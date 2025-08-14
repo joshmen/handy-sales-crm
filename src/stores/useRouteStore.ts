@@ -121,7 +121,7 @@ interface RouteStore {
   // Actions - Visits
   addVisit: (routeId: string, visit: RouteVisit) => void;
   updateVisit: (routeId: string, visitId: string, updates: Partial<RouteVisit>) => void;
-  completeVisit: (routeId: string, visitId: string, orderData?: any) => void;
+  completeVisit: (routeId: string, visitId: string, orderData?: { total: number; products: Array<{ productId: string; quantity: number; price: number }> }) => void;
   cancelVisit: (routeId: string, visitId: string, reason?: string) => void;
   
   // Actions - Inventory

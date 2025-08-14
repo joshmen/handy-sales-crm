@@ -11,14 +11,14 @@ export const serverApiInstance = axios.create({
 })
 
 // Función helper para llamadas al API desde el servidor
-export async function serverApiCall<T = any>(
+export async function serverApiCall<T = unknown>(
   method: 'get' | 'post' | 'put' | 'delete',
   url: string,
-  data?: any,
+  data?: unknown,
   token?: string
 ): Promise<T> {
   try {
-    const config: any = {
+    const config: Record<string, unknown> = {
       method,
       url,
       data,
@@ -31,7 +31,10 @@ export async function serverApiCall<T = any>(
     
     const response = await serverApiInstance(config)
     return response.data
-  } catch (error: any) {
-    throw error.response?.data || error
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      throw error.response?.data || error
+    }
+    throw error
   }
 }

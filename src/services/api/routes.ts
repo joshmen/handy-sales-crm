@@ -240,7 +240,8 @@ class RouteService {
     zone?: string;
   }) {
     try {
-      const response = await api.get<ApiResponse<any>>(
+      const response = await api.get<ApiResponse<Record<string, unknown>>>(
+
         `${this.basePath}/statistics`,
         { params }
       );
@@ -286,7 +287,7 @@ class RouteService {
   /**
    * Sincronizar ruta offline
    */
-  async syncRoute(routeData: any) {
+  async syncRoute(routeData: Partial<Route>) {
     try {
       const response = await api.post<ApiResponse<Route>>(
         `${this.basePath}/sync`,

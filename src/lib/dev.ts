@@ -1,4 +1,5 @@
 // Development utilities and helpers
+import React from 'react'
 
 // API Mock Mode - useful for development without backend
 export const DEV_CONFIG = {
@@ -10,22 +11,22 @@ export const DEV_CONFIG = {
 
 // Development logger
 export const devLog = {
-  info: (message: string, ...args: any[]) => {
+  info: (message: string, ...args: unknown[]) => {
     if (DEV_CONFIG.ENABLE_LOGS) {
       console.log(`🔷 [Handy CRM] ${message}`, ...args)
     }
   },
-  error: (message: string, error?: any) => {
+  error: (message: string, error?: unknown) => {
     if (DEV_CONFIG.ENABLE_LOGS) {
       console.error(`🔴 [Handy CRM] ${message}`, error)
     }
   },
-  warn: (message: string, ...args: any[]) => {
+  warn: (message: string, ...args: unknown[]) => {
     if (DEV_CONFIG.ENABLE_LOGS) {
       console.warn(`🟡 [Handy CRM] ${message}`, ...args)
     }
   },
-  success: (message: string, ...args: any[]) => {
+  success: (message: string, ...args: unknown[]) => {
     if (DEV_CONFIG.ENABLE_LOGS) {
       console.log(`🟢 [Handy CRM] ${message}`, ...args)
     }
@@ -51,7 +52,7 @@ export const generateMockDate = (daysOffset: number = 0) => {
   return date
 }
 
-export const generateMockClient = (overrides: any = {}) => {
+export const generateMockClient = (overrides: Record<string, unknown> = {}) => {
   const names = ['Abarrotes El Sol', 'Supermercado Central', 'Tienda La Esquina', 'Distribuidora Norte']
   const cities = ['Hermosillo', 'Tijuana', 'Mexicali', 'Ensenada']
   const types = ['MINORISTA', 'MAYORISTA', 'DISTRIBUIDOR']
@@ -76,7 +77,7 @@ export const generateMockClient = (overrides: any = {}) => {
   }
 }
 
-export const generateMockProduct = (overrides: any = {}) => {
+export const generateMockProduct = (overrides: Record<string, unknown> = {}) => {
   const names = ['Refresco Cola', 'Agua Natural', 'Pan Integral', 'Leche Entera', 'Arroz Blanco']
   const categories = ['Bebidas', 'Panadería', 'Lácteos', 'Abarrotes']
   const brands = ['Coca Cola', 'Bonafont', 'Bimbo', 'Lala', 'Verde Valle']
@@ -147,7 +148,7 @@ export const devShortcuts = {
 
 // Make dev tools available globally in development
 if (typeof window !== 'undefined' && DEV_CONFIG.SHOW_DEV_TOOLS) {
-  ;(window as any).handyDev = {
+  ;(window as Window & { handyDev?: unknown }).handyDev = {
     ...devShortcuts,
     log: devLog,
     config: DEV_CONFIG,

@@ -252,7 +252,7 @@ export interface ChartData {
   name: string
   value: number
   date?: string
-  [key: string]: any
+  [key: string]: unknown
 }
 
 // Form types
@@ -268,7 +268,7 @@ export interface SelectOption extends FormOption {
 }
 
 // API Response types
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   data: T
   message?: string
   success: boolean
@@ -397,7 +397,7 @@ export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
 
 export type RequiredFields<T, K extends keyof T> = T & Required<Pick<T, K>>
 
-export type EntityWithRelations<T, R = {}> = T & R
+export type EntityWithRelations<T, R = Record<string, unknown>> = T & R
 
 // Component prop types
 export interface BaseComponentProps {
@@ -405,16 +405,16 @@ export interface BaseComponentProps {
   children?: React.ReactNode
 }
 
-export interface TableColumn<T = any> {
+export interface TableColumn<T = unknown> {
   key: keyof T | string
   title: string
   width?: string | number
   align?: 'left' | 'center' | 'right'
   sortable?: boolean
-  render?: (value: any, record: T, index: number) => React.ReactNode
+  render?: (value: unknown, record: T, index: number) => React.ReactNode
 }
 
-export interface TableProps<T = any> {
+export interface TableProps<T = unknown> {
   data: T[]
   columns: TableColumn<T>[]
   loading?: boolean

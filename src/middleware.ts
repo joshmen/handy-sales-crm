@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { UserRole, PERMISSIONS, ROLE_PERMISSIONS } from "@/types/users";
 
 // Mock subscription check (en producción, verificar desde la base de datos)
-const checkSubscription = async (companyId?: string) => {
+const checkSubscription = async (_companyId?: string) => {
   // Simular verificación de suscripción
   return {
     isActive: true,
