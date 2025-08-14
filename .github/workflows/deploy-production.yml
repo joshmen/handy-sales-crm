@@ -52,21 +52,12 @@ jobs:
               body: `### ✅ Desplegado exitosamente en Vercel!\n\n🔗 **URL de Producción:** ${deploymentUrl}\n📦 **Commit:** \`${commitSha}\`\n🚀 **Rama:** \`main\`\n⏱️ **Desplegado:** ${new Date().toLocaleString('es-MX')}`
             });
 
-      - name: 📊 Notificar estado del despliegue
+      - name: 📊 Mostrar resultado
         if: always()
-        uses: actions/github-script@v6
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const status = '${{ job.status }}';
-            const statusEmoji = status === 'success' ? '✅' : '❌';
-            const statusText = status === 'success' ? 'exitoso' : 'fallido';
-            
-            await github.rest.repos.createCommitStatus({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              sha: context.sha,
-              state: status === 'success' ? 'success' : 'failure',
-              description: `Despliegue ${statusText} en Vercel`,
-              context: 'Vercel Deployment'
-            });
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Despliegue exitoso!"
+            echo "URL: ${{ env.DEPLOYMENT_URL }}"
+          else
+            echo "❌ Despliegue fallido"
+          fi
