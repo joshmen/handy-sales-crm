@@ -8,18 +8,5 @@
     "app/api/**/*.ts": {
       "maxDuration": 30
     }
-  },
-  "env": {
-    "NEXTAUTH_URL": "@production-url",
-    "NEXTAUTH_SECRET": "@nextauth-secret",
-    "NODE_ENV": "production",
-    "NEXT_PUBLIC_ENV": "production"
-  },
-  "build": {
-    "env": {
-      "NEXTAUTH_SECRET": "@nextauth-secret",
-      "NEXTAUTH_URL": "@production-url",
-      "NODE_ENV": "production"
-    }
   }
 }
