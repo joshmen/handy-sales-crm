@@ -35,6 +35,11 @@ if exist "ci.yml" (
     echo [OK] ci.yml deshabilitado
 )
 
+if exist "deploy.yml" (
+    ren "deploy.yml" "deploy.yml.disabled"
+    echo [OK] deploy.yml deshabilitado
+)
+
 echo.
 echo ========================================
 echo   Workflows Activos:
