@@ -1,0 +1,45 @@
+version: 2
+updates:
+  # Mantener las dependencias de npm actualizadas
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/Mexico_City"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "tu-usuario-github"  # Cambia esto por tu usuario
+    labels:
+      - "dependencies"
+      - "npm"
+    commit-message:
+      prefix: "chore"
+      prefix-development: "chore"
+      include: "scope"
+    ignore:
+      # Puedes ignorar actualizaciones de ciertas dependencias
+      # - dependency-name: "express"
+      #   versions: ["5.x"]
+    groups:
+      # Agrupa las actualizaciones de desarrollo
+      development-dependencies:
+        dependency-type: "development"
+      # Agrupa las actualizaciones de producción
+      production-dependencies:
+        dependency-type: "production"
+        
+  # Mantener las GitHub Actions actualizadas
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/Mexico_City"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "ci"
