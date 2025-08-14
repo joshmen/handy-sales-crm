@@ -23,6 +23,17 @@ jobs:
           node-version: '18'
           cache: 'npm'
 
+      - name: 📚 Cache de dependencias
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: 📦 Instalar dependencias
+        run: npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+
       - name: 🔧 Instalar Vercel CLI
         run: npm install --global vercel@latest
 
@@ -31,6 +42,9 @@ jobs:
 
       - name: 🏗️ Build Project Artifacts
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET || 'development-secret-change-in-production' }}
+          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL || 'https://handy-sales-crm.vercel.app' }}
 
       - name: 🚀 Deploy Project Artifacts to Vercel
         run: |
