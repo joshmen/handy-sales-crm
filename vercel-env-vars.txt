@@ -1,0 +1,17 @@
+# Variables de Entorno para Vercel
+# Copia estas variables en Vercel Dashboard
+
+NEXTAUTH_URL=https://tu-proyecto.vercel.app
+NEXTAUTH_SECRET=9zs+sqFTs5OmAipYQjkskCJa3+VetAsuZfrslD1ba8A=
+NODE_ENV=production
+NEXT_PUBLIC_ENV=production
+
+# Si tienes API Backend:
+# NEXT_PUBLIC_API_URL=https://tu-api.com/api
+
+# Opcionales:
+# CLOUDINARY_CLOUD_NAME=
+# CLOUDINARY_API_KEY=
+# CLOUDINARY_API_SECRET=
+# RESEND_API_KEY=
+# STRIPE_SECRET_KEY=
