@@ -34,11 +34,7 @@ import { Separator } from '@/components/ui/Separator';
 
 type Breadcrumb = { label: string; href: string; isLast: boolean };
 
-interface HeaderProps {
-  onMenuClick?: () => void;
-}
-
-// Breadcrumb mapping
+// Mapeo de breadcrumbs
 const routeLabels: Record<string, string> = {
   '/dashboard': 'Dashboard',
   '/clients': 'Clientes',
@@ -55,7 +51,7 @@ const routeLabels: Record<string, string> = {
   '/settings': 'Configuración',
 };
 
-// Mock user for testing
+// Mock user
 const mockUser = {
   id: '1',
   name: 'Carlos Mendoza',
@@ -64,7 +60,7 @@ const mockUser = {
   avatar: '',
 };
 
-// Mock notifications
+// Mock notificaciones
 const mockNotifications = [
   {
     id: '1',
@@ -82,9 +78,14 @@ const mockNotifications = [
   },
 ];
 
+export interface HeaderProps {
+  /** Para abrir/cerrar menú móvil desde el layout */
+  onMenuClick?: () => void;
+}
+
 export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const [mounted, setMounted] = useState(false);
-  const { toggle } = useSidebar();
+  const { toggle } = useSidebar(); // fallback
   const { theme, toggle: toggleTheme } = useTheme();
   const pathname = usePathname();
   const router = useRouter();
@@ -96,111 +97,66 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  // Usar datos reales del usuario si está disponible
   const currentUser = session?.user
     ? {
-        id: session.user.id || '1',
+        id: (session.user as any).id || '1',
         name: session.user.name || 'Usuario',
         email: session.user.email || 'usuario@handysales.com',
-        role: session.user.role || 'VENDEDOR',
-        avatar: session.user.image || '',
+        role: (session.user as any).role || 'VENDEDOR',
+        avatar: (session.user as any).image || '',
       }
     : mockUser;
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  useEffect(() => setMounted(true), []);
 
-  // Generate breadcrumbs
   const generateBreadcrumbs = (): Breadcrumb[] => {
     const segments = pathname.split('/').filter(Boolean);
     const crumbs: Breadcrumb[] = [];
-
     let currentPath = '';
     segments.forEach((segment, index) => {
       currentPath += `/${segment}`;
       const label = routeLabels[currentPath] || segment.charAt(0).toUpperCase() + segment.slice(1);
-
-      crumbs.push({
-        label,
-        href: currentPath,
-        isLast: index === segments.length - 1,
-      });
+      crumbs.push({ label, href: currentPath, isLast: index === segments.length - 1 });
     });
-
     return crumbs;
   };
 
   const breadcrumbs = generateBreadcrumbs();
-  const unreadNotifications = mockNotifications.filter(n => !n.read).length;
+  const unread = mockNotifications.filter(n => !n.read).length;
 
-  const getInitials = (name: string) => {
-    return name
+  const getInitials = (name: string) =>
+    name
       .split(' ')
       .map(n => n[0])
       .join('')
       .toUpperCase();
-  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      toast({
-        title: 'Búsqueda',
-        description: `Buscando: ${searchQuery}`,
-      });
-      setIsSearchOpen(false);
-      setSearchQuery('');
-      // TODO: Implementar lógica de búsqueda real
-    }
+    if (!searchQuery.trim()) return;
+    toast({ title: 'Búsqueda', description: `Buscando: ${searchQuery}` });
+    setIsSearchOpen(false);
+    setSearchQuery('');
   };
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
-      await signOut({
-        redirect: false,
-        callbackUrl: '/login',
-      });
-
-      toast({
-        title: 'Sesión cerrada',
-        description: 'Has cerrado sesión exitosamente',
-      });
-
-      if (typeof window !== 'undefined') {
-        localStorage.clear();
-      }
-
+      await signOut({ redirect: false, callbackUrl: '/login' });
+      toast({ title: 'Sesión cerrada', description: 'Has cerrado sesión exitosamente' });
+      if (typeof window !== 'undefined') localStorage.clear();
       router.push('/login');
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'No se pudo cerrar la sesión',
-        variant: 'destructive',
-      });
+    } catch {
+      toast({ title: 'Error', description: 'No se pudo cerrar la sesión', variant: 'destructive' });
     } finally {
       setIsLoggingOut(false);
       setIsUserMenuOpen(false);
     }
   };
 
-  const formatTime = (date: Date) => {
-    return new Intl.DateTimeFormat('es-MX', {
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(date);
-  };
+  const formatTime = (date: Date) =>
+    new Intl.DateTimeFormat('es-MX', { hour: '2-digit', minute: '2-digit' }).format(date);
 
-  const handleMenuButton = () => {
-    if (onMenuClick) {
-      onMenuClick();
-    } else {
-      toggle();
-    }
-  };
-
-  // No renderizar botones interactivos hasta que esté montado
   if (!mounted) {
     return (
       <header className="sticky top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -216,8 +172,13 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-16 items-center px-4 lg:px-6">
-        {/* Mobile menu button */}
-        <Button variant="ghost" size="icon" className="lg:hidden mr-2" onClick={handleMenuButton}>
+        {/* Botón menú móvil */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="lg:hidden mr-2"
+          onClick={onMenuClick ?? toggle}
+        >
           <Menu className="h-5 w-5" />
         </Button>
 
@@ -246,14 +207,14 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
           ))}
         </nav>
 
-        {/* Mobile title */}
+        {/* Título móvil */}
         <div className="flex-1 md:hidden">
           <h1 className="text-lg font-semibold">{routeLabels[pathname] || 'Handy CRM'}</h1>
         </div>
 
-        {/* Right side controls */}
+        {/* Controles derechos */}
         <div className="flex items-center space-x-2 ml-auto">
-          {/* Search */}
+          {/* Buscar */}
           <Dialog open={isSearchOpen} onOpenChange={setIsSearchOpen}>
             <DialogTrigger asChild>
               <Button variant="ghost" size="icon" className="relative">
@@ -283,22 +244,22 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             </DialogContent>
           </Dialog>
 
-          {/* Theme toggle */}
+          {/* Tema */}
           <Button variant="ghost" size="icon" onClick={toggleTheme}>
             {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </Button>
 
-          {/* Notifications */}
+          {/* Notificaciones */}
           <Dialog open={isNotificationsOpen} onOpenChange={setIsNotificationsOpen}>
             <DialogTrigger asChild>
               <Button variant="ghost" size="icon" className="relative">
                 <Bell className="h-5 w-5" />
-                {unreadNotifications > 0 && (
+                {unread > 0 && (
                   <Badge
                     variant="destructive"
                     className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
                   >
-                    {unreadNotifications}
+                    {unread}
                   </Badge>
                 )}
               </Button>
@@ -308,23 +269,23 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                 <DialogTitle>Notificaciones</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 max-h-80 overflow-y-auto">
-                {mockNotifications.map(notification => (
+                {mockNotifications.map(n => (
                   <div
-                    key={notification.id}
+                    key={n.id}
                     className={cn(
                       'p-3 rounded-lg border transition-colors',
-                      !notification.read && 'bg-muted/50'
+                      !n.read && 'bg-muted/50'
                     )}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <h4 className="text-sm font-medium">{notification.title}</h4>
-                        <p className="text-sm text-muted-foreground mt-1">{notification.message}</p>
+                        <h4 className="text-sm font-medium">{n.title}</h4>
+                        <p className="text-sm text-muted-foreground mt-1">{n.message}</p>
                         <span className="text-xs text-muted-foreground">
-                          {formatTime(notification.createdAt)}
+                          {formatTime(n.createdAt)}
                         </span>
                       </div>
-                      {!notification.read && (
+                      {!n.read && (
                         <div className="h-2 w-2 bg-primary rounded-full flex-shrink-0 mt-1" />
                       )}
                     </div>
@@ -336,7 +297,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
 
           <Separator orientation="vertical" className="h-6" />
 
-          {/* User menu */}
+          {/* Usuario */}
           <Dialog open={isUserMenuOpen} onOpenChange={setIsUserMenuOpen}>
             <DialogTrigger asChild>
               <Button variant="ghost" className="flex items-center space-x-2 px-2">
@@ -358,7 +319,6 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                 <DialogTitle>Menú de usuario</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
-                {/* User info */}
                 <div className="flex items-center space-x-3 p-3 rounded-lg bg-muted">
                   <Avatar className="h-12 w-12">
                     <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
@@ -373,7 +333,6 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                   </div>
                 </div>
 
-                {/* Menu items */}
                 <div className="space-y-1">
                   <Button
                     variant="ghost"
@@ -383,8 +342,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                       setIsUserMenuOpen(false);
                     }}
                   >
-                    <User className="h-4 w-4 mr-2" />
-                    Mi perfil
+                    <User className="h-4 w-4 mr-2" /> Mi perfil
                   </Button>
                   <Button
                     variant="ghost"
@@ -394,8 +352,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                       setIsUserMenuOpen(false);
                     }}
                   >
-                    <Settings className="h-4 w-4 mr-2" />
-                    Configuración
+                    <Settings className="h-4 w-4 mr-2" /> Configuración
                   </Button>
                   <Separator />
                   <Button
@@ -425,3 +382,5 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
     </header>
   );
 };
+
+export default Header;
