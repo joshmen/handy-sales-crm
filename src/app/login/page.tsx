@@ -1,22 +1,22 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { signIn } from "next-auth/react";
-import { toast } from "@/hooks/useToast";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Card } from "@/components/ui/Card";
-import { Loading } from "@/components/ui/Loading";
-import { Eye, EyeOff, LogIn } from "lucide-react";
+import { useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { signIn } from 'next-auth/react';
+import { toast } from '@/hooks/useToast';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Card } from '@/components/ui/Card';
+import { Loading } from '@/components/ui/Loading';
+import { Eye, EyeOff, LogIn } from 'lucide-react';
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("from") || "/dashboard";
+  const callbackUrl = searchParams.get('from') || '/dashboard';
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -25,9 +25,9 @@ export default function LoginPage() {
 
     if (!email || !password) {
       toast({
-        title: "Error",
-        description: "Por favor ingresa tu email y contraseña",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Por favor ingresa tu email y contraseña',
+        variant: 'destructive',
       });
       return;
     }
@@ -35,7 +35,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const result = await signIn("credentials", {
+      const result = await signIn('credentials', {
         email,
         password,
         redirect: false,
@@ -44,23 +44,23 @@ export default function LoginPage() {
       if (result?.error) {
         console.log(result?.error);
         toast({
-          title: "Error de autenticación",
-          description: "Email o contraseña incorrectos",
-          variant: "destructive",
+          title: 'Error de autenticación',
+          description: 'Email o contraseña incorrectos',
+          variant: 'destructive',
         });
       } else {
         toast({
-          title: "¡Bienvenido!",
-          description: "Iniciando sesión...",
+          title: '¡Bienvenido!',
+          description: 'Iniciando sesión...',
         });
         router.push(callbackUrl);
         router.refresh();
       }
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Ocurrió un error al iniciar sesión",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Ocurrió un error al iniciar sesión',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -82,10 +82,7 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
               Email
             </label>
             <Input
@@ -93,7 +90,7 @@ export default function LoginPage() {
               type="email"
               placeholder="tu@email.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={e => setEmail(e.target.value)}
               disabled={loading}
               className="w-full"
               required
@@ -101,19 +98,16 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
               Contraseña
             </label>
             <div className="relative">
               <Input
                 id="password"
-                type={showPassword ? "text" : "password"}
+                type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={e => setPassword(e.target.value)}
                 disabled={loading}
                 className="w-full pr-10"
                 required
@@ -124,11 +118,7 @@ export default function LoginPage() {
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
                 tabIndex={-1}
               >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
           </div>
@@ -141,10 +131,7 @@ export default function LoginPage() {
               />
               <span className="ml-2 text-sm text-gray-600">Recordarme</span>
             </label>
-            <a
-              href="#"
-              className="text-sm text-teal-600 hover:text-teal-700 font-medium"
-            >
+            <a href="#" className="text-sm text-teal-600 hover:text-teal-700 font-medium">
               ¿Olvidaste tu contraseña?
             </a>
           </div>
@@ -170,7 +157,7 @@ export default function LoginPage() {
 
         <div className="text-center">
           <p className="text-sm text-gray-600">
-            ¿Necesitas acceso?{" "}
+            ¿Necesitas acceso?{' '}
             <a
               href="mailto:ventas@handysales.com"
               className="font-medium text-teal-600 hover:text-teal-700"
@@ -184,24 +171,28 @@ export default function LoginPage() {
         </div>
 
         {/* Credenciales de demo para desarrollo */}
-        {process.env.NODE_ENV === "development" && (
+        {process.env.NODE_ENV === 'development' && (
           <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <p className="text-xs text-gray-600 mb-2 font-semibold">
-              Credenciales de prueba:
-            </p>
+            <p className="text-xs text-gray-600 mb-2 font-semibold">Credenciales de prueba:</p>
             <div className="space-y-1">
               <p className="text-xs text-gray-600">
-                <span className="font-medium">Admin:</span> admin@handysales.com
-                / admin123
+                <span className="font-medium">Admin:</span> admin@handysales.com / admin123
               </p>
               <p className="text-xs text-gray-600">
-                <span className="font-medium">Vendedor:</span>{" "}
-                vendedor@handysales.com / vendedor123
+                <span className="font-medium">Vendedor:</span> vendedor@handysales.com / vendedor123
               </p>
             </div>
           </div>
         )}
       </Card>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div>Cargando...</div>}>
+      <LoginContent />
+    </Suspense>
   );
 }
