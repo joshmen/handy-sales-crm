@@ -1,8 +1,8 @@
-import React from "react";
-import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
-import { Button } from "@/components/ui/Button";
-import { Search, Filter, X } from "lucide-react";
+import React from 'react';
+import { Input } from '@/components/ui/Input';
+import { SelectCompat as Select } from '@/components/ui/SelectCompat';
+import { Button } from '@/components/ui/Button';
+import { Search, Filter, X } from 'lucide-react';
 
 interface OrderFiltersProps {
   searchTerm: string;
@@ -21,31 +21,31 @@ interface OrderFiltersProps {
 }
 
 const statusOptions = [
-  { value: "", label: "Todos los estados" },
-  { value: "draft", label: "Borrador" },
-  { value: "pending", label: "Pendiente" },
-  { value: "confirmed", label: "Confirmado" },
-  { value: "in_progress", label: "En Progreso" },
-  { value: "delivered", label: "Entregado" },
-  { value: "cancelled", label: "Cancelado" },
+  { value: '', label: 'Todos los estados' },
+  { value: 'draft', label: 'Borrador' },
+  { value: 'pending', label: 'Pendiente' },
+  { value: 'confirmed', label: 'Confirmado' },
+  { value: 'in_progress', label: 'En Progreso' },
+  { value: 'delivered', label: 'Entregado' },
+  { value: 'cancelled', label: 'Cancelado' },
 ];
 
 const priorityOptions = [
-  { value: "", label: "Todas las prioridades" },
-  { value: "low", label: "Baja" },
-  { value: "normal", label: "Normal" },
-  { value: "high", label: "Alta" },
-  { value: "urgent", label: "Urgente" },
+  { value: '', label: 'Todas las prioridades' },
+  { value: 'low', label: 'Baja' },
+  { value: 'normal', label: 'Normal' },
+  { value: 'high', label: 'Alta' },
+  { value: 'urgent', label: 'Urgente' },
 ];
 
 const dateOptions = [
-  { value: "", label: "Cualquier fecha" },
-  { value: "today", label: "Hoy" },
-  { value: "yesterday", label: "Ayer" },
-  { value: "this_week", label: "Esta semana" },
-  { value: "last_week", label: "Semana pasada" },
-  { value: "this_month", label: "Este mes" },
-  { value: "last_month", label: "Mes pasado" },
+  { value: '', label: 'Cualquier fecha' },
+  { value: 'today', label: 'Hoy' },
+  { value: 'yesterday', label: 'Ayer' },
+  { value: 'this_week', label: 'Esta semana' },
+  { value: 'last_week', label: 'Semana pasada' },
+  { value: 'this_month', label: 'Este mes' },
+  { value: 'last_month', label: 'Mes pasado' },
 ];
 
 export const OrderFilters: React.FC<OrderFiltersProps> = ({
@@ -61,11 +61,11 @@ export const OrderFilters: React.FC<OrderFiltersProps> = ({
   onClientChange,
   onClearFilters,
   clients = [],
-  className = "",
+  className = '',
 }) => {
   const clientOptions = [
-    { value: "", label: "Todos los clientes" },
-    ...clients.map((client) => ({
+    { value: '', label: 'Todos los clientes' },
+    ...clients.map(client => ({
       value: client.id,
       label: client.name,
     })),
@@ -86,7 +86,7 @@ export const OrderFilters: React.FC<OrderFiltersProps> = ({
         <Input
           placeholder="Buscar por código, cliente o notas..."
           value={searchTerm}
-          onChange={(e) => onSearchChange(e.target.value)}
+          onChange={e => onSearchChange(e.target.value)}
           className="pl-10"
         />
       </div>
@@ -94,46 +94,63 @@ export const OrderFilters: React.FC<OrderFiltersProps> = ({
       {/* Filtros en fila */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Select
-          options={statusOptions}
+          //options={statusOptions}
           value={statusFilter}
-          onChange={(e) => onStatusChange(e.target.value)}
+          onChange={e => onStatusChange(e.target.value)}
           placeholder="Estado"
-        />
+        >
+          {statusOptions.map(u => (
+            <option key={u.value} value={u.value}>
+              {u.label}
+            </option>
+          ))}
+        </Select>
 
         <Select
-          options={priorityOptions}
+          //options={priorityOptions}
           value={priorityFilter}
-          onChange={(e) => onPriorityChange(e.target.value)}
+          onChange={e => onPriorityChange(e.target.value)}
           placeholder="Prioridad"
-        />
+        >
+          {priorityOptions.map(u => (
+            <option key={u.value} value={u.value}>
+              {u.label}
+            </option>
+          ))}
+        </Select>
 
         <Select
-          options={dateOptions}
+          //options={dateOptions}
           value={dateFilter}
-          onChange={(e) => onDateChange(e.target.value)}
+          onChange={e => onDateChange(e.target.value)}
           placeholder="Fecha"
-        />
+        >
+          {dateOptions.map(u => (
+            <option key={u.value} value={u.value}>
+              {u.label}
+            </option>
+          ))}
+        </Select>
 
         <Select
-          options={clientOptions}
+          //options={clientOptions}
           value={clientFilter}
-          onChange={(e) => onClientChange(e.target.value)}
+          onChange={e => onClientChange(e.target.value)}
           placeholder="Cliente"
-        />
+        >
+          {clientOptions.map(u => (
+            <option key={u.value} value={u.value}>
+              {u.label}
+            </option>
+          ))}
+        </Select>
       </div>
 
       {/* Botón para limpiar filtros */}
       {hasActiveFilters && (
         <div className="flex justify-between items-center pt-2 border-t">
-          <span className="text-sm text-gray-500">
-            Filtros activos aplicados
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onClearFilters}
-            className="text-gray-600"
-          >
+          <span className="text-sm text-gray-500">Filtros activos aplicados</span>
+          <Button variant="outline" size="sm" onClick={onClearFilters} className="text-gray-600">
             <X size={16} className="mr-1" />
             Limpiar filtros
           </Button>

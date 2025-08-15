@@ -1,17 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import {
-  Card,
-  CardHeader,
-  CardContent,
-  Button,
-  Input,
-  Select,
-} from "@/components/ui";
-import { Order, OrderItem } from "@/types/orders";
-import { Client, Product } from "@/types";
+import React, { useState } from 'react';
+import { Card, CardHeader, CardContent, Button, Input } from '@/components/ui';
+import { SelectCompat as Select } from '@/components/ui/SelectCompat';
+import { Order, OrderItem } from '@/types/orders';
+import { Client, Product } from '@/types';
 
 interface OrderFormProps {
   order?: Order | null;
@@ -29,60 +23,58 @@ export const OrderForm: React.FC<OrderFormProps> = ({
   onCancel,
 }) => {
   const [formData, setFormData] = useState({
-    clientId: order?.clientId || "",
+    clientId: order?.clientId || '',
     deliveryDate: order?.deliveryDate
-      ? new Date(order.deliveryDate).toISOString().split("T")[0]
-      : "",
-    priority: order?.priority || "normal",
-    paymentMethod: order?.paymentMethod || "cash",
-    notes: order?.notes || "",
-    address: order?.address || "",
+      ? new Date(order.deliveryDate).toISOString().split('T')[0]
+      : '',
+    priority: order?.priority || 'normal',
+    paymentMethod: order?.paymentMethod || 'cash',
+    notes: order?.notes || '',
+    address: order?.address || '',
   });
 
   const [orderItems, setOrderItems] = useState<OrderItem[]>(order?.items || []);
-  const [selectedProduct, setSelectedProduct] = useState("");
+  const [selectedProduct, setSelectedProduct] = useState('');
   const [quantity, setQuantity] = useState(1);
 
-  const clientOptions = clients.map((client) => ({
+  const clientOptions = clients.map(client => ({
     value: client.id,
     label: client.name,
   }));
 
-  const productOptions = products.map((product) => ({
+  const productOptions = products.map(product => ({
     value: product.id,
     label: `${product.name} - $${product.price}`,
   }));
 
   const priorityOptions = [
-    { value: "low", label: "Baja" },
-    { value: "normal", label: "Normal" },
-    { value: "high", label: "Alta" },
-    { value: "urgent", label: "Urgente" },
+    { value: 'low', label: 'Baja' },
+    { value: 'normal', label: 'Normal' },
+    { value: 'high', label: 'Alta' },
+    { value: 'urgent', label: 'Urgente' },
   ];
 
   const paymentOptions = [
-    { value: "cash", label: "Efectivo" },
-    { value: "credit", label: "Crédito" },
-    { value: "transfer", label: "Transferencia" },
-    { value: "check", label: "Cheque" },
+    { value: 'cash', label: 'Efectivo' },
+    { value: 'credit', label: 'Crédito' },
+    { value: 'transfer', label: 'Transferencia' },
+    { value: 'check', label: 'Cheque' },
   ];
 
   const handleAddProduct = () => {
     if (!selectedProduct || quantity <= 0) {
-      alert("Selecciona un producto y cantidad válida");
+      alert('Selecciona un producto y cantidad válida');
       return;
     }
 
-    const product = products.find((p) => p.id === selectedProduct);
+    const product = products.find(p => p.id === selectedProduct);
     if (!product) return;
 
-    const existingItem = orderItems.find(
-      (item) => item.productId === selectedProduct
-    );
+    const existingItem = orderItems.find(item => item.productId === selectedProduct);
 
     if (existingItem) {
       setOrderItems(
-        orderItems.map((item) =>
+        orderItems.map(item =>
           item.productId === selectedProduct
             ? {
                 ...item,
@@ -95,7 +87,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({
     } else {
       const newItem: OrderItem = {
         id: `item-${Date.now()}`,
-        orderId: order?.id || "",
+        orderId: order?.id || '',
         productId: product.id,
         product,
         quantity,
@@ -106,12 +98,12 @@ export const OrderForm: React.FC<OrderFormProps> = ({
       setOrderItems([...orderItems, newItem]);
     }
 
-    setSelectedProduct("");
+    setSelectedProduct('');
     setQuantity(1);
   };
 
   const handleRemoveItem = (itemId: string) => {
-    setOrderItems(orderItems.filter((item) => item.id !== itemId));
+    setOrderItems(orderItems.filter(item => item.id !== itemId));
   };
 
   const handleQuantityChange = (itemId: string, newQuantity: number) => {
@@ -121,7 +113,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({
     }
 
     setOrderItems(
-      orderItems.map((item) =>
+      orderItems.map(item =>
         item.id === itemId
           ? {
               ...item,
@@ -144,22 +136,20 @@ export const OrderForm: React.FC<OrderFormProps> = ({
 
   const handleSave = () => {
     if (!formData.clientId || orderItems.length === 0) {
-      alert("Selecciona un cliente y agrega al menos un producto");
+      alert('Selecciona un cliente y agrega al menos un producto');
       return;
     }
 
     const orderData: Partial<Order> = {
       ...formData,
-      deliveryDate: formData.deliveryDate
-        ? new Date(formData.deliveryDate)
-        : undefined,
+      deliveryDate: formData.deliveryDate ? new Date(formData.deliveryDate) : undefined,
       items: orderItems,
       subtotal,
       tax,
       discount: 0,
       total,
-      status: order?.status || "draft",
-      paymentStatus: "pending",
+      status: order?.status || 'draft',
+      paymentStatus: 'pending',
     };
 
     onSave(orderData);
@@ -171,29 +161,31 @@ export const OrderForm: React.FC<OrderFormProps> = ({
       <Card>
         <CardHeader>
           <h3 className="text-lg font-semibold">
-            {order ? "Editar Pedido" : "Crear Nuevo Pedido"}
+            {order ? 'Editar Pedido' : 'Crear Nuevo Pedido'}
           </h3>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Select
               label="Cliente *"
-              options={[
-                { value: "", label: "Seleccionar cliente" },
-                ...clientOptions,
-              ]}
+              //options={[{ value: '', label: 'Seleccionar cliente' }, ...clientOptions]}
               value={formData.clientId}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, clientId: e.target.value }))
-              }
-            />
+              onChange={e => setFormData(prev => ({ ...prev, clientId: e.target.value }))}
+            >
+              <option value="">Seleccionar cliente</option>
+              {clientOptions.map(u => (
+                <option key={u.value} value={u.value}>
+                  {u.label}
+                </option>
+              ))}
+            </Select>
 
             <Input
               label="Fecha de entrega"
               type="date"
               value={formData.deliveryDate}
-              onChange={(e) =>
-                setFormData((prev) => ({
+              onChange={e =>
+                setFormData(prev => ({
                   ...prev,
                   deliveryDate: e.target.value,
                 }))
@@ -202,36 +194,48 @@ export const OrderForm: React.FC<OrderFormProps> = ({
 
             <Select
               label="Prioridad"
-              options={priorityOptions}
+              //options={priorityOptions}
               value={formData.priority}
-              onChange={(e) =>
-                setFormData((prev) => ({
+              onChange={e =>
+                setFormData(prev => ({
                   ...prev,
                   priority: e.target.value as any,
                 }))
               }
-            />
+            >
+              <option value="">Prioridad</option>
+              {priorityOptions.map(u => (
+                <option key={u.value} value={u.value}>
+                  {u.label}
+                </option>
+              ))}
+            </Select>
 
             <Select
               label="Método de pago"
-              options={paymentOptions}
+              //options={paymentOptions}
               value={formData.paymentMethod}
-              onChange={(e) =>
-                setFormData((prev) => ({
+              onChange={e =>
+                setFormData(prev => ({
                   ...prev,
                   paymentMethod: e.target.value as any,
                 }))
               }
-            />
+            >
+              <option value="">Método de pago</option>
+              {paymentOptions.map(u => (
+                <option key={u.value} value={u.value}>
+                  {u.label}
+                </option>
+              ))}
+            </Select>
           </div>
 
           <div className="mt-4">
             <Input
               label="Dirección de entrega"
               value={formData.address}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, address: e.target.value }))
-              }
+              onChange={e => setFormData(prev => ({ ...prev, address: e.target.value }))}
               placeholder="Dirección donde se entregará el pedido"
             />
           </div>
@@ -246,18 +250,22 @@ export const OrderForm: React.FC<OrderFormProps> = ({
         <CardContent>
           <div className="flex gap-4 mb-4">
             <Select
-              options={[
-                { value: "", label: "Seleccionar producto" },
-                ...productOptions,
-              ]}
+              //options={[{ value: '', label: 'Seleccionar producto' }, ...productOptions]}
               value={selectedProduct}
-              onChange={(e) => setSelectedProduct(e.target.value)}
+              onChange={e => setSelectedProduct(e.target.value)}
               className="flex-1"
-            />
+            >
+              <option value="">Seleccionar producto</option>
+              {productOptions.map(u => (
+                <option key={u.value} value={u.value}>
+                  {u.label}
+                </option>
+              ))}
+            </Select>
             <Input
               type="number"
               value={quantity}
-              onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+              onChange={e => setQuantity(parseInt(e.target.value) || 1)}
               min="1"
               className="w-24"
               placeholder="Cant."
@@ -272,54 +280,35 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                 <table className="min-w-full">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-4 py-2 text-left text-sm font-medium">
-                        Producto
-                      </th>
-                      <th className="px-4 py-2 text-left text-sm font-medium">
-                        Cantidad
-                      </th>
-                      <th className="px-4 py-2 text-left text-sm font-medium">
-                        Precio Unit.
-                      </th>
-                      <th className="px-4 py-2 text-left text-sm font-medium">
-                        Total
-                      </th>
-                      <th className="px-4 py-2 text-left text-sm font-medium">
-                        Acciones
-                      </th>
+                      <th className="px-4 py-2 text-left text-sm font-medium">Producto</th>
+                      <th className="px-4 py-2 text-left text-sm font-medium">Cantidad</th>
+                      <th className="px-4 py-2 text-left text-sm font-medium">Precio Unit.</th>
+                      <th className="px-4 py-2 text-left text-sm font-medium">Total</th>
+                      <th className="px-4 py-2 text-left text-sm font-medium">Acciones</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {orderItems.map((item) => (
+                    {orderItems.map(item => (
                       <tr key={item.id}>
                         <td className="px-4 py-2">
                           <div>
                             <p className="font-medium">{item.product.name}</p>
-                            <p className="text-sm text-gray-500">
-                              {item.product.code}
-                            </p>
+                            <p className="text-sm text-gray-500">{item.product.code}</p>
                           </div>
                         </td>
                         <td className="px-4 py-2">
                           <Input
                             type="number"
                             value={item.quantity}
-                            onChange={(e) =>
-                              handleQuantityChange(
-                                item.id,
-                                parseInt(e.target.value) || 0
-                              )
+                            onChange={e =>
+                              handleQuantityChange(item.id, parseInt(e.target.value) || 0)
                             }
                             min="0"
                             className="w-20"
                           />
                         </td>
-                        <td className="px-4 py-2">
-                          ${item.unitPrice.toFixed(2)}
-                        </td>
-                        <td className="px-4 py-2 font-medium">
-                          ${item.total.toFixed(2)}
-                        </td>
+                        <td className="px-4 py-2">${item.unitPrice.toFixed(2)}</td>
+                        <td className="px-4 py-2 font-medium">${item.total.toFixed(2)}</td>
                         <td className="px-4 py-2">
                           <button
                             onClick={() => handleRemoveItem(item.id)}
@@ -355,9 +344,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({
           ) : (
             <div className="text-center py-8 text-gray-500">
               <p>No hay productos agregados</p>
-              <p className="text-sm">
-                Selecciona productos para agregar al pedido
-              </p>
+              <p className="text-sm">Selecciona productos para agregar al pedido</p>
             </div>
           )}
         </CardContent>
@@ -366,14 +353,10 @@ export const OrderForm: React.FC<OrderFormProps> = ({
       {/* Notas */}
       <Card>
         <CardContent>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Notas del pedido
-          </label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Notas del pedido</label>
           <textarea
             value={formData.notes}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, notes: e.target.value }))
-            }
+            onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
             placeholder="Comentarios adicionales..."
             className="w-full p-3 border border-gray-300 rounded-lg h-24 focus:outline-none focus:ring-2 focus:ring-teal-500"
           />
@@ -385,9 +368,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({
         <Button variant="outline" onClick={onCancel}>
           Cancelar
         </Button>
-        <Button onClick={handleSave}>
-          {order ? "Actualizar Pedido" : "Crear Pedido"}
-        </Button>
+        <Button onClick={handleSave}>{order ? 'Actualizar Pedido' : 'Crear Pedido'}</Button>
       </div>
     </div>
   );
