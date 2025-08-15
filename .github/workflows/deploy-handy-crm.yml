@@ -1,4 +1,4 @@
-name: 🚀 HandyCRM CI/CD Pipeline
+name: HandyCRM CI/CD Pipeline
 
 on:
   push:
@@ -77,7 +77,7 @@ jobs:
           CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}
           EOF
 
-      - name: 🏗️ Build Application
+      - name: Build Application
         run: npm run build
         env:
           NODE_ENV: production
