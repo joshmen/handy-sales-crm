@@ -1,26 +1,16 @@
 {
-  "installCommand": "npm install --legacy-peer-deps",
-  "buildCommand": "npm run build || echo 'Build completed with warnings'",
-  "outputDirectory": ".next",
   "framework": "nextjs",
+  "installCommand": "npm install --force",
   "buildCommand": "npm run build",
   "devCommand": "npm run dev",
   "outputDirectory": ".next",
-  "installCommand": "npm install --legacy-peer-deps",
   "git": {
     "deploymentEnabled": {
       "main": true,
       "develop": true
     }
   },
-  "env": {
-    "NEXT_PUBLIC_API_URL": "@api-url",
-    "NEXTAUTH_SECRET": "@nextauth-secret",
-    "NEXTAUTH_URL": "@nextauth-url",
-    "CLOUDINARY_CLOUD_NAME": "@cloudinary-cloud-name",
-    "CLOUDINARY_API_KEY": "@cloudinary-api-key",
-    "CLOUDINARY_API_SECRET": "@cloudinary-api-secret"
-  },
+
   "functions": {
     "src/app/api/**/*.ts": {
       "maxDuration": 30
