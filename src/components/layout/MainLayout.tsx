@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Header } from './Header';
+import Header from './Header'; // ⬅️ default import
 import { Sidebar } from './Sidebar';
 import { MobileMenu } from './MobileMenu';
 
