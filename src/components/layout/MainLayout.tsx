@@ -23,7 +23,7 @@ export function MainLayout({ children }: MainLayoutProps) {
       {/* Main Content */}
       <div className="md:pl-64">
         {/* Header */}
-        <Header onMenuClick={() => setMobileMenuOpen(!mobileMenuOpen)} />
+        <Header onMenuClick={() => setMobileMenuOpen(v => !v)} />
 
         {/* Page Content */}
         <main className="p-4 md:p-6 lg:p-8">{children}</main>
