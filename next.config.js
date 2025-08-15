@@ -83,7 +83,7 @@ const nextConfig = {
   },
 
   eslint: {
-    ignoreDuringBuilds: true, // Temporalmente ignorar ESLint para permitir deploy
+    ignoreDuringBuilds: false,
   },
 
   // Configuración experimental

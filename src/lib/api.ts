@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { API_CONFIG } from '@/lib/constants';
 
 // Create axios instance
@@ -110,7 +110,7 @@ export const handleApiError = (error: unknown): ApiError => {
     return {
       message: error.response?.data?.message || 'Server error',
       status: error.response?.status || 0,
-      errors: (error.response?.data as any)?.errors || [],
+      errors: (error.response?.data as { errors?: string[] })?.errors || [],
     };
   }
 

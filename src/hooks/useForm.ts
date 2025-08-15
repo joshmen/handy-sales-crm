@@ -184,16 +184,16 @@ export interface FormFieldProps {
 }
 
 // Form state helpers
-export function getFormError(form: UseFormReturn<any>, fieldName: string): string | undefined {
+export function getFormError<T extends FieldValues>(form: UseFormReturn<T>, fieldName: string): string | undefined {
   const error = form.formState.errors[fieldName]
   return error?.message as string | undefined
 }
 
-export function isFieldInvalid(form: UseFormReturn<any>, fieldName: string): boolean {
+export function isFieldInvalid<T extends FieldValues>(form: UseFormReturn<T>, fieldName: string): boolean {
   return !!form.formState.errors[fieldName] && form.formState.touchedFields[fieldName]
 }
 
-export function getFieldProps(form: UseFormReturn<any>, fieldName: string) {
+export function getFieldProps<T extends FieldValues>(form: UseFormReturn<T>, fieldName: string) {
   return {
     ...form.register(fieldName),
     error: getFormError(form, fieldName),

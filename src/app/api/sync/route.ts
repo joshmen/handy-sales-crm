@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth';
 
 // Mock data para desarrollo
 const mockSyncData = {
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Filtrar datos según los tipos solicitados
-    const syncData: any = {
+    const syncData: Record<string, unknown> = {
       success: true,
       lastSyncDate: new Date(),
       data: {},
