@@ -34,6 +34,10 @@ import { Separator } from '@/components/ui/Separator';
 
 type Breadcrumb = { label: string; href: string; isLast: boolean };
 
+interface HeaderProps {
+  onMenuClick?: () => void;
+}
+
 // Breadcrumb mapping
 const routeLabels: Record<string, string> = {
   '/dashboard': 'Dashboard',
@@ -78,7 +82,7 @@ const mockNotifications = [
   },
 ];
 
-export const Header: React.FC = () => {
+export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const [mounted, setMounted] = useState(false);
   const { toggle } = useSidebar();
   const { theme, toggle: toggleTheme } = useTheme();
@@ -164,7 +168,6 @@ export const Header: React.FC = () => {
         description: 'Has cerrado sesión exitosamente',
       });
 
-      // Limpiar stores de Zustand si es necesario
       if (typeof window !== 'undefined') {
         localStorage.clear();
       }
@@ -189,6 +192,14 @@ export const Header: React.FC = () => {
     }).format(date);
   };
 
+  const handleMenuButton = () => {
+    if (onMenuClick) {
+      onMenuClick();
+    } else {
+      toggle();
+    }
+  };
+
   // No renderizar botones interactivos hasta que esté montado
   if (!mounted) {
     return (
@@ -206,7 +217,7 @@ export const Header: React.FC = () => {
     <header className="sticky top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-16 items-center px-4 lg:px-6">
         {/* Mobile menu button */}
-        <Button variant="ghost" size="icon" className="lg:hidden mr-2" onClick={toggle}>
+        <Button variant="ghost" size="icon" className="lg:hidden mr-2" onClick={handleMenuButton}>
           <Menu className="h-5 w-5" />
         </Button>
 
@@ -216,7 +227,7 @@ export const Header: React.FC = () => {
             <Home className="h-4 w-4 mr-1" />
             <span className="text-sm text-muted-foreground">Inicio</span>
           </div>
-          {breadcrumbs.map((crumb, index) => (
+          {breadcrumbs.map(crumb => (
             <React.Fragment key={crumb.href}>
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
               <div className="flex items-center">

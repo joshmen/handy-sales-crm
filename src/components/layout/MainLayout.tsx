@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useState } from 'react';
 import { Header } from './Header';
@@ -18,10 +18,7 @@ export function MainLayout({ children }: MainLayoutProps) {
       <Sidebar />
 
       {/* Mobile Menu */}
-      <MobileMenu 
-        isOpen={mobileMenuOpen} 
-        onClose={() => setMobileMenuOpen(false)} 
-      />
+      <MobileMenu isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
 
       {/* Main Content */}
       <div className="md:pl-64">
@@ -29,9 +26,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         <Header onMenuClick={() => setMobileMenuOpen(!mobileMenuOpen)} />
 
         {/* Page Content */}
-        <main className="p-4 md:p-6 lg:p-8">
-          {children}
-        </main>
+        <main className="p-4 md:p-6 lg:p-8">{children}</main>
       </div>
     </div>
   );
