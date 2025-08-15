@@ -17,4 +17,4 @@ export { Toast } from './Toast';
 export { Toaster } from './Toaster';
 
 // Hooks
-export { toast, useToast } from './use-toast';
+export { useToast } from './use-toast';
