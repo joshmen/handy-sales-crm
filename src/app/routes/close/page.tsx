@@ -32,6 +32,7 @@ import {
   Target,
   TrendingDown,
   BarChart3,
+  Plus,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
