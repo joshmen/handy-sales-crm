@@ -14,8 +14,8 @@ export interface RouteVisit {
   notes?: string;
   orderTotal?: number;
   products?: Array<{
-    id: string;
-    name: string;
+    productId: string;
+    name?: string;
     quantity: number;
     price: number;
   }>;
@@ -110,41 +110,52 @@ interface RouteStore {
   error: string | null;
   hasHydrated: boolean;
   setHasHydrated: (state: boolean) => void;
-  
+
   // Actions - Routes
   setRoutes: (routes: Route[]) => void;
   addRoute: (route: Route) => void;
   updateRoute: (id: string, updates: Partial<Route>) => void;
   deleteRoute: (id: string) => void;
   setCurrentRoute: (route: Route | null) => void;
-  
+
   // Actions - Visits
   addVisit: (routeId: string, visit: RouteVisit) => void;
   updateVisit: (routeId: string, visitId: string, updates: Partial<RouteVisit>) => void;
-  completeVisit: (routeId: string, visitId: string, orderData?: { total: number; products: Array<{ productId: string; quantity: number; price: number }> }) => void;
+  completeVisit: (
+    routeId: string,
+    visitId: string,
+    orderData?: {
+      total: number;
+      products: Array<{ productId: string; quantity: number; price: number }>;
+    }
+  ) => void;
   cancelVisit: (routeId: string, visitId: string, reason?: string) => void;
-  
+
   // Actions - Inventory
   loadInventory: (routeId: string, inventory: RouteInventory[]) => void;
-  updateInventoryItem: (routeId: string, productId: string, updates: Partial<RouteInventory>) => void;
-  
+  updateInventoryItem: (
+    routeId: string,
+    productId: string,
+    updates: Partial<RouteInventory>
+  ) => void;
+
   // Actions - Route Status
   startRoute: (routeId: string) => void;
   completeRoute: (routeId: string) => void;
-  
+
   // Actions - Filters & Search
   setFilters: (filters: Partial<RouteFilters>) => void;
   clearFilters: () => void;
-  
+
   // Actions - Statistics
   updateStatistics: (stats: Partial<RouteStatistics>) => void;
   calculateStatistics: () => void;
-  
+
   // Computed
   getFilteredRoutes: () => Route[];
   getRoutesByStatus: (status: Route['status']) => Route[];
   getTodayRoutes: () => Route[];
-  
+
   // Estado UI
   selectedVisitId: string | null;
   setSelectedVisitId: (id: string | null) => void;
@@ -178,245 +189,255 @@ const useRouteStore = create<RouteStore>()(
         selectedVisitId: null,
         mapView: 'list',
         hasHydrated: false,
-        
+
         // Hydration action
         setHasHydrated: (state: boolean) => set(() => ({ hasHydrated: state })),
 
         // Actions - Routes
-        setRoutes: (routes) => set((state) => {
-          state.routes = routes;
-        }),
+        setRoutes: routes =>
+          set(state => {
+            state.routes = routes;
+          }),
 
-        addRoute: (route) => set((state) => {
-          state.routes.push(route);
-        }),
+        addRoute: route =>
+          set(state => {
+            state.routes.push(route);
+          }),
 
-        updateRoute: (id, updates) => set((state) => {
-          const index = state.routes.findIndex(r => r.id === id);
-          if (index !== -1) {
-            state.routes[index] = { ...state.routes[index], ...updates, updatedAt: new Date() };
-          }
-        }),
+        updateRoute: (id, updates) =>
+          set(state => {
+            const index = state.routes.findIndex(r => r.id === id);
+            if (index !== -1) {
+              state.routes[index] = { ...state.routes[index], ...updates, updatedAt: new Date() };
+            }
+          }),
 
-        deleteRoute: (id) => set((state) => {
-          state.routes = state.routes.filter(r => r.id !== id);
-          if (state.currentRoute?.id === id) {
-            state.currentRoute = null;
-          }
-        }),
+        deleteRoute: id =>
+          set(state => {
+            state.routes = state.routes.filter(r => r.id !== id);
+            if (state.currentRoute?.id === id) {
+              state.currentRoute = null;
+            }
+          }),
 
-        setCurrentRoute: (route) => set((state) => {
-          state.currentRoute = route;
-        }),
+        setCurrentRoute: route =>
+          set(state => {
+            state.currentRoute = route;
+          }),
 
         // Actions - Visits
-        addVisit: (routeId, visit) => set((state) => {
-          const route = state.routes.find(r => r.id === routeId);
-          if (route) {
-            route.visits.push(visit);
-            route.updatedAt = new Date();
-          }
-        }),
-
-        updateVisit: (routeId, visitId, updates) => set((state) => {
-          const route = state.routes.find(r => r.id === routeId);
-          if (route) {
-            const visitIndex = route.visits.findIndex(v => v.id === visitId);
-            if (visitIndex !== -1) {
-              route.visits[visitIndex] = { ...route.visits[visitIndex], ...updates };
+        addVisit: (routeId, visit) =>
+          set(state => {
+            const route = state.routes.find(r => r.id === routeId);
+            if (route) {
+              route.visits.push(visit);
               route.updatedAt = new Date();
             }
-          }
-        }),
+          }),
 
-        completeVisit: (routeId, visitId, orderData) => set((state) => {
-          const route = state.routes.find(r => r.id === routeId);
-          if (route) {
-            const visit = route.visits.find(v => v.id === visitId);
-            if (visit) {
-              visit.status = 'completed';
-              visit.completedTime = new Date();
-              if (orderData) {
-                visit.orderTotal = orderData.total;
-                visit.products = orderData.products;
+        updateVisit: (routeId, visitId, updates) =>
+          set(state => {
+            const route = state.routes.find(r => r.id === routeId);
+            if (route) {
+              const visitIndex = route.visits.findIndex(v => v.id === visitId);
+              if (visitIndex !== -1) {
+                route.visits[visitIndex] = { ...route.visits[visitIndex], ...updates };
+                route.updatedAt = new Date();
               }
-              route.updatedAt = new Date();
-              
-              // Actualizar estadísticas
-              get().calculateStatistics();
             }
-          }
-        }),
+          }),
 
-        cancelVisit: (routeId, visitId, reason) => set((state) => {
-          const route = state.routes.find(r => r.id === routeId);
-          if (route) {
-            const visit = route.visits.find(v => v.id === visitId);
-            if (visit) {
-              visit.status = 'cancelled';
-              if (reason) visit.notes = reason;
-              route.updatedAt = new Date();
+        completeVisit: (routeId, visitId, orderData) =>
+          set(state => {
+            const route = state.routes.find(r => r.id === routeId);
+            if (route) {
+              const visit = route.visits.find(v => v.id === visitId);
+              if (visit) {
+                visit.status = 'completed';
+                visit.completedTime = new Date();
+                if (orderData) {
+                  visit.orderTotal = orderData.total;
+                  visit.products = orderData.products;
+                }
+                route.updatedAt = new Date();
+
+                // Actualizar estadísticas
+                get().calculateStatistics();
+              }
             }
-          }
-        }),
+          }),
+
+        cancelVisit: (routeId, visitId, reason) =>
+          set(state => {
+            const route = state.routes.find(r => r.id === routeId);
+            if (route) {
+              const visit = route.visits.find(v => v.id === visitId);
+              if (visit) {
+                visit.status = 'cancelled';
+                if (reason) visit.notes = reason;
+                route.updatedAt = new Date();
+              }
+            }
+          }),
 
         // Actions - Inventory
-        loadInventory: (routeId, inventory) => set((state) => {
-          const route = state.routes.find(r => r.id === routeId);
-          if (route) {
-            route.inventory = inventory;
-            route.updatedAt = new Date();
-          }
-        }),
-
-        updateInventoryItem: (routeId, productId, updates) => set((state) => {
-          const route = state.routes.find(r => r.id === routeId);
-          if (route) {
-            const itemIndex = route.inventory.findIndex(i => i.productId === productId);
-            if (itemIndex !== -1) {
-              route.inventory[itemIndex] = { ...route.inventory[itemIndex], ...updates };
+        loadInventory: (routeId, inventory) =>
+          set(state => {
+            const route = state.routes.find(r => r.id === routeId);
+            if (route) {
+              route.inventory = inventory;
               route.updatedAt = new Date();
             }
-          }
-        }),
+          }),
+
+        updateInventoryItem: (routeId, productId, updates) =>
+          set(state => {
+            const route = state.routes.find(r => r.id === routeId);
+            if (route) {
+              const itemIndex = route.inventory.findIndex(i => i.productId === productId);
+              if (itemIndex !== -1) {
+                route.inventory[itemIndex] = { ...route.inventory[itemIndex], ...updates };
+                route.updatedAt = new Date();
+              }
+            }
+          }),
 
         // Actions - Route Status
-        startRoute: (routeId) => set((state) => {
-          const route = state.routes.find(r => r.id === routeId);
-          if (route) {
-            route.status = 'in_progress';
-            route.startTime = new Date();
-            route.updatedAt = new Date();
-          }
-        }),
+        startRoute: routeId =>
+          set(state => {
+            const route = state.routes.find(r => r.id === routeId);
+            if (route) {
+              route.status = 'in_progress';
+              route.startTime = new Date();
+              route.updatedAt = new Date();
+            }
+          }),
 
-        completeRoute: (routeId) => set((state) => {
-          const route = state.routes.find(r => r.id === routeId);
-          if (route) {
-            route.status = 'completed';
-            route.endTime = new Date();
-            route.updatedAt = new Date();
-            
-            // Calcular métricas finales
-            const completedVisits = route.visits.filter(v => v.status === 'completed').length;
-            const totalVisits = route.visits.length;
-            route.performance.efficiency = Math.round((completedVisits / totalVisits) * 100);
-            
-            // Calcular ventas totales
-            const totalSales = route.visits
-              .filter(v => v.status === 'completed')
-              .reduce((sum, v) => sum + (v.orderTotal || 0), 0);
-            route.sales.total = totalSales;
-            
-            get().calculateStatistics();
-          }
-        }),
+        completeRoute: routeId =>
+          set(state => {
+            const route = state.routes.find(r => r.id === routeId);
+            if (route) {
+              route.status = 'completed';
+              route.endTime = new Date();
+              route.updatedAt = new Date();
+
+              // Calcular métricas finales
+              const completedVisits = route.visits.filter(v => v.status === 'completed').length;
+              const totalVisits = route.visits.length;
+              route.performance.efficiency = Math.round((completedVisits / totalVisits) * 100);
+
+              // Calcular ventas totales
+              const totalSales = route.visits
+                .filter(v => v.status === 'completed')
+                .reduce((sum, v) => sum + (v.orderTotal || 0), 0);
+              route.sales.total = totalSales;
+
+              get().calculateStatistics();
+            }
+          }),
 
         // Actions - Filters & Search
-        setFilters: (filters) => set((state) => {
-          state.filters = { ...state.filters, ...filters };
-        }),
+        setFilters: filters =>
+          set(state => {
+            state.filters = { ...state.filters, ...filters };
+          }),
 
-        clearFilters: () => set((state) => {
-          state.filters = {
-            search: '',
-            status: 'all',
-            zone: 'all',
-          };
-        }),
+        clearFilters: () =>
+          set(state => {
+            state.filters = {
+              search: '',
+              status: 'all',
+              zone: 'all',
+            };
+          }),
 
         // Actions - Statistics
-        updateStatistics: (stats) => set((state) => {
-          state.statistics = { ...state.statistics, ...stats };
-        }),
+        updateStatistics: stats =>
+          set(state => {
+            state.statistics = { ...state.statistics, ...stats };
+          }),
 
-        calculateStatistics: () => set((state) => {
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          
-          const todayRoutes = state.routes.filter(r => {
-            const routeDate = new Date(r.date);
-            routeDate.setHours(0, 0, 0, 0);
-            return routeDate.getTime() === today.getTime();
-          });
-          
-          const activeRoutes = todayRoutes.filter(r => 
-            r.status === 'active' || r.status === 'in_progress'
-          ).length;
-          
-          const totalVisitsToday = todayRoutes.reduce((sum, r) => 
-            sum + r.visits.length, 0
-          );
-          
-          const completedVisits = todayRoutes.reduce((sum, r) => 
-            sum + r.visits.filter(v => v.status === 'completed').length, 0
-          );
-          
-          const efficiencies = todayRoutes
-            .filter(r => r.performance.efficiency > 0)
-            .map(r => r.performance.efficiency);
-          
-          const avgEfficiency = efficiencies.length > 0
-            ? Math.round(efficiencies.reduce((sum, e) => sum + e, 0) / efficiencies.length)
-            : 0;
-          
-          const totalSalesToday = todayRoutes.reduce((sum, r) => 
-            sum + r.sales.total, 0
-          );
-          
-          const inventoryOut = todayRoutes.reduce((sum, r) => 
-            sum + r.inventory.reduce((invSum, item) => invSum + item.loaded, 0), 0
-          );
-          
-          state.statistics = {
-            activeRoutes,
-            totalVisitsToday,
-            completedVisits,
-            avgEfficiency,
-            totalSalesToday,
-            inventoryOut,
-          };
-        }),
+        calculateStatistics: () =>
+          set(state => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const todayRoutes = state.routes.filter(r => {
+              const routeDate = new Date(r.date);
+              routeDate.setHours(0, 0, 0, 0);
+              return routeDate.getTime() === today.getTime();
+            });
+
+            const activeRoutes = todayRoutes.filter(
+              r => r.status === 'active' || r.status === 'in_progress'
+            ).length;
+
+            const totalVisitsToday = todayRoutes.reduce((sum, r) => sum + r.visits.length, 0);
+
+            const completedVisits = todayRoutes.reduce(
+              (sum, r) => sum + r.visits.filter(v => v.status === 'completed').length,
+              0
+            );
+
+            const efficiencies = todayRoutes
+              .filter(r => r.performance.efficiency > 0)
+              .map(r => r.performance.efficiency);
+
+            const avgEfficiency =
+              efficiencies.length > 0
+                ? Math.round(efficiencies.reduce((sum, e) => sum + e, 0) / efficiencies.length)
+                : 0;
+
+            const totalSalesToday = todayRoutes.reduce((sum, r) => sum + r.sales.total, 0);
+
+            const inventoryOut = todayRoutes.reduce(
+              (sum, r) => sum + r.inventory.reduce((invSum, item) => invSum + item.loaded, 0),
+              0
+            );
+
+            state.statistics = {
+              activeRoutes,
+              totalVisitsToday,
+              completedVisits,
+              avgEfficiency,
+              totalSalesToday,
+              inventoryOut,
+            };
+          }),
 
         // Computed
         getFilteredRoutes: () => {
           const { routes, filters } = get();
-          
-          return routes.filter((route) => {
-            const matchesSearch = 
+
+          return routes.filter(route => {
+            const matchesSearch =
               !filters.search ||
               route.name.toLowerCase().includes(filters.search.toLowerCase()) ||
               route.zone.toLowerCase().includes(filters.search.toLowerCase()) ||
               route.assignedTo.name.toLowerCase().includes(filters.search.toLowerCase());
-            
-            const matchesStatus = 
-              filters.status === 'all' || 
-              route.status === filters.status;
-            
-            const matchesZone = 
-              filters.zone === 'all' || 
-              route.zone === filters.zone;
-            
-            const matchesDate = 
+
+            const matchesStatus = filters.status === 'all' || route.status === filters.status;
+
+            const matchesZone = filters.zone === 'all' || route.zone === filters.zone;
+
+            const matchesDate =
               (!filters.dateFrom || new Date(route.date) >= filters.dateFrom) &&
               (!filters.dateTo || new Date(route.date) <= filters.dateTo);
-            
-            const matchesUser = 
-              !filters.assignedTo || 
-              route.assignedTo.id === filters.assignedTo;
-            
+
+            const matchesUser = !filters.assignedTo || route.assignedTo.id === filters.assignedTo;
+
             return matchesSearch && matchesStatus && matchesZone && matchesDate && matchesUser;
           });
         },
 
-        getRoutesByStatus: (status) => {
+        getRoutesByStatus: status => {
           return get().routes.filter(r => r.status === status);
         },
 
         getTodayRoutes: () => {
           const today = new Date();
           today.setHours(0, 0, 0, 0);
-          
+
           return get().routes.filter(r => {
             const routeDate = new Date(r.date);
             routeDate.setHours(0, 0, 0, 0);
@@ -425,17 +446,19 @@ const useRouteStore = create<RouteStore>()(
         },
 
         // Estado UI
-        setSelectedVisitId: (id) => set((state) => {
-          state.selectedVisitId = id;
-        }),
+        setSelectedVisitId: id =>
+          set(state => {
+            state.selectedVisitId = id;
+          }),
 
-        setMapView: (view) => set((state) => {
-          state.mapView = view;
-        }),
+        setMapView: view =>
+          set(state => {
+            state.mapView = view;
+          }),
       })),
       {
         name: 'route-store',
-        partialize: (state) => ({
+        partialize: state => ({
           filters: state.filters,
           mapView: state.mapView,
         }),

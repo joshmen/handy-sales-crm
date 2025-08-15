@@ -1,11 +1,11 @@
-import { User, Product, Client } from "./index";
+import { User, Product, Client } from './index';
 
 export interface Route {
   id: string;
   name: string;
   userId: string;
   user: User;
-  status: "pending" | "in_progress" | "completed" | "cancelled";
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
   startDate: Date;
   endDate?: Date;
   initialCash: number;
@@ -33,7 +33,7 @@ export interface RouteOrder {
   routeId: string;
   clientId: string;
   client: Client;
-  status: "pending" | "delivered" | "cancelled";
+  status: 'pending' | 'delivered' | 'cancelled';
   items: RouteOrderItem[];
   total: number;
   deliveryDate?: Date;
@@ -55,7 +55,7 @@ export interface RouteVisit {
   client: Client;
   scheduledDate: Date;
   completedDate?: Date;
-  status: "scheduled" | "completed" | "cancelled";
+  status: 'scheduled' | 'completed' | 'cancelled';
   notes?: string;
   duration?: number;
 }
@@ -67,4 +67,28 @@ export interface RouteSummary {
   completedVisits: number;
   effectiveness: number;
   productsReturned: number;
+}
+
+// Inventario que se carga a una ruta
+export interface RouteInventory {
+  productId: string;
+  quantity: number;
+  unitPrice?: number; // opcional si solo cargas cantidades
+}
+
+// Template (plantilla) de rutas
+export interface RouteTemplate {
+  id: string;
+  name: string;
+  zone?: string;
+  isActive: boolean;
+  // visitas previstas en la plantilla
+  visits: Array<{
+    clientId: string;
+    order?: number; // orden sugerido de visita
+    preferredTime?: string; // ej. "09:00-11:00"
+    notes?: string;
+  }>;
+  createdAt: Date;
+  updatedAt: Date;
 }
