@@ -31,6 +31,13 @@ import {
   DialogTrigger,
 } from '@/components/ui/Dialog';
 import { Separator } from '@/components/ui/Separator';
+import type { DefaultSession } from 'next-auth';
+
+// Extiende el user de NextAuth con los campos que usas en tu app
+type AppSessionUser = DefaultSession['user'] & {
+  id?: string;
+  role?: string;
+};
 
 type Breadcrumb = { label: string; href: string; isLast: boolean };
 
@@ -97,13 +104,15 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const currentUser = session?.user
+  const sUser = session?.user as AppSessionUser | undefined;
+
+  const currentUser = sUser
     ? {
-        id: (session.user as any).id || '1',
-        name: session.user.name || 'Usuario',
-        email: session.user.email || 'usuario@handysales.com',
-        role: (session.user as any).role || 'VENDEDOR',
-        avatar: (session.user as any).image || '',
+        id: sUser.id ?? '1',
+        name: sUser.name ?? 'Usuario',
+        email: sUser.email ?? 'usuario@handysales.com',
+        role: sUser.role ?? 'VENDEDOR',
+        avatar: sUser.image ?? '',
       }
     : mockUser;
 
@@ -383,4 +392,4 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   );
 };
 
-export default Header;
+export default Header; // <-- para poder importarlo como default
