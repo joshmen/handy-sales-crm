@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build || true",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
@@ -39,6 +39,7 @@
     "@radix-ui/react-slot": "^1.1.1",
     "@radix-ui/react-tabs": "^1.1.1",
     "@radix-ui/react-toast": "^1.2.4",
+    "autoprefixer": "^10.4.21",
     "axios": "^1.11.0",
     "class-variance-authority": "^0.7.1",
     "cloudinary": "^2.7.0",
@@ -48,11 +49,13 @@
     "next": "15.4.6",
     "next-auth": "^4.24.10",
     "next-cloudinary": "^6.16.0",
+    "postcss": "^8.5.6",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-hook-form": "^7.62.0",
     "recharts": "^3.1.2",
     "tailwind-merge": "^3.3.1",
+    "tailwindcss": "^4.1.12",
     "zod": "^3.22.2",
     "zustand": "^5.0.0"
   },
@@ -61,11 +64,8 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "autoprefixer": "^10.4.21",
     "eslint": "^9",
     "eslint-config-next": "15.4.6",
-    "postcss": "^8.5.6",
-    "tailwindcss": "^3.4.17",
     "tailwindcss-animate": "^1.0.7",
     "typescript": "^5"
   }
