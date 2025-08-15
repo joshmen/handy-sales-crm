@@ -6,7 +6,7 @@ export * from './useToast';
 export * from './useUtils';
 
 // Re-export specific hooks for easier imports
-export { useAuth, useClients, useProducts, useDashboard } from './useApi';
+export { useClients, useProducts, useDashboard } from './useApi';
 export { useZodForm, useFormHandler, formSchemas } from './useForm';
 export { usePermissions, useConditionalRender, withPermission } from './usePermissions';
 export { useToast } from './useToast';

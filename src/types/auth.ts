@@ -1,3 +1,9 @@
+// import type { Client } from '@/types/clients';
+// import type { Product } from '@/types/products';
+import type { Order } from '@/types/orders';
+// Si tu Route está definida en otro módulo, impórtala desde allí:
+import type { Route } from '@/types/routes'; // o desde el store si ahí vive el tipo
+
 // Tipos de Usuario y Autenticación
 export interface User {
   id: string;
@@ -24,10 +30,10 @@ export interface User {
 
 export enum UserRole {
   SUPER_ADMIN = 'SUPER_ADMIN', // Sistema HandySales
-  ADMIN = 'ADMIN',             // Admin de la empresa (cliente que paga)
-  SUPERVISOR = 'SUPERVISOR',    // Supervisor de vendedores
-  VENDEDOR = 'VENDEDOR',       // Vendedor de ruta
-  VIEWER = 'VIEWER',           // Solo lectura
+  ADMIN = 'ADMIN', // Admin de la empresa (cliente que paga)
+  SUPERVISOR = 'SUPERVISOR', // Supervisor de vendedores
+  VENDEDOR = 'VENDEDOR', // Vendedor de ruta
+  VIEWER = 'VIEWER', // Solo lectura
 }
 
 export interface Company {
@@ -70,10 +76,10 @@ export interface Subscription {
 }
 
 export enum SubscriptionPlan {
-  BASIC = 'BASIC',           // 1-5 vendedores
+  BASIC = 'BASIC', // 1-5 vendedores
   PROFESSIONAL = 'PROFESSIONAL', // 6-20 vendedores
-  ENTERPRISE = 'ENTERPRISE',     // 21+ vendedores
-  CUSTOM = 'CUSTOM',            // Plan personalizado
+  ENTERPRISE = 'ENTERPRISE', // 21+ vendedores
+  CUSTOM = 'CUSTOM', // Plan personalizado
 }
 
 export enum SubscriptionStatus {
@@ -152,8 +158,8 @@ export interface SyncResponse {
   success: boolean;
   lastSyncDate: Date;
   data: {
-    clients?: Client[];
-    products?: Product[];
+    // clients?: Client[];
+    // products?: Product[];
     routes?: Route[];
     orders?: Order[];
   };

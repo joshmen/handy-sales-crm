@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect } from "react";
-import { User } from "@/types";
-import { useAppContext } from "@/context/AppContext";
+import { useState, useEffect } from 'react';
+import { User, UserRole } from '@/types';
+import { useAppContext } from '@/context/AppContext';
 
 interface UseAuthReturn {
   user: User | null;
@@ -19,15 +19,15 @@ export const useAuth = (): UseAuthReturn => {
   useEffect(() => {
     // Simular usuario por defecto para desarrollo
     const mockUser: User = {
-      id: "1",
-      name: "Josué Mendoza",
-      email: "josue@handycrm.com",
-      role: "admin",
+      id: '1',
+      name: 'Josué Mendoza',
+      email: 'josue@handycrm.com',
+      role: UserRole.ADMIN,
       isActive: true,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    dispatch({ type: "SET_USER", payload: mockUser });
+    dispatch({ type: 'SET_USER', payload: mockUser });
   }, [dispatch]);
 
   const login = async (email: string, password: string) => {
@@ -37,25 +37,25 @@ export const useAuth = (): UseAuthReturn => {
 
       // Aquí irá la llamada real a tu API
       const mockUser: User = {
-        id: "1",
-        name: "Josué Mendoza",
+        id: '1',
+        name: 'Josué Mendoza',
         email: email,
-        role: "admin",
+        role: UserRole.ADMIN,
         isActive: true,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
 
-      dispatch({ type: "SET_USER", payload: mockUser });
+      dispatch({ type: 'SET_USER', payload: mockUser });
     } catch (err: any) {
-      setError(err.message || "Error al iniciar sesión");
+      setError(err.message || 'Error al iniciar sesión');
     } finally {
       setLoading(false);
     }
   };
 
   const logout = () => {
-    dispatch({ type: "SET_USER", payload: null });
+    dispatch({ type: 'SET_USER', payload: null });
   };
 
   return {
