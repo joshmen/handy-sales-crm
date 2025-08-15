@@ -36,7 +36,7 @@ const mockSyncData = {
       sku: 'REF001',
       name: 'Refresco Cola 2L',
       category: 'Bebidas',
-      price: 28.50,
+      price: 28.5,
       stock: 150,
       minStock: 50,
       image: 'https://via.placeholder.com/150',
@@ -46,7 +46,7 @@ const mockSyncData = {
       sku: 'SAB001',
       name: 'Sabritas Original 45g',
       category: 'Botanas',
-      price: 18.00,
+      price: 18.0,
       stock: 200,
       minStock: 100,
       image: 'https://via.placeholder.com/150',
@@ -69,10 +69,10 @@ const mockSyncData = {
       clientId: '1',
       date: new Date('2025-01-10'),
       items: [
-        { productId: '1', quantity: 10, price: 28.50 },
-        { productId: '2', quantity: 20, price: 18.00 },
+        { productId: '1', quantity: 10, price: 28.5 },
+        { productId: '2', quantity: 20, price: 18.0 },
       ],
-      total: 645.00,
+      total: 645.0,
       status: 'delivered',
       paymentMethod: 'credit',
     },
@@ -91,29 +91,73 @@ const mockSyncData = {
   },
 };
 
+// ===== Tipos mínimos para arreglar TS sin romper tu lógica =====
+type DataTypeKey = 'clients' | 'products' | 'routes' | 'orders';
+
+type SyncDataPayload = {
+  clients?: typeof mockSyncData.clients;
+  products?: typeof mockSyncData.products;
+  routes?: typeof mockSyncData.routes;
+  orders?: typeof mockSyncData.orders;
+};
+
+type DeletedIds = {
+  clients: string[];
+  products: string[];
+  routes: string[];
+  orders: string[];
+};
+
+type SyncResponse = {
+  success: boolean;
+  lastSyncDate: Date;
+  data: SyncDataPayload;
+  settings: typeof mockSyncData.settings;
+  deletedIds?: DeletedIds;
+};
+
+type DeviceInfo = {
+  deviceId?: string;
+  // ...otros campos que mandes desde el móvil
+  [k: string]: unknown;
+};
+
+type SessionUser = {
+  id: string;
+  email: string;
+  role: string; // 'ADMIN' | ...
+};
+
+// ================================================================
+
 export async function POST(request: NextRequest) {
   try {
     // Verificar autenticación
     const session = await getServerSession(authOptions);
-    
+
     if (!session) {
-      return NextResponse.json(
-        { error: 'No autorizado' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
+    const user = session.user as unknown as SessionUser;
+
     // Obtener datos de sincronización del request
-    const body = await request.json();
-    const { 
-      userId, 
-      lastSyncDate, 
-      deviceInfo, 
-      dataTypes = ['clients', 'products', 'routes', 'orders'] 
+    const body = (await request.json()) as {
+      userId: string;
+      lastSyncDate?: string;
+      deviceInfo?: DeviceInfo;
+      dataTypes?: DataTypeKey[];
+    };
+
+    const {
+      userId,
+      lastSyncDate,
+      deviceInfo,
+      dataTypes = ['clients', 'products', 'routes', 'orders'],
     } = body;
 
     // Validar que el usuario solo pueda sincronizar sus propios datos
-    if (userId !== session.user.id && session.user.role !== 'ADMIN') {
+    if (userId !== user.id && user.role !== 'ADMIN') {
       return NextResponse.json(
         { error: 'No tienes permisos para sincronizar estos datos' },
         { status: 403 }
@@ -126,11 +170,11 @@ export async function POST(request: NextRequest) {
       lastSyncDate,
       deviceInfo,
       dataTypes,
-      sessionUser: session.user.email,
+      sessionUser: user.email,
     });
 
     // Filtrar datos según los tipos solicitados
-    const syncData: Record<string, unknown> = {
+    const syncData: SyncResponse = {
       success: true,
       lastSyncDate: new Date(),
       data: {},
@@ -146,9 +190,10 @@ export async function POST(request: NextRequest) {
     }
     if (dataTypes.includes('routes')) {
       // Filtrar rutas asignadas al usuario
-      syncData.data.routes = session.user.role === 'ADMIN' 
-        ? mockSyncData.routes
-        : mockSyncData.routes.filter(r => r.assignedTo === session.user.email);
+      syncData.data.routes =
+        user.role === 'ADMIN'
+          ? mockSyncData.routes
+          : mockSyncData.routes.filter(r => r.assignedTo === user.email);
     }
     if (dataTypes.includes('orders')) {
       syncData.data.orders = mockSyncData.orders;
@@ -157,7 +202,6 @@ export async function POST(request: NextRequest) {
     // Si hay una fecha de última sincronización, filtrar solo datos nuevos/actualizados
     if (lastSyncDate) {
       const lastSync = new Date(lastSyncDate);
-      
       // Aquí filtrarías los datos que han sido modificados después de lastSync
       // Por ahora, enviamos todo en desarrollo
       syncData.deletedIds = {
@@ -175,13 +219,9 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(syncData);
-    
   } catch (error) {
     console.error('Sync error:', error);
-    return NextResponse.json(
-      { error: 'Error en la sincronización' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Error en la sincronización' }, { status: 500 });
   }
 }
 
@@ -189,22 +229,21 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session) {
-      return NextResponse.json(
-        { error: 'No autorizado' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
+
+    const user = session.user as unknown as SessionUser;
 
     // Devolver información sobre la última sincronización
     return NextResponse.json({
       status: 'ready',
       serverTime: new Date(),
       user: {
-        id: session.user.id,
-        email: session.user.email,
-        role: session.user.role,
+        id: user.id,
+        email: user.email,
+        role: user.role,
       },
       subscription: {
         status: 'active', // En producción, verificar el estado real de la suscripción
@@ -212,7 +251,6 @@ export async function GET(request: NextRequest) {
         validUntil: new Date('2025-02-15'),
       },
     });
-    
   } catch (error) {
     console.error('Sync status error:', error);
     return NextResponse.json(

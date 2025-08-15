@@ -1,8 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Almacenamiento temporal para desarrollo
-const syncQueue = new Map();
-const lastSyncTimestamps = new Map();
+// ==== Tipos mínimos para corregir TS ====
+type SyncType = 'full' | 'delta' | 'push';
+
+type OrdersProcessedItem = {
+  localId: string;
+  serverId: string;
+  status: 'confirmed' | 'rejected' | 'pending';
+};
+
+type MessageItem = {
+  id: string;
+  type: 'info' | 'warning' | 'error';
+  title: string;
+  message: string;
+  createdAt: string;
+};
+
+// Payload que enviará el servidor. Todo opcional para permitir construirlo por partes.
+type SyncData = {
+  ordersProcessed?: OrdersProcessedItem[];
+  clients?: unknown[];
+  products?: unknown[];
+  routes?: unknown[];
+  promotions?: unknown[];
+  settings?: unknown;
+
+  updatedClients?: unknown[];
+  updatedProducts?: Array<{ id: string; stock?: number }>;
+  newOrders?: unknown[];
+  cancelledOrders?: unknown[];
+  messages?: MessageItem[];
+};
+
+type ServerData = {
+  timestamp: string;
+  type: SyncType;
+  data: SyncData;
+};
+
+// Almacenamiento temporal para desarrollo (tipado para evitar unknown)
+const syncQueue = new Map<string, unknown[]>();
+const lastSyncTimestamps = new Map<string, string>();
 
 // POST /api/mobile/sync
 // Sincronización bidireccional de datos
@@ -13,22 +52,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { 
-      deviceId, 
-      lastSyncAt, 
-      data: clientData,
-      type = 'full' // 'full' | 'delta' | 'push'
-    } = body;
+    const body = (await request.json()) as {
+      deviceId: string;
+      lastSyncAt?: string;
+      data?: {
+        orders?: Array<{ localId: string } & Record<string, unknown>>;
+        visits?: unknown[];
+        locations?: unknown[];
+        photos?: unknown[];
+      };
+      type?: SyncType;
+    };
+
+    const { deviceId, lastSyncAt, data: clientData, type = 'full' } = body;
 
     // Timestamp actual
     const currentTimestamp = new Date().toISOString();
 
-    // Datos para enviar al cliente
-    const serverData = {
+    // Datos para enviar al cliente (tipado)
+    const serverData: ServerData = {
       timestamp: currentTimestamp,
-      type: type,
-      data: {}
+      type,
+      data: {},
     };
 
     // Procesar datos recibidos del cliente
@@ -37,11 +82,11 @@ export async function POST(request: NextRequest) {
       if (clientData.orders && clientData.orders.length > 0) {
         console.log('Nuevos pedidos recibidos:', clientData.orders.length);
         // TODO: Guardar en base de datos
-        
+
         serverData.data.ordersProcessed = clientData.orders.map(o => ({
           localId: o.localId,
           serverId: `order-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          status: 'confirmed'
+          status: 'confirmed',
         }));
       }
 
@@ -80,7 +125,7 @@ export async function POST(request: NextRequest) {
             creditLimit: 10000,
             creditUsed: 3500,
             lastVisit: '2025-01-10T10:30:00Z',
-            visitFrequency: 'weekly'
+            visitFrequency: 'weekly',
           },
           {
             id: '2',
@@ -92,7 +137,7 @@ export async function POST(request: NextRequest) {
             creditLimit: 5000,
             creditUsed: 1200,
             lastVisit: '2025-01-12T14:20:00Z',
-            visitFrequency: 'weekly'
+            visitFrequency: 'weekly',
           },
           {
             id: '3',
@@ -104,8 +149,8 @@ export async function POST(request: NextRequest) {
             creditLimit: 15000,
             creditUsed: 8900,
             lastVisit: '2025-01-08T09:15:00Z',
-            visitFrequency: 'biweekly'
-          }
+            visitFrequency: 'biweekly',
+          },
         ],
         products: [
           {
@@ -118,7 +163,7 @@ export async function POST(request: NextRequest) {
             minStock: 20,
             category: 'Bebidas',
             brand: 'CocaCola',
-            barcode: '7501031311309'
+            barcode: '7501031311309',
           },
           {
             id: '2',
@@ -130,7 +175,7 @@ export async function POST(request: NextRequest) {
             minStock: 50,
             category: 'Bebidas',
             brand: 'Bonafont',
-            barcode: '7501055300846'
+            barcode: '7501055300846',
           },
           {
             id: '3',
@@ -142,7 +187,7 @@ export async function POST(request: NextRequest) {
             minStock: 30,
             category: 'Botanas',
             brand: 'Sabritas',
-            barcode: '7501011130012'
+            barcode: '7501011130012',
           },
           {
             id: '4',
@@ -154,8 +199,8 @@ export async function POST(request: NextRequest) {
             minStock: 15,
             category: 'Galletas',
             brand: 'Gamesa',
-            barcode: '7501030402022'
-          }
+            barcode: '7501030402022',
+          },
         ],
         routes: [
           {
@@ -171,7 +216,7 @@ export async function POST(request: NextRequest) {
               { productId: '1', loaded: 50, sold: 0, returned: 0 },
               { productId: '2', loaded: 100, sold: 0, returned: 0 },
               { productId: '3', loaded: 75, sold: 0, returned: 0 },
-              { productId: '4', loaded: 40, sold: 0, returned: 0 }
+              { productId: '4', loaded: 40, sold: 0, returned: 0 },
             ],
             visits: [
               {
@@ -181,7 +226,7 @@ export async function POST(request: NextRequest) {
                 scheduledTime: new Date().toISOString(),
                 estimatedDuration: 30,
                 status: 'pending',
-                order: 1
+                order: 1,
               },
               {
                 id: 'v2',
@@ -190,7 +235,7 @@ export async function POST(request: NextRequest) {
                 scheduledTime: new Date(Date.now() + 3600000).toISOString(),
                 estimatedDuration: 25,
                 status: 'pending',
-                order: 2
+                order: 2,
               },
               {
                 id: 'v3',
@@ -199,10 +244,10 @@ export async function POST(request: NextRequest) {
                 scheduledTime: new Date(Date.now() + 7200000).toISOString(),
                 estimatedDuration: 35,
                 status: 'pending',
-                order: 3
-              }
-            ]
-          }
+                order: 3,
+              },
+            ],
+          },
         ],
         promotions: [
           {
@@ -212,7 +257,7 @@ export async function POST(request: NextRequest) {
             productIds: ['1'],
             validFrom: '2025-01-01T00:00:00Z',
             validTo: '2025-01-31T23:59:59Z',
-            type: '2x1'
+            type: '2x1',
           },
           {
             id: 'promo2',
@@ -222,8 +267,8 @@ export async function POST(request: NextRequest) {
             validFrom: '2025-01-01T00:00:00Z',
             validTo: '2025-01-15T23:59:59Z',
             type: 'discount',
-            discountPercent: 10
-          }
+            discountPercent: 10,
+          },
         ],
         settings: {
           syncInterval: 30000,
@@ -235,13 +280,13 @@ export async function POST(request: NextRequest) {
           allowOfflineOrders: true,
           maxOfflineDays: 7,
           currency: 'MXN',
-          timezone: 'America/Mexico_City'
-        }
+          timezone: 'America/Mexico_City',
+        },
       };
     } else {
       // Sincronización delta (solo cambios desde lastSyncAt)
-      const lastSync = new Date(lastSyncAt);
-      
+      const lastSync = new Date(lastSyncAt!);
+
       // Simular cambios incrementales
       serverData.data = {
         ...serverData.data,
@@ -249,8 +294,8 @@ export async function POST(request: NextRequest) {
         updatedProducts: [
           {
             id: '1',
-            stock: 95 // Stock actualizado
-          }
+            stock: 95, // Stock actualizado
+          },
         ],
         newOrders: [],
         cancelledOrders: [],
@@ -260,9 +305,9 @@ export async function POST(request: NextRequest) {
             type: 'info',
             title: 'Promoción especial',
             message: 'Recuerda ofrecer la promoción 2x1 en refrescos',
-            createdAt: currentTimestamp
-          }
-        ]
+            createdAt: currentTimestamp,
+          },
+        ],
       };
     }
 
@@ -272,15 +317,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       ...serverData,
-      nextSyncIn: 30000 // Próxima sincronización en 30 segundos
+      nextSyncIn: 30000, // Próxima sincronización en 30 segundos
     });
-
   } catch (error) {
     console.error('Sync error:', error);
-    return NextResponse.json(
-      { error: 'Error durante la sincronización' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Error durante la sincronización' }, { status: 500 });
   }
 }
 
@@ -292,10 +333,7 @@ export async function GET(request: NextRequest) {
     const deviceId = searchParams.get('deviceId');
 
     if (!deviceId) {
-      return NextResponse.json(
-        { error: 'Device ID requerido' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Device ID requerido' }, { status: 400 });
     }
 
     const lastSync = lastSyncTimestamps.get(deviceId);
@@ -304,16 +342,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       deviceId,
       lastSyncAt: lastSync || null,
-      pendingItems: pendingItems.length,
+      pendingItems: (pendingItems as unknown[]).length,
       serverTime: new Date().toISOString(),
-      status: 'online'
+      status: 'online',
     });
-
   } catch (error) {
     console.error('Sync status error:', error);
-    return NextResponse.json(
-      { error: 'Error al obtener estado' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Error al obtener estado' }, { status: 500 });
   }
 }
