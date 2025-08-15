@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
 // Mock database para desarrollo
 const mockDevices = new Map();
-const mockSyncData = new Map();
 
 // POST /api/mobile/auth/login
 // Login desde la app móvil con registro de dispositivo

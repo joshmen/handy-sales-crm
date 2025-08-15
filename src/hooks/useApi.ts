@@ -84,7 +84,7 @@ export function useClients() {
     }
   }, [setClients])
 
-  const createClient = useCallback(async (clientData: any) => {
+  const createClient = useCallback(async (clientData: Record<string, unknown>) => {
     setLoading(true)
     setError(null)
     try {
@@ -100,7 +100,7 @@ export function useClients() {
     }
   }, [addClient])
 
-  const editClient = useCallback(async (clientData: any) => {
+  const editClient = useCallback(async (clientData: Record<string, unknown>) => {
     setLoading(true)
     setError(null)
     try {
@@ -164,7 +164,7 @@ export function useProducts() {
     }
   }, [setProducts])
 
-  const createProduct = useCallback(async (productData: any) => {
+  const createProduct = useCallback(async (productData: Record<string, unknown>) => {
     setLoading(true)
     setError(null)
     try {
@@ -180,7 +180,7 @@ export function useProducts() {
     }
   }, [addProduct])
 
-  const editProduct = useCallback(async (productData: any) => {
+  const editProduct = useCallback(async (productData: Record<string, unknown>) => {
     setLoading(true)
     setError(null)
     try {
@@ -228,7 +228,7 @@ export function useDashboard() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchMetrics = useCallback(async (dateRange?: any) => {
+  const fetchMetrics = useCallback(async (dateRange?: { start?: Date; end?: Date }) => {
     setLoading(true)
     setError(null)
     try {
@@ -244,7 +244,7 @@ export function useDashboard() {
     }
   }, [setMetrics])
 
-  const fetchChartsData = useCallback(async (dateRange?: any) => {
+  const fetchChartsData = useCallback(async (dateRange?: { start?: Date; end?: Date }) => {
     setLoading(true)
     setError(null)
     try {

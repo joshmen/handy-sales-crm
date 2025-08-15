@@ -281,7 +281,7 @@ export default function TestToastPage() {
             </li>
             <li className="flex items-start gap-2">
               <span className="text-blue-600 mt-1">•</span>
-              <span>Usa variant="destructive" solo para errores importantes</span>
+              <span>Usa variant=&quot;destructive&quot; solo para errores importantes</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-blue-600 mt-1">•</span>

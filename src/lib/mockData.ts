@@ -1,19 +1,19 @@
-import { User, Client, Product, DashboardMetrics } from '@/types'
+import { User, Client, Product, DashboardMetrics, ClientType, UserRole } from '@/types';
 
 // Mock user data
 export const mockUser: User = {
   id: '1',
   name: 'Carlos Mendoza',
   email: 'carlos.mendoza@handy.com',
-  role: 'VENDEDOR' as any,
+  role: UserRole.ADMIN,
   avatar: '',
   phone: '+52 644 123 4567',
   territory: 'Zona Norte',
   isActive: true,
   lastLogin: new Date('2024-01-15T08:30:00'),
   createdAt: new Date('2023-06-15'),
-  updatedAt: new Date('2024-01-15')
-}
+  updatedAt: new Date('2024-01-15'),
+};
 
 // Mock clients data
 export const mockClients: Client[] = [
@@ -29,13 +29,13 @@ export const mockClients: Client[] = [
     zipCode: '83000',
     latitude: 29.0729,
     longitude: -110.9559,
-    type: 'MINORISTA' as any,
+    type: ClientType.MINORISTA,
     isActive: true,
     creditLimit: 10000,
     paymentTerms: 30,
     notes: 'Cliente frecuente, pago puntual',
     createdAt: new Date('2023-01-15'),
-    updatedAt: new Date('2024-01-10')
+    updatedAt: new Date('2024-01-10'),
   },
   {
     id: '2',
@@ -48,14 +48,14 @@ export const mockClients: Client[] = [
     state: 'Sonora',
     zipCode: '83010',
     latitude: 29.1026,
-    longitude: -110.9770,
-    type: 'MAYORISTA' as any,
+    longitude: -110.977,
+    type: ClientType.MAYORISTA,
     isActive: true,
     creditLimit: 50000,
     paymentTerms: 45,
     notes: 'Compras grandes, solicita descuentos',
     createdAt: new Date('2023-03-20'),
-    updatedAt: new Date('2024-01-12')
+    updatedAt: new Date('2024-01-12'),
   },
   {
     id: '3',
@@ -69,13 +69,13 @@ export const mockClients: Client[] = [
     zipCode: '83020',
     latitude: 29.0529,
     longitude: -110.9359,
-    type: 'MINORISTA' as any,
+    type: ClientType.MAYORISTA,
     isActive: true,
     creditLimit: 5000,
     paymentTerms: 15,
     notes: 'Negocio familiar, pagos en efectivo',
     createdAt: new Date('2023-07-10'),
-    updatedAt: new Date('2024-01-08')
+    updatedAt: new Date('2024-01-08'),
   },
   {
     id: '4',
@@ -89,15 +89,15 @@ export const mockClients: Client[] = [
     zipCode: '83030',
     latitude: 29.1129,
     longitude: -110.9869,
-    type: 'DISTRIBUIDOR' as any,
+    type: ClientType.DISTRIBUIDOR,
     isActive: true,
     creditLimit: 100000,
     paymentTerms: 60,
     notes: 'Distribuidor principal de la zona',
     createdAt: new Date('2023-02-05'),
-    updatedAt: new Date('2024-01-14')
-  }
-]
+    updatedAt: new Date('2024-01-14'),
+  },
+];
 
 // Mock products data
 export const mockProducts: Product[] = [
@@ -109,15 +109,15 @@ export const mockProducts: Product[] = [
     category: 'Bebidas',
     brand: 'Coca Cola',
     unit: 'pz',
-    price: 32.50,
-    cost: 20.00,
+    price: 32.5,
+    cost: 20.0,
     stock: 150,
     minStock: 20,
     maxStock: 500,
     isActive: true,
     images: [],
     createdAt: new Date('2023-01-01'),
-    updatedAt: new Date('2024-01-10')
+    updatedAt: new Date('2024-01-10'),
   },
   {
     id: '2',
@@ -127,15 +127,15 @@ export const mockProducts: Product[] = [
     category: 'Bebidas',
     brand: 'Bonafont',
     unit: 'pz',
-    price: 15.00,
-    cost: 8.50,
+    price: 15.0,
+    cost: 8.5,
     stock: 200,
     minStock: 30,
     maxStock: 800,
     isActive: true,
     images: [],
     createdAt: new Date('2023-01-01'),
-    updatedAt: new Date('2024-01-05')
+    updatedAt: new Date('2024-01-05'),
   },
   {
     id: '3',
@@ -145,15 +145,15 @@ export const mockProducts: Product[] = [
     category: 'Panadería',
     brand: 'Bimbo',
     unit: 'pz',
-    price: 45.00,
-    cost: 28.00,
+    price: 45.0,
+    cost: 28.0,
     stock: 80,
     minStock: 15,
     maxStock: 200,
     isActive: true,
     images: [],
     createdAt: new Date('2023-01-01'),
-    updatedAt: new Date('2024-01-12')
+    updatedAt: new Date('2024-01-12'),
   },
   {
     id: '4',
@@ -163,15 +163,15 @@ export const mockProducts: Product[] = [
     category: 'Lácteos',
     brand: 'Lala',
     unit: 'pz',
-    price: 28.00,
-    cost: 18.50,
+    price: 28.0,
+    cost: 18.5,
     stock: 120,
     minStock: 25,
     maxStock: 400,
     isActive: true,
     images: [],
     createdAt: new Date('2023-01-01'),
-    updatedAt: new Date('2024-01-11')
+    updatedAt: new Date('2024-01-11'),
   },
   {
     id: '5',
@@ -181,15 +181,15 @@ export const mockProducts: Product[] = [
     category: 'Abarrotes',
     brand: 'Verde Valle',
     unit: 'kg',
-    price: 35.00,
-    cost: 22.00,
+    price: 35.0,
+    cost: 22.0,
     stock: 60,
     minStock: 10,
     maxStock: 150,
     isActive: true,
     images: [],
     createdAt: new Date('2023-01-01'),
-    updatedAt: new Date('2024-01-09')
+    updatedAt: new Date('2024-01-09'),
   },
   {
     id: '6',
@@ -199,17 +199,17 @@ export const mockProducts: Product[] = [
     category: 'Abarrotes',
     brand: 'Capullo',
     unit: 'pz',
-    price: 55.00,
-    cost: 35.00,
+    price: 55.0,
+    cost: 35.0,
     stock: 40,
     minStock: 8,
     maxStock: 100,
     isActive: true,
     images: [],
     createdAt: new Date('2023-01-01'),
-    updatedAt: new Date('2024-01-13')
-  }
-]
+    updatedAt: new Date('2024-01-13'),
+  },
+];
 
 // Mock dashboard metrics
 export const mockMetrics: DashboardMetrics = {
@@ -217,27 +217,27 @@ export const mockMetrics: DashboardMetrics = {
     total: 45,
     effectiveness: 82,
     scheduled: 12,
-    completed: 33
+    completed: 33,
   },
   sales: {
     total: 125000,
     target: 150000,
-    percentage: 83.3
+    percentage: 83.3,
   },
   products: {
     total: 156,
-    withoutSales: 23
+    withoutSales: 23,
   },
   clients: {
     total: 89,
     withoutOrders: 15,
-    withScheduledVisits: 28
+    withScheduledVisits: 28,
   },
   users: {
     total: 12,
-    withoutOrders: 3
-  }
-}
+    withoutOrders: 3,
+  },
+};
 
 // Mock notifications
 export const mockNotifications = [
@@ -248,7 +248,7 @@ export const mockNotifications = [
     message: 'Se ha programado una visita para el cliente Abarrotes Don Juan',
     read: false,
     createdAt: new Date('2024-01-15T09:30:00'),
-    duration: 0
+    duration: 0,
   },
   {
     id: '2',
@@ -257,7 +257,7 @@ export const mockNotifications = [
     message: 'El producto "Refresco Cola 2L" tiene stock bajo (150 unidades)',
     read: false,
     createdAt: new Date('2024-01-15T08:15:00'),
-    duration: 0
+    duration: 0,
   },
   {
     id: '3',
@@ -266,7 +266,7 @@ export const mockNotifications = [
     message: 'El pedido #ORD-123 ha sido entregado exitosamente',
     read: true,
     createdAt: new Date('2024-01-14T16:45:00'),
-    duration: 0
+    duration: 0,
   },
   {
     id: '4',
@@ -275,26 +275,29 @@ export const mockNotifications = [
     message: 'No se pudo completar la entrega del pedido #ORD-124',
     read: true,
     createdAt: new Date('2024-01-14T14:20:00'),
-    duration: 0
-  }
-]
+    duration: 0,
+  },
+];
 
 // Function to initialize mock data in stores
 export const initializeMockData = () => {
   if (typeof window !== 'undefined') {
     // Initialize user
-    const userStore = JSON.parse(localStorage.getItem('handy-crm-storage') || '{}')
+    const userStore = JSON.parse(localStorage.getItem('handy-crm-storage') || '{}');
     if (!userStore.state?.user) {
-      localStorage.setItem('handy-crm-storage', JSON.stringify({
-        state: {
-          user: mockUser,
-          isAuthenticated: true
-        },
-        version: 0
-      }))
+      localStorage.setItem(
+        'handy-crm-storage',
+        JSON.stringify({
+          state: {
+            user: mockUser,
+            isAuthenticated: true,
+          },
+          version: 0,
+        })
+      );
     }
   }
-}
+};
 
 // Export all mock data
 export const mockData = {
@@ -302,7 +305,7 @@ export const mockData = {
   clients: mockClients,
   products: mockProducts,
   metrics: mockMetrics,
-  notifications: mockNotifications
-}
+  notifications: mockNotifications,
+};
 
-export default mockData
+export default mockData;

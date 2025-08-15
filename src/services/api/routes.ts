@@ -89,12 +89,15 @@ class RouteService {
   /**
    * Cerrar ruta
    */
-  async closeRoute(id: string, data: {
-    cashCount: number;
-    expenses: Array<{ concept: string; amount: number; category: string }>;
-    returnedProducts: Array<{ productId: string; quantity: number; reason: string }>;
-    notes?: string;
-  }) {
+  async closeRoute(
+    id: string,
+    data: {
+      cashCount: number;
+      expenses: Array<{ concept: string; amount: number; category: string }>;
+      returnedProducts: Array<{ productId: string; quantity: number; reason: string }>;
+      notes?: string;
+    }
+  ) {
     try {
       const response = await api.post<ApiResponse<Route>>(`${this.basePath}/${id}/close`, data);
       return handleApiResponse(response);
@@ -108,10 +111,9 @@ class RouteService {
    */
   async loadInventory(routeId: string, inventory: RouteInventory[]) {
     try {
-      const response = await api.post<ApiResponse<Route>>(
-        `${this.basePath}/${routeId}/inventory`,
-        { inventory }
-      );
+      const response = await api.post<ApiResponse<Route>>(`${this.basePath}/${routeId}/inventory`, {
+        inventory,
+      });
       return handleApiResponse(response);
     } catch (error) {
       throw handleApiError(error);
@@ -136,11 +138,15 @@ class RouteService {
   /**
    * Completar visita
    */
-  async completeVisit(routeId: string, visitId: string, orderData: {
-    products: Array<{ productId: string; quantity: number; price: number }>;
-    paymentMethod: 'cash' | 'credit' | 'transfer';
-    notes?: string;
-  }) {
+  async completeVisit(
+    routeId: string,
+    visitId: string,
+    orderData: {
+      products: Array<{ productId: string; quantity: number; price: number }>;
+      paymentMethod: 'cash' | 'credit' | 'transfer';
+      notes?: string;
+    }
+  ) {
     try {
       const response = await api.post<ApiResponse<RouteVisit>>(
         `${this.basePath}/${routeId}/visits/${visitId}/complete`,
@@ -172,10 +178,9 @@ class RouteService {
    */
   async getRouteTemplates(params?: { zone?: string; isActive?: boolean }) {
     try {
-      const response = await api.get<ApiResponse<RouteTemplate[]>>(
-        `${this.basePath}/templates`,
-        { params }
-      );
+      const response = await api.get<ApiResponse<RouteTemplate[]>>(`${this.basePath}/templates`, {
+        params,
+      });
       return handleApiResponse(response);
     } catch (error) {
       throw handleApiError(error);
@@ -200,11 +205,14 @@ class RouteService {
   /**
    * Crear ruta desde template
    */
-  async createRouteFromTemplate(templateId: string, data: {
-    userId: string;
-    date: string;
-    notes?: string;
-  }) {
+  async createRouteFromTemplate(
+    templateId: string,
+    data: {
+      userId: string;
+      date: string;
+      notes?: string;
+    }
+  ) {
     try {
       const response = await api.post<ApiResponse<Route>>(
         `${this.basePath}/templates/${templateId}/create`,
@@ -221,9 +229,7 @@ class RouteService {
    */
   async optimizeRoute(routeId: string) {
     try {
-      const response = await api.post<ApiResponse<Route>>(
-        `${this.basePath}/${routeId}/optimize`
-      );
+      const response = await api.post<ApiResponse<Route>>(`${this.basePath}/${routeId}/optimize`);
       return handleApiResponse(response);
     } catch (error) {
       throw handleApiError(error);
@@ -240,7 +246,7 @@ class RouteService {
     zone?: string;
   }) {
     try {
-      const response = await api.get<ApiResponse<any>>(
+      const response = await api.get<ApiResponse<Record<string, unknown>>>(
         `${this.basePath}/statistics`,
         { params }
       );
@@ -253,21 +259,21 @@ class RouteService {
   /**
    * Exportar rutas
    */
-  async exportRoutes(format: 'pdf' | 'excel' | 'csv', params?: {
-    startDate?: string;
-    endDate?: string;
-    status?: string;
-    zone?: string;
-  }) {
+  async exportRoutes(
+    format: 'pdf' | 'excel' | 'csv',
+    params?: {
+      startDate?: string;
+      endDate?: string;
+      status?: string;
+      zone?: string;
+    }
+  ) {
     try {
-      const response = await api.get(
-        `${this.basePath}/export/${format}`,
-        {
-          params,
-          responseType: 'blob'
-        }
-      );
-      
+      const response = await api.get<ArrayBuffer>(`${this.basePath}/export/${format}`, {
+        params,
+        responseType: 'arraybuffer' as const,
+      });
+
       // Crear descarga del archivo
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
@@ -276,7 +282,7 @@ class RouteService {
       document.body.appendChild(link);
       link.click();
       link.remove();
-      
+
       return true;
     } catch (error) {
       throw handleApiError(error);
@@ -286,12 +292,9 @@ class RouteService {
   /**
    * Sincronizar ruta offline
    */
-  async syncRoute(routeData: any) {
+  async syncRoute(routeData: Partial<Route>) {
     try {
-      const response = await api.post<ApiResponse<Route>>(
-        `${this.basePath}/sync`,
-        routeData
-      );
+      const response = await api.post<ApiResponse<Route>>(`${this.basePath}/sync`, routeData);
       return handleApiResponse(response);
     } catch (error) {
       throw handleApiError(error);

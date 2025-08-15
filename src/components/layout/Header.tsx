@@ -1,9 +1,9 @@
-"use client"
+'use client';
 
-import React, { useState, useEffect } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
-import { signOut, useSession } from 'next-auth/react'
-import { toast } from '@/hooks/useToast'
+import React, { useState, useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { signOut, useSession } from 'next-auth/react';
+import { toast } from '@/hooks/useToast';
 import {
   Bell,
   Search,
@@ -15,24 +15,26 @@ import {
   ChevronDown,
   Menu,
   Home,
-  ChevronRight
-} from 'lucide-react'
-import { useSidebar, useTheme } from '@/stores/useUIStore'
-import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar'
-import { Badge } from '@/components/ui/Badge'
+  ChevronRight,
+} from 'lucide-react';
+import { useSidebar, useTheme } from '@/stores/useUIStore';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar';
+import { Badge } from '@/components/ui/Badge';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/Dialog'
-import { Separator } from '@/components/ui/Separator'
+} from '@/components/ui/Dialog';
+import { Separator } from '@/components/ui/Separator';
 
-// Breadcrumb mapping
+type Breadcrumb = { label: string; href: string; isLast: boolean };
+
+// Mapeo de breadcrumbs
 const routeLabels: Record<string, string> = {
   '/dashboard': 'Dashboard',
   '/clients': 'Clientes',
@@ -47,140 +49,114 @@ const routeLabels: Record<string, string> = {
   '/subscription': 'Suscripción',
   '/profile': 'Mi Perfil',
   '/settings': 'Configuración',
-}
+};
 
-// Mock user for testing
+// Mock user
 const mockUser = {
   id: '1',
   name: 'Carlos Mendoza',
   email: 'carlos@handy.com',
   role: 'VENDEDOR',
-  avatar: ''
-}
+  avatar: '',
+};
 
-// Mock notifications
+// Mock notificaciones
 const mockNotifications = [
   {
     id: '1',
     title: 'Nueva visita programada',
     message: 'Se ha programado una visita para el cliente Abarrotes Don Juan',
     read: false,
-    createdAt: new Date()
+    createdAt: new Date(),
   },
   {
     id: '2',
     title: 'Stock bajo',
     message: 'El producto "Refresco Cola 2L" tiene stock bajo',
     read: false,
-    createdAt: new Date()
-  }
-]
+    createdAt: new Date(),
+  },
+];
 
-export const Header: React.FC = () => {
-  const [mounted, setMounted] = useState(false)
-  const { toggle } = useSidebar()
-  const { theme, toggle: toggleTheme } = useTheme()
-  const pathname = usePathname()
-  const router = useRouter()
-  const { data: session } = useSession()
-  
-  const [isSearchOpen, setIsSearchOpen] = useState(false)
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [isLoggingOut, setIsLoggingOut] = useState(false)
+export interface HeaderProps {
+  /** Para abrir/cerrar menú móvil desde el layout */
+  onMenuClick?: () => void;
+}
 
-  // Usar datos reales del usuario si está disponible
-  const currentUser = session?.user ? {
-    id: session.user.id || '1',
-    name: session.user.name || 'Usuario',
-    email: session.user.email || 'usuario@handysales.com',
-    role: session.user.role || 'VENDEDOR',
-    avatar: session.user.image || ''
-  } : mockUser
+export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
+  const [mounted, setMounted] = useState(false);
+  const { toggle } = useSidebar(); // fallback
+  const { theme, toggle: toggleTheme } = useTheme();
+  const pathname = usePathname();
+  const router = useRouter();
+  const { data: session } = useSession();
 
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  // Generate breadcrumbs
-  const generateBreadcrumbs = () => {
-    const segments = pathname.split('/').filter(Boolean)
-    const breadcrumbs = []
-    
-    let currentPath = ''
+  const currentUser = session?.user
+    ? {
+        id: (session.user as any).id || '1',
+        name: session.user.name || 'Usuario',
+        email: session.user.email || 'usuario@handysales.com',
+        role: (session.user as any).role || 'VENDEDOR',
+        avatar: (session.user as any).image || '',
+      }
+    : mockUser;
+
+  useEffect(() => setMounted(true), []);
+
+  const generateBreadcrumbs = (): Breadcrumb[] => {
+    const segments = pathname.split('/').filter(Boolean);
+    const crumbs: Breadcrumb[] = [];
+    let currentPath = '';
     segments.forEach((segment, index) => {
-      currentPath += `/${segment}`
-      const label = routeLabels[currentPath] || segment.charAt(0).toUpperCase() + segment.slice(1)
-      breadcrumbs.push({
-        label,
-        href: currentPath,
-        isLast: index === segments.length - 1
-      })
-    })
-    
-    return breadcrumbs
-  }
+      currentPath += `/${segment}`;
+      const label = routeLabels[currentPath] || segment.charAt(0).toUpperCase() + segment.slice(1);
+      crumbs.push({ label, href: currentPath, isLast: index === segments.length - 1 });
+    });
+    return crumbs;
+  };
 
-  const breadcrumbs = generateBreadcrumbs()
-  const unreadNotifications = mockNotifications.filter(n => !n.read).length
-  
-  const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase()
-  }
+  const breadcrumbs = generateBreadcrumbs();
+  const unread = mockNotifications.filter(n => !n.read).length;
+
+  const getInitials = (name: string) =>
+    name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase();
 
   const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (searchQuery.trim()) {
-      toast({
-        title: "Búsqueda",
-        description: `Buscando: ${searchQuery}`,
-      })
-      setIsSearchOpen(false)
-      setSearchQuery('')
-      // TODO: Implementar lógica de búsqueda real
-    }
-  }
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    toast({ title: 'Búsqueda', description: `Buscando: ${searchQuery}` });
+    setIsSearchOpen(false);
+    setSearchQuery('');
+  };
 
   const handleLogout = async () => {
-    setIsLoggingOut(true)
+    setIsLoggingOut(true);
     try {
-      await signOut({ 
-        redirect: false,
-        callbackUrl: '/login' 
-      })
-      
-      toast({
-        title: "Sesión cerrada",
-        description: "Has cerrado sesión exitosamente",
-      })
-      
-      // Limpiar stores de Zustand si es necesario
-      if (typeof window !== 'undefined') {
-        localStorage.clear()
-      }
-      
-      router.push('/login')
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo cerrar la sesión",
-        variant: "destructive",
-      })
+      await signOut({ redirect: false, callbackUrl: '/login' });
+      toast({ title: 'Sesión cerrada', description: 'Has cerrado sesión exitosamente' });
+      if (typeof window !== 'undefined') localStorage.clear();
+      router.push('/login');
+    } catch {
+      toast({ title: 'Error', description: 'No se pudo cerrar la sesión', variant: 'destructive' });
     } finally {
-      setIsLoggingOut(false)
-      setIsUserMenuOpen(false)
+      setIsLoggingOut(false);
+      setIsUserMenuOpen(false);
     }
-  }
+  };
 
-  const formatTime = (date: Date) => {
-    return new Intl.DateTimeFormat('es-MX', {
-      hour: '2-digit',
-      minute: '2-digit'
-    }).format(date)
-  }
+  const formatTime = (date: Date) =>
+    new Intl.DateTimeFormat('es-MX', { hour: '2-digit', minute: '2-digit' }).format(date);
 
-  // No renderizar botones interactivos hasta que esté montado
   if (!mounted) {
     return (
       <header className="sticky top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -190,18 +166,18 @@ export const Header: React.FC = () => {
           </div>
         </div>
       </header>
-    )
+    );
   }
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-16 items-center px-4 lg:px-6">
-        {/* Mobile menu button */}
+        {/* Botón menú móvil */}
         <Button
           variant="ghost"
           size="icon"
           className="lg:hidden mr-2"
-          onClick={toggle}
+          onClick={onMenuClick ?? toggle}
         >
           <Menu className="h-5 w-5" />
         </Button>
@@ -212,16 +188,16 @@ export const Header: React.FC = () => {
             <Home className="h-4 w-4 mr-1" />
             <span className="text-sm text-muted-foreground">Inicio</span>
           </div>
-          {breadcrumbs.map((crumb, index) => (
+          {breadcrumbs.map(crumb => (
             <React.Fragment key={crumb.href}>
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
               <div className="flex items-center">
                 <span
                   className={cn(
-                    "text-sm",
+                    'text-sm',
                     crumb.isLast
-                      ? "font-medium text-foreground"
-                      : "text-muted-foreground hover:text-foreground cursor-pointer"
+                      ? 'font-medium text-foreground'
+                      : 'text-muted-foreground hover:text-foreground cursor-pointer'
                   )}
                 >
                   {crumb.label}
@@ -231,16 +207,14 @@ export const Header: React.FC = () => {
           ))}
         </nav>
 
-        {/* Mobile title */}
+        {/* Título móvil */}
         <div className="flex-1 md:hidden">
-          <h1 className="text-lg font-semibold">
-            {routeLabels[pathname] || 'Handy CRM'}
-          </h1>
+          <h1 className="text-lg font-semibold">{routeLabels[pathname] || 'Handy CRM'}</h1>
         </div>
 
-        {/* Right side controls */}
+        {/* Controles derechos */}
         <div className="flex items-center space-x-2 ml-auto">
-          {/* Search */}
+          {/* Buscar */}
           <Dialog open={isSearchOpen} onOpenChange={setIsSearchOpen}>
             <DialogTrigger asChild>
               <Button variant="ghost" size="icon" className="relative">
@@ -255,15 +229,11 @@ export const Header: React.FC = () => {
                 <Input
                   placeholder="Buscar clientes, productos, pedidos..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={e => setSearchQuery(e.target.value)}
                   autoFocus
                 />
                 <div className="flex justify-end space-x-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsSearchOpen(false)}
-                  >
+                  <Button type="button" variant="outline" onClick={() => setIsSearchOpen(false)}>
                     Cancelar
                   </Button>
                   <Button type="submit" disabled={!searchQuery.trim()}>
@@ -274,30 +244,22 @@ export const Header: React.FC = () => {
             </DialogContent>
           </Dialog>
 
-          {/* Theme toggle */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleTheme}
-          >
-            {theme === 'dark' ? (
-              <Sun className="h-5 w-5" />
-            ) : (
-              <Moon className="h-5 w-5" />
-            )}
+          {/* Tema */}
+          <Button variant="ghost" size="icon" onClick={toggleTheme}>
+            {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </Button>
 
-          {/* Notifications */}
+          {/* Notificaciones */}
           <Dialog open={isNotificationsOpen} onOpenChange={setIsNotificationsOpen}>
             <DialogTrigger asChild>
               <Button variant="ghost" size="icon" className="relative">
                 <Bell className="h-5 w-5" />
-                {unreadNotifications > 0 && (
+                {unread > 0 && (
                   <Badge
                     variant="destructive"
                     className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
                   >
-                    {unreadNotifications}
+                    {unread}
                   </Badge>
                 )}
               </Button>
@@ -307,25 +269,23 @@ export const Header: React.FC = () => {
                 <DialogTitle>Notificaciones</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 max-h-80 overflow-y-auto">
-                {mockNotifications.map((notification) => (
+                {mockNotifications.map(n => (
                   <div
-                    key={notification.id}
+                    key={n.id}
                     className={cn(
-                      "p-3 rounded-lg border transition-colors",
-                      !notification.read && "bg-muted/50"
+                      'p-3 rounded-lg border transition-colors',
+                      !n.read && 'bg-muted/50'
                     )}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <h4 className="text-sm font-medium">{notification.title}</h4>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {notification.message}
-                        </p>
+                        <h4 className="text-sm font-medium">{n.title}</h4>
+                        <p className="text-sm text-muted-foreground mt-1">{n.message}</p>
                         <span className="text-xs text-muted-foreground">
-                          {formatTime(notification.createdAt)}
+                          {formatTime(n.createdAt)}
                         </span>
                       </div>
-                      {!notification.read && (
+                      {!n.read && (
                         <div className="h-2 w-2 bg-primary rounded-full flex-shrink-0 mt-1" />
                       )}
                     </div>
@@ -337,7 +297,7 @@ export const Header: React.FC = () => {
 
           <Separator orientation="vertical" className="h-6" />
 
-          {/* User menu */}
+          {/* Usuario */}
           <Dialog open={isUserMenuOpen} onOpenChange={setIsUserMenuOpen}>
             <DialogTrigger asChild>
               <Button variant="ghost" className="flex items-center space-x-2 px-2">
@@ -359,13 +319,10 @@ export const Header: React.FC = () => {
                 <DialogTitle>Menú de usuario</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
-                {/* User info */}
                 <div className="flex items-center space-x-3 p-3 rounded-lg bg-muted">
                   <Avatar className="h-12 w-12">
                     <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
-                    <AvatarFallback>
-                      {getInitials(currentUser.name)}
-                    </AvatarFallback>
+                    <AvatarFallback>{getInitials(currentUser.name)}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
                     <h3 className="font-medium">{currentUser.name}</h3>
@@ -376,29 +333,26 @@ export const Header: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Menu items */}
                 <div className="space-y-1">
                   <Button
                     variant="ghost"
                     className="w-full justify-start"
                     onClick={() => {
-                      router.push('/profile')
-                      setIsUserMenuOpen(false)
+                      router.push('/profile');
+                      setIsUserMenuOpen(false);
                     }}
                   >
-                    <User className="h-4 w-4 mr-2" />
-                    Mi perfil
+                    <User className="h-4 w-4 mr-2" /> Mi perfil
                   </Button>
                   <Button
                     variant="ghost"
                     className="w-full justify-start"
                     onClick={() => {
-                      router.push('/settings')
-                      setIsUserMenuOpen(false)
+                      router.push('/settings');
+                      setIsUserMenuOpen(false);
                     }}
                   >
-                    <Settings className="h-4 w-4 mr-2" />
-                    Configuración
+                    <Settings className="h-4 w-4 mr-2" /> Configuración
                   </Button>
                   <Separator />
                   <Button
@@ -426,5 +380,7 @@ export const Header: React.FC = () => {
         </div>
       </div>
     </header>
-  )
-}
+  );
+};
+
+export default Header;

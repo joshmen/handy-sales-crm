@@ -1,0 +1,77 @@
+name: 🚀 Deploy to Vercel - Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+jobs:
+  deploy-production:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout código
+        uses: actions/checkout@v3
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: 📚 Cache de dependencias
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: 📦 Instalar dependencias
+        run: npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+
+      - name: 🔧 Instalar Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: 🔑 Pull Vercel Environment Information
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: 🏗️ Build Project Artifacts
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET || 'development-secret-change-in-production' }}
+          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL || 'https://handy-sales-crm.vercel.app' }}
+
+      - name: 🚀 Deploy Project Artifacts to Vercel
+        run: |
+          vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }} > deployment-url.txt
+          echo "DEPLOYMENT_URL=$(cat deployment-url.txt)" >> $GITHUB_ENV
+
+      - name: ✅ Comentar URL de despliegue en el commit
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const deploymentUrl = process.env.DEPLOYMENT_URL;
+            const commitSha = context.sha.substring(0, 7);
+            
+            await github.rest.repos.createCommitComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.sha,
+              body: `### ✅ Desplegado exitosamente en Vercel!\n\n🔗 **URL de Producción:** ${deploymentUrl}\n📦 **Commit:** \`${commitSha}\`\n🚀 **Rama:** \`main\`\n⏱️ **Desplegado:** ${new Date().toLocaleString('es-MX')}`
+            });
+
+      - name: 📊 Mostrar resultado
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Despliegue exitoso!"
+            echo "URL: ${{ env.DEPLOYMENT_URL }}"
+          else
+            echo "❌ Despliegue fallido"
+          fi

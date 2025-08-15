@@ -1,34 +1,34 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { Layout } from "@/components/layout/Layout";
-import { Card, CardHeader, CardContent, Button, Input } from "@/components/ui";
-import { UserAssignment } from "@/components/routes/UserAssignment";
-import { InventoryLoader } from "@/components/routes/InventoryLoader";
-import { User, Product, RouteProduct } from "@/types";
+import React, { useState } from 'react';
+import { Layout } from '@/components/layout/Layout';
+import { Card, CardHeader, CardContent, Button, Input } from '@/components/ui';
+import { UserAssignment } from '@/components/routes/UserAssignment';
+import { InventoryLoader } from '@/components/routes/InventoryLoader';
+import { User, Product, RouteProduct, UserRole } from '@/types';
 
 export default function RouteLoadPage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [initialCash, setInitialCash] = useState<string>("120000");
-  const [comments, setComments] = useState<string>("");
+  const [initialCash, setInitialCash] = useState<string>('120000');
+  const [comments, setComments] = useState<string>('');
   const [routeProducts, setRouteProducts] = useState<RouteProduct[]>([]);
 
   // Datos de ejemplo
   const users: User[] = [
     {
-      id: "1",
-      name: "Josué Mendoza",
-      email: "josue@handycrm.com",
-      role: "admin",
+      id: '1',
+      name: 'Josué Mendoza',
+      email: 'josue@handycrm.com',
+      role: UserRole.ADMIN,
       isActive: true,
       createdAt: new Date(),
       updatedAt: new Date(),
     },
     {
-      id: "2",
-      name: "María García",
-      email: "maria@handycrm.com",
-      role: "user",
+      id: '2',
+      name: 'María García',
+      email: 'maria@handycrm.com',
+      role: UserRole.VENDEDOR,
       isActive: true,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -37,27 +37,33 @@ export default function RouteLoadPage() {
 
   const products: Product[] = [
     {
-      id: "1",
-      name: "Tanque Acme",
-      code: "ACM-1001",
-      description: "Tanque de agua 1000L",
+      id: '1',
+      name: 'Tanque Acme',
+      code: 'ACM-1001',
+      description: 'Tanque de agua 1000L',
+      images: [],
+      minStock: 10,
+      unit: '',
       price: 1250,
       stock: 15,
-      category: "Tanques",
-      family: "Almacenamiento",
+      category: 'Tanques',
+      family: 'Almacenamiento',
       isActive: true,
       createdAt: new Date(),
       updatedAt: new Date(),
     },
     {
-      id: "2",
-      name: "Coca Cola 600ml",
-      code: "CC-600",
-      description: "Refresco de cola",
+      id: '2',
+      name: 'Coca Cola 600ml',
+      code: 'CC-600',
+      description: 'Refresco de cola',
+      images: [],
+      minStock: 10,
+      unit: '',
       price: 18.5,
       stock: 120,
-      category: "Bebidas",
-      family: "Refrescos",
+      category: 'Bebidas',
+      family: 'Refrescos',
       isActive: true,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -67,7 +73,7 @@ export default function RouteLoadPage() {
   const handleProductAdd = (product: Product, quantity: number) => {
     const newRouteProduct: RouteProduct = {
       id: `rp-${Date.now()}`,
-      routeId: "",
+      routeId: '',
       productId: product.id,
       product,
       assignedQuantity: quantity,
@@ -79,12 +85,12 @@ export default function RouteLoadPage() {
   };
 
   const handleProductRemove = (productId: string) => {
-    setRouteProducts(routeProducts.filter((rp) => rp.productId !== productId));
+    setRouteProducts(routeProducts.filter(rp => rp.productId !== productId));
   };
 
   const handleQuantityChange = (productId: string, quantity: number) => {
     setRouteProducts(
-      routeProducts.map((rp) =>
+      routeProducts.map(rp =>
         rp.productId === productId ? { ...rp, assignedQuantity: quantity } : rp
       )
     );
@@ -92,7 +98,7 @@ export default function RouteLoadPage() {
 
   const handleSaveRoute = () => {
     if (!selectedUser) {
-      alert("Por favor selecciona un usuario");
+      alert('Por favor selecciona un usuario');
       return;
     }
 
@@ -103,14 +109,11 @@ export default function RouteLoadPage() {
       products: routeProducts,
     };
 
-    console.log("Guardar ruta:", routeData);
-    alert("Ruta guardada exitosamente");
+    console.log('Guardar ruta:', routeData);
+    alert('Ruta guardada exitosamente');
   };
 
-  const totalValue = routeProducts.reduce(
-    (sum, rp) => sum + rp.assignedQuantity * rp.unitPrice,
-    0
-  );
+  const totalValue = routeProducts.reduce((sum, rp) => sum + rp.assignedQuantity * rp.unitPrice, 0);
 
   return (
     <Layout>
@@ -157,9 +160,7 @@ export default function RouteLoadPage() {
                 {routeProducts.length > 0 && (
                   <Card>
                     <CardHeader>
-                      <h3 className="font-semibold">
-                        Total asignado a la ruta
-                      </h3>
+                      <h3 className="font-semibold">Total asignado a la ruta</h3>
                     </CardHeader>
                     <CardContent>
                       <div className="overflow-x-auto">
@@ -168,14 +169,12 @@ export default function RouteLoadPage() {
                             <tr>
                               <th className="px-3 py-2 text-left">Producto</th>
                               <th className="px-3 py-2 text-left">Cantidad</th>
-                              <th className="px-3 py-2 text-left">
-                                Precio Unit.
-                              </th>
+                              <th className="px-3 py-2 text-left">Precio Unit.</th>
                               <th className="px-3 py-2 text-left">Total</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-gray-200">
-                            {routeProducts.map((rp) => (
+                            {routeProducts.map(rp => (
                               <tr key={rp.id}>
                                 <td className="px-3 py-2">
                                   <div className="flex items-center">
@@ -185,30 +184,20 @@ export default function RouteLoadPage() {
                                     {rp.product.name}
                                   </div>
                                 </td>
-                                <td className="px-3 py-2">
-                                  {rp.assignedQuantity}
-                                </td>
+                                <td className="px-3 py-2">{rp.assignedQuantity}</td>
                                 <td className="px-3 py-2">${rp.unitPrice}</td>
                                 <td className="px-3 py-2">
-                                  $
-                                  {(rp.assignedQuantity * rp.unitPrice).toFixed(
-                                    2
-                                  )}
+                                  ${(rp.assignedQuantity * rp.unitPrice).toFixed(2)}
                                 </td>
                               </tr>
                             ))}
                           </tbody>
                           <tfoot className="bg-gray-50">
                             <tr>
-                              <td
-                                colSpan={3}
-                                className="px-3 py-2 font-semibold"
-                              >
+                              <td colSpan={3} className="px-3 py-2 font-semibold">
                                 Total:
                               </td>
-                              <td className="px-3 py-2 font-semibold">
-                                ${totalValue.toFixed(2)}
-                              </td>
+                              <td className="px-3 py-2 font-semibold">${totalValue.toFixed(2)}</td>
                             </tr>
                           </tfoot>
                         </table>
@@ -227,7 +216,7 @@ export default function RouteLoadPage() {
                         label="Efectivo inicial"
                         type="number"
                         value={initialCash}
-                        onChange={(e) => setInitialCash(e.target.value)}
+                        onChange={e => setInitialCash(e.target.value)}
                         placeholder="120000"
                       />
 
@@ -237,7 +226,7 @@ export default function RouteLoadPage() {
                         </label>
                         <textarea
                           value={comments}
-                          onChange={(e) => setComments(e.target.value)}
+                          onChange={e => setComments(e.target.value)}
                           placeholder="Usada para describir y vender la ruta"
                           className="w-full p-2 border border-gray-300 rounded-lg h-24 focus:outline-none focus:ring-2 focus:ring-teal-500"
                         />
@@ -268,10 +257,7 @@ export default function RouteLoadPage() {
                       <div className="flex justify-between">
                         <span>Unidades:</span>
                         <span>
-                          {routeProducts.reduce(
-                            (sum, rp) => sum + rp.assignedQuantity,
-                            0
-                          )}
+                          {routeProducts.reduce((sum, rp) => sum + rp.assignedQuantity, 0)}
                         </span>
                       </div>
                       <div className="flex justify-between">
@@ -280,9 +266,7 @@ export default function RouteLoadPage() {
                       </div>
                       <div className="flex justify-between">
                         <span>Efectivo inicial:</span>
-                        <span>
-                          ${parseFloat(initialCash || "0").toFixed(2)}
-                        </span>
+                        <span>${parseFloat(initialCash || '0').toFixed(2)}</span>
                       </div>
                     </div>
                   </CardContent>

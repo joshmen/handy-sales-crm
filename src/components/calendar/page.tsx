@@ -1,17 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { Layout } from "@/components/layout/Layout";
-import { Card, CardContent, Button, Select } from "@/components/ui";
-import { CalendarView } from "@/components/calendar/CalendarView";
-import { VisitModal } from "@/components/calendar/VisitModal";
-import { Visit } from "@/types/calendar";
-import { Client, User } from "@/types";
+import React, { useState } from 'react';
+import { Layout } from '@/components/layout/Layout';
+import { Card, CardContent, Button } from '@/components/ui';
+import { SelectCompat as Select } from '@/components/ui/SelectCompat';
+import { CalendarView } from '@/components/calendar/CalendarView';
+import { VisitModal } from '@/components/calendar/VisitModal';
+import { Visit } from '@/types/calendar';
+import { Client, ClientType, User, UserRole } from '@/types';
 
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedUser, setSelectedUser] = useState("1");
+  const [selectedUser, setSelectedUser] = useState('1');
   const [showVisitModal, setShowVisitModal] = useState(false);
   const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -19,10 +20,10 @@ export default function CalendarPage() {
   // Datos de ejemplo
   const users: User[] = [
     {
-      id: "1",
-      name: "Josué Mendoza",
-      email: "josue@handycrm.com",
-      role: "admin",
+      id: '1',
+      name: 'Josué Mendoza',
+      email: 'josue@handycrm.com',
+      role: UserRole.ADMIN,
       isActive: true,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -31,25 +32,25 @@ export default function CalendarPage() {
 
   const clients: Client[] = [
     {
-      id: "1",
-      name: "Abarrotes Benítez",
-      email: "carlos@abarrotes.com",
-      phone: "+52 664 123 4567",
-      address: "Av. Revolución 123, Tijuana",
-      zone: "Zona 1",
-      type: "mayorista",
+      id: '1',
+      name: 'Abarrotes Benítez',
+      email: 'carlos@abarrotes.com',
+      phone: '+52 664 123 4567',
+      address: 'Av. Revolución 123, Tijuana',
+      code: 'Zona 1',
+      type: ClientType.MAYORISTA,
       isActive: true,
       createdAt: new Date(),
       updatedAt: new Date(),
     },
     {
-      id: "2",
-      name: "Supermercado Morelos",
-      email: "info@supermorelos.mx",
-      phone: "+52 664 987 6543",
-      address: "Calle Morelos 456, Tijuana",
-      zone: "Zona 2",
-      type: "medio-mayorista",
+      id: '2',
+      name: 'Supermercado Morelos',
+      email: 'info@supermorelos.mx',
+      phone: '+52 664 987 6543',
+      address: 'Calle Morelos 456, Tijuana',
+      code: 'Zona 2',
+      type: ClientType.MINORISTA,
       isActive: true,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -58,48 +59,48 @@ export default function CalendarPage() {
 
   const [visits, setVisits] = useState<Visit[]>([
     {
-      id: "1",
-      clientId: "1",
+      id: '1',
+      clientId: '1',
       client: clients[0],
-      userId: "1",
+      userId: '1',
       user: users[0],
       date: new Date(2025, 4, 2, 10, 0), // 2 de mayo de 2025
-      startTime: "10:00",
-      endTime: "11:00",
-      status: "scheduled",
-      type: "sales",
-      priority: "high",
-      notes: "Visita de seguimiento para nuevos productos",
-      address: "Av. Revolución 123, Tijuana",
+      startTime: '10:00',
+      endTime: '11:00',
+      status: 'scheduled',
+      type: 'sales',
+      priority: 'high',
+      notes: 'Visita de seguimiento para nuevos productos',
+      address: 'Av. Revolución 123, Tijuana',
       createdAt: new Date(),
       updatedAt: new Date(),
     },
     {
-      id: "2",
-      clientId: "2",
+      id: '2',
+      clientId: '2',
       client: clients[1],
-      userId: "1",
+      userId: '1',
       user: users[0],
       date: new Date(2025, 4, 2, 14, 0), // 2 de mayo de 2025
-      startTime: "14:00",
-      status: "completed",
-      type: "delivery",
-      priority: "medium",
-      notes: "Entrega de pedido especial",
-      address: "Calle Morelos 456, Tijuana",
+      startTime: '14:00',
+      status: 'completed',
+      type: 'delivery',
+      priority: 'medium',
+      notes: 'Entrega de pedido especial',
+      address: 'Calle Morelos 456, Tijuana',
       createdAt: new Date(),
       updatedAt: new Date(),
     },
   ]);
 
-  const userOptions = users.map((user) => ({
+  const userOptions = users.map(user => ({
     value: user.id,
     label: user.name,
   }));
 
-  const navigateMonth = (direction: "prev" | "next") => {
+  const navigateMonth = (direction: 'prev' | 'next') => {
     const newDate = new Date(currentDate);
-    newDate.setMonth(currentDate.getMonth() + (direction === "next" ? 1 : -1));
+    newDate.setMonth(currentDate.getMonth() + (direction === 'next' ? 1 : -1));
     setCurrentDate(newDate);
   };
 
@@ -119,10 +120,8 @@ export default function CalendarPage() {
     if (selectedVisit) {
       // Actualizar visita existente
       setVisits(
-        visits.map((visit) =>
-          visit.id === selectedVisit.id
-            ? { ...visit, ...visitData, updatedAt: new Date() }
-            : visit
+        visits.map(visit =>
+          visit.id === selectedVisit.id ? { ...visit, ...visitData, updatedAt: new Date() } : visit
         )
       );
     } else {
@@ -130,12 +129,12 @@ export default function CalendarPage() {
       const newVisit: Visit = {
         id: `visit-${Date.now()}`,
         clientId: visitData.clientId!,
-        client: clients.find((c) => c.id === visitData.clientId)!,
+        client: clients.find(c => c.id === visitData.clientId)!,
         userId: visitData.userId!,
-        user: users.find((u) => u.id === visitData.userId)!,
+        user: users.find(u => u.id === visitData.userId)!,
         date: visitData.date!,
         startTime: visitData.startTime!,
-        status: "scheduled",
+        status: 'scheduled',
         type: visitData.type as any,
         priority: visitData.priority as any,
         notes: visitData.notes,
@@ -148,7 +147,7 @@ export default function CalendarPage() {
   };
 
   const handleDeleteVisits = () => {
-    if (confirm("¿Estás seguro de que quieres eliminar todas las visitas?")) {
+    if (confirm('¿Estás seguro de que quieres eliminar todas las visitas?')) {
       setVisits([]);
     }
   };
@@ -161,9 +160,7 @@ export default function CalendarPage() {
           <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
             <div className="flex justify-between items-center mb-6">
               {/* 🎨 TÍTULO CON MEJOR CONTRASTE */}
-              <h2 className="text-2xl font-bold text-gray-900">
-                📅 Calendario de visitas
-              </h2>
+              <h2 className="text-2xl font-bold text-gray-900">📅 Calendario de visitas</h2>
 
               {/* 🎨 BOTONES PRINCIPALES CON MEJOR VISIBILIDAD */}
               <div className="flex gap-3">
@@ -197,7 +194,7 @@ export default function CalendarPage() {
                   variant="outline"
                   size="sm"
                   className="text-gray-700 hover:bg-gray-100 border-gray-300"
-                  onClick={() => navigateMonth("prev")}
+                  onClick={() => navigateMonth('prev')}
                 >
                   ← Anterior
                 </Button>
@@ -206,15 +203,13 @@ export default function CalendarPage() {
                   size="sm"
                   className="bg-blue-600 hover:bg-blue-700 text-white font-medium min-w-[80px]"
                 >
-                  {currentDate
-                    .toLocaleDateString("es-ES", { month: "short" })
-                    .toUpperCase()}
+                  {currentDate.toLocaleDateString('es-ES', { month: 'short' }).toUpperCase()}
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   className="text-gray-700 hover:bg-gray-100 border-gray-300"
-                  onClick={() => navigateMonth("next")}
+                  onClick={() => navigateMonth('next')}
                 >
                   Siguiente →
                 </Button>
@@ -248,18 +243,22 @@ export default function CalendarPage() {
               {/* Selector de usuario */}
               <div className="bg-white rounded-lg shadow-sm border p-1">
                 <Select
-                  options={userOptions}
+                  //options={userOptions}
                   value={selectedUser}
-                  onChange={(e) => setSelectedUser(e.target.value)}
+                  onChange={e => setSelectedUser(e.target.value)}
                   className="min-w-[150px]"
-                />
+                >
+                  <option value="">Todos los usuarios</option>
+                  {userOptions.map(u => (
+                    <option key={u.value} value={u.value}>
+                      {u.label}
+                    </option>
+                  ))}
+                </Select>
               </div>
 
               {/* Botón actualizar */}
-              <Button
-                size="sm"
-                className="bg-green-600 hover:bg-green-700 text-white font-medium"
-              >
+              <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white font-medium">
                 🔄 Actualizar
               </Button>
             </div>

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React from "react";
-import { Button } from "@/components/ui/Button";
-import { Select } from "@/components/ui/Select";
+import React from 'react';
+import { Button } from '@/components/ui/Button';
+import { SelectCompat as Select } from '@/components/ui/SelectCompat';
 import {
   ChevronLeft,
   ChevronRight,
@@ -9,15 +9,15 @@ import {
   Grid3X3,
   List,
   Plus,
-} from "lucide-react";
+} from 'lucide-react';
 
 interface CalendarHeaderProps {
   currentDate: Date;
-  viewMode: "month" | "week" | "day";
+  viewMode: 'month' | 'week' | 'day';
   selectedUser?: string;
   users: Array<{ id: string; name: string }>;
   onDateChange: (date: Date) => void;
-  onViewModeChange: (mode: "month" | "week" | "day") => void;
+  onViewModeChange: (mode: 'month' | 'week' | 'day') => void;
   onUserChange: (userId: string) => void;
   onCreateVisit: () => void;
   onDeleteAllVisits?: () => void;
@@ -36,26 +36,20 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
   onCreateVisit,
   onDeleteAllVisits,
   onManageRules,
-  className = "",
+  className = '',
 }) => {
-  const navigateDate = (direction: "prev" | "next") => {
+  const navigateDate = (direction: 'prev' | 'next') => {
     const newDate = new Date(currentDate);
 
     switch (viewMode) {
-      case "month":
-        newDate.setMonth(
-          currentDate.getMonth() + (direction === "next" ? 1 : -1)
-        );
+      case 'month':
+        newDate.setMonth(currentDate.getMonth() + (direction === 'next' ? 1 : -1));
         break;
-      case "week":
-        newDate.setDate(
-          currentDate.getDate() + (direction === "next" ? 7 : -7)
-        );
+      case 'week':
+        newDate.setDate(currentDate.getDate() + (direction === 'next' ? 7 : -7));
         break;
-      case "day":
-        newDate.setDate(
-          currentDate.getDate() + (direction === "next" ? 1 : -1)
-        );
+      case 'day':
+        newDate.setDate(currentDate.getDate() + (direction === 'next' ? 1 : -1));
         break;
     }
 
@@ -68,48 +62,48 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
 
   const formatCurrentPeriod = () => {
     const options: Intl.DateTimeFormatOptions = {
-      month: "long",
-      year: "numeric",
+      month: 'long',
+      year: 'numeric',
     };
 
     switch (viewMode) {
-      case "month":
-        return currentDate.toLocaleDateString("es-ES", options);
-      case "week":
+      case 'month':
+        return currentDate.toLocaleDateString('es-ES', options);
+      case 'week':
         const weekStart = new Date(currentDate);
         weekStart.setDate(currentDate.getDate() - currentDate.getDay() + 1);
         const weekEnd = new Date(weekStart);
         weekEnd.setDate(weekStart.getDate() + 6);
 
-        return `${weekStart.toLocaleDateString("es-ES", {
-          day: "numeric",
-          month: "short",
-        })} - ${weekEnd.toLocaleDateString("es-ES", {
-          day: "numeric",
-          month: "short",
-          year: "numeric",
+        return `${weekStart.toLocaleDateString('es-ES', {
+          day: 'numeric',
+          month: 'short',
+        })} - ${weekEnd.toLocaleDateString('es-ES', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
         })}`;
-      case "day":
-        return currentDate.toLocaleDateString("es-ES", {
-          weekday: "long",
-          year: "numeric",
-          month: "long",
-          day: "numeric",
+      case 'day':
+        return currentDate.toLocaleDateString('es-ES', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
         });
       default:
-        return "";
+        return '';
     }
   };
 
-  const userOptions = users.map((user) => ({
+  const userOptions = users.map(user => ({
     value: user.id,
     label: user.name,
   }));
 
   const viewModeOptions = [
-    { value: "month", label: "Mes", icon: Grid3X3 },
-    { value: "week", label: "Semana", icon: List },
-    { value: "day", label: "Día", icon: CalendarIcon },
+    { value: 'month', label: 'Mes', icon: Grid3X3 },
+    { value: 'week', label: 'Semana', icon: List },
+    { value: 'day', label: 'Día', icon: CalendarIcon },
   ];
 
   return (
@@ -117,12 +111,8 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
       {/* Título y botones principales */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">
-            📅 Calendario de visitas
-          </h1>
-          <p className="text-sm text-gray-600">
-            Gestiona y programa todas tus visitas comerciales
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">📅 Calendario de visitas</h1>
+          <p className="text-sm text-gray-600">Gestiona y programa todas tus visitas comerciales</p>
         </div>
 
         <div className="flex gap-3">
@@ -164,7 +154,7 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigateDate("prev")}
+              onClick={() => navigateDate('prev')}
               className="text-gray-600 hover:text-gray-900"
             >
               <ChevronLeft size={16} />
@@ -179,7 +169,7 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigateDate("next")}
+              onClick={() => navigateDate('next')}
               className="text-gray-600 hover:text-gray-900"
             >
               <ChevronRight size={16} />
@@ -200,7 +190,7 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
         <div className="flex items-center gap-4">
           {/* Selector de vista */}
           <div className="flex border border-gray-300 rounded-lg overflow-hidden">
-            {viewModeOptions.map((option) => {
+            {viewModeOptions.map(option => {
               const Icon = option.icon;
               return (
                 <button
@@ -208,8 +198,8 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
                   onClick={() => onViewModeChange(option.value as any)}
                   className={`px-4 py-2 text-sm font-medium flex items-center gap-2 transition-colors ${
                     viewMode === option.value
-                      ? "bg-primary-600 text-white"
-                      : "bg-white text-gray-700 hover:bg-gray-50"
+                      ? 'bg-primary-600 text-white'
+                      : 'bg-white text-gray-700 hover:bg-gray-50'
                   }`}
                 >
                   <Icon size={14} />
@@ -221,20 +211,19 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
 
           {/* Selector de usuario */}
           <Select
-            options={[
-              { value: "", label: "Todos los usuarios" },
-              ...userOptions,
-            ]}
-            value={selectedUser || ""}
-            onChange={(e) => onUserChange(e.target.value)}
+            value={selectedUser || ''}
+            onChange={e => onUserChange(e.target.value)}
             className="min-w-[150px]"
-          />
-
-          <Button
-            size="sm"
-            variant="outline"
-            className="text-gray-600 hover:text-gray-900"
           >
+            <option value="">Todos los usuarios</option>
+            {users.map(u => (
+              <option key={u.id} value={u.id}>
+                {u.name}
+              </option>
+            ))}
+          </Select>
+
+          <Button size="sm" variant="outline" className="text-gray-600 hover:text-gray-900">
             🔄 Actualizar
           </Button>
         </div>
