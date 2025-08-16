@@ -3,7 +3,9 @@
 
 import React, { useState } from 'react';
 import { Layout } from '@/components/layout/Layout';
-import { Card, CardContent, Button } from '@/components/ui';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { CardContent } from '@/components/ui/Card';
 // ⬇️ Import correcto de shadcn/ui Select
 import {
   Select,
