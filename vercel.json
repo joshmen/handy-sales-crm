@@ -2,26 +2,5 @@
   "framework": "nextjs",
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
-  "installCommand": "npm install --legacy-peer-deps",
-  "git": {
-    "deploymentEnabled": {
-      "main": true,
-      "develop": true,
-      "fix-deployment-issues": true
-    }
-  },
-  "env": {
-    "NEXTAUTH_URL": "@production-url",
-    "NODE_ENV": "production"
-  },
-  "build": {
-    "env": {
-      "NEXT_PUBLIC_API_URL": "@api-url",
-      "NEXTAUTH_SECRET": "@nextauth-secret",
-      "DATABASE_URL": "@database-url",
-      "CLOUDINARY_CLOUD_NAME": "@cloudinary-cloud-name",
-      "CLOUDINARY_API_KEY": "@cloudinary-api-key",
-      "CLOUDINARY_API_SECRET": "@cloudinary-api-secret"
-    }
-  }
+  "installCommand": "npm install --legacy-peer-deps"
 }
