@@ -3,8 +3,9 @@
 
 import React, { useState } from 'react';
 import { Layout } from '@/components/layout/Layout';
-import { Card, CardContent } from '@/components/ui';
-import { Button } from '@/components/ui';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { CardContent } from '@/components/ui/Card';
 // ⬇️ Import correcto de shadcn/ui Select
 import {
   Select,
@@ -12,7 +13,7 @@ import {
   SelectContent,
   SelectItem,
   SelectValue,
-} from '@/components/ui';
+} from '@/components/ui/Select';
 import { CalendarView } from '@/components/calendar/CalendarView';
 import { VisitModal } from '@/components/calendar/VisitModal';
 import { Visit } from '@/types/calendar';

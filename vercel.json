@@ -1,9 +1,8 @@
 {
   "framework": "nextjs",
-  "installCommand": "npm install --force",
   "buildCommand": "npm run build",
-  "devCommand": "npm run dev",
   "outputDirectory": ".next",
+  "installCommand": "npm install --legacy-peer-deps",
   "git": {
     "deploymentEnabled": {
       "main": true,
@@ -11,30 +10,18 @@
       "fix-deployment-issues": true
     }
   },
-  "functions": {
-    "src/app/api/**/*.ts": {
-      "maxDuration": 30
-    }
+  "env": {
+    "NEXTAUTH_URL": "@production-url",
+    "NODE_ENV": "production"
   },
-  "regions": ["iad1"],
-  "headers": [
-    {
-      "source": "/api/:path*",
-      "headers": [
-        { "key": "Access-Control-Allow-Credentials", "value": "true" },
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "Access-Control-Allow-Methods", "value": "GET,OPTIONS,PATCH,DELETE,POST,PUT" },
-        {
-          "key": "Access-Control-Allow-Headers",
-          "value": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version"
-        }
-      ]
+  "build": {
+    "env": {
+      "NEXT_PUBLIC_API_URL": "@api-url",
+      "NEXTAUTH_SECRET": "@nextauth-secret",
+      "DATABASE_URL": "@database-url",
+      "CLOUDINARY_CLOUD_NAME": "@cloudinary-cloud-name",
+      "CLOUDINARY_API_KEY": "@cloudinary-api-key",
+      "CLOUDINARY_API_SECRET": "@cloudinary-api-secret"
     }
-  ],
-  "rewrites": [
-    {
-      "source": "/uploads/:path*",
-      "destination": "https://res.cloudinary.com/:path*"
-    }
-  ]
+  }
 }
