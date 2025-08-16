@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Label } from "@/components/ui/Label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
-import { Separator } from "@/components/ui/Separator";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/Avatar";
-import { Badge } from "@/components/ui/Badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
+import { Button } from "@/components/ui";
+import { Input } from "@/components/ui";
+import { Label } from "@/components/ui";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui";
+import { Separator } from "@/components/ui";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui";
+import { Badge } from "@/components/ui";
 import { Layout } from "@/components/layout/Layout";
 import {
   Settings,
