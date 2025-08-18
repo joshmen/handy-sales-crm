@@ -177,7 +177,8 @@ function LoginContent() {
         {/* Credenciales de demo para desarrollo */}
         {process.env.NODE_ENV === 'development' ||
           process.env.ALLOW_DEV_LOGIN === 'true' ||
-          (process.env.VERCEL_ENV === 'preview' && (
+          process.env.VERCEL_ENV === 'preview' ||
+          (process.env.VERCEL_ENV === 'production' && (
             <div className="mt-6 p-4 bg-gray-50 rounded-lg">
               <p className="text-xs text-gray-600 mb-2 font-semibold">Credenciales de prueba:</p>
               <div className="space-y-1">
