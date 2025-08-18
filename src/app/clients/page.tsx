@@ -1,5 +1,5 @@
-import { Layout } from "@/components/layout/Layout";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
+import { Layout } from '@/components/layout';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
 
 export default function ClientsPage() {
   return (

@@ -3,11 +3,11 @@
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
-import { toast } from '@/hooks/useToast';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Card } from '@/components/ui/Card';
-import { Loading } from '@/components/ui/Loading';
+import { toast } from '@/hooks';
+import { Button } from '@/components/ui';
+import { Input } from '@/components/ui';
+import { Card } from '@/components/ui';
+import { Loading } from '@/components/ui';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
 
 function LoginContent() {

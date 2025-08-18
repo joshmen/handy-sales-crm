@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Layout } from '@/components/layout/Layout';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Badge } from '@/components/ui/Badge';
-import { Table } from '@/components/ui/Table';
+import { Layout } from '@/components/layout';
+import { Card } from '@/components/ui';
+import { Button } from '@/components/ui';
+import { Input } from '@/components/ui';
+import { Badge } from '@/components/ui';
+import { Table } from '@/components/ui';
 import {
   DollarSign,
   Package,
@@ -37,7 +37,7 @@ import {
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import useRouteStore from '@/stores/useRouteStore';
-import { useToast } from '@/hooks/useToast';
+import { useToast } from '@/hooks';
 
 // Tipos para el cierre
 interface CloseSummary {

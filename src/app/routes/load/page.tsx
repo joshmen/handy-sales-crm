@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Layout } from '@/components/layout/Layout';
+import { Layout } from '@/components/layout';
 import { Card, CardHeader, CardContent, Button, Input } from '@/components/ui';
 import { UserAssignment } from '@/components/routes/UserAssignment';
 import { InventoryLoader } from '@/components/routes/InventoryLoader';

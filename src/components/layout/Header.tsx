@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
-import { toast } from '@/hooks/useToast';
+import { toast } from '@/hooks';
 import {
   Bell,
   Search,
@@ -19,18 +19,18 @@ import {
 } from 'lucide-react';
 import { useSidebar, useTheme } from '@/stores/useUIStore';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar';
-import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui';
+import { Input } from '@/components/ui';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui';
+import { Badge } from '@/components/ui';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/Dialog';
-import { Separator } from '@/components/ui/Separator';
+} from '@/components/ui';
+import { Separator } from '@/components/ui';
 import type { DefaultSession } from 'next-auth';
 
 // Extiende el user de NextAuth con los campos que usas en tu app

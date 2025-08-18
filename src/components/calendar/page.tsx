@@ -2,9 +2,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Layout } from '@/components/layout/Layout';
+import { Layout } from '@/components/layout';
 import { Card, CardContent, Button } from '@/components/ui';
-import { SelectCompat as Select } from '@/components/ui/SelectCompat';
+import { SelectCompat as Select } from '@/components/ui';
 import { CalendarView } from '@/components/calendar/CalendarView';
 import { VisitModal } from '@/components/calendar/VisitModal';
 import { Visit } from '@/types/calendar';

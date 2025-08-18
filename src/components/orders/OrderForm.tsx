@@ -3,7 +3,7 @@
 
 import React, { useState } from 'react';
 import { Card, CardHeader, CardContent, Button, Input } from '@/components/ui';
-import { SelectCompat as Select } from '@/components/ui/SelectCompat';
+import { SelectCompat as Select } from '@/components/ui';
 import { Order, OrderItem } from '@/types/orders';
 import { Client, Product } from '@/types';
 

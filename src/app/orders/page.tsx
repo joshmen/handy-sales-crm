@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Layout } from '@/components/layout/Layout';
+import { Layout } from '@/components/layout';
 import { OrderList } from '@/components/orders/OrderList';
 import { OrderForm } from '@/components/orders/OrderForm';
-import { Modal } from '@/components/ui/Modal';
+import { Modal } from '@/components/ui';
 import { Order } from '@/types/orders';
 import { Client, ClientType, Product, UserRole } from '@/types';
 

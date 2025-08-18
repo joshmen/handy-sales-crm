@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Modal, Button, Input } from '@/components/ui';
-import { SelectCompat as Select } from '@/components/ui/SelectCompat';
+import { SelectCompat as Select } from '@/components/ui';
 import { Visit } from '@/types/calendar';
 import { Client, User } from '@/types';
 

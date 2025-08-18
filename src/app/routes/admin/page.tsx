@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Layout } from '@/components/layout/Layout';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { SelectCompat as Select } from '@/components/ui/SelectCompat';
-import { Modal } from '@/components/ui/Modal';
-import { Badge } from '@/components/ui/Badge';
-import { Table } from '@/components/ui/Table';
+import { Layout } from '@/components/layout';
+import { Card } from '@/components/ui';
+import { Button } from '@/components/ui';
+import { Input } from '@/components/ui';
+import { SelectCompat as Select } from '@/components/ui';
+import { Modal } from '@/components/ui';
+import { Badge } from '@/components/ui';
+import { Table } from '@/components/ui';
 import {
   Plus,
   Edit,
@@ -36,7 +36,7 @@ import {
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import useRouteStore from '@/stores/useRouteStore';
-import { useToast } from '@/hooks/useToast';
+import { useToast } from '@/hooks';
 
 // Tipos
 interface RouteTemplate {

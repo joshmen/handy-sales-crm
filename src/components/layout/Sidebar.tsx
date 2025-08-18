@@ -22,9 +22,9 @@ import {
 } from "lucide-react"
 import { useSidebar } from '@/stores/useUIStore'
 import { cn } from "@/lib/utils"
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar'
-import { Badge } from '@/components/ui/Badge'
-import { Separator } from '@/components/ui/Separator'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui'
+import { Badge } from '@/components/ui'
+import { Separator } from '@/components/ui'
 
 interface SidebarItem {
   id: string

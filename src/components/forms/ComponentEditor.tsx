@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { FormComponent, FormOption } from '@/types/forms';
 import { Modal, Button, Input } from '@/components/ui';
-import { SelectCompat as Select } from '@/components/ui/SelectCompat';
+import { SelectCompat as Select } from '@/components/ui';
 
 interface ComponentEditorProps {
   isOpen: boolean;

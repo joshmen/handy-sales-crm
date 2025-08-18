@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react';
-import { Button } from '@/components/ui/Button';
-import { SelectCompat as Select } from '@/components/ui/SelectCompat';
+import { Button } from '@/components/ui';
+import { SelectCompat as Select } from '@/components/ui';
 import {
   ChevronLeft,
   ChevronRight,

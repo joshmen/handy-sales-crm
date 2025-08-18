@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Layout } from '@/components/layout/Layout';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { SelectCompat as Select } from '@/components/ui/SelectCompat';
-import { Badge } from '@/components/ui/Badge';
+import { Layout } from '@/components/layout';
+import { Card } from '@/components/ui';
+import { Button } from '@/components/ui';
+import { Input } from '@/components/ui';
+import { SelectCompat as Select } from '@/components/ui';
+import { Badge } from '@/components/ui';
 import { EmptyState } from '@/components/common/EmptyState';
 import {
   MapPin,

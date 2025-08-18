@@ -1,6 +1,6 @@
-import { Layout } from "@/components/layout/Layout";
-import { Card, CardHeader, CardContent } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
+import { Layout } from '@/components/layout';
+import { Card, CardHeader, CardContent } from '@/components/ui';
+import { Button } from '@/components/ui';
 import Link from "next/link";
 
 export default function FormsPage() {

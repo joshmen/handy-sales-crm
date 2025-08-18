@@ -13,7 +13,7 @@ import {
   SelectContent,
   SelectItem,
   SelectValue,
-} from '@/components/ui/Select';
+} from '@/components/ui';
 import { CalendarView } from '@/components/calendar/CalendarView';
 import { VisitModal } from '@/components/calendar/VisitModal';
 import { Visit } from '@/types/calendar';

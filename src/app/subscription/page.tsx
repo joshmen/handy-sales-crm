@@ -1,15 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Layout } from "@/components/layout/Layout";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
-import { Separator } from "@/components/ui/Separator";
-import { toast } from "@/hooks/useToast";
+import { Layout } from '@/components/layout';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui';
+import { Button } from '@/components/ui';
+import { Badge } from '@/components/ui';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui';
+import { Separator } from '@/components/ui';
+import { toast } from '@/hooks';
 import { useSession } from "next-auth/react";
-import { useRequireAdmin } from "@/hooks/usePermissions";
+import { useRequireAdmin } from '@/hooks';
 import { 
   Crown,
   CreditCard,

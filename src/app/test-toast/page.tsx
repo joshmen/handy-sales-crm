@@ -1,9 +1,9 @@
 "use client";
 
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
-import { toast } from "@/hooks/useToast";
-import { Layout } from "@/components/layout/Layout";
+import { Button } from '@/components/ui';
+import { Card } from '@/components/ui';
+import { toast } from '@/hooks';
+import { Layout } from '@/components/layout';
 import { 
   CheckCircle, 
   XCircle, 
@@ -219,7 +219,7 @@ export default function TestToastPage() {
             <div>
               <h4 className="font-medium mb-2">1. Importar el hook:</h4>
               <pre className="bg-muted p-3 rounded-lg text-sm">
-                <code>{`import { toast } from "@/hooks/useToast"`}</code>
+                <code>{`import { toast } from '@/hooks'`}</code>
               </pre>
             </div>
 

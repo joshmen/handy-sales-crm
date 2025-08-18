@@ -7,8 +7,8 @@ import {
   ToastProvider,
   ToastTitle,
   ToastViewport,
-} from "@/components/ui/Toast"
-import { useToast } from "@/hooks/useToast"
+} from '@/components/ui'
+import { useToast } from '@/hooks'
 
 export function Toaster() {
   const { toasts } = useToast()

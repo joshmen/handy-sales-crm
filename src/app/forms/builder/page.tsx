@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Layout } from "@/components/layout/Layout";
+import { Layout } from '@/components/layout';
 import { Card, CardHeader, CardContent, Button, Input } from "@/components/ui";
 import { ComponentPalette } from "@/components/forms/ComponentPalette";
 import { FormPreview } from "@/components/forms/FormPreview";

@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { OrderCard } from './OrderCard';
 import { OrderFilters } from './OrderFilters';
 import { OrderSummary } from './OrderSummary';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui';
 import { EmptyState } from '@/components/common/EmptyState';
 import { Order } from '@/types/orders';
 import { Plus, Package } from 'lucide-react';

@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, CardHeader, CardContent } from "@/components/ui/Card";
+import { Card, CardHeader, CardContent } from '@/components/ui';
 import {
   Target,
   TrendingUp,

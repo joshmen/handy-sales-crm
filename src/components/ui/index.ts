@@ -1,21 +1,36 @@
-// Re-export everything to ensure case-insensitive imports work
-export * from './Card';
-export * from './Button';
-export * from './Toast';
-export * from './Toaster';
-export * from './Avatar';
-export * from './Badge';
-export * from './Dialog';
-export * from './Input';
-export * from './Label';
-export * from './Loading';
-export * from './Modal';
-export * from './Select';
-export * from './SelectCompat';
-export * from './Separator';
-export * from './Table';
-export * from './Tabs';
-export { useToast } from './use-toast';
+// Exportaciones centralizadas de componentes UI
+// Aseguramos que todos los exports estén disponibles
 
-// Default exports
-export { Card as default } from './Card';
+// Componentes principales
+export { Avatar } from './Avatar';
+export { Badge } from './Badge';
+export { Button } from './Button';
+export { 
+  Card, 
+  CardContent, 
+  CardHeader, 
+  CardFooter, 
+  CardTitle, 
+  CardDescription 
+} from './Card';
+export { Dialog } from './Dialog';
+export { Input } from './Input';
+export { Label } from './Label';
+export { Loading } from './Loading';
+export { Modal } from './Modal';
+export { 
+  Select, 
+  SelectTrigger, 
+  SelectContent, 
+  SelectItem, 
+  SelectValue 
+} from './Select';
+export { SelectCompat } from './SelectCompat';
+export { Separator } from './Separator';
+export { Table } from './Table';
+export { Tabs } from './Tabs';
+export { Toast } from './Toast';
+export { Toaster } from './Toaster';
+
+// Hook de toast
+export { useToast } from './use-toast';

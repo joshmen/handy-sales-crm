@@ -7,7 +7,7 @@ import {
   SelectContent,
   SelectItem,
   SelectValue,
-} from '@/components/ui/Select';
+} from '@/components/ui';
 
 // Opciones nativas <option>
 type OptionEl = React.ReactElement<{

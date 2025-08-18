@@ -11,7 +11,7 @@ import {
   Area,
   AreaChart,
 } from "recharts";
-import { Card, CardHeader, CardContent } from "@/components/ui/Card";
+import { Card, CardHeader, CardContent } from '@/components/ui';
 
 interface SalesData {
   date: string;

@@ -1,7 +1,7 @@
 import React from 'react';
-import { Input } from '@/components/ui/Input';
-import { SelectCompat as Select } from '@/components/ui/SelectCompat';
-import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui';
+import { SelectCompat as Select } from '@/components/ui';
+import { Button } from '@/components/ui';
 import { Search, Filter, X } from 'lucide-react';
 
 interface OrderFiltersProps {

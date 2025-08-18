@@ -10,7 +10,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import { Card, CardHeader, CardContent } from "@/components/ui/Card";
+import { Card, CardHeader, CardContent } from '@/components/ui';
 
 interface VisitsData {
   date: string;

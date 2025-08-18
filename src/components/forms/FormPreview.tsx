@@ -3,7 +3,7 @@
 import React from 'react';
 import { FormComponent } from '@/types/forms';
 import { Card, Input, Button } from '@/components/ui';
-import { SelectCompat as Select } from '@/components/ui/SelectCompat';
+import { SelectCompat as Select } from '@/components/ui';
 
 interface FormPreviewProps {
   components: FormComponent[];
