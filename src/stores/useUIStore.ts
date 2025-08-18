@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { create } from "zustand";
-import { useShallow } from "zustand/react/shallow";
+import { create } from 'zustand';
+import { useShallow } from 'zustand/react/shallow';
 
 type UIState = {
   sidebarOpen: boolean;
   sidebarCollapsed: boolean;
-  theme: "light" | "dark";
+  theme: 'light' | 'dark';
   hasHydrated: boolean;
 
   // acciones
@@ -15,39 +15,34 @@ type UIState = {
   setSidebarCollapsed: (collapsed: boolean) => void;
   toggleSidebar: () => void;
   toggleSidebarCollapsed: () => void;
-  setTheme: (t: "light" | "dark") => void;
+  setTheme: (t: 'light' | 'dark') => void;
   toggleTheme: () => void;
 };
 
-export const useUIStore = create<UIState>((set) => ({
-  sidebarOpen: true,
+export const useUIStore = create<UIState>(set => ({
+  sidebarOpen: false,
   sidebarCollapsed: false,
-  theme: "light",
+  theme: 'light',
   hasHydrated: false,
 
-  setHasHydrated: (v) => set({ hasHydrated: v }),
+  setHasHydrated: v => set({ hasHydrated: v }),
 
-  setSidebarOpen: (open) =>
-    set((s) => (s.sidebarOpen === open ? s : { sidebarOpen: open })),
+  setSidebarOpen: open => set(s => (s.sidebarOpen === open ? s : { sidebarOpen: open })),
 
-  setSidebarCollapsed: (collapsed) =>
-    set((s) =>
-      s.sidebarCollapsed === collapsed ? s : { sidebarCollapsed: collapsed }
-    ),
+  setSidebarCollapsed: collapsed =>
+    set(s => (s.sidebarCollapsed === collapsed ? s : { sidebarCollapsed: collapsed })),
 
-  toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
-  toggleSidebarCollapsed: () =>
-    set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
+  toggleSidebar: () => set(s => ({ sidebarOpen: !s.sidebarOpen })),
+  toggleSidebarCollapsed: () => set(s => ({ sidebarCollapsed: !s.sidebarCollapsed })),
 
-  setTheme: (t) => set({ theme: t }),
-  toggleTheme: () =>
-    set((s) => ({ theme: s.theme === "light" ? "dark" : "light" })),
+  setTheme: t => set({ theme: t }),
+  toggleTheme: () => set(s => ({ theme: s.theme === 'light' ? 'dark' : 'light' })),
 }));
 
 /** Helpers selectores “seguros” */
 export const useSidebar = () =>
   useUIStore(
-    useShallow((s) => ({
+    useShallow(s => ({
       open: s.sidebarOpen,
       collapsed: s.sidebarCollapsed,
       setOpen: s.setSidebarOpen,
@@ -60,7 +55,7 @@ export const useSidebar = () =>
 
 export const useTheme = () =>
   useUIStore(
-    useShallow((s) => ({
+    useShallow(s => ({
       theme: s.theme,
       setTheme: s.setTheme,
       toggle: s.toggleTheme,
