@@ -47,6 +47,11 @@ type ApiLoginFail = { success: false; message?: string };
 
 type ApiLoginResponse = ApiLoginSuccessWrapped | ApiLoginSuccessFlat | ApiLoginFail | undefined;
 
+// arriba del file
+const isDevLike = () =>
+  process.env.ALLOW_DEV_LOGIN === 'true' || // bandera explícita
+  process.env.VERCEL_ENV === 'preview'; // habilitar también en previews si quieres
+
 // —— Type guards ——
 function isWrappedSuccess(r: unknown): r is ApiLoginSuccessWrapped {
   return (
@@ -78,7 +83,8 @@ export const authOptions: NextAuthOptions = {
         }
 
         // Desarrollo: mock directo
-        if (process.env.NODE_ENV === 'development') {
+        //if (process.env.NODE_ENV === 'development') {
+        if (isDevLike()) {
           const user = MOCK_USERS.find(
             u => u.email === credentials.email && u.password === credentials.password
           );
