@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, Suspense, useEffect } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { signIn, useSession } from 'next-auth/react';
+import { signIn } from 'next-auth/react';
 import { toast } from '@/hooks/useToast';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -13,22 +13,12 @@ import { Eye, EyeOff, LogIn } from 'lucide-react';
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  // usa callbackUrl (no "from")
-  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
-
-  const { status } = useSession();
+  const callbackUrl = searchParams.get('from') || '/dashboard';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  // Si la sesión ya se marcó como autenticada, redirige (evita doble clic)
-  useEffect(() => {
-    if (status === 'authenticated') {
-      router.replace(callbackUrl);
-    }
-  }, [status, callbackUrl, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,38 +38,35 @@ function LoginContent() {
       const result = await signIn('credentials', {
         email,
         password,
-        redirect: false, // dejamos que NextAuth NO redirija
-        callbackUrl, // y pasamos el destino correcto
+        redirect: false,
       });
 
       if (result?.error) {
-        console.log(result.error);
+        console.log(result?.error);
         toast({
           title: 'Error de autenticación',
           description: 'Email o contraseña incorrectos',
           variant: 'destructive',
         });
       } else {
-        toast({ title: '¡Bienvenido!', description: 'Iniciando sesión...' });
-        // redirige tú mismo; no uses push+refresh (causa el 2do clic)
-        router.replace(result?.url ?? callbackUrl);
+        toast({
+          title: '¡Bienvenido!',
+          description: 'Iniciando sesión...',
+        });
+        router.push(callbackUrl);
+        router.refresh();
       }
-    } catch {
+    } catch (error) {
       toast({
         title: 'Error',
         description: 'Ocurrió un error al iniciar sesión',
         variant: 'destructive',
       });
+      console.log(error);
     } finally {
       setLoading(false);
     }
   };
-
-  // Calcula una sola vez si mostrar credenciales demo
-  const showDemo =
-    process.env.NODE_ENV === 'development' ||
-    process.env.ALLOW_DEV_LOGIN === 'true' ||
-    process.env.VERCEL_ENV === 'preview';
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 via-white to-blue-50 p-4">
@@ -184,19 +171,24 @@ function LoginContent() {
           </p>
         </div>
 
-        {showDemo && (
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <p className="text-xs text-gray-600 mb-2 font-semibold">Credenciales de prueba:</p>
-            <div className="space-y-1">
-              <p className="text-xs text-gray-600">
-                <span className="font-medium">Admin:</span> admin@handysales.com / admin123
-              </p>
-              <p className="text-xs text-gray-600">
-                <span className="font-medium">Vendedor:</span> vendedor@handysales.com / vendedor123
-              </p>
+        {/* Credenciales de demo para desarrollo */}
+        {process.env.NODE_ENV === 'development' ||
+          process.env.ALLOW_DEV_LOGIN === 'true' ||
+          process.env.VERCEL_ENV === 'preview' ||
+          (process.env.VERCEL_ENV === 'production' && (
+            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-600 mb-2 font-semibold">Credenciales de prueba:</p>
+              <div className="space-y-1">
+                <p className="text-xs text-gray-600">
+                  <span className="font-medium">Admin:</span> admin@handysales.com / admin123
+                </p>
+                <p className="text-xs text-gray-600">
+                  <span className="font-medium">Vendedor:</span> vendedor@handysales.com /
+                  vendedor123
+                </p>
+              </div>
             </div>
-          </div>
-        )}
+          ))}
       </Card>
     </div>
   );
