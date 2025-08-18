@@ -175,20 +175,22 @@ function LoginContent() {
         </div>
 
         {/* Credenciales de demo para desarrollo */}
-        {/* {process.env.NODE_ENV === 'development' && ( */}
-        {isDevLike() && (
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <p className="text-xs text-gray-600 mb-2 font-semibold">Credenciales de prueba:</p>
-            <div className="space-y-1">
-              <p className="text-xs text-gray-600">
-                <span className="font-medium">Admin:</span> admin@handysales.com / admin123
-              </p>
-              <p className="text-xs text-gray-600">
-                <span className="font-medium">Vendedor:</span> vendedor@handysales.com / vendedor123
-              </p>
+        {process.env.NODE_ENV === 'development' ||
+          process.env.ALLOW_DEV_LOGIN === 'true' ||
+          (process.env.VERCEL_ENV === 'preview' && (
+            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-600 mb-2 font-semibold">Credenciales de prueba:</p>
+              <div className="space-y-1">
+                <p className="text-xs text-gray-600">
+                  <span className="font-medium">Admin:</span> admin@handysales.com / admin123
+                </p>
+                <p className="text-xs text-gray-600">
+                  <span className="font-medium">Vendedor:</span> vendedor@handysales.com /
+                  vendedor123
+                </p>
+              </div>
             </div>
-          </div>
-        )}
+          ))}
       </Card>
     </div>
   );
