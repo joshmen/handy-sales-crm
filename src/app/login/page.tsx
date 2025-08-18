@@ -33,36 +33,20 @@ function LoginContent() {
     }
 
     setLoading(true);
-
     try {
-      const result = await signIn('credentials', {
+      await signIn('credentials', {
         email,
         password,
-        redirect: false,
+        redirect: true, // <- clave
+        callbackUrl: searchParams.get('callbackUrl') || '/dashboard',
       });
-
-      if (result?.error) {
-        console.log(result?.error);
-        toast({
-          title: 'Error de autenticación',
-          description: 'Email o contraseña incorrectos',
-          variant: 'destructive',
-        });
-      } else {
-        toast({
-          title: '¡Bienvenido!',
-          description: 'Iniciando sesión...',
-        });
-        router.push(callbackUrl);
-        router.refresh();
-      }
-    } catch (error) {
+      // No hagas router.push/replace ni refresh aquí.
+    } catch {
       toast({
         title: 'Error',
         description: 'Ocurrió un error al iniciar sesión',
         variant: 'destructive',
       });
-      console.log(error);
     } finally {
       setLoading(false);
     }
