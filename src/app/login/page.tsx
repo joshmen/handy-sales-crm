@@ -20,6 +20,10 @@ function LoginContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const isDevLike = () =>
+    process.env.ALLOW_DEV_LOGIN === 'true' || // bandera explícita
+    process.env.VERCEL_ENV === 'preview'; // habilitar también en previews si quieres
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -171,7 +175,8 @@ function LoginContent() {
         </div>
 
         {/* Credenciales de demo para desarrollo */}
-        {process.env.NODE_ENV === 'development' && (
+        {/* {process.env.NODE_ENV === 'development' && ( */}
+        {isDevLike() && (
           <div className="mt-6 p-4 bg-gray-50 rounded-lg">
             <p className="text-xs text-gray-600 mb-2 font-semibold">Credenciales de prueba:</p>
             <div className="space-y-1">
