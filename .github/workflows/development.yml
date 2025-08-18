@@ -40,11 +40,16 @@ jobs:
         if: github.ref == 'refs/heads/main'
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
 
-      # Build localmente (genera .vercel/output)
-      - name: Build (prebuilt)
+      # Build
+      - name: Build (preview)
+        if: github.ref != 'refs/heads/main'
         run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
 
-      # Deploy sin build en Vercel
+      - name: Build (production)
+        if: github.ref == 'refs/heads/main'
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      # Deploy
       - name: Deploy preview
         if: github.ref != 'refs/heads/main'
         run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
