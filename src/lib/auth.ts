@@ -49,7 +49,7 @@ type ApiLoginResponse = ApiLoginSuccessWrapped | ApiLoginSuccessFlat | ApiLoginF
 
 // arriba del file
 const isDevLike = () =>
-  process.env.ALLOW_DEV_LOGIN === 'true' || // bandera explícita
+  process.env.ALLOW_DEV_LOGIN === 'true' || // bandera explícitas
   process.env.VERCEL_ENV === 'production' ||
   process.env.VERCEL_ENV === 'preview'; // habilitar también en previews si quieres
 
