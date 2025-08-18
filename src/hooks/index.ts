@@ -9,7 +9,7 @@ export * from './useUtils';
 export { useClients, useProducts, useDashboard } from './useApi';
 export { useZodForm, useFormHandler, formSchemas } from './useForm';
 export { usePermissions, useConditionalRender, withPermission } from './usePermissions';
-export { useToast } from './useToast';
+export { useToast, toast } from './useToast';  // Explicitly export toast
 export {
   useDebounce,
   useLocalStorage,

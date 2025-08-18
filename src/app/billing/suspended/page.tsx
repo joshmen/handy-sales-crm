@@ -1,9 +1,9 @@
 'use client';
 
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui';
+import { Button } from '@/components/ui';
 import { AlertCircle, CreditCard, Mail, Phone, ArrowRight } from 'lucide-react';
-import { toast } from '@/hooks/useToast';
+import { toast } from '@/hooks';
 import { useState } from 'react';
 
 export default function SuspendedPage() {

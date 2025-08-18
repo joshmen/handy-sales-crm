@@ -2,10 +2,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Layout } from '@/components/layout/Layout';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { CardContent } from '@/components/ui/Card';
+import { Layout } from '@/components/layout';
+import { Card } from '@/components/ui';
+import { Button } from '@/components/ui';
+import { CardContent } from '@/components/ui';
 // ⬇️ Import correcto de shadcn/ui Select
 import {
   Select,
