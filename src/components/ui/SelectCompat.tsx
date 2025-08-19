@@ -9,21 +9,20 @@ import {
   SelectValue,
 } from '@/components/ui/Select';
 
-// Opciones nativas <option>
 type OptionEl = React.ReactElement<{
-  value: string;
+  value: string | number;
   disabled?: boolean;
   children?: React.ReactNode;
 }>;
 
 type Props = {
-  value: string;
-  onChange: (e: { target: { value: string } }) => void; // misma firma que <select>
-  className?: string; // se aplica al Trigger
-  placeholder?: React.ReactNode; // texto dentro del trigger
-  label?: React.ReactNode; // ← NUEVO: etiqueta visible arriba
-  id?: string; // ← NUEVO: para asociar label con el trigger
-  children: React.ReactNode; // tus <option>...</option>
+  id?: string;
+  label?: string;
+  className?: string;
+  placeholder?: string;
+  value: string; // seguimos mimetizando <select>
+  onChange: (e: { target: { value: string } }) => void;
+  children: React.ReactNode; // <option>...</option>...
 };
 
 export function SelectCompat({
@@ -35,11 +34,17 @@ export function SelectCompat({
   id,
   children,
 }: Props) {
-  const options = Children.toArray(children).filter(isValidElement) as OptionEl[];
+  const allOptions = Children.toArray(children).filter(isValidElement) as OptionEl[];
 
-  // etiqueta del valor seleccionado (fallback del placeholder)
-  const selectedLabel: React.ReactNode =
-    options.find(o => String(o.props.value) === String(value))?.props.children ?? undefined;
+  // Detecta opción "vacía" para usar su texto como placeholder
+  const emptyOption = allOptions.find(o => String(o.props.value) === '');
+  const options = allOptions.filter(o => String(o.props.value) !== '');
+
+  // Etiqueta de la opción seleccionada (solo informativa)
+  const selectedLabel =
+    allOptions.find(o => String(o.props.value) === String(value))?.props.children ?? undefined;
+
+  const computedPlaceholder = placeholder ?? (emptyOption ? emptyOption.props.children : undefined);
 
   const emitChange = (v: string) => onChange({ target: { value: v } });
 
@@ -51,9 +56,10 @@ export function SelectCompat({
         </label>
       ) : null}
 
-      <ShSelect value={value} onValueChange={v => emitChange(String(v))}>
+      {/* value: si está vacío, pásalo como undefined para que Radix muestre el placeholder */}
+      <ShSelect value={value || undefined} onValueChange={v => emitChange(String(v))}>
         <SelectTrigger id={id} className={className}>
-          <SelectValue placeholder={placeholder ?? selectedLabel} />
+          <SelectValue placeholder={computedPlaceholder ?? selectedLabel} />
         </SelectTrigger>
         <SelectContent>
           {options.map(opt => (
