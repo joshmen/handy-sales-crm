@@ -28,12 +28,14 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       <div
         className={cn(
           'transition-[margin] duration-300 min-h-[100vh]',
-          collapsed ? 'ml-16' : 'ml-64',
-          !open && 'ml-0'
+          // En móvil SIEMPRE sin margen
+          'ml-0',
+          // En desktop: si el sidebar está abierto, aplica margen según colapsado
+          open ? (collapsed ? 'lg:ml-16' : 'lg:ml-64') : 'ml-0'
         )}
       >
         <Header />
-        <main className="min-h-[calc(100vh-4rem)]">{children}</main>
+        <main className="min-h-[calc(100vh-4rem)] w-full overflow-x-hidden">{children}</main>
       </div>
     </div>
   );
