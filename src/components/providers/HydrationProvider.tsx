@@ -10,10 +10,10 @@ interface HydrationProviderProps {
 }
 
 export function HydrationProvider({ children }: HydrationProviderProps) {
-  // Marcar cuando los stores están hidratados
+  // Hidratar stores desde localStorage y marcar como hidratados
   useEffect(() => {
     useAppStore.getState().setHasHydrated(true);
-    useUIStore.getState().setHasHydrated(true);
+    useUIStore.getState().hydrate(); // Hidrata el tema desde localStorage
     useRouteStore.getState().setHasHydrated(true);
   }, []);
 
