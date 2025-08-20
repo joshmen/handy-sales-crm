@@ -427,6 +427,9 @@ export * from './discounts';
 // Re-export product-families types
 export * from './product-families';
 
+// Re-export promotions types
+export * from './promotions';
+
 // Component prop types
 export interface BaseComponentProps {
   className?: string;

@@ -6,6 +6,7 @@ import { clientService } from './clients';
 import { dashboardService } from './dashboard';
 import { productService } from './products';
 import { inventoryApi } from './inventory';
+import { promotionsApi } from './promotions';
 
 // 2) Re-exporta todo (tipos, funciones, etc.)
 export * from './auth';
@@ -13,9 +14,10 @@ export * from './clients';
 export * from './dashboard';
 export * from './products';
 export * from './inventory';
+export * from './promotions';
 
 // 3) (Opcional) re-exporta también las instancias por nombre
-export { authService, clientService, dashboardService, productService, inventoryApi };
+export { authService, clientService, dashboardService, productService, inventoryApi, promotionsApi };
 
 // 4) Objeto centralizado
 export const services = {
@@ -24,6 +26,7 @@ export const services = {
   dashboard: dashboardService,
   products: productService,
   inventory: inventoryApi,
+  promotions: promotionsApi,
 } as const;
 
 export default services;
