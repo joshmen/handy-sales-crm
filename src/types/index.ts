@@ -415,6 +415,9 @@ export type RequiredFields<T, K extends keyof T> = T & Required<Pick<T, K>>;
 
 export type EntityWithRelations<T, R = Record<string, unknown>> = T & R;
 
+// Re-export inventory types
+export * from './inventory';
+
 // Component prop types
 export interface BaseComponentProps {
   className?: string;
