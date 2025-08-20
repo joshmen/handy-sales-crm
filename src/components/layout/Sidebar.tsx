@@ -101,6 +101,21 @@ const sidebarItems: SidebarItem[] = [
     ],
   },
   {
+    id: 'price-lists',
+    label: 'Listas de precios',
+    icon: DollarSign,
+    permission: 'view_products',
+    submenu: [
+      {
+        id: 'price-lists-list',
+        label: 'Gestión de precios',
+        icon: DollarSign,
+        href: '/price-lists',
+        permission: 'view_products',
+      },
+    ],
+  },
+  {
     id: 'discounts',
     label: 'Descuentos',
     icon: Percent,
