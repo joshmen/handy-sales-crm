@@ -22,6 +22,7 @@ import {
   CreditCard,
   Percent,
   DollarSign,
+  Layers,
 } from 'lucide-react';
 import { useSidebar } from '@/stores/useUIStore';
 import { cn } from '@/lib/utils';
@@ -73,6 +74,28 @@ const sidebarItems: SidebarItem[] = [
         label: 'Lista de productos',
         icon: Package,
         href: '/products',
+        permission: 'view_products',
+      },
+      {
+        id: 'product-families',
+        label: 'Familias de productos',
+        icon: Layers,
+        href: '/product-families',
+        permission: 'view_products',
+      },
+    ],
+  },
+  {
+    id: 'price-lists',
+    label: 'Listas de precios',
+    icon: DollarSign,
+    permission: 'view_products',
+    submenu: [
+      {
+        id: 'price-lists-list',
+        label: 'Gestión de precios',
+        icon: DollarSign,
+        href: '/price-lists',
         permission: 'view_products',
       },
     ],
