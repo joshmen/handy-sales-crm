@@ -118,6 +118,14 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
 
   useEffect(() => setMounted(true), []);
 
+  // 🎯 FIX: Aplicar clase CSS al DOM cuando cambie el tema
+  useEffect(() => {
+    if (mounted) {
+      document.documentElement.classList.remove('light', 'dark');
+      document.documentElement.classList.add(theme);
+    }
+  }, [theme, mounted]);
+
   const generateBreadcrumbs = (): Breadcrumb[] => {
     const segments = pathname.split('/').filter(Boolean);
     const crumbs: Breadcrumb[] = [];
