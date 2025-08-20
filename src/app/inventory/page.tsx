@@ -210,8 +210,8 @@ export default function InventoryPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Inventario de almacén</h1>
-            <p className="text-gray-600">Gestiona las existencias de productos</p>
+            <h1 className="text-2xl font-bold text-foreground">Inventario de almacén</h1>
+            <p className="text-muted-foreground">Gestiona las existencias de productos</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline">

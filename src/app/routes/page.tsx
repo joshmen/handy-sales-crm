@@ -300,8 +300,8 @@ export default function RoutesPage() {
         {/* Header */}
         <div className="flex justify-between items-start mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Rutas de Venta</h1>
-            <p className="text-gray-600 mt-2">Gestión y seguimiento de rutas comerciales</p>
+            <h1 className="text-3xl font-bold text-foreground">Rutas de Venta</h1>
+            <p className="text-muted-foreground mt-2">Gestión y seguimiento de rutas comerciales</p>
           </div>
           <div className="flex gap-3">
             <Link href="/routes/admin">
@@ -323,7 +323,7 @@ export default function RoutesPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Rutas Activas</p>
-                <p className="text-2xl font-bold text-gray-900">{mockStats.activeRoutes}</p>
+                <p className="text-2xl font-bold text-foreground">{mockStats.activeRoutes}</p>
               </div>
               <div className="p-2 bg-blue-100 rounded-lg">
                 <MapPin size={20} className="text-blue-600" />
@@ -335,7 +335,7 @@ export default function RoutesPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Visitas Hoy</p>
-                <p className="text-2xl font-bold text-gray-900">{mockStats.totalVisitsToday}</p>
+                <p className="text-2xl font-bold text-foreground">{mockStats.totalVisitsToday}</p>
               </div>
               <div className="p-2 bg-green-100 rounded-lg">
                 <Users size={20} className="text-green-600" />
@@ -347,7 +347,7 @@ export default function RoutesPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Completadas</p>
-                <p className="text-2xl font-bold text-gray-900">{mockStats.completedVisits}</p>
+                <p className="text-2xl font-bold text-foreground">{mockStats.completedVisits}</p>
               </div>
               <div className="p-2 bg-purple-100 rounded-lg">
                 <CheckCircle size={20} className="text-purple-600" />
@@ -359,7 +359,7 @@ export default function RoutesPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Eficiencia</p>
-                <p className="text-2xl font-bold text-gray-900">{mockStats.avgEfficiency}%</p>
+                <p className="text-2xl font-bold text-foreground">{mockStats.avgEfficiency}%</p>
               </div>
               <div className="p-2 bg-orange-100 rounded-lg">
                 <TrendingUp size={20} className="text-orange-600" />
@@ -371,7 +371,7 @@ export default function RoutesPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Ventas Hoy</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-2xl font-bold text-foreground">
                   ${mockStats.totalSalesToday.toLocaleString()}
                 </p>
               </div>
@@ -385,7 +385,7 @@ export default function RoutesPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Productos</p>
-                <p className="text-2xl font-bold text-gray-900">{mockStats.inventoryOut}</p>
+                <p className="text-2xl font-bold text-foreground">{mockStats.inventoryOut}</p>
               </div>
               <div className="p-2 bg-indigo-100 rounded-lg">
                 <Package size={20} className="text-indigo-600" />
@@ -403,7 +403,7 @@ export default function RoutesPage() {
                   <Truck size={24} className="text-blue-600" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900">Cargar Inventario</h3>
+                  <h3 className="text-lg font-semibold text-foreground">Cargar Inventario</h3>
                   <p className="text-sm text-gray-600 mt-1">Preparar productos para ruta</p>
                 </div>
                 <ChevronRight size={20} className="text-gray-400" />
@@ -418,7 +418,7 @@ export default function RoutesPage() {
                   <Target size={24} className="text-green-600" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900">Administrar Rutas</h3>
+                  <h3 className="text-lg font-semibold text-foreground">Administrar Rutas</h3>
                   <p className="text-sm text-gray-600 mt-1">Asignar vendedores y zonas</p>
                 </div>
                 <ChevronRight size={20} className="text-gray-400" />
@@ -433,7 +433,7 @@ export default function RoutesPage() {
                   <BarChart3 size={24} className="text-purple-600" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900">Cerrar Ruta</h3>
+                  <h3 className="text-lg font-semibold text-foreground">Cerrar Ruta</h3>
                   <p className="text-sm text-gray-600 mt-1">Conciliar ventas del día</p>
                 </div>
                 <ChevronRight size={20} className="text-gray-400" />

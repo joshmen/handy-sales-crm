@@ -279,8 +279,8 @@ export default function OrdersPage() {
     <Layout>
       <div className="p-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Gestión de Pedidos</h1>
-          <p className="text-gray-600">Administra todos los pedidos de tu negocio</p>
+          <h1 className="text-2xl font-bold text-foreground">Gestión de Pedidos</h1>
+          <p className="text-muted-foreground">Administra todos los pedidos de tu negocio</p>
         </div>
 
         <OrderList
