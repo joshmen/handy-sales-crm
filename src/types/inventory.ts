@@ -43,6 +43,26 @@ export interface InventoryAdjustmentForm {
   reason?: string;
 }
 
+// Base form data
+export interface BaseInventoryFormData {
+  productId: string;
+  quantity: number;
+  reason?: string;
+}
+
+// Specific form types
+export interface AdjustmentFormData extends BaseInventoryFormData {
+  type: InventoryAdjustmentType;
+}
+
+export interface TransferFormData extends BaseInventoryFormData {
+  fromLocation: 'warehouse' | 'route';
+  toLocation: 'warehouse' | 'route';
+}
+
+// Union type for all inventory operations
+export type InventoryFormData = AdjustmentFormData | TransferFormData;
+
 // Filter types
 export interface InventoryFilters {
   search?: string;
