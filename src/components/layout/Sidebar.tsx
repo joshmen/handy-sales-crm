@@ -24,6 +24,7 @@ import {
   DollarSign,
   Layers,
   Gift,
+  MapPin,
 } from 'lucide-react';
 import { useSidebar } from '@/stores/useUIStore';
 import { cn } from '@/lib/utils';
@@ -160,6 +161,13 @@ const sidebarItems: SidebarItem[] = [
         permission: 'view_routes',
       },
     ],
+  },
+  {
+    id: 'zones',
+    label: 'Zonas',
+    icon: MapPin,
+    href: '/zones',
+    permission: 'view_zones',
   },
   {
     id: 'calendar',
