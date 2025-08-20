@@ -118,7 +118,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
 
   useEffect(() => setMounted(true), []);
 
-  // 🎯 FIX: Aplicar clase CSS al DOM cuando cambie el tema
+  // Aplicar clase CSS al DOM cuando cambie el tema (después del mount inicial)
   useEffect(() => {
     if (mounted) {
       document.documentElement.classList.remove('light', 'dark');

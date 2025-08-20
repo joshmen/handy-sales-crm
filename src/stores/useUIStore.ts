@@ -17,12 +17,34 @@ type UIState = {
   toggleSidebarCollapsed: () => void;
   setTheme: (t: 'light' | 'dark') => void;
   toggleTheme: () => void;
+  hydrate: () => void;
 };
 
-export const useUIStore = create<UIState>(set => ({
+// Función para obtener el tema desde localStorage de forma segura
+const getStoredTheme = (): 'light' | 'dark' => {
+  if (typeof window === 'undefined') return 'light';
+  try {
+    const stored = localStorage.getItem('handy-crm-theme');
+    return stored === 'dark' ? 'dark' : 'light';
+  } catch {
+    return 'light';
+  }
+};
+
+// Función para guardar el tema en localStorage
+const storeTheme = (theme: 'light' | 'dark') => {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem('handy-crm-theme', theme);
+  } catch {
+    // Silently fail if localStorage is not available
+  }
+};
+
+export const useUIStore = create<UIState>((set, get) => ({
   sidebarOpen: false,
   sidebarCollapsed: false,
-  theme: 'light',
+  theme: 'light', // Valor por defecto, se hidrata desde localStorage
   hasHydrated: false,
 
   setHasHydrated: v => set({ hasHydrated: v }),
@@ -35,8 +57,23 @@ export const useUIStore = create<UIState>(set => ({
   toggleSidebar: () => set(s => ({ sidebarOpen: !s.sidebarOpen })),
   toggleSidebarCollapsed: () => set(s => ({ sidebarCollapsed: !s.sidebarCollapsed })),
 
-  setTheme: t => set({ theme: t }),
-  toggleTheme: () => set(s => ({ theme: s.theme === 'light' ? 'dark' : 'light' })),
+  setTheme: (theme: 'light' | 'dark') => {
+    storeTheme(theme);
+    set({ theme });
+  },
+  
+  toggleTheme: () => {
+    const currentTheme = get().theme;
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    storeTheme(newTheme);
+    set({ theme: newTheme });
+  },
+
+  // Función para hidratar el estado desde localStorage
+  hydrate: () => {
+    const storedTheme = getStoredTheme();
+    set({ theme: storedTheme, hasHydrated: true });
+  },
 }));
 
 /** Helpers selectores “seguros” */
