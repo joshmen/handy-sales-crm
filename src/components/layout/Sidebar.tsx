@@ -20,6 +20,7 @@ import {
   ChevronRight,
   X,
   CreditCard,
+  Percent,
 } from 'lucide-react';
 import { useSidebar } from '@/stores/useUIStore';
 import { cn } from '@/lib/utils';
@@ -72,6 +73,21 @@ const sidebarItems: SidebarItem[] = [
         icon: Package,
         href: '/products',
         permission: 'view_products',
+      },
+    ],
+  },
+  {
+    id: 'discounts',
+    label: 'Descuentos',
+    icon: Percent,
+    permission: 'view_discounts',
+    submenu: [
+      {
+        id: 'discounts-list',
+        label: 'Descuentos por cantidad',
+        icon: Percent,
+        href: '/discounts',
+        permission: 'view_discounts',
       },
     ],
   },

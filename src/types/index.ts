@@ -418,6 +418,9 @@ export type EntityWithRelations<T, R = Record<string, unknown>> = T & R;
 // Re-export inventory types
 export * from './inventory';
 
+// Re-export discount types
+export * from './discounts';
+
 // Component prop types
 export interface BaseComponentProps {
   className?: string;
