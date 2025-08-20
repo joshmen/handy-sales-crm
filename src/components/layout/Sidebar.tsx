@@ -23,6 +23,8 @@ import {
   Percent,
   DollarSign,
   Layers,
+  Gift,
+  MapPin,
 } from 'lucide-react';
 import { useSidebar } from '@/stores/useUIStore';
 import { cn } from '@/lib/utils';
@@ -101,21 +103,6 @@ const sidebarItems: SidebarItem[] = [
     ],
   },
   {
-    id: 'price-lists',
-    label: 'Listas de precios',
-    icon: DollarSign,
-    permission: 'view_products',
-    submenu: [
-      {
-        id: 'price-lists-list',
-        label: 'Gestión de precios',
-        icon: DollarSign,
-        href: '/price-lists',
-        permission: 'view_products',
-      },
-    ],
-  },
-  {
     id: 'discounts',
     label: 'Descuentos',
     icon: Percent,
@@ -127,6 +114,21 @@ const sidebarItems: SidebarItem[] = [
         icon: Percent,
         href: '/discounts',
         permission: 'view_discounts',
+      },
+    ],
+  },
+  {
+    id: 'promotions',
+    label: 'Promociones',
+    icon: Gift,
+    permission: 'view_promotions',
+    submenu: [
+      {
+        id: 'promotions-list',
+        label: 'Promociones especiales',
+        icon: Gift,
+        href: '/promotions',
+        permission: 'view_promotions',
       },
     ],
   },
@@ -159,6 +161,13 @@ const sidebarItems: SidebarItem[] = [
         permission: 'view_routes',
       },
     ],
+  },
+  {
+    id: 'zones',
+    label: 'Zonas',
+    icon: MapPin,
+    href: '/zones',
+    permission: 'view_zones',
   },
   {
     id: 'calendar',
