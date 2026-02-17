@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useSession } from 'next-auth/react';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { OrderForm, OrderFormHandle } from '@/components/orders/OrderForm';
@@ -9,6 +10,7 @@ import { Client, ClientType, Product, UserRole } from '@/types';
 import { orderService, OrderListItem } from '@/services/api/orders';
 import { clientService } from '@/services/api/clients';
 import { productService } from '@/services/api/products';
+import { api } from '@/lib/api';
 import { toast } from '@/hooks/useToast';
 import {
   Plus,
@@ -129,7 +131,15 @@ function mapApiOrderToOrder(apiOrder: OrderListItem): Order {
   };
 }
 
+interface UsuarioOption {
+  id: number;
+  nombre: string;
+}
+
 export default function OrdersPage() {
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN';
+
   const [orders, setOrders] = useState<Order[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -147,6 +157,7 @@ export default function OrdersPage() {
   const orderFormRef = useRef<OrderFormHandle>(null);
   const drawerRef = useRef<DrawerHandle>(null);
   const [formIsDirty, setFormIsDirty] = useState(false);
+  const [usuarios, setUsuarios] = useState<UsuarioOption[]>([]);
 
   // Calcular total de montos
   const totalAmount = orders.reduce((sum, order) => sum + order.total, 0);
@@ -155,7 +166,9 @@ export default function OrdersPage() {
     try {
       setLoading(true);
       setError(null);
-      const response = await orderService.getOrders({ page: currentPage, pageSize });
+      const params: { page: number; pageSize: number; usuarioId?: number } = { page: currentPage, pageSize };
+      if (filterUser !== 'all') params.usuarioId = parseInt(filterUser);
+      const response = await orderService.getOrders(params);
       const mappedOrders = response.items.map(mapApiOrderToOrder);
       setOrders(mappedOrders);
       setTotalItems(response.totalCount);
@@ -167,7 +180,7 @@ export default function OrdersPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage]);
+  }, [currentPage, filterUser]);
 
   const fetchFormData = useCallback(async () => {
     try {
@@ -186,6 +199,18 @@ export default function OrdersPage() {
     fetchOrders();
     fetchFormData();
   }, [fetchOrders, fetchFormData]);
+
+  // Cargar lista de vendedores (solo para admin)
+  useEffect(() => {
+    if (!isAdmin) return;
+    api.get<{ items: UsuarioOption[] } | UsuarioOption[]>('/usuarios?pagina=1&tamanoPagina=500')
+      .then(res => {
+        const data = res.data;
+        const items = Array.isArray(data) ? data : data.items || [];
+        setUsuarios(items);
+      })
+      .catch(() => {});
+  }, [isAdmin]);
 
   const handleCreateOrder = () => {
     setEditingOrder(null);
@@ -337,15 +362,20 @@ export default function OrdersPage() {
               <ChevronDown className="w-4 h-4 text-gray-500" />
             </button>
 
-            {/* Users Filter */}
+            {/* Users Filter - solo visible para Admin */}
+            {isAdmin && (
             <div className="flex-1" data-tour="orders-user-filter">
               <SearchableSelect
-                options={[{ value: 'all', label: 'Todos los usuarios' }]}
+                options={[
+                  { value: 'all', label: 'Todos los vendedores' },
+                  ...usuarios.map(u => ({ value: u.id.toString(), label: u.nombre })),
+                ]}
                 value={filterUser}
-                onChange={(val) => setFilterUser(val ? String(val) : 'all')}
-                placeholder="Todos los usuarios"
+                onChange={(val) => { setFilterUser(val ? String(val) : 'all'); setCurrentPage(1); }}
+                placeholder="Todos los vendedores"
               />
             </div>
+            )}
 
             {/* More Filters Button */}
             <button className="flex items-center gap-2 px-4 py-2 h-10 text-[13px] font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 transition-colors">

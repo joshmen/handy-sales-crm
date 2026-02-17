@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 // import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -55,6 +56,9 @@ const routeSchema = z.object({
 type RouteFormData = z.infer<typeof routeSchema>;
 
 export default function RoutesPage() {
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN';
+
   const [routes, setRoutes] = useState<RouteListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -64,6 +68,7 @@ export default function RoutesPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [estadoFilter, setEstadoFilter] = useState<string>('all');
   const [zonaFilter, setZonaFilter] = useState<string>('all');
+  const [usuarioFilter, setUsuarioFilter] = useState<string>('all');
   const [showInactive, setShowInactive] = useState(false);
   const [zones, setZones] = useState<ZoneOption[]>([]);
 
@@ -111,6 +116,7 @@ export default function RoutesPage() {
         search: searchTerm || undefined,
         estado: estadoFilter !== 'all' ? parseInt(estadoFilter) : undefined,
         zonaId: zonaFilter !== 'all' ? parseInt(zonaFilter) : undefined,
+        usuarioId: usuarioFilter !== 'all' ? parseInt(usuarioFilter) : undefined,
         mostrarInactivos: showInactive,
       });
       setRoutes(response.items);
@@ -123,7 +129,7 @@ export default function RoutesPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, searchTerm, estadoFilter, zonaFilter, showInactive]);
+  }, [currentPage, searchTerm, estadoFilter, zonaFilter, usuarioFilter, showInactive]);
 
   const fetchZones = async () => {
     try {
@@ -157,7 +163,7 @@ export default function RoutesPage() {
   // Clear selection on filter/page changes
   useEffect(() => {
     setSelectedIds(new Set());
-  }, [currentPage, estadoFilter, zonaFilter, showInactive]);
+  }, [currentPage, estadoFilter, zonaFilter, usuarioFilter, showInactive]);
 
   const handleRefresh = () => {
     fetchRoutes();
@@ -426,6 +432,20 @@ export default function RoutesPage() {
               placeholder="Todas las zonas"
             />
           </div>
+
+          {isAdmin && (
+          <div className="min-w-[160px]">
+            <SearchableSelect
+              options={[
+                { value: 'all', label: 'Todos los vendedores' },
+                ...usuarios.map(u => ({ value: u.id.toString(), label: u.nombre })),
+              ]}
+              value={usuarioFilter}
+              onChange={(val) => { setUsuarioFilter(val ? String(val) : 'all'); setCurrentPage(1); }}
+              placeholder="Todos los vendedores"
+            />
+          </div>
+          )}
 
           <button
             onClick={handleRefresh}

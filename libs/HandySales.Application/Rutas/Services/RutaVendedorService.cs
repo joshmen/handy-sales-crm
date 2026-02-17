@@ -75,6 +75,13 @@ public class RutaVendedorService
 
     public async Task<(List<RutaListaDto> Items, int TotalCount)> ObtenerPorFiltroAsync(RutaFiltroDto filtro)
     {
+        // RBAC: Vendedor solo ve sus rutas
+        if (!_tenant.IsAdmin && !_tenant.IsSuperAdmin)
+        {
+            if (int.TryParse(_tenant.UserId, out var vendedorId))
+                filtro.UsuarioId = vendedorId;
+        }
+
         return await _repo.ObtenerPorFiltroAsync(_tenant.TenantId, filtro);
     }
 

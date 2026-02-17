@@ -25,6 +25,9 @@ public class Cliente : AuditableEntity
     [Column("categoria_cliente_id")]
     public int CategoriaClienteId { get; set; }
 
+    [Column("vendedor_id")]
+    public int? VendedorId { get; set; }
+
     [Column("latitud")]
     public double? Latitud { get; set; }
 
@@ -32,4 +35,5 @@ public class Cliente : AuditableEntity
     public double? Longitud { get; set; }
 
     public Tenant Tenant { get; set; } = null!;
+    public Usuario? Vendedor { get; set; }
 }

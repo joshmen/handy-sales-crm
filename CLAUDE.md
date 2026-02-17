@@ -503,3 +503,72 @@ docs/design/pencil/pencil-admin.pen       # Mismo contenido
 1. **Fase A**: Actualizar 43 frames existentes (iconos coloridos + Modal→Drawer)
 2. **Fase B**: Crear 12 pantallas faltantes en Pencil
 3. **Fase C**: Crear servicio `deliveries.ts` real (reemplazar mock data)
+
+---
+
+## Checklist Maestro de Pendientes (Feb 2026)
+
+### 🔴 CRÍTICO — Seguridad (antes de dar acceso a clientes reales)
+
+- [ ] **SEC-1**: Habilitar JWT validation (ValidateIssuer, ValidateAudience, ValidateLifetime, etc.) — `JwtExtensions.cs`
+- [ ] **SEC-2**: Mover secretos a variables de entorno (JWT key, Cloudinary URL hardcodeados en `appsettings.json`)
+- [ ] **SEC-3**: Reducir expiración de token de 1 AÑO a 30 min + refresh token
+- [ ] **SEC-4**: Mover JWT tokens de localStorage a httpOnly cookies — `auth.ts`
+- [ ] **SEC-5**: Implementar Rate Limiting en Nginx (`limit_req_zone`) — NO en app, es seguridad base no premium
+- [ ] **SEC-6**: Rotar TODOS los secretos expuestos en Git (JWT key, Cloudinary URL, DB passwords)
+
+### 🔴 CRÍTICO — Filtrado de datos por rol (Data Leak)
+
+- [ ] **RBAC-1**: Vendedor solo ve SUS clientes (asignados) — filtrar en `/clients` page + backend
+- [ ] **RBAC-2**: Vendedor solo ve SUS pedidos — filtrar en `/orders` page + backend
+- [ ] **RBAC-3**: Vendedor solo ve SUS rutas — filtrar en `/routes` page + backend
+- [ ] **RBAC-4**: Vendedor solo ve SUS entregas — filtrar en `/deliveries` page
+- [ ] **RBAC-5**: Vendedor solo ve SUS visitas — filtrar en `/visits` page
+- [ ] **RBAC-6**: Dashboard personalizado para vendedor (sus métricas, no las de toda la empresa)
+
+### 🟠 ALTA — Protección de rutas por rol
+
+- [ ] **RBAC-7**: Proteger `/roles` en middleware (solo ADMIN/SUPER_ADMIN)
+- [ ] **RBAC-8**: Proteger páginas de catálogo por rol (`/product-families`, `/zones`, `/price-lists`, `/discounts`, `/promotions`) — solo ADMIN+
+- [ ] **RBAC-9**: Proteger `/activity-logs` por rol
+- [ ] **RBAC-10**: Proteger `/forms` y `/forms/builder` por rol
+
+### 🟠 ALTA — Pantallas faltantes SuperAdmin
+
+- [ ] **SA-1**: Gestión de tenants (`/admin/tenants`) — crear/editar/desactivar empresas
+- [ ] **SA-2**: Tenant switcher en header — cambiar entre empresas
+- [ ] **SA-3**: Dashboard sistema — métricas globales cross-tenant
+- [ ] **SA-4**: Integrar ImpersonationModal en header/user menu (código existe, no hay botón)
+
+### 🟠 ALTA — Funcionalidad incompleta
+
+- [ ] **FUNC-1**: `deliveries.ts` usa MOCK data — conectar al API real
+- [ ] **FUNC-2**: Firebase FCM simulado (`FcmService.cs` retorna mocks) — implementar real
+- [ ] **FUNC-3**: Error Boundary global — componente wrapper para errores no manejados
+- [ ] **FUNC-4**: Módulo Rutas Admin completo (carga/cierre) — 8 fases según `rutas-module-plan.md`
+
+### 🟡 MEDIA — Mejoras de infraestructura
+
+- [ ] **INFRA-1**: EF Core Migrations (schema sin version control, solo SQL manual)
+- [ ] **INFRA-2**: Soft deletes (GDPR compliance)
+- [ ] **INFRA-3**: Integration tests
+- [ ] **INFRA-4**: 12 pantallas React sin diseño Pencil (listadas arriba)
+
+### 🟡 MEDIA — Rol Supervisor
+
+- [ ] **SUP-1**: Implementar sidebar/permisos para SUPERVISOR (enum existe, no se usa)
+- [ ] **SUP-2**: Dashboard de equipo para supervisor
+- [ ] **SUP-3**: Vista de rendimiento por subordinado
+
+### 🟢 BAJA — Futuro
+
+- [ ] **FUT-1**: App móvil React Native (7 fases, no iniciado) — `mobile-architecture.md`
+- [ ] **FUT-2**: Billing API deploy en producción
+- [ ] **FUT-3**: Migración a Azure (cuando 1,000+ users) — `AZURE_MIGRATION.md`
+- [ ] **FUT-4**: Custom domain (`app.handysales.com`)
+- [ ] **FUT-5**: Impersonation feature completa (policy escrita, código parcial)
+- [ ] **FUT-6**: 2FA/MFA
+- [ ] **FUT-7**: WebSocket para actualizaciones real-time
+- [ ] **FUT-8**: Offline support
+- [ ] **FUT-9**: Password Reset page
+- [ ] **FUT-10**: Rol VIEWER funcional

@@ -63,15 +63,13 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:1050
       ConnectionStrings__DefaultConnection: "Server=mysql;Port=3306;Database=handy_erp;User=handy_user;Password=handy_pass;AllowUserVariables=true;ConnectionTimeout=60;DefaultCommandTimeout=60;CharSet=utf8mb4;Pooling=true;MinimumPoolSize=5;MaximumPoolSize=50;ConnectionLifeTime=300;"
-      JWT__SecretKey: "DevelopmentSecretKeyThatIsAtLeast256BitsLong_1234567890123456789012345678901234567890"
-      JWT__Issuer: "HandySales"
-      JWT__Audience: "HandySalesUsers"
-      JWT__ExpirationHours: 24
+      Jwt__Secret: "DevelopmentSecretKeyThatIsAtLeast256BitsLong_1234567890123456789012345678901234567890"
+      Jwt__Issuer: "HandySales"
+      Jwt__Audience: "HandySalesUsers"
+      Jwt__ExpirationMinutes: 60
       Multitenancy__DefaultTenantId: "00000000-0000-0000-0000-000000000001"
       Multitenancy__DefaultTenantName: "Default"
-      Cloudinary__CloudName: "demo_cloud"
-      Cloudinary__ApiKey: "demo_key"
-      Cloudinary__ApiSecret: "demo_secret"
+      Cloudinary__Url: "cloudinary://000000000000000:placeholder@demo"
       Seq__ServerUrl: "http://seq:5341"
     ports:
       - "1050:1050"
@@ -104,10 +102,10 @@ services:
       ASPNETCORE_URLS: http://+:1051
       ConnectionStrings__BillingConnection: "Server=mysql;Port=3306;Database=handy_billing;User=handy_user;Password=handy_pass;AllowUserVariables=true;ConnectionTimeout=60;DefaultCommandTimeout=60;"
       ConnectionStrings__MainConnection: "Server=mysql;Port=3306;Database=handy_erp;User=handy_user;Password=handy_pass;AllowUserVariables=true;ConnectionTimeout=60;DefaultCommandTimeout=60;"
-      JWT__SecretKey: "DevelopmentSecretKeyThatIsAtLeast256BitsLong_1234567890123456789012345678901234567890"
-      JWT__Issuer: "HandySales"
-      JWT__Audience: "HandySalesUsers"
-      JWT__ExpirationHours: 24
+      Jwt__Secret: "DevelopmentSecretKeyThatIsAtLeast256BitsLong_1234567890123456789012345678901234567890"
+      Jwt__Issuer: "HandySales"
+      Jwt__Audience: "HandySalesUsers"
+      Jwt__ExpirationMinutes: 60
       SAT__CertificadoPath: "/app/certificates"
       SAT__WebServiceUrl: "https://consultaqr.facturaelectronica.sat.gob.mx/ConsultaCFDIService.svc"
       Seq__ServerUrl: "http://seq:5341"
@@ -142,10 +140,10 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:1052
       ConnectionStrings__DefaultConnection: "Server=mysql;Port=3306;Database=handy_erp;User=handy_user;Password=handy_pass;AllowUserVariables=true;ConnectionTimeout=60;DefaultCommandTimeout=60;CharSet=utf8mb4;Pooling=true;MinimumPoolSize=5;MaximumPoolSize=50;ConnectionLifeTime=300;"
-      JWT__SecretKey: "DevelopmentSecretKeyThatIsAtLeast256BitsLong_1234567890123456789012345678901234567890"
-      JWT__Issuer: "HandySales"
-      JWT__Audience: "HandySalesUsers"
-      JWT__ExpirationHours: 24
+      Jwt__Secret: "DevelopmentSecretKeyThatIsAtLeast256BitsLong_1234567890123456789012345678901234567890"
+      Jwt__Issuer: "HandySales"
+      Jwt__Audience: "HandySalesUsers"
+      Jwt__ExpirationMinutes: 60
       Multitenancy__DefaultTenantId: "00000000-0000-0000-0000-000000000001"
       Multitenancy__DefaultTenantName: "Default"
       Seq__ServerUrl: "http://seq:5341"

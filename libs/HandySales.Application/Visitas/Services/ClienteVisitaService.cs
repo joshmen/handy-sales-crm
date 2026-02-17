@@ -30,6 +30,13 @@ public class ClienteVisitaService
 
     public async Task<PaginatedResult<ClienteVisitaListaDto>> ObtenerPorFiltroAsync(ClienteVisitaFiltroDto filtro)
     {
+        // RBAC: Vendedor solo ve sus visitas
+        if (!_tenant.IsAdmin && !_tenant.IsSuperAdmin)
+        {
+            if (int.TryParse(_tenant.UserId, out var vendedorId))
+                filtro.UsuarioId = vendedorId;
+        }
+
         return await _repository.ObtenerPorFiltroAsync(filtro, _tenant.TenantId);
     }
 

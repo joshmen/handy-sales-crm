@@ -34,6 +34,13 @@ public class PedidoService
 
     public async Task<PaginatedResult<PedidoListaDto>> ObtenerPorFiltroAsync(PedidoFiltroDto filtro)
     {
+        // RBAC: Vendedor solo ve sus pedidos
+        if (!_tenant.IsAdmin && !_tenant.IsSuperAdmin)
+        {
+            if (int.TryParse(_tenant.UserId, out var vendedorId))
+                filtro.UsuarioId = vendedorId;
+        }
+
         return await _repository.ObtenerPorFiltroAsync(filtro, _tenant.TenantId);
     }
 

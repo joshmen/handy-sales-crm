@@ -1,4 +1,5 @@
 import { NextAuthOptions } from 'next-auth';
+import { JWT } from 'next-auth/jwt';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { serverApiCall } from '@/lib/server-api';
 
@@ -91,6 +92,45 @@ function isWrappedSuccess(r: unknown): r is ApiLoginSuccessWrapped {
 
 function isFlatSuccess(r: unknown): r is ApiLoginSuccessFlat {
   return typeof r === 'object' && r !== null && 'user' in r && 'token' in r;
+}
+
+// —— Token refresh helpers ——
+function getTokenExpiry(accessToken: string): number {
+  try {
+    const payload = JSON.parse(
+      Buffer.from(accessToken.split('.')[1], 'base64url').toString()
+    );
+    return (payload.exp as number) * 1000;
+  } catch {
+    return 0;
+  }
+}
+
+async function refreshAccessToken(token: JWT): Promise<JWT> {
+  try {
+    if (!token.refreshToken || token.refreshToken.startsWith('mock-')) {
+      return { ...token, error: 'RefreshAccessTokenError' };
+    }
+
+    const response = (await serverApiCall('post', '/auth/refresh', {
+      refreshToken: token.refreshToken,
+    })) as ApiLoginSuccessFlat | undefined;
+
+    if (response && 'token' in response) {
+      return {
+        ...token,
+        accessToken: response.token,
+        refreshToken: response.refreshToken ?? token.refreshToken,
+        accessTokenExpires: getTokenExpiry(response.token),
+        error: undefined,
+      };
+    }
+
+    return { ...token, error: 'RefreshAccessTokenError' };
+  } catch {
+    console.error('[Auth] Failed to refresh access token');
+    return { ...token, error: 'RefreshAccessTokenError' };
+  }
 }
 
 export const authOptions: NextAuthOptions = {
@@ -194,10 +234,9 @@ export const authOptions: NextAuthOptions = {
   },
 
   callbacks: {
-    // token <-> user
     async jwt({ token, user }) {
+      // Initial login: store user data + token expiry
       if (user) {
-        // Gracias a los augmentations, estas props existen tipadas:
         token.id = user.id;
         token.role = user.role;
         token.name = user.name || undefined;
@@ -205,16 +244,26 @@ export const authOptions: NextAuthOptions = {
         token.refreshToken = user.refreshToken;
         token.tenantId = user.tenantId;
         token.companyId = user.companyId;
+        token.accessTokenExpires = user.accessToken
+          ? getTokenExpiry(user.accessToken)
+          : 0;
+        return token;
       }
-      return token;
+
+      // Token still valid (> 5 min remaining): return as-is
+      const fiveMinutes = 5 * 60 * 1000;
+      if (token.accessTokenExpires && Date.now() < token.accessTokenExpires - fiveMinutes) {
+        return token;
+      }
+
+      // Token expired or about to expire: refresh it
+      return refreshAccessToken(token);
     },
 
-    // session <-> token
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id ?? session.user.id;
         session.user.role = token.role;
-        // Solo actualizar name si está en el token
         if (token.name) {
           session.user.name = token.name;
         }
@@ -223,6 +272,7 @@ export const authOptions: NextAuthOptions = {
       session.refreshToken = token.refreshToken;
       session.tenantId = token.tenantId;
       session.companyId = token.companyId;
+      session.error = token.error;
       return session;
     },
   },

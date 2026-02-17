@@ -12,6 +12,7 @@ public class ClienteDto
     public int CategoriaClienteId { get; set; }
     public double? Latitud { get; set; }
     public double? Longitud { get; set; }
+    public int? VendedorId { get; set; }
     public bool Activo { get; set; }
 }
 
@@ -24,6 +25,8 @@ public class ClienteListaDto
     public required string Telefono { get; set; }
     public string? ZonaNombre { get; set; }
     public string? CategoriaNombre { get; set; }
+    public int? VendedorId { get; set; }
+    public string? VendedorNombre { get; set; }
     public bool Activo { get; set; }
 }
 
@@ -31,6 +34,7 @@ public class ClienteFiltroDto
 {
     public int? ZonaId { get; set; }
     public int? CategoriaClienteId { get; set; }
+    public int? VendedorId { get; set; }
     public string? Busqueda { get; set; }
     public bool? Activo { get; set; }
     public int Pagina { get; set; } = 1;

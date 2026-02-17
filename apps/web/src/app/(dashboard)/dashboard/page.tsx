@@ -19,9 +19,11 @@ import { useSession } from 'next-auth/react';
 import {
   dashboardService,
   DashboardMetrics,
+  VendedorPerformance,
   getFallbackMetrics,
 } from '@/services/dashboardService';
 import { BrandedLoadingScreen } from '@/components/ui/BrandedLoadingScreen';
+import { MapPin } from 'lucide-react';
 
 
 // Tipos para métricas
@@ -104,6 +106,9 @@ export default function DashboardPage() {
   const { data: session } = useSession();
   const [isLoading, setIsLoading] = useState(true);
   const [metrics, setMetrics] = useState<DashboardMetrics>(getFallbackMetrics());
+  const [vendedorPerf, setVendedorPerf] = useState<VendedorPerformance | null>(null);
+
+  const isVendedor = session?.user?.role === 'VENDEDOR';
 
   // Métricas para mostrar (basadas en el diseño de Pencil)
   const metricCards: MetricCardData[] = [
@@ -156,8 +161,13 @@ export default function DashboardPage() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const data = await dashboardService.getMetrics();
-        setMetrics(data);
+        if (isVendedor) {
+          const perf = await dashboardService.getMyPerformance();
+          setVendedorPerf(perf);
+        } else {
+          const data = await dashboardService.getMetrics();
+          setMetrics(data);
+        }
       } catch (error) {
         console.error('Error loading metrics:', error);
       } finally {
@@ -165,10 +175,160 @@ export default function DashboardPage() {
       }
     };
     loadData();
-  }, []);
+  }, [isVendedor]);
 
   if (isLoading) {
     return <BrandedLoadingScreen message="Cargando dashboard..." />;
+  }
+
+  // Vista para vendedores con datos reales
+  if (isVendedor && vendedorPerf) {
+    const vendedorCards: MetricCardData[] = [
+      {
+        title: 'Mis Ventas',
+        value: `$${vendedorPerf.totalVentas.toLocaleString('es-MX', { minimumFractionDigits: 0 })}`,
+        change: 0,
+        changeLabel: 'últimos 30 días',
+        icon: DollarSign,
+        iconBg: 'bg-blue-100',
+        iconColor: 'text-blue-600',
+      },
+      {
+        title: 'Mis Pedidos',
+        value: String(vendedorPerf.pedidosCount),
+        change: 0,
+        changeLabel: `${vendedorPerf.pedidosEntregados} entregados`,
+        icon: ShoppingCart,
+        iconBg: 'bg-emerald-100',
+        iconColor: 'text-emerald-600',
+      },
+      {
+        title: 'Mis Visitas',
+        value: String(vendedorPerf.visitasTotal),
+        change: vendedorPerf.efectividadVisitas,
+        changeLabel: 'efectividad',
+        icon: Users,
+        iconBg: 'bg-violet-100',
+        iconColor: 'text-violet-600',
+      },
+      {
+        title: 'Mis Clientes',
+        value: String(vendedorPerf.clientesAsignados),
+        change: 0,
+        changeLabel: 'asignados',
+        icon: Package,
+        iconBg: 'bg-amber-100',
+        iconColor: 'text-amber-600',
+      },
+    ];
+
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center gap-2 text-sm">
+          <span className="text-gray-500">Inicio</span>
+          <span className="text-gray-400">/</span>
+          <span className="text-gray-900 font-medium">Mi Rendimiento</span>
+        </div>
+
+        <div>
+          <h1 className="text-3xl font-semibold text-gray-900 tracking-tight">Mi Rendimiento</h1>
+          <p className="text-gray-500 mt-1">Hola {session?.user?.name}, aquí están tus métricas</p>
+        </div>
+
+        {/* Métricas del vendedor */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          {vendedorCards.map((card, index) => (
+            <div key={index} className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-sm transition-shadow">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-sm text-gray-500">{card.title}</span>
+                <div className={`w-8 h-8 ${card.iconBg} rounded-lg flex items-center justify-center`}>
+                  <card.icon className={`w-4 h-4 ${card.iconColor}`} />
+                </div>
+              </div>
+              <div className="text-3xl font-semibold text-gray-900 mb-2">{card.value}</div>
+              <div className="flex items-center gap-2">
+                {card.change > 0 && <TrendingUp className="w-4 h-4 text-green-500" />}
+                <span className="text-sm text-gray-500">
+                  {card.change > 0 ? `${card.change}% ` : ''}{card.changeLabel}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Detalle de actividad */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                <ShoppingCart className="w-5 h-5 text-blue-600" />
+              </div>
+              <h3 className="font-semibold text-gray-900">Pedidos</h3>
+            </div>
+            <div className="space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Pendientes</span>
+                <span className="font-medium">{vendedorPerf.pedidosPendientes}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Entregados</span>
+                <span className="font-medium text-green-600">{vendedorPerf.pedidosEntregados}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Total</span>
+                <span className="font-medium">{vendedorPerf.pedidosCount}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-violet-100 rounded-lg flex items-center justify-center">
+                <Users className="w-5 h-5 text-violet-600" />
+              </div>
+              <h3 className="font-semibold text-gray-900">Visitas</h3>
+            </div>
+            <div className="space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Completadas</span>
+                <span className="font-medium">{vendedorPerf.visitasCompletadas}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Con venta</span>
+                <span className="font-medium text-green-600">{vendedorPerf.visitasConVenta}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Efectividad</span>
+                <span className="font-medium">{vendedorPerf.efectividadVisitas}%</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                <MapPin className="w-5 h-5 text-emerald-600" />
+              </div>
+              <h3 className="font-semibold text-gray-900">Rutas</h3>
+            </div>
+            <div className="space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Hoy</span>
+                <span className="font-medium">{vendedorPerf.rutasHoy}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Completadas</span>
+                <span className="font-medium text-green-600">{vendedorPerf.rutasCompletadas}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Total</span>
+                <span className="font-medium">{vendedorPerf.rutasTotal}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

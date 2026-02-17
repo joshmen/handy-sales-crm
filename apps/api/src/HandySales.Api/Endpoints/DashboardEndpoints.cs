@@ -30,6 +30,11 @@ public static class DashboardEndpoints
         group.MapGet("/activity/chart", GetActivityChart)
             .WithName("GetActivityChart")
             .WithSummary("Obtiene datos de actividad para gráficos del dashboard");
+
+        // Rendimiento del vendedor actual
+        group.MapGet("/my-performance", GetMyPerformance)
+            .WithName("GetMyPerformance")
+            .WithSummary("Obtiene métricas de rendimiento del vendedor autenticado");
     }
 
     private static async Task<IResult> GetDashboardMetrics(
@@ -203,6 +208,93 @@ public static class DashboardEndpoints
         catch (Exception ex)
         {
             return Results.Problem($"Error obteniendo datos del gráfico: {ex.Message}");
+        }
+    }
+
+    private static async Task<IResult> GetMyPerformance(
+        [FromServices] HandySalesDbContext context,
+        [FromServices] ICurrentTenant currentTenant,
+        [FromQuery] string? startDate = null,
+        [FromQuery] string? endDate = null)
+    {
+        try
+        {
+            if (!int.TryParse(currentTenant.UserId, out var userId))
+                return Results.Unauthorized();
+
+            var tenantId = currentTenant.TenantId;
+            var today = DateTime.UtcNow.Date;
+            var desde = startDate != null ? DateTime.Parse(startDate) : today.AddDays(-30);
+            var hasta = endDate != null ? DateTime.Parse(endDate) : today.AddDays(1);
+
+            // Mis pedidos (proyección para evitar columnas faltantes en DB)
+            var pedidosPeriodo = await context.Pedidos
+                .AsNoTracking()
+                .Where(p => p.TenantId == tenantId && p.UsuarioId == userId && p.Activo)
+                .Where(p => p.FechaPedido >= desde && p.FechaPedido < hasta)
+                .Select(p => new { p.Total, p.Estado })
+                .ToListAsync();
+
+            // Mis visitas
+            var misVisitas = await context.ClienteVisitas
+                .AsNoTracking()
+                .Where(v => v.TenantId == tenantId && v.UsuarioId == userId && v.Activo)
+                .Where(v => v.FechaProgramada >= desde && v.FechaProgramada < hasta)
+                .Select(v => new { v.Resultado })
+                .ToListAsync();
+
+            // Mis rutas
+            var misRutas = await context.RutasVendedor
+                .AsNoTracking()
+                .Where(r => r.TenantId == tenantId && r.UsuarioId == userId && r.Activo == true)
+                .Where(r => r.Fecha >= desde && r.Fecha < hasta)
+                .Select(r => new { r.Estado, r.Fecha })
+                .ToListAsync();
+
+            // Mis clientes (asignados)
+            var misClientes = await context.Clientes
+                .AsNoTracking()
+                .Where(c => c.TenantId == tenantId && c.Activo
+                    && (c.VendedorId == userId || c.VendedorId == null))
+                .CountAsync();
+
+            var visitasTotal = misVisitas.Count;
+            var visitasConVenta = misVisitas.Count(v => v.Resultado == ResultadoVisita.Venta);
+
+            var performance = new
+            {
+                // Ventas
+                totalVentas = pedidosPeriodo.Sum(p => p.Total),
+                pedidosCount = pedidosPeriodo.Count,
+                pedidosEntregados = pedidosPeriodo.Count(p => p.Estado == EstadoPedido.Entregado),
+                pedidosPendientes = pedidosPeriodo.Count(p => p.Estado != EstadoPedido.Entregado && p.Estado != EstadoPedido.Cancelado),
+
+                // Visitas
+                visitasTotal,
+                visitasCompletadas = misVisitas.Count(v => v.Resultado != ResultadoVisita.Pendiente),
+                visitasConVenta,
+                efectividadVisitas = visitasTotal > 0
+                    ? Math.Round((double)visitasConVenta / visitasTotal * 100, 1)
+                    : 0,
+
+                // Rutas
+                rutasTotal = misRutas.Count,
+                rutasCompletadas = misRutas.Count(r => r.Estado == EstadoRuta.Completada || r.Estado == EstadoRuta.Cerrada),
+                rutasHoy = misRutas.Count(r => r.Fecha.Date == today),
+
+                // Clientes
+                clientesAsignados = misClientes,
+
+                // Periodo
+                desde = desde,
+                hasta = hasta
+            };
+
+            return Results.Ok(performance);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error obteniendo rendimiento: {ex.Message}");
         }
     }
 

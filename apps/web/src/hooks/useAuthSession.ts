@@ -16,6 +16,12 @@ export function useAuthSession() {
     } else {
       setLoading('auth', false);
 
+      // Handle refresh token failure
+      if (session?.error === 'RefreshAccessTokenError') {
+        signOut({ callbackUrl: '/login' });
+        return;
+      }
+
       if (session?.user) {
         setUser({
           id: session.user.id,
@@ -26,7 +32,6 @@ export function useAuthSession() {
           createdAt: new Date(),
           updatedAt: new Date(),
         });
-        // Sincronizar token al caché del API client (0ms, en memoria)
         setApiAccessToken(session.accessToken || null);
       } else {
         setUser(null);

@@ -60,6 +60,7 @@ CREATE TABLE Clientes (
   direccion TEXT,
   id_zona INT,
   categoria_cliente_id INT,
+  vendedor_id INT NULL,
   latitud DECIMAL(10,8) NULL,
   longitud DECIMAL(11,8) NULL,
   version BIGINT DEFAULT 1,
@@ -70,7 +71,8 @@ CREATE TABLE Clientes (
   actualizado_por VARCHAR(255) NULL,
   FOREIGN KEY (tenant_id) REFERENCES Tenants(id) ON DELETE CASCADE,
   FOREIGN KEY (id_zona) REFERENCES Zonas(id) ON DELETE SET NULL,
-  FOREIGN KEY (categoria_cliente_id) REFERENCES CategoriasClientes(id) ON DELETE SET NULL
+  FOREIGN KEY (categoria_cliente_id) REFERENCES CategoriasClientes(id) ON DELETE SET NULL,
+  FOREIGN KEY (vendedor_id) REFERENCES Usuarios(id) ON DELETE SET NULL
 );
 
 CREATE TABLE FamiliasProductos (

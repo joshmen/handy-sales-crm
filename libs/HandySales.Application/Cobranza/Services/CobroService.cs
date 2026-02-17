@@ -16,7 +16,16 @@ public class CobroService
     }
 
     public Task<List<CobroDto>> ObtenerCobrosAsync(int? clienteId = null, DateTime? desde = null, DateTime? hasta = null, int? usuarioId = null)
-        => _repo.ObtenerCobrosAsync(_tenant.TenantId, clienteId, desde, hasta, usuarioId);
+    {
+        // RBAC: Vendedor solo ve sus cobros
+        if (!_tenant.IsAdmin && !_tenant.IsSuperAdmin)
+        {
+            if (int.TryParse(_tenant.UserId, out var vendedorId))
+                usuarioId = vendedorId;
+        }
+
+        return _repo.ObtenerCobrosAsync(_tenant.TenantId, clienteId, desde, hasta, usuarioId);
+    }
 
     public Task<CobroDto?> ObtenerPorIdAsync(int id)
         => _repo.ObtenerPorIdAsync(id, _tenant.TenantId);

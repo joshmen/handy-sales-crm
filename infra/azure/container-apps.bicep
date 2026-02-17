@@ -1,5 +1,5 @@
 // Azure Container Apps - HandySales Production Infrastructure
-// Para desplegar: az deployment group create --resource-group handysales-rg --template-file container-apps.bicep --parameters mysqlPassword=xxx jwtSecretKey=xxx
+// Para desplegar: az deployment group create --resource-group handysales-rg --template-file container-apps.bicep --parameters mysqlPassword=xxx jwtSecretKey=xxx cloudinaryUrl=xxx
 
 @description('Ubicación de los recursos')
 param location string = 'mexicocentral' // Querétaro datacenter
@@ -26,6 +26,10 @@ param mysqlServerName string = 'handysales-mysql'
 
 @description('Usuario administrador MySQL')
 param mysqlAdminUser string = 'handyadmin'
+
+@description('URL de Cloudinary (cloudinary://API_KEY:API_SECRET@CLOUD_NAME)')
+@secure()
+param cloudinaryUrl string
 
 // ============================================
 // MySQL Flexible Server
@@ -162,6 +166,10 @@ resource apiMainApp 'Microsoft.App/containerApps@2023-05-01' = {
           name: 'jwt-secret'
           value: jwtSecretKey
         }
+        {
+          name: 'cloudinary-url'
+          value: cloudinaryUrl
+        }
       ]
     }
     template: {
@@ -187,20 +195,24 @@ resource apiMainApp 'Microsoft.App/containerApps@2023-05-01' = {
               value: 'Server=${mysqlServer.properties.fullyQualifiedDomainName};Database=handy_erp;User=${mysqlAdminUser};Password=${mysqlPassword};SslMode=Required;'
             }
             {
-              name: 'JWT__SecretKey'
+              name: 'Jwt__Secret'
               secretRef: 'jwt-secret'
             }
             {
-              name: 'JWT__Issuer'
+              name: 'Jwt__Issuer'
               value: 'HandySales'
             }
             {
-              name: 'JWT__Audience'
+              name: 'Jwt__Audience'
               value: 'HandySalesUsers'
             }
             {
-              name: 'JWT__ExpirationHours'
-              value: '24'
+              name: 'Jwt__ExpirationMinutes'
+              value: '30'
+            }
+            {
+              name: 'Cloudinary__Url'
+              secretRef: 'cloudinary-url'
             }
             {
               name: 'Multitenancy__DefaultTenantId'
@@ -314,16 +326,20 @@ resource apiBillingApp 'Microsoft.App/containerApps@2023-05-01' = {
               value: 'Server=${mysqlServer.properties.fullyQualifiedDomainName};Database=handy_erp;User=${mysqlAdminUser};Password=${mysqlPassword};SslMode=Required;'
             }
             {
-              name: 'JWT__SecretKey'
+              name: 'Jwt__Secret'
               secretRef: 'jwt-secret'
             }
             {
-              name: 'JWT__Issuer'
+              name: 'Jwt__Issuer'
               value: 'HandySales'
             }
             {
-              name: 'JWT__Audience'
+              name: 'Jwt__Audience'
               value: 'HandySalesUsers'
+            }
+            {
+              name: 'Jwt__ExpirationMinutes'
+              value: '30'
             }
           ]
           probes: [
@@ -429,20 +445,20 @@ resource apiMobileApp 'Microsoft.App/containerApps@2023-05-01' = {
               value: 'Server=${mysqlServer.properties.fullyQualifiedDomainName};Database=handy_erp;User=${mysqlAdminUser};Password=${mysqlPassword};SslMode=Required;'
             }
             {
-              name: 'JWT__SecretKey'
+              name: 'Jwt__Secret'
               secretRef: 'jwt-secret'
             }
             {
-              name: 'JWT__Issuer'
+              name: 'Jwt__Issuer'
               value: 'HandySales'
             }
             {
-              name: 'JWT__Audience'
+              name: 'Jwt__Audience'
               value: 'HandySalesUsers'
             }
             {
-              name: 'JWT__ExpirationHours'
-              value: '168'
+              name: 'Jwt__ExpirationMinutes'
+              value: '30'
             }
             {
               name: 'Multitenancy__DefaultTenantId'

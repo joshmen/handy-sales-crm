@@ -56,6 +56,13 @@ public class ClienteService
 
     public async Task<ClientePaginatedResult> ObtenerPorFiltroAsync(ClienteFiltroDto filtro)
     {
+        // RBAC: Vendedor solo ve sus clientes asignados (o sin asignar)
+        if (!_tenant.IsAdmin && !_tenant.IsSuperAdmin)
+        {
+            if (int.TryParse(_tenant.UserId, out var vendedorId))
+                filtro.VendedorId = vendedorId;
+        }
+
         return await _repo.ObtenerPorFiltroAsync(filtro, _tenant.TenantId);
     }
 

@@ -46,6 +46,23 @@ export interface ActivityChartResponse {
   chartData: ActivityChartData[];
 }
 
+export interface VendedorPerformance {
+  totalVentas: number;
+  pedidosCount: number;
+  pedidosEntregados: number;
+  pedidosPendientes: number;
+  visitasTotal: number;
+  visitasCompletadas: number;
+  visitasConVenta: number;
+  efectividadVisitas: number;
+  rutasTotal: number;
+  rutasCompletadas: number;
+  rutasHoy: number;
+  clientesAsignados: number;
+  desde: string;
+  hasta: string;
+}
+
 // Dashboard API service
 export const dashboardService = {
   // Get dashboard metrics
@@ -63,6 +80,16 @@ export const dashboardService = {
   // Get activity chart data
   async getActivityChart(days: number = 7): Promise<ActivityChartResponse> {
     const response = await api.get<ActivityChartResponse>(`/api/dashboard/activity/chart?days=${days}`);
+    return response.data;
+  },
+
+  // Get vendedor performance metrics
+  async getMyPerformance(startDate?: string, endDate?: string): Promise<VendedorPerformance> {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    const response = await api.get<VendedorPerformance>(`/api/dashboard/my-performance${query}`);
     return response.data;
   },
 };

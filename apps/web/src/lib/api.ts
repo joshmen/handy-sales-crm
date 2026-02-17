@@ -52,50 +52,79 @@ apiInstance.interceptors.request.use(
   }
 );
 
-// Flag to prevent multiple simultaneous logout redirects
+// Flags to prevent multiple simultaneous refreshes/logouts
 let isLoggingOut = false;
+let isRefreshing = false;
+let refreshPromise: Promise<string | null> | null = null;
 
-// Response interceptor for error handling
+async function tryRefreshSession(): Promise<string | null> {
+  try {
+    const session = await getSession();
+    if (session?.accessToken && !session.error) {
+      _cachedAccessToken = session.accessToken;
+      return session.accessToken;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+// Response interceptor with token refresh retry
 apiInstance.interceptors.response.use(
   (response: AxiosResponse) => {
     return response;
   },
   async error => {
     const status = error.response?.status;
+    const originalRequest = error.config;
 
-    // Suppress 404 errors - these are expected for optional endpoints
-    // Only log actual errors (5xx, network errors, etc.)
     if (status !== 404 && status !== 400) {
-      // Log non-404 errors for debugging (in development only)
       if (process.env.NODE_ENV === 'development' && status >= 500) {
         console.error('API Error:', status, error.config?.url);
       }
     }
 
-    if (status === 401) {
-      if (typeof window !== 'undefined' && !isLoggingOut) {
-        // Check if we're using mock auth (development mode with mock tokens)
-        const authHeader = error.config?.headers?.Authorization;
-        const isMockToken = authHeader && typeof authHeader === 'string' && authHeader.includes('mock-');
+    if (status === 401 && typeof window !== 'undefined') {
+      const authHeader = originalRequest?.headers?.Authorization;
+      const isMockToken = authHeader && typeof authHeader === 'string' && authHeader.includes('mock-');
 
-        // In development with mock tokens, don't trigger logout on 401
-        // The mock tokens are not valid JWTs for the backend
-        if (isMockToken && process.env.NODE_ENV === 'development') {
-          console.warn('API 401 with mock token - skipping logout redirect');
-          return Promise.reject(error);
+      if (isMockToken && process.env.NODE_ENV === 'development') {
+        console.warn('API 401 with mock token - skipping logout redirect');
+        return Promise.reject(error);
+      }
+
+      // Try refresh once per failed request
+      if (!originalRequest._retry && !isLoggingOut) {
+        originalRequest._retry = true;
+
+        // Coalesce multiple 401s into a single refresh
+        if (!isRefreshing) {
+          isRefreshing = true;
+          refreshPromise = tryRefreshSession().finally(() => {
+            isRefreshing = false;
+            refreshPromise = null;
+          });
         }
 
-        // Only redirect to login for non-upload/logo endpoints
-        const isFileOrLogoOperation = error.config?.url?.includes('upload') ||
-                                      error.config?.url?.includes('/logo') ||
-                                      error.config?.data instanceof FormData;
+        const newToken = await (refreshPromise ?? tryRefreshSession());
+        if (newToken) {
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          return apiInstance(originalRequest);
+        }
+      }
+
+      // Refresh failed or already retried: sign out
+      if (!isLoggingOut) {
+        const isFileOrLogoOperation = originalRequest?.url?.includes('upload') ||
+                                      originalRequest?.url?.includes('/logo') ||
+                                      originalRequest?.data instanceof FormData;
 
         if (!isFileOrLogoOperation && !window.location.pathname.includes('/login')) {
           isLoggingOut = true;
           try {
             await signOut({ callbackUrl: '/login', redirect: true });
           } catch {
-            // signOut failed - force redirect as fallback
             window.location.href = '/login';
           }
         }

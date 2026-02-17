@@ -69,6 +69,7 @@ public class ClienteRepository : IClienteRepository
                 CategoriaClienteId = c.CategoriaClienteId,
                 Latitud = c.Latitud,
                 Longitud = c.Longitud,
+                VendedorId = c.VendedorId,
                 Activo = c.Activo
             })
             .FirstOrDefaultAsync();
@@ -118,6 +119,10 @@ public class ClienteRepository : IClienteRepository
         if (filtro.CategoriaClienteId.HasValue)
             query = query.Where(c => c.CategoriaClienteId == filtro.CategoriaClienteId.Value);
 
+        // Filtrar por vendedor asignado
+        if (filtro.VendedorId.HasValue)
+            query = query.Where(c => c.VendedorId == filtro.VendedorId.Value || c.VendedorId == null);
+
         // Búsqueda por texto
         if (!string.IsNullOrWhiteSpace(filtro.Busqueda))
         {
@@ -136,7 +141,9 @@ public class ClienteRepository : IClienteRepository
             .Skip((filtro.Pagina - 1) * filtro.TamanoPagina)
             .Take(filtro.TamanoPagina)
             .Join(_db.Zonas, c => c.IdZona, z => z.Id, (c, z) => new { c, ZonaNombre = z.Nombre })
-            .Join(_db.CategoriasClientes, x => x.c.CategoriaClienteId, cat => cat.Id, (x, cat) => new ClienteListaDto
+            .Join(_db.CategoriasClientes, x => x.c.CategoriaClienteId, cat => cat.Id, (x, cat) => new { x.c, x.ZonaNombre, CategoriaNombre = cat.Nombre })
+            .GroupJoin(_db.Usuarios, x => x.c.VendedorId, u => u.Id, (x, vendedores) => new { x.c, x.ZonaNombre, x.CategoriaNombre, Vendedor = vendedores.FirstOrDefault() })
+            .Select(x => new ClienteListaDto
             {
                 Id = x.c.Id,
                 Nombre = x.c.Nombre,
@@ -144,7 +151,9 @@ public class ClienteRepository : IClienteRepository
                 Correo = x.c.Correo,
                 Telefono = x.c.Telefono,
                 ZonaNombre = x.ZonaNombre,
-                CategoriaNombre = cat.Nombre,
+                CategoriaNombre = x.CategoriaNombre,
+                VendedorId = x.c.VendedorId,
+                VendedorNombre = x.Vendedor != null ? x.Vendedor.Nombre : null,
                 Activo = x.c.Activo
             })
             .ToListAsync();
