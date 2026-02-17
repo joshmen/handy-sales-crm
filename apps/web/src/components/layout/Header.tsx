@@ -193,7 +193,6 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick }) => {
     setIsLoggingOut(true);
     try {
       await signOut({ redirect: false, callbackUrl: '/login' });
-      toast({ title: 'Sesión cerrada', description: 'Has cerrado sesión exitosamente' });
       if (typeof window !== 'undefined') localStorage.clear();
       router.push('/login');
     } catch {
