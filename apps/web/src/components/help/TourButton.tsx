@@ -25,18 +25,18 @@ export function TourButton({ onStartTour }: TourButtonProps) {
     <button
       type="button"
       onClick={handleClick}
-      className="w-full flex items-center gap-2.5 px-4 py-3 text-left bg-blue-50 hover:bg-blue-100 border-b border-blue-100 transition-colors group"
+      className="w-full flex items-center gap-2.5 px-4 py-3 text-left bg-green-50 hover:bg-green-100 border-b border-green-100 transition-colors group"
     >
       {isCompleted ? (
-        <RotateCcw className="w-4 h-4 text-blue-500 group-hover:text-blue-600 flex-shrink-0" />
+        <RotateCcw className="w-4 h-4 text-green-500 group-hover:text-green-600 flex-shrink-0" />
       ) : (
-        <Play className="w-4 h-4 text-blue-500 group-hover:text-blue-600 flex-shrink-0" />
+        <Play className="w-4 h-4 text-green-500 group-hover:text-green-600 flex-shrink-0" />
       )}
       <div className="flex-1 min-w-0">
-        <span className="text-sm font-medium text-blue-700">
+        <span className="text-sm font-medium text-green-700">
           {isCompleted ? 'Repetir tour de esta página' : 'Iniciar tour interactivo'}
         </span>
-        <p className="text-xs text-blue-500 mt-0.5">
+        <p className="text-xs text-green-600 mt-0.5">
           {tourConfig.description}
         </p>
       </div>

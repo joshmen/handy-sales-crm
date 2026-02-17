@@ -7,7 +7,7 @@ import { GlobalSettingsProvider } from "@/contexts/GlobalSettingsContext"
 import { CompanyProvider } from "@/contexts/CompanyContext"
 import { ProfileProvider } from "@/contexts/ProfileContext"
 import { LoadingProvider } from "@/contexts/LoadingContext"
-import { Toaster } from "@/components/ui/Toaster"
+import { Toaster } from "sonner"
 import { GlobalLoadingIndicator } from "@/components/ui/GlobalLoadingIndicator"
 import { HydrationProvider } from "./HydrationProvider"
 import NextTopLoader from "nextjs-toploader"
@@ -34,7 +34,7 @@ export function ClientProviders({ children }: { children: React.ReactNode }) {
                 <AppProvider>
                   <UIProvider>
                     {children}
-                    <Toaster />
+                    <Toaster richColors position="top-right" toastOptions={{ duration: 4000 }} />
                     <GlobalLoadingIndicator />
                   </UIProvider>
                 </AppProvider>

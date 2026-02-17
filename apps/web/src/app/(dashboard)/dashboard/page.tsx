@@ -21,6 +21,7 @@ import {
   DashboardMetrics,
   getFallbackMetrics,
 } from '@/services/dashboardService';
+import { BrandedLoadingScreen } from '@/components/ui/BrandedLoadingScreen';
 
 
 // Tipos para métricas
@@ -167,14 +168,7 @@ export default function DashboardPage() {
   }, []);
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-gray-500">Cargando dashboard...</p>
-        </div>
-      </div>
-    );
+    return <BrandedLoadingScreen message="Cargando dashboard..." />;
   }
 
   return (

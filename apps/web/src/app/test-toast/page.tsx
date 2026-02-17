@@ -17,33 +17,19 @@ export default function TestToastPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   const showSuccessToast = () => {
-    toast({
-      title: "¡Éxito!",
-      description: "La operación se completó correctamente",
-    });
+    toast.success("La operación se completó correctamente");
   };
 
   const showErrorToast = () => {
-    toast({
-      title: "Error",
-      description: "Algo salió mal. Por favor intenta de nuevo",
-      variant: "destructive",
-    });
+    toast.error("Algo salió mal. Por favor intenta de nuevo");
   };
 
   const showInfoToast = () => {
-    toast({
-      title: "Información",
-      description: "Este es un mensaje informativo",
-    });
+    toast.info("Este es un mensaje informativo");
   };
 
   const showWarningToast = () => {
-    toast({
-      title: "Advertencia",
-      description: "Ten cuidado con esta acción",
-      variant: "destructive",
-    });
+    toast.warning("Ten cuidado con esta acción");
   };
 
   const simulateAsyncOperation = async () => {
@@ -226,21 +212,14 @@ export default function TestToastPage() {
             <div>
               <h4 className="font-medium mb-2">2. Toast de éxito:</h4>
               <pre className="bg-muted p-3 rounded-lg text-sm">
-                <code>{`toast({
-  title: "Éxito",
-  description: "Operación completada",
-})`}</code>
+                <code>{`toast.success("Operación completada")`}</code>
               </pre>
             </div>
 
             <div>
               <h4 className="font-medium mb-2">3. Toast de error:</h4>
               <pre className="bg-muted p-3 rounded-lg text-sm">
-                <code>{`toast({
-  title: "Error",
-  description: "Algo salió mal",
-  variant: "destructive",
-})`}</code>
+                <code>{`toast.error("Algo salió mal")`}</code>
               </pre>
             </div>
 
@@ -249,16 +228,9 @@ export default function TestToastPage() {
               <pre className="bg-muted p-3 rounded-lg text-sm overflow-x-auto">
                 <code>{`try {
   const result = await apiCall();
-  toast({
-    title: "Éxito",
-    description: "Datos guardados correctamente",
-  });
+  toast.success("Datos guardados correctamente");
 } catch (error) {
-  toast({
-    title: "Error",
-    description: error.message,
-    variant: "destructive",
-  });
+  toast.error(error.message);
 }`}</code>
               </pre>
             </div>

@@ -108,17 +108,17 @@ export function TourPrompt() {
       }`}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-blue-50 border-b border-blue-100">
+      <div className="flex items-center justify-between px-4 py-3 bg-green-50 border-b border-green-100">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center">
-            <Play className="w-3.5 h-3.5 text-blue-600 ml-0.5" />
+          <div className="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center">
+            <Play className="w-3.5 h-3.5 text-green-600 ml-0.5" />
           </div>
-          <span className="text-sm font-semibold text-blue-900">Tour disponible</span>
+          <span className="text-sm font-semibold text-green-900">Tour disponible</span>
         </div>
         <button
           type="button"
           onClick={handleDismiss}
-          className="p-1 text-gray-400 hover:text-gray-600 hover:bg-blue-100 rounded transition-colors"
+          className="p-1 text-gray-400 hover:text-gray-600 hover:bg-green-100 rounded transition-colors"
           aria-label="Cerrar"
         >
           <X className="w-4 h-4" />
@@ -137,7 +137,7 @@ export function TourPrompt() {
         <button
           type="button"
           onClick={handleStartTour}
-          className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+          className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
         >
           <Play className="w-3.5 h-3.5 ml-0.5" />
           Iniciar tour
