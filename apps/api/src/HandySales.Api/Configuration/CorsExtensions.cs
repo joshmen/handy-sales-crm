@@ -24,17 +24,15 @@ public static class CorsExtensions
                 }
                 else
                 {
-                    // Producción: Orígenes específicos más restrictivos
-                    var allowedOrigins = configuration.GetSection("CORS:AllowedOrigins").Get<string[]>() ?? new[]
-                    {
-                        "https://handysales.vercel.app",    // Frontend principal
-                        "https://handysales.com",           // Dominio custom
-                        "https://www.handysales.com",       // Dominio custom con www
-                        "https://*.vercel.app"              // Cualquier deployment de Vercel
-                    };
-
+                    // Producción: Permitir dominios propios + cualquier deploy de Vercel
                     builder
-                        .WithOrigins(allowedOrigins)
+                        .SetIsOriginAllowed(origin =>
+                        {
+                            var uri = new Uri(origin);
+                            return uri.Host.EndsWith(".vercel.app") ||
+                                   uri.Host == "handysales.com" ||
+                                   uri.Host == "www.handysales.com";
+                        })
                         .WithMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
                         .WithHeaders("Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With")
                         .AllowCredentials()

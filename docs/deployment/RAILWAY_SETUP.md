@@ -1,78 +1,155 @@
 # Railway Setup — HandySales Backend
 
-## Prerequisites
+Guía paso a paso para desplegar las APIs de HandySales en Railway.
 
-- [Railway account](https://railway.app) (Pro plan: $20/month with $20 credit)
-- [Railway CLI](https://docs.railway.app/develop/cli) installed
-- GitHub repository connected to Railway
+## Arquitectura en Railway
 
-## Step 1: Create Project
+```
+┌─────────────────────────────────────────────┐
+│              Railway Project                 │
+│                                              │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  │
+│  │ main-api │  │mobile-api│  │billing-api│  │
+│  │ .NET 8   │  │ .NET 8   │  │ .NET 9   │  │
+│  │ Port auto│  │ Port auto│  │ Port auto│  │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘  │
+│       │              │              │        │
+│       └──────┬───────┘              │        │
+│              ▼                      ▼        │
+│  ┌─────────────────┐  ┌─────────────────┐   │
+│  │    MySQL 8.0    │  │    MySQL 8.0    │   │
+│  │   handy_erp     │  │  handy_billing  │   │
+│  │ (internal:3306) │  │ (same instance) │   │
+│  └─────────────────┘  └─────────────────┘   │
+└─────────────────────────────────────────────┘
+```
+
+---
+
+## Paso 1: Crear Proyecto en Railway
+
+1. Ir a https://railway.app/new
+2. Crear proyecto nuevo
+3. Nombre sugerido: `handysales-prod`
+
+---
+
+## Paso 2: Agregar MySQL
+
+1. Click **"+ New"** → **"Database"** → **"MySQL"**
+2. Railway crea la instancia con credenciales automáticas
+3. Ir a tab **Variables** y anotar:
+
+| Variable | Descripción |
+|----------|-------------|
+| `MYSQL_PUBLIC_URL` | URL pública (para conectar desde fuera de Railway) |
+| `MYSQLHOST` | Host interno: `mysql.railway.internal` |
+| `MYSQLPORT` | Puerto interno: `3306` |
+| `MYSQLUSER` | Usuario: `root` |
+| `MYSQLPASSWORD` | Password auto-generado |
+
+### Crear bases de datos e importar schema
+
+Conectar desde Docker local (o cualquier MySQL client) usando la URL pública:
 
 ```bash
-# Install Railway CLI
-npm install -g @railway/cli
+# Extraer host y puerto de MYSQL_PUBLIC_URL
+# Formato: mysql://root:PASSWORD@HOST:PORT/railway
 
-# Login
-railway login
+# Crear bases de datos
+mysql -h <HOST> -P <PORT> -u root -p<PASSWORD> -e "
+  CREATE DATABASE IF NOT EXISTS handy_erp CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+  CREATE DATABASE IF NOT EXISTS handy_billing CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+"
 
-# Create new project
-railway init
+# Crear usuario de aplicación
+mysql -h <HOST> -P <PORT> -u root -p<PASSWORD> -e "
+  CREATE USER IF NOT EXISTS 'handy_user'@'%' IDENTIFIED BY 'handy_pass_prod_2026';
+  GRANT ALL PRIVILEGES ON handy_erp.* TO 'handy_user'@'%';
+  GRANT ALL PRIVILEGES ON handy_billing.* TO 'handy_user'@'%';
+  FLUSH PRIVILEGES;
+"
+
+# Importar schema completo desde DB local (mejor método)
+# Opción A: Dump desde Docker local
+docker exec handysales_mysql_dev bash -c "mysqldump -u root -proot123 --routines --triggers --single-transaction handy_erp 2>/dev/null > /tmp/erp_full.sql"
+docker exec handysales_mysql_dev bash -c "mysql -h <HOST> -P <PORT> -u root -p<PASSWORD> handy_erp < /tmp/erp_full.sql"
+
+# Importar billing schema
+docker cp infra/database/schema/BillingSchema.sql handysales_mysql_dev:/tmp/billing.sql
+docker exec handysales_mysql_dev bash -c "mysql -h <HOST> -P <PORT> -u root -p<PASSWORD> handy_billing < /tmp/billing.sql"
 ```
 
-Or create via Railway Dashboard: https://railway.app/new
-
-## Step 2: Add MySQL Service
-
-1. In Railway Dashboard, click **"+ New"** → **"Database"** → **"MySQL"**
-2. Railway auto-creates the database with credentials
-3. Note the connection variables (available as `MYSQL_URL`, `MYSQL_HOST`, etc.)
-
-### Create Second Database (handy_billing)
-
-Connect to Railway MySQL and create the billing database:
-
-```sql
-CREATE DATABASE IF NOT EXISTS handy_billing
-  CHARACTER SET utf8mb4
-  COLLATE utf8mb4_unicode_ci;
-```
-
-### Import Schema
-
-Use the init scripts from `infra/database/schema/` in order:
-1. `01_init_schema_multitenant.sql`
-2. `02_seed_data.sql`
-3. `03_create_user.sql`
-4. `04-billing-schema.sql` (BillingSchema.sql)
-5. `05-admin.sql`
-6. `06-usuarios.sql` (04_seed_usuarios.sql)
+### Verificar importación
 
 ```bash
-# Connect to Railway MySQL
-railway connect mysql
-
-# Or use mysql client with Railway-provided credentials
-mysql -h <MYSQL_HOST> -P <MYSQL_PORT> -u root -p<MYSQL_PASSWORD> handy_erp < infra/database/schema/01_init_schema_multitenant.sql
+mysql -h <HOST> -P <PORT> -u root -p<PASSWORD> -e "
+  SELECT 'handy_erp' as db, COUNT(*) as tables FROM information_schema.tables WHERE table_schema='handy_erp'
+  UNION ALL
+  SELECT 'handy_billing', COUNT(*) FROM information_schema.tables WHERE table_schema='handy_billing';
+"
+# Esperado: handy_erp = 28 tablas, handy_billing = 14 tablas
 ```
 
-## Step 3: Add API Services
+---
 
-### Main API
+## Paso 3: Agregar Servicios API
 
-1. Click **"+ New"** → **"GitHub Repo"** → Select your repo
-2. Configure:
-   - **Root Directory**: `/` (build from root)
-   - **Builder**: Dockerfile
-   - **Dockerfile Path**: `infra/docker/Dockerfile.Main.Prod`
-   - **Watch Paths**: `apps/api/**`, `libs/**`
+Para cada servicio: **"+ New"** → **"GitHub Repo"** → seleccionar `joshmen/handy-sales-crm`
 
-3. Set environment variables:
+### 3.1 Main API
+
+**Settings:**
+
+| Setting | Valor |
+|---------|-------|
+| Service Name | `main-api` |
+| Branch | `main` |
+| Root Directory | _(vacío/default)_ |
+| Builder | **Dockerfile** |
+| Dockerfile Path | `infra/docker/Dockerfile.Main.Prod` |
+| Watch Paths | `apps/api/**` y `libs/**` |
+| Healthcheck Path | `/health` |
+| Networking | Click **"Generate Domain"** |
+
+**Variables (tab Variables → Raw Editor):**
 
 ```
 ASPNETCORE_ENVIRONMENT=Production
-ASPNETCORE_URLS=http://+:${PORT}
-ConnectionStrings__DefaultConnection=Server=${MYSQL_HOST};Port=${MYSQL_PORT};Database=handy_erp;User=root;Password=${MYSQL_PASSWORD};AllowUserVariables=true;ConnectionTimeout=60;DefaultCommandTimeout=60;CharSet=utf8mb4;Pooling=true;MinimumPoolSize=5;MaximumPoolSize=50;ConnectionLifeTime=300;SslMode=Required;
-JWT__SecretKey=<generate with: openssl rand -base64 64>
+ConnectionStrings__DefaultConnection=Server=mysql.railway.internal;Port=3306;Database=handy_erp;User=handy_user;Password=handy_pass_prod_2026;AllowUserVariables=true;AllowPublicKeyRetrieval=true;ConnectionTimeout=60;DefaultCommandTimeout=60;CharSet=utf8mb4;Pooling=true;MinimumPoolSize=5;MaximumPoolSize=50;ConnectionLifeTime=300;SslMode=None;
+JWT__SecretKey=HandySalesProd2026SecretKeyMinimo256BitsSeguro_9a8b7c6d5e4f3g2h1i0j
+JWT__Issuer=HandySales
+JWT__Audience=HandySalesUsers
+JWT__ExpirationHours=24
+Multitenancy__DefaultTenantId=00000000-0000-0000-0000-000000000001
+Multitenancy__DefaultTenantName=Default
+Cloudinary__CloudName=demo_cloud
+Cloudinary__ApiKey=demo_key
+Cloudinary__ApiSecret=demo_secret
+```
+
+> **Nota:** `AllowPublicKeyRetrieval=true` es necesario para MySQL 8.0 con `caching_sha2_password`.
+> Reemplazar `Cloudinary__*` con credenciales reales cuando se tenga cuenta de Cloudinary.
+
+### 3.2 Mobile API
+
+**Settings:**
+
+| Setting | Valor |
+|---------|-------|
+| Service Name | `mobile-api` |
+| Builder | **Dockerfile** |
+| Dockerfile Path | `infra/docker/Dockerfile.Mobile.Prod` |
+| Watch Paths | `apps/mobile/**` y `libs/**` |
+| Healthcheck Path | `/health` |
+| Networking | Click **"Generate Domain"** |
+
+**Variables (tab Variables → Raw Editor):**
+
+```
+ASPNETCORE_ENVIRONMENT=Production
+ConnectionStrings__DefaultConnection=Server=mysql.railway.internal;Port=3306;Database=handy_erp;User=handy_user;Password=handy_pass_prod_2026;AllowUserVariables=true;AllowPublicKeyRetrieval=true;ConnectionTimeout=60;DefaultCommandTimeout=60;CharSet=utf8mb4;Pooling=true;MinimumPoolSize=5;MaximumPoolSize=50;ConnectionLifeTime=300;SslMode=None;
+JWT__SecretKey=HandySalesProd2026SecretKeyMinimo256BitsSeguro_9a8b7c6d5e4f3g2h1i0j
 JWT__Issuer=HandySales
 JWT__Audience=HandySalesUsers
 JWT__ExpirationHours=24
@@ -80,23 +157,26 @@ Multitenancy__DefaultTenantId=00000000-0000-0000-0000-000000000001
 Multitenancy__DefaultTenantName=Default
 ```
 
-4. Add custom domain: `api.handycrm.com`
+### 3.3 Billing API (futuro)
 
-### Billing API
+**Settings:**
 
-1. Click **"+ New"** → **"GitHub Repo"** → Same repo
-2. Configure:
-   - **Dockerfile Path**: `infra/docker/Dockerfile.Billing.Prod`
-   - **Watch Paths**: `apps/billing/**`
+| Setting | Valor |
+|---------|-------|
+| Service Name | `billing-api` |
+| Builder | **Dockerfile** |
+| Dockerfile Path | `infra/docker/Dockerfile.Billing.Prod` |
+| Watch Paths | `apps/billing/**` |
+| Healthcheck Path | `/health` |
+| Networking | Click **"Generate Domain"** |
 
-3. Set environment variables:
+**Variables (tab Variables → Raw Editor):**
 
 ```
 ASPNETCORE_ENVIRONMENT=Production
-ASPNETCORE_URLS=http://+:${PORT}
-ConnectionStrings__BillingConnection=Server=${MYSQL_HOST};Port=${MYSQL_PORT};Database=handy_billing;User=root;Password=${MYSQL_PASSWORD};AllowUserVariables=true;ConnectionTimeout=60;DefaultCommandTimeout=60;SslMode=Required;
-ConnectionStrings__MainConnection=Server=${MYSQL_HOST};Port=${MYSQL_PORT};Database=handy_erp;User=root;Password=${MYSQL_PASSWORD};AllowUserVariables=true;ConnectionTimeout=60;DefaultCommandTimeout=60;SslMode=Required;
-JWT__SecretKey=<same as Main API>
+ConnectionStrings__BillingConnection=Server=mysql.railway.internal;Port=3306;Database=handy_billing;User=handy_user;Password=handy_pass_prod_2026;AllowUserVariables=true;ConnectionTimeout=60;DefaultCommandTimeout=60;CharSet=utf8mb4;SslMode=None;
+ConnectionStrings__MainConnection=Server=mysql.railway.internal;Port=3306;Database=handy_erp;User=handy_user;Password=handy_pass_prod_2026;AllowUserVariables=true;ConnectionTimeout=60;DefaultCommandTimeout=60;CharSet=utf8mb4;SslMode=None;
+JWT__SecretKey=HandySalesProd2026SecretKeyMinimo256BitsSeguro_9a8b7c6d5e4f3g2h1i0j
 JWT__Issuer=HandySales
 JWT__Audience=HandySalesUsers
 JWT__ExpirationHours=24
@@ -104,79 +184,118 @@ SAT__CertificadoPath=/app/certificates
 SAT__WebServiceUrl=https://consultaqr.facturaelectronica.sat.gob.mx/ConsultaCFDIService.svc
 ```
 
-4. Add custom domain: `billing.handycrm.com`
+---
 
-### Mobile API
+## Paso 4: Configurar Vercel (Frontend)
 
-1. Click **"+ New"** → **"GitHub Repo"** → Same repo
-2. Configure:
-   - **Dockerfile Path**: `infra/docker/Dockerfile.Mobile.Prod`
-   - **Watch Paths**: `apps/mobile/**`, `libs/**`
+En Vercel → Settings → Environment Variables, agregar:
 
-3. Set environment variables: Same as Main API
+```
+NEXTAUTH_SECRET=handysales-prod-secret-key-2026-cambiar-en-produccion
+NEXTAUTH_URL=https://<tu-dominio-vercel>.vercel.app
+API_URL=https://<main-api-domain>.up.railway.app
+NEXT_PUBLIC_API_URL=https://<main-api-domain>.up.railway.app
+```
 
-4. Add custom domain: `mobile.handycrm.com`
+> Reemplazar `<main-api-domain>` con el dominio generado por Railway para main-api.
+> Reemplazar `<tu-dominio-vercel>` con tu URL de Vercel.
 
-## Step 4: Verify Deployment
+---
+
+## Paso 5: Verificar Deployment
 
 ```bash
 # Health checks
-curl https://api.handycrm.com/health
-curl https://billing.handycrm.com/health
-curl https://mobile.handycrm.com/health
+curl https://<main-api-domain>.up.railway.app/health
+curl https://<mobile-api-domain>.up.railway.app/health
 
 # Test login
-curl -X POST https://api.handycrm.com/auth/login \
+curl -X POST https://<main-api-domain>.up.railway.app/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@jeyma.com","password":"test123"}'
 ```
 
-## Step 5: CI/CD (Automatic)
+---
 
-Railway auto-deploys when you push to `main`. Additionally, the GitHub Actions workflow (`.github/workflows/deploy-apis.yml`) provides:
-- Change detection (only deploys affected services)
-- Manual deploy trigger
-- Build status checks
+## Notas Importantes
 
-## Railway CLI Commands
+### JWT Secret Key
+- **DEBE ser igual en TODAS las APIs** (Main, Mobile, Billing)
+- Los tokens generados por una API deben ser válidos en las otras
+- Mínimo 256 bits (32 caracteres)
 
-```bash
-# View logs
-railway logs --service api_main
+### Connection String
+- Usar `mysql.railway.internal` (red interna, más rápido y gratis)
+- NO usar la URL pública (más lento, cobra por tráfico)
+- `SslMode=None` para conexiones internas de Railway
 
-# Open dashboard
-railway open
+### Railway PORT
+- Railway inyecta la variable `PORT` automáticamente
+- Los Dockerfiles usan `CMD` con shell form para evaluarla en runtime
+- NO es necesario agregar `PORT` o `ASPNETCORE_URLS` en las variables
 
-# Check status
-railway status
+### Auto-Deploy
+- Railway detecta cambios en GitHub automáticamente
+- Los Watch Paths limitan qué cambios triggerean un deploy
+- Cambios en `libs/**` triggerean deploy de Main API y Mobile API (comparten código)
 
-# Run one-off command
-railway run --service api_main -- dotnet HandySales.Api.dll --urls "http://+:8080"
-```
+---
 
-## Cost Estimation
+## Credenciales de Producción
 
-| Service | Estimated Cost |
-|---------|---------------|
-| MySQL | $10-15/month |
-| Main API | $5-8/month |
-| Billing API | $3-5/month |
-| Mobile API | $3-5/month |
-| **Total** | **$21-33/month** |
+### MySQL Railway
+- **Host interno**: `mysql.railway.internal`
+- **Puerto**: `3306`
+- **Usuario app**: `handy_user`
+- **Password app**: `handy_pass_prod_2026`
+- **Bases de datos**: `handy_erp`, `handy_billing`
 
-Railway Pro plan includes $20 credit, so effective cost is even lower.
+### Usuarios de Prueba
+Password: `test123` para todos
+
+| Email | Tenant | Rol |
+|-------|--------|-----|
+| admin@jeyma.com | Jeyma (id=3) | Admin |
+| vendedor1@jeyma.com | Jeyma (id=3) | Vendedor |
+| vendedor2@jeyma.com | Jeyma (id=3) | Vendedor |
+| admin@huichol.com | Huichol (id=4) | Admin |
+| admin@centro.com | Centro (id=1) | Admin |
+| admin@rutasnorte.com | Rutas Norte (id=2) | Admin |
+
+---
+
+## Costos Estimados (Railway Trial/Pro)
+
+| Servicio | Costo Estimado |
+|----------|---------------|
+| MySQL | $10-15/mes |
+| Main API | $5-8/mes |
+| Mobile API | $3-5/mes |
+| Billing API | $3-5/mes |
+| **Total** | **$21-33/mes** |
+
+Railway Trial: 30 días o $5 USD de crédito.
+Railway Pro: $20/mes incluye $20 de crédito.
+
+---
 
 ## Troubleshooting
 
-### Build fails with "dotnet restore failed"
-- Check that Dockerfile paths match monorepo structure
-- Ensure `.dockerignore` doesn't exclude needed files
+### Build falla con "dotnet restore failed"
+- Verificar que el Dockerfile path sea correcto
+- Verificar que `.dockerignore` no excluya archivos necesarios
+- Root Directory debe estar vacío (build desde raíz del repo)
 
-### Container crashes on startup
-- Check `ASPNETCORE_URLS` uses `${PORT}` (Railway assigns dynamically)
-- Verify MySQL connection string uses Railway variables
+### Container crashea al iniciar
+- Revisar logs en Railway → Deployments → click en el deployment → View Logs
+- Verificar que las variables de entorno estén correctas
+- Verificar que MySQL esté accessible (health check del servicio MySQL)
 
 ### MySQL connection refused
-- Ensure `SslMode=Required` in connection string
-- Use Railway's internal variables (`${MYSQL_HOST}`, `${MYSQL_PORT}`)
-- Check that both databases exist (handy_erp, handy_billing)
+- Usar `mysql.railway.internal` (NO la URL pública)
+- Verificar que el usuario `handy_user` exista y tenga permisos
+- Verificar que las bases de datos `handy_erp` y `handy_billing` existan
+
+### CORS errors en frontend
+- Verificar que `NEXT_PUBLIC_API_URL` en Vercel apunte al dominio correcto de Railway
+- La API en producción permite: `*.vercel.app`, `handysales.com`
