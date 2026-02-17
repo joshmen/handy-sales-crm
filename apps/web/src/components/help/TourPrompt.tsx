@@ -100,7 +100,7 @@ export function TourPrompt() {
 
   if (!visible || !tourConfig) return null;
 
-  // Collapsed: small FAB
+  // Collapsed: small pill FAB
   if (!expanded) {
     return (
       <div
@@ -113,10 +113,11 @@ export function TourPrompt() {
         <button
           type="button"
           onClick={() => setExpanded(true)}
-          className="relative w-12 h-12 rounded-full bg-green-500 hover:bg-green-600 text-white shadow-lg hover:shadow-xl flex items-center justify-center transition-all active:scale-95"
+          className="relative h-10 px-4 rounded-full bg-green-500 hover:bg-green-600 text-white shadow-lg hover:shadow-xl flex items-center gap-1.5 transition-all active:scale-95"
           aria-label="Tour disponible"
         >
-          <Play className="w-5 h-5 ml-0.5" />
+          <Play className="w-4 h-4 ml-0.5" />
+          <span className="text-sm font-medium">Tour</span>
         </button>
       </div>
     );

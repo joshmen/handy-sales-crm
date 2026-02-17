@@ -262,6 +262,11 @@ docker-compose -f docker-compose.dev.yml up -d
 - Multi-tenant: All tables have tenant_id column
 - Billing separated by SAT compliance requirements
 
+## Git Workflow Rules
+
+- **NEVER push automatically.** Always test locally first. Only push when the user explicitly requests it.
+- Commits are fine without asking, but `git push` requires explicit user instruction.
+
 ---
 
 ## Deployment Strategy
