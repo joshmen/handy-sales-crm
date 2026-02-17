@@ -1,0 +1,26 @@
+<Project>
+    <ItemGroup>
+        <!-- EF Core v8.0.13 = recomendado por Pomelo 8.0.3 -->
+        <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="8.0.13" />
+        <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.13" />
+        <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.13" />
+        <PackageVersion Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.3" />
+
+        <!-- JWT y OpenAPI -->
+        <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.3" />
+        <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="8.0.3" />
+
+        <!-- AutoMapper 14 compatible con .NET 8 -->
+        <PackageVersion Include="AutoMapper" Version="14.0.0" />
+        <PackageVersion Include="AutoMapper.Extensions.Microsoft.DependencyInjection"
+            Version="14.0.0" />
+
+        <!-- FluentValidation -->
+        <PackageVersion Include="FluentValidation" Version="11.7.0" />
+        <PackageVersion Include="FluentValidation.AspNetCore" Version="11.7.0" />
+
+        <!-- Swagger -->
+        <PackageVersion Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+    </ItemGroup>
+</Project>
+  

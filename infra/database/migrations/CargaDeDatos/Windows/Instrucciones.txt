@@ -1,0 +1,6 @@
+Instrucciones de uso en Windows:
+Asegúrate de tener mysql.exe en tu PATH (parte de MySQL Client o XAMPP).
+
+Coloca este .bat y los tres .sql en la misma carpeta.
+
+Haz doble clic en el archivo o ejecútalo desde cmd

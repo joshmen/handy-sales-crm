@@ -1,0 +1,407 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Custom Toggle/Switch Styles */
+.toggle-checkbox:checked {
+  right: 0;
+  border-color: #3B82F6;
+}
+
+.toggle-checkbox:checked + .toggle-label {
+  background-color: #3B82F6;
+}
+
+.toggle-label {
+  transition: background-color 0.2s;
+}
+
+@layer base {
+  :root {
+    /* Background colors - Google style */
+    --background: 0 0% 98%;
+    --foreground: 0 0% 15%;
+
+    /* Card colors */
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 15%;
+
+    /* Popover colors */
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 15%;
+
+    /* Primary colors - Google Blue */
+    --primary: 213 93% 57%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary colors */
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 15%;
+
+    /* Muted colors */
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
+
+    /* Accent colors */
+    --accent: 0 0% 96%;
+    --accent-foreground: 0 0% 15%;
+
+    /* Destructive colors */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    /* Border colors - Subtle Google borders */
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+
+    /* Ring colors - Google Blue for focus */
+    --ring: 213 93% 57%;
+
+    /* Chart colors - Google palette */
+    --chart-1: 213 93% 57%;
+    --chart-2: 120 57% 50%;
+    --chart-3: 0 84% 60%;
+    --chart-4: 45 93% 57%;
+    --chart-5: 300 47% 50%;
+
+    /* Radius - More rounded for modern look */
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    /* Background colors */
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    /* Card colors */
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    /* Popover colors */
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    /* Primary colors */
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    /* Secondary colors */
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    /* Muted colors */
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    /* Accent colors */
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    /* Destructive colors */
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    /* Border colors */
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+
+    /* Ring colors */
+    --ring: 212.7 26.8% 83.9%;
+
+    /* Chart colors */
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply scroll-m-20 tracking-tight;
+  }
+
+  h1 {
+    @apply text-4xl font-extrabold lg:text-5xl;
+  }
+
+  h2 {
+    @apply text-3xl font-semibold;
+  }
+
+  h3 {
+    @apply text-2xl font-semibold;
+  }
+
+  h4 {
+    @apply text-xl font-semibold;
+  }
+
+  p {
+    @apply leading-7 [&:not(:first-child)]:mt-6;
+  }
+
+  blockquote {
+    @apply mt-6 border-l-2 pl-6 italic;
+  }
+
+  ul {
+    @apply my-6 ml-6 list-disc [&>li]:mt-2;
+  }
+
+  code {
+    @apply relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm font-semibold;
+  }
+
+  pre {
+    @apply overflow-x-auto rounded-lg bg-muted p-4;
+  }
+
+  pre code {
+    @apply bg-transparent p-0;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-muted;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-border rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-accent-foreground/20;
+}
+
+/* Loading animations */
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Custom utility classes */
+.text-balance {
+  text-wrap: balance;
+}
+
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Google-style components */
+.google-card {
+  @apply bg-white rounded-2xl shadow-sm border-0 hover:shadow-md transition-shadow duration-200;
+}
+
+.google-button {
+  @apply bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2 rounded-full transition-all duration-200 hover:shadow-md;
+}
+
+.google-input {
+  @apply w-full bg-gray-50 border border-gray-200 rounded-full px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200;
+}
+
+.google-text-primary {
+  @apply text-gray-900;
+}
+
+.google-text-secondary {
+  @apply text-gray-600;
+}
+
+.google-text-muted {
+  @apply text-gray-500;
+}
+
+/* ============================================
+   Driver.js Tour - Custom Styles
+   ============================================ */
+
+.driver-popover.handy-tour-popover {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px -12px rgba(0, 0, 0, 0.2);
+  border: 1px solid #e2e8f0;
+  max-width: 340px;
+  padding: 0;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.driver-popover.handy-tour-popover .driver-popover-title {
+  font-family: 'Space Grotesk', Inter, system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e3a5f;
+  padding: 14px 16px 6px;
+  background: #eff6ff;
+  border-radius: 12px 12px 0 0;
+  border-bottom: 1px solid #dbeafe;
+  margin: 0;
+}
+
+.driver-popover.handy-tour-popover .driver-popover-description {
+  font-size: 13px;
+  color: #4b5563;
+  line-height: 1.6;
+  padding: 12px 16px;
+  margin: 0;
+}
+
+.driver-popover.handy-tour-popover .driver-popover-progress-text {
+  font-size: 11px;
+  color: #9ca3af;
+  padding: 0 16px;
+}
+
+.driver-popover.handy-tour-popover .driver-popover-footer {
+  padding: 8px 16px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.driver-popover.handy-tour-popover .driver-popover-prev-btn {
+  background: white;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-shadow: none;
+}
+
+.driver-popover.handy-tour-popover .driver-popover-prev-btn:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.driver-popover.handy-tour-popover .driver-popover-next-btn,
+.driver-popover.handy-tour-popover .driver-popover-close-btn-text {
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-shadow: none;
+}
+
+.driver-popover.handy-tour-popover .driver-popover-next-btn:hover,
+.driver-popover.handy-tour-popover .driver-popover-close-btn-text:hover {
+  background: #1d4ed8;
+}
+
+/* Overlay and element z-index (above header z-50) */
+.driver-overlay {
+  z-index: 999 !important;
+}
+
+.driver-active-element {
+  z-index: 1000 !important;
+}
+
+.driver-popover {
+  z-index: 1001 !important;
+}
+
+/* Tour image steps - wider popover for form previews */
+.driver-popover.tour-image-step {
+  max-width: min(720px, 85vw) !important;
+}
+
+.tour-img-wrap {
+  margin-top: 8px;
+}
+
+.tour-img-wrap img {
+  width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.tour-img-caption {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #6b7280;
+  text-align: center;
+  font-style: italic;
+}
+
+/* Tour inside Drawer - between driver overlay (999) and popover (1001) */
+[data-drawer-root].tour-drawer-active {
+  z-index: 1000 !important;
+}
+
+/* Keep drawer overlay visible during tour for dimming effect, but non-interactive */
+[data-drawer-root].tour-drawer-active > .absolute.inset-0 {
+  pointer-events: none;
+}

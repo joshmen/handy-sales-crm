@@ -1,0 +1,54 @@
+mkdir HandySales
+cd HandySales
+
+# Crear solución
+dotnet new sln -n HandySales
+
+# Crear proyectos
+dotnet new webapi -n HandySales.Api
+dotnet new classlib -n HandySales.Application
+dotnet new classlib -n HandySales.Domain
+dotnet new classlib -n HandySales.Infrastructure
+dotnet new classlib -n HandySales.Shared
+
+# Agregar proyectos a la solución
+dotnet sln add HandySales.Api
+dotnet sln add HandySales.Application
+dotnet sln add HandySales.Domain
+dotnet sln add HandySales.Infrastructure
+dotnet sln add HandySales.Shared
+
+# Dentro del proyecto agregar referencias
+dotnet add HandySales.Api reference HandySales.Application
+dotnet add HandySales.Api reference HandySales.Shared
+
+dotnet add HandySales.Application reference HandySales.Domain
+dotnet add HandySales.Application reference HandySales.Shared
+
+dotnet add HandySales.Infrastructure reference HandySales.Application
+dotnet add HandySales.Infrastructure reference HandySales.Domain
+dotnet add HandySales.Infrastructure reference HandySales.Shared
+
+# EF Core + Pomelo para MySQL
+dotnet add HandySales.Infrastructure package Pomelo.EntityFrameworkCore.MySql
+dotnet add HandySales.Infrastructure package Microsoft.EntityFrameworkCore.Design
+
+# Autenticación JWT
+dotnet add HandySales.Api package Microsoft.AspNetCore.Authentication.JwtBearer
+
+# FluentValidation
+dotnet add HandySales.Application package FluentValidation
+dotnet add HandySales.Api package FluentValidation.AspNetCore
+
+# AutoMapper
+dotnet add HandySales.Application package AutoMapper
+dotnet add HandySales.Api package AutoMapper.Extensions.Microsoft.DependencyInjection
+
+#Swagger
+dotnet add HandySales.Api package Swashbuckle.AspNetCore
+
+#Probar 
+$env:ASPNETCORE_ENVIRONMENT = "Testing" <== en powershell
+cd HandySales.Tests
+dotnet test
+

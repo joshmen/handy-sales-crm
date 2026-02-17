@@ -1,0 +1,8 @@
+namespace HandySales.Application.CategoriasProductos.DTOs;
+
+public class CategoriaProductoDto
+{
+    public int Id { get; set; }
+    public string Nombre { get; set; } = string.Empty;
+    public string? Descripcion { get; set; }
+}

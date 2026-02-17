@@ -1,0 +1,113 @@
+# Azure Container Instances - Configuración Económica
+# Para desplegar: az container create --file container-instances.yml
+
+apiVersion: 2019-12-01
+location: eastus2  # Región más barata
+name: handysales-container-group
+properties:
+  containers:
+  # API Principal
+  - name: handy-api-main
+    properties:
+      image: handysales/api-main:latest
+      resources:
+        requests:
+          memoryInGB: 0.5    # Mínimo posible
+          cpu: 0.1           # 0.1 vCPU
+      environmentVariables:
+      - name: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - name: ASPNETCORE_URLS
+        value: http://+:5000
+      - name: ConnectionStrings__DefaultConnection
+        secureValue: "Server=handysales-mysql.mysql.database.azure.com;Database=handy_erp;User=handyadmin;Password=${MYSQL_PASSWORD};SslMode=Required;"
+      - name: JWT__SecretKey
+        secureValue: "${JWT_SECRET}"
+      - name: JWT__Issuer
+        value: "HandySales"
+      - name: JWT__Audience
+        value: "HandySalesUsers"
+      - name: JWT__ExpirationHours
+        value: "24"
+      - name: Multitenancy__DefaultTenantId
+        value: "00000000-0000-0000-0000-000000000001"
+      ports:
+      - port: 5000
+        protocol: TCP
+
+  # API Facturación  
+  - name: handy-api-billing
+    properties:
+      image: handysales/api-billing:latest
+      resources:
+        requests:
+          memoryInGB: 0.5    # Mínimo posible
+          cpu: 0.1           # 0.1 vCPU
+      environmentVariables:
+      - name: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - name: ASPNETCORE_URLS
+        value: http://+:5001
+      - name: ConnectionStrings__BillingConnection
+        secureValue: "Server=handysales-mysql.mysql.database.azure.com;Database=handy_billing;User=handyadmin;Password=${MYSQL_PASSWORD};SslMode=Required;"
+      - name: ConnectionStrings__MainConnection
+        secureValue: "Server=handysales-mysql.mysql.database.azure.com;Database=handy_erp;User=handyadmin;Password=${MYSQL_PASSWORD};SslMode=Required;"
+      - name: JWT__SecretKey
+        secureValue: "${JWT_SECRET}"
+      - name: JWT__Issuer
+        value: "HandySales"
+      - name: JWT__Audience
+        value: "HandySalesUsers"
+      ports:
+      - port: 5001
+        protocol: TCP
+
+  # Nginx (Proxy inverso económico)
+  - name: nginx-proxy
+    properties:
+      image: nginx:alpine
+      resources:
+        requests:
+          memoryInGB: 0.1    # Solo 100MB para nginx
+          cpu: 0.05          # 0.05 vCPU
+      ports:
+      - port: 80
+        protocol: TCP
+      - port: 443
+        protocol: TCP
+      volumes:
+      - name: nginx-config
+        mountPath: /etc/nginx/nginx.conf
+        subPath: nginx.conf
+
+  osType: Linux
+  
+  # IP Pública - Standard SKU para balanceador
+  ipAddress:
+    type: Public
+    ports:
+    - protocol: TCP
+      port: 80
+    - protocol: TCP  
+      port: 443
+    - protocol: TCP
+      port: 5000
+    - protocol: TCP
+      port: 5001
+    dnsNameLabel: handysales-api  # handysales-api.eastus2.azurecontainer.io
+
+  # Auto-restart policy
+  restartPolicy: Always
+
+  # Volumen para configuración nginx
+  volumes:
+  - name: nginx-config
+    azureFile:
+      shareName: nginx-config
+      storageAccountName: handysalesstorage
+      storageAccountKey: "${STORAGE_KEY}"
+
+tags:
+  Environment: Production
+  Project: HandySales
+  CostCenter: Main

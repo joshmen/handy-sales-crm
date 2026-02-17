@@ -1,0 +1,50 @@
+# Dockerfile para API de Facturación - Desarrollo
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
+WORKDIR /app
+EXPOSE 5001
+
+# Instalar herramientas de desarrollo
+RUN apt-get update && apt-get install -y \
+    curl \
+    procps \
+    && rm -rf /var/lib/apt/lists/*
+
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+WORKDIR /src
+
+# Copiar archivo de proyecto del microservicio de facturación (nueva estructura)
+COPY ["apps/billing/HandySales.Billing.Api/HandySales.Billing.Api.csproj", "apps/billing/HandySales.Billing.Api/"]
+
+# Restaurar dependencias
+RUN dotnet restore "apps/billing/HandySales.Billing.Api/HandySales.Billing.Api.csproj"
+
+# Copiar código fuente
+COPY apps/billing/ apps/billing/
+
+# Build de la aplicación en modo Debug
+WORKDIR "/src/apps/billing/HandySales.Billing.Api"
+RUN dotnet build "HandySales.Billing.Api.csproj" -c Debug -o /app/build
+
+FROM build AS publish
+RUN dotnet publish "HandySales.Billing.Api.csproj" -c Debug -o /app/publish /p:UseAppHost=false
+
+FROM base AS final
+WORKDIR /app
+
+# Copiar aplicación publicada
+COPY --from=publish /app/publish .
+
+# Crear directorios necesarios con permisos
+RUN mkdir -p /app/logs /app/certificates /app/facturas \
+    && chmod 755 /app/logs /app/certificates /app/facturas
+
+# Configurar variables de entorno para desarrollo
+ENV DOTNET_ENVIRONMENT=Development
+ENV ASPNETCORE_HTTP_PORTS=5001
+ENV DOTNET_EnableDiagnostics=1
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:5001/health || exit 1
+
+ENTRYPOINT ["dotnet", "HandySales.Billing.Api.dll"]

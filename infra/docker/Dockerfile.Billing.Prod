@@ -1,0 +1,53 @@
+# =============================================================
+# HandySales Billing API — Production Dockerfile (.NET 9)
+# Standalone microservice (no shared libs)
+# Build context: repository root (HandySales/)
+# =============================================================
+
+# --- Stage 1: Build ---
+FROM mcr.microsoft.com/dotnet/sdk:9.0-alpine AS build
+WORKDIR /src
+
+# Copy project file
+COPY ["apps/billing/HandySales.Billing.Api/HandySales.Billing.Api.csproj", "apps/billing/HandySales.Billing.Api/"]
+
+# Restore
+RUN dotnet restore "apps/billing/HandySales.Billing.Api/HandySales.Billing.Api.csproj"
+
+# Copy source code
+COPY apps/billing/ apps/billing/
+
+# Publish optimized release build
+WORKDIR "/src/apps/billing/HandySales.Billing.Api"
+RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
+
+# --- Stage 2: Runtime ---
+FROM mcr.microsoft.com/dotnet/aspnet:9.0-alpine AS final
+WORKDIR /app
+
+# Install ICU for globalization + curl for health checks
+RUN apk add --no-cache icu-libs curl
+
+# Create non-root user
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+# Create required directories (SAT certificates, invoices)
+RUN mkdir -p /app/logs /app/certificates /app/facturas \
+    && chown -R appuser:appgroup /app
+
+# Copy published app
+COPY --from=build --chown=appuser:appgroup /app/publish .
+
+# Switch to non-root user
+USER appuser
+
+# Environment
+ENV ASPNETCORE_ENVIRONMENT=Production
+ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
+ENV ASPNETCORE_URLS=http://+:${PORT:-5001}
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+    CMD curl -f http://localhost:${PORT:-5001}/health || exit 1
+
+ENTRYPOINT ["dotnet", "HandySales.Billing.Api.dll"]

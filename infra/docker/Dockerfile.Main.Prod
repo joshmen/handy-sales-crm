@@ -1,0 +1,59 @@
+# =============================================================
+# HandySales Main API — Production Dockerfile (.NET 8)
+# Works with: Railway, Azure Container Apps, any Docker host
+# Build context: repository root (HandySales/)
+# =============================================================
+
+# --- Stage 1: Build ---
+FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build
+WORKDIR /src
+
+# Copy project files in dependency order for optimal layer caching
+COPY ["libs/HandySales.Shared/HandySales.Shared.csproj", "libs/HandySales.Shared/"]
+COPY ["libs/HandySales.Domain/HandySales.Domain.csproj", "libs/HandySales.Domain/"]
+COPY ["libs/HandySales.Application/HandySales.Application.csproj", "libs/HandySales.Application/"]
+COPY ["libs/HandySales.Infrastructure/HandySales.Infrastructure.csproj", "libs/HandySales.Infrastructure/"]
+COPY ["apps/api/src/HandySales.Api/HandySales.Api.csproj", "apps/api/src/HandySales.Api/"]
+
+# Restore (cached unless .csproj files change)
+RUN dotnet restore "apps/api/src/HandySales.Api/HandySales.Api.csproj"
+
+# Copy source code
+COPY libs/ libs/
+COPY apps/api/ apps/api/
+
+# Publish optimized release build
+WORKDIR "/src/apps/api/src/HandySales.Api"
+RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
+
+# --- Stage 2: Runtime ---
+FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS final
+WORKDIR /app
+
+# Install ICU for globalization support (Mexican locale, currency formatting)
+RUN apk add --no-cache icu-libs curl
+
+# Create non-root user
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+# Create required directories
+RUN mkdir -p /app/logs /app/uploads \
+    && chown -R appuser:appgroup /app
+
+# Copy published app
+COPY --from=build --chown=appuser:appgroup /app/publish .
+
+# Switch to non-root user
+USER appuser
+
+# Environment
+ENV ASPNETCORE_ENVIRONMENT=Production
+ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
+# Railway assigns PORT dynamically; Azure uses ASPNETCORE_URLS
+ENV ASPNETCORE_URLS=http://+:${PORT:-5000}
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+    CMD curl -f http://localhost:${PORT:-5000}/health || exit 1
+
+ENTRYPOINT ["dotnet", "HandySales.Api.dll"]

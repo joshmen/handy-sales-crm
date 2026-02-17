@@ -1,0 +1,33 @@
+# Node
+**/node_modules
+**/.next
+**/.turbo
+
+# Git
+.git
+.gitignore
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment
+.env*.local
+**/.env.local
+
+# IDE
+.vscode
+.idea
+
+# Build artifacts
+**/bin
+**/obj
+**/dist
+**/build
+
+# Temp
+**/tmp
+**/.tmp
+
+# Test
+**/coverage

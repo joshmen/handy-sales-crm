@@ -1,0 +1,8 @@
+
+# Configuración de conexión MySQL para Handy ERP
+
+DB_HOST=localhost
+DB_PORT=3307
+DB_NAME=handy_erp
+DB_USER=handy_user
+DB_PASSWORD=handy_pass

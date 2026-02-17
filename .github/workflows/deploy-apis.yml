@@ -1,0 +1,158 @@
+name: Deploy APIs to Railway
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/api/**'
+      - 'apps/billing/**'
+      - 'apps/mobile/**'
+      - 'libs/**'
+      - 'infra/docker/Dockerfile.*.Prod'
+  workflow_dispatch:
+    inputs:
+      deploy_all:
+        description: 'Deploy all services'
+        required: false
+        default: 'true'
+
+# Required secrets (configure in GitHub repo settings):
+# - RAILWAY_TOKEN: Railway API token (get from railway.app/account/tokens)
+# - RAILWAY_PROJECT_ID: Railway project ID (get from project settings)
+
+jobs:
+  detect-changes:
+    name: Detect Changed Services
+    runs-on: ubuntu-latest
+    outputs:
+      main-api: ${{ steps.filter.outputs.main-api }}
+      billing-api: ${{ steps.filter.outputs.billing-api }}
+      mobile-api: ${{ steps.filter.outputs.mobile-api }}
+      deploy-all: ${{ github.event_name == 'workflow_dispatch' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for changes
+        uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            main-api:
+              - 'apps/api/**'
+              - 'libs/**'
+              - 'infra/docker/Dockerfile.Main.Prod'
+            billing-api:
+              - 'apps/billing/**'
+              - 'infra/docker/Dockerfile.Billing.Prod'
+            mobile-api:
+              - 'apps/mobile/**'
+              - 'libs/**'
+              - 'infra/docker/Dockerfile.Mobile.Prod'
+
+  deploy-main-api:
+    name: Deploy Main API
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.main-api == 'true' || needs.detect-changes.outputs.deploy-all == 'true'
+    environment:
+      name: production-main-api
+      url: https://handysales-api-main.up.railway.app
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: |
+          npm install -g @railway/cli
+
+      - name: Deploy to Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          railway up --service handysales-api-main --detach
+        working-directory: ./apps/api
+
+      - name: Wait for deployment
+        run: sleep 30
+
+      - name: Health check
+        run: |
+          curl --fail https://handysales-api-main.up.railway.app/health || exit 1
+
+  deploy-billing-api:
+    name: Deploy Billing API
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.billing-api == 'true' || needs.detect-changes.outputs.deploy-all == 'true'
+    environment:
+      name: production-billing-api
+      url: https://handysales-api-billing.up.railway.app
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: |
+          npm install -g @railway/cli
+
+      - name: Deploy to Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          railway up --service handysales-api-billing --detach
+        working-directory: ./apps/billing
+
+      - name: Wait for deployment
+        run: sleep 30
+
+      - name: Health check
+        run: |
+          curl --fail https://handysales-api-billing.up.railway.app/health || exit 1
+
+  deploy-mobile-api:
+    name: Deploy Mobile API
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.mobile-api == 'true' || needs.detect-changes.outputs.deploy-all == 'true'
+    environment:
+      name: production-mobile-api
+      url: https://handysales-api-mobile.up.railway.app
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: |
+          npm install -g @railway/cli
+
+      - name: Deploy to Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          railway up --service handysales-api-mobile --detach
+        working-directory: ./apps/mobile
+
+      - name: Wait for deployment
+        run: sleep 30
+
+      - name: Health check
+        run: |
+          curl --fail https://handysales-api-mobile.up.railway.app/health || exit 1
+
+  deployment-summary:
+    name: Deployment Summary
+    runs-on: ubuntu-latest
+    needs: [detect-changes, deploy-main-api, deploy-billing-api, deploy-mobile-api]
+    if: always()
+    steps:
+      - name: Print deployment results
+        run: |
+          echo "# Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Service | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Main API | ${{ needs.deploy-main-api.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Billing API | ${{ needs.deploy-billing-api.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Mobile API | ${{ needs.deploy-mobile-api.result }} |" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,249 @@
+services:
+  # Seq - Centralized Logging (Development)
+  seq:
+    image: datalust/seq:latest
+    container_name: handysales_seq_dev
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      SEQ_FIRSTRUN_ADMINPASSWORD: "admin123"
+    ports:
+      - "1341:5341"   # Ingestion API
+      - "1082:80"     # Web UI
+    volumes:
+      - seq_dev_data:/data
+    networks:
+      - handysales_dev_network
+
+  # MySQL Database (única instancia con múltiples bases de datos)
+  mysql:
+    image: mysql:8.0
+    container_name: handysales_mysql_dev
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_USER: handy_user
+      MYSQL_PASSWORD: handy_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_dev_data:/var/lib/mysql
+      # Scripts de inicialización (orden correcto)
+      - ./infra/database/schema/01_init_schema_multitenant.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./infra/database/schema/02_seed_data.sql:/docker-entrypoint-initdb.d/02-seed.sql
+      - ./infra/database/schema/03_create_user.sql:/docker-entrypoint-initdb.d/03-user.sql
+      - ./infra/database/schema/BillingSchema.sql:/docker-entrypoint-initdb.d/04-billing-schema.sql
+      - ./infra/azure/init-database.sql:/docker-entrypoint-initdb.d/05-admin.sql
+      - ./infra/database/schema/04_seed_usuarios.sql:/docker-entrypoint-initdb.d/06-usuarios.sql
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --innodb-buffer-pool-size=256M
+      --innodb-flush-log-at-trx-commit=2
+      --innodb-flush-method=O_DIRECT
+      --max-connections=200
+      --innodb-log-file-size=64M
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "handy_user", "-phandy_pass"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - handysales_dev_network
+
+  # API Principal (HandySales.Api)
+  api_main:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.Main.Dev
+    container_name: handysales_api_main_dev
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:1050
+      ConnectionStrings__DefaultConnection: "Server=mysql;Port=3306;Database=handy_erp;User=handy_user;Password=handy_pass;AllowUserVariables=true;ConnectionTimeout=60;DefaultCommandTimeout=60;CharSet=utf8mb4;Pooling=true;MinimumPoolSize=5;MaximumPoolSize=50;ConnectionLifeTime=300;"
+      JWT__SecretKey: "DevelopmentSecretKeyThatIsAtLeast256BitsLong_1234567890123456789012345678901234567890"
+      JWT__Issuer: "HandySales"
+      JWT__Audience: "HandySalesUsers"
+      JWT__ExpirationHours: 24
+      Multitenancy__DefaultTenantId: "00000000-0000-0000-0000-000000000001"
+      Multitenancy__DefaultTenantName: "Default"
+      Cloudinary__CloudName: "demo_cloud"
+      Cloudinary__ApiKey: "demo_key"
+      Cloudinary__ApiSecret: "demo_secret"
+      Seq__ServerUrl: "http://seq:5341"
+    ports:
+      - "1050:1050"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      seq:
+        condition: service_started
+    volumes:
+      - ./apps/api/logs/main:/app/logs
+      - ./apps/api/uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:1050/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - handysales_dev_network
+
+  # API de Facturación (HandySales.Billing.Api)
+  api_billing:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.Billing.Dev
+    container_name: handysales_api_billing_dev
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:1051
+      ConnectionStrings__BillingConnection: "Server=mysql;Port=3306;Database=handy_billing;User=handy_user;Password=handy_pass;AllowUserVariables=true;ConnectionTimeout=60;DefaultCommandTimeout=60;"
+      ConnectionStrings__MainConnection: "Server=mysql;Port=3306;Database=handy_erp;User=handy_user;Password=handy_pass;AllowUserVariables=true;ConnectionTimeout=60;DefaultCommandTimeout=60;"
+      JWT__SecretKey: "DevelopmentSecretKeyThatIsAtLeast256BitsLong_1234567890123456789012345678901234567890"
+      JWT__Issuer: "HandySales"
+      JWT__Audience: "HandySalesUsers"
+      JWT__ExpirationHours: 24
+      SAT__CertificadoPath: "/app/certificates"
+      SAT__WebServiceUrl: "https://consultaqr.facturaelectronica.sat.gob.mx/ConsultaCFDIService.svc"
+      Seq__ServerUrl: "http://seq:5341"
+    ports:
+      - "1051:1051"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      seq:
+        condition: service_started
+    volumes:
+      - ./apps/api/logs/billing:/app/logs
+      - ./apps/api/certificates:/app/certificates
+      - ./apps/api/facturas:/app/facturas
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:1051/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - handysales_dev_network
+
+  # API Móvil (HandySales.Mobile.Api)
+  api_mobile:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.Mobile.Dev
+    container_name: handysales_api_mobile_dev
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:1052
+      ConnectionStrings__DefaultConnection: "Server=mysql;Port=3306;Database=handy_erp;User=handy_user;Password=handy_pass;AllowUserVariables=true;ConnectionTimeout=60;DefaultCommandTimeout=60;CharSet=utf8mb4;Pooling=true;MinimumPoolSize=5;MaximumPoolSize=50;ConnectionLifeTime=300;"
+      JWT__SecretKey: "DevelopmentSecretKeyThatIsAtLeast256BitsLong_1234567890123456789012345678901234567890"
+      JWT__Issuer: "HandySales"
+      JWT__Audience: "HandySalesUsers"
+      JWT__ExpirationHours: 24
+      Multitenancy__DefaultTenantId: "00000000-0000-0000-0000-000000000001"
+      Multitenancy__DefaultTenantName: "Default"
+      Seq__ServerUrl: "http://seq:5341"
+    ports:
+      - "1052:1052"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      seq:
+        condition: service_started
+    volumes:
+      - ./apps/mobile/logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:1052/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - handysales_dev_network
+
+  # Frontend Web (Next.js) — Usar solo si NO corres el frontend localmente
+  # Para desarrollo: correr 'npm run dev' localmente es ~15x más rápido
+  # Solo usar este container si necesitas simular producción
+  web:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.Web.Dev
+    container_name: handysales_web_dev
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 1083
+      # Client-side (browser) uses localhost
+      NEXT_PUBLIC_API_URL: http://localhost:1050
+      # Server-side (NextAuth) uses Docker internal network
+      API_URL: http://api_main:1050
+      NEXTAUTH_URL: http://localhost:1083
+      NEXTAUTH_SECRET: dev-secret-key-change-in-production
+    ports:
+      - "1083:1083"
+    depends_on:
+      - api_main
+    volumes:
+      # Mount source for hot reload
+      - ./apps/web/src:/app/src
+      - ./apps/web/public:/app/public
+    networks:
+      - handysales_dev_network
+    profiles:
+      - web  # Solo se ejecuta si usas: docker-compose --profile web up -d
+
+  # Nginx Reverse Proxy (opcional para desarrollo)
+  nginx:
+    image: nginx:alpine
+    container_name: handysales_nginx_dev
+    restart: unless-stopped
+    ports:
+      - "1080:80"
+    volumes:
+      - ./infra/nginx/nginx.dev.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api_main
+      - api_billing
+      - api_mobile
+    networks:
+      - handysales_dev_network
+    profiles:
+      - nginx  # Solo se ejecuta si usas: docker-compose --profile nginx up
+
+  # phpMyAdmin (herramienta de administración de BD opcional)
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: handysales_phpmyadmin_dev
+    restart: unless-stopped
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: handy_user
+      PMA_PASSWORD: handy_pass
+      UPLOAD_LIMIT: 100M
+    ports:
+      - "1081:80"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - handysales_dev_network
+    profiles:
+      - admin  # Solo se ejecuta si usas: docker-compose --profile admin up
+
+volumes:
+  mysql_dev_data:
+    driver: local
+  seq_dev_data:
+    driver: local
+
+networks:
+  handysales_dev_network:
+    driver: bridge
+    name: handysales_dev_network

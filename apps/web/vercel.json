@@ -1,0 +1,22 @@
+{
+  "framework": "nextjs",
+  "installCommand": "npm install --legacy-peer-deps --production=false",
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "build": {
+    "env": {
+      "NEXT_TELEMETRY_DISABLED": "1"
+    }
+  },
+  "functions": {
+    "src/app/api/**/*.ts": {
+      "maxDuration": 10
+    }
+  },
+  "git": {
+    "deploymentEnabled": {
+      "develop": false,
+      "main": true
+    }
+  }
+}

@@ -1,0 +1,78 @@
+# ===========================================
+# HandySales .gitignore
+# ===========================================
+
+# ── .NET ──────────────────────────────────
+**/bin/
+**/obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+*.ncrunchproject
+*.ncrunchsolution
+project.lock.json
+TestResult.xml
+
+# ── Node.js / Next.js ────────────────────
+**/node_modules/
+**/.next/
+**/.turbo/
+**/out/
+**/.vercel/
+
+# ── Environment Variables ─────────────────
+.env
+.env.*
+!.env.production.template
+!.env.example
+
+# ── Logs ──────────────────────────────────
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+**/logs/
+apps/api/logs/
+apps/mobile/logs/
+
+# ── IDE ───────────────────────────────────
+.vs/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── OS Files ──────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Docker ────────────────────────────────
+# Don't ignore docker-compose or Dockerfiles
+# But ignore runtime data
+apps/api/uploads/
+apps/api/certificates/
+apps/api/facturas/
+
+# ── Build artifacts ───────────────────────
+**/dist/
+**/build/
+**/coverage/
+**/tmp/
+**/.tmp/
+
+# ── NuGet ─────────────────────────────────
+*.nupkg
+**/packages/
+
+# ── Claude Code ───────────────────────────
+.claude/
+
+# ── Old/legacy folders ────────────────────
+HandySales/
+
+# ── Windows reserved names ────────────────
+**/nul

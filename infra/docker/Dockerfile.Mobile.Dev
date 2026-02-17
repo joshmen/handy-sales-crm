@@ -1,0 +1,56 @@
+# Dockerfile para API Móvil - Desarrollo
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+WORKDIR /app
+EXPOSE 5002
+
+# Instalar herramientas de desarrollo y debugging
+RUN apt-get update && apt-get install -y \
+    curl \
+    procps \
+    && rm -rf /var/lib/apt/lists/*
+
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+
+# Copiar archivos de proyecto en orden de dependencias (nueva estructura)
+COPY ["libs/HandySales.Shared/HandySales.Shared.csproj", "libs/HandySales.Shared/"]
+COPY ["libs/HandySales.Domain/HandySales.Domain.csproj", "libs/HandySales.Domain/"]
+COPY ["libs/HandySales.Application/HandySales.Application.csproj", "libs/HandySales.Application/"]
+COPY ["libs/HandySales.Infrastructure/HandySales.Infrastructure.csproj", "libs/HandySales.Infrastructure/"]
+COPY ["apps/mobile/HandySales.Mobile.Api/HandySales.Mobile.Api.csproj", "apps/mobile/HandySales.Mobile.Api/"]
+
+# Restaurar dependencias
+RUN dotnet restore "apps/mobile/HandySales.Mobile.Api/HandySales.Mobile.Api.csproj"
+
+# Copiar código fuente
+COPY libs/ libs/
+COPY apps/mobile/ apps/mobile/
+
+# Build de la aplicación en modo Debug para desarrollo
+WORKDIR "/src/apps/mobile/HandySales.Mobile.Api"
+RUN dotnet build "HandySales.Mobile.Api.csproj" -c Debug -o /app/build
+
+FROM build AS publish
+RUN dotnet publish "HandySales.Mobile.Api.csproj" -c Debug -o /app/publish /p:UseAppHost=false
+
+FROM base AS final
+WORKDIR /app
+
+# Copiar aplicación publicada
+COPY --from=publish /app/publish .
+
+# Crear directorios necesarios con permisos
+RUN mkdir -p /app/logs \
+    && chmod 755 /app/logs
+
+# Configurar variables de entorno para desarrollo
+ENV DOTNET_ENVIRONMENT=Development
+ENV ASPNETCORE_HTTP_PORTS=5002
+ENV DOTNET_EnableDiagnostics=1
+ENV DOTNET_WATCH_RESTART_ON_RUDE_EDIT=1
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:5002/health || exit 1
+
+ENTRYPOINT ["dotnet", "HandySales.Mobile.Api.dll"]

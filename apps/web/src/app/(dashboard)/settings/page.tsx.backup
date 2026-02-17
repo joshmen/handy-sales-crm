@@ -1,0 +1,754 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { useClientOnly } from "@/hooks/useClientOnly";
+import { useCompany } from "@/contexts/CompanyContext";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Label } from "@/components/ui/Label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
+import { Separator } from "@/components/ui/Separator";
+import { Switch } from "@/components/ui/Switch";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/Avatar";
+import { Badge } from "@/components/ui/Badge";
+import { Layout } from "@/components/layout/Layout";
+import {
+  Settings,
+  Bell,
+  Shield,
+  Palette,
+  Database,
+  Save,
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
+  Globe,
+  Lock,
+  Smartphone,
+  Monitor,
+  Moon,
+  Sun,
+  Building,
+  Image,
+  Download,
+  Trash2,
+  AlertCircle,
+} from "lucide-react";
+import { useSession } from "next-auth/react";
+import { toast } from "@/hooks/useToast";
+
+export default function SettingsPage() {
+  const { data: session } = useSession();
+  const isClient = useClientOnly();
+  const { settings, isUpdating, updateSettings, uploadLogo, deleteLogo } = useCompany();
+  const [activeTab, setActiveTab] = useState("company");
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [notifications, setNotifications] = useState({
+    email: true,
+    push: true,
+    sms: false,
+    desktop: true,
+  });
+
+  // Determinar rol del usuario
+  const userRole = session?.user?.role || "VENDEDOR";
+  const isSuperAdmin = userRole === "SUPER_ADMIN";
+  const isAdmin = userRole === "ADMIN";
+  const isVendedor = userRole === "VENDEDOR";
+
+  const [profile, setProfile] = useState({
+    name: session?.user?.name || "Carlos Mendoza",
+    email: session?.user?.email || "carlos.mendoza@handy.com",
+    phone: "+52 644 123 4567",
+    territory: "Zona Norte",
+    role: userRole,
+    avatar: session?.user?.image || "",
+    bio: "Vendedor especializado en zona norte con 5 años de experiencia.",
+  });
+
+  const [companySettings, setCompanySettings] = useState({
+    name: settings?.companyName || "Mi Empresa",
+    logo: settings?.companyLogo || "",
+    primaryColor: settings?.companyPrimaryColor || "#3B82F6",
+    secondaryColor: settings?.companySecondaryColor || "#8B5CF6",
+  });
+  const [hasChanges, setHasChanges] = useState(false);
+  const [originalSettings, setOriginalSettings] = useState({
+    name: settings?.companyName || "Mi Empresa",
+    logo: settings?.companyLogo || "",
+    primaryColor: settings?.companyPrimaryColor || "#3B82F6",
+    secondaryColor: settings?.companySecondaryColor || "#8B5CF6",
+  });
+
+  // Sincronizar con el contexto cuando cambie
+  useEffect(() => {
+    if (settings) {
+      const newSettings = {
+        name: settings.companyName || "Mi Empresa",
+        logo: settings.companyLogo || "",
+        primaryColor: settings.companyPrimaryColor || "#3B82F6",
+        secondaryColor: settings.companySecondaryColor || "#8B5CF6",
+      };
+      setCompanySettings(newSettings);
+      setOriginalSettings(newSettings);
+    }
+  }, [settings]);
+
+  // Detectar cambios en la configuración
+  useEffect(() => {
+    const changed = JSON.stringify(companySettings) !== JSON.stringify(originalSettings);
+    setHasChanges(changed);
+  }, [companySettings, originalSettings]);
+
+  const handleSaveProfile = () => {
+    // Aquí iría la lógica para guardar el perfil
+    console.log("Guardando perfil:", profile);
+  };
+
+  const handleSaveNotifications = () => {
+    // Aquí iría la lógica para guardar notificaciones
+    console.log("Guardando notificaciones:", notifications);
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase();
+  };
+
+  return (
+    <Layout>
+      <div className="flex-1 space-y-6 p-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Configuración</h1>
+            <p className="text-muted-foreground">
+              Gestiona tu perfil y configuraciones del sistema
+            </p>
+          </div>
+        </div>
+
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="space-y-6"
+        >
+          <TabsList className="grid w-full grid-cols-6">
+            {(isAdmin || isSuperAdmin) && (
+              <TabsTrigger value="company" className="flex items-center gap-2">
+                <Building className="h-4 w-4" />
+                Empresa
+              </TabsTrigger>
+            )}
+            {(isAdmin || isSuperAdmin) && (
+              <TabsTrigger value="billing" className="flex items-center gap-2">
+                <Building className="h-4 w-4" />
+                Facturación
+              </TabsTrigger>
+            )}
+            <TabsTrigger
+              value="notifications"
+              className="flex items-center gap-2"
+            >
+              <Bell className="h-4 w-4" />
+              Notificaciones
+            </TabsTrigger>
+            <TabsTrigger value="security" className="flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              Seguridad
+            </TabsTrigger>
+            <TabsTrigger value="appearance" className="flex items-center gap-2">
+              <Palette className="h-4 w-4" />
+              Apariencia
+            </TabsTrigger>
+            <TabsTrigger value="system" className="flex items-center gap-2">
+              <Database className="h-4 w-4" />
+              Sistema
+            </TabsTrigger>
+          </TabsList>
+
+
+          {/* Company Tab - Para Administradores y Super Admin */}
+          {(isAdmin || isSuperAdmin) && (
+            <TabsContent value="company" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Configuración de Empresa</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="company-name">Nombre de la Empresa</Label>
+                      <Input
+                        id="company-name"
+                        value={companySettings.name}
+                        onChange={(e) =>
+                          setCompanySettings({ ...companySettings, name: e.target.value })
+                        }
+                        placeholder="Tu empresa"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Logo de la Empresa</Label>
+                      <div className="flex items-center gap-4">
+                        {companySettings.logo ? (
+                          <img
+                            src={companySettings.logo}
+                            alt="Logo"
+                            className="h-16 w-16 rounded-lg object-contain border"
+                          />
+                        ) : (
+                          <div className="h-16 w-16 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
+                            <Image className="h-8 w-8 text-gray-400" />
+                          </div>
+                        )}
+                        <div className="space-y-2">
+                          <div className="flex gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                const input = document.createElement('input');
+                                input.type = 'file';
+                                input.accept = 'image/*';
+                                input.onchange = async (e) => {
+                                  const file = (e.target as HTMLInputElement)?.files?.[0];
+                                  if (file) {
+                                    const result = await uploadLogo(file);
+                                    if (result) {
+                                      // Don't reset other fields when logo updates
+                                      setCompanySettings(prev => ({ ...prev, logo: result.logo }));
+                                    }
+                                  }
+                                };
+                                input.click();
+                              }}
+                              disabled={isUpdating}
+                            >
+                              <Image className="mr-2 h-4 w-4" />
+                              {isUpdating ? 'Subiendo...' : 'Subir Logo'}
+                            </Button>
+                            {companySettings.logo && (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={deleteLogo}
+                                disabled={isUpdating}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Eliminar
+                              </Button>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            PNG, JPG hasta 2MB. Se mostrará en el header
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    <div className="space-y-2">
+                      <Label>Colores de la Marca</Label>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="primary-color" className="text-sm">
+                            Color Primario
+                          </Label>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              id="primary-color"
+                              type="color"
+                              value={companySettings.primaryColor}
+                              onChange={(e) =>
+                                setCompanySettings({
+                                  ...companySettings,
+                                  primaryColor: e.target.value,
+                                })
+                              }
+                              className="w-20 h-10"
+                            />
+                            <Input
+                              value={companySettings.primaryColor}
+                              onChange={(e) =>
+                                setCompanySettings({
+                                  ...companySettings,
+                                  primaryColor: e.target.value,
+                                })
+                              }
+                              placeholder="#3B82F6"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="secondary-color" className="text-sm">
+                            Color Secundario
+                          </Label>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              id="secondary-color"
+                              type="color"
+                              value={companySettings.secondaryColor}
+                              onChange={(e) =>
+                                setCompanySettings({
+                                  ...companySettings,
+                                  secondaryColor: e.target.value,
+                                })
+                              }
+                              className="w-20 h-10"
+                            />
+                            <Input
+                              value={companySettings.secondaryColor}
+                              onChange={(e) =>
+                                setCompanySettings({
+                                  ...companySettings,
+                                  secondaryColor: e.target.value,
+                                })
+                              }
+                              placeholder="#8B5CF6"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Los colores se aplicarán a botones y elementos de la interfaz
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end">
+                    <Button 
+                      onClick={async () => {
+                        // Mapear campos locales a campos de API
+                        const apiData = {
+                          companyName: companySettings.name,
+                          companyPrimaryColor: companySettings.primaryColor,
+                          companySecondaryColor: companySettings.secondaryColor,
+                        };
+                        const success = await updateSettings(apiData);
+                        if (success) {
+                          setOriginalSettings(companySettings);
+                          setHasChanges(false);
+                        }
+                      }}
+                      disabled={isUpdating || !hasChanges}
+                    >
+                      <Save className="mr-2 h-4 w-4" />
+                      {isUpdating ? 'Guardando...' : 'Guardar configuración'}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+
+          {/* Notifications Tab */}
+          <TabsContent value="notifications" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Preferencias de Notificaciones</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-2">
+                        <Mail className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium">
+                          Notificaciones por email
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Recibe actualizaciones importantes por correo
+                        electrónico
+                      </p>
+                    </div>
+                    <Switch
+                      checked={notifications.email}
+                      onCheckedChange={(checked) =>
+                        setNotifications({
+                          ...notifications,
+                          email: checked,
+                        })
+                      }
+                      disabled={!isSuperAdmin && !isAdmin}
+                    />
+                  </div>
+
+                  <Separator />
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-2">
+                        <Smartphone className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium">Notificaciones push</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Recibe notificaciones en tu dispositivo móvil
+                      </p>
+                    </div>
+                    <Switch
+                      checked={notifications.push}
+                      onCheckedChange={(checked) =>
+                        setNotifications({
+                          ...notifications,
+                          push: checked,
+                        })
+                      }
+                      disabled={!isSuperAdmin && !isAdmin}
+                    />
+                  </div>
+
+                  <Separator />
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-2">
+                        <Phone className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium">Notificaciones SMS</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Recibe mensajes de texto para eventos críticos
+                      </p>
+                    </div>
+                    <Switch
+                      checked={notifications.sms}
+                      onCheckedChange={(checked) =>
+                        setNotifications({
+                          ...notifications,
+                          sms: checked,
+                        })
+                      }
+                      disabled={!isSuperAdmin && !isAdmin}
+                    />
+                  </div>
+
+                  <Separator />
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-2">
+                        <Monitor className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium">
+                          Notificaciones de escritorio
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Muestra notificaciones en tu navegador
+                      </p>
+                    </div>
+                    <Switch
+                      checked={notifications.desktop}
+                      onCheckedChange={(checked) =>
+                        setNotifications({
+                          ...notifications,
+                          desktop: checked,
+                        })
+                      }
+                      disabled={!isSuperAdmin && !isAdmin}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end">
+                  <Button 
+                    onClick={handleSaveNotifications}
+                    disabled={!isSuperAdmin && !isAdmin}
+                  >
+                    <Save className="mr-2 h-4 w-4" />
+                    Guardar preferencias
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Security Tab */}
+          <TabsContent value="security" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Seguridad de la cuenta</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="current-password">Contraseña actual</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        id="current-password"
+                        type="password"
+                        placeholder="Ingresa tu contraseña actual"
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="new-password">Nueva contraseña</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        id="new-password"
+                        type="password"
+                        placeholder="Ingresa tu nueva contraseña"
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm-password">
+                      Confirmar nueva contraseña
+                    </Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        id="confirm-password"
+                        type="password"
+                        placeholder="Confirma tu nueva contraseña"
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">
+                    Autenticación de dos factores
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Agrega una capa extra de seguridad a tu cuenta
+                  </p>
+                  <Button variant="outline">
+                    <Shield className="mr-2 h-4 w-4" />
+                    Configurar 2FA
+                  </Button>
+                </div>
+
+                <div className="flex justify-end">
+                  <Button>
+                    <Save className="mr-2 h-4 w-4" />
+                    Actualizar contraseña
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Appearance Tab */}
+          <TabsContent value="appearance" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Apariencia</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Tema</Label>
+                    <div className="flex gap-4">
+                      <button
+                        onClick={() => setIsDarkMode(false)}
+                        className={`flex items-center gap-2 rounded-lg border-2 p-4 transition-colors ${
+                          !isDarkMode
+                            ? "border-primary bg-primary/5"
+                            : "border-border bg-background"
+                        }`}
+                      >
+                        <Sun className="h-5 w-5" />
+                        <span>Claro</span>
+                      </button>
+                      <button
+                        onClick={() => setIsDarkMode(true)}
+                        className={`flex items-center gap-2 rounded-lg border-2 p-4 transition-colors ${
+                          isDarkMode
+                            ? "border-primary bg-primary/5"
+                            : "border-border bg-background"
+                        }`}
+                      >
+                        <Moon className="h-5 w-5" />
+                        <span>Oscuro</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-2">
+                    <Label htmlFor="language">Idioma</Label>
+                    <div className="relative">
+                      <Globe className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <select className="w-full rounded-md border border-input bg-background px-3 py-2 pl-10 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                        <option value="es">Español</option>
+                        <option value="en">English</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="timezone">Zona horaria</Label>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <select className="w-full rounded-md border border-input bg-background px-3 py-2 pl-10 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                        <option value="America/Mexico_City">
+                          Ciudad de México (GMT-6)
+                        </option>
+                        <option value="America/Tijuana">Tijuana (GMT-8)</option>
+                        <option value="America/Cancun">Cancún (GMT-5)</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end">
+                  <Button>
+                    <Save className="mr-2 h-4 w-4" />
+                    Guardar configuración
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* System Tab */}
+          <TabsContent value="system" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Información del sistema</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Versión de la aplicación</Label>
+                    <p className="text-sm text-muted-foreground">v1.0.0-beta</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Última actualización</Label>
+                    <p className="text-sm text-muted-foreground">
+                      15 de enero, 2024
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Base de datos</Label>
+                    <p className="text-sm text-muted-foreground">Conectado</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Servidor</Label>
+                    <p className="text-sm text-muted-foreground">Online</p>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Acciones del sistema</h3>
+                  
+                  <div className="space-y-4">
+                    <div className="rounded-lg border p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Trash2 className="h-4 w-4 text-muted-foreground" />
+                            <h4 className="font-medium">Limpiar Caché</h4>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            Elimina datos temporales almacenados localmente. Útil si experimentas 
+                            problemas de rendimiento o datos desactualizados.
+                          </p>
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            localStorage.clear();
+                            sessionStorage.clear();
+                            toast({
+                              title: "Caché limpiado",
+                              description: "Los datos temporales han sido eliminados",
+                            });
+                          }}
+                        >
+                          Limpiar
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg border p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Download className="h-4 w-4 text-muted-foreground" />
+                            <h4 className="font-medium">Exportar Configuración</h4>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            Descarga un archivo JSON con todas tus preferencias y configuraciones. 
+                            Útil para respaldo o migración a otro dispositivo.
+                          </p>
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            const config = {
+                              profile,
+                              notifications,
+                              theme: isDarkMode ? 'dark' : 'light',
+                              companySettings: isAdmin ? companySettings : undefined,
+                              exportDate: new Date().toISOString(),
+                            };
+                            const blob = new Blob([JSON.stringify(config, null, 2)], 
+                              { type: 'application/json' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `handycrm-config-${Date.now()}.json`;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                            toast({
+                              title: "Configuración exportada",
+                              description: "El archivo se ha descargado correctamente",
+                            });
+                          }}
+                        >
+                          Exportar
+                        </Button>
+                      </div>
+                    </div>
+
+                    {(isAdmin || isSuperAdmin) && (
+                      <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+                        <div className="flex items-start gap-2">
+                          <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
+                          <div className="space-y-1">
+                            <h4 className="font-medium text-yellow-900">Información para Administradores</h4>
+                            <p className="text-sm text-yellow-800">
+                              Como administrador, tienes acceso completo a todas las configuraciones. 
+                              Los cambios que realices afectarán a todos los usuarios de tu organización.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </Layout>
+  );
+}

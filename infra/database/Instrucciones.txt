@@ -1,0 +1,34 @@
+1.- docker-compose up -d
+2.- docker exec -i handy_mysql mysql -u root -prootpass handy_erp < 01_init_schema_multitenant.sql <-- me equivoque en el script y para volver a ejecutar se pone esto:
+3.- docker-compose down -v
+	docker-compose up -d <-- en caso de reiniciar docker compose
+4.- docker exec -it handy_mysql mysql -u root -prootpass <-- para entrar a la consola de mysql desde CLI
+5.- -- 1. Elimina cualquier versión previa (seguro)
+	DROP USER IF EXISTS 'handy_user'@'%';
+
+	-- 2. Crea al usuario con plugin compatible
+	CREATE USER 'handy_user'@'%' IDENTIFIED WITH mysql_native_password BY 'handy_pass';
+
+	-- 3. Asigna todos los privilegios sobre la base de datos
+	GRANT ALL PRIVILEGES ON handy_erp.* TO 'handy_user'@'%' WITH GRANT OPTION;
+
+	-- 4. Refresca los privilegios
+	FLUSH PRIVILEGES;
+
+	-- 5. Confirmación (opcional)
+	SELECT user, host, plugin FROM mysql.user WHERE user = 'handy_user';
+6.- Para meter datos seed:
+# 1. Copia los archivos al contenedor
+docker cp 01_init_schema_multitenant.sql handy_mysql:/tmp/ <<----- este en caso de que no hayas ejecutado el escript de creacion de tablas, de lo contrario te dira que las tablas ya existen
+docker cp 02_seed_data.sql handy_mysql:/tmp/
+docker cp 03_create_user.sql handy_mysql:/tmp/
+
+# 2. Entra al contenedor
+docker exec -it handy_mysql bash
+
+# 3. Ejecuta cada uno dentro del contenedor
+mysql -u root -prootpass handy_erp < /tmp/01_init_schema_multitenant.sql
+mysql -u root -prootpass handy_erp < /tmp/02_seed_data.sql
+mysql -u root -prootpass handy_erp < /tmp/03_create_user.sql
+
+

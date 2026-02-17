@@ -1,0 +1,30 @@
+# Frontend Next.js Development Dockerfile
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install dependencies for node-gyp (some packages need it)
+RUN apk add --no-cache libc6-compat
+
+# Copy package files first (for better layer caching)
+COPY apps/web/package.json apps/web/package-lock.json* ./
+
+# Install dependencies with legacy peer deps to handle React 19 compatibility
+RUN npm install --legacy-peer-deps
+
+# Copy all source files (node_modules excluded via .dockerignore)
+COPY apps/web/ ./
+
+# Remove any local node_modules that might have been copied
+RUN rm -rf node_modules/.cache 2>/dev/null || true
+
+# Expose port
+EXPOSE 1083
+
+# Environment variables
+ENV NODE_ENV=development
+ENV PORT=1083
+ENV HOSTNAME=0.0.0.0
+
+# Start development server
+CMD ["npm", "run", "dev", "--", "-p", "1083", "-H", "0.0.0.0"]

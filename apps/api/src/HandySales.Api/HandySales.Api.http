@@ -1,0 +1,322 @@
+@HandySales_Api_HostAddress = http://localhost:5070
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6...  # Pega tu token real
+
+### 🔐 Login
+POST {{HandySales_Api_HostAddress}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@empresa.com",
+  "tenantId": 1
+}
+
+### 👤 WhoAmI
+GET {{HandySales_Api_HostAddress}}/whoami
+Authorization: Bearer {{token}}
+Accept: application/json
+
+---
+
+### 🚀 Registro autoservicio (crea Tenant + Usuario)
+POST {{HandySales_Api_HostAddress}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "admin@empresa-nueva.com",
+  "password": "123456",
+  "nombre": "Admin Empresa Nueva",
+  "nombreEmpresa": "Distribuciones Aztlán S.A. de C.V.",
+  "rfc": "DAZ010203ZZ1",
+  "contacto": "admin@empresa-nueva.com"
+}
+
+### 📋 Obtener usuarios de mi tenant
+GET {{HandySales_Api_HostAddress}}/usuarios
+Authorization: Bearer {{token}}
+Accept: application/json
+
+---
+
+## 🧾 CLIENTES
+
+### ✅ Crear cliente
+POST {{HandySales_Api_HostAddress}}/clientes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nombre": "Juan Pérez",
+  "rfc": "JUAP810101ABC",
+  "correo": "juan@example.com",
+  "telefono": "5512345678",
+  "direccion": "Calle Falsa 123"
+}
+
+### 📋 Obtener todos los clientes
+GET {{HandySales_Api_HostAddress}}/clientes
+Authorization: Bearer {{token}}
+
+### 🔍 Obtener cliente por ID
+GET {{HandySales_Api_HostAddress}}/clientes/1
+Authorization: Bearer {{token}}
+
+### ✏️ Actualizar cliente
+PUT {{HandySales_Api_HostAddress}}/clientes/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nombre": "Juan P. Modificado",
+  "rfc": "JUAM810101XYZ",
+  "correo": "juan.modificado@example.com",
+  "telefono": "5598765432",
+  "direccion": "Nueva dirección 456"
+}
+
+### 🗑️ Eliminar cliente
+DELETE {{HandySales_Api_HostAddress}}/clientes/1
+Authorization: Bearer {{token}}
+
+---
+
+## 📦 PRODUCTOS
+
+### ✅ Crear producto
+POST {{HandySales_Api_HostAddress}}/productos
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nombre": "Monitor Gamer 27 pulgadas",
+  "codigoBarra": "MON-27-001",
+  "descripcion": "Monitor IPS 144Hz resolución 2K",
+  "precioBase": 4999.99
+}
+
+### 📋 Obtener todos los productos
+GET {{HandySales_Api_HostAddress}}/productos
+Authorization: Bearer {{token}}
+
+### 🔍 Obtener producto por ID
+GET {{HandySales_Api_HostAddress}}/productos/1
+Authorization: Bearer {{token}}
+
+### ✏️ Actualizar producto
+PUT {{HandySales_Api_HostAddress}}/productos/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nombre": "Monitor Gamer 27 curvo",
+  "codigoBarra": "MON-27-001-CURVO",
+  "descripcion": "Monitor curvo 165Hz resolución QHD",
+  "precioBase": 5499.99
+}
+
+### 🗑️ Eliminar producto
+DELETE {{HandySales_Api_HostAddress}}/productos/1
+Authorization: Bearer {{token}}
+
+
+## 🧮 INVENTARIO
+
+### 📋 Obtener todo el inventario del tenant
+GET {{HandySales_Api_HostAddress}}/inventario
+Authorization: Bearer {{token}}
+Accept: application/json
+
+---
+
+### 🔍 Obtener inventario por ID de producto
+GET {{HandySales_Api_HostAddress}}/inventario/1
+Authorization: Bearer {{token}}
+Accept: application/json
+
+> 🔁 Reemplaza `1` con un `productoId` real que exista en tu base de datos.
+
+---
+
+### ✏️ Actualizar inventario por productoId
+PUT {{HandySales_Api_HostAddress}}/inventario/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "cantidadActual": 100,
+  "stockMinimo": 10,
+  "stockMaximo": 150
+}
+
+
+### ➕ Crear lista de precios
+POST {{HandySales_Api_HostAddress}}/listas-precios
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nombre": "Lista Precio Verano 2025",
+  "descripcion": "Precios promocionales para temporada de verano"
+}
+
+---
+
+### 📋 Obtener todas las listas de precios
+GET {{HandySales_Api_HostAddress}}/listas-precios
+Authorization: Bearer {{token}}
+Accept: application/json
+
+---
+
+### 🔍 Obtener lista de precios por ID
+GET {{HandySales_Api_HostAddress}}/listas-precios/1
+Authorization: Bearer {{token}}
+Accept: application/json
+
+---
+
+### ✏️ Actualizar lista de precios
+PUT {{HandySales_Api_HostAddress}}/listas-precios/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nombre": "Lista Actualizada Primavera",
+  "descripcion": "Actualización de precios para primavera"
+}
+
+---
+
+### 🗑️ Eliminar lista de precios
+DELETE {{HandySales_Api_HostAddress}}/listas-precios/1
+Authorization: Bearer {{token}}
+
+
+### ➕ Crear precio para producto en lista de precios
+POST {{HandySales_Api_HostAddress}}/precios-producto
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "productoId": 1,
+  "listaPrecioId": 1,
+  "precio": 1499.99
+}
+
+---
+
+### 📋 Obtener todos los precios por lista de precios
+GET {{HandySales_Api_HostAddress}}/precios-producto/lista/1
+Authorization: Bearer {{token}}
+Accept: application/json
+
+> Cambia `1` por el ID real de una lista de precios.
+
+---
+
+### ✏️ Actualizar precio por producto
+PUT {{HandySales_Api_HostAddress}}/precios-producto/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "productoId": 1,
+  "listaPrecioId": 1,
+  "precio": 1299.00
+}
+
+---
+
+### 🗑️ Eliminar precio por producto
+DELETE {{HandySales_Api_HostAddress}}/precios-producto/1
+Authorization: Bearer {{token}}
+
+
+### ➕ Crear descuento por cantidad
+POST {{HandySales_Api_HostAddress}}/descuentos-cantidad
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "productoId": 1,
+  "cantidadMinima": 5,
+  "descuentoPorcentaje": 10.00,
+  "tipoAplicacion": "Producto"
+}
+
+---
+
+### 📋 Obtener descuentos por producto
+GET {{HandySales_Api_HostAddress}}/descuentos-cantidad/producto/1
+Authorization: Bearer {{token}}
+Accept: application/json
+
+---
+
+### ✏️ Actualizar descuento por cantidad
+PUT {{HandySales_Api_HostAddress}}/descuentos-cantidad/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "productoId": 1,
+  "cantidadMinima": 10,
+  "descuentoPorcentaje": 15.00,
+  "tipoAplicacion": "Producto"
+}
+
+---
+
+### 🗑️ Eliminar descuento
+DELETE {{HandySales_Api_HostAddress}}/descuentos-cantidad/1
+Authorization: Bearer {{token}}
+
+## 🎯 PROMOCIONES
+
+### ➕ Crear promoción
+POST {{HandySales_Api_HostAddress}}/promociones
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nombre": "Promo Back To School",
+  "descripcion": "Descuento por regreso a clases",
+  "productoId": 1,
+  "descuentoPorcentaje": 20.00,
+  "fechaInicio": "2024-08-01",
+  "fechaFin": "2024-08-31"
+}
+
+---
+
+### 📋 Obtener todas las promociones
+GET {{HandySales_Api_HostAddress}}/promociones
+Authorization: Bearer {{token}}
+
+---
+
+### 🔍 Obtener promoción por ID
+GET {{HandySales_Api_HostAddress}}/promociones/1
+Authorization: Bearer {{token}}
+
+---
+
+### ✏️ Actualizar promoción
+PUT {{HandySales_Api_HostAddress}}/promociones/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nombre": "Promo Back To School EXTENDIDA",
+  "descripcion": "Extendida hasta septiembre",
+  "productoId": 1,
+  "descuentoPorcentaje": 25.00,
+  "fechaInicio": "2024-08-01",
+  "fechaFin": "2024-09-15"
+}
+
+---
+
+### 🗑️ Eliminar promoción
+DELETE {{HandySales_Api_HostAddress}}/promociones/1
+Authorization: Bearer {{token}}
+
