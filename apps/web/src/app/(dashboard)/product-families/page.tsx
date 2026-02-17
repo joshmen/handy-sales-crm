@@ -203,11 +203,16 @@ export default function ProductFamiliesPage() {
   const handleToggleActive = async (family: ProductFamily) => {
     try {
       setTogglingId(family.id);
-      await api.patch(`/familias-productos/${family.id}/activo`, { activo: !family.activo });
-      toast.success(family.activo ? 'Familia desactivada' : 'Familia activada');
-      setFamilies(prev => prev.map(f =>
-        f.id === family.id ? { ...f, activo: !f.activo } : f
-      ));
+      const newActivo = !family.activo;
+      await api.patch(`/familias-productos/${family.id}/activo`, { activo: newActivo });
+      toast.success(newActivo ? 'Familia activada' : 'Familia desactivada');
+      if (!showInactive && !newActivo) {
+        setFamilies(prev => prev.filter(f => f.id !== family.id));
+      } else {
+        setFamilies(prev => prev.map(f =>
+          f.id === family.id ? { ...f, activo: newActivo } : f
+        ));
+      }
     } catch (error: any) {
       console.error('Error al cambiar estado:', error);
       const message = error?.response?.data?.message || 'Error al cambiar el estado de la familia';
@@ -274,9 +279,13 @@ export default function ProductFamiliesPage() {
 
       setIsBatchConfirmOpen(false);
       setSelectedIds(new Set());
-      setFamilies(prev => prev.map(f =>
-        ids.includes(f.id) ? { ...f, activo } : f
-      ));
+      if (!showInactive && !activo) {
+        setFamilies(prev => prev.filter(f => !ids.includes(f.id)));
+      } else {
+        setFamilies(prev => prev.map(f =>
+          ids.includes(f.id) ? { ...f, activo } : f
+        ));
+      }
     } catch (error: any) {
       console.error('Error en batch toggle:', error);
       const message = error?.response?.data?.message || 'Error al cambiar el estado de las familias';

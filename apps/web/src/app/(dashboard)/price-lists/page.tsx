@@ -175,11 +175,16 @@ export default function PriceListsPage() {
   const handleToggleActive = async (list: ListaPrecio) => {
     try {
       setTogglingId(list.id);
-      await api.patch(`/listas-precios/${list.id}/activo`, { activo: !list.activo });
-      toast.success(list.activo ? 'Lista desactivada' : 'Lista activada');
-      setPriceLists(prev => prev.map(l =>
-        l.id === list.id ? { ...l, activo: !l.activo } : l
-      ));
+      const newActivo = !list.activo;
+      await api.patch(`/listas-precios/${list.id}/activo`, { activo: newActivo });
+      toast.success(newActivo ? 'Lista activada' : 'Lista desactivada');
+      if (!showInactive && !newActivo) {
+        setPriceLists(prev => prev.filter(l => l.id !== list.id));
+      } else {
+        setPriceLists(prev => prev.map(l =>
+          l.id === list.id ? { ...l, activo: newActivo } : l
+        ));
+      }
     } catch (error: any) {
       console.error('Error al cambiar estado:', error);
       const message = error?.response?.data?.message || 'Error al cambiar el estado de la lista';
@@ -246,9 +251,13 @@ export default function PriceListsPage() {
 
       setIsBatchConfirmOpen(false);
       setSelectedIds(new Set());
-      setPriceLists(prev => prev.map(l =>
-        ids.includes(l.id) ? { ...l, activo } : l
-      ));
+      if (!showInactive && !activo) {
+        setPriceLists(prev => prev.filter(l => !ids.includes(l.id)));
+      } else {
+        setPriceLists(prev => prev.map(l =>
+          ids.includes(l.id) ? { ...l, activo } : l
+        ));
+      }
     } catch (error: any) {
       console.error('Error en batch toggle:', error);
       const message = error?.response?.data?.message || 'Error al cambiar el estado de las listas';

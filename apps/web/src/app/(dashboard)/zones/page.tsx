@@ -180,9 +180,13 @@ export default function ZonesPage() {
       const newActive = !zone.isEnabled;
       await api.patch(`/zonas/${zone.id}/activo`, { activo: newActive });
       toast.success(newActive ? 'Zona activada' : 'Zona desactivada');
-      setZones(prev => prev.map(z =>
-        z.id === zone.id ? { ...z, isEnabled: newActive } : z
-      ));
+      if (!showInactive && !newActive) {
+        setZones(prev => prev.filter(z => z.id !== zone.id));
+      } else {
+        setZones(prev => prev.map(z =>
+          z.id === zone.id ? { ...z, isEnabled: newActive } : z
+        ));
+      }
     } catch (err: any) {
       console.error('Error al cambiar estado:', err);
       const message = err?.response?.data?.message || 'Error al cambiar el estado de la zona';
@@ -249,9 +253,13 @@ export default function ZonesPage() {
 
       setIsBatchConfirmOpen(false);
       setSelectedIds(new Set());
-      setZones(prev => prev.map(z =>
-        ids.includes(parseInt(z.id)) ? { ...z, isEnabled: activo } : z
-      ));
+      if (!showInactive && !activo) {
+        setZones(prev => prev.filter(z => !ids.includes(parseInt(z.id))));
+      } else {
+        setZones(prev => prev.map(z =>
+          ids.includes(parseInt(z.id)) ? { ...z, isEnabled: activo } : z
+        ));
+      }
     } catch (error: any) {
       console.error('Error en batch toggle:', error);
       const message = error?.response?.data?.message || 'Error al cambiar el estado de las zonas';

@@ -304,9 +304,13 @@ export default function ProductsPage() {
       const newActive = !product.isActive;
       await productService.toggleActive(product.id, newActive);
       toast.success(newActive ? 'Producto activado' : 'Producto desactivado');
-      setProducts(prev => prev.map(p =>
-        p.id === product.id ? { ...p, isActive: newActive } : p
-      ));
+      if (!showInactive && !newActive) {
+        setProducts(prev => prev.filter(p => p.id !== product.id));
+      } else {
+        setProducts(prev => prev.map(p =>
+          p.id === product.id ? { ...p, isActive: newActive } : p
+        ));
+      }
     } catch (err) {
       console.error('Error al cambiar estado:', err);
       toast.error('Error al cambiar el estado del producto');
@@ -372,9 +376,13 @@ export default function ProductsPage() {
 
       setIsBatchConfirmOpen(false);
       setSelectedIds(new Set());
-      setProducts(prev => prev.map(p =>
-        ids.includes(parseInt(p.id)) ? { ...p, isActive: activo } : p
-      ));
+      if (!showInactive && !activo) {
+        setProducts(prev => prev.filter(p => !ids.includes(parseInt(p.id))));
+      } else {
+        setProducts(prev => prev.map(p =>
+          ids.includes(parseInt(p.id)) ? { ...p, isActive: activo } : p
+        ));
+      }
     } catch (error) {
       console.error('Error en batch toggle:', error);
       toast.error('Error al cambiar el estado de los productos');

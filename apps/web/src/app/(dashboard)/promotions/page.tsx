@@ -179,9 +179,13 @@ export default function PromotionsPage() {
       );
 
       // Optimistic update
-      setPromotions(prev => prev.map(p =>
-        ids.includes(p.id) ? { ...p, activo } : p
-      ));
+      if (!showInactive && !activo) {
+        setPromotions(prev => prev.filter(p => !ids.includes(p.id)));
+      } else {
+        setPromotions(prev => prev.map(p =>
+          ids.includes(p.id) ? { ...p, activo } : p
+        ));
+      }
 
       setIsBatchConfirmOpen(false);
       setSelectedIds(new Set());
@@ -284,9 +288,13 @@ export default function PromotionsPage() {
       await promotionService.toggleActive(promo.id, newActivo);
       toast.success(newActivo ? 'Promocion activada' : 'Promocion desactivada');
       // Optimistic update
-      setPromotions(prev => prev.map(p =>
-        p.id === promo.id ? { ...p, activo: newActivo } : p
-      ));
+      if (!showInactive && !newActivo) {
+        setPromotions(prev => prev.filter(p => p.id !== promo.id));
+      } else {
+        setPromotions(prev => prev.map(p =>
+          p.id === promo.id ? { ...p, activo: newActivo } : p
+        ));
+      }
     } catch (error: any) {
       const msg = error?.response?.data?.message || 'Error al cambiar estado';
       toast.error(msg);

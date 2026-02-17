@@ -111,9 +111,13 @@ export default function ClientsPage() {
       const newActive = !client.isActive;
       await api.patch(`/clientes/${client.id}/activo`, { activo: newActive });
       toast.success(newActive ? 'Cliente activado' : 'Cliente desactivado');
-      setClients(prev => prev.map(c =>
-        c.id === client.id ? { ...c, isActive: newActive } : c
-      ));
+      if (!showInactive && !newActive) {
+        setClients(prev => prev.filter(c => c.id !== client.id));
+      } else {
+        setClients(prev => prev.map(c =>
+          c.id === client.id ? { ...c, isActive: newActive } : c
+        ));
+      }
     } catch (err) {
       console.error('Error al cambiar estado:', err);
       toast.error('Error al cambiar el estado del cliente');
@@ -179,9 +183,13 @@ export default function ClientsPage() {
 
       setIsBatchConfirmOpen(false);
       setSelectedIds(new Set());
-      setClients(prev => prev.map(c =>
-        ids.includes(parseInt(c.id)) ? { ...c, isActive: activo } : c
-      ));
+      if (!showInactive && !activo) {
+        setClients(prev => prev.filter(c => !ids.includes(parseInt(c.id))));
+      } else {
+        setClients(prev => prev.map(c =>
+          ids.includes(parseInt(c.id)) ? { ...c, isActive: activo } : c
+        ));
+      }
     } catch (error) {
       console.error('Error en batch toggle:', error);
       toast.error('Error al cambiar el estado de los clientes');
