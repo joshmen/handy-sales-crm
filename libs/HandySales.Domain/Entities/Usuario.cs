@@ -47,6 +47,23 @@ public class Usuario : AuditableEntity
     [Column("totp_enabled_at")]
     public DateTime? TotpEnabledAt { get; set; }
 
+    // Password reset
+    [Column("password_reset_token")]
+    public string? PasswordResetToken { get; set; }
+
+    [Column("password_reset_expiry")]
+    public DateTime? PasswordResetExpiry { get; set; }
+
+    // Email verification
+    [Column("email_verificado")]
+    public bool EmailVerificado { get; set; } = false;
+
+    [Column("codigo_verificacion")]
+    public string? CodigoVerificacion { get; set; }
+
+    [Column("codigo_verificacion_expiry")]
+    public DateTime? CodigoVerificacionExpiry { get; set; }
+
     // Navigation properties
     public Tenant Tenant { get; set; } = null!;
     public Role? Role { get; set; }

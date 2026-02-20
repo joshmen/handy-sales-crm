@@ -100,7 +100,12 @@ using HandySales.Infrastructure.MovimientosInventario.Repositories;
 using HandySales.Application.Cobranza.Interfaces;
 using HandySales.Application.Cobranza.Services;
 using HandySales.Infrastructure.Repositories.Cobranza;
+using HandySales.Api.Payments;
 using HandySales.Api.TwoFactor;
+using HandySales.Shared.Email;
+using HandySales.Application.Tenants.Interfaces;
+using HandySales.Infrastructure.Tenants.Services;
+using HandySales.Application.Auth.Validators;
 
 namespace HandySales.Api.Configuration;
 
@@ -255,6 +260,12 @@ public static class ServiceRegistrationExtensions
         // Tenant Repository (Platform-level)
         services.AddScoped<ITenantRepository, TenantRepository>();
 
+        // Tenant Seed Service (auto-seeding demo data on registration)
+        services.AddScoped<ITenantSeedService, TenantSeedService>();
+
+        // Social Register Validator
+        services.AddValidatorsFromAssemblyContaining<SocialRegisterDtoValidator>();
+
         // Impersonation Services (Platform-level, SUPER_ADMIN only)
         services.AddScoped<IImpersonationRepository, ImpersonationRepository>();
         services.AddScoped<IImpersonationService, ImpersonationService>();
@@ -266,6 +277,12 @@ public static class ServiceRegistrationExtensions
 
         // Pwned Password Check (HIBP k-anonymity)
         services.AddHttpClient<PwnedPasswordService>();
+
+        // Email Service (SendGrid)
+        services.AddSingleton<IEmailService, SendGridEmailService>();
+
+        // Stripe Payment Service
+        services.AddScoped<IStripeService, StripeService>();
 
         return services;
     }

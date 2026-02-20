@@ -1,9 +1,12 @@
+using System.Security.Cryptography;
 using HandySales.Domain.Entities;
 using HandySales.Infrastructure.Persistence;
+using HandySales.Shared.Email;
 using HandySales.Shared.Security;
 using Microsoft.EntityFrameworkCore;
 using HandySales.Application.ActivityTracking.Services;
 using HandySales.Application.CompanySettings.Interfaces;
+using HandySales.Application.Tenants.Interfaces;
 using HandySales.Api.TwoFactor;
 using Microsoft.AspNetCore.Http;
 using System.Linq;
@@ -18,6 +21,8 @@ public class AuthService
     private readonly ICloudinaryService _cloudinaryService;
     private readonly TotpService _totp;
     private readonly PwnedPasswordService _pwnedPasswords;
+    private readonly IEmailService _emailService;
+    private readonly ITenantSeedService _tenantSeedService;
 
     public AuthService(
         HandySalesDbContext db,
@@ -27,7 +32,9 @@ public class AuthService
         IServiceProvider serviceProvider,
         ICloudinaryService cloudinaryService,
         TotpService totp,
-        PwnedPasswordService pwnedPasswords)
+        PwnedPasswordService pwnedPasswords,
+        IEmailService emailService,
+        ITenantSeedService tenantSeedService)
     {
         _db = db;
         _jwt = jwt;
@@ -37,9 +44,11 @@ public class AuthService
         _cloudinaryService = cloudinaryService;
         _totp = totp;
         _pwnedPasswords = pwnedPasswords;
+        _emailService = emailService;
+        _tenantSeedService = tenantSeedService;
     }
 
-    public async Task<bool> RegisterAsync(UsuarioRegisterDto dto)
+    public async Task<object?> RegisterAsync(UsuarioRegisterDto dto)
     {
         // Block disposable email domains
         if (DisposableEmailService.IsDisposable(dto.Email))
@@ -50,8 +59,8 @@ public class AuthService
             throw new InvalidOperationException("Esta contraseña fue encontrada en filtraciones de datos. Por favor elige una contraseña diferente.");
 
         // Verifica si ya existe ese email
-        if (await _db.Usuarios.AnyAsync(u => u.Email == dto.Email))
-            return false;
+        if (await _db.Usuarios.IgnoreQueryFilters().AnyAsync(u => u.Email == dto.Email))
+            return null; // Email ya existe
 
         // Crea el Tenant
         var tenant = new Tenant
@@ -62,14 +71,174 @@ public class AuthService
         };
 
         _db.Tenants.Add(tenant);
-        await _db.SaveChangesAsync(); // Necesitamos el Id del tenant
+        await _db.SaveChangesAsync();
 
         // Crear carpeta en Cloudinary para el nuevo tenant
+        await CreateCloudinaryFolderAsync(tenant);
+
+        // Crea el Usuario administrador con verificación pendiente
+        var verificationCode = GenerateVerificationCode();
+        var usuario = new Usuario
+        {
+            Email = dto.Email,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+            Nombre = dto.Nombre,
+            EsAdmin = true,
+            Activo = true,
+            TenantId = tenant.Id,
+            EmailVerificado = false,
+            CodigoVerificacion = BCrypt.Net.BCrypt.HashPassword(verificationCode),
+            CodigoVerificacionExpiry = DateTime.UtcNow.AddMinutes(15)
+        };
+
+        _db.Usuarios.Add(usuario);
+        await _db.SaveChangesAsync();
+
+        // Seed demo data
+        try { await _tenantSeedService.SeedDemoDataAsync(tenant.Id); }
+        catch (Exception ex) { Console.WriteLine($"Error seeding demo data: {ex.Message}"); }
+
+        // Enviar email de verificación
+        await SendVerificationEmailAsync(dto.Email, dto.Nombre, verificationCode);
+
+        return new { requiresVerification = true, email = dto.Email };
+    }
+
+    public async Task<object?> SocialRegisterAsync(SocialRegisterDto dto)
+    {
+        // Block disposable email domains
+        if (DisposableEmailService.IsDisposable(dto.Email))
+            throw new InvalidOperationException("No se permiten correos electrónicos temporales o desechables.");
+
+        // Verifica si ya existe ese email
+        if (await _db.Usuarios.IgnoreQueryFilters().AnyAsync(u => u.Email == dto.Email))
+            return null; // Email ya existe
+
+        // Crea el Tenant
+        var tenant = new Tenant
+        {
+            NombreEmpresa = dto.NombreEmpresa,
+            RFC = dto.RFC ?? string.Empty,
+            Contacto = dto.Contacto ?? string.Empty
+        };
+
+        _db.Tenants.Add(tenant);
+        await _db.SaveChangesAsync();
+
+        // Crear carpeta en Cloudinary
+        await CreateCloudinaryFolderAsync(tenant);
+
+        // Crea el Usuario administrador — Google ya verificó el email
+        var usuario = new Usuario
+        {
+            Email = dto.Email,
+            PasswordHash = string.Empty, // Sin password — login solo por OAuth
+            Nombre = dto.Nombre,
+            AvatarUrl = dto.AvatarUrl,
+            EsAdmin = true,
+            Activo = true,
+            TenantId = tenant.Id,
+            EmailVerificado = true // Google ya lo verificó
+        };
+
+        _db.Usuarios.Add(usuario);
+        await _db.SaveChangesAsync();
+
+        // Seed demo data
+        try { await _tenantSeedService.SeedDemoDataAsync(tenant.Id); }
+        catch (Exception ex) { Console.WriteLine($"Error seeding demo data: {ex.Message}"); }
+
+        await LogActivityAsync(tenant.Id, usuario.Id, "social_register", "auth",
+            $"Nuevo usuario {dto.Email} se registró con {dto.Provider}");
+
+        return await CompleteLogin(usuario);
+    }
+
+    public async Task<object?> VerifyEmailAsync(string email, string code)
+    {
+        var usuario = await _db.Usuarios.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Email == email);
+
+        if (usuario == null)
+            return null;
+
+        if (usuario.EmailVerificado)
+            return new { alreadyVerified = true };
+
+        if (string.IsNullOrEmpty(usuario.CodigoVerificacion) ||
+            usuario.CodigoVerificacionExpiry == null ||
+            usuario.CodigoVerificacionExpiry < DateTime.UtcNow)
+            return new { error = "EXPIRED", message = "El código ha expirado. Solicita uno nuevo." };
+
+        if (!BCrypt.Net.BCrypt.Verify(code, usuario.CodigoVerificacion))
+            return new { error = "INVALID", message = "Código incorrecto." };
+
+        // Marcar como verificado
+        usuario.EmailVerificado = true;
+        usuario.CodigoVerificacion = null;
+        usuario.CodigoVerificacionExpiry = null;
+        await _db.SaveChangesAsync();
+
+        await LogActivityAsync(usuario.TenantId, usuario.Id, "email_verified", "auth",
+            $"Email verificado para {email}");
+
+        return await CompleteLogin(usuario);
+    }
+
+    public async Task<object> ResendVerificationAsync(string email)
+    {
+        var usuario = await _db.Usuarios.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Email == email);
+
+        if (usuario == null || usuario.EmailVerificado)
+            return new { message = "Si el correo existe y no está verificado, recibirá un nuevo código." };
+
+        var verificationCode = GenerateVerificationCode();
+        usuario.CodigoVerificacion = BCrypt.Net.BCrypt.HashPassword(verificationCode);
+        usuario.CodigoVerificacionExpiry = DateTime.UtcNow.AddMinutes(15);
+        await _db.SaveChangesAsync();
+
+        await SendVerificationEmailAsync(email, usuario.Nombre, verificationCode);
+
+        return new { message = "Si el correo existe y no está verificado, recibirá un nuevo código." };
+    }
+
+    private static string GenerateVerificationCode()
+    {
+        return RandomNumberGenerator.GetInt32(100000, 999999).ToString();
+    }
+
+    private async Task SendVerificationEmailAsync(string email, string nombre, string code)
+    {
+        try
+        {
+            var html = $@"
+                <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+                    <h2 style='color: #1e293b;'>Verifica tu cuenta</h2>
+                    <p>Hola <strong>{nombre}</strong>,</p>
+                    <p>Tu código de verificación es:</p>
+                    <div style='background: #f1f5f9; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;'>
+                        <span style='font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #1e293b;'>{code}</span>
+                    </div>
+                    <p>Este código expira en <strong>15 minutos</strong>.</p>
+                    <p style='color: #64748b; font-size: 14px;'>Si no solicitaste este código, puedes ignorar este correo.</p>
+                    <hr style='border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;' />
+                    <p style='color: #94a3b8; font-size: 12px;'>Handy Suites&reg; — Gestiona tu negocio desde cualquier lugar</p>
+                </div>";
+            await _emailService.SendAsync(email, "Verifica tu cuenta — Handy Suites", html);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error enviando email de verificación: {ex.Message}");
+        }
+    }
+
+    private async Task CreateCloudinaryFolderAsync(Tenant tenant)
+    {
         try
         {
             var tenantFolder = _cloudinaryService.GenerateTenantFolder(tenant.Id, tenant.NombreEmpresa);
             var folderCreated = await _cloudinaryService.CreateFolderAsync(tenantFolder);
-            
             if (folderCreated)
             {
                 tenant.CloudinaryFolder = tenantFolder;
@@ -79,24 +248,8 @@ public class AuthService
         }
         catch (Exception ex)
         {
-            // Log error pero continuar con el registro
             Console.WriteLine($"Error creando carpeta de Cloudinary: {ex.Message}");
         }
-
-        // Crea el Usuario administrador
-        var usuario = new Usuario
-        {
-            Email = dto.Email,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
-            Nombre = dto.Nombre,
-            EsAdmin = true,
-            TenantId = tenant.Id
-        };
-
-        _db.Usuarios.Add(usuario);
-        await _db.SaveChangesAsync();
-
-        return true;
     }
 
     public async Task<object?> LoginAsync(UsuarioLoginDto dto)
@@ -116,6 +269,31 @@ public class AuthService
                     $"Intento de login fallido para {usuario.Email}", "failed");
             }
             return null;
+        }
+
+        // Check tenant is active (SuperAdmin is exempt — they don't belong to a regular tenant)
+        if (!usuario.EsSuperAdmin)
+        {
+            var tenant = await _db.Tenants.AsNoTracking()
+                .FirstOrDefaultAsync(t => t.Id == usuario.TenantId);
+            if (tenant == null || !tenant.Activo)
+            {
+                await LogActivityAsync(usuario.TenantId, usuario.Id, "login", "auth",
+                    $"Login bloqueado: tenant desactivado para {usuario.Email}", "blocked");
+                return new { code = "TENANT_DEACTIVATED", message = "Su cuenta ha sido desactivada. Contacte al administrador del sistema." };
+            }
+        }
+
+        // Check if email is verified
+        if (!usuario.EmailVerificado)
+        {
+            // Resend verification code
+            var verificationCode = GenerateVerificationCode();
+            usuario.CodigoVerificacion = BCrypt.Net.BCrypt.HashPassword(verificationCode);
+            usuario.CodigoVerificacionExpiry = DateTime.UtcNow.AddMinutes(15);
+            await _db.SaveChangesAsync();
+            await SendVerificationEmailAsync(usuario.Email, usuario.Nombre, verificationCode);
+            return new { requiresVerification = true, email = usuario.Email };
         }
 
         // Check if 2FA is enabled
@@ -200,6 +378,15 @@ public class AuthService
         if (usuario == null || !usuario.TotpEnabled)
             return null;
 
+        // Check tenant is active before allowing 2FA completion
+        if (!usuario.EsSuperAdmin)
+        {
+            var tenant = await _db.Tenants.AsNoTracking()
+                .FirstOrDefaultAsync(t => t.Id == usuario.TenantId);
+            if (tenant == null || !tenant.Activo)
+                return new { code = "TENANT_DEACTIVATED", message = "Su cuenta ha sido desactivada. Contacte al administrador del sistema." };
+        }
+
         // Try TOTP code first, then recovery code
         var isValid = await _totp.VerifyLoginCodeAsync(userId, code);
         var usedRecoveryCode = false;
@@ -251,6 +438,15 @@ public class AuthService
 
         if (usuario == null || !BCrypt.Net.BCrypt.Verify(dto.password, usuario.PasswordHash))
             return null;
+
+        // Check tenant is active
+        if (!usuario.EsSuperAdmin)
+        {
+            var tenant = await _db.Tenants.AsNoTracking()
+                .FirstOrDefaultAsync(t => t.Id == usuario.TenantId);
+            if (tenant == null || !tenant.Activo)
+                return new { code = "TENANT_DEACTIVATED", message = "Su cuenta ha sido desactivada. Contacte al administrador del sistema." };
+        }
 
         // If user has 2FA, force-login is not allowed — they must use verify-2fa
         if (usuario.TotpEnabled)
@@ -350,8 +546,23 @@ public class AuthService
     public async Task<object?> SocialLoginAsync(string email, string provider)
     {
         var usuario = await _db.Usuarios.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Email == email);
-        if (usuario == null || !usuario.Activo)
-            return null; // User not registered — only pre-registered users can use social login
+
+        // User not found — needs registration
+        if (usuario == null)
+            return new { needsRegistration = true };
+
+        // User deactivated
+        if (!usuario.Activo)
+            return null;
+
+        // Check tenant is active
+        if (!usuario.EsSuperAdmin)
+        {
+            var tenant = await _db.Tenants.AsNoTracking()
+                .FirstOrDefaultAsync(t => t.Id == usuario.TenantId);
+            if (tenant == null || !tenant.Activo)
+                return new { code = "TENANT_DEACTIVATED", message = "Su cuenta ha sido desactivada. Contacte al administrador del sistema." };
+        }
 
         // If user has 2FA enabled, social login still needs 2FA verification
         if (usuario.TotpEnabled)
@@ -452,6 +663,15 @@ public class AuthService
 
         if (tokenEntity == null)
             return null;
+
+        // Check tenant is active before refreshing
+        if (!tokenEntity.Usuario.EsSuperAdmin)
+        {
+            var tenant = await _db.Tenants.AsNoTracking()
+                .FirstOrDefaultAsync(t => t.Id == tokenEntity.Usuario.TenantId);
+            if (tenant == null || !tenant.Activo)
+                return new { code = "TENANT_DEACTIVATED", message = "Su cuenta ha sido desactivada." };
+        }
 
         // Revocar el token actual
         tokenEntity.IsRevoked = true;
@@ -584,5 +804,68 @@ public class AuthService
         }
 
         return context.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+    }
+
+    public async Task<object> ForgotPasswordAsync(string email, string baseUrl)
+    {
+        var usuario = await _db.Usuarios.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Email == email);
+
+        // Always return success to prevent email enumeration
+        if (usuario == null)
+            return new { message = "Si el correo existe, recibirá instrucciones para restablecer su contraseña." };
+
+        // Generate secure token
+        var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+        usuario.PasswordResetToken = BCrypt.Net.BCrypt.HashPassword(token);
+        usuario.PasswordResetExpiry = DateTime.UtcNow.AddMinutes(30);
+        await _db.SaveChangesAsync();
+
+        // Build reset URL
+        var resetUrl = $"{baseUrl}/reset-password?token={token}&email={Uri.EscapeDataString(email)}";
+
+        // Send email
+        var html = EmailTemplates.PasswordReset(usuario.Nombre, resetUrl);
+        _ = _emailService.SendAsync(email, "Restablecer Contraseña - HandySales", html);
+
+        await LogActivityAsync(usuario.TenantId, usuario.Id, "password_reset_request", "auth",
+            $"Solicitud de restablecimiento de contraseña para {email}", "success");
+
+        return new { message = "Si el correo existe, recibirá instrucciones para restablecer su contraseña." };
+    }
+
+    public async Task<object?> ResetPasswordAsync(string email, string token, string newPassword)
+    {
+        var usuario = await _db.Usuarios.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Email == email);
+
+        if (usuario == null)
+            return null;
+
+        // Validate token and expiry
+        if (string.IsNullOrEmpty(usuario.PasswordResetToken) ||
+            usuario.PasswordResetExpiry == null ||
+            usuario.PasswordResetExpiry < DateTime.UtcNow)
+            return null;
+
+        // Verify the token matches
+        if (!BCrypt.Net.BCrypt.Verify(token, usuario.PasswordResetToken))
+            return null;
+
+        // Check password against known breaches
+        if (await _pwnedPasswords.IsCompromisedAsync(newPassword))
+            return new { error = "COMPROMISED_PASSWORD", message = "Esta contraseña fue encontrada en filtraciones de datos. Por favor elige una diferente." };
+
+        // Update password and clear reset token
+        usuario.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+        usuario.PasswordResetToken = null;
+        usuario.PasswordResetExpiry = null;
+        usuario.SessionVersion++; // Invalidate existing sessions
+        await _db.SaveChangesAsync();
+
+        await LogActivityAsync(usuario.TenantId, usuario.Id, "password_reset", "auth",
+            $"Contraseña restablecida exitosamente para {email}", "success");
+
+        return new { message = "Contraseña restablecida exitosamente. Ya puede iniciar sesión." };
     }
 }

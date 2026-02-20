@@ -2,20 +2,6 @@ import { withAuth } from 'next-auth/middleware';
 import { NextResponse } from 'next/server';
 import { UserRole, PERMISSIONS, ROLE_PERMISSIONS } from '@/types/users';
 
-// Mock subscription check (en producción, verificar desde la base de datos)
-const checkSubscription = async (_companyId?: string) => {
-  void _companyId; // evita warning y explícitamente no lo usas
-  // Simular verificación de suscripción
-  return {
-    isActive: true,
-    status: 'ACTIVE',
-    endDate: new Date('2025-02-15'),
-    plan: 'PROFESSIONAL',
-    maxUsers: 20,
-    currentUsers: 8,
-  };
-};
-
 // Rutas y sus permisos requeridos
 const ROUTE_PERMISSIONS = {
   '/users': [PERMISSIONS.USER_READ],
@@ -46,8 +32,15 @@ export default withAuth(
     const pathname = req.nextUrl.pathname;
 
     // Páginas públicas
-    const isPublicPage = pathname === '/' || pathname.startsWith('/invite');
-    const isAuthPage = pathname.startsWith('/login');
+    const isPublicPage =
+      pathname === '/' ||
+      pathname.startsWith('/invite') ||
+      pathname === '/tenant-suspended' ||
+      pathname === '/forgot-password' ||
+      pathname === '/reset-password' ||
+      pathname === '/register' ||
+      pathname === '/verify-email';
+    const isAuthPage = pathname.startsWith('/login') || pathname === '/register' || pathname === '/verify-email';
     const isApiRoute = pathname.startsWith('/api');
     const isMobileApiRoute = pathname.startsWith('/api/mobile');
 
@@ -93,22 +86,11 @@ export default withAuth(
       return NextResponse.redirect(new URL(`/login?from=${encodeURIComponent(from)}`, req.url));
     }
 
-    // Verificar estado de suscripción (excepto para SUPER_ADMIN)
-    if (token.role !== UserRole.SUPER_ADMIN) {
-      const subscription = await checkSubscription(token.companyId as string);
-
-      if (!subscription.isActive) {
-        // Si la suscripción no está activa, solo permitir acceso a página de pago
-        if (!pathname.startsWith('/subscription')) {
-          return NextResponse.redirect(new URL('/subscription/expired', req.url));
-        }
-      }
-
-      // Verificar límite de usuarios al intentar crear uno nuevo
-      if (pathname === '/users/create' && subscription.currentUsers >= subscription.maxUsers) {
-        return NextResponse.redirect(new URL('/users?error=limit_reached', req.url));
-      }
-    }
+    // Subscription enforcement is handled by the backend:
+    // - SessionValidationMiddleware returns 403 TENANT_DEACTIVATED for inactive tenants
+    // - SubscriptionMonitor auto-deactivates tenants with expired subscriptions
+    // - api.ts interceptor catches 403 and redirects to /tenant-suspended
+    // - ExpirationBanner shows warnings for expiring/expired subscriptions in the UI
 
     // Verificación de permisos basados en rol
     const userRole = token.role as UserRole;
@@ -180,8 +162,9 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - public folder
+     * - static assets (svg, png, jpg, etc.)
+     * - login page
      */
-    '/((?!api/auth|_next/static|_next/image|favicon.ico|public|login).*)',
+    '/((?!api/auth|_next/static|_next/image|favicon\\.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?|ttf|eot|css|js|map)$|login|register|verify-email).*)',
   ],
 };

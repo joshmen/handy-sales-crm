@@ -158,6 +158,7 @@ export const authOptions: NextAuthOptions = {
                 role: data.user.role,
                 accessToken: data.token,
                 refreshToken: data.refreshToken,
+                rememberMe: data.rememberMe === true,
               };
             }
           } catch {
@@ -286,6 +287,17 @@ export const authOptions: NextAuthOptions = {
 
           const data = response.data;
 
+          // User not registered — redirect to /register with pre-filled data
+          if (data.needsRegistration) {
+            const params = new URLSearchParams({
+              email: user.email || '',
+              name: user.name || '',
+              avatar: user.image || '',
+              provider: account.provider,
+            });
+            return `/register?${params.toString()}`;
+          }
+
           // Store backend tokens on the user object for the jwt callback
           if (data.user && data.token) {
             user.id = data.user.id;
@@ -300,7 +312,7 @@ export const authOptions: NextAuthOptions = {
             return `/login?requires2FA=true&tempToken=${data.tempToken}&provider=${account.provider}`;
           }
 
-          return false; // User not found in our system
+          return false; // User deactivated or other error
         } catch {
           return false; // Backend error — reject login
         }
@@ -320,9 +332,14 @@ export const authOptions: NextAuthOptions = {
         token.tenantId = user.tenantId;
         token.companyId = user.companyId;
         token.isImpersonating = false;
+        token.rememberMe = user.rememberMe === true;
         token.accessTokenExpires = user.accessToken
           ? getTokenExpiry(user.accessToken)
           : 0;
+        // Set session expiry: 30 days if "Recordarme", 24 hours if not
+        token.sessionExpires = user.rememberMe
+          ? Date.now() + 30 * 24 * 60 * 60 * 1000
+          : Date.now() + 24 * 60 * 60 * 1000;
         return token;
       }
 
@@ -352,6 +369,11 @@ export const authOptions: NextAuthOptions = {
       // Refreshing would restore the original token and break impersonation
       if (token.isImpersonating) {
         return token;
+      }
+
+      // Check "Recordarme" session expiry (24h without, 30d with)
+      if (token.sessionExpires && Date.now() > (token.sessionExpires as number)) {
+        return { ...token, error: 'SessionExpired' };
       }
 
       // Token still valid (> 5 min remaining): return as-is

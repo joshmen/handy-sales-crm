@@ -10,6 +10,7 @@ import { loginSchema, LoginFormData } from '@/lib/validations';
 import { toast } from '@/hooks/useToast';
 import { Eye, EyeOff, Monitor, Shield, AlertTriangle } from 'lucide-react';
 import { BrandedLoadingScreen } from '@/components/ui/BrandedLoadingScreen';
+import { AuthLayout } from '@/components/auth/AuthLayout';
 import axios from 'axios';
 import { API_CONFIG } from '@/lib/constants';
 
@@ -52,6 +53,7 @@ function LoginContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
   const [navigating, setNavigating] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   // 2FA state
   const [loginStep, setLoginStep] = useState<LoginStep>('credentials');
@@ -132,7 +134,7 @@ function LoginContent() {
   // Establish NextAuth session from pre-authenticated tokens
   const establishSession = async (loginResponse: LoginSuccessResponse) => {
     const result = await signIn('credentials', {
-      loginResponse: JSON.stringify(loginResponse),
+      loginResponse: JSON.stringify({ ...loginResponse, rememberMe }),
       redirect: false,
     });
 
@@ -152,6 +154,13 @@ function LoginContent() {
     setSigningIn(true);
     try {
       const { status, data: responseData } = await callLoginApi(data.email, data.password);
+
+      // Email verification required
+      if (status === 200 && responseData.requiresVerification) {
+        router.push(`/verify-email?email=${encodeURIComponent(responseData.email)}`);
+        setSigningIn(false);
+        return;
+      }
 
       // Normal success — user + token
       if (status === 200 && responseData.user && responseData.token) {
@@ -177,6 +186,17 @@ function LoginContent() {
           });
         }
         setLoginStep('totp');
+        setSigningIn(false);
+        return;
+      }
+
+      // Tenant deactivated
+      if (responseData.code === 'TENANT_DEACTIVATED') {
+        toast({
+          title: 'Cuenta desactivada',
+          description: responseData.message || 'Su empresa ha sido desactivada. Contacte al administrador del sistema.',
+          variant: 'destructive',
+        });
         setSigningIn(false);
         return;
       }
@@ -238,7 +258,14 @@ function LoginContent() {
         { timeout: API_CONFIG.TIMEOUT, validateStatus: () => true }
       );
 
-      if (response.status === 200 && response.data.user && response.data.token) {
+      if (response.data?.code === 'TENANT_DEACTIVATED') {
+        toast({
+          title: 'Cuenta desactivada',
+          description: response.data.message || 'Su empresa ha sido desactivada.',
+          variant: 'destructive',
+        });
+        handleBackToCredentials();
+      } else if (response.status === 200 && response.data.user && response.data.token) {
         await establishSession(response.data as LoginSuccessResponse);
       } else {
         toast.error(response.data.error || 'Código inválido. Intenta nuevamente.');
@@ -263,7 +290,14 @@ function LoginContent() {
         { timeout: API_CONFIG.TIMEOUT, validateStatus: () => true }
       );
 
-      if (response.status === 200 && response.data.user && response.data.token) {
+      if (response.data?.code === 'TENANT_DEACTIVATED') {
+        toast({
+          title: 'Cuenta desactivada',
+          description: response.data.message || 'Su empresa ha sido desactivada.',
+          variant: 'destructive',
+        });
+        handleBackToCredentials();
+      } else if (response.status === 200 && response.data.user && response.data.token) {
         await establishSession(response.data as LoginSuccessResponse);
       } else if (response.data.error === '2FA_REQUIRED') {
         toast.error('Este usuario tiene 2FA activado. Usa tu código de autenticación.');
@@ -291,65 +325,41 @@ function LoginContent() {
     setSavedCredentials(null);
   };
 
+  const spinnerSvg = (
+    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+    </svg>
+  );
+
   return (
-    <div className="min-h-screen flex flex-col md:flex-row">
-      {/* ===== LEFT: Brand Panel (desktop) ===== */}
-      <div className="hidden md:flex md:w-1/2 bg-[#16A34A] items-center justify-center p-16">
-        <div className="flex flex-col items-center gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center">
-              <span className={`text-[#16A34A] font-bold text-xl ${spaceGrotesk.className}`}>H</span>
-            </div>
-            <span className={`text-white text-4xl font-bold ${spaceGrotesk.className}`}>
-              HandySales
-            </span>
-          </div>
-          <p className="text-white/80 text-lg">
-            Tu CRM de ventas inteligente
-          </p>
-        </div>
-      </div>
-
-      {/* ===== Mobile Brand Header (< md) ===== */}
-      <div className="flex md:hidden bg-[#16A34A] px-6 py-8 items-center justify-center">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
-            <span className={`text-[#16A34A] font-bold text-lg ${spaceGrotesk.className}`}>H</span>
-          </div>
-          <span className={`text-white text-2xl font-bold ${spaceGrotesk.className}`}>
-            HandySales
-          </span>
-        </div>
-      </div>
-
-      {/* ===== RIGHT: Form Panel ===== */}
-      <div className="flex-1 flex items-center justify-center bg-white px-6 py-12 md:px-16 lg:px-[120px]">
-        <div className="w-full max-w-[480px] space-y-6">
-
+    <>
+      <AuthLayout>
+        <div className="space-y-7">
           {/* ═══ STEP: Credentials ═══ */}
           {loginStep === 'credentials' && (
             <>
-              <div className="space-y-2">
-                <h1 className={`text-[28px] font-bold text-[#111827] ${spaceGrotesk.className}`}>
-                  Iniciar Sesión
+              <div className="space-y-2 text-center">
+                <h1 className={`text-[28px] font-bold text-[#0F172A] tracking-tight ${spaceGrotesk.className}`}>
+                  Iniciar sesión
                 </h1>
-                <p className="text-sm text-[#6B7280]">
+                <p className="text-[15px] text-[#64748B]">
                   Ingresa tus credenciales para acceder
                 </p>
               </div>
 
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                 <div className="space-y-1.5">
-                  <label htmlFor="email" className="block text-[13px] font-medium text-[#374151]">
+                  <label htmlFor="email" className="block text-[14px] font-medium text-[#374151]">
                     Correo electrónico
                   </label>
                   <input
                     id="email"
                     type="email"
-                    placeholder="admin@jeyma.com"
+                    placeholder="tu@empresa.com"
                     {...register('email')}
                     disabled={isDisabled}
-                    className={`w-full h-11 px-3.5 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-[#16A34A] focus:border-[#16A34A] outline-none transition-colors ${
+                    className={`w-full h-12 px-3.5 border rounded-[10px] text-[15px] focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors ${
                       errors.email ? 'border-red-500' : 'border-[#D1D5DB]'
                     } disabled:bg-gray-50 disabled:text-gray-500`}
                   />
@@ -359,9 +369,14 @@ function LoginContent() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label htmlFor="password" className="block text-[13px] font-medium text-[#374151]">
-                    Contraseña
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label htmlFor="password" className="block text-[14px] font-medium text-[#374151]">
+                      Contraseña
+                    </label>
+                    <a href="/forgot-password" className="text-[13px] font-medium text-indigo-600 hover:text-indigo-700">
+                      ¿Olvidaste tu contraseña?
+                    </a>
+                  </div>
                   <div className="relative">
                     <input
                       id="password"
@@ -369,7 +384,7 @@ function LoginContent() {
                       placeholder="••••••••"
                       {...register('password')}
                       disabled={isDisabled}
-                      className={`w-full h-11 px-3.5 py-2.5 pr-10 border rounded-lg text-sm focus:ring-2 focus:ring-[#16A34A] focus:border-[#16A34A] outline-none transition-colors ${
+                      className={`w-full h-12 px-3.5 pr-10 border rounded-[10px] text-[15px] focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors ${
                         errors.password ? 'border-red-500' : 'border-[#D1D5DB]'
                       } disabled:bg-gray-50 disabled:text-gray-500`}
                     />
@@ -387,45 +402,32 @@ function LoginContent() {
                   )}
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      className="w-[18px] h-[18px] rounded border-[#D1D5DB] text-[#16A34A] focus:ring-[#16A34A]"
-                    />
-                    <span className="text-[13px] text-[#374151]">Recordarme</span>
-                  </label>
-                  <a href="#" className="text-[13px] font-medium text-[#2563EB] hover:text-blue-700">
-                    ¿Olvidaste tu contraseña?
-                  </a>
-                </div>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-[18px] h-[18px] rounded border-[#D1D5DB] text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <span className="text-[14px] text-[#374151]">Recordar sesión</span>
+                </label>
 
                 <button
                   type="submit"
                   disabled={isDisabled}
-                  className="w-full h-11 bg-[#16A34A] hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
+                  className="w-full h-12 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white text-[16px] font-semibold rounded-[10px] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center shadow-sm"
                 >
-                  {signingIn ? (
-                    <>
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                      </svg>
-                      Verificando...
-                    </>
-                  ) : (
-                    'Iniciar Sesión'
-                  )}
+                  {signingIn ? (<>{spinnerSvg}Verificando...</>) : 'Iniciar Sesión'}
                 </button>
               </form>
 
-              {/* Social login separator + buttons */}
+              {/* Separator */}
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-[#E5E7EB]" />
                 </div>
                 <div className="relative flex justify-center text-xs">
-                  <span className="bg-white px-3 text-[#9CA3AF]">o continúa con</span>
+                  <span className="bg-white px-3 text-[#9CA3AF]">o</span>
                 </div>
               </div>
 
@@ -433,7 +435,7 @@ function LoginContent() {
                 type="button"
                 onClick={() => signIn('google', { callbackUrl: searchParams.get('callbackUrl') || '/dashboard' })}
                 disabled={isDisabled}
-                className="w-full h-11 border border-[#D1D5DB] text-sm font-medium text-[#374151] rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+                className="w-full h-12 border border-[#D1D5DB] text-[15px] font-medium text-[#374151] rounded-[10px] hover:bg-gray-50 transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-3"
               >
                 <svg className="h-5 w-5" viewBox="0 0 24 24">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
@@ -444,15 +446,12 @@ function LoginContent() {
                 Continuar con Google
               </button>
 
-              <div className="flex items-center justify-center gap-1">
-                <span className="text-[13px] text-[#6B7280]">¿No tienes cuenta?</span>
-                <a
-                  href="mailto:ventas@handysales.com"
-                  className="text-[13px] font-medium text-[#2563EB] hover:text-blue-700"
-                >
-                  Contactar ventas
+              <p className="text-center text-[14px] text-[#64748B]">
+                ¿No tienes cuenta?{' '}
+                <a href="/register" className="font-medium text-indigo-600 hover:text-indigo-700">
+                  Regístrate gratis
                 </a>
-              </div>
+              </p>
 
               {process.env.NODE_ENV === 'development' && (
                 <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
@@ -473,16 +472,15 @@ function LoginContent() {
           {/* ═══ STEP: 2FA TOTP Input ═══ */}
           {loginStep === 'totp' && (
             <>
-              <div className="space-y-2">
-                <h1 className={`text-[28px] font-bold text-[#111827] ${spaceGrotesk.className}`}>
+              <div className="space-y-2 text-center">
+                <h1 className={`text-[28px] font-bold text-[#0F172A] tracking-tight ${spaceGrotesk.className}`}>
                   Verificación 2FA
                 </h1>
-                <p className="text-sm text-[#6B7280]">
+                <p className="text-[15px] text-[#64748B]">
                   Ingresa el código de 6 dígitos de tu app de autenticación
                 </p>
               </div>
 
-              {/* Session conflict info banner (if applicable) */}
               {conflictInfo && (
                 <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
                   <div className="flex items-start gap-2">
@@ -503,8 +501,8 @@ function LoginContent() {
 
               <div className="space-y-6">
                 <div className="flex flex-col items-center gap-4">
-                  <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center">
-                    <Shield className="h-8 w-8 text-[#16A34A]" />
+                  <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center">
+                    <Shield className="h-8 w-8 text-indigo-600" />
                   </div>
 
                   <input
@@ -520,7 +518,7 @@ function LoginContent() {
                     }}
                     onKeyDown={handleTotpKeyDown}
                     disabled={verifying2FA}
-                    className="w-48 h-14 text-center text-2xl tracking-[0.5em] font-mono border border-[#D1D5DB] rounded-lg focus:ring-2 focus:ring-[#16A34A] focus:border-[#16A34A] outline-none disabled:bg-gray-50"
+                    className="w-48 h-14 text-center text-2xl tracking-[0.5em] font-mono border border-[#D1D5DB] rounded-[10px] focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none disabled:bg-gray-50"
                   />
 
                   <p className="text-xs text-[#9CA3AF]">El código cambia cada 30 segundos</p>
@@ -530,25 +528,15 @@ function LoginContent() {
                   type="button"
                   onClick={handleVerify2FA}
                   disabled={totpCode.replace(/\s/g, '').length !== 6 || verifying2FA}
-                  className="w-full h-11 bg-[#16A34A] hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
+                  className="w-full h-12 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white text-[15px] font-semibold rounded-[10px] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center shadow-sm"
                 >
-                  {verifying2FA ? (
-                    <>
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                      </svg>
-                      Verificando...
-                    </>
-                  ) : (
-                    'Verificar y continuar'
-                  )}
+                  {verifying2FA ? (<>{spinnerSvg}Verificando...</>) : 'Verificar y continuar'}
                 </button>
 
                 <button
                   type="button"
                   onClick={handleBackToCredentials}
-                  className="w-full text-sm text-[#6B7280] hover:text-[#374151] transition-colors"
+                  className="w-full text-sm text-[#64748B] hover:text-[#374151] transition-colors"
                 >
                   Volver al inicio de sesión
                 </button>
@@ -559,39 +547,37 @@ function LoginContent() {
           {/* ═══ STEP: Session Conflict Dialog ═══ */}
           {loginStep === 'session-conflict' && conflictInfo && (
             <>
-              <div className="space-y-2">
-                <h1 className={`text-[28px] font-bold text-[#111827] ${spaceGrotesk.className}`}>
+              <div className="space-y-2 text-center">
+                <h1 className={`text-[28px] font-bold text-[#0F172A] tracking-tight ${spaceGrotesk.className}`}>
                   Sesión activa
                 </h1>
-                <p className="text-sm text-[#6B7280]">
+                <p className="text-[15px] text-[#64748B]">
                   Ya tienes una sesión abierta en otro dispositivo
                 </p>
               </div>
 
               <div className="space-y-6">
-                {/* Active session info */}
-                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg space-y-3">
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-3">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center">
                       <Monitor className="h-5 w-5 text-gray-600" />
                     </div>
                     <div>
-                      <p className="font-medium text-sm text-[#111827]">
+                      <p className="font-medium text-sm text-[#0F172A]">
                         {conflictInfo.activeDevice || 'Dispositivo desconocido'}
                       </p>
                       {conflictInfo.lastActivity && (
-                        <p className="text-xs text-[#6B7280]">
+                        <p className="text-xs text-[#64748B]">
                           Última actividad: {conflictInfo.lastActivity}
                         </p>
                       )}
                       {conflictInfo.ip && (
-                        <p className="text-xs text-[#6B7280]">IP: {conflictInfo.ip}</p>
+                        <p className="text-xs text-[#64748B]">IP: {conflictInfo.ip}</p>
                       )}
                     </div>
                   </div>
                 </div>
 
-                {/* 2FA suggestion */}
                 {conflictInfo.suggest2FA && (
                   <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                     <div className="flex items-start gap-2">
@@ -603,7 +589,6 @@ function LoginContent() {
                   </div>
                 )}
 
-                {/* Warning */}
                 <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
                   <div className="flex items-start gap-2">
                     <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
@@ -618,25 +603,15 @@ function LoginContent() {
                     type="button"
                     onClick={handleForceLogin}
                     disabled={forcingLogin}
-                    className="w-full h-11 bg-[#16A34A] hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
+                    className="w-full h-12 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white text-[15px] font-semibold rounded-[10px] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center shadow-sm"
                   >
-                    {forcingLogin ? (
-                      <>
-                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                        </svg>
-                        Iniciando sesión...
-                      </>
-                    ) : (
-                      'Cerrar sesión anterior e iniciar aquí'
-                    )}
+                    {forcingLogin ? (<>{spinnerSvg}Iniciando sesión...</>) : 'Cerrar sesión anterior e iniciar aquí'}
                   </button>
 
                   <button
                     type="button"
                     onClick={handleBackToCredentials}
-                    className="w-full h-11 border border-[#D1D5DB] text-sm font-medium text-[#374151] rounded-lg hover:bg-gray-50 transition-colors"
+                    className="w-full h-12 border border-[#D1D5DB] text-sm font-medium text-[#374151] rounded-[10px] hover:bg-gray-50 transition-colors"
                   >
                     Cancelar
                   </button>
@@ -645,11 +620,11 @@ function LoginContent() {
             </>
           )}
         </div>
-      </div>
+      </AuthLayout>
 
-      {/* ===== Full-Page Navigation Overlay ===== */}
+      {/* Full-Page Navigation Overlay */}
       {navigating && <BrandedLoadingScreen message="Preparando tu escritorio..." />}
-    </div>
+    </>
   );
 }
 
@@ -658,12 +633,7 @@ export default function LoginPage() {
     <Suspense
       fallback={
         <div className="min-h-screen flex items-center justify-center bg-white">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-[#16A34A] rounded-xl flex items-center justify-center">
-              <span className="text-white font-bold text-xl">H</span>
-            </div>
-            <span className="text-[#111827] text-2xl font-bold">HandySales</span>
-          </div>
+          <img src="/logo.svg" alt="Handy Suites" className="w-[220px] h-auto" />
         </div>
       }
     >

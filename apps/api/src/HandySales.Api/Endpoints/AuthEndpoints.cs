@@ -17,8 +17,17 @@ public static class AuthEndpoints
             if (!validation.IsValid)
                 return Results.BadRequest(validation.ToDictionary());
 
-            var ok = await auth.RegisterAsync(dto);
-            return ok ? Results.Ok(new { message = "Usuario registrado" }) : Results.BadRequest(new { error = "Email ya existe" });
+            try
+            {
+                var result = await auth.RegisterAsync(dto);
+                if (result == null)
+                    return Results.BadRequest(new { error = "Email ya existe" });
+                return Results.Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
         });
 
         app.MapPost("/auth/login", async (UsuarioLoginDto dto, IValidator<UsuarioLoginDto> validator, [FromServices] AuthService auth) =>
@@ -31,8 +40,14 @@ public static class AuthEndpoints
             if (result is null)
                 return Results.Unauthorized();
 
-            // Check if this is an ACTIVE_SESSION_EXISTS response (409 Conflict)
             var resultType = result.GetType();
+
+            // Check if email verification is required
+            var requiresVerProp = resultType.GetProperty("requiresVerification");
+            if (requiresVerProp != null && (bool)(requiresVerProp.GetValue(result) ?? false))
+                return Results.Ok(result);
+
+            // Check if this is an ACTIVE_SESSION_EXISTS response (409 Conflict)
             var codeProp = resultType.GetProperty("code");
             if (codeProp != null && codeProp.GetValue(result)?.ToString() == "ACTIVE_SESSION_EXISTS")
                 return Results.Conflict(result);
@@ -128,7 +143,110 @@ public static class AuthEndpoints
 
             var result = await auth.SocialLoginAsync(dto.Email, dto.Provider);
             if (result == null)
-                return Results.BadRequest(new { error = "Usuario no registrado. Solo usuarios existentes pueden usar login social." });
+                return Results.BadRequest(new { error = "Usuario desactivado." });
+
+            return Results.Ok(result);
+        });
+
+        // Social register — called from Next.js API route after Google OAuth for NEW users
+        app.MapPost("/auth/social-register", async (
+            [FromBody] SocialRegisterDto dto,
+            [FromServices] AuthService auth,
+            [FromServices] IConfiguration config,
+            [FromServices] IValidator<SocialRegisterDto> validator,
+            HttpContext context) =>
+        {
+            // Verify shared secret
+            var expectedSecret = config["SocialLogin:SharedSecret"] ?? config["Jwt:Secret"];
+            var providedSecret = context.Request.Headers["X-Social-Login-Secret"].FirstOrDefault();
+            if (string.IsNullOrEmpty(providedSecret) || providedSecret != expectedSecret)
+                return Results.Unauthorized();
+
+            var validation = await validator.ValidateAsync(dto);
+            if (!validation.IsValid)
+                return Results.BadRequest(validation.ToDictionary());
+
+            try
+            {
+                var result = await auth.SocialRegisterAsync(dto);
+                if (result == null)
+                    return Results.BadRequest(new { error = "Email ya existe" });
+                return Results.Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
+        });
+
+        // Email verification
+        app.MapPost("/auth/verify-email", async (
+            [FromBody] VerifyEmailDto dto,
+            [FromServices] AuthService auth) =>
+        {
+            if (string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Code))
+                return Results.BadRequest(new { error = "Se requiere email y código" });
+
+            var result = await auth.VerifyEmailAsync(dto.Email.Trim().ToLowerInvariant(), dto.Code.Trim());
+            if (result == null)
+                return Results.BadRequest(new { error = "Email no encontrado" });
+
+            var resultType = result.GetType();
+            var errorProp = resultType.GetProperty("error");
+            if (errorProp != null)
+                return Results.BadRequest(result);
+
+            return Results.Ok(result);
+        });
+
+        // Resend verification code
+        app.MapPost("/auth/resend-verification", async (
+            [FromBody] ResendVerificationDto dto,
+            [FromServices] AuthService auth) =>
+        {
+            if (string.IsNullOrWhiteSpace(dto.Email))
+                return Results.BadRequest(new { error = "Se requiere email" });
+
+            var result = await auth.ResendVerificationAsync(dto.Email.Trim().ToLowerInvariant());
+            return Results.Ok(result);
+        });
+
+        app.MapPost("/auth/forgot-password", async (
+            [FromBody] ForgotPasswordDto dto,
+            [FromServices] AuthService auth,
+            HttpContext context) =>
+        {
+            if (string.IsNullOrWhiteSpace(dto.Email))
+                return Results.BadRequest(new { error = "Se requiere email" });
+
+            // Build base URL from request origin or referer
+            var origin = context.Request.Headers["Origin"].FirstOrDefault()
+                         ?? context.Request.Headers["Referer"].FirstOrDefault()?.TrimEnd('/')
+                         ?? "http://localhost:1083";
+
+            var result = await auth.ForgotPasswordAsync(dto.Email.Trim().ToLowerInvariant(), origin);
+            return Results.Ok(result);
+        });
+
+        app.MapPost("/auth/reset-password", async (
+            [FromBody] ResetPasswordDto dto,
+            [FromServices] AuthService auth) =>
+        {
+            if (string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Token) || string.IsNullOrWhiteSpace(dto.NewPassword))
+                return Results.BadRequest(new { error = "Se requiere email, token y nueva contraseña" });
+
+            if (dto.NewPassword.Length < 8)
+                return Results.BadRequest(new { error = "La contraseña debe tener al menos 8 caracteres" });
+
+            var result = await auth.ResetPasswordAsync(dto.Email.Trim().ToLowerInvariant(), dto.Token, dto.NewPassword);
+            if (result == null)
+                return Results.BadRequest(new { error = "El enlace es inválido o ha expirado. Solicite uno nuevo." });
+
+            // Check if it was a compromised password error
+            var resultType = result.GetType();
+            var errorProp = resultType.GetProperty("error");
+            if (errorProp != null)
+                return Results.BadRequest(result);
 
             return Results.Ok(result);
         });
@@ -180,3 +298,7 @@ public static class AuthEndpoints
 public record LogoutDto(string? RefreshToken);
 public record Verify2FADto(string TempToken, string Code);
 public record SocialLoginDto(string Email, string Provider);
+public record ForgotPasswordDto(string Email);
+public record ResetPasswordDto(string Email, string Token, string NewPassword);
+public record VerifyEmailDto(string Email, string Code);
+public record ResendVerificationDto(string Email);

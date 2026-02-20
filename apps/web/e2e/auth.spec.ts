@@ -5,7 +5,7 @@ test.describe('Authentication', () => {
     await page.goto('/login');
 
     // Verify login form elements - using actual page structure
-    await expect(page.getByRole('heading', { name: /HandySales/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Iniciar sesión/i })).toBeVisible();
     await expect(page.locator('#email')).toBeVisible();
     await expect(page.locator('#password')).toBeVisible();
     await expect(page.getByRole('button', { name: /Iniciar Sesión/i })).toBeVisible();
@@ -36,8 +36,8 @@ test.describe('Authentication', () => {
     await page.keyboard.press('Escape');
     await page.waitForTimeout(500);
 
-    await page.locator('#email').fill('superadmin@handy.com');
-    await page.locator('#password').fill('password123');
+    await page.locator('#email').fill('admin@jeyma.com');
+    await page.locator('#password').fill('test123');
 
     // Use force click to bypass any overlay
     await page.getByRole('button', { name: /Iniciar Sesión/i }).click({ force: true });
