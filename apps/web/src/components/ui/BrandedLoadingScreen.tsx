@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { Space_Grotesk } from 'next/font/google';
 
 const spaceGrotesk = Space_Grotesk({
@@ -14,20 +14,22 @@ interface BrandedLoadingScreenProps {
 }
 
 export function BrandedLoadingScreen({ message = 'Cargando...' }: BrandedLoadingScreenProps) {
-  const displayMessage = useMemo(() => {
-    if (typeof window === 'undefined') return message;
+  const [displayMessage, setDisplayMessage] = useState(message);
+
+  useEffect(() => {
     try {
       const raw = localStorage.getItem('impersonation-storage');
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed?.state?.isImpersonating && parsed?.state?.tenant?.name) {
-          return `Accediendo a ${parsed.state.tenant.name}...`;
+          setDisplayMessage(`Accediendo a ${parsed.state.tenant.name}...`);
+          return;
         }
       }
     } catch {
       // ignore parse errors
     }
-    return message;
+    setDisplayMessage(message);
   }, [message]);
 
   return (

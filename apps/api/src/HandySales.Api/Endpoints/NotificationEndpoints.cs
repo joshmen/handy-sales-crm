@@ -123,17 +123,16 @@ public static class NotificationEndpoints
         {
             var result = await service.EnviarBroadcastAsync(dto);
 
-            // Push real-time notification to each explicitly targeted user
-            if (dto.UsuarioIds is { Count: > 0 })
+            // Push real-time notification to all notified users (explicit list, zone, or vendedores)
+            if (result.NotifiedUserIds.Count > 0)
             {
                 var payload = new { titulo = dto.Titulo, mensaje = dto.Mensaje, tipo = dto.Tipo };
-                foreach (var uid in dto.UsuarioIds)
+                foreach (var uid in result.NotifiedUserIds)
                 {
                     await hubContext.Clients.Group($"user:{uid}")
                         .SendAsync("ReceiveNotification", payload);
                 }
             }
-            // For zone/vendedores-only broadcasts, users get it via reduced polling
 
             return Results.Ok(result);
         })

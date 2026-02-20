@@ -135,6 +135,7 @@ public class NotificationService : INotificationService
 
                 notification = await _repository.CrearAsync(notification);
                 result.TotalEnviados++;
+                result.NotifiedUserIds.Add(usuarioId);
 
                 var tokenStrings = userTokens.Select(t => t.PushToken).ToList();
                 var fcmResult = await _fcmService.EnviarMulticastAsync(tokenStrings, dto.Titulo, dto.Mensaje, dto.Data);

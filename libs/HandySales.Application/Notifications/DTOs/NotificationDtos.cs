@@ -97,4 +97,5 @@ public class BroadcastResultDto
     public int TotalExitosos { get; set; }
     public int TotalFallidos { get; set; }
     public List<NotificationSendResultDto> Resultados { get; set; } = new();
+    public List<int> NotifiedUserIds { get; set; } = new();
 }

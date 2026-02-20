@@ -1,7 +1,9 @@
 using System.Security.Claims;
+using HandySales.Api.Hubs;
 using HandySales.Application.DTOs;
 using HandySales.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 
 namespace HandySales.Api.Endpoints;
 
@@ -21,7 +23,8 @@ public static class ImpersonationEndpoints
         group.MapPost("/start", async (
             StartImpersonationRequest request,
             HttpContext context,
-            [FromServices] IImpersonationService service) =>
+            [FromServices] IImpersonationService service,
+            [FromServices] IHubContext<NotificationHub> hubContext) =>
         {
             var userId = GetUserId(context);
             if (userId == null)
@@ -33,6 +36,18 @@ public static class ImpersonationEndpoints
             try
             {
                 var response = await service.StartSessionAsync(request, userId.Value, ipAddress, userAgent);
+
+                // Push real-time notification to all users in the target tenant
+                await hubContext.Clients.Group($"tenant:{request.TargetTenantId}")
+                    .SendAsync("ReceiveNotification", new
+                    {
+                        id = 0,
+                        titulo = "Acceso de Soporte",
+                        mensaje = $"Un administrador del sistema ha accedido a su cuenta en modo soporte.",
+                        tipo = 5, // System
+                        timestamp = DateTime.UtcNow
+                    });
+
                 return Results.Ok(response);
             }
             catch (UnauthorizedAccessException)
