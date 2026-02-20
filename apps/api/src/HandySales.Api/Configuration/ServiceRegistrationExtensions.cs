@@ -124,7 +124,7 @@ public static class ServiceRegistrationExtensions
             services.AddDbContext<HandySalesDbContext>(options =>
              options.UseMySql(
                  config.GetConnectionString("DefaultConnection"),
-                 ServerVersion.AutoDetect(config.GetConnectionString("DefaultConnection"))
+                 new MySqlServerVersion(new Version(8, 0, 0))
              ));
         }
         services.AddFluentValidationAutoValidation();
