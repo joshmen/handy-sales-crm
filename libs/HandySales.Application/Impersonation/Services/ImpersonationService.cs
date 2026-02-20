@@ -2,6 +2,7 @@ using System.Text.Json;
 using HandySales.Application.DTOs;
 using HandySales.Application.Impersonation.Interfaces;
 using HandySales.Application.Interfaces;
+using HandySales.Application.Notifications.Interfaces;
 using HandySales.Application.Usuarios.Interfaces;
 using HandySales.Domain.Entities;
 using HandySales.Shared.Security;
@@ -18,6 +19,7 @@ public class ImpersonationService : IImpersonationService
     private readonly IImpersonationRepository _repository;
     private readonly ITenantRepository _tenantRepository;
     private readonly IUsuarioRepository _usuarioRepository;
+    private readonly INotificationRepository _notificationRepository;
     private readonly JwtTokenGenerator _tokenGenerator;
     private readonly ILogger<ImpersonationService> _logger;
 
@@ -30,12 +32,14 @@ public class ImpersonationService : IImpersonationService
         IImpersonationRepository repository,
         ITenantRepository tenantRepository,
         IUsuarioRepository usuarioRepository,
+        INotificationRepository notificationRepository,
         JwtTokenGenerator tokenGenerator,
         ILogger<ImpersonationService> logger)
     {
         _repository = repository;
         _tenantRepository = tenantRepository;
         _usuarioRepository = usuarioRepository;
+        _notificationRepository = notificationRepository;
         _tokenGenerator = tokenGenerator;
         _logger = logger;
     }
@@ -113,6 +117,9 @@ public class ImpersonationService : IImpersonationService
             "IMPERSONATION_STARTED: SuperAdmin {SuperAdminId} ({SuperAdminEmail}) started impersonating Tenant {TenantId} ({TenantName}). Reason: {Reason}. Session: {SessionId}",
             superAdminId, superAdmin.Email, request.TargetTenantId, tenant.NombreEmpresa, request.Reason, sessionId);
 
+        // Notificar a admins del tenant que se inició una sesión de soporte
+        await SendNotificationAsync(sessionId, cancellationToken);
+
         return new StartImpersonationResponse
         {
             SessionId = sessionId,
@@ -149,9 +156,6 @@ public class ImpersonationService : IImpersonationService
         _logger.LogWarning(
             "IMPERSONATION_ENDED: SuperAdmin {SuperAdminId} ended impersonation of Tenant {TenantId}. Session: {SessionId}. Duration: {Duration}",
             superAdminId, session.TargetTenantId, sessionId, DateTime.UtcNow - session.StartedAt);
-
-        // Enviar notificación al tenant (async, no bloquear)
-        _ = Task.Run(() => SendNotificationAsync(sessionId, cancellationToken));
     }
 
     public async Task LogActionAsync(
@@ -270,13 +274,50 @@ public class ImpersonationService : IImpersonationService
 
         try
         {
-            // TODO: Implementar envío real de email
-            // Por ahora solo logueamos
-            _logger.LogInformation(
-                "NOTIFICATION: Tenant {TenantId} should be notified about impersonation session {SessionId}",
-                session.TargetTenantId, sessionId);
+            // Obtener admins activos del tenant target (sin filtro de tenant, ya que corremos en contexto SuperAdmin)
+            var tenantUsers = await _usuarioRepository.ObtenerPorTenantSinFiltroAsync(session.TargetTenantId);
+            var admins = tenantUsers.Where(u => u.EsAdmin && u.Activo).ToList();
+
+            if (admins.Count == 0)
+            {
+                _logger.LogWarning(
+                    "No active admin users found for tenant {TenantId} to notify about impersonation session {SessionId}",
+                    session.TargetTenantId, sessionId);
+                await _repository.MarkNotificationSentAsync(sessionId);
+                return;
+            }
+
+            var ticketInfo = !string.IsNullOrEmpty(session.TicketNumber)
+                ? $" (Ticket: {session.TicketNumber})"
+                : "";
+
+            foreach (var admin in admins)
+            {
+                var notification = new NotificationHistory
+                {
+                    TenantId = session.TargetTenantId,
+                    UsuarioId = admin.Id,
+                    Titulo = "Acceso de Soporte",
+                    Mensaje = $"Un administrador del sistema ha accedido a su cuenta en modo soporte. Motivo: {session.Reason}{ticketInfo}",
+                    Tipo = NotificationType.System,
+                    Status = NotificationStatus.Sent,
+                    DataJson = JsonSerializer.Serialize(new Dictionary<string, string>
+                    {
+                        { "sessionId", sessionId.ToString() },
+                        { "reason", session.Reason },
+                        { "accessLevel", session.AccessLevel.ToString() }
+                    }),
+                    CreadoEn = DateTime.UtcNow
+                };
+
+                await _notificationRepository.CrearAsync(notification);
+            }
 
             await _repository.MarkNotificationSentAsync(sessionId);
+
+            _logger.LogInformation(
+                "Sent impersonation notifications to {Count} admins for tenant {TenantId}, session {SessionId}",
+                admins.Count, session.TargetTenantId, sessionId);
         }
         catch (Exception ex)
         {

@@ -19,6 +19,23 @@ public class Tenant : AuditableEntity
     [Column("logo_url")]
     public string? LogoUrl { get; set; }
 
+    // Suscripción
+    [Column("plan_tipo")]
+    public string? PlanTipo { get; set; }
+    [Column("max_usuarios")]
+    public int MaxUsuarios { get; set; } = 10;
+    [Column("fecha_suscripcion")]
+    public DateTime? FechaSuscripcion { get; set; }
+    [Column("fecha_expiracion")]
+    public DateTime? FechaExpiracion { get; set; }
+
+    // Contacto extendido
+    [Column("telefono")]
+    public string? Telefono { get; set; }
+    [Column("email")]
+    public string? Email { get; set; }
+    [Column("direccion")]
+    public string? Direccion { get; set; }
 
     // Relaciones
     public ICollection<Usuario> Usuarios { get; set; } = new List<Usuario>();

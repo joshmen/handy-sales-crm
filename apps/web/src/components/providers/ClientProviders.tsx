@@ -4,6 +4,7 @@ import { AuthProvider } from "./AuthProvider"
 import { AppProvider } from "@/context/AppContext"
 import { UIProvider } from "@/context/UIContext"
 import { GlobalSettingsProvider } from "@/contexts/GlobalSettingsContext"
+import { SignalRProvider } from "@/contexts/SignalRContext"
 import { CompanyProvider } from "@/contexts/CompanyContext"
 import { ProfileProvider } from "@/contexts/ProfileContext"
 import { LoadingProvider } from "@/contexts/LoadingContext"
@@ -15,6 +16,7 @@ import NextTopLoader from "nextjs-toploader"
 export function ClientProviders({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
+      <SignalRProvider>
       <HydrationProvider>
         <NextTopLoader
           color="#14B8A6"
@@ -43,6 +45,7 @@ export function ClientProviders({ children }: { children: React.ReactNode }) {
           </GlobalSettingsProvider>
         </LoadingProvider>
       </HydrationProvider>
+      </SignalRProvider>
     </AuthProvider>
   )
 }

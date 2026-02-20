@@ -10,6 +10,7 @@ public interface IUsuarioRepository
     Task<Usuario?> ObtenerPorEmailAsync(string email);
     Task<Usuario?> ObtenerPorIdAsync(int id);
     Task<List<Usuario>> ObtenerPorTenantAsync(int tenantId);
+    Task<List<Usuario>> ObtenerPorTenantSinFiltroAsync(int tenantId);
     Task<List<Usuario>> ObtenerTodosAsync();
     Task<Usuario> ActualizarAsync(Usuario usuario);
     Task<bool> EliminarAsync(int id);

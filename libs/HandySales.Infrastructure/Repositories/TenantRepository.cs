@@ -39,4 +39,45 @@ public class TenantRepository : ITenantRepository
             .OrderBy(t => t.NombreEmpresa)
             .ToListAsync();
     }
+
+    public async Task<Tenant?> UpdateAsync(Tenant tenant)
+    {
+        var existing = await _context.Tenants.FindAsync(tenant.Id);
+        if (existing == null) return null;
+
+        existing.NombreEmpresa = tenant.NombreEmpresa;
+        existing.RFC = tenant.RFC;
+        existing.Contacto = tenant.Contacto;
+        existing.Telefono = tenant.Telefono;
+        existing.Email = tenant.Email;
+        existing.Direccion = tenant.Direccion;
+        existing.LogoUrl = tenant.LogoUrl;
+        existing.CloudinaryFolder = tenant.CloudinaryFolder;
+        existing.PlanTipo = tenant.PlanTipo;
+        existing.MaxUsuarios = tenant.MaxUsuarios;
+        existing.FechaSuscripcion = tenant.FechaSuscripcion;
+        existing.FechaExpiracion = tenant.FechaExpiracion;
+        existing.ActualizadoEn = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+        return existing;
+    }
+
+    public async Task<bool> CambiarActivoAsync(int id, bool activo)
+    {
+        var tenant = await _context.Tenants.FindAsync(id);
+        if (tenant == null) return false;
+
+        tenant.Activo = activo;
+        tenant.ActualizadoEn = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<int> GetUsuarioCountAsync(int tenantId)
+    {
+        return await _context.Usuarios
+            .AsNoTracking()
+            .CountAsync(u => u.TenantId == tenantId && u.Activo);
+    }
 }

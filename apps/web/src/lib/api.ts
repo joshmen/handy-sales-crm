@@ -85,7 +85,32 @@ apiInstance.interceptors.response.use(
       }
     }
 
+    // MAINTENANCE_MODE: server is in maintenance, block write operations
+    if (status === 503 && error.response?.data?.code === 'MAINTENANCE_MODE') {
+      // Don't reject silently — let the calling code know
+      return Promise.reject(error);
+    }
+
     if (status === 401 && typeof window !== 'undefined') {
+      const responseCode = error.response?.data?.code;
+
+      // SESSION_REPLACED: another device took the session — immediate redirect, no refresh
+      if (responseCode === 'SESSION_REPLACED') {
+        if (!isLoggingOut && !window.location.pathname.includes('/login')) {
+          isLoggingOut = true;
+          _cachedAccessToken = null;
+          try {
+            sessionStorage.setItem('session_replaced', 'true');
+          } catch { /* ignore */ }
+          try {
+            await signOut({ callbackUrl: '/login', redirect: true });
+          } catch {
+            window.location.href = '/login';
+          }
+        }
+        return Promise.reject(error);
+      }
+
       const authHeader = originalRequest?.headers?.Authorization;
       const isMockToken = authHeader && typeof authHeader === 'string' && authHeader.includes('mock-');
 

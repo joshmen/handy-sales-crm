@@ -1,5 +1,6 @@
 using HandySales.Domain.Entities;
 using HandySales.Shared.Multitenancy;
+using HandySales.Shared.Security;
 using BCrypt.Net;
 using HandySales.Application.Common.DTOs;
 using HandySales.Application.CompanySettings.Interfaces;
@@ -16,19 +17,22 @@ public class UsuarioService
     private readonly ICloudinaryService _cloudinaryService;
     private readonly ICloudinaryFolderService _folderService;
     private readonly ICompanySettingsRepository _companyRepository;
+    private readonly PwnedPasswordService? _pwnedPasswords;
 
     public UsuarioService(
-        IUsuarioRepository repo, 
+        IUsuarioRepository repo,
         ICurrentTenant tenant,
         ICloudinaryService cloudinaryService,
         ICloudinaryFolderService folderService,
-        ICompanySettingsRepository companyRepository)
+        ICompanySettingsRepository companyRepository,
+        PwnedPasswordService? pwnedPasswords = null)
     {
         _repo = repo;
         _tenant = tenant;
         _cloudinaryService = cloudinaryService;
         _folderService = folderService;
         _companyRepository = companyRepository;
+        _pwnedPasswords = pwnedPasswords;
     }
 
     public async Task<bool> EmailDisponibleAsync(string email)
@@ -38,6 +42,14 @@ public class UsuarioService
 
     public async Task<int> RegistrarUsuarioAsync(UsuarioRegisterDto dto)
     {
+        // Block disposable email domains
+        if (DisposableEmailService.IsDisposable(dto.Email))
+            throw new InvalidOperationException("No se permiten correos electrónicos temporales o desechables.");
+
+        // Check password against known breaches
+        if (_pwnedPasswords != null && await _pwnedPasswords.IsCompromisedAsync(dto.Password))
+            throw new InvalidOperationException("Esta contraseña fue encontrada en filtraciones de datos. Por favor elige una contraseña diferente.");
+
         var usuario = new Usuario
         {
             Email = dto.Email,
@@ -172,6 +184,10 @@ public class UsuarioService
         
         if (!string.IsNullOrEmpty(dto.Password))
         {
+            // Check password against known breaches
+            if (_pwnedPasswords != null && await _pwnedPasswords.IsCompromisedAsync(dto.Password))
+                throw new InvalidOperationException("Esta contraseña fue encontrada en filtraciones de datos. Por favor elige una contraseña diferente.");
+
             usuario.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
         }
 
@@ -382,6 +398,10 @@ public class UsuarioService
             {
                 throw new InvalidOperationException("La contraseña actual es incorrecta");
             }
+
+            // Check password against known breaches
+            if (_pwnedPasswords != null && await _pwnedPasswords.IsCompromisedAsync(dto.NewPassword))
+                throw new InvalidOperationException("Esta contraseña fue encontrada en filtraciones de datos. Por favor elige una contraseña diferente.");
 
             // Actualizar con nueva contraseña
             usuario.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);

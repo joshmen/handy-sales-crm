@@ -35,6 +35,7 @@ services:
       - ./infra/database/schema/BillingSchema.sql:/docker-entrypoint-initdb.d/04-billing-schema.sql
       - ./infra/azure/init-database.sql:/docker-entrypoint-initdb.d/05-admin.sql
       - ./infra/database/schema/04_seed_usuarios.sql:/docker-entrypoint-initdb.d/06-usuarios.sql
+      - ./infra/database/schema/05_ef_migrations_baseline.sql:/docker-entrypoint-initdb.d/07-ef-baseline.sql
     command: >
       --default-authentication-plugin=mysql_native_password
       --character-set-server=utf8mb4
@@ -147,6 +148,7 @@ services:
       Multitenancy__DefaultTenantId: "00000000-0000-0000-0000-000000000001"
       Multitenancy__DefaultTenantName: "Default"
       Seq__ServerUrl: "http://seq:5341"
+      RUN_MIGRATIONS: "false"
     ports:
       - "1052:1052"
     depends_on:

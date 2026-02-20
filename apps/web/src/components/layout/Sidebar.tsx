@@ -33,6 +33,7 @@ import {
   Ruler,
   ArrowsLeftRight,
   ChartBar,
+  Megaphone,
   IconContext,
 } from '@phosphor-icons/react';
 import { useSidebar } from '@/stores/useUIStore';
@@ -43,6 +44,7 @@ import { Button } from '@/components/ui/Button';
 import { Separator } from '@/components/ui/Separator';
 import { useCompany } from '@/contexts/CompanyContext';
 import { useProfile } from '@/contexts/ProfileContext';
+import { useImpersonationStore } from '@/stores/useImpersonationStore';
 
 interface SidebarItem {
   id: string;
@@ -289,6 +291,20 @@ const sidebarItems: SidebarItem[] = [
     permission: ['view_users', 'manage_roles', 'manage_global_settings'],
     submenu: [
       {
+        id: 'tenants',
+        label: 'Gestión de Empresas',
+        icon: Buildings,
+        href: '/admin/tenants',
+        permission: 'manage_tenants',
+      },
+      {
+        id: 'system-dashboard',
+        label: 'Dashboard Sistema',
+        icon: ChartBar,
+        href: '/admin/system-dashboard',
+        permission: 'manage_global_settings',
+      },
+      {
         id: 'users',
         label: 'Usuarios',
         icon: Users,
@@ -324,6 +340,34 @@ const sidebarItems: SidebarItem[] = [
     icon: CreditCard,
     href: '/subscription',
     permission: 'view_settings',
+  },
+];
+
+// Sidebar simplificado para SuperAdmin (cuando NO está impersonando)
+const superAdminItems: SidebarItem[] = [
+  {
+    id: 'sa-dashboard',
+    label: 'Dashboard',
+    icon: SquaresFour,
+    href: '/admin/system-dashboard',
+  },
+  {
+    id: 'sa-tenants',
+    label: 'Empresas',
+    icon: Buildings,
+    href: '/admin/tenants',
+  },
+  {
+    id: 'sa-announcements',
+    label: 'Anuncios',
+    icon: Megaphone,
+    href: '/admin/announcements',
+  },
+  {
+    id: 'sa-settings',
+    label: 'Configuración',
+    icon: GearSix,
+    href: '/global-settings',
   },
 ];
 
@@ -378,7 +422,12 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
   ],
 };
 
-export const Sidebar: React.FC = () => {
+interface SidebarProps {
+  /** Cuando el banner de impersonación está activo, desplazar sidebar 40px */
+  isImpersonating?: boolean;
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonatingProp }) => {
   const [mounted, setMounted] = useState(false);
   const { data: session } = useSession();
   // SIEMPRE llamar useCompany para mantener orden de hooks
@@ -387,6 +436,8 @@ export const Sidebar: React.FC = () => {
   const shouldShowCompanySettings =
     session?.user?.role === 'ADMIN' || session?.user?.role === 'VENDEDOR';
   const { profile } = useProfile();
+  const { isImpersonating } = useImpersonationStore();
+  const isSuperAdminDirect = session?.user?.role === 'SUPER_ADMIN' && !isImpersonating;
   const { open: sidebarOpen, collapsed: sidebarCollapsed, toggle, toggleCollapsed } = useSidebar();
   const pathname = usePathname();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
@@ -401,11 +452,13 @@ export const Sidebar: React.FC = () => {
     return () => mq.removeEventListener('change', onChange);
   }, []);
 
+  const activeItems = isSuperAdminDirect ? superAdminItems : sidebarItems;
+
   useEffect(() => {
     // Auto-expandir secciones que contengan la ruta activa
     const itemsToExpand: string[] = [];
 
-    sidebarItems.forEach(item => {
+    activeItems.forEach(item => {
       if (item.submenu) {
         const hasActiveChild = item.submenu.some(
           subItem => subItem.href && pathname === subItem.href
@@ -426,7 +479,7 @@ export const Sidebar: React.FC = () => {
         return prev;
       });
     }
-  }, [pathname]);
+  }, [pathname, activeItems]);
 
   // Close sidebar on mobile when navigating to a new page
   useEffect(() => {
@@ -561,6 +614,14 @@ export const Sidebar: React.FC = () => {
         inactive: 'text-purple-500 group-hover:text-purple-600',
       },
       units: {
+        active: 'text-blue-600',
+        inactive: 'text-blue-500 group-hover:text-blue-600',
+      },
+      tenants: {
+        active: 'text-emerald-600',
+        inactive: 'text-emerald-500 group-hover:text-emerald-600',
+      },
+      'system-dashboard': {
         active: 'text-blue-600',
         inactive: 'text-blue-500 group-hover:text-blue-600',
       },
@@ -734,7 +795,10 @@ export const Sidebar: React.FC = () => {
       {/* Modern Google-style Sidebar */}
       <aside
         className={cn(
-          'fixed left-0 top-16 z-30 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 transition-all duration-300 ease-in-out',
+          'fixed left-0 z-30 bg-white border-r border-gray-200 transition-all duration-300 ease-in-out',
+          isImpersonatingProp
+            ? 'top-[calc(4rem+2.5rem)] h-[calc(100vh-4rem-2.5rem)]'
+            : 'top-16 h-[calc(100vh-4rem)]',
           // En móvil: 85% del viewport, en desktop: ancho fijo
           isDesktop
             ? (sidebarCollapsed ? 'w-20' : 'w-72')
@@ -751,7 +815,7 @@ export const Sidebar: React.FC = () => {
             <div className="flex items-center justify-between">
               {!sidebarCollapsed && (
                 <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
-                  Navegación
+                  {isSuperAdminDirect ? 'Administración' : 'Navegación'}
                 </h2>
               )}
               {/* Collapse toggle */}
@@ -779,17 +843,39 @@ export const Sidebar: React.FC = () => {
           {/* Navigation Items */}
           <IconContext.Provider value={{ weight: 'duotone' }}>
             <nav data-tour="sidebar-nav" className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
-              {sidebarItems.map(item => renderSidebarItem(item))}
+              {activeItems.map(item => renderSidebarItem(item))}
             </nav>
           </IconContext.Provider>
 
           {/* Bottom User Section */}
           {!sidebarCollapsed && session?.user && (
             <div className="border-t border-gray-100 p-4">
-              {shouldShowCompanySettings ? (
+              {isSuperAdminDirect ? (
+                // SuperAdmin (not impersonating) sees their profile
+                <div className="flex items-center space-x-3 p-3 rounded-xl bg-gradient-to-r from-slate-50 to-indigo-50">
+                  <Avatar className="h-10 w-10">
+                    <AvatarFallback className="bg-gradient-to-br from-slate-700 to-indigo-800 text-white text-sm">
+                      SA
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 truncate">
+                      {profile?.nombre || session.user.name || 'Super Admin'}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">
+                      {session.user.email}
+                    </p>
+                    <div className="mt-1">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                        Super Admin
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ) : shouldShowCompanySettings ? (
                 // Non-super admin sees company info with company logo
                 <div
-                  className={`flex items-center space-x-3 p-3 rounded-xl bg-gradient-to-r from-green-50 to-blue-50 hover:from-green-100 hover:to-blue-100 transition-all duration-200 
+                  className={`flex items-center space-x-3 p-3 rounded-xl bg-gradient-to-r from-green-50 to-blue-50 hover:from-green-100 hover:to-blue-100 transition-all duration-200
                       ${session.user.role === 'ADMIN' ? 'cursor-pointer' : 'cursor-default'}`}
                   onClick={() => {
                     if (session.user.role === 'ADMIN') {

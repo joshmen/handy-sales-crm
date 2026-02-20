@@ -34,7 +34,7 @@ public static class CorsExtensions
                                    uri.Host == "www.handysales.com";
                         })
                         .WithMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
-                        .WithHeaders("Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With")
+                        .AllowAnyHeader()
                         .AllowCredentials()
                         .SetPreflightMaxAge(TimeSpan.FromHours(1));
                 }

@@ -4,6 +4,7 @@ using HandySales.Shared.Security;
 using Microsoft.EntityFrameworkCore;
 using HandySales.Application.ActivityTracking.Services;
 using HandySales.Application.CompanySettings.Interfaces;
+using HandySales.Api.TwoFactor;
 using Microsoft.AspNetCore.Http;
 using System.Linq;
 
@@ -15,14 +16,18 @@ public class AuthService
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IServiceProvider _serviceProvider;
     private readonly ICloudinaryService _cloudinaryService;
+    private readonly TotpService _totp;
+    private readonly PwnedPasswordService _pwnedPasswords;
 
     public AuthService(
-        HandySalesDbContext db, 
+        HandySalesDbContext db,
         JwtTokenGenerator jwt,
         IActivityTrackingService activityTracking,
         IHttpContextAccessor httpContextAccessor,
         IServiceProvider serviceProvider,
-        ICloudinaryService cloudinaryService)
+        ICloudinaryService cloudinaryService,
+        TotpService totp,
+        PwnedPasswordService pwnedPasswords)
     {
         _db = db;
         _jwt = jwt;
@@ -30,10 +35,20 @@ public class AuthService
         _httpContextAccessor = httpContextAccessor;
         _serviceProvider = serviceProvider;
         _cloudinaryService = cloudinaryService;
+        _totp = totp;
+        _pwnedPasswords = pwnedPasswords;
     }
 
     public async Task<bool> RegisterAsync(UsuarioRegisterDto dto)
     {
+        // Block disposable email domains
+        if (DisposableEmailService.IsDisposable(dto.Email))
+            throw new InvalidOperationException("No se permiten correos electrónicos temporales o desechables.");
+
+        // Check password against known breaches (k-anonymity, safe)
+        if (await _pwnedPasswords.IsCompromisedAsync(dto.Password))
+            throw new InvalidOperationException("Esta contraseña fue encontrada en filtraciones de datos. Por favor elige una contraseña diferente.");
+
         // Verifica si ya existe ese email
         if (await _db.Usuarios.AnyAsync(u => u.Email == dto.Email))
             return false;
@@ -103,20 +118,287 @@ public class AuthService
             return null;
         }
 
-        var token = _jwt.GenerateTokenWithRoles(usuario.Id.ToString(), usuario.TenantId, usuario.EsAdmin, usuario.EsSuperAdmin);
-        
-        // Crear refresh token real en la base de datos
-        var refreshToken = await CreateRefreshTokenAsync(usuario.Id);
-        
-        // Log successful login
-        await LogActivityAsync(usuario.TenantId, usuario.Id, "login", "auth", 
-            $"Usuario {usuario.Email} inició sesión exitosamente");
-        
-        var role = usuario.EsSuperAdmin ? "SUPER_ADMIN" : (usuario.EsAdmin ? "ADMIN" : "VENDEDOR");
-        
-        return new 
+        // Check if 2FA is enabled
+        if (usuario.TotpEnabled)
         {
-            user = new 
+            // Check for active sessions to include in the response
+            var hasActiveSession = false;
+            string? activeDevice = null;
+            string? lastActivity = null;
+            string? maskedIp = null;
+
+            if (!usuario.EsSuperAdmin)
+            {
+                var latestSession = await _db.DeviceSessions
+                    .IgnoreQueryFilters()
+                    .Where(ds => ds.UsuarioId == usuario.Id && ds.Status == SessionStatus.Active)
+                    .OrderByDescending(ds => ds.LastActivity)
+                    .FirstOrDefaultAsync();
+
+                if (latestSession != null)
+                {
+                    hasActiveSession = true;
+                    activeDevice = ParseDeviceInfo(latestSession.UserAgent ?? "");
+                    var minutesAgo = (int)(DateTime.UtcNow - latestSession.LastActivity).TotalMinutes;
+                    lastActivity = minutesAgo <= 1 ? "Hace un momento" : $"Hace {minutesAgo} minutos";
+                    maskedIp = MaskIpAddress(latestSession.IpAddress);
+                }
+            }
+
+            var tempToken = _jwt.GenerateTempToken(
+                usuario.Id.ToString(), usuario.TenantId,
+                usuario.EsAdmin, usuario.EsSuperAdmin);
+
+            return new
+            {
+                requires2FA = true,
+                tempToken = tempToken,
+                sessionConflict = hasActiveSession,
+                activeDevice = activeDevice,
+                lastActivity = lastActivity,
+                ip = maskedIp
+            };
+        }
+
+        // Check for active sessions (single session enforcement)
+        // SuperAdmin is exempt from single session restriction
+        if (!usuario.EsSuperAdmin)
+        {
+            var activeSessions = await _db.DeviceSessions
+                .IgnoreQueryFilters()
+                .Where(ds => ds.UsuarioId == usuario.Id && ds.Status == SessionStatus.Active)
+                .OrderByDescending(ds => ds.LastActivity)
+                .ToListAsync();
+
+            if (activeSessions.Any())
+            {
+                var latestSession = activeSessions.First();
+                var deviceInfo = ParseDeviceInfo(latestSession.UserAgent ?? "");
+                var minutesAgo = (int)(DateTime.UtcNow - latestSession.LastActivity).TotalMinutes;
+
+                return new
+                {
+                    code = "ACTIVE_SESSION_EXISTS",
+                    activeDevice = deviceInfo,
+                    lastActivity = minutesAgo <= 1 ? "Hace un momento" : $"Hace {minutesAgo} minutos",
+                    ip = MaskIpAddress(latestSession.IpAddress),
+                    suggest2FA = !usuario.TotpEnabled
+                };
+            }
+        }
+
+        return await CompleteLogin(usuario);
+    }
+
+    /// <summary>
+    /// Verify 2FA code during login flow. The tempToken identifies the user.
+    /// Handles session conflicts by closing old sessions.
+    /// </summary>
+    public async Task<object?> Verify2FAAsync(int userId, string code)
+    {
+        var usuario = await _db.Usuarios.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Id == userId);
+        if (usuario == null || !usuario.TotpEnabled)
+            return null;
+
+        // Try TOTP code first, then recovery code
+        var isValid = await _totp.VerifyLoginCodeAsync(userId, code);
+        var usedRecoveryCode = false;
+
+        if (!isValid)
+        {
+            // Try recovery code
+            isValid = await _totp.UseRecoveryCodeAsync(userId, code);
+            usedRecoveryCode = isValid;
+        }
+
+        if (!isValid)
+            return null;
+
+        // Close existing sessions (2FA verification acts as the authorization)
+        await CloseAllActiveSessions(usuario, "Sesión cerrada por verificación 2FA desde otro dispositivo");
+
+        await LogActivityAsync(usuario.TenantId, usuario.Id, "login_2fa", "auth",
+            $"Usuario {usuario.Email} verificó 2FA" + (usedRecoveryCode ? " (código de recuperación)" : ""));
+
+        var loginResult = await CompleteLogin(usuario);
+
+        // If recovery code was used, include warning in response
+        if (usedRecoveryCode)
+        {
+            var remaining = await _db.Set<TwoFactorRecoveryCode>()
+                .CountAsync(rc => rc.UsuarioId == userId && rc.UsedAt == null);
+
+            return new
+            {
+                ((dynamic)loginResult).user,
+                ((dynamic)loginResult).token,
+                ((dynamic)loginResult).refreshToken,
+                recoveryCodeUsed = true,
+                remainingRecoveryCodes = remaining
+            };
+        }
+
+        return loginResult;
+    }
+
+    /// <summary>
+    /// Force login: closes all existing sessions and creates a new one.
+    /// Used when user confirms they want to take over from another device (users WITHOUT 2FA).
+    /// </summary>
+    public async Task<object?> ForceLoginAsync(UsuarioLoginDto dto)
+    {
+        var usuario = await _db.Usuarios.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Email == dto.email);
+
+        if (usuario == null || !BCrypt.Net.BCrypt.Verify(dto.password, usuario.PasswordHash))
+            return null;
+
+        // If user has 2FA, force-login is not allowed — they must use verify-2fa
+        if (usuario.TotpEnabled)
+            return new { error = "2FA_REQUIRED", message = "Usa la verificación 2FA para tomar la sesión" };
+
+        await CloseAllActiveSessions(usuario, "Sesión cerrada por login desde otro dispositivo");
+
+        await LogActivityAsync(usuario.TenantId, usuario.Id, "force_login", "auth",
+            $"Usuario {usuario.Email} forzó cierre de sesiones previas e inició nueva sesión");
+
+        return await CompleteLogin(usuario);
+    }
+
+    /// <summary>
+    /// Closes all active sessions and revokes all refresh tokens for a user.
+    /// </summary>
+    private async Task CloseAllActiveSessions(Usuario usuario, string reason)
+    {
+        // Increment session version (invalidates all existing JWTs)
+        usuario.SessionVersion++;
+
+        // Close all active sessions
+        var activeSessions = await _db.DeviceSessions
+            .IgnoreQueryFilters()
+            .Where(ds => ds.UsuarioId == usuario.Id && ds.Status == SessionStatus.Active)
+            .ToListAsync();
+
+        foreach (var session in activeSessions)
+        {
+            session.Status = SessionStatus.RevokedByUser;
+            session.LoggedOutAt = DateTime.UtcNow;
+            session.LogoutReason = reason;
+        }
+
+        // Revoke all refresh tokens
+        var activeTokens = await _db.RefreshTokens
+            .Where(rt => rt.UserId == usuario.Id && !rt.IsRevoked && rt.ExpiresAt > DateTime.UtcNow)
+            .ToListAsync();
+
+        foreach (var token in activeTokens)
+        {
+            token.IsRevoked = true;
+            token.RevokedAt = DateTime.UtcNow;
+        }
+
+        await _db.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Logout: properly revokes refresh token, closes device session, and increments session version.
+    /// </summary>
+    public async Task<bool> LogoutAsync(int userId, string? refreshToken)
+    {
+        var usuario = await _db.Usuarios.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Id == userId);
+        if (usuario == null) return false;
+
+        // Increment session version to invalidate all JWTs
+        usuario.SessionVersion++;
+
+        // Revoke the specific refresh token
+        if (!string.IsNullOrEmpty(refreshToken))
+        {
+            var tokenEntity = await _db.RefreshTokens
+                .FirstOrDefaultAsync(rt => rt.Token == refreshToken && rt.UserId == userId && !rt.IsRevoked);
+            if (tokenEntity != null)
+            {
+                tokenEntity.IsRevoked = true;
+                tokenEntity.RevokedAt = DateTime.UtcNow;
+            }
+        }
+
+        // Close all active device sessions for this user
+        var activeSessions = await _db.DeviceSessions
+            .IgnoreQueryFilters()
+            .Where(ds => ds.UsuarioId == userId && ds.Status == SessionStatus.Active)
+            .ToListAsync();
+
+        foreach (var session in activeSessions)
+        {
+            session.Status = SessionStatus.LoggedOut;
+            session.LoggedOutAt = DateTime.UtcNow;
+            session.LogoutReason = "Logout voluntario";
+        }
+
+        await _db.SaveChangesAsync();
+
+        await LogActivityAsync(usuario.TenantId, usuario.Id, "logout", "auth",
+            $"Usuario {usuario.Email} cerró sesión");
+
+        return true;
+    }
+
+    /// <summary>
+    /// Social login: verifies user exists by email, returns tokens.
+    /// Called from NextAuth server-side after Google/Microsoft OAuth verifies identity.
+    /// </summary>
+    public async Task<object?> SocialLoginAsync(string email, string provider)
+    {
+        var usuario = await _db.Usuarios.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Email == email);
+        if (usuario == null || !usuario.Activo)
+            return null; // User not registered — only pre-registered users can use social login
+
+        // If user has 2FA enabled, social login still needs 2FA verification
+        if (usuario.TotpEnabled)
+        {
+            var tempToken = _jwt.GenerateTempToken(
+                usuario.Id.ToString(),
+                usuario.TenantId,
+                usuario.EsAdmin,
+                usuario.EsSuperAdmin);
+
+            return new
+            {
+                requires2FA = true,
+                tempToken,
+                sessionConflict = false,
+                activeDevice = (string?)null,
+                lastActivity = (string?)null,
+                ip = (string?)null
+            };
+        }
+
+        // Close existing sessions (single session enforcement)
+        await CloseAllActiveSessions(usuario, $"Sesión cerrada por social login ({provider})");
+
+        await LogActivityAsync(usuario.TenantId, usuario.Id, "social_login", "auth",
+            $"Usuario {usuario.Email} inició sesión con {provider}");
+
+        return await CompleteLogin(usuario);
+    }
+
+    private async Task<object> CompleteLogin(Usuario usuario)
+    {
+        var token = _jwt.GenerateTokenWithRoles(
+            usuario.Id.ToString(), usuario.TenantId,
+            usuario.EsAdmin, usuario.EsSuperAdmin,
+            usuario.SessionVersion);
+
+        var refreshToken = await CreateRefreshTokenAsync(usuario.Id);
+
+        await LogActivityAsync(usuario.TenantId, usuario.Id, "login", "auth",
+            $"Usuario {usuario.Email} inició sesión exitosamente");
+
+        var role = usuario.EsSuperAdmin ? "SUPER_ADMIN" : (usuario.EsAdmin ? "ADMIN" : "VENDEDOR");
+
+        return new
+        {
+            user = new
             {
                 id = usuario.Id.ToString(),
                 email = usuario.Email,
@@ -126,6 +408,34 @@ public class AuthService
             token = token,
             refreshToken = refreshToken.Token
         };
+    }
+
+    private static string ParseDeviceInfo(string userAgent)
+    {
+        var browser = "Navegador desconocido";
+        var os = "Sistema desconocido";
+
+        if (userAgent.Contains("Edg")) browser = "Edge";
+        else if (userAgent.Contains("Chrome")) browser = "Chrome";
+        else if (userAgent.Contains("Firefox")) browser = "Firefox";
+        else if (userAgent.Contains("Safari")) browser = "Safari";
+
+        if (userAgent.Contains("Windows")) os = "Windows";
+        else if (userAgent.Contains("Mac")) os = "macOS";
+        else if (userAgent.Contains("Linux")) os = "Linux";
+        else if (userAgent.Contains("Android")) os = "Android";
+        else if (userAgent.Contains("iPhone") || userAgent.Contains("iOS")) os = "iOS";
+
+        return $"{browser} en {os}";
+    }
+
+    private static string? MaskIpAddress(string? ip)
+    {
+        if (string.IsNullOrEmpty(ip)) return null;
+        var parts = ip.Split('.');
+        if (parts.Length == 4)
+            return $"{parts[0]}.{parts[1]}.{parts[2]}.x";
+        return ip;
     }
 
     public async Task<object?> RefreshTokenAsync(string refreshToken)
@@ -147,8 +457,11 @@ public class AuthService
         tokenEntity.IsRevoked = true;
         tokenEntity.RevokedAt = DateTime.UtcNow;
 
-        // Crear nuevo access token
-        var newAccessToken = _jwt.GenerateToken(tokenEntity.Usuario.Id.ToString(), tokenEntity.Usuario.TenantId);
+        // Crear nuevo access token (include session version)
+        var newAccessToken = _jwt.GenerateTokenWithRoles(
+            tokenEntity.Usuario.Id.ToString(), tokenEntity.Usuario.TenantId,
+            tokenEntity.Usuario.EsAdmin, tokenEntity.Usuario.EsSuperAdmin,
+            tokenEntity.Usuario.SessionVersion);
         
         // Crear nuevo refresh token
         var newRefreshToken = await CreateRefreshTokenAsync(tokenEntity.UserId);

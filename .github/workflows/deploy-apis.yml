@@ -20,6 +20,7 @@ on:
 # Required secrets (configure in GitHub repo settings):
 # - RAILWAY_TOKEN: Railway API token (get from railway.app/account/tokens)
 # - RAILWAY_PROJECT_ID: Railway project ID (get from project settings)
+# - PRODUCTION_DB_CONNECTION_STRING: MySQL connection string for EF Core migrations
 
 jobs:
   detect-changes:
@@ -51,10 +52,45 @@ jobs:
               - 'libs/**'
               - 'infra/docker/Dockerfile.Mobile.Prod'
 
+  migrate-database:
+    name: Apply Database Migrations
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: |
+      needs.detect-changes.outputs.main-api == 'true' ||
+      needs.detect-changes.outputs.mobile-api == 'true' ||
+      needs.detect-changes.outputs.deploy-all == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Install EF Core tools
+        run: dotnet tool install --global dotnet-ef --version 8.0.11
+
+      - name: Build efbundle
+        run: |
+          dotnet ef migrations bundle \
+            --project libs/HandySales.Infrastructure \
+            --startup-project apps/api/src/HandySales.Api \
+            --output ./efbundle \
+            --force
+
+      - name: Apply migrations to production
+        env:
+          ConnectionStrings__DefaultConnection: ${{ secrets.PRODUCTION_DB_CONNECTION_STRING }}
+        run: |
+          chmod +x ./efbundle
+          ./efbundle --connection "$ConnectionStrings__DefaultConnection" --verbose
+
   deploy-main-api:
     name: Deploy Main API
     runs-on: ubuntu-latest
-    needs: detect-changes
+    needs: [detect-changes, migrate-database]
     if: needs.detect-changes.outputs.main-api == 'true' || needs.detect-changes.outputs.deploy-all == 'true'
     environment:
       name: production-main-api
@@ -114,7 +150,7 @@ jobs:
   deploy-mobile-api:
     name: Deploy Mobile API
     runs-on: ubuntu-latest
-    needs: detect-changes
+    needs: [detect-changes, migrate-database]
     if: needs.detect-changes.outputs.mobile-api == 'true' || needs.detect-changes.outputs.deploy-all == 'true'
     environment:
       name: production-mobile-api
@@ -144,7 +180,7 @@ jobs:
   deployment-summary:
     name: Deployment Summary
     runs-on: ubuntu-latest
-    needs: [detect-changes, deploy-main-api, deploy-billing-api, deploy-mobile-api]
+    needs: [detect-changes, migrate-database, deploy-main-api, deploy-billing-api, deploy-mobile-api]
     if: always()
     steps:
       - name: Print deployment results
@@ -153,6 +189,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Service | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|---------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Database Migrations | ${{ needs.migrate-database.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Main API | ${{ needs.deploy-main-api.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Billing API | ${{ needs.deploy-billing-api.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Mobile API | ${{ needs.deploy-mobile-api.result }} |" >> $GITHUB_STEP_SUMMARY

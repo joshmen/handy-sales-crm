@@ -21,6 +21,7 @@ import { useSession } from 'next-auth/react';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
 import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
+import { TwoFactorSetup as TwoFactorSetupDialog } from '@/components/settings/TwoFactorSetup';
 import {
   User,
   Mail,
@@ -141,10 +142,24 @@ export default function ProfilePage() {
     return true;
   };
 
-  const toggle2FA = async (enable: boolean) => {
-    console.log('toggle2FA not implemented yet:', enable);
-    return true;
-  };
+  const [setupOpen, setSetupOpen] = useState(false);
+  const [tfaStatus, setTfaStatus] = useState<{ enabled: boolean; enabledAt: string | null; remainingRecoveryCodes: number } | null>(null);
+
+  // Load 2FA status
+  useEffect(() => {
+    const load2FAStatus = async () => {
+      try {
+        const { profileService } = await import('@/services/api/profileService');
+        const response = await profileService.get2FAStatus();
+        if (response.success && response.data) {
+          setTfaStatus(response.data);
+        }
+      } catch {
+        // Silent fail
+      }
+    };
+    load2FAStatus();
+  }, []);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Estados de edición individuales por tab
@@ -486,9 +501,13 @@ export default function ProfilePage() {
     });
   };
 
-  const handleToggle2FA = async () => {
-    // 2FA is not supported by backend yet, so always try to enable it
-    await toggle2FA(true);
+  const handleToggle2FA = () => {
+    if (tfaStatus?.enabled) {
+      // Redirect to settings security tab for full management
+      window.location.href = '/settings?tab=security';
+    } else {
+      setSetupOpen(true);
+    }
   };
 
   const formatDate = (date: Date) => {
@@ -856,20 +875,42 @@ export default function ProfilePage() {
               <CardContent>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <Shield className="h-5 w-5 text-muted-foreground" />
+                    <Shield className={`h-5 w-5 ${tfaStatus?.enabled ? 'text-green-600' : 'text-muted-foreground'}`} />
                     <div>
                       <p className="font-medium">2FA</p>
                       <p className="text-sm text-muted-foreground">
-                        {'Desactivado'} {/* Backend doesn't support 2FA yet */}
+                        {tfaStatus?.enabled ? 'Activo' : 'Inactivo'}
                       </p>
                     </div>
                   </div>
-                  <Button variant={'default'} onClick={handleToggle2FA} disabled={isUpdating}>
-                    {isUpdating ? 'Procesando...' : 'Activar'} {/* 2FA not supported yet */}
+                  <Button
+                    variant={tfaStatus?.enabled ? 'outline' : 'default'}
+                    onClick={handleToggle2FA}
+                  >
+                    {tfaStatus?.enabled ? 'Administrar' : 'Configurar 2FA'}
                   </Button>
                 </div>
               </CardContent>
             </Card>
+
+            {/* 2FA Setup Dialog */}
+            {setupOpen && (
+              <TwoFactorSetupDialog
+                open={setupOpen}
+                onOpenChange={setSetupOpen}
+                onComplete={async () => {
+                  try {
+                    const { profileService } = await import('@/services/api/profileService');
+                    const response = await profileService.get2FAStatus();
+                    if (response.success && response.data) {
+                      setTfaStatus(response.data);
+                    }
+                  } catch {
+                    // Silent
+                  }
+                }}
+              />
+            )}
           </TabsContent>
 
           {/* Preferences Tab */}

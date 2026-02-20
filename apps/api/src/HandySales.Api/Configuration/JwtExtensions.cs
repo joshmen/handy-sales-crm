@@ -51,6 +51,22 @@ public static class JwtExtensions
                     ClockSkew = TimeSpan.FromMinutes(1)
                 };
             }
+
+            // SignalR: WebSocket cannot send Authorization headers,
+            // so JWT is passed via ?access_token= query string for /hubs paths
+            options.Events = new JwtBearerEvents
+            {
+                OnMessageReceived = context =>
+                {
+                    var accessToken = context.Request.Query["access_token"];
+                    var path = context.HttpContext.Request.Path;
+                    if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+                    {
+                        context.Token = accessToken;
+                    }
+                    return Task.CompletedTask;
+                }
+            };
         });
 
         return services;

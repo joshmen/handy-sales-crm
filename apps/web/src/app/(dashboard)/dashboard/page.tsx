@@ -16,6 +16,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import {
   dashboardService,
   DashboardMetrics,
@@ -23,6 +24,7 @@ import {
   getFallbackMetrics,
 } from '@/services/dashboardService';
 import { BrandedLoadingScreen } from '@/components/ui/BrandedLoadingScreen';
+import { useImpersonationStore } from '@/stores/useImpersonationStore';
 import { MapPin } from 'lucide-react';
 
 
@@ -104,11 +106,21 @@ const weeklyData = [
 
 export default function DashboardPage() {
   const { data: session } = useSession();
+  const router = useRouter();
+  const { isImpersonating } = useImpersonationStore();
   const [isLoading, setIsLoading] = useState(true);
   const [metrics, setMetrics] = useState<DashboardMetrics>(getFallbackMetrics());
   const [vendedorPerf, setVendedorPerf] = useState<VendedorPerformance | null>(null);
 
   const isVendedor = session?.user?.role === 'VENDEDOR';
+  const isSuperAdminDirect = session?.user?.role === 'SUPER_ADMIN' && !isImpersonating;
+
+  // SuperAdmin (sin impersonar) va directo a su dashboard de sistema
+  useEffect(() => {
+    if (isSuperAdminDirect) {
+      router.replace('/admin/system-dashboard');
+    }
+  }, [isSuperAdminDirect, router]);
 
   // Métricas para mostrar (basadas en el diseño de Pencil)
   const metricCards: MetricCardData[] = [
@@ -159,6 +171,12 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
+    // SuperAdmin sin impersonar será redirigido, no cargar datos de tenant
+    if (isSuperAdminDirect) {
+      setIsLoading(false);
+      return;
+    }
+
     const loadData = async () => {
       try {
         if (isVendedor) {
@@ -175,7 +193,7 @@ export default function DashboardPage() {
       }
     };
     loadData();
-  }, [isVendedor]);
+  }, [isVendedor, isSuperAdminDirect]);
 
   if (isLoading) {
     return <BrandedLoadingScreen message="Cargando dashboard..." />;

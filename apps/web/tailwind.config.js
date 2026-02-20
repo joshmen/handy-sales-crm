@@ -150,6 +150,22 @@ module.exports = {
           "0%": { transform: "translateX(100%)" },
           "100%": { transform: "translateX(0)" },
         },
+        "banner-enter": {
+          "0%": { opacity: "0", maxHeight: "0" },
+          "100%": { opacity: "1", maxHeight: "80px" },
+        },
+        "banner-exit": {
+          "0%": { opacity: "1", maxHeight: "80px" },
+          "100%": { opacity: "0", maxHeight: "0" },
+        },
+        "banner-pulse-glow": {
+          "0%, 100%": { boxShadow: "inset 0 0 0 0 rgba(239, 68, 68, 0)" },
+          "50%": { boxShadow: "inset 0 0 20px 0 rgba(239, 68, 68, 0.08)" },
+        },
+        "banner-shimmer": {
+          "0%": { backgroundPosition: "-200% 0" },
+          "100%": { backgroundPosition: "200% 0" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -160,6 +176,10 @@ module.exports = {
         "slide-in-from-bottom": "slide-in-from-bottom 0.3s ease-out",
         "slide-in-from-left": "slide-in-from-left 0.3s ease-out",
         "slide-in-from-right": "slide-in-from-right 0.3s ease-out",
+        "banner-enter": "banner-enter 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards",
+        "banner-exit": "banner-exit 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards",
+        "banner-pulse-glow": "banner-pulse-glow 3s ease-in-out infinite",
+        "banner-shimmer": "banner-shimmer 3s linear infinite",
       },
     },
   },

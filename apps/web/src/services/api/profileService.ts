@@ -40,6 +40,23 @@ export interface ApiResponse<T> {
   error: string | null;
 }
 
+export interface TwoFactorStatus {
+  enabled: boolean;
+  enabledAt: string | null;
+  remainingRecoveryCodes: number;
+}
+
+export interface TwoFactorSetupResponse {
+  qrCodeBase64: string;
+  manualKey: string;
+  otpauthUri: string;
+}
+
+export interface TwoFactorEnableResponse {
+  enabled: boolean;
+  recoveryCodes: string[];
+}
+
 class ProfileService {
   private async request<T>(
     endpoint: string,
@@ -212,22 +229,35 @@ class ProfileService {
     }
   }
 
-  // Note: 2FA is not currently supported by the backend
-  async enable2FA(userId: string): Promise<ApiResponse<{ qrCode: string; secret: string }>> {
-    return {
-      success: false,
-      data: null,
-      error: 'La autenticación de dos factores no está soportada actualmente',
-    };
+  // ─── 2FA TOTP Methods ───
+
+  async get2FAStatus(): Promise<ApiResponse<TwoFactorStatus>> {
+    return this.request<TwoFactorStatus>('/api/2fa/status', { method: 'GET' });
   }
 
-  // Note: 2FA is not currently supported by the backend
-  async disable2FA(userId: string, token: string): Promise<ApiResponse<void>> {
-    return {
-      success: false,
-      data: null,
-      error: 'La autenticación de dos factores no está soportada actualmente',
-    };
+  async setup2FA(): Promise<ApiResponse<TwoFactorSetupResponse>> {
+    return this.request<TwoFactorSetupResponse>('/api/2fa/setup', { method: 'POST' });
+  }
+
+  async enable2FA(code: string): Promise<ApiResponse<TwoFactorEnableResponse>> {
+    return this.request<TwoFactorEnableResponse>('/api/2fa/enable', {
+      method: 'POST',
+      data: { code },
+    });
+  }
+
+  async disable2FA(code: string): Promise<ApiResponse<{ message: string }>> {
+    return this.request<{ message: string }>('/api/2fa/disable', {
+      method: 'POST',
+      data: { code },
+    });
+  }
+
+  async regenerateRecoveryCodes(code: string): Promise<ApiResponse<string[]>> {
+    return this.request<string[]>('/api/2fa/recovery-codes/regenerate', {
+      method: 'POST',
+      data: { code },
+    });
   }
 }
 

@@ -23,6 +23,7 @@ import {
   Calendar,
   Users,
   Info,
+  Building2,
 } from 'lucide-react';
 import { useSidebar, useTheme } from '@/stores/useUIStore';
 import { cn } from '@/lib/utils';
@@ -39,6 +40,8 @@ import {
 } from '@/components/ui/Dialog';
 import { Separator } from '@/components/ui/Separator';
 import { getRoleDisplayName, getRoleColor } from '@/lib/roles';
+import { ImpersonationModal } from '@/components/impersonation';
+import { useNotifications } from '@/hooks/useNotifications';
 import type { DefaultSession } from 'next-auth';
 
 // Extiende el user de NextAuth con los campos que usas en tu app
@@ -65,34 +68,31 @@ const routeLabels: Record<string, string> = {
   '/profile': 'Mi Perfil',
   '/settings': 'Configuración',
   '/global-settings': 'Configuración Global',
+  '/admin': 'Administración',
+  '/admin/tenants': 'Gestión de Empresas',
+  '/admin/system-dashboard': 'Dashboard Sistema',
 };
 
-// Mock notificaciones
-const mockNotifications = [
-  {
-    id: '1',
-    title: 'Nueva visita programada',
-    message: 'Se ha programado una visita para el cliente Abarrotes Don Juan',
-    read: false,
-    createdAt: new Date(),
-  },
-  {
-    id: '2',
-    title: 'Stock bajo',
-    message: 'El producto "Refresco Cola 2L" tiene stock bajo',
-    read: false,
-    createdAt: new Date(),
-  },
-];
+// Notification type icons/colors
+const NOTIFICATION_TYPE_LABELS: Record<string, string> = {
+  System: 'Sistema',
+  Order: 'Pedido',
+  Route: 'Ruta',
+  Visit: 'Visita',
+  Alert: 'Alerta',
+  General: 'General',
+};
 
 export interface HeaderProps {
   /** Para abrir/cerrar menú móvil desde el layout */
   onMenuClick?: () => void;
   /** Para abrir/cerrar panel de ayuda */
   onHelpClick?: () => void;
+  /** Si el SuperAdmin está impersonando, desplazar header 40px hacia abajo */
+  isImpersonating?: boolean;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick }) => {
+export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpersonating }) => {
   const isClient = useClientOnly();
   const [mounted, setMounted] = useState(false);
   const { toggle } = useSidebar(); // fallback
@@ -101,11 +101,22 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick }) => {
   const router = useRouter();
   const { data: session } = useSession();
 
+  const {
+    unreadCount,
+    notifications,
+    loading: notificationsLoading,
+    fetchNotifications,
+    markAsRead,
+    markAllAsRead,
+  } = useNotifications();
+
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isImpersonationOpen, setIsImpersonationOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [expandedNotifId, setExpandedNotifId] = useState<number | null>(null);
 
   const sUser = session?.user as AppSessionUser | undefined;
   const { settings: companySettings } = useCompany();
@@ -172,7 +183,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick }) => {
   };
 
   const breadcrumbs = generateBreadcrumbs();
-  const unread = mockNotifications.filter(n => !n.read).length;
+  const unread = unreadCount;
 
   const getInitials = (name: string) =>
     name
@@ -208,7 +219,10 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick }) => {
 
   if (!mounted || !isClient) {
     return (
-      <header className="fixed top-0 left-0 right-0 z-50 w-full bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 border-b border-gray-200 shadow-sm">
+      <header className={cn(
+        "fixed left-0 right-0 z-50 w-full bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 border-b border-gray-200 shadow-sm",
+        isImpersonating ? "top-10" : "top-0"
+      )}>
         <div className="flex h-16 items-center px-4 lg:px-6">
           <div className="flex-1">
             <h1 className="text-lg font-semibold">HandyCRM</h1>
@@ -219,7 +233,10 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick }) => {
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 w-full bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 border-b border-gray-200 shadow-sm">
+    <header className={cn(
+      "fixed left-0 right-0 z-50 w-full bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 border-b border-gray-200 shadow-sm",
+      isImpersonating ? "top-10" : "top-0"
+    )}>
       <div className="flex h-16 items-center px-4 lg:px-6">
         {/* Left: Logo + Menu toggle */}
         <div className="flex items-center space-x-4">
@@ -290,7 +307,10 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick }) => {
             variant="ghost"
             size="icon"
             className="relative text-gray-600 hover:bg-gray-100 rounded-full"
-            onClick={() => setIsNotificationsOpen(true)}
+            onClick={() => {
+              fetchNotifications();
+              setIsNotificationsOpen(true);
+            }}
           >
             <Bell className="h-5 w-5 text-amber-500" />
             {unread > 0 && (
@@ -346,37 +366,104 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick }) => {
       </div>
 
       {/* Notifications Dialog */}
-      <Dialog open={isNotificationsOpen} onOpenChange={setIsNotificationsOpen}>
+      <Dialog open={isNotificationsOpen} onOpenChange={(open) => { setIsNotificationsOpen(open); if (!open) setExpandedNotifId(null); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Notificaciones</DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle>Notificaciones</DialogTitle>
+              {notifications.length > 0 && unreadCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={async () => {
+                    const res = await markAllAsRead();
+                    if (res.success) {
+                      toast({ title: 'Listo', description: 'Todas marcadas como leídas' });
+                    }
+                  }}
+                  className="text-xs text-blue-600 hover:text-blue-700 -mr-2"
+                >
+                  Marcar todas como leídas
+                </Button>
+              )}
+            </div>
           </DialogHeader>
-          <div className="space-y-4 max-h-80 overflow-y-auto">
-            {mockNotifications.map(n => (
-              <div
-                key={n.id}
-                className={cn(
-                  'p-4 rounded-lg border transition-colors hover:bg-gray-50',
-                  !n.read && 'bg-blue-50 border-blue-200'
-                )}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h4 className="text-sm font-medium text-gray-900">{n.title}</h4>
-                    <p className="text-sm text-gray-600 mt-1">{n.message}</p>
-                    <span className="text-xs text-gray-400 mt-2 block">
-                      {formatTime(n.createdAt)}
-                    </span>
+
+          {notificationsLoading ? (
+            <div className="flex justify-center items-center py-8">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-r-transparent" />
+            </div>
+          ) : notifications.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <Bell className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+              <p>No tienes notificaciones</p>
+            </div>
+          ) : (
+            <div className="space-y-3 max-h-80 overflow-y-auto">
+              {notifications.map(n => {
+                const isUnread = !n.leidoEn;
+                const createdDate = new Date(n.creadoEn);
+                const typeLabel = NOTIFICATION_TYPE_LABELS[n.tipo] || n.tipo;
+
+                return (
+                  <div
+                    key={n.id}
+                    className={cn(
+                      'p-3 rounded-lg border transition-colors cursor-pointer',
+                      isUnread
+                        ? 'bg-blue-50 border-blue-200 hover:bg-blue-100'
+                        : 'hover:bg-gray-50'
+                    )}
+                    onClick={async () => {
+                      if (isUnread) await markAsRead(n.id);
+                      setExpandedNotifId(prev => prev === n.id ? null : n.id);
+                    }}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-sm font-medium text-gray-900 truncate">
+                            {n.titulo}
+                          </h4>
+                          {n.tipo !== 'General' && (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] px-1.5 py-0 flex-shrink-0"
+                            >
+                              {typeLabel}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className={cn(
+                          'text-sm text-gray-600 mt-1 transition-all',
+                          expandedNotifId === n.id ? '' : 'line-clamp-2'
+                        )}>
+                          {n.mensaje}
+                        </p>
+                        <span className="text-xs text-gray-400 mt-1 block">
+                          {formatTime(createdDate)}
+                        </span>
+                      </div>
+                      {isUnread && (
+                        <div className="h-2 w-2 bg-blue-500 rounded-full flex-shrink-0 mt-2" />
+                      )}
+                    </div>
                   </div>
-                  {!n.read && (
-                    <div className="h-2 w-2 bg-blue-500 rounded-full flex-shrink-0 mt-2" />
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
+
+      {/* Impersonation Modal (solo SUPER_ADMIN) */}
+      {currentUser.role === 'SUPER_ADMIN' && (
+        <ImpersonationModal
+          isOpen={isImpersonationOpen}
+          onClose={() => setIsImpersonationOpen(false)}
+          tenant={null}
+        />
+      )}
 
       {/* User Menu Dialog */}
       <Dialog open={isUserMenuOpen} onOpenChange={setIsUserMenuOpen}>
@@ -431,6 +518,20 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick }) => {
                 >
                   <Settings className="h-4 w-4 mr-3 text-gray-500" />
                   Configuración
+                </Button>
+              )}
+              {/* Solo SUPER_ADMIN puede impersonar empresas */}
+              {currentUser.role === 'SUPER_ADMIN' && (
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start h-12 text-gray-700 hover:bg-gray-50"
+                  onClick={() => {
+                    setIsUserMenuOpen(false);
+                    setIsImpersonationOpen(true);
+                  }}
+                >
+                  <Building2 className="h-4 w-4 mr-3 text-purple-500" />
+                  Impersonar Empresa
                 </Button>
               )}
               <div className="border-t pt-2">

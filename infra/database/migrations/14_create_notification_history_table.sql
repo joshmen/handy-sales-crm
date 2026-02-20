@@ -24,6 +24,8 @@ CREATE TABLE IF NOT EXISTS NotificationHistory (
     activo TINYINT(1) NOT NULL DEFAULT 1,
     creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     actualizado_en DATETIME NULL,
+    creado_por VARCHAR(255) NULL,
+    actualizado_por VARCHAR(255) NULL,
     version BIGINT NOT NULL DEFAULT 1,
 
     CONSTRAINT fk_notification_tenant FOREIGN KEY (tenant_id) REFERENCES Tenants(id) ON DELETE CASCADE,

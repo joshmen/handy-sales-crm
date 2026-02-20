@@ -31,6 +31,7 @@ const ROUTE_PERMISSIONS = {
 
 // Rutas que requieren roles específicos
 const ROLE_RESTRICTED_ROUTES = {
+  '/admin': [UserRole.SUPER_ADMIN], // Gestión de Empresas + Dashboard Sistema
   '/users': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
   '/settings': [UserRole.ADMIN], // Solo ADMIN puede acceder a configuración de empresa
   '/global-settings': [UserRole.SUPER_ADMIN], // Solo SUPER_ADMIN puede acceder a configuración global
@@ -111,6 +112,20 @@ export default withAuth(
 
     // Verificación de permisos basados en rol
     const userRole = token.role as UserRole;
+
+    // SuperAdmin sin impersonar: solo puede acceder a rutas de administración
+    // isImpersonating is stored in the signed JWT token (tamper-proof)
+    if (userRole === UserRole.SUPER_ADMIN && !token.isImpersonating) {
+      const isSuperAdminRoute =
+        pathname.startsWith('/admin') ||
+        pathname.startsWith('/global-settings') ||
+        pathname === '/dashboard'; // dashboard redirige a system-dashboard via page logic
+
+      if (!isSuperAdminRoute) {
+        // Redirigir a página de acceso no disponible
+        return NextResponse.redirect(new URL('/admin/access-denied', req.url));
+      }
+    }
 
     // Verificar restricciones de rol para rutas específicas
     for (const [route, allowedRoles] of Object.entries(ROLE_RESTRICTED_ROUTES)) {

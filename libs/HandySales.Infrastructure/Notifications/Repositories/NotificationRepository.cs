@@ -100,7 +100,7 @@ public class NotificationRepository : INotificationRepository
             Mensaje = n.Mensaje,
             Tipo = n.Tipo,
             Status = n.Status,
-            Data = !string.IsNullOrEmpty(n.DataJson) ? JsonSerializer.Deserialize<Dictionary<string, string>>(n.DataJson) : null,
+            Data = ParseDataJson(n.DataJson),
             EnviadoEn = n.EnviadoEn,
             LeidoEn = n.LeidoEn,
             CreadoEn = n.CreadoEn
@@ -194,5 +194,24 @@ public class NotificationRepository : INotificationRepository
 
         var results = await query.ToListAsync();
         return results.Select(x => (x.UsuarioId, x.SessionId, x.PushToken!)).ToList();
+    }
+
+    private static Dictionary<string, string>? ParseDataJson(string? dataJson)
+    {
+        if (string.IsNullOrEmpty(dataJson)) return null;
+        try
+        {
+            using var doc = JsonDocument.Parse(dataJson);
+            var dict = new Dictionary<string, string>();
+            foreach (var prop in doc.RootElement.EnumerateObject())
+            {
+                dict[prop.Name] = prop.Value.ToString();
+            }
+            return dict;
+        }
+        catch
+        {
+            return null;
+        }
     }
 }

@@ -6,6 +6,7 @@
 
 | Rol | Email | Password | Tenant |
 |-----|-------|----------|--------|
+| SuperAdmin | superadmin@handysales.com | test123 | Global (all tenants) |
 | Admin | admin@jeyma.com | test123 | Jeyma (id=3) |
 | Vendedor 1 | vendedor1@jeyma.com | test123 | Jeyma (id=3) |
 | Vendedor 2 | vendedor2@jeyma.com | test123 | Jeyma (id=3) |
@@ -196,6 +197,12 @@ Tests e2e disponibles:
 - `e2e/rbac.spec.ts` — 10 tests RBAC (admin vs vendedor: dashboard, pedidos, rutas, clientes)
 - `e2e/visual-audit.spec.ts` — 34 tests (titulo, boton, tabla, mobile cards en todas las paginas)
 - `e2e/auth.spec.ts` — 5 tests de autenticacion
+- `e2e/superadmin.spec.ts` — 13 tests SuperAdmin (SA-1 tenant mgmt, SA-2 sidebar, SA-3 dashboard, SA-4 impersonation)
+
+```bash
+# Ejecutar tests SuperAdmin:
+cd apps/web && npx playwright test e2e/superadmin.spec.ts --project="Desktop Chrome" --workers=1 --timeout=120000
+```
 
 ---
 
@@ -272,12 +279,76 @@ powershell -ExecutionPolicy Bypass -File "c:\tmp\test_security.ps1"
 
 ---
 
-## 6. RESULTADO DE ULTIMO TEST
+## 6. SUPERADMIN FEATURES (SA-1 a SA-4)
+
+### SA-1: Tenant Management Page (/admin/tenants)
+
+**Backend (PowerShell — 25/25 PASS):**
+- [x] `GET /api/tenants` con token SuperAdmin — retorna lista de 5 tenants
+- [x] `GET /api/tenants/{id}` — retorna detalle con stats (usuarios, productos, pedidos, clientes)
+- [x] `POST /api/tenants` — crea nuevo tenant, retorna id
+- [x] `PUT /api/tenants/{id}` — actualiza tenant existente
+- [x] `PATCH /api/tenants/{id}/activo` — toggle activo/inactivo funciona
+- [x] Campos suscripcion: planTipo, maxUsuarios, fechaSuscripcion, fechaExpiracion
+- [x] Cross-tenant isolation: IgnoreQueryFilters para datos cross-tenant
+
+**Frontend (Playwright — 5/5 PASS):**
+- [x] SuperAdmin accede a /admin/tenants — muestra pagina con h1 "Gestion de Empresas"
+- [x] Lista muestra multiples tenants (Jeyma, Huichol)
+- [x] Boton "Nueva Empresa" visible
+- [x] Input de busqueda visible
+- [x] Filtro de estado (Activo/Inactivo/Todos) funciona
+
+**Access Control (Playwright — 1/1 PASS):**
+- [x] Admin redirigido de /admin/tenants al dashboard
+
+### SA-2: Sidebar Tenant Menu Items
+
+**Frontend (Playwright — 2/2 PASS):**
+- [x] SuperAdmin ve "Gestion de Empresas" en sidebar seccion Administracion
+- [x] SuperAdmin ve "Dashboard Sistema" en sidebar seccion Administracion
+- [x] Admin NO ve "Gestion de Empresas" en sidebar
+- [x] Admin NO ve "Dashboard Sistema" en sidebar
+
+### SA-3: System Dashboard (/admin/system-dashboard)
+
+**Backend (PowerShell — PASS):**
+- [x] `GET /api/dashboard/system-metrics` con token SuperAdmin — retorna metricas globales
+- [x] Metricas: totalTenants, activeTenants, totalUsuarios, totalProductos, totalClientes, totalPedidos, totalVentas
+- [x] Top tenants por ventas
+- [x] Tenants recientes
+
+**Frontend (Playwright — 3/3 PASS):**
+- [x] SuperAdmin accede a /admin/system-dashboard — muestra h1 "Dashboard"
+- [x] Muestra KPI cards: "Total Empresas", "Usuarios Activos"
+- [x] Muestra seccion "Top" tenants
+
+### SA-4: Impersonation Trigger
+
+**Frontend (Playwright — 2/2 PASS):**
+- [x] SuperAdmin ve "Impersonar Empresa" en menu de usuario (header)
+- [x] Admin NO ve "Impersonar Empresa" en menu de usuario
+
+### Resumen SA-1 a SA-4
+
+| Item | Backend | Frontend | Estado |
+|------|---------|----------|--------|
+| SA-1 Tenant Management | **25/25 PASS** | **6/6 PASS** | Completo |
+| SA-2 Sidebar Items | N/A | **2/2 PASS** | Completo |
+| SA-3 System Dashboard | **PASS** | **3/3 PASS** | Completo |
+| SA-4 Impersonation Trigger | N/A | **2/2 PASS** | Completo |
+
+**TODOS LOS ITEMS SA-1 A SA-4 COMPLETADOS**
+
+---
+
+## 7. RESULTADO DE ULTIMO TEST
 
 | Fecha | Tester | Backend | Frontend | Notas |
 |-------|--------|---------|----------|-------|
 | 2026-02-11 | Claude | PASS | PASS | RBAC completo + Security audit: 3 CRITICOS encontrados |
 | 2026-02-17 | Claude | PASS | PASS | Security fixes: SEC-1 a SEC-6 TODOS RESUELTOS |
+| 2026-02-11 | Claude | 25/25 PASS | 13/13 PASS | SA-1 a SA-4: SuperAdmin features (tenants, dashboard, sidebar, impersonation) |
 
 **Detalle Security Fix (2026-02-17):**
 - SEC-1: JWT firma + lifetime validados en dev (tampered token → 401)

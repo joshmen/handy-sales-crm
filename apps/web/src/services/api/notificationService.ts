@@ -44,6 +44,36 @@ export interface ApiResponse<T> {
   error: string | null;
 }
 
+// --- Notification DTOs (match backend NotificationDtos.cs) ---
+
+export interface NotificationDto {
+  id: number;
+  titulo: string;
+  mensaje: string;
+  tipo: string;
+  status: string;
+  data?: Record<string, string>;
+  enviadoEn?: string;
+  leidoEn?: string;
+  creadoEn: string;
+}
+
+export interface NotificationPaginatedResult {
+  items: NotificationDto[];
+  totalItems: number;
+  noLeidas: number;
+  pagina: number;
+  tamanoPagina: number;
+  totalPaginas: number;
+}
+
+export interface NotificationFilters {
+  tipo?: string;
+  noLeidas?: boolean;
+  pagina?: number;
+  tamanoPagina?: number;
+}
+
 class NotificationService {
   async getPreferences(): Promise<ApiResponse<NotificationPreferences>> {
     try {
@@ -79,6 +109,64 @@ class NotificationService {
       };
     }
   }
+
+  // --- Notification CRUD methods ---
+
+  async getNotifications(filters?: NotificationFilters): Promise<ApiResponse<NotificationPaginatedResult>> {
+    try {
+      const params = new URLSearchParams();
+      if (filters?.tipo) params.append('tipo', filters.tipo);
+      if (filters?.noLeidas !== undefined) params.append('noLeidas', String(filters.noLeidas));
+      if (filters?.pagina) params.append('pagina', String(filters.pagina));
+      if (filters?.tamanoPagina) params.append('tamanoPagina', String(filters.tamanoPagina));
+
+      const qs = params.toString();
+      const { data } = await api.get<NotificationPaginatedResult>(
+        `/api/notificaciones${qs ? `?${qs}` : ''}`
+      );
+      return { success: true, data, error: null };
+    } catch {
+      return { success: false, data: null, error: 'Error al obtener notificaciones' };
+    }
+  }
+
+  async getUnreadCount(): Promise<ApiResponse<number>> {
+    try {
+      const { data } = await api.get<{ noLeidas: number }>('/api/notificaciones/no-leidas/count');
+      return { success: true, data: data.noLeidas, error: null };
+    } catch {
+      return { success: false, data: null, error: 'Error al obtener conteo' };
+    }
+  }
+
+  async markAsRead(id: number): Promise<ApiResponse<void>> {
+    try {
+      await api.post(`/api/notificaciones/${id}/leer`);
+      return { success: true, data: null, error: null };
+    } catch {
+      return { success: false, data: null, error: 'Error al marcar como leída' };
+    }
+  }
+
+  async markAllAsRead(): Promise<ApiResponse<{ marcadas: number }>> {
+    try {
+      const { data } = await api.post<{ marcadas: number }>('/api/notificaciones/leer-todas');
+      return { success: true, data, error: null };
+    } catch {
+      return { success: false, data: null, error: 'Error al marcar todas' };
+    }
+  }
+
+  async deleteNotification(id: number): Promise<ApiResponse<void>> {
+    try {
+      await api.delete(`/api/notificaciones/${id}`);
+      return { success: true, data: null, error: null };
+    } catch {
+      return { success: false, data: null, error: 'Error al eliminar notificación' };
+    }
+  }
+
+  // --- Preferences methods ---
 
   async savePreferences(data: SaveNotificationPreferencesRequest): Promise<ApiResponse<NotificationPreferences>> {
     try {

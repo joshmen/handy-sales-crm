@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
@@ -25,15 +26,30 @@ public class FakeJwtAuthHandler : AuthenticationHandler<AuthenticationSchemeOpti
             return Task.FromResult(AuthenticateResult.NoResult());
         }
 
-        // By default, authenticate all requests in test environment
-        var claims = new[]
+        // Allow overriding user identity via headers
+        var userId = Request.Headers.ContainsKey("X-Test-UserId")
+            ? Request.Headers["X-Test-UserId"].ToString() : "1";
+        var tenantId = Request.Headers.ContainsKey("X-Test-TenantId")
+            ? Request.Headers["X-Test-TenantId"].ToString() : "1";
+        var isSuperAdmin = Request.Headers.ContainsKey("X-Test-SuperAdmin");
+
+        var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.NameIdentifier, "1"),
-            new Claim("tenant_id", "1"),
-            new Claim("sub", "1"),
-            new Claim("es_admin", "True"),
-            new Claim(ClaimTypes.Role, "Admin")
+            new(ClaimTypes.NameIdentifier, userId),
+            new("tenant_id", tenantId),
+            new("sub", userId),
         };
+
+        if (isSuperAdmin)
+        {
+            claims.Add(new Claim("es_super_admin", "True"));
+            claims.Add(new Claim(ClaimTypes.Role, "SuperAdmin"));
+        }
+        else
+        {
+            claims.Add(new Claim("es_admin", "True"));
+            claims.Add(new Claim(ClaimTypes.Role, "Admin"));
+        }
 
         var identity = new ClaimsIdentity(claims, Scheme);
         var principal = new ClaimsPrincipal(identity);

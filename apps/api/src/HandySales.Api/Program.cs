@@ -1,6 +1,8 @@
 using HandySales.Api.Configuration;
 using HandySales.Api.Endpoints;
+using HandySales.Api.Hubs;
 using HandySales.Api.Middleware;
+using HandySales.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +21,16 @@ builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddCustomServices(builder.Configuration);
 builder.Services.AddAuthorization();
 
+// SignalR real-time hub (self-hosted, no Azure dependency)
+builder.Services.AddSignalR(options =>
+{
+    options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+    options.ClientTimeoutInterval = TimeSpan.FromSeconds(30);
+}).AddJsonProtocol(options =>
+{
+    options.PayloadSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+});
+
 // Configure JSON serialization for Minimal APIs
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
@@ -28,6 +40,14 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 
 
 var app = builder.Build();
+
+// EF Core Migrations (auto-apply in dev, disabled in prod via RUN_MIGRATIONS=false)
+var runMigrations = Environment.GetEnvironmentVariable("RUN_MIGRATIONS") ?? "true";
+if (runMigrations.Equals("true", StringComparison.OrdinalIgnoreCase))
+{
+    var migrationLogger = app.Services.GetRequiredService<ILogger<Program>>();
+    await DatabaseMigrator.MigrateAsync(app.Services, migrationLogger);
+}
 
 // MIDDLEWARE
 app.UseMiddleware<GlobalExceptionMiddleware>();
@@ -40,6 +60,8 @@ app.UseHttpsRedirection();
 app.UseCors("HandySalesPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<SessionValidationMiddleware>();
+app.UseMiddleware<MaintenanceMiddleware>();
 
 // ENDPOINTS
 app.MapAuthEndpoints();
@@ -74,9 +96,15 @@ app.MapTestEndpoints();
 app.MapHealthEndpoints();
 app.MapNotificationEndpoints();
 app.MapImpersonationEndpoints();
+app.MapTenantEndpoints();
 app.MapImportExportEndpoints();
 app.MapReportEndpoints();
 app.MapCobroEndpoints();
+app.MapTwoFactorEndpoints();
+app.MapAnnouncementEndpoints();
+
+// SignalR hub
+app.MapHub<NotificationHub>("/hubs/notifications");
 
 app.Run();
 public partial class Program { }

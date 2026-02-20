@@ -1,6 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useSession } from 'next-auth/react';
+import { useSignalR } from '@/contexts/SignalRContext';
 import { GlobalSettings, companyService } from '@/services/api/companyService';
 import { toast } from '@/hooks/useToast';
 
@@ -29,6 +31,8 @@ interface GlobalSettingsProviderProps {
 }
 
 export const GlobalSettingsProvider: React.FC<GlobalSettingsProviderProps> = ({ children }) => {
+  const { status } = useSession();
+  const { isConnected, on, off } = useSignalR();
   const [globalSettings, setGlobalSettings] = useState<GlobalSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -100,8 +104,32 @@ export const GlobalSettingsProvider: React.FC<GlobalSettingsProviderProps> = ({ 
   }, []);
 
   useEffect(() => {
-    loadGlobalSettings();
-  }, [loadGlobalSettings]);
+    if (status === 'authenticated') {
+      loadGlobalSettings();
+    } else if (status === 'unauthenticated') {
+      setIsLoading(false);
+    }
+  }, [loadGlobalSettings, status]);
+
+  // --- SignalR push: maintenance mode changes ---
+  useEffect(() => {
+    if (!isConnected) return;
+
+    const handleMaintenance = (...args: unknown[]) => {
+      const payload = args[0] as { active?: boolean; message?: string } | undefined;
+      if (!payload || typeof payload.active !== 'boolean') return;
+
+      setGlobalSettings(prev => {
+        if (!prev) return prev;
+        const updated = { ...prev, maintenanceMode: payload.active, updatedAt: new Date() };
+        localStorage.setItem('global_settings', JSON.stringify(updated));
+        return updated;
+      });
+    };
+
+    on('MaintenanceModeChanged', handleMaintenance);
+    return () => off('MaintenanceModeChanged', handleMaintenance);
+  }, [isConnected, on, off]);
 
   const updateGlobalSettings = async (data: Partial<GlobalSettings>): Promise<boolean> => {
     if (!globalSettings) return false;

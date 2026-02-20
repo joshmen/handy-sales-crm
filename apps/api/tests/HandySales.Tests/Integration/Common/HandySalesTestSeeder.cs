@@ -38,10 +38,26 @@ public static class HandySalesTestSeeder
         db.Productos.Add(new Producto { Id = 1, CategoraId = 1, CodigoBarra = "AVB2131AS", Descripcion = "Producto Test", FamiliaId = 1, Nombre = "Producto Test", PrecioBase = 12, TenantId = 1, UnidadMedidaId = 1 });
 
         // Usuarios para tenant 1 - IDs 1, 123, 124
-        db.Usuarios.Add(new Usuario { Id = 1, Email = "test@user.com", Nombre = "Pedro Picapiedra", EsAdmin = true, PasswordHash = BCrypt.Net.BCrypt.HashPassword("Test123!"), Activo = true, CreadoEn = DateTime.Now, TenantId = 1 });
-        db.Usuarios.Add(new Usuario { Id = 123, Email = "user123@test.com", Nombre = "Usuario 123", EsAdmin = false, PasswordHash = BCrypt.Net.BCrypt.HashPassword("Test123!"), Activo = true, CreadoEn = DateTime.Now, TenantId = 1 });
-        db.Usuarios.Add(new Usuario { Id = 124, Email = "user124@test.com", Nombre = "Usuario 124", EsAdmin = false, PasswordHash = BCrypt.Net.BCrypt.HashPassword("Test123!"), Activo = true, CreadoEn = DateTime.Now, TenantId = 1 });
-        db.Usuarios.Add(new Usuario { Id = 125, Email = "user125@test.com", Nombre = "Usuario 125", EsAdmin = false, PasswordHash = BCrypt.Net.BCrypt.HashPassword("Test123!"), Activo = true, CreadoEn = DateTime.Now, TenantId = 2 });
+        // Roles
+        db.Roles.Add(new Role { Id = 1, Nombre = "Admin", Descripcion = "Administrador" });
+        db.Roles.Add(new Role { Id = 2, Nombre = "Vendedor", Descripcion = "Vendedor" });
+        db.SaveChanges();
+
+        // Usuarios para tenant 1 - IDs 1, 123, 124
+        db.Usuarios.Add(new Usuario { Id = 1, Email = "test@user.com", Nombre = "Pedro Picapiedra", EsAdmin = true, RoleId = 1, PasswordHash = BCrypt.Net.BCrypt.HashPassword("Test123!"), Activo = true, CreadoEn = DateTime.Now, TenantId = 1 });
+        db.Usuarios.Add(new Usuario { Id = 123, Email = "user123@test.com", Nombre = "Usuario 123", EsAdmin = false, RoleId = 2, PasswordHash = BCrypt.Net.BCrypt.HashPassword("Test123!"), Activo = true, CreadoEn = DateTime.Now, TenantId = 1 });
+        db.Usuarios.Add(new Usuario { Id = 124, Email = "user124@test.com", Nombre = "Usuario 124", EsAdmin = false, RoleId = 2, PasswordHash = BCrypt.Net.BCrypt.HashPassword("Test123!"), Activo = true, CreadoEn = DateTime.Now, TenantId = 1 });
+        db.Usuarios.Add(new Usuario { Id = 125, Email = "user125@test.com", Nombre = "Usuario 125", EsAdmin = false, RoleId = 2, PasswordHash = BCrypt.Net.BCrypt.HashPassword("Test123!"), Activo = true, CreadoEn = DateTime.Now, TenantId = 2 });
+
+        // GlobalSettings (needed for maintenance mode tests)
+        db.GlobalSettings.Add(new GlobalSettings
+        {
+            Id = 1,
+            PlatformName = "HandyCRM Test",
+            MaintenanceMode = false,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+        });
 
         db.SaveChanges();
     }

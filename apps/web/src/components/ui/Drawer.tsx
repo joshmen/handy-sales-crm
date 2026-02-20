@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
@@ -40,6 +41,11 @@ export const Drawer = forwardRef<DrawerHandle, DrawerProps>(({
   onSave,
 }, ref) => {
   const [showUnsaved, setShowUnsaved] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleRequestClose = useCallback(() => {
     if (isDirty) {
@@ -70,10 +76,10 @@ export const Drawer = forwardRef<DrawerHandle, DrawerProps>(({
     }
   }, [isOpen, handleRequestClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
-  return (
-    <div className="fixed top-0 right-0 bottom-0 left-0 max-sm:top-16 z-50 flex justify-end" data-drawer-root>
+  const drawerContent = (
+    <div className="fixed inset-0 max-sm:top-16 z-[60] flex justify-end" data-drawer-root>
       {/* Overlay */}
       <div
         className="absolute inset-0 bg-black/40 transition-opacity"
@@ -133,6 +139,8 @@ export const Drawer = forwardRef<DrawerHandle, DrawerProps>(({
       />
     </div>
   );
+
+  return createPortal(drawerContent, document.body);
 });
 
 Drawer.displayName = 'Drawer';

@@ -16,12 +16,12 @@ public class JwtTokenGenerator
         _settings = options.Value;
     }
 
-    public string GenerateToken(string userId, int tenantId)
+    public string GenerateToken(string userId, int tenantId, int sessionVersion = 1)
     {
-        return GenerateTokenWithRoles(userId, tenantId, false, false);
+        return GenerateTokenWithRoles(userId, tenantId, false, false, sessionVersion);
     }
 
-    public string GenerateTokenWithRoles(string userId, int tenantId, bool isAdmin, bool isSuperAdmin)
+    public string GenerateTokenWithRoles(string userId, int tenantId, bool isAdmin, bool isSuperAdmin, int sessionVersion = 1)
     {
         var claims = new List<Claim>
         {
@@ -29,6 +29,7 @@ public class JwtTokenGenerator
             new Claim("tenant_id", tenantId.ToString()),
             new Claim("es_admin", isAdmin.ToString()),
             new Claim("es_super_admin", isSuperAdmin.ToString()),
+            new Claim("session_version", sessionVersion.ToString()),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 
@@ -48,6 +49,36 @@ public class JwtTokenGenerator
             audience: _settings.Audience,
             claims: claims,
             expires: DateTime.UtcNow.AddMinutes(_settings.ExpirationMinutes),
+            signingCredentials: creds
+        );
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    /// <summary>
+    /// Generates a short-lived temp token for 2FA verification during login.
+    /// Contains userId, tenantId, and 2fa_pending flag. Expires in 5 minutes.
+    /// </summary>
+    public string GenerateTempToken(string userId, int tenantId, bool isAdmin, bool isSuperAdmin)
+    {
+        var claims = new List<Claim>
+        {
+            new Claim(JwtRegisteredClaimNames.Sub, userId),
+            new Claim("tenant_id", tenantId.ToString()),
+            new Claim("es_admin", isAdmin.ToString()),
+            new Claim("es_super_admin", isSuperAdmin.ToString()),
+            new Claim("2fa_pending", "true"),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+        };
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Secret));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var token = new JwtSecurityToken(
+            issuer: _settings.Issuer,
+            audience: _settings.Audience,
+            claims: claims,
+            expires: DateTime.UtcNow.AddMinutes(5),
             signingCredentials: creds
         );
 

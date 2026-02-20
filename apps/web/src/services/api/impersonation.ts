@@ -1,5 +1,5 @@
 // src/services/api/impersonation.ts
-import { api, handleApiResponse, handleApiError } from '@/lib/api';
+import { api, handleApiError } from '@/lib/api';
 import {
   StartImpersonationRequest,
   StartImpersonationResponse,
@@ -29,7 +29,7 @@ export const impersonationService = {
         ticketNumber: data.ticketNumber,
         accessLevel: data.accessLevel || 'READ_ONLY',
       });
-      return handleApiResponse(response);
+      return response.data;
     } catch (error) {
       throw handleApiError(error);
     }
@@ -52,7 +52,7 @@ export const impersonationService = {
   async getCurrentState(): Promise<CurrentImpersonationState> {
     try {
       const response = await api.get<CurrentImpersonationState>(`${BASE_URL}/current`);
-      return handleApiResponse(response);
+      return response.data;
     } catch (error) {
       throw handleApiError(error);
     }
@@ -87,7 +87,7 @@ export const impersonationService = {
       const response = await api.get<ImpersonationHistoryResponse>(
         `${BASE_URL}/history?${params.toString()}`
       );
-      return handleApiResponse(response);
+      return response.data;
     } catch (error) {
       throw handleApiError(error);
     }
@@ -99,7 +99,7 @@ export const impersonationService = {
   async getSessionDetails(sessionId: string): Promise<ImpersonationSession> {
     try {
       const response = await api.get<ImpersonationSession>(`${BASE_URL}/sessions/${sessionId}`);
-      return handleApiResponse(response);
+      return response.data;
     } catch (error) {
       throw handleApiError(error);
     }

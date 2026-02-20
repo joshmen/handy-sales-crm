@@ -33,6 +33,20 @@ public class Usuario : AuditableEntity
     [Column("activo")]
     public new bool Activo { get; set; } = false;
 
+    // Session management
+    [Column("session_version")]
+    public int SessionVersion { get; set; } = 1;
+
+    // 2FA TOTP
+    [Column("totp_secret_encrypted")]
+    public string? TotpSecretEncrypted { get; set; }
+
+    [Column("totp_enabled")]
+    public bool TotpEnabled { get; set; }
+
+    [Column("totp_enabled_at")]
+    public DateTime? TotpEnabledAt { get; set; }
+
     // Navigation properties
     public Tenant Tenant { get; set; } = null!;
     public Role? Role { get; set; }

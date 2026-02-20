@@ -1,7 +1,9 @@
 import { NextAuthOptions } from 'next-auth';
 import { JWT } from 'next-auth/jwt';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { serverApiCall } from '@/lib/server-api';
+import GoogleProvider from 'next-auth/providers/google';
+import { serverApiCall, serverApiInstance } from '@/lib/server-api';
+import { API_CONFIG } from '@/lib/constants';
 
 // —— Usuarios mock para desarrollo (coinciden con seed de BD) ——
 // Password: test123 para todos
@@ -140,8 +142,31 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
+        loginResponse: { label: 'Login Response', type: 'text' },
       },
       async authorize(credentials) {
+        // Mode 1: Pre-authenticated (after 2FA verify or force-login)
+        // The login page already called the API and got tokens — just establish the session
+        if (credentials?.loginResponse) {
+          try {
+            const data = JSON.parse(credentials.loginResponse);
+            if (data.user && data.token) {
+              return {
+                id: data.user.id,
+                email: data.user.email,
+                name: data.user.name,
+                role: data.user.role,
+                accessToken: data.token,
+                refreshToken: data.refreshToken,
+              };
+            }
+          } catch {
+            return null;
+          }
+          return null;
+        }
+
+        // Mode 2: Standard email/password login
         if (!credentials?.email || !credentials?.password) {
           return null;
         }
@@ -226,6 +251,16 @@ export const authOptions: NextAuthOptions = {
         }
       },
     }),
+
+    // Google OAuth provider (active only when env vars are set)
+    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+      ? [
+          GoogleProvider({
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+          }),
+        ]
+      : []),
   ],
 
   session: {
@@ -234,7 +269,47 @@ export const authOptions: NextAuthOptions = {
   },
 
   callbacks: {
-    async jwt({ token, user }) {
+    async signIn({ user, account }) {
+      // For credentials provider, always allow (handled in authorize)
+      if (account?.provider === 'credentials') return true;
+
+      // For OAuth providers (Google, etc.), verify user exists in our backend
+      if (account?.provider && user?.email) {
+        try {
+          const sharedSecret = process.env.SOCIAL_LOGIN_SECRET || process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || '';
+          const response = await serverApiInstance.post('/auth/social-login', {
+            email: user.email,
+            provider: account.provider,
+          }, {
+            headers: { 'X-Social-Login-Secret': sharedSecret },
+          });
+
+          const data = response.data;
+
+          // Store backend tokens on the user object for the jwt callback
+          if (data.user && data.token) {
+            user.id = data.user.id;
+            user.role = data.user.role;
+            user.accessToken = data.token;
+            user.refreshToken = data.refreshToken;
+            return true;
+          }
+
+          // 2FA required — redirect to login with temp token
+          if (data.requires2FA) {
+            return `/login?requires2FA=true&tempToken=${data.tempToken}&provider=${account.provider}`;
+          }
+
+          return false; // User not found in our system
+        } catch {
+          return false; // Backend error — reject login
+        }
+      }
+
+      return false;
+    },
+
+    async jwt({ token, user, trigger, session: updateData, account }) {
       // Initial login: store user data + token expiry
       if (user) {
         token.id = user.id;
@@ -244,9 +319,38 @@ export const authOptions: NextAuthOptions = {
         token.refreshToken = user.refreshToken;
         token.tenantId = user.tenantId;
         token.companyId = user.companyId;
+        token.isImpersonating = false;
         token.accessTokenExpires = user.accessToken
           ? getTokenExpiry(user.accessToken)
           : 0;
+        return token;
+      }
+
+      // Client-side session update (e.g. impersonation start/stop)
+      if (trigger === 'update' && updateData) {
+        if (typeof updateData.isImpersonating === 'boolean') {
+          token.isImpersonating = updateData.isImpersonating;
+
+          // Starting impersonation: swap to impersonation token
+          if (updateData.isImpersonating && updateData.impersonationToken) {
+            token.originalAccessToken = token.accessToken;
+            token.accessToken = updateData.impersonationToken as string;
+            token.accessTokenExpires = getTokenExpiry(updateData.impersonationToken as string);
+          }
+
+          // Ending impersonation: restore original token
+          if (!updateData.isImpersonating && token.originalAccessToken) {
+            token.accessToken = token.originalAccessToken;
+            token.accessTokenExpires = getTokenExpiry(token.originalAccessToken);
+            token.originalAccessToken = undefined;
+          }
+        }
+        return token;
+      }
+
+      // During impersonation, don't refresh - let the session expire naturally
+      // Refreshing would restore the original token and break impersonation
+      if (token.isImpersonating) {
         return token;
       }
 
@@ -272,6 +376,7 @@ export const authOptions: NextAuthOptions = {
       session.refreshToken = token.refreshToken;
       session.tenantId = token.tenantId;
       session.companyId = token.companyId;
+      session.isImpersonating = token.isImpersonating;
       session.error = token.error;
       return session;
     },

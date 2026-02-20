@@ -100,6 +100,7 @@ using HandySales.Infrastructure.MovimientosInventario.Repositories;
 using HandySales.Application.Cobranza.Interfaces;
 using HandySales.Application.Cobranza.Services;
 using HandySales.Infrastructure.Repositories.Cobranza;
+using HandySales.Api.TwoFactor;
 
 namespace HandySales.Api.Configuration;
 
@@ -112,6 +113,7 @@ public static class ServiceRegistrationExtensions
 
         // HttpContextAccessor es necesario para ITenantContextService
         services.AddHttpContextAccessor();
+        services.AddMemoryCache();
 
         // Servicio de tenant para Global Query Filters
         services.AddScoped<ITenantContextService, TenantContextService>();
@@ -256,6 +258,14 @@ public static class ServiceRegistrationExtensions
         // Impersonation Services (Platform-level, SUPER_ADMIN only)
         services.AddScoped<IImpersonationRepository, ImpersonationRepository>();
         services.AddScoped<IImpersonationService, ImpersonationService>();
+
+        // 2FA TOTP Services
+        var totpEncryptionKey = config["Totp:EncryptionKey"] ?? config["Jwt:Secret"] ?? "HandySales-Default-TOTP-Key-2026";
+        services.AddSingleton(new TotpEncryptionService(totpEncryptionKey));
+        services.AddScoped<TotpService>();
+
+        // Pwned Password Check (HIBP k-anonymity)
+        services.AddHttpClient<PwnedPasswordService>();
 
         return services;
     }

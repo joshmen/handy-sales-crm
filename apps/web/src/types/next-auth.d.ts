@@ -24,6 +24,7 @@ declare module 'next-auth' {
     refreshToken?: string;
     tenantId?: number;
     companyId?: number;
+    isImpersonating?: boolean;
     error?: string;
   }
 }
@@ -38,6 +39,8 @@ declare module 'next-auth/jwt' {
     accessToken?: string;
     refreshToken?: string;
     accessTokenExpires?: number;
+    isImpersonating?: boolean;
+    originalAccessToken?: string;
     error?: string;
   }
 }

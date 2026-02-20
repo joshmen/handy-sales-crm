@@ -54,9 +54,12 @@ public class HandySalesDbContext : DbContext
     public DbSet<RutaRetornoInventario> RutasRetornoInventario => Set<RutaRetornoInventario>();
     public DbSet<NotificationHistory> NotificationHistory => Set<NotificationHistory>();
     public DbSet<Cobro> Cobros => Set<Cobro>();
+    public DbSet<TwoFactorRecoveryCode> TwoFactorRecoveryCodes => Set<TwoFactorRecoveryCode>();
 
     // Platform-level (sin filtro de tenant)
     public DbSet<ImpersonationSession> ImpersonationSessions => Set<ImpersonationSession>();
+    public DbSet<Announcement> Announcements => Set<Announcement>();
+    public DbSet<AnnouncementDismissal> AnnouncementDismissals => Set<AnnouncementDismissal>();
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -546,7 +549,57 @@ public class HandySalesDbContext : DbContext
             entity.HasIndex(c => new { c.TenantId, c.FechaCobro });
         });
 
+        // Configure TwoFactorRecoveryCode entity
+        modelBuilder.Entity<TwoFactorRecoveryCode>(entity =>
+        {
+            entity.ToTable("TwoFactorRecoveryCodes");
+            entity.HasKey(rc => rc.Id);
+
+            entity.HasOne(rc => rc.Usuario)
+                  .WithMany()
+                  .HasForeignKey(rc => rc.UsuarioId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(rc => rc.UsuarioId);
+        });
+
+        // Configure Announcement entity (platform-level, no tenant filter)
+        modelBuilder.Entity<Announcement>(entity =>
+        {
+            entity.ToTable("Announcements");
+            entity.HasKey(a => a.Id);
+
+            entity.HasOne(a => a.SuperAdmin)
+                  .WithMany()
+                  .HasForeignKey(a => a.SuperAdminId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(a => a.Tipo);
+            entity.HasIndex(a => a.ExpiresAt);
+            entity.HasIndex(a => a.Activo);
+        });
+
+        // Configure AnnouncementDismissal entity
+        modelBuilder.Entity<AnnouncementDismissal>(entity =>
+        {
+            entity.ToTable("AnnouncementDismissals");
+            entity.HasKey(d => d.Id);
+
+            entity.HasOne(d => d.Announcement)
+                  .WithMany(a => a.Dismissals)
+                  .HasForeignKey(d => d.AnnouncementId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(d => d.Usuario)
+                  .WithMany()
+                  .HasForeignKey(d => d.UsuarioId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(d => new { d.AnnouncementId, d.UsuarioId }).IsUnique();
+        });
+
         // NOTA: ImpersonationSessions NO tiene Global Query Filter porque es platform-level
+        // NOTA: Announcements NO tiene Global Query Filter porque es platform-level
 
         // =====================================================
         // GLOBAL QUERY FILTERS - Multi-Tenant Security

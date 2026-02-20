@@ -41,6 +41,15 @@ public class UsuarioRepository : IUsuarioRepository
             .ToListAsync();
     }
 
+    public async Task<List<Usuario>> ObtenerPorTenantSinFiltroAsync(int tenantId)
+    {
+        return await _db.Usuarios
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(u => u.TenantId == tenantId && u.Activo)
+            .ToListAsync();
+    }
+
     public async Task<List<Usuario>> ObtenerTodosAsync()
     {
         return await _db.Usuarios

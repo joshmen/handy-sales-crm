@@ -1,6 +1,8 @@
+using HandySales.Api.Hubs;
 using HandySales.Application.Notifications.DTOs;
 using HandySales.Application.Notifications.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 
 namespace HandySales.Api.Endpoints;
 
@@ -8,7 +10,7 @@ public static class NotificationEndpoints
 {
     public static void MapNotificationEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/notificaciones")
+        var group = app.MapGroup("/api/notificaciones")
             .RequireAuthorization()
             .WithTags("Notificaciones")
             .WithOpenApi();
@@ -89,9 +91,22 @@ public static class NotificationEndpoints
         // ADMIN: Enviar notificación a usuario específico
         group.MapPost("/enviar", async (
             SendNotificationDto dto,
-            [FromServices] INotificationService service) =>
+            [FromServices] INotificationService service,
+            [FromServices] IHubContext<NotificationHub> hubContext) =>
         {
             var result = await service.EnviarNotificacionAsync(dto);
+            if (result.Success)
+            {
+                // Push real-time notification to the target user
+                await hubContext.Clients.Group($"user:{dto.UsuarioId}")
+                    .SendAsync("ReceiveNotification", new
+                    {
+                        id = result.NotificationId,
+                        titulo = dto.Titulo,
+                        mensaje = dto.Mensaje,
+                        tipo = dto.Tipo,
+                    });
+            }
             return result.Success ? Results.Ok(result) : Results.BadRequest(result);
         })
         .WithSummary("Enviar notificación (Admin)")
@@ -103,9 +118,23 @@ public static class NotificationEndpoints
         // ADMIN: Enviar broadcast a múltiples usuarios
         group.MapPost("/broadcast", async (
             BroadcastNotificationDto dto,
-            [FromServices] INotificationService service) =>
+            [FromServices] INotificationService service,
+            [FromServices] IHubContext<NotificationHub> hubContext) =>
         {
             var result = await service.EnviarBroadcastAsync(dto);
+
+            // Push real-time notification to each explicitly targeted user
+            if (dto.UsuarioIds is { Count: > 0 })
+            {
+                var payload = new { titulo = dto.Titulo, mensaje = dto.Mensaje, tipo = dto.Tipo };
+                foreach (var uid in dto.UsuarioIds)
+                {
+                    await hubContext.Clients.Group($"user:{uid}")
+                        .SendAsync("ReceiveNotification", payload);
+                }
+            }
+            // For zone/vendedores-only broadcasts, users get it via reduced polling
+
             return Results.Ok(result);
         })
         .WithSummary("Broadcast de notificación (Admin)")
