@@ -10,14 +10,8 @@ public class Tenant : AuditableEntity
     public int Id { get; set; }
     [Column("nombre_empresa")]
     public string NombreEmpresa { get; set; } = string.Empty;
-    [Column("rfc")]
-    public string? RFC { get; set; }
-    [Column("contacto")]
-    public string? Contacto { get; set; }
     [Column("cloudinary_folder")]
     public string? CloudinaryFolder { get; set; }
-    [Column("logo_url")]
-    public string? LogoUrl { get; set; }
 
     // Suscripción
     [Column("plan_tipo")]
@@ -47,15 +41,8 @@ public class Tenant : AuditableEntity
     [Column("cancellation_reason")]
     public string? CancellationReason { get; set; }
 
-    // Contacto extendido
-    [Column("telefono")]
-    public string? Telefono { get; set; }
-    [Column("email")]
-    public string? Email { get; set; }
-    [Column("direccion")]
-    public string? Direccion { get; set; }
-
     // Relaciones
+    public DatosEmpresa? DatosEmpresa { get; set; }
     public ICollection<Usuario> Usuarios { get; set; } = new List<Usuario>();
     public ICollection<Cliente> Clientes { get; set; } = new List<Cliente>();
     public ICollection<Producto> Productos { get; set; } = new List<Producto>();

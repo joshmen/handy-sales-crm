@@ -51,9 +51,14 @@ public class StripeService : IStripeService
 
     public async Task<string> CreateCustomerAsync(Tenant tenant)
     {
+        // Obtener email de DatosEmpresa (ya no está en Tenant)
+        var datosEmpresa = await _db.DatosEmpresa
+            .AsNoTracking()
+            .FirstOrDefaultAsync(d => d.TenantId == tenant.Id);
+
         var options = new CustomerCreateOptions
         {
-            Email = tenant.Email,
+            Email = datosEmpresa?.Email,
             Name = tenant.NombreEmpresa,
             Metadata = new Dictionary<string, string>
             {

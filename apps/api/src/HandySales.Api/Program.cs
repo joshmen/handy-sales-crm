@@ -91,6 +91,7 @@ app.MapCategoriaProductoEndpoints();
 app.MapUnidadMedidaEndpoints();
 app.MapRoleEndpoints();
 app.MapCompanyEndpoints(app.Services.GetRequiredService<ILogger<Program>>());
+app.MapDatosEmpresaEndpoints();
 app.MapGlobalSettingsEndpoints();
 app.MapProfileEndpoints();
 app.MapImageUploadEndpoints();

@@ -30,21 +30,6 @@ public class CompanySetting : AuditableEntity
     [Column("logo_public_id")]
     public string? LogoPublicId { get; set; } // Para almacenar el ID de Cloudinary
     
-    [Column("address")]
-    public string? Address { get; set; }
-    
-    [Column("phone")]
-    public string? Phone { get; set; }
-    
-    [Column("email")]
-    public string? Email { get; set; }
-    
-    [Column("website")]
-    public string? Website { get; set; }
-    
-    [Column("description")]
-    public string? Description { get; set; }
-    
     [Column("cloudinary_folder")]
     public string? CloudinaryFolder { get; set; }
 

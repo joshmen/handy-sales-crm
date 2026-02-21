@@ -66,11 +66,23 @@ public class AuthService
         var tenant = new Tenant
         {
             NombreEmpresa = dto.NombreEmpresa,
-            RFC = dto.RFC ?? string.Empty,
-            Contacto = dto.Contacto ?? string.Empty
+            PlanTipo = "Trial",
+            FechaSuscripcion = DateTime.UtcNow,
+            FechaExpiracion = DateTime.UtcNow.AddDays(14),
+            SubscriptionStatus = "Trial"
         };
 
         _db.Tenants.Add(tenant);
+        await _db.SaveChangesAsync();
+
+        // Crear DatosEmpresa para el nuevo tenant
+        var datosEmpresa = new DatosEmpresa
+        {
+            TenantId = tenant.Id,
+            RFC = dto.RFC,
+            Contacto = dto.Contacto
+        };
+        _db.DatosEmpresa.Add(datosEmpresa);
         await _db.SaveChangesAsync();
 
         // Crear carpeta en Cloudinary para el nuevo tenant
@@ -118,11 +130,23 @@ public class AuthService
         var tenant = new Tenant
         {
             NombreEmpresa = dto.NombreEmpresa,
-            RFC = dto.RFC ?? string.Empty,
-            Contacto = dto.Contacto ?? string.Empty
+            PlanTipo = "Trial",
+            FechaSuscripcion = DateTime.UtcNow,
+            FechaExpiracion = DateTime.UtcNow.AddDays(14),
+            SubscriptionStatus = "Trial"
         };
 
         _db.Tenants.Add(tenant);
+        await _db.SaveChangesAsync();
+
+        // Crear DatosEmpresa para el nuevo tenant
+        var datosEmpresa = new DatosEmpresa
+        {
+            TenantId = tenant.Id,
+            RFC = dto.RFC,
+            Contacto = dto.Contacto
+        };
+        _db.DatosEmpresa.Add(datosEmpresa);
         await _db.SaveChangesAsync();
 
         // Crear carpeta en Cloudinary

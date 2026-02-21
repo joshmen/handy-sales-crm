@@ -46,12 +46,6 @@ public class TenantRepository : ITenantRepository
         if (existing == null) return null;
 
         existing.NombreEmpresa = tenant.NombreEmpresa;
-        existing.RFC = tenant.RFC;
-        existing.Contacto = tenant.Contacto;
-        existing.Telefono = tenant.Telefono;
-        existing.Email = tenant.Email;
-        existing.Direccion = tenant.Direccion;
-        existing.LogoUrl = tenant.LogoUrl;
         existing.CloudinaryFolder = tenant.CloudinaryFolder;
         existing.PlanTipo = tenant.PlanTipo;
         existing.MaxUsuarios = tenant.MaxUsuarios;

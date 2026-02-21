@@ -5,11 +5,12 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useClientOnly } from '@/hooks/useClientOnly';
 import { useCompany } from '@/contexts/CompanyContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
-import { Bell, Shield, Palette, Database, Building } from 'lucide-react';
+import { Bell, Shield, Palette, Database, Building, Building2 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 
 // Import tab components
 import { CompanyTab } from './components/CompanyTab';
+import { PerfilEmpresaTab } from './components/PerfilEmpresaTab';
 import { NotificationsTab } from './components/NotificationsTab';
 import { SecurityTab } from './components/SecurityTab';
 import { AppearanceTab } from './components/AppearanceTab';
@@ -29,9 +30,9 @@ export default function SettingsPage() {
   const isAdmin = userRole === 'ADMIN';
   const isVendedor = userRole === 'VENDEDOR';
 
-  // Get tab from URL params, default to "company" for admins only, "notifications" for others
+  // Get tab from URL params, default to "perfil-empresa" for admins, "notifications" for others
   // Note: Only ADMIN (not SUPER_ADMIN) can access company settings as they are tenant-specific
-  const defaultTab = searchParams.get('tab') || (isAdmin ? 'company' : 'notifications');
+  const defaultTab = searchParams.get('tab') || (isAdmin ? 'perfil-empresa' : 'notifications');
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [notifications, setNotifications] = useState({
@@ -113,11 +114,17 @@ export default function SettingsPage() {
           }}
           className="space-y-6"
         >
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${isAdmin ? 7 : (isSuperAdmin ? 5 : 4)}, minmax(0, 1fr))` }}>
+            {isAdmin && (
+              <TabsTrigger value="perfil-empresa" className="flex items-center gap-2">
+                <Building2 className="h-4 w-4" />
+                Perfil
+              </TabsTrigger>
+            )}
             {isAdmin && (
               <TabsTrigger value="company" className="flex items-center gap-2">
                 <Building className="h-4 w-4" />
-                Mi Empresa
+                Marca
               </TabsTrigger>
             )}
             {(isAdmin || isSuperAdmin) && (
@@ -144,7 +151,14 @@ export default function SettingsPage() {
             </TabsTrigger>
           </TabsList>
 
-          {/* Company Tab - Solo para Administradores (no Super Admin) */}
+          {/* Perfil de Empresa - Datos fiscales y contacto (Admin only) */}
+          {isAdmin && (
+            <TabsContent value="perfil-empresa" className="space-y-6">
+              <PerfilEmpresaTab />
+            </TabsContent>
+          )}
+
+          {/* Company Tab - Apariencia: nombre, logo, colores (Admin only) */}
           {isAdmin && (
             <TabsContent value="company" className="space-y-6">
               <CompanyTab

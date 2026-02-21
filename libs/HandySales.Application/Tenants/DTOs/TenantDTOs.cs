@@ -1,3 +1,5 @@
+using HandySales.Application.DatosEmpresa.DTOs;
+
 namespace HandySales.Application.Tenants.DTOs;
 
 public record TenantListDto(
@@ -14,12 +16,6 @@ public record TenantListDto(
 public record TenantDetailDto(
     int Id,
     string NombreEmpresa,
-    string? RFC,
-    string? Contacto,
-    string? Telefono,
-    string? Email,
-    string? Direccion,
-    string? LogoUrl,
     string? CloudinaryFolder,
     bool Activo,
     string? PlanTipo,
@@ -28,7 +24,8 @@ public record TenantDetailDto(
     DateTime? FechaExpiracion,
     bool SuscripcionActiva,
     DateTime CreadoEn,
-    TenantStatsDto Stats
+    TenantStatsDto Stats,
+    DatosEmpresaDto? DatosEmpresa
 );
 
 public record TenantStatsDto(
@@ -40,25 +37,20 @@ public record TenantStatsDto(
 
 public record TenantCreateDto(
     string NombreEmpresa,
+    string? PlanTipo,
+    int MaxUsuarios,
+    DateTime? FechaSuscripcion,
+    DateTime? FechaExpiracion,
+    // Datos de empresa opcionales para crear junto al tenant
     string? RFC,
     string? Contacto,
     string? Telefono,
     string? Email,
-    string? Direccion,
-    string? PlanTipo,
-    int MaxUsuarios,
-    DateTime? FechaSuscripcion,
-    DateTime? FechaExpiracion
+    string? Direccion
 );
 
 public record TenantUpdateDto(
     string NombreEmpresa,
-    string? RFC,
-    string? Contacto,
-    string? Telefono,
-    string? Email,
-    string? Direccion,
-    string? LogoUrl,
     string? PlanTipo,
     int MaxUsuarios,
     DateTime? FechaSuscripcion,

@@ -53,7 +53,7 @@ public static class HandySalesTestSeeder
         db.GlobalSettings.Add(new GlobalSettings
         {
             Id = 1,
-            PlatformName = "HandyCRM Test",
+            PlatformName = "Handy Suites Test",
             MaintenanceMode = false,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,

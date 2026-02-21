@@ -63,11 +63,6 @@ namespace HandySales.Application.CompanySettings.Services
                     Logo = settings.LogoUrl,
                     PrimaryColor = settings.PrimaryColor,
                     SecondaryColor = settings.SecondaryColor,
-                    Address = settings.Address,
-                    Phone = settings.Phone,
-                    Email = settings.Email,
-                    Website = settings.Website,
-                    Description = settings.Description,
                     CloudinaryFolder = settings.CloudinaryFolder,
                     UpdatedAt = settings.ActualizadoEn ?? settings.CreadoEn,
                     UpdatedBy = settings.ActualizadoPor
@@ -110,21 +105,6 @@ namespace HandySales.Application.CompanySettings.Services
                 if (!string.IsNullOrEmpty(request.SecondaryColor))
                     settings.SecondaryColor = request.SecondaryColor;
 
-                if (request.Address != null)
-                    settings.Address = request.Address;
-
-                if (request.Phone != null)
-                    settings.Phone = request.Phone;
-
-                if (request.Email != null)
-                    settings.Email = request.Email;
-
-                if (request.Website != null)
-                    settings.Website = request.Website;
-
-                if (request.Description != null)
-                    settings.Description = request.Description;
-
                 settings.ActualizadoPor = userId.ToString();
 
                 var updatedSettings = await _repository.UpdateAsync(settings);
@@ -136,11 +116,6 @@ namespace HandySales.Application.CompanySettings.Services
                     Logo = updatedSettings.LogoUrl,
                     PrimaryColor = updatedSettings.PrimaryColor,
                     SecondaryColor = updatedSettings.SecondaryColor,
-                    Address = updatedSettings.Address,
-                    Phone = updatedSettings.Phone,
-                    Email = updatedSettings.Email,
-                    Website = updatedSettings.Website,
-                    Description = updatedSettings.Description,
                     CloudinaryFolder = updatedSettings.CloudinaryFolder,
                     UpdatedAt = updatedSettings.ActualizadoEn ?? updatedSettings.CreadoEn
                 };

@@ -39,6 +39,7 @@ public class HandySalesDbContext : DbContext
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<CompanySetting> CompanySettings => Set<CompanySetting>();
+    public DbSet<Domain.Entities.DatosEmpresa> DatosEmpresa => Set<Domain.Entities.DatosEmpresa>();
     public DbSet<Domain.Entities.DatosFacturacion> DatosFacturacion => Set<Domain.Entities.DatosFacturacion>();
     public DbSet<NotificationPreference> NotificationPreferences => Set<NotificationPreference>();
     public DbSet<Domain.Entities.GlobalSettings> GlobalSettings => Set<Domain.Entities.GlobalSettings>();
@@ -659,6 +660,15 @@ public class HandySalesDbContext : DbContext
 
         modelBuilder.Entity<CompanySetting>()
             .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
+
+        modelBuilder.Entity<Domain.Entities.DatosEmpresa>(entity =>
+        {
+            entity.HasIndex(d => d.TenantId).IsUnique();
+            entity.HasOne(d => d.Tenant)
+                  .WithOne(t => t.DatosEmpresa)
+                  .HasForeignKey<Domain.Entities.DatosEmpresa>(d => d.TenantId);
+            entity.HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
+        });
 
         modelBuilder.Entity<Domain.Entities.DatosFacturacion>()
             .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);

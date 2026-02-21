@@ -9,15 +9,25 @@ export interface Tenant {
   suscripcionActiva: boolean;
 }
 
+export interface TenantDatosEmpresa {
+  id: number;
+  tenantId: number;
+  razonSocial: string | null;
+  rfc: string | null;
+  telefono: string | null;
+  email: string | null;
+  contacto: string | null;
+  direccion: string | null;
+  ciudad: string | null;
+  estado: string | null;
+  codigoPostal: string | null;
+  sitioWeb: string | null;
+  descripcion: string | null;
+}
+
 export interface TenantDetail {
   id: number;
   nombreEmpresa: string;
-  rfc: string | null;
-  contacto: string | null;
-  telefono: string | null;
-  email: string | null;
-  direccion: string | null;
-  logoUrl: string | null;
   cloudinaryFolder: string | null;
   activo: boolean;
   planTipo: string | null;
@@ -27,6 +37,7 @@ export interface TenantDetail {
   suscripcionActiva: boolean;
   creadoEn: string;
   stats: TenantStats;
+  datosEmpresa: TenantDatosEmpresa | null;
 }
 
 export interface TenantStats {
@@ -51,12 +62,6 @@ export interface TenantCreateRequest {
 
 export interface TenantUpdateRequest {
   nombreEmpresa: string;
-  rfc?: string;
-  contacto?: string;
-  telefono?: string;
-  email?: string;
-  direccion?: string;
-  logoUrl?: string;
   planTipo?: string;
   maxUsuarios: number;
   fechaSuscripcion?: string;

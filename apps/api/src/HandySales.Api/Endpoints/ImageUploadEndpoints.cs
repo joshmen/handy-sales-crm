@@ -114,18 +114,18 @@ public static class ImageUploadEndpoints
                     return Results.BadRequest(result.ErrorMessage);
                 }
 
-                // Eliminar logo anterior si existe
-                if (!string.IsNullOrEmpty(tenant.LogoUrl))
+                // Actualizar logo en CompanySetting (no en Tenant)
+                var companySetting = await dbContext.CompanySettings
+                    .FirstOrDefaultAsync(cs => cs.TenantId == tenantId);
+                if (companySetting != null)
                 {
-                    var oldPublicId = ExtractPublicIdFromUrl(tenant.LogoUrl);
-                    if (!string.IsNullOrEmpty(oldPublicId))
+                    if (!string.IsNullOrEmpty(companySetting.LogoPublicId))
                     {
-                        await cloudinaryService.DeleteImageAsync(oldPublicId);
+                        await cloudinaryService.DeleteImageAsync(companySetting.LogoPublicId);
                     }
+                    companySetting.LogoUrl = result.SecureUrl;
+                    companySetting.LogoPublicId = result.PublicId;
                 }
-
-                // Actualizar URL del logo
-                tenant.LogoUrl = result.SecureUrl;
                 await dbContext.SaveChangesAsync();
 
                 return Results.Ok(new { url = result.SecureUrl });
@@ -193,20 +193,16 @@ public static class ImageUploadEndpoints
                 }
                 else if (request.Type == "logo" && (usuario.EsAdmin || usuario.EsSuperAdmin))
                 {
-                    var tenant = await dbContext.Tenants.FindAsync(usuario.TenantId);
-                    if (tenant != null)
+                    var companySetting = await dbContext.CompanySettings
+                        .FirstOrDefaultAsync(cs => cs.TenantId == usuario.TenantId);
+                    if (companySetting != null)
                     {
-                        // Eliminar logo anterior
-                        if (!string.IsNullOrEmpty(tenant.LogoUrl))
+                        if (!string.IsNullOrEmpty(companySetting.LogoPublicId))
                         {
-                            var oldPublicId = ExtractPublicIdFromUrl(tenant.LogoUrl);
-                            if (!string.IsNullOrEmpty(oldPublicId))
-                            {
-                                await cloudinaryService.DeleteImageAsync(oldPublicId);
-                            }
+                            await cloudinaryService.DeleteImageAsync(companySetting.LogoPublicId);
                         }
-
-                        tenant.LogoUrl = result.SecureUrl;
+                        companySetting.LogoUrl = result.SecureUrl;
+                        companySetting.LogoPublicId = result.PublicId;
                         await dbContext.SaveChangesAsync();
                     }
                 }
@@ -239,10 +235,14 @@ public static class ImageUploadEndpoints
                 return Results.NotFound("Usuario no encontrado");
             }
 
+            var companySetting = await dbContext.CompanySettings
+                .AsNoTracking()
+                .FirstOrDefaultAsync(cs => cs.TenantId == usuario.TenantId);
+
             return Results.Ok(new
             {
                 avatarUrl = usuario.AvatarUrl,
-                companyLogoUrl = usuario.Tenant.LogoUrl,
+                companyLogoUrl = companySetting?.LogoUrl,
                 cloudinaryFolder = usuario.Tenant.CloudinaryFolder
             });
         });

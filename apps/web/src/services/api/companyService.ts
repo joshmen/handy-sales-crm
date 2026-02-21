@@ -20,7 +20,7 @@ export interface GlobalSettings {
   updatedBy?: string;
 }
 
-// Company-specific settings managed by ADMIN
+// Company-specific settings managed by ADMIN (apariencia)
 export interface CompanySettings {
   id: string;
   tenantId: number;
@@ -28,17 +28,9 @@ export interface CompanySettings {
   companyLogo?: string;
   companyPrimaryColor?: string;
   companySecondaryColor?: string;
-  companyDescription?: string;
-  contactEmail?: string;
-  contactPhone?: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  country: string;
-  postalCode?: string;
   timezone: string;
   currency: string;
-  taxId?: string;
+  cloudinaryFolder?: string;
   subscriptionStatus: string;
   subscriptionPlan: string;
   maxUsers?: number;
@@ -65,20 +57,8 @@ export interface UpdateGlobalSettingsRequest {
 
 export interface UpdateCompanyRequest {
   companyName?: string;
-  companyLogo?: string;
   companyPrimaryColor?: string;
   companySecondaryColor?: string;
-  companyDescription?: string;
-  contactEmail?: string;
-  contactPhone?: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  country?: string;
-  postalCode?: string;
-  timezone?: string;
-  currency?: string;
-  taxId?: string;
 }
 
 export interface ApiResponse<T> {

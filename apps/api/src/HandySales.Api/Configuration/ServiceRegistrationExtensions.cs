@@ -214,6 +214,10 @@ public static class ServiceRegistrationExtensions
         services.AddScoped<ICloudinaryService, CloudinaryService>();
         services.AddScoped<ICloudinaryFolderService, CloudinaryFolderService>();
 
+        // Datos de Empresa (identidad del negocio)
+        services.AddScoped<HandySales.Application.DatosEmpresa.Interfaces.IDatosEmpresaRepository, DatosEmpresaRepository>();
+        services.AddScoped<HandySales.Application.DatosEmpresa.Interfaces.IDatosEmpresaService, HandySales.Application.DatosEmpresa.Services.DatosEmpresaService>();
+
         // Billing Data (DatosFacturacion)
         services.AddScoped<IDatosFacturacionService, DatosFacturacionService>();
 

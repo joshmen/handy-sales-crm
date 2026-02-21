@@ -34,13 +34,14 @@ import { toast } from '@/hooks/useToast';
 
 interface TenantFormData {
   nombreEmpresa: string;
+  planTipo?: string;
+  maxUsuarios: number;
+  // DatosEmpresa fields (only for create)
   rfc?: string;
   contacto?: string;
   telefono?: string;
   email?: string;
   direccion?: string;
-  planTipo?: string;
-  maxUsuarios: number;
   // Admin fields (only for create)
   adminNombre?: string;
   adminEmail?: string;
@@ -155,11 +156,6 @@ export default function TenantsPage() {
       setSelectedTenant(detail);
       reset({
         nombreEmpresa: detail.nombreEmpresa,
-        rfc: detail.rfc || '',
-        contacto: detail.contacto || '',
-        telefono: detail.telefono || '',
-        email: detail.email || '',
-        direccion: detail.direccion || '',
         planTipo: detail.planTipo || 'free',
         maxUsuarios: detail.maxUsuarios,
       });
@@ -188,11 +184,6 @@ export default function TenantsPage() {
       if (drawerMode === 'edit' && selectedTenant) {
         const updateData: TenantUpdateRequest = {
           nombreEmpresa: data.nombreEmpresa,
-          rfc: data.rfc || undefined,
-          contacto: data.contacto || undefined,
-          telefono: data.telefono || undefined,
-          email: data.email || undefined,
-          direccion: data.direccion || undefined,
           planTipo: data.planTipo || undefined,
           maxUsuarios: data.maxUsuarios,
         };
@@ -448,99 +439,104 @@ export default function TenantsPage() {
               )}
             </div>
 
-            {/* RFC */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                RFC
-              </label>
-              <div className="relative">
-                <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  {...register('rfc', {
-                    pattern: {
-                      value: /^[A-Z&Ñ]{3,4}\d{6}[A-Z0-9]{3}$/,
-                      message: 'RFC inválido',
-                    },
-                  })}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
-                  placeholder="Ej: ABC123456XYZ"
-                  maxLength={13}
-                />
-              </div>
-              {errors.rfc && (
-                <p className="text-sm text-red-600 mt-1">{errors.rfc.message}</p>
-              )}
-            </div>
+            {/* DatosEmpresa fields - Only on create */}
+            {drawerMode === 'create' && (
+              <>
+                {/* RFC */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    RFC
+                  </label>
+                  <div className="relative">
+                    <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="text"
+                      {...register('rfc', {
+                        pattern: {
+                          value: /^[A-Z&Ñ]{3,4}\d{6}[A-Z0-9]{3}$/,
+                          message: 'RFC inválido',
+                        },
+                      })}
+                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+                      placeholder="Ej: ABC123456XYZ"
+                      maxLength={13}
+                    />
+                  </div>
+                  {errors.rfc && (
+                    <p className="text-sm text-red-600 mt-1">{errors.rfc.message}</p>
+                  )}
+                </div>
 
-            {/* Contacto */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Contacto
-              </label>
-              <input
-                type="text"
-                {...register('contacto')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Nombre del contacto principal"
-              />
-            </div>
+                {/* Contacto */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Contacto
+                  </label>
+                  <input
+                    type="text"
+                    {...register('contacto')}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Nombre del contacto principal"
+                  />
+                </div>
 
-            {/* Email */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="email"
-                  {...register('email', {
-                    pattern: {
-                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                      message: 'Email inválido',
-                    },
-                  })}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="contacto@empresa.com"
-                />
-              </div>
-              {errors.email && (
-                <p className="text-sm text-red-600 mt-1">{errors.email.message}</p>
-              )}
-            </div>
+                {/* Email */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="email"
+                      {...register('email', {
+                        pattern: {
+                          value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                          message: 'Email inválido',
+                        },
+                      })}
+                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="contacto@empresa.com"
+                    />
+                  </div>
+                  {errors.email && (
+                    <p className="text-sm text-red-600 mt-1">{errors.email.message}</p>
+                  )}
+                </div>
 
-            {/* Teléfono */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Teléfono
-              </label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="tel"
-                  {...register('telefono')}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Ej: 3331234567"
-                />
-              </div>
-            </div>
+                {/* Teléfono */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Teléfono
+                  </label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="tel"
+                      {...register('telefono')}
+                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Ej: 3331234567"
+                    />
+                  </div>
+                </div>
 
-            {/* Dirección */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Dirección
-              </label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <textarea
-                  {...register('direccion')}
-                  rows={3}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                  placeholder="Dirección completa"
-                />
-              </div>
-            </div>
+                {/* Dirección */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Dirección
+                  </label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <textarea
+                      {...register('direccion')}
+                      rows={3}
+                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                      placeholder="Dirección completa"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
 
             {/* Plan Tipo */}
             <div>

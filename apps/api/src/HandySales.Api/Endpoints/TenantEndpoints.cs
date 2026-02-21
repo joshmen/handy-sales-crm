@@ -73,10 +73,17 @@ public static class TenantEndpoints
             .Select(g => new { TenantId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.TenantId, x => x.Count);
 
+        // Join con DatosEmpresa para obtener RFC
+        var datosEmpresaMap = await context.DatosEmpresa
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(d => tenantIds.Contains(d.TenantId))
+            .ToDictionaryAsync(d => d.TenantId, d => d.RFC);
+
         var result = tenants.Select(t => new TenantListDto(
             t.Id,
             t.NombreEmpresa,
-            t.RFC,
+            datosEmpresaMap.GetValueOrDefault(t.Id),
             t.Activo,
             t.PlanTipo,
             userCounts.GetValueOrDefault(t.Id, 0),
@@ -107,15 +114,24 @@ public static class TenantEndpoints
             await context.Pedidos.IgnoreQueryFilters().AsNoTracking().CountAsync(p => p.TenantId == id)
         );
 
+        // Cargar DatosEmpresa
+        var datosEmpresa = await context.DatosEmpresa
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .FirstOrDefaultAsync(d => d.TenantId == id);
+
+        Application.DatosEmpresa.DTOs.DatosEmpresaDto? datosDto = datosEmpresa != null
+            ? new Application.DatosEmpresa.DTOs.DatosEmpresaDto(
+                datosEmpresa.Id, datosEmpresa.TenantId, datosEmpresa.RazonSocial,
+                datosEmpresa.RFC, datosEmpresa.Telefono, datosEmpresa.Email,
+                datosEmpresa.Contacto, datosEmpresa.Direccion, datosEmpresa.Ciudad,
+                datosEmpresa.Estado, datosEmpresa.CodigoPostal, datosEmpresa.SitioWeb,
+                datosEmpresa.Descripcion)
+            : null;
+
         var result = new TenantDetailDto(
             tenant.Id,
             tenant.NombreEmpresa,
-            tenant.RFC,
-            tenant.Contacto,
-            tenant.Telefono,
-            tenant.Email,
-            tenant.Direccion,
-            tenant.LogoUrl,
             tenant.CloudinaryFolder,
             tenant.Activo,
             tenant.PlanTipo,
@@ -124,7 +140,8 @@ public static class TenantEndpoints
             tenant.FechaExpiracion,
             tenant.FechaExpiracion == null || tenant.FechaExpiracion > DateTime.UtcNow,
             tenant.CreadoEn,
-            stats
+            stats,
+            datosDto
         );
 
         return Results.Ok(result);
@@ -133,7 +150,8 @@ public static class TenantEndpoints
     private static async Task<IResult> Create(
         [FromBody] TenantCreateDto dto,
         [FromServices] ICurrentTenant currentTenant,
-        [FromServices] ITenantRepository tenantRepo)
+        [FromServices] ITenantRepository tenantRepo,
+        [FromServices] HandySalesDbContext context)
     {
         if (!currentTenant.IsSuperAdmin)
             return Results.Forbid();
@@ -141,11 +159,6 @@ public static class TenantEndpoints
         var tenant = new Tenant
         {
             NombreEmpresa = dto.NombreEmpresa,
-            RFC = dto.RFC,
-            Contacto = dto.Contacto,
-            Telefono = dto.Telefono,
-            Email = dto.Email,
-            Direccion = dto.Direccion,
             PlanTipo = dto.PlanTipo ?? "basic",
             MaxUsuarios = dto.MaxUsuarios > 0 ? dto.MaxUsuarios : 10,
             FechaSuscripcion = dto.FechaSuscripcion ?? DateTime.UtcNow,
@@ -156,6 +169,26 @@ public static class TenantEndpoints
         };
 
         var created = await tenantRepo.CrearAsync(tenant);
+
+        // Crear DatosEmpresa si se proporcionaron datos de negocio
+        if (!string.IsNullOrEmpty(dto.RFC) || !string.IsNullOrEmpty(dto.Contacto) ||
+            !string.IsNullOrEmpty(dto.Telefono) || !string.IsNullOrEmpty(dto.Email) ||
+            !string.IsNullOrEmpty(dto.Direccion))
+        {
+            var datosEmpresa = new Domain.Entities.DatosEmpresa
+            {
+                TenantId = created.Id,
+                RFC = dto.RFC,
+                Contacto = dto.Contacto,
+                Telefono = dto.Telefono,
+                Email = dto.Email,
+                Direccion = dto.Direccion,
+                CreadoPor = currentTenant.UserId
+            };
+            context.DatosEmpresa.Add(datosEmpresa);
+            await context.SaveChangesAsync();
+        }
+
         return Results.Created($"/api/tenants/{created.Id}", new { id = created.Id });
     }
 
@@ -176,12 +209,6 @@ public static class TenantEndpoints
         {
             Id = id,
             NombreEmpresa = dto.NombreEmpresa,
-            RFC = dto.RFC,
-            Contacto = dto.Contacto,
-            Telefono = dto.Telefono,
-            Email = dto.Email,
-            Direccion = dto.Direccion,
-            LogoUrl = dto.LogoUrl,
             PlanTipo = dto.PlanTipo,
             MaxUsuarios = dto.MaxUsuarios,
             FechaSuscripcion = dto.FechaSuscripcion,
