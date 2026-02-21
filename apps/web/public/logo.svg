@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 439 172" fill="none">
+  <defs>
+    <!-- Gradients (225° = top-right to bottom-left) -->
+    <linearGradient id="grad-rose" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FB7185"/>
+      <stop offset="100%" stop-color="#E11D48"/>
+    </linearGradient>
+    <linearGradient id="grad-indigo" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#818CF8"/>
+      <stop offset="100%" stop-color="#4338CA"/>
+    </linearGradient>
+    <linearGradient id="grad-green" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#34D399"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+    <linearGradient id="grad-amber" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FCD34D"/>
+      <stop offset="100%" stop-color="#B45309"/>
+    </linearGradient>
+
+    <!-- Shadow filters -->
+    <filter id="shadow-rose" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#E11D48" flood-opacity="0.31"/>
+    </filter>
+    <filter id="shadow-indigo" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#4338CA" flood-opacity="0.31"/>
+    </filter>
+    <filter id="shadow-green" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#047857" flood-opacity="0.31"/>
+    </filter>
+    <filter id="shadow-amber" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#B45309" flood-opacity="0.31"/>
+    </filter>
+  </defs>
+
+  <!-- White background -->
+  <rect width="439" height="172" rx="0" fill="#FFFFFF"/>
+
+  <!-- ====== ICON CLUSTER (offset by padding: 56, 48) ====== -->
+  <g transform="translate(56, 48)">
+
+    <!-- Rose box - Users icon -->
+    <g filter="url(#shadow-rose)">
+      <rect x="0" y="26" width="30" height="30" rx="9" fill="url(#grad-rose)"/>
+      <g transform="translate(7.5, 33.5) scale(0.625)" stroke="white" stroke-width="3.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+        <path d="M16 3.128a4 4 0 0 1 0 7.744"/>
+        <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+        <circle cx="9" cy="7" r="4"/>
+      </g>
+    </g>
+
+    <!-- Indigo box - Shopping Bag icon (LARGEST) -->
+    <g filter="url(#shadow-indigo)">
+      <rect x="22" y="0" width="36" height="36" rx="11" fill="url(#grad-indigo)"/>
+      <g transform="translate(31, 9) scale(0.75)" stroke="white" stroke-width="2.67" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M16 10a4 4 0 0 1-8 0"/>
+        <path d="M3.103 6.034h17.794"/>
+        <path d="M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z"/>
+      </g>
+    </g>
+
+    <!-- Green box - Map Pin icon -->
+    <g filter="url(#shadow-green)">
+      <rect x="46" y="28" width="28" height="28" rx="8" fill="url(#grad-green)"/>
+      <g transform="translate(53, 35) scale(0.583)" stroke="white" stroke-width="3.43" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/>
+        <circle cx="12" cy="10" r="3"/>
+      </g>
+    </g>
+
+    <!-- Amber box - File Text icon -->
+    <g filter="url(#shadow-amber)">
+      <rect x="16" y="46" width="26" height="26" rx="8" fill="url(#grad-amber)"/>
+      <g transform="translate(22.5, 52.5) scale(0.542)" stroke="white" stroke-width="3.69" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/>
+        <path d="M14 2v5a1 1 0 0 0 1 1h5"/>
+        <path d="M10 9H8"/>
+        <path d="M16 13H8"/>
+        <path d="M16 17H8"/>
+      </g>
+    </g>
+
+  </g>
+
+  <!-- ====== TEXT: "Handy Suites®" ====== -->
+  <text font-family="Inter, system-ui, -apple-system, sans-serif" dominant-baseline="central">
+    <tspan x="152" y="86" font-size="36" font-weight="900" fill="#111827" letter-spacing="-1.5">Handy</tspan>
+    <tspan dx="6" font-size="36" font-weight="400" fill="#9CA3AF" letter-spacing="-0.5">Suites</tspan>
+    <tspan dx="1" dy="-14" font-size="14" font-weight="400" fill="#9CA3AF">®</tspan>
+  </text>
+</svg>

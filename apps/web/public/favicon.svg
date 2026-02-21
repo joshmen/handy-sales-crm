@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <defs>
+    <linearGradient id="r" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FB7185"/>
+      <stop offset="100%" stop-color="#E11D48"/>
+    </linearGradient>
+    <linearGradient id="i" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#818CF8"/>
+      <stop offset="100%" stop-color="#4338CA"/>
+    </linearGradient>
+    <linearGradient id="g" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#34D399"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+    <linearGradient id="a" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FCD34D"/>
+      <stop offset="100%" stop-color="#B45309"/>
+    </linearGradient>
+  </defs>
+  <!-- Rose (top-left) -->
+  <rect x="1" y="1" width="13" height="13" rx="3.5" fill="url(#r)"/>
+  <!-- Indigo (top-right) -->
+  <rect x="18" y="1" width="13" height="13" rx="3.5" fill="url(#i)"/>
+  <!-- Green (bottom-left) -->
+  <rect x="1" y="18" width="13" height="13" rx="3.5" fill="url(#g)"/>
+  <!-- Amber (bottom-right) -->
+  <rect x="18" y="18" width="13" height="13" rx="3.5" fill="url(#a)"/>
+</svg>
