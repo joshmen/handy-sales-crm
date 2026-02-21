@@ -98,6 +98,38 @@ public class SessionValidationMiddleware
             return;
         }
 
+        // Check tenant is active (cached 5 minutes to avoid DB hit on every request)
+        var tenantIdClaim = context.User.FindFirstValue("tenant_id");
+        if (int.TryParse(tenantIdClaim, out var tenantId) && tenantId > 0)
+        {
+            var tenantCacheKey = $"tenant_active:{tenantId}";
+            if (!_cache.TryGetValue<bool>(tenantCacheKey, out var isTenantActive))
+            {
+                using var tenantScope = context.RequestServices.CreateScope();
+                var tenantDb = tenantScope.ServiceProvider.GetRequiredService<HandySalesDbContext>();
+
+                var tenant = await tenantDb.Tenants
+                    .AsNoTracking()
+                    .Where(t => t.Id == tenantId)
+                    .Select(t => new { t.Activo })
+                    .FirstOrDefaultAsync();
+
+                isTenantActive = tenant?.Activo ?? false;
+                _cache.Set(tenantCacheKey, isTenantActive, TimeSpan.FromMinutes(5));
+            }
+
+            if (!isTenantActive)
+            {
+                context.Response.StatusCode = 403;
+                await context.Response.WriteAsJsonAsync(new
+                {
+                    code = "TENANT_DEACTIVATED",
+                    message = "Su cuenta ha sido desactivada. Contacte al administrador del sistema."
+                });
+                return;
+            }
+        }
+
         await _next(context);
     }
 

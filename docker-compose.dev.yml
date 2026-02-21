@@ -72,6 +72,9 @@ services:
       Multitenancy__DefaultTenantName: "Default"
       Cloudinary__Url: "cloudinary://000000000000000:placeholder@demo"
       Seq__ServerUrl: "http://seq:5341"
+      SENDGRID_API_KEY: "${SENDGRID_API_KEY}"
+      SENDGRID_FROM_EMAIL: "${SENDGRID_FROM_EMAIL}"
+      SENDGRID_FROM_NAME: "${SENDGRID_FROM_NAME}"
     ports:
       - "1050:1050"
     depends_on:

@@ -4,11 +4,19 @@ import "./globals.css";
 import { ClientProviders } from "@/components/providers/ClientProviders";
 import "@/lib/suppress-hydration-warnings";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  preload: true,
+});
 
 export const metadata: Metadata = {
-  title: "Handy CRM - Sistema de Gestión de Ventas",
-  description: "Sistema completo de gestión de ventas, rutas e inventario",
+  title: "Handy Suites® - Sistema de Gestión Empresarial",
+  description: "Plataforma integral de ventas, rutas, inventario y facturación para PyMEs",
+  icons: {
+    icon: "/favicon.svg",
+    apple: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({
@@ -25,7 +33,7 @@ export default function RootLayout({
             __html: `
               (function() {
                 try {
-                  var theme = localStorage.getItem('handy-crm-theme');
+                  var theme = localStorage.getItem('handy-suites-theme') || localStorage.getItem('handy-crm-theme');
                   if (theme === 'dark') {
                     document.documentElement.classList.add('dark');
                     document.documentElement.classList.remove('light');

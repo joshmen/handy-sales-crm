@@ -117,11 +117,11 @@ export default function SuspendedPage() {
           <h4 className="font-medium text-gray-900 mb-3">¿Necesitas ayuda?</h4>
           <div className="space-y-2 text-sm">
             <a
-              href="mailto:soporte@handysales.com"
+              href="mailto:soporte@handysuites.com"
               className="flex items-center gap-2 text-blue-600 hover:text-blue-700"
             >
               <Mail className="h-4 w-4" />
-              soporte@handysales.com
+              soporte@handysuites.com
             </a>
             <a
               href="tel:+526611234567"

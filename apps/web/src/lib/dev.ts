@@ -13,22 +13,22 @@ export const DEV_CONFIG = {
 export const devLog = {
   info: (message: string, ...args: unknown[]) => {
     if (DEV_CONFIG.ENABLE_LOGS) {
-      console.log(`[Handy CRM] ${message}`, ...args);
+      console.log(`[Handy Suites] ${message}`, ...args);
     }
   },
   error: (message: string, error?: unknown) => {
     if (DEV_CONFIG.ENABLE_LOGS) {
-      console.error(`[Handy CRM] ${message}`, error);
+      console.error(`[Handy Suites] ${message}`, error);
     }
   },
   warn: (message: string, ...args: unknown[]) => {
     if (DEV_CONFIG.ENABLE_LOGS) {
-      console.warn(`[Handy CRM] ${message}`, ...args);
+      console.warn(`[Handy Suites] ${message}`, ...args);
     }
   },
   success: (message: string, ...args: unknown[]) => {
     if (DEV_CONFIG.ENABLE_LOGS) {
-      console.log(`[Handy CRM] ${message}`, ...args);
+      console.log(`[Handy Suites] ${message}`, ...args);
     }
   },
 };

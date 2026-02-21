@@ -117,7 +117,7 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = `handycrm-config-${Date.now()}.json`;
+                    a.download = `handysuites-config-${Date.now()}.json`;
                     a.click();
                     URL.revokeObjectURL(url);
                     toast({

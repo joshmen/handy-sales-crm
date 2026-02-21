@@ -130,7 +130,7 @@ export const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
 
   const handleDownloadRecoveryCodes = () => {
     const text = [
-      'HandySales - Códigos de Recuperación 2FA',
+      'Handy Suites - Códigos de Recuperación 2FA',
       `Generados: ${new Date().toLocaleString('es-MX')}`,
       '',
       'Guarda estos códigos en un lugar seguro.',
@@ -143,7 +143,7 @@ export const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'handysales-recovery-codes.txt';
+    a.download = 'handysuites-recovery-codes.txt';
     a.click();
     URL.revokeObjectURL(url);
     toast.success('Códigos descargados');

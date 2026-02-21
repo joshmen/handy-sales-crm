@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     const mockUsers = [
       { 
         id: '1', 
-        email: 'vendedor@handysales.com', 
+        email: 'vendedor@handysuites.com', 
         password: 'vendedor123',
         name: 'Vendedor Demo',
         role: 'VENDEDOR',

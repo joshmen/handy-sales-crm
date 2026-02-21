@@ -8,6 +8,8 @@ import { HelpPanel } from '@/components/help/HelpPanel';
 import { TourPrompt } from '@/components/help/TourPrompt';
 import { ImpersonationBanner } from '@/components/impersonation';
 import { AnnouncementBanners } from '@/components/announcements/AnnouncementBanners';
+import { ExpirationBanner } from '@/components/subscription/ExpirationBanner';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { useSidebar } from '@/stores/useUIStore';
 import { useImpersonationStore } from '@/stores/useImpersonationStore';
 import { cn } from '@/lib/utils';
@@ -53,10 +55,13 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             open ? (collapsed ? 'lg:ml-20' : 'lg:ml-72') : 'ml-0'
           )}
         >
+          <ExpirationBanner />
           <AnnouncementBanners />
-          <div className="p-4 sm:p-6 lg:p-8 w-full min-w-0">
-            {children}
-          </div>
+          <ErrorBoundary>
+            <div className="p-4 sm:p-6 lg:p-8 w-full min-w-0">
+              {children}
+            </div>
+          </ErrorBoundary>
         </main>
       </div>
       <HelpPanel isOpen={helpPanelOpen} onClose={() => setHelpPanelOpen(false)} />

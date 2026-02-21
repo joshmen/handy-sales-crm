@@ -24,7 +24,7 @@ type UIState = {
 const getStoredTheme = (): 'light' | 'dark' => {
   if (typeof window === 'undefined') return 'light';
   try {
-    const stored = localStorage.getItem('handy-crm-theme');
+    const stored = localStorage.getItem('handy-suites-theme');
     return stored === 'dark' ? 'dark' : 'light';
   } catch {
     return 'light';
@@ -35,7 +35,7 @@ const getStoredTheme = (): 'light' | 'dark' => {
 const storeTheme = (theme: 'light' | 'dark') => {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem('handy-crm-theme', theme);
+    localStorage.setItem('handy-suites-theme', theme);
   } catch {
     // Silently fail if localStorage is not available
   }

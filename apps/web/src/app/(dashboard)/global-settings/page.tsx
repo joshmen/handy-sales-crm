@@ -180,7 +180,7 @@ export default function GlobalSettingsPage() {
               <h1 className="text-3xl font-bold text-gray-900">Configuración Global</h1>
             </div>
             <p className="text-gray-600">
-              Configuraciones que afectan a toda la plataforma HandyCRM
+              Configuraciones que afectan a toda la plataforma Handy Suites
             </p>
             <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full bg-red-100 text-red-800 text-sm font-medium">
               <Shield className="h-4 w-4 mr-1" />
@@ -204,7 +204,7 @@ export default function GlobalSettingsPage() {
                   <Input
                     value={settings.platformName}
                     onChange={e => setSettings({ ...settings, platformName: e.target.value })}
-                    placeholder="HandyCRM"
+                    placeholder="Handy Suites"
                   />
                 </div>
 

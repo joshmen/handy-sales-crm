@@ -183,15 +183,18 @@ export default function OrdersPage() {
   }, [currentPage, filterUser]);
 
   const fetchFormData = useCallback(async () => {
+    // Load clients and products independently so one failure doesn't block the other
     try {
-      const [clientsResponse, productsResponse] = await Promise.all([
-        clientService.getClients({ limit: 100 }),
-        productService.getProducts({ limit: 100 }),
-      ]);
+      const clientsResponse = await clientService.getClients({ limit: 100 });
       setClients(clientsResponse.clients || []);
+    } catch (err) {
+      console.error('Error al cargar clientes:', err);
+    }
+    try {
+      const productsResponse = await productService.getProducts({ limit: 100 });
       setProducts(productsResponse.products || []);
     } catch (err) {
-      console.error('Error al cargar datos del formulario:', err);
+      console.error('Error al cargar productos:', err);
     }
   }, []);
 
@@ -203,7 +206,7 @@ export default function OrdersPage() {
   // Cargar lista de vendedores (solo para admin)
   useEffect(() => {
     if (!isAdmin) return;
-    api.get<{ items: UsuarioOption[] } | UsuarioOption[]>('/usuarios?pagina=1&tamanoPagina=500')
+    api.get<{ items: UsuarioOption[] } | UsuarioOption[]>('/api/usuarios?pagina=1&tamanoPagina=500')
       .then(res => {
         const data = res.data;
         const items = Array.isArray(data) ? data : data.items || [];

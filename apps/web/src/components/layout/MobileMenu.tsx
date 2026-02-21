@@ -71,7 +71,7 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
           <div className="flex items-center justify-between p-4 border-b">
             <div className="flex items-center space-x-2">
               <Package className="h-8 w-8 text-blue-600" />
-              <span className="font-bold text-xl">Handy CRM</span>
+              <span className="font-bold text-xl">Handy Suites</span>
             </div>
             <button
               onClick={onClose}

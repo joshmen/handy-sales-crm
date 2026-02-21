@@ -5,7 +5,7 @@ export const generalTours: Record<string, TourConfig> = {
   '/dashboard': {
     id: 'dashboard-general',
     title: 'Tour general del sistema',
-    description: 'Conoce las secciones principales de HandySales y cómo navegar el sistema.',
+    description: 'Conoce las secciones principales de Handy Suites y cómo navegar el sistema.',
     steps: [
       {
         element: '[data-tour="sidebar-nav"]',

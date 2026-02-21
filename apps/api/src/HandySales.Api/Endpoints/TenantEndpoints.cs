@@ -1,7 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using BCrypt.Net;
+using HandySales.Api.Hubs;
 using HandySales.Application.Tenants.DTOs;
+using HandySales.Shared.Email;
 using HandySales.Application.Usuarios.Interfaces;
 using HandySales.Domain.Entities;
 using HandySales.Infrastructure.Persistence;
@@ -192,7 +196,11 @@ public static class TenantEndpoints
         int id,
         [FromBody] TenantCambiarActivoDto dto,
         [FromServices] ICurrentTenant currentTenant,
-        [FromServices] ITenantRepository tenantRepo)
+        [FromServices] ITenantRepository tenantRepo,
+        [FromServices] HandySalesDbContext db,
+        [FromServices] IMemoryCache cache,
+        [FromServices] IHubContext<NotificationHub> hubContext,
+        [FromServices] IEmailService emailService)
     {
         if (!currentTenant.IsSuperAdmin)
             return Results.Forbid();
@@ -201,13 +209,97 @@ public static class TenantEndpoints
         if (!success)
             return Results.NotFound(new { message = "Tenant no encontrado" });
 
+        // When deactivating: invalidate all sessions + notify users
+        if (!dto.Activo)
+        {
+            // Bump SessionVersion for all tenant users → invalidates existing JWTs
+            var tenantUsers = await db.Usuarios
+                .IgnoreQueryFilters()
+                .Where(u => u.TenantId == id && u.Activo)
+                .ToListAsync();
+
+            foreach (var user in tenantUsers)
+            {
+                user.SessionVersion++;
+                // Invalidate session_version cache for each user
+                cache.Remove($"session_version_{user.Id}");
+            }
+
+            // Revoke all active refresh tokens for tenant users
+            var userIds = tenantUsers.Select(u => u.Id).ToList();
+            var activeTokens = await db.RefreshTokens
+                .Where(rt => userIds.Contains(rt.UserId) && !rt.IsRevoked && rt.ExpiresAt > DateTime.UtcNow)
+                .ToListAsync();
+
+            foreach (var token in activeTokens)
+            {
+                token.IsRevoked = true;
+                token.RevokedAt = DateTime.UtcNow;
+            }
+
+            // Close all active device sessions
+            var activeSessions = await db.DeviceSessions
+                .IgnoreQueryFilters()
+                .Where(ds => userIds.Contains(ds.UsuarioId) && ds.Status == SessionStatus.Active)
+                .ToListAsync();
+
+            foreach (var session in activeSessions)
+            {
+                session.Status = SessionStatus.RevokedByUser;
+                session.LoggedOutAt = DateTime.UtcNow;
+                session.LogoutReason = "Tenant desactivado por SuperAdmin";
+            }
+
+            // Create notification for each user
+            foreach (var user in tenantUsers)
+            {
+                db.NotificationHistory.Add(new NotificationHistory
+                {
+                    TenantId = id,
+                    UsuarioId = user.Id,
+                    Titulo = "Cuenta Desactivada",
+                    Mensaje = "Su empresa ha sido desactivada por el administrador del sistema.",
+                    Tipo = NotificationType.System,
+                    Status = NotificationStatus.Sent,
+                    CreadoEn = DateTime.UtcNow
+                });
+            }
+
+            await db.SaveChangesAsync();
+
+            // Invalidate tenant active cache in middleware
+            cache.Remove($"tenant_active:{id}");
+
+            // Push ForceLogout via SignalR to all connected users of this tenant
+            await hubContext.Clients.Group($"tenant:{id}")
+                .SendAsync("ForceLogout", new { reason = "TENANT_DEACTIVATED" });
+
+            // Send deactivation email to admin users
+            var tenant = await db.Tenants.AsNoTracking().FirstOrDefaultAsync(t => t.Id == id);
+            var tenantName = tenant?.NombreEmpresa ?? "Empresa";
+            var adminEmails = tenantUsers.Where(u => u.EsAdmin).Select(u => u.Email).ToList();
+            if (adminEmails.Count > 0)
+            {
+                var html = EmailTemplates.TenantDeactivated(tenantName);
+                _ = emailService.SendBulkAsync(adminEmails, "Cuenta Desactivada", html);
+            }
+        }
+        else
+        {
+            // When reactivating: invalidate tenant cache so middleware allows access
+            cache.Remove($"tenant_active:{id}");
+        }
+
         return Results.Ok(new { message = dto.Activo ? "Tenant activado" : "Tenant desactivado" });
     }
 
     private static async Task<IResult> BatchToggleActivo(
         [FromBody] TenantBatchToggleRequest dto,
         [FromServices] ICurrentTenant currentTenant,
-        [FromServices] ITenantRepository tenantRepo)
+        [FromServices] ITenantRepository tenantRepo,
+        [FromServices] HandySalesDbContext db,
+        [FromServices] IMemoryCache cache,
+        [FromServices] IHubContext<NotificationHub> hubContext)
     {
         if (!currentTenant.IsSuperAdmin)
             return Results.Forbid();
@@ -219,7 +311,41 @@ public static class TenantEndpoints
         foreach (var id in dto.Ids)
         {
             var success = await tenantRepo.CambiarActivoAsync(id, dto.Activo);
-            if (success) count++;
+            if (!success) continue;
+            count++;
+
+            // Invalidate tenant cache
+            cache.Remove($"tenant_active:{id}");
+
+            if (!dto.Activo)
+            {
+                // Invalidate sessions for deactivated tenants
+                var tenantUsers = await db.Usuarios
+                    .IgnoreQueryFilters()
+                    .Where(u => u.TenantId == id && u.Activo)
+                    .ToListAsync();
+
+                foreach (var user in tenantUsers)
+                {
+                    user.SessionVersion++;
+                    cache.Remove($"session_version_{user.Id}");
+                }
+
+                var userIds = tenantUsers.Select(u => u.Id).ToList();
+                var activeTokens = await db.RefreshTokens
+                    .Where(rt => userIds.Contains(rt.UserId) && !rt.IsRevoked && rt.ExpiresAt > DateTime.UtcNow)
+                    .ToListAsync();
+                foreach (var token in activeTokens)
+                {
+                    token.IsRevoked = true;
+                    token.RevokedAt = DateTime.UtcNow;
+                }
+
+                await db.SaveChangesAsync();
+
+                await hubContext.Clients.Group($"tenant:{id}")
+                    .SendAsync("ForceLogout", new { reason = "TENANT_DEACTIVATED" });
+            }
         }
 
         return Results.Ok(new { message = $"{count} tenant(s) actualizados", count });

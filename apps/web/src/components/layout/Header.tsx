@@ -128,9 +128,9 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
     // SUPER_ADMIN ve configuración global, otros ven configuración de empresa
     name:
       // sUser?.role === 'SUPER_ADMIN'
-      //   ? globalSettings?.platformName || 'HandyCRM'
-      //   : companySettings?.companyName || globalSettings?.platformName || 'HandyCRM',
-      globalSettings?.platformName || 'HandyCRM',
+      //   ? globalSettings?.platformName || 'Handy Suites'
+      //   : companySettings?.companyName || globalSettings?.platformName || 'Handy Suites',
+      globalSettings?.platformName || 'Handy Suites',
     // TODOS ven el logo de la configuración global (solo SUPER_ADMIN puede cambiarlo)
     logo: globalSettings?.platformLogo || '',
     primaryColor:
@@ -147,7 +147,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
     ? {
         id: sUser.id ?? '1',
         name: profile?.nombre || (sUser.name ?? 'Usuario'),
-        email: profile?.email || (sUser.email ?? 'usuario@handysales.com'),
+        email: profile?.email || (sUser.email ?? 'usuario@handysuites.com'),
         role: profile?.role || (sUser.role ?? 'VENDEDOR'),
         // El avatar del header SIEMPRE es la foto personal del perfil
         avatar: profile?.avatarUrl || '',
@@ -155,7 +155,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
     : {
         id: '1',
         name: 'Usuario',
-        email: 'usuario@handysales.com',
+        email: 'usuario@handysuites.com',
         role: 'VENDEDOR',
         avatar: '',
       };
@@ -203,9 +203,9 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
-      await signOut({ redirect: false, callbackUrl: '/login' });
+      await signOut({ redirect: false, callbackUrl: '/' });
       if (typeof window !== 'undefined') localStorage.clear();
-      router.push('/login');
+      router.push('/');
     } catch {
       toast({ title: 'Error', description: 'No se pudo cerrar la sesión', variant: 'destructive' });
     } finally {
@@ -225,7 +225,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
       )}>
         <div className="flex h-16 items-center px-4 lg:px-6">
           <div className="flex-1">
-            <h1 className="text-lg font-semibold">HandyCRM</h1>
+            <h1 className="text-lg font-semibold">Handy Suites</h1>
           </div>
         </div>
       </header>
@@ -260,15 +260,12 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
                 className="w-8 h-8 rounded-lg object-contain"
               />
             ) : (
-              // Logo por defecto HandyCRM
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center shadow-sm"
-                style={{
-                  background: `linear-gradient(to bottom right, ${companyConfig.primaryColor}, ${companyConfig.primaryColor}dd)`,
-                }}
-              >
-                <span className="text-white font-bold text-sm">H</span>
-              </div>
+              // Logo por defecto Handy Suites - cluster de 4 íconos
+              <img
+                src="/logo-icon.svg"
+                alt="Handy Suites"
+                className="w-9 h-9"
+              />
             )}
             <span className="hidden sm:block text-xl font-semibold text-gray-900">
               {companyConfig.name}

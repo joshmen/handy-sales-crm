@@ -8,6 +8,7 @@ declare module 'next-auth' {
     companyId?: number;
     accessToken?: string;
     refreshToken?: string;
+    rememberMe?: boolean;
   }
 
   interface Session {
@@ -41,6 +42,8 @@ declare module 'next-auth/jwt' {
     accessTokenExpires?: number;
     isImpersonating?: boolean;
     originalAccessToken?: string;
+    rememberMe?: boolean;
+    sessionExpires?: number;
     error?: string;
   }
 }

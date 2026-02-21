@@ -236,7 +236,7 @@ public class UsuarioService
 
             // Obtener configuración de la empresa para usar la carpeta correcta
             var companySettings = await _companyRepository.GetByTenantIdAsync(_tenant.TenantId);
-            var companyName = companySettings?.CompanyName ?? "HandyCRM";
+            var companyName = companySettings?.CompanyName ?? "Handy Suites";
             var companyFolder = _folderService.GenerateCompanyFolderName(_tenant.TenantId, companyName);
             var avatarsFolder = _folderService.GetUsersFolder(companyFolder);
 

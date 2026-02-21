@@ -289,7 +289,7 @@ CREATE TABLE company_settings (
 -- Tabla de configuración global de la plataforma (SUPER_ADMIN)
 CREATE TABLE GlobalSettings (
   Id INT AUTO_INCREMENT PRIMARY KEY,
-  PlatformName VARCHAR(255) NOT NULL DEFAULT 'HandyCRM',
+  PlatformName VARCHAR(255) NOT NULL DEFAULT 'Handy Suites',
   PlatformLogo VARCHAR(500) NULL,
   PlatformLogoPublicId VARCHAR(255) NULL,
   PlatformPrimaryColor VARCHAR(7) DEFAULT '#3B82F6',
@@ -309,7 +309,7 @@ CREATE TABLE GlobalSettings (
 
 -- Insert default global settings
 INSERT INTO GlobalSettings (PlatformName, CreatedAt, UpdatedAt)
-VALUES ('HandyCRM', NOW(), NOW());
+VALUES ('Handy Suites', NOW(), NOW());
 
 -- ========================================
 -- Tabla de Cobros (Cobranza)

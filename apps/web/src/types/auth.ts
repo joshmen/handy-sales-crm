@@ -29,7 +29,7 @@ export interface User {
 }
 
 export enum UserRole {
-  SUPER_ADMIN = 'SUPER_ADMIN', // Sistema HandySales
+  SUPER_ADMIN = 'SUPER_ADMIN', // Sistema Handy Suites
   ADMIN = 'ADMIN', // Admin de la empresa (cliente que paga)
   SUPERVISOR = 'SUPERVISOR', // Supervisor de vendedores
   VENDEDOR = 'VENDEDOR', // Vendedor de ruta

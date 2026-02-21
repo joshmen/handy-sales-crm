@@ -38,7 +38,7 @@ namespace HandySales.Application.CompanySettings.Services
                 if (settings == null)
                 {
                     // Crear configuración por defecto si no existe
-                    var defaultCompanyName = "HandyCRM";
+                    var defaultCompanyName = "Handy Suites";
                     var cloudinaryFolder = _folderService.GenerateCompanyFolderName(tenantId, defaultCompanyName);
                     
                     settings = new CompanySetting

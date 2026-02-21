@@ -66,7 +66,7 @@ export const useGlobalSettings = () => {
       // Set default values si falla completamente
       setGlobalSettings({
         id: 1,
-        platformName: 'HandyCRM',
+        platformName: 'Handy Suites',
         platformLogo: null,
         platformPrimaryColor: '#3B82F6',
         platformSecondaryColor: '#8B5CF6',

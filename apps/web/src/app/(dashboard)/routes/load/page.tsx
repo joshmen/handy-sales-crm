@@ -17,7 +17,7 @@ export default function RouteLoadPage() {
     {
       id: '1',
       name: 'Josué Mendoza',
-      email: 'josue@handycrm.com',
+      email: 'josue@handysuites.com',
       role: UserRole.ADMIN,
       isActive: true,
       createdAt: new Date(),
@@ -26,7 +26,7 @@ export default function RouteLoadPage() {
     {
       id: '2',
       name: 'María García',
-      email: 'maria@handycrm.com',
+      email: 'maria@handysuites.com',
       role: UserRole.VENDEDOR,
       isActive: true,
       createdAt: new Date(),

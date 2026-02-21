@@ -101,7 +101,7 @@ export function SearchableSelect({
 
       <Popover.Portal>
         <Popover.Content
-          className="z-50 w-[var(--radix-popover-trigger-width)] bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden"
+          className="z-[70] w-[var(--radix-popover-trigger-width)] bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden"
           sideOffset={4}
           align="start"
         >

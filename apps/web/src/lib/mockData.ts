@@ -283,10 +283,10 @@ export const mockNotifications = [
 export const initializeMockData = () => {
   if (typeof window !== 'undefined') {
     // Initialize user
-    const userStore = JSON.parse(localStorage.getItem('handy-crm-storage') || '{}');
+    const userStore = JSON.parse(localStorage.getItem('handy-suites-storage') || '{}');
     if (!userStore.state?.user) {
       localStorage.setItem(
-        'handy-crm-storage',
+        'handy-suites-storage',
         JSON.stringify({
           state: {
             user: mockUser,

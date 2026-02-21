@@ -91,6 +91,22 @@ apiInstance.interceptors.response.use(
       return Promise.reject(error);
     }
 
+    // TENANT_DEACTIVATED: tenant was deactivated by SuperAdmin — redirect to suspended page
+    if (status === 403 && typeof window !== 'undefined') {
+      const code = error.response?.data?.code;
+      if (code === 'TENANT_DEACTIVATED') {
+        if (!isLoggingOut && !window.location.pathname.includes('/tenant-suspended')) {
+          isLoggingOut = true;
+          _cachedAccessToken = null;
+          try {
+            await signOut({ redirect: false });
+          } catch { /* ignore */ }
+          window.location.href = '/tenant-suspended';
+        }
+        return Promise.reject(error);
+      }
+    }
+
     if (status === 401 && typeof window !== 'undefined') {
       const responseCode = error.response?.data?.code;
 

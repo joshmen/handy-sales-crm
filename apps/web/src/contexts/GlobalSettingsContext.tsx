@@ -57,7 +57,7 @@ export const GlobalSettingsProvider: React.FC<GlobalSettingsProviderProps> = ({ 
         // Fallback to default global settings
         const defaultSettings: GlobalSettings = {
           id: '1',
-          platformName: 'HandyCRM',
+          platformName: 'Handy Suites',
           platformPrimaryColor: '#3B82F6',
           platformSecondaryColor: '#8B5CF6',
           defaultLanguage: 'es',
@@ -86,7 +86,7 @@ export const GlobalSettingsProvider: React.FC<GlobalSettingsProviderProps> = ({ 
         // If everything fails, use default settings
         const defaultSettings: GlobalSettings = {
           id: '1',
-          platformName: 'HandyCRM',
+          platformName: 'Handy Suites',
           platformPrimaryColor: '#3B82F6',
           platformSecondaryColor: '#8B5CF6',
           defaultLanguage: 'es',

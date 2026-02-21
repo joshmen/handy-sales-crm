@@ -40,7 +40,7 @@ export function BrandedLoadingScreen({ message = 'Cargando...' }: BrandedLoading
             <span className={`text-[#16A34A] font-bold text-xl ${spaceGrotesk.className}`}>H</span>
           </div>
           <span className={`text-white text-4xl font-bold ${spaceGrotesk.className}`}>
-            HandySales
+            Handy Suites
           </span>
         </div>
         <div className="flex items-center gap-3">

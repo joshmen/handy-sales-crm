@@ -21,7 +21,7 @@ export const useAuth = (): UseAuthReturn => {
     const mockUser: User = {
       id: '1',
       name: 'Josué Mendoza',
-      email: 'josue@handycrm.com',
+      email: 'josue@handysuites.com',
       role: UserRole.ADMIN,
       isActive: true,
       createdAt: new Date(),

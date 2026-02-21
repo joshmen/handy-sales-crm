@@ -67,7 +67,7 @@ export default function ManageRoutesPage() {
 
   const fetchUsuarios = async () => {
     try {
-      const response = await api.get<{ items: UsuarioOption[] } | UsuarioOption[]>('/usuarios?pagina=1&tamanoPagina=500');
+      const response = await api.get<{ items: UsuarioOption[] } | UsuarioOption[]>('/api/usuarios?pagina=1&tamanoPagina=500');
       const data = response.data;
       const items = Array.isArray(data) ? data : data.items || [];
       setUsuarios(items);

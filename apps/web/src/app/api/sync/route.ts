@@ -60,7 +60,7 @@ const mockSyncData = {
       clients: ['1', '2'],
       status: 'scheduled',
       estimatedTime: 240, // minutos
-      assignedTo: 'vendedor@handysales.com',
+      assignedTo: 'vendedor@handysuites.com',
     },
   ],
   orders: [
