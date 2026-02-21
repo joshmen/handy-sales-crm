@@ -168,6 +168,26 @@ docker-compose -f docker-compose.dev.yml down && docker-compose -f docker-compos
 
 **Only restart THIS project's containers** — never restart all Docker containers on the machine.
 
+### CRITICAL: Frontend Dev Server Rules (for AI agents)
+
+1. **NEVER delete `apps/web/.next/`** while the dev server is running. This corrupts the server and it will return 500 for ALL pages. The server process becomes a zombie that's hard to kill.
+
+2. **NEVER run `rm -rf .next`** as a troubleshooting step. If needed, stop the server FIRST, then delete, then restart.
+
+3. **The user runs the dev server from their own terminal** (VSCode or separate shell). AI agents cannot see or kill this process reliably via `taskkill /im node.exe` because `netstat` sometimes doesn't show it on Windows.
+
+4. **To find and kill processes on Windows port 1083**, use PowerShell (netstat often fails silently):
+   ```powershell
+   # Find PID
+   powershell.exe -Command "Get-NetTCPConnection -LocalPort 1083 | Select-Object OwningProcess"
+   # Kill it
+   powershell.exe -Command "Stop-Process -Id <PID> -Force"
+   ```
+
+5. **If the server is returning 500 and you can't fix it**, tell the user to restart it manually: `Ctrl+C` then `cd apps/web && npm run dev`
+
+6. **Multiple agents warning**: Other Claude agents may be running on this project simultaneously. Do NOT kill all node.exe processes — this will break other agents' servers and tools.
+
 ## Port Configuration (1000-range)
 
 **IMPORTANT**: This project uses ports in the 1000-range to avoid conflicts with other projects.
@@ -284,6 +304,15 @@ docker-compose -f docker-compose.dev.yml up -d
 
 - **NEVER push automatically.** Always test locally first. Only push when the user explicitly requests it.
 - Commits are fine without asking, but `git push` requires explicit user instruction.
+- **Before ANY push**, present a **Pre-Push Deployment Checklist** to the user:
+  1. **New env vars**: List ALL new environment variables needed in Railway/Vercel/Azure with exact names, where to set them, and whether they're required or optional
+  2. **DB migrations**: List new EF Core migrations that will auto-apply in production (name, what they change)
+  3. **CI/CD pipeline changes**: Any modifications needed to `.github/workflows/deploy-apis.yml` or Vercel config
+  4. **Azure Bicep/docs updates**: If new services, env vars, or infra changes affect future Azure migration
+  5. **Schema base update**: Whether `01_init_schema_multitenant.sql` needs updating for fresh deployments
+  6. **Breaking changes**: Any API contract changes that affect frontend/mobile/billing
+  - Only proceed with push after user reviews and confirms the checklist
+- **CRITICAL — Env vars notification**: After ANY commit that introduces new `process.env.*`, `Environment.GetEnvironmentVariable(...)`, or `IConfiguration["..."]` references, you MUST immediately tell the user which variables need to be added to which platform (Vercel/Railway/Azure) BEFORE they can push. Format as a clear table with: Variable Name | Platform | Required/Optional | Description. The user MUST add these manually in the provider dashboards before deploying.
 
 ---
 
@@ -331,6 +360,9 @@ NEXTAUTH_URL=https://app.handycrm.com
 NEXTAUTH_SECRET=<openssl rand -base64 32>
 NEXT_PUBLIC_API_URL=https://api.handycrm.com
 NODE_ENV=production
+SOCIAL_LOGIN_SECRET=<must match JWT__SecretKey on Railway>
+GOOGLE_CLIENT_ID=<from Google Cloud Console>              # Optional — enables Google OAuth
+GOOGLE_CLIENT_SECRET=<from Google Cloud Console>           # Optional — enables Google OAuth
 ```
 
 **Main API (Railway Dashboard):**
@@ -342,6 +374,9 @@ JWT__SecretKey=<openssl rand -base64 64>
 JWT__Issuer=HandySales
 JWT__Audience=HandySalesUsers
 JWT__ExpirationHours=24
+SENDGRID_API_KEY=<from SendGrid dashboard>
+SENDGRID_FROM_EMAIL=<verified sender, e.g. noreply@handysuites.com>
+SENDGRID_FROM_NAME=Handy Suites
 ```
 
 **Billing API (Railway Dashboard):**
@@ -419,9 +454,15 @@ Schema changes are managed via EF Core Migrations. The baseline migration (`2026
 
 ### Developer Workflow
 
+**IMPORTANT — Shell PATH fix**: `dotnet ef` is installed as a global tool but `.dotnet/tools` is NOT in the bash PATH. Always prefix commands with the PATH export:
+```bash
+export PATH="$PATH:/c/Users/AW AREA 51M R2/.dotnet/tools"
+```
+
 ```bash
 # Generate a new migration after changing entities/DbContext
-dotnet ef migrations add DescripcionDelCambio \
+export PATH="$PATH:/c/Users/AW AREA 51M R2/.dotnet/tools"
+dotnet-ef migrations add DescripcionDelCambio \
   --project libs/HandySales.Infrastructure \
   --startup-project apps/api/src/HandySales.Api \
   --output-dir Migrations
@@ -430,12 +471,12 @@ dotnet ef migrations add DescripcionDelCambio \
 docker-compose -f docker-compose.dev.yml up -d --build api_main
 
 # Revert last migration (if not yet applied)
-dotnet ef migrations remove \
+dotnet-ef migrations remove \
   --project libs/HandySales.Infrastructure \
   --startup-project apps/api/src/HandySales.Api
 
 # List migrations and their status
-dotnet ef migrations list \
+dotnet-ef migrations list \
   --project libs/HandySales.Infrastructure \
   --startup-project apps/api/src/HandySales.Api
 ```
@@ -462,6 +503,15 @@ dotnet ef migrations list \
 - **ALWAYS** commit the `Migrations/` folder — it's the source of truth for schema
 - Docker init SQL scripts are frozen at baseline — all new changes go through EF migrations
 - GitHub Secret required: `PRODUCTION_DB_CONNECTION_STRING`
+- **MANDATORY**: When modifying ANY entity (Domain), DbContext mapping, or adding/removing columns, you MUST generate a new EF Core migration BEFORE committing:
+  ```bash
+  export PATH="$PATH:/c/Users/AW AREA 51M R2/.dotnet/tools"
+  dotnet-ef migrations add NombreDescriptivo \
+    --project libs/HandySales.Infrastructure \
+    --startup-project apps/api/src/HandySales.Api \
+    --output-dir Migrations
+  ```
+  Then rebuild the API container (`docker-compose -f docker-compose.dev.yml up -d --build api_main`) to verify the migration applies cleanly. Never commit DB schema changes without the corresponding migration files.
 
 ---
 
@@ -798,6 +848,22 @@ apps/ai/src/HandySales.Ai.Api/
 - **Maintenance mode**: Middleware que bloquea requests + toggle desde SuperAdmin con banner automático (shimmer + no-dismiss)
 - **2FA/TOTP**: Endpoints backend + UI setup/disable en SecurityTab, TOTP encryption service
 - **Session validation**: Middleware valida sesión activa, revocación remota de dispositivos
+- **Rebranding → Handy Suites®**: Nombre cambiado de HandyCRM/HandySales a "Handy Suites" en toda la app, BD, y assets
+- **Landing page** (`/`): Página pública con 9 secciones (hero, features, pricing, testimonios, footer). Server Component con SEO metadata. Antes era redirect a `/dashboard`
+- **Login split layout** (`/login`): Panel izquierdo con imagen vendedor de ruta (AI-generated) + gradient overlay + value props (CheckCircle) + pills App Store/Google Play a color. Panel derecho con form limpio sobre fondo blanco. `AuthLayout` reutilizable en login, forgot-password, reset-password. Responsive: panel izquierdo oculto en mobile
+- **Forgot/Reset password pages**: `/forgot-password` y `/reset-password` con AuthLayout compartido
+- **LandingNav**: Componente sticky con scroll awareness, mobile hamburger, links a secciones + CTA "Comienza gratis"
+- **Logo SVGs**: `logo-icon.svg` (4 cuadros multicolor con iconos), `logo.svg`, `logo-dark.svg`, `logo-transparent.svg`
+- **Favicon**: 4 cuadros de colores (rose/indigo/green/amber) — mismos gradientes que logo-icon.svg, sin iconos internos para nitidez a 16x16
+- **Logo workflow rule**: When creating or updating logos, ALWAYS generate proper SVG files with transparency. Create multiple versions:
+  - `logo.svg` — Full logo (brand colors, white/light background assumed)
+  - `logo-dark.svg` — Logo for dark backgrounds (inverted text/fills)
+  - `logo-transparent.svg` — Logo with fully transparent background (no background rect)
+  - `logo-icon.svg` — Icon-only version (square, for favicons/app icons)
+  - `favicon.svg` — Simplified version optimized for 16x16 rendering
+  All SVGs must use transparent backgrounds by default (no opaque `<rect>` fills). Saved in `apps/web/public/`.
+- **Tour screenshots**: Capturados via Playwright desde las páginas reales (`public/images/tour/`), usados en landing page product showcase
+- **Hero dashboard screenshot**: `public/images/hero-dashboard.png` — capturado via Playwright del dashboard real de Jeyma
 
 ### Recuento React vs Pencil
 
@@ -806,14 +872,14 @@ apps/ai/src/HandySales.Ai.Api/
 | Pantallas React totales | 47 |
 | Pantallas Pencil totales | 49 frames |
 | Match React↔Pencil | 43 (todas necesitan actualización) |
-| En React pero NO en Pencil | 12 (faltantes) |
+| En React pero NO en Pencil | 10 (faltantes, login + forgot/reset completados) |
 | En Pencil pero NO en React | 3 (features futuras) |
 
-### 12 Pantallas React SIN diseño Pencil
+### 10 Pantallas React SIN diseño Pencil
 
 | # | Página | Prioridad |
 |---|--------|-----------|
-| 1 | `login/page.tsx` | ALTA |
+| ~~1~~ | ~~`login/page.tsx`~~ | ~~ALTA~~ ✅ Rediseñado (split layout con vendedor + AuthLayout reutilizable) |
 | 2 | `cobranza/page.tsx` | ALTA |
 | 3 | `routes/page.tsx` (lista) | ALTA |
 | 4 | `routes/manage/page.tsx` | ALTA |
@@ -840,14 +906,14 @@ apps/ai/src/HandySales.Ai.Api/
 - ~~orders.ts~~ ✅ Creado
 - ~~discounts.ts~~ ✅ Creado
 - ~~price-lists.ts~~ ✅ Creado
-- `deliveries.ts` ❌ **SIGUE USANDO MOCK DATA**
+- ~~deliveries.ts~~ ✅ Conectado a API real (`/rutas` + `/pedidos`, 12 métodos)
 
 **Stores Zustand faltantes:** No son críticos — los hooks `usePaginated{Entity}` cubren la funcionalidad.
 
 **Features que implican pantallas nuevas:**
-- Error Boundary global (componente wrapper, no pantalla) — ALTA
-- Password Reset page — MEDIA
-- 2FA/MFA tab en Profile/Settings — BAJA
+- ~~Error Boundary global~~ ✅ Implementado (`error.tsx` root + dashboard + `not-found.tsx`)
+- ~~Password Reset page~~ ✅ Implementado (`/forgot-password` + `/reset-password` con AuthLayout)
+- ~~2FA/MFA tab en Profile/Settings~~ ✅ Implementado (SecurityTab con TwoFactorSetup/TwoFactorDisable)
 - Email Verification page — BAJA
 
 ### Archivos Pencil
@@ -860,8 +926,7 @@ docs/design/pencil/pencil-admin.pen       # Mismo contenido
 
 ### Próximos pasos de diseño
 1. **Fase A**: Actualizar 43 frames existentes (iconos coloridos + Modal→Drawer)
-2. **Fase B**: Crear 12 pantallas faltantes en Pencil
-3. **Fase C**: Crear servicio `deliveries.ts` real (reemplazar mock data)
+2. **Fase B**: Crear 10 pantallas faltantes en Pencil (login y forgot/reset ya completados)
 
 ---
 
@@ -922,7 +987,7 @@ docs/design/pencil/pencil-admin.pen       # Mismo contenido
 - [x] **INFRA-1**: ~~EF Core Migrations~~ — baseline generado, `DatabaseMigrator` con advisory lock, auto-apply en dev, `efbundle` en CI/CD
 - [ ] **INFRA-2**: Soft deletes (GDPR compliance)
 - [ ] **INFRA-3**: Integration tests (parcial: rbac, security, visual-audit existen)
-- [ ] **INFRA-4**: 12 pantallas React sin diseño Pencil (listadas arriba)
+- [ ] **INFRA-4**: 11 pantallas React sin diseño Pencil (listadas arriba, login ya completado)
 
 ### 🟡 MEDIA — Rol Supervisor
 
@@ -940,7 +1005,7 @@ docs/design/pencil/pencil-admin.pen       # Mismo contenido
 - [x] **FUT-6**: ~~2FA/MFA~~ TOTP implementado (endpoints + UI setup/disable en SecurityTab)
 - [x] **FUT-7**: ~~WebSocket para actualizaciones real-time~~ SignalR self-hosted implementado
 - [ ] **FUT-8**: Offline support
-- [ ] **FUT-9**: Password Reset page
+- [x] **FUT-9**: ~~Password Reset page~~ — `/forgot-password` + `/reset-password` con AuthLayout compartido
 - [ ] **FUT-10**: Rol VIEWER funcional
 
 ### ✅ COMPLETADO — Announcements DisplayMode
