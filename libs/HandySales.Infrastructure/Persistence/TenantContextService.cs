@@ -19,6 +19,11 @@ public interface ITenantContextService
     /// False durante migraciones, seeds, o para super admins.
     /// </summary>
     bool ShouldApplyFilter { get; }
+
+    /// <summary>
+    /// Email del usuario actual, o null si no está disponible.
+    /// </summary>
+    string? CurrentUserEmail { get; }
 }
 
 public class TenantContextService : ITenantContextService
@@ -63,6 +68,24 @@ public class TenantContextService : ITenantContextService
             //     return false;
 
             return TenantId.HasValue;
+        }
+    }
+
+    public string? CurrentUserEmail
+    {
+        get
+        {
+            try
+            {
+                var user = _httpContextAccessor.HttpContext?.User;
+                return user?.FindFirst(ClaimTypes.Email)?.Value
+                    ?? user?.FindFirst("email")?.Value
+                    ?? user?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            }
+            catch
+            {
+                return null;
+            }
         }
     }
 

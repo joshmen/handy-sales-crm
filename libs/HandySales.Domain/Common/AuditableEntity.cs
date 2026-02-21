@@ -20,6 +20,12 @@ public abstract class AuditableEntity
     [Column("actualizado_por")]
     public string? ActualizadoPor { get; set; }
 
+    [Column("eliminado_en")]
+    public DateTime? EliminadoEn { get; set; }
+
+    [Column("eliminado_por")]
+    public string? EliminadoPor { get; set; }
+
     /// <summary>
     /// Version for optimistic concurrency control and offline sync
     /// </summary>

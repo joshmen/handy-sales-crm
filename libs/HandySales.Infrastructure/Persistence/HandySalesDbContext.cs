@@ -1,3 +1,4 @@
+using HandySales.Domain.Common;
 using HandySales.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -65,6 +66,22 @@ public class HandySalesDbContext : DbContext
     public DbSet<Announcement> Announcements => Set<Announcement>();
     public DbSet<AnnouncementDismissal> AnnouncementDismissals => Set<AnnouncementDismissal>();
 
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        var currentUser = _tenantContext?.CurrentUserEmail;
+
+        foreach (var entry in ChangeTracker.Entries<AuditableEntity>())
+        {
+            if (entry.State == EntityState.Deleted)
+            {
+                entry.State = EntityState.Modified;
+                entry.Entity.EliminadoEn = DateTime.UtcNow;
+                entry.Entity.EliminadoPor = currentUser;
+            }
+        }
+
+        return await base.SaveChangesAsync(cancellationToken);
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -611,55 +628,57 @@ public class HandySalesDbContext : DbContext
         // Para deshabilitar: usar .IgnoreQueryFilters() en la query.
         // =====================================================
 
-        // Entidades principales con TenantId
+        // Entidades principales con TenantId + Soft Delete
         modelBuilder.Entity<Cliente>()
-            .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
+            .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
 
         modelBuilder.Entity<Producto>()
-            .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
+            .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
 
         modelBuilder.Entity<Usuario>()
-            .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
+            .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
 
         modelBuilder.Entity<HandySales.Domain.Entities.Inventario>()
-            .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
+            .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
 
         modelBuilder.Entity<ListaPrecio>()
-            .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
+            .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
 
         modelBuilder.Entity<PrecioPorProducto>()
-            .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
+            .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
 
         modelBuilder.Entity<DescuentoPorCantidad>()
-            .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
+            .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
 
         modelBuilder.Entity<Promocion>()
-            .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
+            .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
 
+        // PromocionProducto: no hereda AuditableEntity — solo filtro de tenant
         modelBuilder.Entity<PromocionProducto>()
             .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
 
         modelBuilder.Entity<Zona>()
-            .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
+            .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
 
         modelBuilder.Entity<FamiliaProducto>()
-            .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
+            .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
 
         modelBuilder.Entity<CategoriaCliente>()
-            .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
+            .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
 
         modelBuilder.Entity<CategoriaProducto>()
-            .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
+            .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
 
         modelBuilder.Entity<UnidadMedida>()
-            .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
+            .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
 
         // Entidades de auditoría y configuración
+        // ActivityLog: no hereda AuditableEntity — solo filtro de tenant
         modelBuilder.Entity<ActivityLog>()
             .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
 
         modelBuilder.Entity<CompanySetting>()
-            .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
+            .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
 
         modelBuilder.Entity<Domain.Entities.DatosEmpresa>(entity =>
         {
@@ -667,45 +686,51 @@ public class HandySalesDbContext : DbContext
             entity.HasOne(d => d.Tenant)
                   .WithOne(t => t.DatosEmpresa)
                   .HasForeignKey<Domain.Entities.DatosEmpresa>(d => d.TenantId);
-            entity.HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
+            entity.HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
         });
 
         modelBuilder.Entity<Domain.Entities.DatosFacturacion>()
-            .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
+            .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
 
         modelBuilder.Entity<NotificationPreference>()
-            .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
+            .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
 
         // Entidades de móvil (Fase 1-3)
         modelBuilder.Entity<Pedido>()
-            .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
+            .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
 
         modelBuilder.Entity<ClienteVisita>()
-            .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
+            .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
 
         modelBuilder.Entity<DeviceSession>()
-            .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
+            .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
 
         modelBuilder.Entity<RutaVendedor>()
-            .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
+            .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
 
         modelBuilder.Entity<RutaCarga>()
-            .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
+            .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
 
+        // RutaPedido: no hereda AuditableEntity — solo filtro de tenant
         modelBuilder.Entity<RutaPedido>()
             .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
 
+        // RutaRetornoInventario: no hereda AuditableEntity — solo filtro de tenant
         modelBuilder.Entity<RutaRetornoInventario>()
             .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
 
         modelBuilder.Entity<NotificationHistory>()
-            .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
+            .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
 
         modelBuilder.Entity<Cobro>()
-            .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
+            .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
 
-        // Company tiene TenantId (es el mismo que su Id en algunos casos)
+        // Company: no hereda AuditableEntity — solo filtro de tenant
         modelBuilder.Entity<Company>()
             .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
+
+        // Announcement: platform-level (sin tenant), pero hereda AuditableEntity — solo soft delete
+        modelBuilder.Entity<Announcement>()
+            .HasQueryFilter(e => e.EliminadoEn == null);
     }
 }
