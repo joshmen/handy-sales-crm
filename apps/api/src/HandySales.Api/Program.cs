@@ -2,6 +2,7 @@ using HandySales.Api.Configuration;
 using HandySales.Api.Endpoints;
 using HandySales.Api.Hubs;
 using HandySales.Api.Middleware;
+using HandySales.Api.Workers;
 using HandySales.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -38,6 +39,9 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
 });
 
+// Background workers
+builder.Services.AddHostedService<ScheduledActionProcessor>();
+builder.Services.AddHostedService<SubscriptionMonitor>();
 
 var app = builder.Build();
 
@@ -102,6 +106,8 @@ app.MapReportEndpoints();
 app.MapCobroEndpoints();
 app.MapTwoFactorEndpoints();
 app.MapAnnouncementEndpoints();
+app.MapSubscriptionEndpoints();
+app.MapStripeWebhookEndpoints();
 
 // SignalR hub
 app.MapHub<NotificationHub>("/hubs/notifications");

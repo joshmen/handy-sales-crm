@@ -10,7 +10,7 @@ namespace HandySales.Domain.Entities
     public class GlobalSettings
     {
         public int Id { get; set; }
-        public string PlatformName { get; set; } = "HandyCRM";
+        public string PlatformName { get; set; } = "Handy Suites";
         public string? PlatformLogo { get; set; }
         public string? PlatformLogoPublicId { get; set; }
         public string PlatformPrimaryColor { get; set; } = "#3B82F6";

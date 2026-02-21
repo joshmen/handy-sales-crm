@@ -5,7 +5,7 @@ namespace HandySales.Application.GlobalSettings.DTOs
     public class GlobalSettingsDto
     {
         public int Id { get; set; }
-        public string PlatformName { get; set; } = "HandyCRM";
+        public string PlatformName { get; set; } = "Handy Suites";
         public string? PlatformLogo { get; set; }
         public string PlatformPrimaryColor { get; set; } = "#3B82F6";
         public string PlatformSecondaryColor { get; set; } = "#8B5CF6";

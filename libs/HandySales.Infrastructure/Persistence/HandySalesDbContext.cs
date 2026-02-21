@@ -56,6 +56,9 @@ public class HandySalesDbContext : DbContext
     public DbSet<Cobro> Cobros => Set<Cobro>();
     public DbSet<TwoFactorRecoveryCode> TwoFactorRecoveryCodes => Set<TwoFactorRecoveryCode>();
 
+    public DbSet<ScheduledAction> ScheduledActions => Set<ScheduledAction>();
+    public DbSet<SubscriptionPlan> SubscriptionPlans => Set<SubscriptionPlan>();
+
     // Platform-level (sin filtro de tenant)
     public DbSet<ImpersonationSession> ImpersonationSessions => Set<ImpersonationSession>();
     public DbSet<Announcement> Announcements => Set<Announcement>();

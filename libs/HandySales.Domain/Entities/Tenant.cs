@@ -29,6 +29,24 @@ public class Tenant : AuditableEntity
     [Column("fecha_expiracion")]
     public DateTime? FechaExpiracion { get; set; }
 
+    // Stripe
+    [Column("stripe_customer_id")]
+    public string? StripeCustomerId { get; set; }
+    [Column("stripe_subscription_id")]
+    public string? StripeSubscriptionId { get; set; }
+    [Column("stripe_price_id")]
+    public string? StripePriceId { get; set; }
+
+    // Estado de suscripción
+    [Column("subscription_status")]
+    public string SubscriptionStatus { get; set; } = "Trial";
+    [Column("grace_period_end")]
+    public DateTime? GracePeriodEnd { get; set; }
+    [Column("cancelled_at")]
+    public DateTime? CancelledAt { get; set; }
+    [Column("cancellation_reason")]
+    public string? CancellationReason { get; set; }
+
     // Contacto extendido
     [Column("telefono")]
     public string? Telefono { get; set; }

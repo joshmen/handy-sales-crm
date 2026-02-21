@@ -42,7 +42,7 @@ namespace HandySales.Application.GlobalSettings.Services
                     // Crear configuración global por defecto si no existe
                     settings = new Domain.Entities.GlobalSettings
                     {
-                        PlatformName = "HandyCRM",
+                        PlatformName = "Handy Suites",
                         PlatformPrimaryColor = "#3B82F6",
                         PlatformSecondaryColor = "#8B5CF6",
                         DefaultLanguage = "es",
