@@ -5,6 +5,7 @@ using Microsoft.Extensions.Caching.Memory;
 using BCrypt.Net;
 using HandySales.Api.Hubs;
 using HandySales.Application.Tenants.DTOs;
+using HandySales.Application.Tenants.Interfaces;
 using HandySales.Shared.Email;
 using HandySales.Application.Usuarios.Interfaces;
 using HandySales.Domain.Entities;
@@ -151,6 +152,7 @@ public static class TenantEndpoints
         [FromBody] TenantCreateDto dto,
         [FromServices] ICurrentTenant currentTenant,
         [FromServices] ITenantRepository tenantRepo,
+        [FromServices] ITenantSeedService tenantSeedService,
         [FromServices] HandySalesDbContext context)
     {
         if (!currentTenant.IsSuperAdmin)
@@ -188,6 +190,9 @@ public static class TenantEndpoints
             context.DatosEmpresa.Add(datosEmpresa);
             await context.SaveChangesAsync();
         }
+
+        // Auto-seed demo data for the new tenant
+        await tenantSeedService.SeedDemoDataAsync(created.Id);
 
         return Results.Created($"/api/tenants/{created.Id}", new { id = created.Id });
     }
