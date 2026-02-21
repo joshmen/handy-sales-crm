@@ -1,4 +1,3 @@
-using HandySales.Application.Auth.DTOs;
 using HandySales.Application.Usuarios.Services;
 using HandySales.Application.Usuarios.DTOs;
 using Microsoft.AspNetCore.Authorization;
@@ -124,19 +123,20 @@ public static class UsuarioEndpoints
         }
     }
 
-    private static async Task<IResult> CreateUsuario(UsuarioRegisterDto dto, UsuarioService service)
+    private static async Task<IResult> CreateUsuario(CrearUsuarioDto dto, UsuarioService service)
     {
         try
         {
-            if (await service.EmailDisponibleAsync(dto.Email) == false)
-                return Results.BadRequest("El email ya está en uso");
-
-            var usuarioId = await service.RegistrarUsuarioAsync(dto);
+            var usuarioId = await service.CrearUsuarioAsync(dto);
             return Results.Created($"/api/usuarios/{usuarioId}", new { id = usuarioId });
         }
-        catch (Exception ex)
+        catch (UnauthorizedAccessException)
         {
-            return Results.Problem($"Error al crear usuario: {ex.Message}");
+            return Results.Forbid();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Results.BadRequest(new { error = ex.Message });
         }
     }
 

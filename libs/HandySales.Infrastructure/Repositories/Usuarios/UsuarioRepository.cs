@@ -170,6 +170,15 @@ public class UsuarioRepository : IUsuarioRepository
         return entities.Count;
     }
 
+    public async Task<Role?> ObtenerRolPorNombreAsync(string nombre)
+    {
+        return await _db.Roles
+            .AsNoTracking()
+            .Where(r => r.Nombre.ToUpper() == nombre.ToUpper())
+            .Select(r => new Role { Id = r.Id, Nombre = r.Nombre })
+            .FirstOrDefaultAsync();
+    }
+
     private static IQueryable<Usuario> ApplySorting(IQueryable<Usuario> query, string? sortBy, string? sortDirection)
     {
         if (string.IsNullOrWhiteSpace(sortBy))

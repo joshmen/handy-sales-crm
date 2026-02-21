@@ -24,6 +24,7 @@ import {
   PowerOff,
   Loader2,
 } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import { usePaginatedUsers, useCreateUser, useUpdateUser, useDeleteUser } from '@/hooks/useUsers';
 import { roleService, Role } from '@/services/api/roleService';
 import { usersService } from '@/services/api/users';
@@ -42,8 +43,10 @@ export default function UsersPage() {
     goToPage,
   } = usePaginatedUsers();
 
+  const { data: session } = useSession();
   const createUserMutation = useCreateUser();
   const updateUserMutation = useUpdateUser();
+  const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN';
 
   const [roles, setRoles] = useState<Role[]>([]);
   const [filterZona, setFilterZona] = useState('all');
@@ -176,8 +179,7 @@ export default function UsersPage() {
         nombre: formData.nombre,
         password: formData.password,
         telefono: formData.telefono,
-        esAdmin: formData.role === 'ADMIN',
-        tenantId: 1,
+        rol: formData.role,
       });
       toast.success('Usuario creado exitosamente');
       setIsCreateModalOpen(false);
@@ -670,7 +672,9 @@ export default function UsersPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Rol</label>
                 <SearchableSelect
-                  options={roles.map(role => ({ value: role.nombre, label: role.nombre }))}
+                  options={roles
+                    .filter(role => isSuperAdmin || role.nombre.toUpperCase() !== 'ADMIN')
+                    .map(role => ({ value: role.nombre, label: role.nombre }))}
                   value={formData.role || null}
                   onChange={(val) => setFormData({ ...formData, role: val ? String(val) : '' })}
                   placeholder="Seleccionar rol"

@@ -62,6 +62,56 @@ public class UsuarioService
         return creado.Id;
     }
 
+    public async Task<int> CrearUsuarioAsync(CrearUsuarioDto dto)
+    {
+        // Authorization: only Admin or SuperAdmin
+        if (!_tenant.IsAdmin && !_tenant.IsSuperAdmin)
+            throw new UnauthorizedAccessException("No tienes permisos para crear usuarios");
+
+        // Validate email
+        if (DisposableEmailService.IsDisposable(dto.Email))
+            throw new InvalidOperationException("No se permiten correos electrónicos temporales o desechables.");
+        if (await _repo.ExisteEmailAsync(dto.Email))
+            throw new InvalidOperationException("El email ya está en uso");
+
+        // Validate password
+        if (_pwnedPasswords != null && await _pwnedPasswords.IsCompromisedAsync(dto.Password))
+            throw new InvalidOperationException("Esta contraseña fue encontrada en filtraciones de datos. Por favor elige una contraseña diferente.");
+
+        // Role resolution
+        var rolUpper = dto.Rol?.ToUpperInvariant() ?? "VENDEDOR";
+        bool esAdmin = false;
+        int? roleId = null;
+
+        if (rolUpper == "ADMIN")
+        {
+            if (!_tenant.IsSuperAdmin)
+                throw new UnauthorizedAccessException("Solo el SuperAdmin puede crear administradores");
+            esAdmin = true;
+        }
+        else
+        {
+            var role = await _repo.ObtenerRolPorNombreAsync(rolUpper);
+            if (role != null) roleId = role.Id;
+        }
+
+        var usuario = new Usuario
+        {
+            Email = dto.Email,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+            Nombre = dto.Nombre,
+            TenantId = _tenant.TenantId,
+            EsAdmin = esAdmin,
+            EsSuperAdmin = false,
+            RoleId = roleId,
+            Activo = true,
+            CreadoPor = _tenant.UserId
+        };
+
+        var creado = await _repo.RegistrarAsync(usuario);
+        return creado.Id;
+    }
+
     public async Task<Usuario?> ObtenerPorEmailAsync(string email)
     {
         return await _repo.ObtenerPorEmailAsync(email);

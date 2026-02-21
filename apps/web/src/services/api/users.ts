@@ -31,9 +31,8 @@ export interface CreateUserRequest {
   email: string;
   password: string;
   nombre: string;
-  esAdmin: boolean;
-  tenantId: number;
   telefono?: string;
+  rol: string;
 }
 
 export interface UpdateUserRequest {
