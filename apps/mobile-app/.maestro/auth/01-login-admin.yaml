@@ -1,0 +1,36 @@
+appId: host.exp.exponent
+name: "Login Admin Jeyma"
+---
+
+# Esperar pantalla de login
+- extendedWaitUntil:
+    visible: "Iniciar Sesión"
+    timeout: 30000
+
+- takeScreenshot: login-screen
+
+# Llenar email
+- tapOn:
+    id: "email-input"
+- eraseText: 50
+- inputText: "admin@jeyma.com"
+
+# Llenar contraseña
+- tapOn:
+    id: "password-input"
+- eraseText: 50
+- inputText: "test123"
+
+- takeScreenshot: login-filled
+
+# Tap Iniciar Sesión button (último texto visible con ese nombre)
+- tapOn:
+    text: "Iniciar Sesión"
+    index: 1
+
+# Esperar que cargue el dashboard (tab Hoy)
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 30000
+
+- takeScreenshot: login-success-hoy

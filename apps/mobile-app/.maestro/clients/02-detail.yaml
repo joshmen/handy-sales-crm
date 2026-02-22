@@ -1,0 +1,19 @@
+appId: host.exp.exponent
+name: "Clientes - Detalle"
+---
+
+# Tap en el primer cliente de la lista
+- tapOn:
+    index: 0
+    childOf:
+      enabled: true
+
+- extendedWaitUntil:
+    visible: "Teléfono"
+    timeout: 15000
+    optional: true
+
+- takeScreenshot: client-detail
+
+# Regresar
+- back

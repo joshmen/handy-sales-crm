@@ -1,0 +1,29 @@
+appId: host.exp.exponent
+name: "Handy Suites Full E2E"
+---
+
+# 1. Login como Admin
+- runFlow: auth/01-login-admin.yaml
+
+# 2. Dashboard "Hoy"
+- runFlow: dashboard/01-hoy.yaml
+
+# 3. Vender (Pedidos)
+- runFlow: vender/01-list.yaml
+- runFlow: vender/02-crear-pedido.yaml
+
+# 4. Cobrar
+- runFlow: cobrar/01-saldos.yaml
+
+# 5. Más → Clientes
+- runFlow: clients/01-list-from-mas.yaml
+- runFlow: clients/02-detail.yaml
+
+# 6. Más → Ruta
+- runFlow: ruta/01-ruta-dia.yaml
+
+# 7. Más → Config + Sync
+- runFlow: mas/01-menu-nav.yaml
+
+# 8. Logout
+- runFlow: auth/02-logout.yaml

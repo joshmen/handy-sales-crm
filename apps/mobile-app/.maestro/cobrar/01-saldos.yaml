@@ -1,0 +1,28 @@
+appId: host.exp.exponent
+name: "Cobrar - Saldos Pendientes"
+---
+
+# Ir al tab Cobrar
+- tapOn: "Cobrar"
+
+- extendedWaitUntil:
+    visible: "Cobranza"
+    timeout: 15000
+
+- takeScreenshot: cobrar-saldos
+
+# Verificar resumen de cartera
+- assertVisible:
+    text: "Facturado"
+    optional: true
+- assertVisible:
+    text: "Cobrado"
+    optional: true
+- assertVisible:
+    text: "Pendiente"
+    optional: true
+
+# Scroll para ver lista de clientes
+- scroll
+
+- takeScreenshot: cobrar-saldos-scrolled

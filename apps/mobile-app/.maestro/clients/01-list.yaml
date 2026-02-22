@@ -1,0 +1,17 @@
+appId: host.exp.exponent
+name: "Clientes - Lista"
+---
+
+# Ir al tab Clientes
+- tapOn: "Clientes"
+
+- extendedWaitUntil:
+    visible: "Clientes"
+    timeout: 15000
+
+- takeScreenshot: clients-list
+
+# Scroll la lista
+- scroll
+
+- takeScreenshot: clients-list-scrolled

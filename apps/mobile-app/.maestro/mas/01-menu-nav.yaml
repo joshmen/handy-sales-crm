@@ -1,0 +1,51 @@
+appId: host.exp.exponent
+name: "Más - Menú y Navegación"
+---
+
+# Ir al tab Más
+- tapOn: "Más"
+
+- extendedWaitUntil:
+    visible: "Navegación"
+    timeout: 15000
+
+# Verificar items del menú principal
+- assertVisible: "Clientes"
+- assertVisible: "Pedidos"
+- assertVisible: "Ruta del Día"
+- assertVisible: "Sincronización"
+
+# Verificar items de cuenta
+- assertVisible: "Mi Perfil"
+- assertVisible: "Configuración"
+
+- takeScreenshot: mas-menu-full
+
+# Navegar a Configuración
+- tapOn: "Configuración"
+
+- extendedWaitUntil:
+    visible: "Configuración"
+    timeout: 15000
+
+- assertVisible: "Notificaciones push"
+- assertVisible: "Sincronización automática"
+
+- takeScreenshot: configuracion-screen
+
+# Regresar
+- back
+
+# Navegar a Sincronización
+- tapOn: "Sincronización"
+
+- extendedWaitUntil:
+    visible: "Sincronización"
+    timeout: 15000
+
+- assertVisible: "Sincronizar Ahora"
+
+- takeScreenshot: sync-screen
+
+# Regresar
+- back

@@ -1,0 +1,22 @@
+appId: host.exp.exponent
+name: "Vender - Lista Pedidos"
+---
+
+# Ir al tab Vender
+- tapOn: "Vender"
+
+- extendedWaitUntil:
+    visible: "Pedidos"
+    timeout: 15000
+
+- takeScreenshot: vender-pedidos-list
+
+# Verificar filtros de estado
+- assertVisible:
+    text: "Todos"
+    optional: true
+
+# Scroll la lista
+- scroll
+
+- takeScreenshot: vender-pedidos-scrolled

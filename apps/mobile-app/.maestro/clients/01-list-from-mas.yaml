@@ -1,0 +1,26 @@
+appId: host.exp.exponent
+name: "Clientes - Acceder desde Más"
+---
+
+# Ir al tab Más
+- tapOn: "Más"
+
+- extendedWaitUntil:
+    visible: "Navegación"
+    timeout: 15000
+
+- takeScreenshot: mas-menu
+
+# Tap en Clientes
+- tapOn: "Clientes"
+
+- extendedWaitUntil:
+    visible: "Clientes"
+    timeout: 15000
+
+- takeScreenshot: clients-list
+
+# Scroll la lista
+- scroll
+
+- takeScreenshot: clients-list-scrolled

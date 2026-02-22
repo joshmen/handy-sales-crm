@@ -1,0 +1,28 @@
+appId: host.exp.exponent
+name: "Vender - Flujo Crear Pedido"
+---
+
+# Asegurarse de estar en tab Vender
+- tapOn: "Vender"
+
+- extendedWaitUntil:
+    visible: "Pedidos"
+    timeout: 15000
+
+# Navegar a crear pedido — tap botón "+" o "Nuevo Pedido"
+- tapOn:
+    text: "Nuevo Pedido"
+    optional: true
+
+# Paso 1: Seleccionar cliente
+- extendedWaitUntil:
+    visible: "Seleccionar Cliente"
+    timeout: 15000
+    optional: true
+
+- takeScreenshot: crear-pedido-paso1
+
+# Regresar sin completar (no queremos enviar pedido real en E2E)
+- back
+
+- takeScreenshot: vender-after-back

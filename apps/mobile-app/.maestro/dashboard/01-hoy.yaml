@@ -1,0 +1,30 @@
+appId: host.exp.exponent
+name: "Dashboard - Tab Hoy"
+---
+
+# Ya estamos en Hoy después del login
+- tapOn: "Hoy"
+
+- extendedWaitUntil:
+    visible: "Resumen del Día"
+    timeout: 15000
+
+- takeScreenshot: hoy-dashboard
+
+# Verificar KPIs
+- assertVisible: "Ventas"
+- assertVisible: "Completadas"
+- assertVisible: "Pendiente"
+
+# Verificar sección Ruta
+- assertVisible: "Ruta del Día"
+
+# Scroll para ver acciones rápidas
+- scroll
+
+- assertVisible: "Acciones Rápidas"
+- assertVisible: "Nuevo Pedido"
+- assertVisible: "Registrar Cobro"
+- assertVisible: "Ver Mapa"
+
+- takeScreenshot: hoy-scrolled
