@@ -23,5 +23,5 @@ name: "Ruta del Día"
 
 - takeScreenshot: ruta-dia-scrolled
 
-# Regresar al menú Más
-- back
+# Volver al tab Más
+- tapOn: "Más"

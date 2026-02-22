@@ -6,13 +6,16 @@ name: "Logout"
 - tapOn: "Más"
 
 - extendedWaitUntil:
-    visible: "Cerrar Sesión"
+    visible: "Navegación"
     timeout: 15000
 
 - takeScreenshot: mas-before-logout
 
-# Scroll para ver el botón Cerrar Sesión
-- scroll
+# Scroll para ver el botón Cerrar Sesión (está al final)
+- scrollUntilVisible:
+    element: "Cerrar Sesión"
+    direction: DOWN
+    timeout: 10000
 
 # Tap logout
 - tapOn: "Cerrar Sesión"

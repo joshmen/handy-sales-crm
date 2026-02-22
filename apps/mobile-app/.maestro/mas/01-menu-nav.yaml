@@ -33,8 +33,12 @@ name: "Más - Menú y Navegación"
 
 - takeScreenshot: configuracion-screen
 
-# Regresar
-- back
+# Volver al tab Más
+- tapOn: "Más"
+
+- extendedWaitUntil:
+    visible: "Navegación"
+    timeout: 15000
 
 # Navegar a Sincronización
 - tapOn: "Sincronización"
@@ -47,5 +51,5 @@ name: "Más - Menú y Navegación"
 
 - takeScreenshot: sync-screen
 
-# Regresar
-- back
+# Volver al tab Más
+- tapOn: "Más"
