@@ -3,11 +3,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Card, Button } from '@/components/ui';
 import { Wifi, WifiOff, RefreshCcw, CheckCircle, Clock } from 'lucide-react-native';
 import { useState } from 'react';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 
 export default function SyncScreen() {
   const insets = useSafeAreaInsets();
   const [syncing, setSyncing] = useState(false);
-  const isOnline = true; // TODO: use NetInfo
+  const { isConnected: isOnline } = useNetworkStatus();
 
   const handleSync = async () => {
     setSyncing(true);

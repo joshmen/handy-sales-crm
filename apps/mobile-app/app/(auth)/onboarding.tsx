@@ -4,10 +4,8 @@ import {
   Text,
   FlatList,
   Dimensions,
-  TouchableOpacity,
+  Pressable,
   StyleSheet,
-  type NativeSyntheticEvent,
-  type NativeScrollEvent,
   type ViewToken,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -75,7 +73,11 @@ export default function OnboardingScreen() {
   const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 50 }).current;
 
   const handleComplete = async () => {
-    await secureStorage.set(ONBOARDING_KEY, 'true');
+    try {
+      await secureStorage.set(ONBOARDING_KEY, 'true');
+    } catch {
+      // SecureStore may fail on emulators without lock screen — continue anyway
+    }
     router.replace('/(auth)/login');
   };
 
@@ -104,9 +106,9 @@ export default function OnboardingScreen() {
       {/* Skip button */}
       <View style={styles.header}>
         {!isLast ? (
-          <TouchableOpacity onPress={handleComplete} activeOpacity={0.7}>
+          <Pressable testID="skip-onboarding" onPress={handleComplete}>
             <Text style={styles.skipText}>Omitir</Text>
-          </TouchableOpacity>
+          </Pressable>
         ) : (
           <View />
         )}
@@ -142,15 +144,15 @@ export default function OnboardingScreen() {
         </View>
 
         {/* Action button */}
-        <TouchableOpacity
+        <Pressable
+          testID="onboarding-action"
           style={[styles.button, isLast && styles.buttonFinal]}
           onPress={handleNext}
-          activeOpacity={0.85}
         >
           <Text style={styles.buttonText}>
             {isLast ? 'Comenzar' : 'Siguiente'}
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </View>
   );

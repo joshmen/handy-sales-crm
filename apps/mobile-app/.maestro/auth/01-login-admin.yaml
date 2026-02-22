@@ -15,15 +15,17 @@ name: "Login Admin Jeyma"
 - eraseText: 50
 - inputText: "admin@jeyma.com"
 
+# Move to password field via Tab key
+- pressKey: Tab
+
 # Llenar contraseña
-- tapOn:
-    id: "password-input"
 - eraseText: 50
 - inputText: "test123"
 
+- hideKeyboard
 - takeScreenshot: login-filled
 
-# Tap Iniciar Sesión button (último texto visible con ese nombre)
+# Tap login button by text
 - tapOn:
     text: "Iniciar Sesión"
     index: 1

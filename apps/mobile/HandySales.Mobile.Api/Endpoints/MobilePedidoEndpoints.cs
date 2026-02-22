@@ -28,13 +28,44 @@ public static class MobilePedidoEndpoints
         .Produces(StatusCodes.Status400BadRequest);
 
         group.MapGet("/mis-pedidos", async (
+            [FromQuery] int? estado,
+            [FromQuery] int pagina,
+            [FromQuery] int porPagina,
             [FromServices] PedidoService servicio) =>
         {
             var pedidos = await servicio.ObtenerMisPedidosAsync();
-            return Results.Ok(new { success = true, data = pedidos, count = pedidos.Count });
+
+            // Filtrar por estado si se proporciona
+            if (estado.HasValue)
+            {
+                pedidos = pedidos.Where(p => (int)p.Estado == estado.Value).ToList();
+            }
+
+            var total = pedidos.Count;
+            var paginaActual = pagina > 0 ? pagina : 1;
+            var tamano = porPagina > 0 ? porPagina : 20;
+
+            var paginados = pedidos
+                .OrderByDescending(p => p.FechaPedido)
+                .Skip((paginaActual - 1) * tamano)
+                .Take(tamano)
+                .ToList();
+
+            return Results.Ok(new
+            {
+                success = true,
+                data = paginados,
+                pagination = new
+                {
+                    page = paginaActual,
+                    pageSize = tamano,
+                    total,
+                    totalPages = (int)Math.Ceiling((double)total / tamano)
+                }
+            });
         })
         .WithSummary("Mis pedidos")
-        .WithDescription("Lista todos los pedidos creados por el vendedor autenticado.")
+        .WithDescription("Lista pedidos del vendedor autenticado con paginación y filtro de estado opcional.")
         .Produces<object>(StatusCodes.Status200OK);
 
         group.MapGet("/{id:int}", async (

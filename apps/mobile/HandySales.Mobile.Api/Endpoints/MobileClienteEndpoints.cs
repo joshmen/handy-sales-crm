@@ -1,3 +1,4 @@
+using HandySales.Application.Clientes.DTOs;
 using HandySales.Application.Clientes.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -137,6 +138,45 @@ public static class MobileClienteEndpoints
         .WithSummary("Clientes cercanos")
         .WithDescription("Lista clientes dentro de un radio en kilómetros desde las coordenadas proporcionadas.")
         .Produces<object>(StatusCodes.Status200OK);
+
+        // POST /api/mobile/clientes — Crear cliente
+        group.MapPost("/", async (
+            ClienteCreateDto dto,
+            [FromServices] ClienteService servicio) =>
+        {
+            var resultado = await servicio.CrearClienteAsync(dto);
+            if (!resultado.Success)
+                return Results.Conflict(new { success = false, message = resultado.Error });
+
+            return Results.Created($"/api/mobile/clientes/{resultado.Id}",
+                new { success = true, data = new { id = resultado.Id } });
+        })
+        .WithSummary("Crear cliente")
+        .WithDescription("Crea un nuevo cliente con nombre, RFC, teléfono, email, dirección, zona y categoría.")
+        .Produces<object>(StatusCodes.Status201Created)
+        .Produces(StatusCodes.Status409Conflict);
+
+        // PUT /api/mobile/clientes/{id} — Editar cliente
+        group.MapPut("/{id:int}", async (
+            int id,
+            ClienteCreateDto dto,
+            [FromServices] ClienteService servicio) =>
+        {
+            var resultado = await servicio.ActualizarClienteAsync(id, dto);
+            if (!resultado.Success)
+            {
+                if (resultado.Error?.Contains("no encontrado") == true)
+                    return Results.NotFound(new { success = false, message = resultado.Error });
+                return Results.Conflict(new { success = false, message = resultado.Error });
+            }
+
+            return Results.Ok(new { success = true, message = "Cliente actualizado" });
+        })
+        .WithSummary("Editar cliente")
+        .WithDescription("Actualiza los datos de un cliente existente.")
+        .Produces<object>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status404NotFound)
+        .Produces(StatusCodes.Status409Conflict);
     }
 
     private static double CalcularDistanciaKm(double lat1, double lon1, double lat2, double lon2)

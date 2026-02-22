@@ -10,6 +10,7 @@ interface ButtonProps {
   disabled?: boolean;
   fullWidth?: boolean;
   icon?: React.ReactNode;
+  testID?: string;
 }
 
 const VARIANT_STYLES = {
@@ -35,6 +36,7 @@ export function Button({
   disabled = false,
   fullWidth = false,
   icon,
+  testID,
 }: ButtonProps) {
   const isDisabled = disabled || loading;
   const v = VARIANT_STYLES[variant];
@@ -42,6 +44,7 @@ export function Button({
 
   return (
     <TouchableOpacity
+      testID={testID}
       onPress={onPress}
       disabled={isDisabled}
       activeOpacity={0.7}

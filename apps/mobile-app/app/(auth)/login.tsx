@@ -127,6 +127,7 @@ export default function LoginScreen() {
           )}
 
           <Button
+            testID="login-button"
             title="Iniciar Sesión"
             onPress={handleLogin}
             loading={loginMutation.isPending}

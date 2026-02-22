@@ -2,6 +2,13 @@ appId: host.exp.exponent
 name: "Handy Suites Full E2E"
 ---
 
+# 0. Open project in Expo Go via deep link
+# Requires: adb reverse tcp:8081 tcp:8081
+- openLink: "exp://127.0.0.1:8081"
+
+# 0b. Handle onboarding (first launch) or skip to login
+- runFlow: auth/00-onboarding.yaml
+
 # 1. Login como Admin
 - runFlow: auth/01-login-admin.yaml
 

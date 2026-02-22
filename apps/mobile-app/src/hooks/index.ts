@@ -6,3 +6,5 @@ export { useRouteToday, useRoutePending, useRouteDetail, useIniciarRuta, useComp
 export { useSaldos, useResumenCartera, useEstadoCuenta, useMisCobros, useCrearCobro } from './useCobros';
 export { useZonas, useCategoriasCliente, useCategoriasProducto, useFamiliasProducto } from './useCatalogos';
 export { useProductsList, useProductDetail, useProductStock } from './useProducts';
+export { useUserLocation } from './useLocation';
+export { useNetworkStatus } from './useNetworkStatus';

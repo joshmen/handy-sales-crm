@@ -1,14 +1,34 @@
 import { View, Text, ScrollView, Switch, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui';
-import { Bell, Wifi, Moon, Info, Shield, FileText } from 'lucide-react-native';
+import { Bell, Wifi, Info, Shield, FileText } from 'lucide-react-native';
 import * as Application from 'expo-application';
+import { secureStorage } from '@/utils/storage';
+
+const PUSH_KEY = 'config_push_enabled';
+const SYNC_KEY = 'config_auto_sync';
 
 export default function ConfiguracionScreen() {
   const insets = useSafeAreaInsets();
   const [pushEnabled, setPushEnabled] = useState(true);
   const [autoSync, setAutoSync] = useState(true);
+
+  // Load persisted settings
+  useEffect(() => {
+    secureStorage.get(PUSH_KEY).then((v) => { if (v !== null) setPushEnabled(v === 'true'); });
+    secureStorage.get(SYNC_KEY).then((v) => { if (v !== null) setAutoSync(v === 'true'); });
+  }, []);
+
+  const togglePush = (val: boolean) => {
+    setPushEnabled(val);
+    secureStorage.set(PUSH_KEY, String(val));
+  };
+
+  const toggleSync = (val: boolean) => {
+    setAutoSync(val);
+    secureStorage.set(SYNC_KEY, String(val));
+  };
 
   return (
     <ScrollView
@@ -31,7 +51,7 @@ export default function ConfiguracionScreen() {
           </View>
           <Switch
             value={pushEnabled}
-            onValueChange={setPushEnabled}
+            onValueChange={togglePush}
             trackColor={{ false: '#e2e8f0', true: '#93c5fd' }}
             thumbColor={pushEnabled ? '#2563eb' : '#f1f5f9'}
           />
@@ -51,7 +71,7 @@ export default function ConfiguracionScreen() {
           </View>
           <Switch
             value={autoSync}
-            onValueChange={setAutoSync}
+            onValueChange={toggleSync}
             trackColor={{ false: '#e2e8f0', true: '#86efac' }}
             thumbColor={autoSync ? '#16a34a' : '#f1f5f9'}
           />

@@ -41,6 +41,8 @@ app.MapMobileClienteEndpoints();
 app.MapMobileProductoEndpoints();
 app.MapMobileSyncEndpoints();
 app.MapMobileRutaEndpoints();
+app.MapMobileCobroEndpoints();
+app.MapMobileCatalogosEndpoints();
 app.MapHealthEndpoints();
 
 app.Run();

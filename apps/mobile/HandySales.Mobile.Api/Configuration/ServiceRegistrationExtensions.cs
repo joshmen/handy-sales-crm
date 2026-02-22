@@ -44,6 +44,21 @@ using HandySales.Infrastructure.Promociones.Repositories;
 using HandySales.Application.Inventario.Interfaces;
 using HandySales.Application.Inventario.Services;
 using HandySales.Infrastructure.Inventario.Repositories;
+using HandySales.Application.Cobranza.Interfaces;
+using HandySales.Application.Cobranza.Services;
+using HandySales.Infrastructure.Repositories.Cobranza;
+using HandySales.Application.Zonas.Interfaces;
+using HandySales.Application.Zonas.Services;
+using HandySales.Infrastructure.Zonas.Repositories;
+using HandySales.Application.CategoriasClientes.Interfaces;
+using HandySales.Application.CategoriasClientes.Services;
+using HandySales.Infrastructure.CategoriasClientes.Repositories;
+using HandySales.Application.CategoriasProductos.Interfaces;
+using HandySales.Application.CategoriasProductos.Services;
+using HandySales.Infrastructure.CategoriasProductos.Repositories;
+using HandySales.Application.FamiliasProductos.Interfaces;
+using HandySales.Application.FamiliasProductos.Services;
+using HandySales.Infrastructure.FamiliasProductos.Repositories;
 using HandySales.Mobile.Api.Services;
 
 namespace HandySales.Mobile.Api.Configuration;
@@ -126,6 +141,20 @@ public static class ServiceRegistrationExtensions
         // Inventario
         services.AddScoped<IInventarioRepository, InventarioRepository>();
         services.AddScoped<InventarioService>();
+
+        // Cobranza
+        services.AddScoped<ICobroRepository, CobroRepository>();
+        services.AddScoped<CobroService>();
+
+        // Catálogos (Zonas, Categorías, Familias)
+        services.AddScoped<IZonaRepository, ZonaRepository>();
+        services.AddScoped<ZonaService>();
+        services.AddScoped<ICategoriaClienteRepository, CategoriaClienteRepository>();
+        services.AddScoped<CategoriaClienteService>();
+        services.AddScoped<ICategoriaProductoRepository, CategoriaProductoRepository>();
+        services.AddScoped<CategoriaProductoService>();
+        services.AddScoped<IFamiliaProductoRepository, FamiliaProductoRepository>();
+        services.AddScoped<FamiliaProductoService>();
 
         return services;
     }
