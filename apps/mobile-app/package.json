@@ -31,6 +31,7 @@
     "expo-secure-store": "~15.0.8",
     "expo-splash-screen": "~31.0.13",
     "expo-status-bar": "~3.0.9",
+    "lightningcss": "^1.31.1",
     "lucide-react-native": "^0.575.0",
     "nativewind": "^4.2.2",
     "react": "19.1.0",

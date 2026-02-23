@@ -24,7 +24,6 @@
         "backgroundColor": "#2563eb"
       },
       "package": "com.handysuites.app",
-      "usesCleartextTraffic": true,
       "googleServicesFile": "./google-services.json"
     },
     "web": {
@@ -46,6 +45,7 @@
         "expo-build-properties",
         {
           "android": {
+            "usesCleartextTraffic": true,
             "packagingOptions": {
               "pickFirst": [
                 "**/libc++_shared.so"
