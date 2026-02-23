@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { View, ActivityIndicator } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { DatabaseProvider } from '@nozbe/watermelondb/DatabaseProvider';
 import { QueryProvider } from '@/providers/QueryProvider';
 import { useAuthStore } from '@/stores';
 import { AnimatedSplash } from '@/components/shared/AnimatedSplash';
@@ -12,6 +13,7 @@ import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { OfflineBanner } from '@/components/shared/OfflineBanner';
 import { secureStorage } from '@/utils/storage';
 import { COLORS } from '@/utils/constants';
+import { database } from '@/db/database';
 
 const ONBOARDING_KEY = 'onboarding_complete';
 
@@ -85,14 +87,16 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <ErrorBoundary>
-        <QueryProvider>
-          <StatusBar style="dark" />
-          <OfflineBanner />
-          <AuthGate onReady={handleAppReady} />
-          {showSplash && appReady && (
-            <AnimatedSplash onFinish={handleSplashFinish} />
-          )}
-        </QueryProvider>
+        <DatabaseProvider database={database}>
+          <QueryProvider>
+            <StatusBar style="dark" />
+            <OfflineBanner />
+            <AuthGate onReady={handleAppReady} />
+            {showSplash && appReady && (
+              <AnimatedSplash onFinish={handleSplashFinish} />
+            )}
+          </QueryProvider>
+        </DatabaseProvider>
       </ErrorBoundary>
     </SafeAreaProvider>
   );

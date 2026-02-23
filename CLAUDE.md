@@ -299,6 +299,11 @@ docker-compose -f docker-compose.dev.yml up -d
 - Auth: JWT + NextAuth.js
 - Multi-tenant: All tables have tenant_id column
 - Billing separated by SAT compliance requirements
+- **MANDATORY — Entity creation rules**: Every new domain entity MUST:
+  1. **Inherit `AuditableEntity`** (`libs/HandySales.Domain/Common/AuditableEntity.cs`) — this provides `Activo`, `CreadoEn`, `ActualizadoEn`, `CreadoPor`, `ActualizadoPor`, `EliminadoEn`, `EliminadoPor`, `Version`
+  2. **Have a global query filter** in `HandySalesDbContext.OnModelCreating` that includes `e.EliminadoEn == null` to exclude soft-deleted records. If the entity has `TenantId`, combine both: `e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null`
+  3. **Use `.Remove()` for deletes** — the `SaveChangesAsync` override automatically converts hard deletes to soft deletes (sets `EliminadoEn` + `EliminadoPor`). No manual soft-delete logic needed in repositories
+  4. **Never hard-delete** an `AuditableEntity` — if a true physical delete is needed (e.g., join tables, tokens), the entity should NOT inherit `AuditableEntity`
 
 ## Git Workflow Rules
 
@@ -666,17 +671,53 @@ eas update --channel production --message "Fix order total"
 - Custom metrics: sync_duration_ms, sync_records_pushed, sync_conflicts
 - MMKV counters: offline_orders_created, offline_duration_seconds
 
-### Mobile Roadmap
+### Análisis Competitivo Mobile (Feb 2026)
 
-| Phase | Scope | Duracion |
-|-------|-------|----------|
-| 1. Foundation | Auth, navigation, API client, screens basicas | 4 semanas |
-| 2. Offline Core | WatermelonDB, outbox/inbox, sync engine | 3 semanas |
-| 3. Route & Map | Ruta en mapa, clusters, check-in/out, tracking | 3 semanas |
-| 4. Evidence & Payments | Fotos/firma, deferred upload, cobros | 2 semanas |
-| 5. Push & Notifications | FCM, topics, deep links, notification center | 2 semanas |
-| 6. Polish & Testing | Error boundaries, Sentry, E2E (Detox), performance | 2 semanas |
-| 7. Store Release | EAS Submit, TestFlight beta, Play Internal, produccion | 1 semana |
+Analizamos 31 screenshots de **Handy** (handy.la, v1.4238) + 15 competidores (VentaRuta, Microsip, EVC PRO, CPG Soft, Pepperi, FieldAssist). Mercado: $201M USD (2023), 8.9% CAGR → $367M en 2030. 1.1M+ tienditas en México.
+
+**Gaps del mercado (nadie los tiene)**:
+- SaaS self-service (todos requieren llamar a ventas)
+- AI inteligente (solo players internacionales de India)
+- WhatsApp pedidos tiendita (futuro — tendero hace su pedido por chatbot)
+- Gamificación (leaderboards, badges)
+
+**Nuestra diferenciación**:
+- **Tab "Cobrar" dedicado** — Handy lo esconde en sub-sección 9 de 13
+- **Tab "Más"** como menú — no desperdiciamos tab en solo Perfil
+- **Mapa inteligente** — pines color semántico (verde/amarillo/rojo/azul), ruta polyline
+- **Push notifications (FCM)** para vendedores (no WhatsApp)
+- **CFDI integrado** via Billing API
+
+**Navegación 5 tabs**: Hoy / Mapa / Vender / Cobrar / Más (Clientes, Perfil, Sync, Config en Más)
+
+### Mobile Roadmap (Actualizado — basado en análisis competitivo)
+
+| Phase | Scope | Pantallas | Backend |
+|-------|-------|-----------|---------|
+| 1. Foundation (MOB-1) ✅ | Auth, navigation, API client, lectura básica | 9 | 0 |
+| 2. Vender (MOB-2) | Catálogo productos, crear/editar pedidos, tab Vender | 5 | 0 |
+| 3. Ruta + Visitas (MOB-3) | Check-in/out GPS, paradas, resumen diario | 5 | 0 |
+| 4. Cobrar (MOB-4) | Cobranza, saldos, estado cuenta, tab Cobrar | 4 | 5 endpoints |
+| 5. Mapa + Clientes (MOB-5) | Tab Mapa inteligente, CRUD clientes, GPS | 4 | 5 endpoints |
+| 6. Polish (MOB-6) | Escáner, fotos, onboarding, calendario, timeline | 6 features | 1 endpoint |
+| 7+ Future (MOB-7) | Liquidación, FCM, AI, gamificación, offline, WhatsApp tienditas | — | — |
+
+> Plan completo en `memory/plan-mobile-roadmap.md`
+
+### Diseño Pencil Mobile
+
+Archivo: `docs/design/pencil/pencil-mobile.pen` — 31 frames cubriendo todas las pantallas móviles
+
+| Grupo | Frames | Contenido |
+|-------|--------|-----------|
+| Auth | 1-2 | Login, Forgot Password |
+| MOB-1 | 3-9 | Tab Hoy, Clientes, Cliente Detalle, Pedidos, Pedido Detalle, Tab Más, Perfil |
+| MOB-2 Vender | 10-13 | Tab Vender, Crear Pedido (3 pasos) |
+| MOB-3 Ruta | 14-17 | Ruta del Día, Detalle Parada, Visita Activa, Resumen Diario |
+| MOB-4 Cobrar | 18-21 | Tab Cobrar, Estado Cuenta, Registrar Cobro, Historial |
+| MOB-5 Mapa | 22-24 | Tab Mapa, Crear Cliente, Cliente Seleccionado |
+| MOB-6 Polish | 25-28 | Onboarding (3), Escáner |
+| Estados | 29-31 | Empty States, Loading States, Component Library |
 
 ---
 
@@ -974,39 +1015,44 @@ docs/design/pencil/pencil-admin.pen       # Mismo contenido
 ### 🟠 ALTA — Funcionalidad incompleta
 
 - [x] **FUNC-1**: ~~`deliveries.ts` usa MOCK data~~ — API real a `/rutas` y `/pedidos`, 12 métodos
-- [ ] **FUNC-2**: Firebase FCM simulado (`FcmService.cs` retorna mocks) — pausado hasta versión móvil
+- [x] **FUNC-2**: ~~Firebase FCM simulado~~ — movido a BAJA (depende de app móvil FUT-1)
 - [x] **FUNC-3**: ~~Error Boundary global~~ — `error.tsx` (root + dashboard) + `not-found.tsx` con UI en español
 - [x] **FUNC-4**: ~~Módulo Rutas Admin incompleto~~ — 8 páginas funcionales (list, manage, detail, admin, load, close)
 - [x] **FUNC-5**: ~~`subscription/page.tsx` mock data~~ — conectado a `useCompany()` (CompanySettings API real)
-- [ ] **FUNC-6**: Auto-seeding para nuevos tenants — al crear tenant/empresa, generar datos demo mínimos (categorías, productos ejemplo, cliente ejemplo, lista de precios) para onboarding inmediato
+- [x] **FUNC-6**: ~~Auto-seeding para nuevos tenants~~ — `TenantSeedService` genera zonas, categorías, productos, clientes y lista de precios demo al crear tenant
 
 ### 🟡 MEDIA — Mejoras de infraestructura
 
 - [x] **INFRA-CI**: CI/CD pipeline (GitHub Actions + Railway auto-deploy + Vercel auto-deploy)
 - [x] **INFRA-DEPLOY**: Producción desplegada (Railway APIs + Vercel frontend + MySQL)
 - [x] **INFRA-1**: ~~EF Core Migrations~~ — baseline generado, `DatabaseMigrator` con advisory lock, auto-apply en dev, `efbundle` en CI/CD
-- [ ] **INFRA-2**: Soft deletes (GDPR compliance)
-- [ ] **INFRA-3**: Integration tests (parcial: rbac, security, visual-audit existen)
-- [ ] **INFRA-4**: 11 pantallas React sin diseño Pencil (listadas arriba, login ya completado)
+- [x] **INFRA-2**: ~~Soft deletes (GDPR compliance)~~ — `SaveChangesAsync` override, `EliminadoEn`/`EliminadoPor` en 30 entidades, query filters actualizados
 
-### 🟡 MEDIA — Rol Supervisor
+### 🔴 ALTA — App Móvil React Native
 
-- [ ] **SUP-1**: Implementar sidebar/permisos para SUPERVISOR (enum existe, no se usa)
-- [ ] **SUP-2**: Dashboard de equipo para supervisor
-- [ ] **SUP-3**: Vista de rendimiento por subordinado
+- [ ] **MOB-1**: Foundation — Auth, navigation, API client, screens básicas (4 sem)
+- [ ] **MOB-2**: Offline Core — WatermelonDB, outbox/inbox, sync engine (3 sem)
+- [ ] **MOB-3**: Route & Map — Ruta en mapa, clusters, check-in/out, tracking (3 sem)
+- [ ] **MOB-4**: Evidence & Payments — Fotos/firma, deferred upload, cobros (2 sem)
+- [ ] **MOB-5**: Push & Notifications — FCM, topics, deep links, notification center (2 sem)
+- [ ] **MOB-6**: Polish & Testing — Error boundaries, Sentry, E2E (Detox), performance (2 sem)
+- [ ] **MOB-7**: Store Release — EAS Submit, TestFlight beta, Play Internal, producción (1 sem)
 
 ### 🟢 BAJA — Futuro
 
-- [ ] **FUT-1**: App móvil React Native (7 fases) — ver sección "React Native Mobile App" abajo
 - [ ] **FUT-2**: Billing API deploy en producción
 - [ ] **FUT-3**: Migración a Azure (cuando 1,000+ users) — `AZURE_MIGRATION.md`
 - [ ] **FUT-4**: Custom domain (`app.handysales.com`)
 - [x] **FUT-5**: ~~Impersonation feature completa~~ — modal + banner + audit trail + session timeout implementado
 - [x] **FUT-6**: ~~2FA/MFA~~ TOTP implementado (endpoints + UI setup/disable en SecurityTab)
 - [x] **FUT-7**: ~~WebSocket para actualizaciones real-time~~ SignalR self-hosted implementado
-- [ ] **FUT-8**: Offline support
 - [x] **FUT-9**: ~~Password Reset page~~ — `/forgot-password` + `/reset-password` con AuthLayout compartido
 - [ ] **FUT-10**: Rol VIEWER funcional
+- [ ] **SUP-1**: Implementar sidebar/permisos para SUPERVISOR — esperar demanda real
+- [ ] **SUP-2**: Dashboard de equipo para supervisor
+- [ ] **SUP-3**: Vista de rendimiento por subordinado
+- [ ] **INFRA-3**: Integration tests (parcial: rbac, security, visual-audit existen)
+- [ ] **INFRA-4**: 11 pantallas React sin diseño Pencil (diseño cuando se necesite)
 
 ### ✅ COMPLETADO — Announcements DisplayMode
 

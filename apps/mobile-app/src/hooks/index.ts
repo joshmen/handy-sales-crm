@@ -8,3 +8,4 @@ export { useZonas, useCategoriasCliente, useCategoriasProducto, useFamiliasProdu
 export { useProductsList, useProductDetail, useProductStock } from './useProducts';
 export { useUserLocation } from './useLocation';
 export { useNetworkStatus } from './useNetworkStatus';
+export { useAutoSync } from './useAutoSync';

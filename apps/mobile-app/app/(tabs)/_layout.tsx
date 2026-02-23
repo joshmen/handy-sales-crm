@@ -2,9 +2,13 @@ import { Platform } from 'react-native';
 import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CalendarClock, Map, ShoppingBag, Wallet, Menu } from 'lucide-react-native';
+import { useAutoSync } from '@/hooks/useAutoSync';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
+  useAutoSync();
+  usePushNotifications();
 
   return (
     <Tabs
