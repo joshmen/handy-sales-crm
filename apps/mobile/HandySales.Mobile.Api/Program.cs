@@ -43,6 +43,7 @@ app.MapMobileSyncEndpoints();
 app.MapMobileRutaEndpoints();
 app.MapMobileCobroEndpoints();
 app.MapMobileCatalogosEndpoints();
+app.MapMobileNotificationEndpoints();
 app.MapHealthEndpoints();
 
 app.Run();

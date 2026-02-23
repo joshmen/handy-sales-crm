@@ -92,6 +92,9 @@ public static class ServiceRegistrationExtensions
         services.AddScoped<ICurrentTenant, CurrentTenant>();
         services.AddScoped<MobileAuthService>();
 
+        // Push Notifications (HttpClient for Expo Push API)
+        services.AddHttpClient<PushNotificationService>();
+
         // Usuarios
         services.AddScoped<IUsuarioRepository, UsuarioRepository>();
         services.AddValidatorsFromAssemblyContaining<UsuarioLoginDtoValidator>();

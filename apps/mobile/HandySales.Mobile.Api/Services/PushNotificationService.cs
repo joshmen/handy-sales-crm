@@ -1,0 +1,147 @@
+using System.Net.Http.Json;
+using System.Text.Json;
+using HandySales.Domain.Entities;
+using HandySales.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+
+namespace HandySales.Mobile.Api.Services;
+
+public class PushNotificationService
+{
+    private readonly HandySalesDbContext _db;
+    private readonly HttpClient _http;
+    private readonly ILogger<PushNotificationService> _logger;
+    private const string ExpoPushUrl = "https://exp.host/--/api/v2/push/send";
+
+    public PushNotificationService(
+        HandySalesDbContext db,
+        HttpClient http,
+        ILogger<PushNotificationService> logger)
+    {
+        _db = db;
+        _http = http;
+        _logger = logger;
+    }
+
+    /// <summary>
+    /// Send push notification to a specific user (all their devices)
+    /// </summary>
+    public async Task<PushResult> SendToUserAsync(int userId, int tenantId, string title, string body, Dictionary<string, string>? data = null)
+    {
+        var tokens = await GetActiveTokensAsync(userId, tenantId);
+        if (tokens.Count == 0)
+            return new PushResult(false, 0, "No hay dispositivos registrados para este usuario");
+
+        return await SendToTokensAsync(tokens, title, body, data);
+    }
+
+    /// <summary>
+    /// Send push notification to multiple users
+    /// </summary>
+    public async Task<PushResult> SendToUsersAsync(List<int> userIds, int tenantId, string title, string body, Dictionary<string, string>? data = null)
+    {
+        var tokens = await _db.DeviceSessions
+            .IgnoreQueryFilters()
+            .Where(ds => userIds.Contains(ds.UsuarioId) &&
+                         ds.TenantId == tenantId &&
+                         ds.PushToken != null &&
+                         ds.Status == SessionStatus.Active &&
+                         ds.EliminadoEn == null)
+            .Select(ds => ds.PushToken!)
+            .Distinct()
+            .ToListAsync();
+
+        if (tokens.Count == 0)
+            return new PushResult(false, 0, "No hay dispositivos registrados para estos usuarios");
+
+        return await SendToTokensAsync(tokens, title, body, data);
+    }
+
+    /// <summary>
+    /// Send push notification to all active devices in a tenant
+    /// </summary>
+    public async Task<PushResult> SendToTenantAsync(int tenantId, string title, string body, Dictionary<string, string>? data = null)
+    {
+        var tokens = await _db.DeviceSessions
+            .IgnoreQueryFilters()
+            .Where(ds => ds.TenantId == tenantId &&
+                         ds.PushToken != null &&
+                         ds.Status == SessionStatus.Active &&
+                         ds.EliminadoEn == null)
+            .Select(ds => ds.PushToken!)
+            .Distinct()
+            .ToListAsync();
+
+        if (tokens.Count == 0)
+            return new PushResult(false, 0, "No hay dispositivos registrados en esta empresa");
+
+        return await SendToTokensAsync(tokens, title, body, data);
+    }
+
+    /// <summary>
+    /// Send push to specific Expo Push Tokens via Expo Push API
+    /// </summary>
+    private async Task<PushResult> SendToTokensAsync(List<string> tokens, string title, string body, Dictionary<string, string>? data)
+    {
+        // Expo Push API accepts up to 100 messages per request
+        var messages = tokens.Select(token => new
+        {
+            to = token,
+            title,
+            body,
+            sound = "default",
+            data = data ?? new Dictionary<string, string>(),
+            channelId = GetChannelId(data)
+        }).ToList();
+
+        try
+        {
+            var response = await _http.PostAsJsonAsync(ExpoPushUrl, messages);
+            var responseBody = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
+            {
+                _logger.LogInformation("Push sent to {Count} devices. Response: {Response}", tokens.Count, responseBody);
+                return new PushResult(true, tokens.Count, $"Enviado a {tokens.Count} dispositivo(s)");
+            }
+
+            _logger.LogWarning("Expo Push API error: {Status} {Response}", response.StatusCode, responseBody);
+            return new PushResult(false, 0, $"Error de Expo Push API: {response.StatusCode}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send push notification");
+            return new PushResult(false, 0, $"Error al enviar: {ex.Message}");
+        }
+    }
+
+    private async Task<List<string>> GetActiveTokensAsync(int userId, int tenantId)
+    {
+        return await _db.DeviceSessions
+            .IgnoreQueryFilters()
+            .Where(ds => ds.UsuarioId == userId &&
+                         ds.TenantId == tenantId &&
+                         ds.PushToken != null &&
+                         ds.Status == SessionStatus.Active &&
+                         ds.EliminadoEn == null)
+            .Select(ds => ds.PushToken!)
+            .Distinct()
+            .ToListAsync();
+    }
+
+    private static string GetChannelId(Dictionary<string, string>? data)
+    {
+        if (data == null || !data.TryGetValue("type", out var type))
+            return "default";
+
+        return type switch
+        {
+            "order.assigned" or "order.status_changed" => "orders",
+            "route.published" or "visit.reminder" => "routes",
+            _ when type.StartsWith("collection") => "collections",
+            _ => "default"
+        };
+    }
+}
+
+public record PushResult(bool Success, int DeviceCount, string Message);
