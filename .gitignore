@@ -80,5 +80,19 @@ docs/deployment/AZURE_MIGRATION.md
 # ── Old/legacy folders ────────────────────
 HandySales/
 
+# ── Playwright test artifacts ────────────
+apps/web/test-results/
+apps/web/playwright-report/
+
+# ── Pencil generated images ──────────────
+docs/design/pencil/images/
+
+# ── Temp/artifacts at root ───────────────
+baseline.sql
+efbundle
+response.json
+tmpswagger.json
+
 # ── Windows reserved names ────────────────
 **/nul
+c*tmp*

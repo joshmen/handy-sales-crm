@@ -5,7 +5,7 @@
 -- 1. Create GlobalSettings table (only one record, managed by SUPER_ADMIN)
 CREATE TABLE IF NOT EXISTS `global_settings` (
     `Id` int NOT NULL AUTO_INCREMENT,
-    `PlatformName` varchar(100) NOT NULL DEFAULT 'HandyCRM',
+    `PlatformName` varchar(100) NOT NULL DEFAULT 'Handy Suites',
     `PlatformLogo` varchar(500) NULL,
     `PlatformPrimaryColor` varchar(7) NULL DEFAULT '#3B82F6',
     `PlatformSecondaryColor` varchar(7) NULL DEFAULT '#8B5CF6',
@@ -68,7 +68,7 @@ ADD CONSTRAINT `FK_company_settings_companies`
 
 -- 4. Insert default global settings
 INSERT INTO `global_settings` (`PlatformName`, `PlatformLogo`, `PlatformPrimaryColor`, `PlatformSecondaryColor`, `UpdatedBy`)
-VALUES ('HandyCRM', NULL, '#3B82F6', '#8B5CF6', 'system')
+VALUES ('Handy Suites', NULL, '#3B82F6', '#8B5CF6', 'system')
 ON DUPLICATE KEY UPDATE `Id` = `Id`;
 
 -- 5. Migrate existing company_settings to companies table (if needed)
