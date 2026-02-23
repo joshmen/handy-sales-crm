@@ -3,6 +3,7 @@ using HandySales.Application.Auth.DTOs;
 using HandySales.Mobile.Api.Services;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace HandySales.Mobile.Api.Endpoints;
 
@@ -66,5 +67,32 @@ public static class MobileAuthEndpoints
         .WithSummary("Cerrar sesión")
         .WithDescription("Cierra la sesión del vendedor en el dispositivo móvil.")
         .Produces<object>(StatusCodes.Status200OK);
+
+        group.MapPost("/device-token", async (
+            DeviceTokenDto dto,
+            [FromServices] MobileAuthService auth,
+            HttpContext context) =>
+        {
+            var userIdClaim = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                           ?? context.User.FindFirst("sub")?.Value;
+            var tenantIdClaim = context.User.FindFirst("tenant_id")?.Value;
+
+            if (string.IsNullOrEmpty(userIdClaim) || string.IsNullOrEmpty(tenantIdClaim))
+                return Results.Unauthorized();
+
+            var userId = int.Parse(userIdClaim);
+            var tenantId = int.Parse(tenantIdClaim);
+
+            await auth.RegisterDeviceTokenAsync(userId, tenantId, dto.Token, dto.Platform, dto.DeviceName);
+
+            return Results.Ok(new { success = true, message = "Token registrado" });
+        })
+        .RequireAuthorization()
+        .WithSummary("Registrar push token del dispositivo")
+        .WithDescription("Registra o actualiza el Expo Push Token para enviar notificaciones push al dispositivo.")
+        .Produces<object>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status401Unauthorized);
     }
 }
+
+public record DeviceTokenDto(string Token, string Platform, string DeviceName);

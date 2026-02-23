@@ -83,6 +83,50 @@ public class MobileAuthService
         };
     }
 
+    public async Task RegisterDeviceTokenAsync(int userId, int tenantId, string pushToken, string platform, string deviceName)
+    {
+        var deviceType = platform.ToLowerInvariant() switch
+        {
+            "android" => DeviceType.Android,
+            "ios" => DeviceType.iOS,
+            _ => DeviceType.Unknown
+        };
+
+        // Find existing session for this user+push token combo, or any session for this user on same platform
+        var existingSession = await _db.DeviceSessions
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(ds =>
+                ds.UsuarioId == userId &&
+                ds.TenantId == tenantId &&
+                ds.PushToken == pushToken &&
+                ds.EliminadoEn == null);
+
+        if (existingSession != null)
+        {
+            existingSession.LastActivity = DateTime.UtcNow;
+            existingSession.DeviceName = deviceName;
+            existingSession.Status = SessionStatus.Active;
+        }
+        else
+        {
+            var session = new DeviceSession
+            {
+                TenantId = tenantId,
+                UsuarioId = userId,
+                DeviceId = Guid.NewGuid().ToString(),
+                DeviceName = deviceName,
+                DeviceType = deviceType,
+                PushToken = pushToken,
+                Status = SessionStatus.Active,
+                LastActivity = DateTime.UtcNow,
+                LoggedInAt = DateTime.UtcNow
+            };
+            _db.DeviceSessions.Add(session);
+        }
+
+        await _db.SaveChangesAsync();
+    }
+
     private async Task<RefreshToken> CreateRefreshTokenAsync(int userId)
     {
         var existingTokens = await _db.RefreshTokens
