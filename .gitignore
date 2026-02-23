@@ -21,6 +21,7 @@ TestResult.xml
 **/.turbo/
 **/out/
 **/.vercel/
+.expo/
 
 # ── Environment Variables ─────────────────
 .env
