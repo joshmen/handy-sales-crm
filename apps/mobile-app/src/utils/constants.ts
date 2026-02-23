@@ -1,15 +1,19 @@
 import { Platform } from 'react-native';
 
-// API URL from .env (EXPO_PUBLIC_BACKEND_IP)
-const getApiUrl = (port: number): string => {
+// API URL: Use EXPO_PUBLIC_API_URL for preview/production builds,
+// fall back to local dev server for development
+const getApiUrl = (): string => {
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL;
+  }
   const host = process.env.EXPO_PUBLIC_BACKEND_IP || (
     Platform.OS === 'android' ? '10.0.2.2' : 'localhost'
   );
-  return `http://${host}:${port}`;
+  return `http://${host}:1052`;
 };
 
 export const API_CONFIG = {
-  BASE_URL: getApiUrl(1052),
+  BASE_URL: getApiUrl(),
   TIMEOUT: 15000,
 } as const;
 
