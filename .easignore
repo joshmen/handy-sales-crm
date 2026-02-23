@@ -1,63 +1,33 @@
-# EAS Build: Only include what's needed for the mobile app build
-# This is a monorepo — exclude everything except apps/mobile-app and root workspace files
+# EAS Build: Exclude non-mobile files to reduce archive size
+# With requireCommit:true, .gitignore handles node_modules/.expo/.next etc.
 
-# .NET projects (not needed for React Native build)
+# .NET projects
 apps/api/
 apps/mobile/
 apps/billing/
 apps/ai/
 
-# Web frontend (not needed for mobile build)
+# Web frontend
 apps/web/
 
 # Shared .NET libraries
 libs/
 
-# Infrastructure
+# Infrastructure & scripts
 infra/
-
-# Documentation
-docs/
-
-# Scripts
 scripts/
+.github/
+
+# Documentation & design
+docs/
 
 # Database files
 *.sql
-baseline.sql
-
-# CI/CD
-.github/
-
-# Design files
-*.pen
-
-# Git
-.gitignore
-
-# Editor/IDE
-.vscode/
-.vs/
-.idea/
 
 # EF Core bundle
 efbundle
 
-# Temp files
+# Temp/artifacts
 *.log
 response.json
-c:tmp*
-
-# Playwright results
-apps/web/test-results/
-apps/web/playwright-report/
-apps/web/e2e/
-
-# Claude
-.claude/
-
-# Large binary files
-*.png
-*.jpg
-*.jpeg
-!apps/mobile-app/assets/*.png
+tmpswagger.json
