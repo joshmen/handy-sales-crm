@@ -1,5 +1,4 @@
 using System.Net.Http.Json;
-using System.Text.Json;
 using HandySales.Domain.Entities;
 using HandySales.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -79,40 +78,64 @@ public class PushNotificationService
     }
 
     /// <summary>
-    /// Send push to specific Expo Push Tokens via Expo Push API
+    /// Send push to specific Expo Push Tokens via Expo Push API.
+    /// Docs: https://docs.expo.dev/push-notifications/sending-notifications/
+    /// Max 100 per request, 600/sec per project, 4KB payload max.
     /// </summary>
     private async Task<PushResult> SendToTokensAsync(List<string> tokens, string title, string body, Dictionary<string, string>? data)
     {
-        // Expo Push API accepts up to 100 messages per request
-        var messages = tokens.Select(token => new
-        {
-            to = token,
-            title,
-            body,
-            sound = "default",
-            data = data ?? new Dictionary<string, string>(),
-            channelId = GetChannelId(data)
-        }).ToList();
+        var totalSent = 0;
 
-        try
+        // Expo Push API accepts up to 100 messages per request — chunk if needed
+        foreach (var chunk in tokens.Chunk(100))
         {
-            var response = await _http.PostAsJsonAsync(ExpoPushUrl, messages);
-            var responseBody = await response.Content.ReadAsStringAsync();
-
-            if (response.IsSuccessStatusCode)
+            var messages = chunk.Select(token => new
             {
-                _logger.LogInformation("Push sent to {Count} devices. Response: {Response}", tokens.Count, responseBody);
-                return new PushResult(true, tokens.Count, $"Enviado a {tokens.Count} dispositivo(s)");
-            }
+                to = token,
+                title,
+                body,
+                sound = "default",
+                data = data ?? new Dictionary<string, string>(),
+                channelId = GetChannelId(data),
+                priority = "high"
+            }).ToList();
 
-            _logger.LogWarning("Expo Push API error: {Status} {Response}", response.StatusCode, responseBody);
-            return new PushResult(false, 0, $"Error de Expo Push API: {response.StatusCode}");
+            try
+            {
+                var request = new HttpRequestMessage(HttpMethod.Post, ExpoPushUrl);
+                request.Headers.Add("Accept", "application/json");
+                request.Headers.Add("Accept-Encoding", "gzip, deflate");
+
+                // Optional: Expo Access Token for enhanced push security
+                var accessToken = Environment.GetEnvironmentVariable("EXPO_ACCESS_TOKEN");
+                if (!string.IsNullOrEmpty(accessToken))
+                    request.Headers.Add("Authorization", $"Bearer {accessToken}");
+
+                request.Content = JsonContent.Create(messages);
+
+                var response = await _http.SendAsync(request);
+                var responseBody = await response.Content.ReadAsStringAsync();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    totalSent += chunk.Length;
+                    _logger.LogInformation("Push sent to {Count} devices. Response: {Response}", chunk.Length, responseBody);
+                }
+                else
+                {
+                    _logger.LogWarning("Expo Push API error: {Status} {Response}", response.StatusCode, responseBody);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send push notification batch");
+            }
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to send push notification");
-            return new PushResult(false, 0, $"Error al enviar: {ex.Message}");
-        }
+
+        if (totalSent > 0)
+            return new PushResult(true, totalSent, $"Enviado a {totalSent} dispositivo(s)");
+
+        return new PushResult(false, 0, "Error al enviar notificaciones");
     }
 
     private async Task<List<string>> GetActiveTokensAsync(int userId, int tenantId)
