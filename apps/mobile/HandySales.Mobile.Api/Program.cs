@@ -1,6 +1,7 @@
 using HandySales.Mobile.Api.Configuration;
 using HandySales.Mobile.Api.Endpoints;
 using HandySales.Mobile.Api.Middleware;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,6 +31,16 @@ app.UseSwaggerConfiguration(app.Environment);
 
 app.UseHttpsRedirection();
 app.UseCors("MobilePolicy");
+
+// Ensure wwwroot/uploads exists for static file serving (evidence uploads)
+var wwwroot = Path.Combine(app.Environment.ContentRootPath, "wwwroot");
+Directory.CreateDirectory(Path.Combine(wwwroot, "uploads", "evidence"));
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(wwwroot),
+    RequestPath = ""
+});
+
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -44,6 +55,7 @@ app.MapMobileRutaEndpoints();
 app.MapMobileCobroEndpoints();
 app.MapMobileCatalogosEndpoints();
 app.MapMobileNotificationEndpoints();
+app.MapMobileAttachmentEndpoints();
 app.MapHealthEndpoints();
 
 app.Run();

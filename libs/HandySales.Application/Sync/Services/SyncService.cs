@@ -216,6 +216,45 @@ public class SyncService
                 }
             }
         }
+
+        // Push Cobros
+        if (clientChanges.Cobros?.Any() == true)
+        {
+            foreach (var dto in clientChanges.Cobros)
+            {
+                try
+                {
+                    var (entity, wasConflict) = await _repo.UpsertCobroAsync(tenantId, usuarioId, dto, userId);
+                    if (wasConflict)
+                    {
+                        response.Conflicts.Add(new SyncConflictDto
+                        {
+                            EntityType = "Cobro",
+                            EntityId = dto.Id,
+                            ClientModified = dto.ActualizadoEn ?? DateTime.UtcNow,
+                            ServerModified = entity.ActualizadoEn ?? entity.CreadoEn,
+                            Resolution = "server_wins"
+                        });
+                        response.Summary.ConflictsFound++;
+                    }
+                    else
+                    {
+                        response.Summary.CobrosPushed++;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    response.Errors.Add(new SyncErrorDto
+                    {
+                        EntityType = "Cobro",
+                        EntityId = dto.Id > 0 ? dto.Id : null,
+                        Operation = dto.Operation.ToString(),
+                        Message = ex.Message
+                    });
+                    response.Summary.ErrorsFound++;
+                }
+            }
+        }
     }
 
     private async Task PullServerChangesAsync(SyncResponseDto response, int tenantId, int usuarioId, DateTime? since, List<string> entityTypes, bool syncAll)
@@ -382,6 +421,28 @@ public class SyncService
                 }).ToList()
             }).ToList();
             response.Summary.RutasPulled = rutas.Count;
+        }
+
+        // Pull Cobros for this user
+        if (syncAll || entityTypes.Contains("cobros", StringComparer.OrdinalIgnoreCase))
+        {
+            var cobros = await _repo.GetCobrosModifiedSinceAsync(tenantId, usuarioId, since);
+            response.ServerChanges.Cobros = cobros.Select(c => new SyncCobroDto
+            {
+                Id = c.Id,
+                ClienteId = c.ClienteId,
+                PedidoId = c.PedidoId,
+                Monto = c.Monto,
+                MetodoPago = (int)c.MetodoPago,
+                FechaCobro = c.FechaCobro,
+                Referencia = c.Referencia,
+                Notas = c.Notas,
+                Activo = c.Activo,
+                Version = c.Version,
+                ActualizadoEn = c.ActualizadoEn,
+                IsDeleted = !c.Activo
+            }).ToList();
+            response.Summary.CobrosPulled = cobros.Count;
         }
     }
 }

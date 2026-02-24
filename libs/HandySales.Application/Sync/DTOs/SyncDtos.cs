@@ -31,6 +31,7 @@ public class SyncChangesDto
     public List<SyncVisitaDto>? Visitas { get; set; }
     public List<SyncRutaDto>? Rutas { get; set; }
     public List<SyncProductoDto>? Productos { get; set; }
+    public List<SyncCobroDto>? Cobros { get; set; }
 }
 
 /// <summary>
@@ -75,6 +76,8 @@ public class SyncSummaryDto
     public int RutasPulled { get; set; }
     public int RutasPushed { get; set; }
     public int ProductosPulled { get; set; }
+    public int CobrosPulled { get; set; }
+    public int CobrosPushed { get; set; }
     public int ConflictsFound { get; set; }
     public int ErrorsFound { get; set; }
 }
@@ -248,6 +251,24 @@ public class SyncProductoDto
     public long Version { get; set; }
     public DateTime? ActualizadoEn { get; set; }
     // Products are read-only from mobile, no Operation needed
+}
+
+public class SyncCobroDto
+{
+    public int Id { get; set; }
+    public string? LocalId { get; set; }
+    public int ClienteId { get; set; }
+    public int PedidoId { get; set; }
+    public decimal Monto { get; set; }
+    public int MetodoPago { get; set; }
+    public DateTime FechaCobro { get; set; }
+    public string? Referencia { get; set; }
+    public string? Notas { get; set; }
+    public bool Activo { get; set; } = true;
+    public long Version { get; set; }
+    public DateTime? ActualizadoEn { get; set; }
+    public SyncOperation Operation { get; set; } = SyncOperation.Create;
+    public bool IsDeleted { get; set; }
 }
 
 public enum SyncOperation

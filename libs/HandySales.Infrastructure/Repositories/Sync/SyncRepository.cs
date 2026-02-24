@@ -434,6 +434,83 @@ public class SyncRepository : ISyncRepository
         throw new InvalidOperationException($"RutaVendedor sync only supports Update operation. Id: {dto.Id}, Operation: {dto.Operation}");
     }
 
+    public async Task<List<Cobro>> GetCobrosModifiedSinceAsync(int tenantId, int usuarioId, DateTime? since)
+    {
+        var query = _db.Cobros
+            .AsNoTracking()
+            .Where(c => c.TenantId == tenantId && c.UsuarioId == usuarioId);
+
+        if (since.HasValue)
+        {
+            query = query.Where(c => c.ActualizadoEn > since || c.CreadoEn > since);
+        }
+
+        return await query.OrderBy(c => c.Id).ToListAsync();
+    }
+
+    public async Task<(Cobro entity, bool wasConflict)> UpsertCobroAsync(int tenantId, int usuarioId, SyncCobroDto dto, string userId)
+    {
+        bool wasConflict = false;
+
+        if (dto.Operation == SyncOperation.Delete)
+        {
+            var existing = await _db.Cobros.FindAsync(dto.Id);
+            if (existing == null || existing.TenantId != tenantId)
+            {
+                throw new InvalidOperationException($"Cobro with id {dto.Id} not found or unauthorized");
+            }
+            existing.Activo = false;
+            existing.ActualizadoEn = DateTime.UtcNow;
+            existing.ActualizadoPor = userId;
+            existing.Version++;
+            return (existing, wasConflict);
+        }
+
+        if (dto.Id > 0)
+        {
+            var existing = await _db.Cobros.FindAsync(dto.Id);
+            if (existing != null && existing.TenantId == tenantId)
+            {
+                if (existing.Version != dto.Version)
+                {
+                    wasConflict = true;
+                    return (existing, wasConflict);
+                }
+
+                existing.Monto = dto.Monto;
+                existing.MetodoPago = (MetodoPago)dto.MetodoPago;
+                existing.Referencia = dto.Referencia;
+                existing.Notas = dto.Notas;
+                existing.Activo = dto.Activo;
+                existing.ActualizadoEn = DateTime.UtcNow;
+                existing.ActualizadoPor = userId;
+                existing.Version++;
+
+                return (existing, wasConflict);
+            }
+        }
+
+        var cobro = new Cobro
+        {
+            TenantId = tenantId,
+            UsuarioId = usuarioId,
+            ClienteId = dto.ClienteId,
+            PedidoId = dto.PedidoId,
+            Monto = dto.Monto,
+            MetodoPago = (MetodoPago)dto.MetodoPago,
+            FechaCobro = dto.FechaCobro != default ? dto.FechaCobro : DateTime.UtcNow,
+            Referencia = dto.Referencia,
+            Notas = dto.Notas,
+            Activo = dto.Activo,
+            CreadoEn = DateTime.UtcNow,
+            CreadoPor = userId,
+            Version = 1
+        };
+
+        _db.Cobros.Add(cobro);
+        return (cobro, wasConflict);
+    }
+
     public async Task<int> SaveChangesAsync()
     {
         return await _db.SaveChangesAsync();
