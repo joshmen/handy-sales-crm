@@ -1028,13 +1028,13 @@ docs/design/pencil/pencil-admin.pen       # Mismo contenido
 - [x] **INFRA-1**: ~~EF Core Migrations~~ — baseline generado, `DatabaseMigrator` con advisory lock, auto-apply en dev, `efbundle` en CI/CD
 - [x] **INFRA-2**: ~~Soft deletes (GDPR compliance)~~ — `SaveChangesAsync` override, `EliminadoEn`/`EliminadoPor` en 30 entidades, query filters actualizados
 
-### 🔴 ALTA — App Móvil React Native
+### 🟡 EN PROGRESO — App Móvil React Native
 
-- [ ] **MOB-1**: Foundation — Auth, navigation, API client, screens básicas (4 sem)
-- [ ] **MOB-2**: Offline Core — WatermelonDB, outbox/inbox, sync engine (3 sem)
-- [ ] **MOB-3**: Route & Map — Ruta en mapa, clusters, check-in/out, tracking (3 sem)
-- [ ] **MOB-4**: Evidence & Payments — Fotos/firma, deferred upload, cobros (2 sem)
-- [ ] **MOB-5**: Push & Notifications — FCM, topics, deep links, notification center (2 sem)
+- [x] **MOB-1**: ~~Foundation~~ — Auth, navigation, API client, 38 screens, 5 tabs, Maestro E2E passing
+- [x] **MOB-2**: ~~Offline Core~~ — WatermelonDB 8 tablas, sync engine 3-phase (pull/push/attachments), outbox/inbox, MMKV cursors
+- [x] **MOB-3**: ~~Route & Map~~ — react-native-maps + clustering + polylines, GPS check-in 200m geofence, location tracking, 7 map components
+- [ ] **MOB-4**: Evidence & Payments — Infraestructura existe pero NO conectada a pantallas (ver MOB-4 subtasks abajo)
+- [x] **MOB-5**: ~~Push & Notifications~~ — Expo Push API funcional (device-token, send, test endpoints), canales Android, deep links. Deployed to Railway
 - [ ] **MOB-6**: Polish & Testing — Error boundaries, Sentry, E2E (Detox), performance (2 sem)
 - [ ] **MOB-7**: Store Release — EAS Submit, TestFlight beta, Play Internal, producción (1 sem)
 
@@ -1053,6 +1053,7 @@ docs/design/pencil/pencil-admin.pen       # Mismo contenido
 - [ ] **SUP-3**: Vista de rendimiento por subordinado
 - [ ] **INFRA-3**: Integration tests (parcial: rbac, security, visual-audit existen)
 - [ ] **INFRA-4**: 11 pantallas React sin diseño Pencil (diseño cuando se necesite)
+- [ ] **INFRA-5**: Message broker (Redis Streams) + Push Worker directo a FCM/APNs — reemplazar Expo Push API como intermediario cuando escala lo requiera
 
 ### ✅ COMPLETADO — Announcements DisplayMode
 
@@ -1076,3 +1077,68 @@ docs/design/pencil/pencil-admin.pen       # Mismo contenido
 - [ ] **AI-7**: Phase 4 — /api/ai/anomalies + /api/ai/forecast
 - [ ] **AI-8**: Admin AI usage dashboard
 - [ ] **AI-9**: Mobile AI integration
+
+---
+
+## Checklist Accionable — Sprint Actual (Feb 24, 2026)
+
+> Última actualización: 2026-02-24. Ejecutar en orden de arriba a abajo.
+
+### 🔴 Paso 1: Commit pendientes (80+ archivos sin commitear)
+
+- [ ] **GIT-1**: Commit Mobile API endpoints nuevos (`MobileCatalogosEndpoints.cs`, `MobileCobroEndpoints.cs`) + cambios en `Program.cs`
+- [ ] **GIT-2**: Commit Mobile App — todos los archivos nuevos y modificados (hooks offline, map components, WDB actions, Maestro tests, TS fix, entry.js, patches)
+- [ ] **GIT-3**: Verificar `npx tsc --noEmit` = 0 errores antes de commit
+
+### 🔴 Paso 2: MOB-4 — Conectar evidencia a pantallas
+
+> La infraestructura existe (PhotoEvidence, SignatureCapture, evidenceManager, Attachment model). Falta INTEGRAR.
+
+- [ ] **MOB-4a**: `visita-activa.tsx` — Agregar fotos + firma + selector de resultado (Con Venta/Sin Venta/No Encontrado/Reagendada) al checkout
+- [ ] **MOB-4b**: `cobrar/registrar.tsx` — Agregar foto de recibo opcional (1 foto con capturePhoto)
+- [ ] **MOB-4c**: `evidenceManager.ts` — Agregar JWT auth header al `uploadAsync` (no pasa por axios interceptor)
+- [ ] **MOB-4d**: `syncEngine.ts` — Llamar `uploadPendingAttachments()` + `cleanUploadedFiles()` como Phase 3 después del push
+- [ ] **MOB-4e**: `sync.tsx` — Mostrar "Fotos pendientes de subir: N" usando `usePendingAttachmentCount`
+- [ ] **MOB-4f**: Commit MOB-4
+
+### 🟡 Paso 3: Maestro E2E — Verificar todo pasa
+
+- [ ] **E2E-1**: Correr `maestro test .maestro/flow.yaml` completo (8 sub-flows)
+- [ ] **E2E-2**: Probar nuevos flows si existen (cobrar/02-registrar-cobro, ruta/02-visita-activa-evidence, sync/)
+- [ ] **E2E-3**: Fix cualquier test roto
+
+### 🟡 Paso 4: Web — Limpiar mocks y fix E2E
+
+- [ ] **WEB-1**: `profile/page.tsx` — Reemplazar `mockDevices` y `mockActivity` con datos reales de API (DeviceSession + AuditLog)
+- [ ] **WEB-2**: Investigar y fix los 68 E2E tests fallando (¿regresiones reales o tests desactualizados?)
+- [ ] **WEB-3**: Limpiar `apps/web/src/app/api/mobile/sync/route.ts` — eliminar si mobile app usa Mobile API .NET directamente (port 1052)
+
+### 🟡 Paso 5: MOB-6 — Polish
+
+- [ ] **MOB-6a**: Sentry React Native setup (crash reporting + source maps)
+- [ ] **MOB-6b**: Error boundaries en cada tab/screen group
+- [ ] **MOB-6c**: Zod validation en API responses (robustez)
+- [ ] **MOB-6d**: Session timeout por inactividad
+- [ ] **MOB-6e**: Performance audit (FlatList optimization, image caching)
+
+### 🟢 Paso 6: Billing API — Completar para facturación real
+
+- [ ] **BILL-1**: Conectar PAC real para timbrado CFDI (reemplazar mock)
+- [ ] **BILL-2**: Generación PDF real (reemplazar stub)
+- [ ] **BILL-3**: Envío de facturas por email (SendGrid integration)
+- [ ] **BILL-4**: Fix passwords plaintext → BCrypt
+
+### 🟢 Paso 7: MOB-7 — Store Release
+
+- [ ] **MOB-7a**: EAS Build production profile (iOS + Android)
+- [ ] **MOB-7b**: TestFlight beta submission
+- [ ] **MOB-7c**: Play Internal testing track
+- [ ] **MOB-7d**: App Store / Play Store metadata, screenshots, descriptions
+- [ ] **MOB-7e**: Production release
+
+### 🟢 Paso 8: Seguridad móvil avanzada (post-launch)
+
+- [ ] **SEC-M1**: SQLCipher para encripción WatermelonDB
+- [ ] **SEC-M2**: Biometric auth (expo-local-authentication)
+- [ ] **SEC-M3**: Certificate pinning
+- [ ] **SEC-M4**: Root/jailbreak detection
