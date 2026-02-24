@@ -1033,7 +1033,7 @@ docs/design/pencil/pencil-admin.pen       # Mismo contenido
 - [x] **MOB-1**: ~~Foundation~~ — Auth, navigation, API client, 38 screens, 5 tabs, Maestro E2E passing
 - [x] **MOB-2**: ~~Offline Core~~ — WatermelonDB 8 tablas, sync engine 3-phase (pull/push/attachments), outbox/inbox, MMKV cursors
 - [x] **MOB-3**: ~~Route & Map~~ — react-native-maps + clustering + polylines, GPS check-in 200m geofence, location tracking, 7 map components
-- [ ] **MOB-4**: Evidence & Payments — Infraestructura existe pero NO conectada a pantallas (ver MOB-4 subtasks abajo)
+- [x] **MOB-4**: ~~Evidence & Payments~~ — Fotos/firma en visita-activa, foto comprobante en cobrar, JWT upload, sync Phase 3, pending count en sync screen
 - [x] **MOB-5**: ~~Push & Notifications~~ — Expo Push API funcional (device-token, send, test endpoints), canales Android, deep links. Deployed to Railway
 - [ ] **MOB-6**: Polish & Testing — Error boundaries, Sentry, E2E (Detox), performance (2 sem)
 - [ ] **MOB-7**: Store Release — EAS Submit, TestFlight beta, Play Internal, producción (1 sem)
@@ -1054,6 +1054,7 @@ docs/design/pencil/pencil-admin.pen       # Mismo contenido
 - [ ] **INFRA-3**: Integration tests (parcial: rbac, security, visual-audit existen)
 - [ ] **INFRA-4**: 11 pantallas React sin diseño Pencil (diseño cuando se necesite)
 - [ ] **INFRA-5**: Message broker (Redis Streams) + Push Worker directo a FCM/APNs — reemplazar Expo Push API como intermediario cuando escala lo requiera
+- [ ] **RT-9**: SignalR real-time desde mobile sync → web backoffice — Al recibir push de sync móvil (cobros, pedidos, visitas), disparar evento SignalR al grupo del tenant para que el admin vea los datos entrar en vivo sin refrescar (CobroRecibido, PedidoCreado, VisitaRegistrada)
 
 ### ✅ COMPLETADO — Announcements DisplayMode
 
@@ -1084,22 +1085,23 @@ docs/design/pencil/pencil-admin.pen       # Mismo contenido
 
 > Última actualización: 2026-02-24. Ejecutar en orden de arriba a abajo.
 
-### 🔴 Paso 1: Commit pendientes (80+ archivos sin commitear)
+### ✅ Paso 1: Commit pendientes — COMPLETADO
 
-- [ ] **GIT-1**: Commit Mobile API endpoints nuevos (`MobileCatalogosEndpoints.cs`, `MobileCobroEndpoints.cs`) + cambios en `Program.cs`
-- [ ] **GIT-2**: Commit Mobile App — todos los archivos nuevos y modificados (hooks offline, map components, WDB actions, Maestro tests, TS fix, entry.js, patches)
-- [ ] **GIT-3**: Verificar `npx tsc --noEmit` = 0 errores antes de commit
+- [x] **GIT-1**: Commit Mobile API (attachment endpoint + sync service) — `8310b17`
+- [x] **GIT-2**: Commit Mobile App (74 files: offline hooks, map, WDB, Maestro, TS fix) — `a6b771b`
+- [x] **GIT-3**: TypeScript 0 errores confirmado (TS 5.6.3)
+- [x] **Security**: Firebase files removidos de git, Google Maps key movida a env var — `d77dfa2`
 
-### 🔴 Paso 2: MOB-4 — Conectar evidencia a pantallas
+### ✅ Paso 2: MOB-4 — Evidencia conectada a pantallas — COMPLETADO
 
-> La infraestructura existe (PhotoEvidence, SignatureCapture, evidenceManager, Attachment model). Falta INTEGRAR.
+> Todo ya estaba implementado. Solo faltaban botones de navegación en cobrar/index.tsx.
 
-- [ ] **MOB-4a**: `visita-activa.tsx` — Agregar fotos + firma + selector de resultado (Con Venta/Sin Venta/No Encontrado/Reagendada) al checkout
-- [ ] **MOB-4b**: `cobrar/registrar.tsx` — Agregar foto de recibo opcional (1 foto con capturePhoto)
-- [ ] **MOB-4c**: `evidenceManager.ts` — Agregar JWT auth header al `uploadAsync` (no pasa por axios interceptor)
-- [ ] **MOB-4d**: `syncEngine.ts` — Llamar `uploadPendingAttachments()` + `cleanUploadedFiles()` como Phase 3 después del push
-- [ ] **MOB-4e**: `sync.tsx` — Mostrar "Fotos pendientes de subir: N" usando `usePendingAttachmentCount`
-- [ ] **MOB-4f**: Commit MOB-4
+- [x] **MOB-4a**: `visita-activa.tsx` — Fotos (PhotoEvidence) + firma (SignatureCapture) + selector resultado (4 opciones) + notas
+- [x] **MOB-4b**: `cobrar/registrar.tsx` — Foto comprobante (capturePhoto + saveAttachmentRecord)
+- [x] **MOB-4c**: `evidenceManager.ts` — JWT auth header via `getAccessToken()` + Bearer
+- [x] **MOB-4d**: `syncEngine.ts` — `uploadPendingAttachments()` + `cleanUploadedFiles()` como Phase 3
+- [x] **MOB-4e**: `sync.tsx` — "Fotos pendientes de subir: N" con `usePendingAttachmentCount`
+- [x] **MOB-4f**: Fix: botones "Registrar Cobro" + "Historial" en cobrar tab — `bf31409`
 
 ### 🟡 Paso 3: Maestro E2E — Verificar todo pasa
 
@@ -1142,3 +1144,245 @@ docs/design/pencil/pencil-admin.pen       # Mismo contenido
 - [ ] **SEC-M2**: Biometric auth (expo-local-authentication)
 - [ ] **SEC-M3**: Certificate pinning
 - [ ] **SEC-M4**: Root/jailbreak detection
+
+---
+
+## 🔵 PENDIENTE — Marketplace de Integraciones + Facturación SAT (INT)
+
+> **Modelo de negocio**: Add-on permanente (pago único). La facturación es la primera integración disponible.
+> **Arquitectura**: Marketplace extensible donde futuros add-ons (WhatsApp, Maps, Pagos) se agregan dinámicamente.
+> **PAC**: Diferido — por ahora solo la arquitectura; integración con PAC real en fase posterior.
+
+### Lo que YA existe (Billing API)
+
+| Componente | Estado | Ubicación |
+|-----------|--------|-----------|
+| Billing API (.NET 9, port 1051) | Funcional, 23 endpoints | `apps/billing/` |
+| DB `handy_billing` | 11 tablas + SP + views | `infra/database/schema/BillingSchema.sql` |
+| FacturasController | List, Create, Timbrar, Cancelar, PDF, XML, Enviar | `apps/billing/.../Controllers/FacturasController.cs` |
+| CatalogosController | Tipos, Métodos, Formas pago, Usos CFDI, Config fiscal, Certificados | `apps/billing/.../Controllers/CatalogosController.cs` |
+| ReportesController | Dashboard, ventas/periodo, top clientes, estados, auditoría | `apps/billing/.../Controllers/ReportesController.cs` |
+| Docker dev + prod | Configurado | `infra/docker/Dockerfile.Billing.Dev/Prod` |
+| BillingTab frontend | PLACEHOLDER ("próximamente") | `settings/components/BillingTab.tsx` |
+| PAC real / PDF real | NO — UUID simulado, PDF placeholder | Diferido a fase futura |
+
+### INT Fase 1: Backend — Entidades + Endpoints (Main API, port 1050)
+
+#### Nuevas entidades en `libs/HandySales.Domain/Entities/`
+
+- [ ] **INT-1**: Crear `Integration.cs` — Catálogo platform-level (SIN tenant_id, SIN AuditableEntity)
+  - Campos: `Id`, `Slug` (unique, max 50), `Nombre` (max 100), `Descripcion` (max 500), `DescripcionCorta` (max 200)
+  - `Icono` (nombre Phosphor icon, e.g. "Receipt"), `Categoria` (max 50: "Facturacion"/"Comunicacion"/"Mapas"/"Pagos")
+  - `TipoPrecio` (max 20: "PERMANENTE"/"MENSUAL"/"GRATIS"), `PrecioMXN` (decimal), `PrecioSetupMXN` (decimal)
+  - `RequiereConfiguracion` (bool), `Estado` (max 20: "DISPONIBLE"/"PROXIMO"/"DESCONTINUADO")
+  - `Orden` (int), `Version` (max 20), `CreatedAt`, `UpdatedAt`
+  - Navigation: `ICollection<TenantIntegration> TenantIntegrations`
+
+- [ ] **INT-2**: Crear `TenantIntegration.cs` — Activación por tenant (CON tenant_id)
+  - Campos: `Id`, `TenantId`, `IntegrationId`, `Estado` (ACTIVA/SUSPENDIDA/CANCELADA)
+  - `FechaActivacion`, `FechaCancelacion`, `ActivadoPor` (FK Usuario)
+  - `ConfiguracionJson` (string nullable, JSON flexible), `Notas` (max 500)
+  - `CreatedAt`, `UpdatedAt`
+  - Index único compuesto: `(TenantId, IntegrationId)`
+  - Navigation: `Tenant`, `Integration`, `ActivadoPorUsuario`
+
+- [ ] **INT-3**: Crear `IntegrationLog.cs` — Auditoría (CON tenant_id)
+  - Campos: `Id` (long), `TenantId`, `IntegrationId`, `Accion` (ACTIVAR/DESACTIVAR/CONFIGURAR/ERROR)
+  - `Descripcion` (max 500), `UsuarioId`, `CreatedAt`
+
+- [ ] **INT-4**: Registrar en `HandySalesDbContext.cs`
+  - Agregar 3 DbSets: `Integrations`, `TenantIntegrations`, `IntegrationLogs`
+  - `Integration` NO tiene global query filter de tenant (es catálogo global)
+  - `TenantIntegration` y `IntegrationLog` SÍ tienen tenant filter + `EliminadoEn == null` si aplica
+  - Configurar unique index `(TenantId, IntegrationId)` en OnModelCreating
+
+- [ ] **INT-5**: Generar EF Core migration `AddIntegrationsMarketplace`
+  ```bash
+  export PATH="$PATH:/c/Users/AW AREA 51M R2/.dotnet/tools"
+  dotnet-ef migrations add AddIntegrationsMarketplace \
+    --project libs/HandySales.Infrastructure \
+    --startup-project apps/api/src/HandySales.Api \
+    --output-dir Migrations
+  ```
+
+- [ ] **INT-6**: Crear seed SQL `infra/database/schema/07_integrations_seed.sql`
+  ```sql
+  INSERT INTO Integrations (slug, nombre, descripcion, descripcion_corta, icono, categoria,
+    tipo_precio, precio_mxn, precio_setup_mxn, requiere_configuracion, estado, orden, version)
+  VALUES ('facturacion-sat', 'Facturación SAT (CFDI 4.0)',
+    'Genera facturas electrónicas con validez fiscal ante el SAT. Incluye timbrado, cancelación, envío por correo, generación de PDF/XML y reportes.',
+    'Facturación electrónica CFDI 4.0 con timbrado SAT',
+    'Receipt', 'Facturacion', 'PERMANENTE', 1499.00, 0.00, true, 'DISPONIBLE', 1, '1.0.0');
+  -- Próximas (solo visual, no activables)
+  INSERT INTO Integrations (slug, nombre, descripcion_corta, icono, categoria, tipo_precio, precio_mxn, estado, orden)
+  VALUES
+    ('whatsapp-business', 'WhatsApp Business', 'Mensajes y notificaciones a clientes por WhatsApp', 'WhatsappLogo', 'Comunicacion', 'MENSUAL', 299.00, 'PROXIMO', 2),
+    ('google-maps-avanzado', 'Google Maps Avanzado', 'Optimización de rutas y tracking en tiempo real', 'MapPin', 'Mapas', 'MENSUAL', 199.00, 'PROXIMO', 3),
+    ('pagos-en-linea', 'Pagos en Línea', 'Cobros con tarjeta, SPEI y CoDi', 'CreditCard', 'Pagos', 'MENSUAL', 399.00, 'PROXIMO', 4);
+  ```
+
+- [ ] **INT-7**: Crear Application layer
+  - `libs/HandySales.Application/Integrations/IntegrationDtos.cs` — DTOs: IntegrationCatalogDto, TenantIntegrationDto, ActivarIntegrationRequest
+  - `libs/HandySales.Application/Integrations/IIntegrationRepository.cs` — Interface repository
+  - `libs/HandySales.Application/Integrations/IntegrationService.cs` — Business logic
+
+- [ ] **INT-8**: Crear Repository `libs/HandySales.Infrastructure/Repositories/IntegrationRepository.cs`
+  - GetAllAsync() — todos del catálogo + flag `activada` para tenant actual
+  - GetBySlugAsync(slug) — detalle con info de activación
+  - GetTenantIntegrationsAsync(tenantId) — solo activas del tenant
+  - ActivarAsync(tenantId, integrationId, userId) — crear TenantIntegration + IntegrationLog
+  - DesactivarAsync(tenantId, integrationId, userId) — marcar CANCELADA + log
+  - CheckEstadoAsync(tenantId, slug) — bool rápido
+
+- [ ] **INT-9**: Crear Endpoints `apps/api/src/HandySales.Api/Endpoints/IntegrationEndpoints.cs`
+  ```
+  MapGroup("/api/integrations").RequireAuthorization()
+  GET  /api/integrations                    → Catálogo completo (con flag activada por tenant)
+  GET  /api/integrations/{slug}             → Detalle de una integración
+  GET  /api/integrations/mis-integraciones  → Activas del tenant actual
+  POST /api/integrations/{slug}/activar     → Activar (Admin/SuperAdmin only)
+  POST /api/integrations/{slug}/desactivar  → Desactivar (Admin/SuperAdmin only)
+  GET  /api/integrations/{slug}/estado      → Check rápido si está activa
+  ```
+
+- [ ] **INT-10**: Registrar en DI + Program.cs
+  - `ServiceRegistrationExtensions.cs`: registrar IIntegrationRepository, IntegrationService
+  - `Program.cs`: agregar `app.MapIntegrationEndpoints();`
+
+- [ ] **INT-11**: Rebuild y verificar
+  - `docker-compose -f docker-compose.dev.yml up -d --build api_main`
+  - Swagger: verificar 6 endpoints en `/api/integrations`
+  - Verificar seed: `SELECT * FROM Integrations` (4 registros)
+
+### INT Fase 2: Frontend — Marketplace Page
+
+- [ ] **INT-12**: Crear types `apps/web/src/types/integrations.ts`
+  ```typescript
+  export interface IntegrationCatalog {
+    id: number; slug: string; nombre: string; descripcion: string;
+    descripcionCorta: string; icono: string; categoria: string;
+    tipoPrecio: 'PERMANENTE' | 'MENSUAL' | 'GRATIS';
+    precioMXN: number; precioSetupMXN: number;
+    requiereConfiguracion: boolean;
+    estado: 'DISPONIBLE' | 'PROXIMO' | 'DESCONTINUADO';
+    activada: boolean; versionIntegracion: string;
+  }
+  export interface TenantIntegration {
+    id: number; integrationSlug: string; integrationNombre: string;
+    estado: 'ACTIVA' | 'SUSPENDIDA' | 'CANCELADA';
+    fechaActivacion: string; configuracionJson?: string;
+  }
+  ```
+
+- [ ] **INT-13**: Crear service `apps/web/src/services/api/integrations.ts`
+  - Usa instancia `api` existente (Main API port 1050)
+  - Métodos: getAll, getBySlug, getMisIntegraciones, activar, desactivar, checkEstado
+  - Registrar en `services/api/index.ts`
+
+- [ ] **INT-14**: Crear billing service `apps/web/src/services/api/billing.ts`
+  - Instancia axios SEPARADA apuntando a Billing API
+  - `const BILLING_API_URL = process.env.NEXT_PUBLIC_BILLING_API_URL || 'http://localhost:1051'`
+  - Misma lógica de auth interceptor que `api.ts` (Bearer token de NextAuth session)
+  - Métodos facturas: getFacturas, getFactura, createFactura, timbrarFactura, cancelarFactura, getPdf, getXml, enviarFactura
+  - Métodos catálogos: getTiposComprobante, getMetodosPago, getFormasPago, getUsosCfdi
+  - Métodos config: getConfigFiscal, createConfigFiscal, updateConfigFiscal, uploadCertificado, getNumeracion
+  - Métodos reportes: getDashboard, getVentasPeriodo, getClientesFacturacion, getEstadosFactura
+  - Registrar en `services/api/index.ts`
+
+- [ ] **INT-15**: Agregar env var `NEXT_PUBLIC_BILLING_API_URL=http://localhost:1051` en `.env.local`
+
+- [ ] **INT-16**: Crear `apps/web/src/contexts/IntegrationsContext.tsx`
+  - Carga integraciones activas del tenant al iniciar sesión
+  - Expone `hasIntegration(slug): boolean` y `activeIntegrations: TenantIntegration[]`
+  - Se refresca automáticamente al activar/desactivar
+  - Inicializar en `ClientProviders` junto a CompanyContext, ProfileContext
+
+- [ ] **INT-17**: Modificar Sidebar `apps/web/src/components/layout/Sidebar.tsx`
+  - Import: `Plugs` from `@phosphor-icons/react`
+  - Agregar item en `sidebarItems` entre "Entregas" y "Administración":
+    `{ id: 'integrations', label: 'Integraciones', icon: Plugs, href: '/integrations', permission: 'view_integrations' }`
+  - Color: `integrations: { active: 'text-fuchsia-600', inactive: 'text-fuchsia-500 group-hover:text-fuchsia-600' }`
+  - Agregar `'view_integrations'` a ROLE_PERMISSIONS de ADMIN y SUPER_ADMIN
+
+- [ ] **INT-18**: Modificar middleware `apps/web/src/middleware.ts`
+  - Agregar a ROLE_RESTRICTED_ROUTES: `'/integrations': [UserRole.ADMIN, UserRole.SUPER_ADMIN]`
+
+- [ ] **INT-19**: Crear marketplace page `apps/web/src/app/(dashboard)/integrations/page.tsx`
+  - Título: "Integraciones" con subtítulo descriptivo
+  - Filtro por categoría: tabs (Todas, Facturación, Comunicación, Mapas, Pagos)
+  - Grid responsivo (1 col mobile, 2 cols tablet, 3 cols desktop)
+  - Cada card: icono Phosphor (color por categoría), nombre, descripción corta, badge categoría
+  - Precio formateado ("$1,499 MXN / permanente" o "$299 MXN / mes")
+  - Status badges: "Activa" (green), "Disponible" (blue), "Próximamente" (gray disabled)
+  - Click "Activar" → Drawer lateral con detalles + precio + confirmar → POST activar → toast
+  - Click "Configurar" → navegar a `/integrations/{slug}`
+
+- [ ] **INT-20**: Actualizar BillingTab `apps/web/src/app/(dashboard)/settings/components/BillingTab.tsx`
+  - Si `hasIntegration('facturacion-sat')`: "Facturación SAT activa ✓" + link a `/integrations/facturacion-sat`
+  - Si no: "Activa la facturación desde el Marketplace" + link a `/integrations`
+
+### INT Fase 3: Frontend — Portal de Facturación (sub-páginas)
+
+- [ ] **INT-21**: Actualizar CORS en Billing API `apps/billing/HandySales.Billing.Api/Program.cs`
+  - Agregar `http://localhost:1083` a CORS origins (y dominio Vercel para prod)
+
+- [ ] **INT-22**: Crear dashboard `apps/web/src/app/(dashboard)/integrations/facturacion-sat/page.tsx`
+  - 4 KPIs: Total facturas, Timbradas, Pendientes, Monto total mes
+  - Acciones rápidas: "Nueva Factura", "Ver Facturas", "Configuración Fiscal"
+  - Mini-tabla últimas 5 facturas — datos de `billingService.getDashboard()`
+
+- [ ] **INT-23**: Crear lista facturas `apps/web/src/app/(dashboard)/integrations/facturacion-sat/facturas/page.tsx`
+  - Patrón tabla estándar (como products/page.tsx)
+  - Filtros: rango fechas, estado dropdown, RFC cliente
+  - Columnas: Serie-Folio, Fecha, Cliente, RFC, Total, Estado, Acciones
+  - Acciones: Ver detalle (drawer), Timbrar (si PENDIENTE), Cancelar (si TIMBRADA), PDF, XML
+  - Mobile cards + paginación con X-Total-Count
+
+- [ ] **INT-24**: Crear nueva factura `apps/web/src/app/(dashboard)/integrations/facturacion-sat/nueva-factura/page.tsx`
+  - Form multi-sección con React Hook Form + Zod
+  - Emisor auto-llenado desde config fiscal (solo lectura)
+  - Receptor: buscar cliente existente o RFC manual
+  - Detalle: tabla editable de líneas (producto, clave SAT, cantidad, precio, IVA)
+  - Resumen: subtotal, descuento, IVA trasladado, retenciones, total
+  - Selects SAT: Tipo Comprobante, Método Pago, Forma Pago, Uso CFDI
+
+- [ ] **INT-25**: Crear config fiscal `apps/web/src/app/(dashboard)/integrations/facturacion-sat/configuracion-fiscal/page.tsx`
+  - Form: RFC, Razón Social, Régimen Fiscal (select), Domicilio Fiscal (CP)
+  - Upload CSD: .cer + .key + password → POST multipart
+  - Config Serie/Folio: tabla series + crear nueva
+  - Sección PAC: disabled con "Próximamente"
+
+- [ ] **INT-26**: Crear reportes `apps/web/src/app/(dashboard)/integrations/facturacion-sat/reportes/page.tsx`
+  - Ventas por periodo: date range + gráfica barras (recharts)
+  - Top clientes facturación: tabla RFC, nombre, total, # facturas
+  - Estados facturas: pie chart (Pendientes, Timbradas, Canceladas)
+
+### INT Fase 4: PAC Real (DIFERIDO — NO implementar ahora)
+
+- [ ] **INT-27**: Integrar PAC real (Finkok o SW) para timbrado
+- [ ] **INT-28**: Generación PDF real con layout CFDI
+- [ ] **INT-29**: XML real per esquema SAT CFDI 4.0
+- [ ] **INT-30**: Validación certificados CSD contra SAT
+- [ ] **INT-31**: Flujo cancelación real con acuse SAT
+
+### Archivos nuevos vs modificados
+
+**Nuevos backend (8):** Integration.cs, TenantIntegration.cs, IntegrationLog.cs, IntegrationDtos.cs, IIntegrationRepository.cs, IntegrationService.cs, IntegrationRepository.cs, IntegrationEndpoints.cs
+**Nuevos frontend (10):** integrations.ts (types), integrations.ts (service), billing.ts, IntegrationsContext.tsx, integrations/page.tsx, facturacion-sat/page.tsx, facturas/page.tsx, nueva-factura/page.tsx, configuracion-fiscal/page.tsx, reportes/page.tsx
+**Nuevo infra (1):** 07_integrations_seed.sql
+**Modificados backend (3):** HandySalesDbContext.cs, Program.cs (main), Program.cs (billing CORS)
+**Modificados frontend (4):** Sidebar.tsx, middleware.ts, services/api/index.ts, BillingTab.tsx
+**EF Migration (auto):** AddIntegrationsMarketplace
+
+### Verificación
+
+1. Rebuild API → Swagger `/api/integrations` funciona (6 endpoints)
+2. Seed: 4 integraciones en DB (1 DISPONIBLE + 3 PROXIMO)
+3. Sidebar: "Integraciones" visible Admin/SuperAdmin, oculto Vendedor
+4. Marketplace: `/integrations` muestra 4 cards correctamente
+5. Activar Facturación SAT → card cambia a "Configurar"
+6. Dashboard facturación: KPIs desde Billing API (port 1051)
+7. CRUD facturas: lista, crear, timbrar (simulado), cancelar
+8. Config fiscal: RFC + certificados se guardan
+9. Reportes: gráficas renderizan con datos
+10. Permisos: Vendedor bloqueado en `/integrations`

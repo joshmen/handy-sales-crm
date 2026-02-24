@@ -96,3 +96,5 @@ tmpswagger.json
 # ── Windows reserved names ────────────────
 **/nul
 c*tmp*
+emulator_screen*.png
+package-lock.json
