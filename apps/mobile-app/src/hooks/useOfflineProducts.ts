@@ -23,8 +23,9 @@ export function useOfflineProducts(search?: string, categoriaId?: number) {
   return useObservable(observable);
 }
 
-export function useOfflineProductById(id: string) {
+export function useOfflineProductById(id: string | undefined) {
   const observable = useMemo(() => {
+    if (!id) return null;
     return database.get<Producto>('productos').findAndObserve(id);
   }, [id]);
 

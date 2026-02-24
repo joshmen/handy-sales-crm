@@ -1,16 +1,5 @@
-import { useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  withDelay,
-  withSequence,
-  withSpring,
-  runOnJS,
-  Easing,
-  interpolate,
-} from 'react-native-reanimated';
+import { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Dimensions, Animated } from 'react-native';
 import Svg, {
   Defs,
   LinearGradient,
@@ -96,102 +85,55 @@ function LogoIcon({ size }: { size: number }) {
 }
 
 export function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
-  // Animation values
-  const logoScale = useSharedValue(0.3);
-  const logoOpacity = useSharedValue(0);
-  const textOpacity = useSharedValue(0);
-  const textTranslateY = useSharedValue(20);
-  const subtitleOpacity = useSharedValue(0);
-  const containerOpacity = useSharedValue(1);
-  const glowOpacity = useSharedValue(0);
-
-  const handleFinish = useCallback(() => {
-    onFinish();
-  }, [onFinish]);
+  const logoScale = useRef(new Animated.Value(0.3)).current;
+  const logoOpacity = useRef(new Animated.Value(0)).current;
+  const textOpacity = useRef(new Animated.Value(0)).current;
+  const textTranslateY = useRef(new Animated.Value(20)).current;
+  const subtitleOpacity = useRef(new Animated.Value(0)).current;
+  const containerOpacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    // Step 1: Logo pops in with spring (0ms)
-    logoOpacity.value = withTiming(1, { duration: 400, easing: Easing.out(Easing.cubic) });
-    logoScale.value = withSequence(
-      withSpring(1.08, { damping: 8, stiffness: 120 }),
-      withSpring(1, { damping: 12, stiffness: 100 }),
-    );
-
-    // Step 2: Subtle glow pulse behind logo (300ms)
-    glowOpacity.value = withDelay(
-      300,
-      withSequence(
-        withTiming(0.6, { duration: 500 }),
-        withTiming(0.15, { duration: 600 }),
-      ),
-    );
-
-    // Step 3: "Handy Suites" text slides up (500ms)
-    textOpacity.value = withDelay(500, withTiming(1, { duration: 400 }));
-    textTranslateY.value = withDelay(500, withSpring(0, { damping: 12, stiffness: 100 }));
-
-    // Step 4: Subtitle fades in (800ms)
-    subtitleOpacity.value = withDelay(800, withTiming(1, { duration: 400 }));
-
-    // Step 5: Fade out everything (2200ms)
-    containerOpacity.value = withDelay(
-      2200,
-      withTiming(0, { duration: 400, easing: Easing.in(Easing.cubic) }, () => {
-        runOnJS(handleFinish)();
-      }),
-    );
+    Animated.sequence([
+      // Step 1: Logo pops in
+      Animated.parallel([
+        Animated.timing(logoOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
+        Animated.spring(logoScale, { toValue: 1, damping: 12, stiffness: 120, useNativeDriver: true }),
+      ]),
+      // Step 2: Text slides up
+      Animated.parallel([
+        Animated.timing(textOpacity, { toValue: 1, duration: 350, useNativeDriver: true }),
+        Animated.spring(textTranslateY, { toValue: 0, damping: 12, stiffness: 100, useNativeDriver: true }),
+      ]),
+      // Step 3: Subtitle
+      Animated.timing(subtitleOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
+      // Step 4: Hold
+      Animated.delay(800),
+      // Step 5: Fade out
+      Animated.timing(containerOpacity, { toValue: 0, duration: 350, useNativeDriver: true }),
+    ]).start(() => {
+      onFinish();
+    });
   }, []);
 
-  const logoAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: logoOpacity.value,
-    transform: [{ scale: logoScale.value }],
-  }));
-
-  const glowAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: glowOpacity.value,
-    transform: [{ scale: interpolate(glowOpacity.value, [0, 0.6], [0.8, 1.3]) }],
-  }));
-
-  const textAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: textOpacity.value,
-    transform: [{ translateY: textTranslateY.value }],
-  }));
-
-  const subtitleAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: subtitleOpacity.value,
-  }));
-
-  const containerAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: containerOpacity.value,
-  }));
-
   return (
-    <Animated.View style={[styles.container, containerAnimatedStyle]} pointerEvents="none">
-      {/* Content cluster */}
+    <Animated.View style={[styles.container, { opacity: containerOpacity }]} pointerEvents="none">
       <View style={styles.content}>
-        {/* Glow behind logo */}
-        <Animated.View style={[styles.glow, glowAnimatedStyle]} />
-
-        {/* Logo icon */}
-        <Animated.View style={[styles.logoWrap, logoAnimatedStyle]}>
+        <Animated.View style={[styles.logoWrap, { opacity: logoOpacity, transform: [{ scale: logoScale }] }]}>
           <LogoIcon size={LOGO_SIZE} />
         </Animated.View>
 
-        {/* Brand name */}
-        <Animated.View style={[styles.textWrap, textAnimatedStyle]}>
+        <Animated.View style={[styles.textWrap, { opacity: textOpacity, transform: [{ translateY: textTranslateY }] }]}>
           <Text style={styles.brandHandy}>Handy</Text>
           <Text style={styles.brandSuites}> Suites</Text>
           <Text style={styles.brandReg}>®</Text>
         </Animated.View>
 
-        {/* Subtitle */}
-        <Animated.View style={subtitleAnimatedStyle}>
+        <Animated.View style={{ opacity: subtitleOpacity }}>
           <Text style={styles.subtitle}>Tu equipo de ventas, conectado</Text>
         </Animated.View>
       </View>
 
-      {/* Bottom version */}
-      <Animated.View style={[styles.versionWrap, subtitleAnimatedStyle]}>
+      <Animated.View style={[styles.versionWrap, { opacity: subtitleOpacity }]}>
         <Text style={styles.versionText}>v1.0.0</Text>
       </Animated.View>
     </Animated.View>
@@ -209,15 +151,6 @@ const styles = StyleSheet.create({
   content: {
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  glow: {
-    position: 'absolute',
-    width: LOGO_SIZE * 1.8,
-    height: LOGO_SIZE * 1.8,
-    borderRadius: LOGO_SIZE,
-    backgroundColor: '#2563eb',
-    top: -(LOGO_SIZE * 0.4),
-    alignSelf: 'center',
   },
   logoWrap: {
     marginBottom: 24,

@@ -20,8 +20,9 @@ export function useOfflineCobros(clienteId?: string) {
   return useObservable(observable);
 }
 
-export function useOfflineCobroById(id: string) {
+export function useOfflineCobroById(id: string | undefined) {
   const observable = useMemo(() => {
+    if (!id) return null;
     return database.get<Cobro>('cobros').findAndObserve(id);
   }, [id]);
 

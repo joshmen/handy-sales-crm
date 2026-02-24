@@ -83,6 +83,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="ruta" options={{ href: null }} />
       <Tabs.Screen name="profile" options={{ href: null }} />
       <Tabs.Screen name="configuracion" options={{ href: null }} />
+      <Tabs.Screen name="impresora" options={{ href: null }} />
       <Tabs.Screen name="sync" options={{ href: null }} />
     </Tabs>
   );

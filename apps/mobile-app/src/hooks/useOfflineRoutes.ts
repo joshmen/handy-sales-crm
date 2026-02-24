@@ -36,8 +36,9 @@ export function useOfflineRutaHoy() {
   return useObservable(observable);
 }
 
-export function useOfflineRutaById(id: string) {
+export function useOfflineRutaById(id: string | undefined) {
   const observable = useMemo(() => {
+    if (!id) return null;
     return database.get<Ruta>('rutas').findAndObserve(id);
   }, [id]);
 

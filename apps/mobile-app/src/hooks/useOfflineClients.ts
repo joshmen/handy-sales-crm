@@ -23,8 +23,9 @@ export function useOfflineClients(search?: string, zonaId?: number) {
   return useObservable(observable);
 }
 
-export function useOfflineClientById(id: string) {
+export function useOfflineClientById(id: string | undefined) {
   const observable = useMemo(() => {
+    if (!id) return null;
     return database.get<Cliente>('clientes').findAndObserve(id);
   }, [id]);
 

@@ -16,6 +16,7 @@ import {
   ChevronRight,
   RefreshCcw,
   Mail,
+  Printer,
 } from 'lucide-react-native';
 import { HandyLogo } from '@/components/shared/HandyLogo';
 
@@ -98,6 +99,12 @@ export default function MasScreen() {
       icon: <Settings size={20} color="#64748b" />,
       iconBg: '#f1f5f9',
       onPress: () => router.push('/(tabs)/configuracion' as any),
+    },
+    {
+      label: 'Impresora',
+      icon: <Printer size={20} color="#0891b2" />,
+      iconBg: '#cffafe',
+      onPress: () => router.push('/(tabs)/impresora' as any),
     },
     {
       label: 'Ayuda',

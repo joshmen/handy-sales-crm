@@ -20,8 +20,9 @@ export function useOfflineVisits(clienteId?: string) {
   return useObservable(observable);
 }
 
-export function useOfflineVisitById(id: string) {
+export function useOfflineVisitById(id: string | undefined) {
   const observable = useMemo(() => {
+    if (!id) return null;
     return database.get<Visita>('visitas').findAndObserve(id);
   }, [id]);
 

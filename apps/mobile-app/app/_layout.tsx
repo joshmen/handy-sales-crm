@@ -7,7 +7,6 @@ import { View, ActivityIndicator, LogBox } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { DatabaseProvider } from '@nozbe/watermelondb/DatabaseProvider';
 
-// Suppress WatermelonDB JSI warnings in Expo Go (JSI bindings are only available in dev-client builds)
 LogBox.ignoreLogs([
   "Cannot read property 'initializeJSI'",
   'Require cycle:',
@@ -24,7 +23,6 @@ import { database } from '@/db/database';
 
 const ONBOARDING_KEY = 'onboarding_complete';
 
-// Keep native splash visible until we're ready
 SplashScreen.preventAutoHideAsync();
 
 function AuthGate({ onReady }: { onReady: () => void }) {
@@ -35,11 +33,9 @@ function AuthGate({ onReady }: { onReady: () => void }) {
 
   useEffect(() => {
     restoreSession();
-    // Check if onboarding was completed
     secureStorage.get(ONBOARDING_KEY).then((val) => {
       setOnboardingDone(val === 'true');
     }).catch(() => {
-      // SecureStore may fail on emulators — skip onboarding
       setOnboardingDone(true);
     });
   }, []);
@@ -47,26 +43,25 @@ function AuthGate({ onReady }: { onReady: () => void }) {
   useEffect(() => {
     if (isLoading || onboardingDone === null) return;
 
-    // Auth state resolved — tell root we're ready for animated splash
     onReady();
 
     const inAuthGroup = segments[0] === '(auth)';
+    const inTabsGroup = segments[0] === '(tabs)';
 
     if (!isAuthenticated && !inAuthGroup) {
-      // Show onboarding on first launch, otherwise login
       if (!onboardingDone) {
         router.replace('/(auth)/onboarding' as any);
       } else {
         router.replace('/(auth)/login');
       }
-    } else if (isAuthenticated && inAuthGroup) {
+    } else if (isAuthenticated && !inTabsGroup) {
       router.replace('/(tabs)');
     }
   }, [isAuthenticated, isLoading, onboardingDone, segments]);
 
   if (isLoading || onboardingDone === null) {
     return (
-      <View className="flex-1 items-center justify-center bg-white">
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff' }}>
         <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
@@ -82,7 +77,6 @@ export default function RootLayout() {
   const handleAppReady = useCallback(() => {
     if (!appReady) {
       setAppReady(true);
-      // Hide the native splash, our animated one takes over
       SplashScreen.hideAsync();
     }
   }, [appReady]);

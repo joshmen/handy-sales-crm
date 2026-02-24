@@ -44,7 +44,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   plugins: [
     "expo-router",
-    "expo-dev-client",
     "expo-secure-store",
     [
       "expo-notifications",

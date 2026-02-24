@@ -21,8 +21,9 @@ export function useOfflineOrders(clienteId?: string) {
   return useObservable(observable);
 }
 
-export function useOfflineOrderById(id: string) {
+export function useOfflineOrderById(id: string | undefined) {
   const observable = useMemo(() => {
+    if (!id) return null;
     return database.get<Pedido>('pedidos').findAndObserve(id);
   }, [id]);
 

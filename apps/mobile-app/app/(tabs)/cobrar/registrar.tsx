@@ -1,14 +1,15 @@
-import { useState } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert, Image, StyleSheet } from 'react-native';
+import { useState, useRef } from 'react';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert, Image, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuthStore } from '@/stores';
-import { useOfflineClientById } from '@/hooks';
+import { useOfflineClientById, useOfflineClients } from '@/hooks';
 import { createCobroOffline } from '@/db/actions';
 import { capturePhoto, saveAttachmentRecord } from '@/services/evidenceManager';
 import { performSync } from '@/sync/syncEngine';
 import { Button } from '@/components/ui';
 import { formatCurrency } from '@/utils/format';
 import { METODO_PAGO } from '@/types/cobro';
+import type Cliente from '@/db/models/Cliente';
 import {
   Banknote,
   ArrowRightLeft,
@@ -19,6 +20,8 @@ import {
   Check,
   Camera,
   X,
+  Search,
+  ChevronRight,
 } from 'lucide-react-native';
 
 const METODO_ICONS: Record<number, React.ReactNode> = {
@@ -39,11 +42,23 @@ export default function RegistrarCobroScreen() {
     saldo: string;
   }>();
 
-  const clienteId = params.clienteId || '';
-  const clienteNombre = decodeURIComponent(params.clienteNombre || '');
-  const saldoPendiente = Number(params.saldo || 0);
+  const paramClienteId = params.clienteId || undefined;
+  const paramClienteNombre = decodeURIComponent(params.clienteNombre || '');
+  const paramSaldo = Number(params.saldo || 0);
 
-  const { data: cliente } = useOfflineClientById(clienteId);
+  // Client picker state (when no clienteId passed via params)
+  const [searchText, setSearchText] = useState('');
+  const [selectedClient, setSelectedClient] = useState<Cliente | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  const { data: clientesSearch } = useOfflineClients(searchText);
+
+  // Resolve the effective client (from params OR from picker)
+  const effectiveClienteId = paramClienteId || selectedClient?.id;
+  const effectiveClienteNombre = paramClienteId ? paramClienteNombre : (selectedClient?.nombre || '');
+  const effectiveSaldo = paramClienteId ? paramSaldo : 0;
+
+  const { data: cliente } = useOfflineClientById(effectiveClienteId);
 
   const [monto, setMonto] = useState('');
   const [metodoPago, setMetodoPago] = useState(0);
@@ -51,16 +66,39 @@ export default function RegistrarCobroScreen() {
   const [notas, setNotas] = useState('');
   const [receiptPhoto, setReceiptPhoto] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
+
+  const scrollToInput = (reactNode: any) => {
+    reactNode?.measureLayout?.(
+      scrollRef.current as any,
+      (_x: number, y: number) => {
+        scrollRef.current?.scrollTo({ y: y - 80, animated: true });
+      },
+      () => {}
+    );
+  };
+
+  const handleSelectClient = (c: Cliente) => {
+    setSelectedClient(c);
+    setPickerOpen(false);
+    setSearchText('');
+  };
+
+  const handleClearClient = () => {
+    setSelectedClient(null);
+    setPickerOpen(false);
+    setSearchText('');
+  };
 
   const montoNum = parseFloat(monto) || 0;
-  const isValid = montoNum > 0 && !!clienteId;
+  const isValid = montoNum > 0 && !!effectiveClienteId;
 
   const handleConfirmar = () => {
     if (!isValid) return;
 
     Alert.alert(
       'Confirmar Cobro',
-      `Registrar cobro de ${formatCurrency(montoNum)} para ${clienteNombre}?`,
+      `Registrar cobro de ${formatCurrency(montoNum)} para ${effectiveClienteNombre}?`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -69,7 +107,7 @@ export default function RegistrarCobroScreen() {
             setSending(true);
             try {
               const cobro = await createCobroOffline(
-                clienteId,
+                effectiveClienteId,
                 cliente?.serverId ?? null,
                 user?.id ? Number(user.id) : 0,
                 montoNum,
@@ -89,9 +127,17 @@ export default function RegistrarCobroScreen() {
               }
 
               performSync().catch(() => {});
-              Alert.alert('Cobro Registrado', 'El cobro se registró exitosamente', [
-                { text: 'OK', onPress: () => router.back() },
-              ]);
+              router.replace({
+                pathname: '/(tabs)/cobrar/recibo',
+                params: {
+                  clienteNombre: encodeURIComponent(effectiveClienteNombre),
+                  monto: String(montoNum),
+                  metodoPago: String(metodoPago),
+                  referencia: encodeURIComponent(referencia || ''),
+                  notas: encodeURIComponent(notas || ''),
+                  fecha: new Date().toISOString(),
+                },
+              });
             } catch {
               Alert.alert('Error', 'No se pudo registrar el cobro');
             } finally {
@@ -104,22 +150,106 @@ export default function RegistrarCobroScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Client Info */}
-        <View style={styles.clientCard}>
-          <View style={styles.clientAvatar}>
-            <User size={20} color="#2563eb" />
+    <KeyboardAvoidingView style={styles.container} behavior="padding" keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Client Section */}
+        {paramClienteId ? (
+          /* Came from estado-cuenta with a pre-selected client */
+          <View style={styles.clientCard}>
+            <View style={styles.clientAvatar}>
+              <User size={20} color="#2563eb" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.clientName}>{effectiveClienteNombre}</Text>
+              {effectiveSaldo > 0 && (
+                <Text style={styles.saldoText}>
+                  Saldo pendiente: {formatCurrency(effectiveSaldo)}
+                </Text>
+              )}
+            </View>
           </View>
-          <View>
-            <Text style={styles.clientName}>{clienteNombre}</Text>
-            {saldoPendiente > 0 && (
-              <Text style={styles.saldoText}>
-                Saldo pendiente: {formatCurrency(saldoPendiente)}
-              </Text>
-            )}
+        ) : selectedClient && !pickerOpen ? (
+          /* Client selected from picker — show card with change button */
+          <View style={styles.clientCard}>
+            <View style={styles.clientAvatar}>
+              <User size={20} color="#2563eb" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.clientName}>{selectedClient.nombre}</Text>
+              {selectedClient.telefono ? (
+                <Text style={styles.clientMeta}>{selectedClient.telefono}</Text>
+              ) : null}
+            </View>
+            <TouchableOpacity onPress={handleClearClient} style={styles.changeClientBtn}>
+              <X size={16} color="#64748b" />
+            </TouchableOpacity>
           </View>
-        </View>
+        ) : pickerOpen ? (
+          /* Picker expanded — search + list */
+          <View style={styles.pickerSection}>
+            <Text style={styles.sectionLabel}>Seleccionar Cliente</Text>
+            <View style={styles.searchRow}>
+              <Search size={18} color="#94a3b8" />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Buscar cliente por nombre..."
+                placeholderTextColor="#94a3b8"
+                value={searchText}
+                onChangeText={setSearchText}
+                autoFocus
+              />
+              {searchText.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchText('')}>
+                  <X size={16} color="#94a3b8" />
+                </TouchableOpacity>
+              )}
+            </View>
+            <View style={styles.clientList}>
+              {(clientesSearch || []).slice(0, 10).map((c) => (
+                <TouchableOpacity
+                  key={c.id}
+                  style={styles.clientOption}
+                  onPress={() => handleSelectClient(c)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.clientOptionAvatar}>
+                    <User size={16} color="#64748b" />
+                  </View>
+                  <View style={styles.clientOptionContent}>
+                    <Text style={styles.clientOptionName} numberOfLines={1}>{c.nombre}</Text>
+                    {c.telefono ? (
+                      <Text style={styles.clientOptionMeta}>{c.telefono}</Text>
+                    ) : null}
+                  </View>
+                  <ChevronRight size={14} color="#cbd5e1" />
+                </TouchableOpacity>
+              ))}
+              {clientesSearch && clientesSearch.length === 0 && (
+                <Text style={styles.noResults}>
+                  {searchText.length > 0 ? 'No se encontraron clientes' : 'No hay clientes registrados'}
+                </Text>
+              )}
+            </View>
+          </View>
+        ) : (
+          /* No client selected, picker closed — show trigger button */
+          <TouchableOpacity
+            style={styles.pickerTrigger}
+            onPress={() => setPickerOpen(true)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.pickerTriggerIcon}>
+              <User size={18} color="#94a3b8" />
+            </View>
+            <Text style={styles.pickerTriggerText}>Seleccionar cliente</Text>
+            <ChevronRight size={16} color="#cbd5e1" />
+          </TouchableOpacity>
+        )}
 
         {/* Monto */}
         <View style={styles.montoSection}>
@@ -172,6 +302,7 @@ export default function RegistrarCobroScreen() {
           placeholderTextColor="#94a3b8"
           value={referencia}
           onChangeText={setReferencia}
+          onFocus={(e) => scrollToInput(e.target)}
         />
 
         {/* Notas */}
@@ -185,6 +316,7 @@ export default function RegistrarCobroScreen() {
           value={notas}
           onChangeText={setNotas}
           textAlignVertical="top"
+          onFocus={(e) => scrollToInput(e.target)}
         />
 
         {/* Receipt Photo */}
@@ -224,7 +356,7 @@ export default function RegistrarCobroScreen() {
           fullWidth
         />
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -251,7 +383,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   clientName: { fontSize: 16, fontWeight: '700', color: '#0f172a' },
+  clientMeta: { fontSize: 13, color: '#64748b', marginTop: 2 },
   saldoText: { fontSize: 13, color: '#ef4444', fontWeight: '500', marginTop: 2 },
+  pickerTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    margin: 16,
+    backgroundColor: '#ffffff',
+    borderRadius: 14,
+    padding: 14,
+    gap: 12,
+    borderWidth: 1.5,
+    borderColor: '#e2e8f0',
+    borderStyle: 'dashed',
+  },
+  pickerTriggerIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: '#f1f5f9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pickerTriggerText: { flex: 1, fontSize: 15, fontWeight: '500', color: '#94a3b8' },
   montoSection: {
     marginHorizontal: 16,
     marginBottom: 20,
@@ -369,6 +523,68 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8fafc',
   },
   receiptBtnText: { fontSize: 14, fontWeight: '500', color: '#2563eb' },
+  pickerSection: { marginBottom: 8 },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    marginHorizontal: 16,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: '#1e293b',
+    padding: 0,
+  },
+  clientList: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
+    overflow: 'hidden',
+  },
+  clientOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  clientOptionAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: '#f1f5f9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  clientOptionContent: { flex: 1 },
+  clientOptionName: { fontSize: 14, fontWeight: '600', color: '#1e293b' },
+  clientOptionMeta: { fontSize: 12, color: '#94a3b8', marginTop: 1 },
+  noResults: {
+    textAlign: 'center',
+    paddingVertical: 20,
+    fontSize: 13,
+    color: '#94a3b8',
+  },
+  changeClientBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: '#f1f5f9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   footer: {
     position: 'absolute',
     bottom: 0,
