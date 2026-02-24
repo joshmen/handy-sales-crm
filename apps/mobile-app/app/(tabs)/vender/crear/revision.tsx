@@ -1,23 +1,26 @@
+import { useState } from 'react';
 import { View, Text, ScrollView, TextInput, Alert, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { pedidosApi } from '@/api';
 import { useOrderDraftStore } from '@/stores';
+import { useAuthStore } from '@/stores';
+import { createPedidoOffline } from '@/db/actions';
+import { performSync } from '@/sync/syncEngine';
 import { ProgressSteps } from '@/components/shared/ProgressSteps';
 import { Card, Button } from '@/components/ui';
 import { QuantityStepper } from '@/components/shared/QuantityStepper';
 import { formatCurrency } from '@/utils/format';
-import { User, Package, Trash2, Send } from 'lucide-react-native';
-import type { PedidoCreateRequest } from '@/types';
+import { User, Package, Send } from 'lucide-react-native';
 
 const STEPS = ['Cliente', 'Productos', 'Revisar'];
 
 export default function CrearPedidoStep3() {
   const router = useRouter();
-  const queryClient = useQueryClient();
+  const { user } = useAuthStore();
+  const [sending, setSending] = useState(false);
 
   const {
     clienteId,
+    clienteServerId,
     clienteNombre,
     items,
     notas,
@@ -30,22 +33,6 @@ export default function CrearPedidoStep3() {
     reset,
   } = useOrderDraftStore();
 
-  const crearYEnviar = useMutation({
-    mutationFn: async (data: PedidoCreateRequest) => {
-      const pedido = await pedidosApi.create(data);
-      await pedidosApi.enviar(pedido.id);
-      return pedido;
-    },
-    onSuccess: (pedido) => {
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
-      reset();
-      router.replace(`/(tabs)/vender/crear/exito?numero=${pedido.numeroPedido}&id=${pedido.id}` as any);
-    },
-    onError: () => {
-      Alert.alert('Error', 'No se pudo crear el pedido. Intenta de nuevo.');
-    },
-  });
-
   const handleEnviar = () => {
     if (!clienteId || items.length === 0) return;
 
@@ -56,16 +43,31 @@ export default function CrearPedidoStep3() {
         { text: 'Cancelar', style: 'cancel' },
         {
           text: 'Enviar',
-          onPress: () => {
-            crearYEnviar.mutate({
-              clienteId,
-              notas: notas || undefined,
-              detalles: items.map((item) => ({
-                productoId: item.productoId,
-                cantidad: item.cantidad,
-                precioUnitario: item.precioUnitario,
-              })),
-            });
+          onPress: async () => {
+            setSending(true);
+            try {
+              const pedido = await createPedidoOffline(
+                clienteId,
+                clienteServerId,
+                user?.id ? Number(user.id) : 0,
+                items.map((item) => ({
+                  productoId: item.productoId,
+                  productoServerId: item.productoServerId,
+                  productoNombre: item.nombre,
+                  cantidad: item.cantidad,
+                  precioUnitario: item.precioUnitario,
+                })),
+                notas || undefined
+              );
+              reset();
+              // Try to sync immediately if online
+              performSync().catch(() => {});
+              router.replace(`/(tabs)/vender/crear/exito?numero=${pedido.id.slice(0, 8)}&id=${pedido.id}` as any);
+            } catch {
+              Alert.alert('Error', 'No se pudo crear el pedido. Intenta de nuevo.');
+            } finally {
+              setSending(false);
+            }
           },
         },
       ]
@@ -154,7 +156,7 @@ export default function CrearPedidoStep3() {
         <Button
           title="Enviar Pedido"
           onPress={handleEnviar}
-          loading={crearYEnviar.isPending}
+          loading={sending}
           disabled={items.length === 0}
           fullWidth
           icon={<Send size={18} color="#ffffff" />}

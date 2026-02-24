@@ -1,0 +1,114 @@
+appId: host.exp.exponent
+name: "Cobrar - Registrar Cobro con Comprobante"
+---
+
+# Ir al tab Cobrar
+- tapOn: "Cobrar"
+
+- extendedWaitUntil:
+    visible: "Cobranza"
+    timeout: 15000
+
+# Verificar resumen de cartera cards
+- assertVisible:
+    text: "Facturado"
+    optional: true
+- assertVisible:
+    text: "Cobrado"
+    optional: true
+- assertVisible:
+    text: "Pendiente"
+    optional: true
+
+- takeScreenshot: cobrar-index
+
+# Scroll para ver lista de clientes con saldo
+- scroll
+
+# Tap en primer cliente con saldo (navega a estado de cuenta)
+# Si no hay clientes con saldo, el test terminara aqui (el assertVisible es optional)
+- tapOn:
+    text: "Estado de Cuenta"
+    optional: true
+
+# Si llegamos a Estado de Cuenta
+- extendedWaitUntil:
+    visible: "Estado de Cuenta"
+    timeout: 10000
+    optional: true
+
+- takeScreenshot: cobrar-estado-cuenta
+
+# Verificar boton de registrar cobro
+- assertVisible:
+    text: "Registrar Cobro"
+    optional: true
+
+# Navegar a registrar cobro
+- tapOn:
+    text: "Registrar Cobro"
+    optional: true
+
+# Verificar pantalla de registrar cobro
+- extendedWaitUntil:
+    visible: "Monto a Cobrar"
+    timeout: 10000
+    optional: true
+
+- takeScreenshot: cobrar-registrar-empty
+
+# Verificar secciones de la pantalla
+- assertVisible:
+    text: "todo de Pago"
+    optional: true
+- assertVisible:
+    text: "Referencia (opcional)"
+    optional: true
+- assertVisible:
+    text: "Notas (opcional)"
+    optional: true
+
+# Scroll para ver seccion de comprobante
+- scrollUntilVisible:
+    element: "Comprobante (opcional)"
+    direction: DOWN
+    timeout: 5000
+    optional: true
+
+- assertVisible:
+    text: "Comprobante (opcional)"
+    optional: true
+- assertVisible:
+    text: "Tomar foto del comprobante"
+    optional: true
+
+- takeScreenshot: cobrar-registrar-receipt-section
+
+# Verificar metodos de pago visibles
+- scrollUntilVisible:
+    element: "Efectivo"
+    direction: UP
+    timeout: 5000
+    optional: true
+
+- assertVisible:
+    text: "Efectivo"
+    optional: true
+- assertVisible:
+    text: "Transferencia"
+    optional: true
+
+# Ingresar monto
+- tapOn:
+    text: "0.00"
+    optional: true
+- inputText: "500"
+- hideKeyboard
+
+- takeScreenshot: cobrar-registrar-filled
+
+# Volver sin confirmar (no queremos crear cobro real)
+- back
+
+# Volver al tab Cobrar
+- tapOn: "Cobrar"

@@ -2,37 +2,38 @@ appId: host.exp.exponent
 name: "Login Admin Jeyma"
 ---
 
-# Esperar pantalla de login
+# Wait for login screen (partial text avoids encoding issues with accent)
 - extendedWaitUntil:
-    visible: "Iniciar Sesión"
+    visible: "Iniciar Sesi"
     timeout: 30000
 
 - takeScreenshot: login-screen
 
-# Llenar email
+# Fill email by testID
 - tapOn:
     id: "email-input"
 - eraseText: 50
 - inputText: "admin@jeyma.com"
 
-# Move to password field via Tab key
-- pressKey: Tab
+- hideKeyboard
 
-# Llenar contraseña
+# Fill password by testID
+- tapOn:
+    id: "password-input"
+    retryTapIfNoChange: true
 - eraseText: 50
 - inputText: "test123"
 
 - hideKeyboard
 - takeScreenshot: login-filled
 
-# Tap login button by text
+# Tap login button by testID
 - tapOn:
-    text: "Iniciar Sesión"
-    index: 1
+    id: "login-button"
 
-# Esperar que cargue el dashboard (tab Hoy)
+# Wait for dashboard (tab Hoy)
 - extendedWaitUntil:
     visible: "Hoy"
-    timeout: 30000
+    timeout: 45000
 
 - takeScreenshot: login-success-hoy

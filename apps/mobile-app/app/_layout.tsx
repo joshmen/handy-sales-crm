@@ -3,9 +3,16 @@ import { useEffect, useState, useCallback } from 'react';
 import { Slot, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, LogBox } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { DatabaseProvider } from '@nozbe/watermelondb/DatabaseProvider';
+
+// Suppress WatermelonDB JSI warnings in Expo Go (JSI bindings are only available in dev-client builds)
+LogBox.ignoreLogs([
+  "Cannot read property 'initializeJSI'",
+  'Require cycle:',
+]);
+
 import { QueryProvider } from '@/providers/QueryProvider';
 import { useAuthStore } from '@/stores';
 import { AnimatedSplash } from '@/components/shared/AnimatedSplash';

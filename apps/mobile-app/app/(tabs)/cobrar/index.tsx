@@ -1,28 +1,88 @@
-import { useState, useCallback } from 'react';
-import { View, Text, FlatList, RefreshControl, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { useState, useCallback, useMemo } from 'react';
+import { View, Text, FlatList, RefreshControl, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useSaldos, useResumenCartera } from '@/hooks';
+import { useOfflineOrders, useOfflineCobros, useClientNameMap } from '@/hooks';
 import { Card, LoadingSpinner, EmptyState } from '@/components/ui';
 import { formatCurrency } from '@/utils/format';
 import { Wallet, ChevronRight, TrendingDown, TrendingUp, DollarSign, User } from 'lucide-react-native';
-import type { SaldoCliente } from '@/types';
+import { performSync } from '@/sync/syncEngine';
+
+interface ClienteSaldo {
+  clienteId: string;
+  clienteNombre: string;
+  totalFacturado: number;
+  totalCobrado: number;
+  saldoPendiente: number;
+}
 
 export default function CobrarScreen() {
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
-  const resumen = useResumenCartera();
-  const saldos = useSaldos();
 
-  const clientes = saldos.data ?? [];
+  const { data: pedidos, isLoading: loadingPedidos } = useOfflineOrders();
+  const { data: cobros, isLoading: loadingCobros } = useOfflineCobros();
+  const clientNames = useClientNameMap();
+
+  // Compute saldos per client from local WDB data
+  const { clientes, resumen } = useMemo(() => {
+    const byClient = new Map<string, { facturado: number; cobrado: number }>();
+
+    // Sum order totals (exclude cancelled = estado 4, and drafts = estado 0)
+    pedidos?.forEach((p) => {
+      if (p.estado >= 1 && p.estado !== 4) {
+        const entry = byClient.get(p.clienteId) ?? { facturado: 0, cobrado: 0 };
+        entry.facturado += p.total || 0;
+        byClient.set(p.clienteId, entry);
+      }
+    });
+
+    // Sum cobro amounts
+    cobros?.forEach((c) => {
+      const entry = byClient.get(c.clienteId) ?? { facturado: 0, cobrado: 0 };
+      entry.cobrado += c.monto || 0;
+      byClient.set(c.clienteId, entry);
+    });
+
+    let totalFacturado = 0;
+    let totalCobrado = 0;
+    const saldos: ClienteSaldo[] = [];
+
+    byClient.forEach((val, clienteId) => {
+      totalFacturado += val.facturado;
+      totalCobrado += val.cobrado;
+      const saldoPendiente = val.facturado - val.cobrado;
+      if (saldoPendiente > 0) {
+        saldos.push({
+          clienteId,
+          clienteNombre: clientNames.get(clienteId) || 'Cliente',
+          totalFacturado: val.facturado,
+          totalCobrado: val.cobrado,
+          saldoPendiente,
+        });
+      }
+    });
+
+    // Sort by saldo desc
+    saldos.sort((a, b) => b.saldoPendiente - a.saldoPendiente);
+
+    return {
+      clientes: saldos,
+      resumen: {
+        totalFacturado,
+        totalCobrado,
+        totalPendiente: totalFacturado - totalCobrado,
+        clientesConSaldo: saldos.length,
+      },
+    };
+  }, [pedidos, cobros, clientNames]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([resumen.refetch(), saldos.refetch()]);
+    await performSync();
     setRefreshing(false);
   };
 
   const renderHeader = useCallback(() => {
-    const data = resumen.data;
     return (
       <View>
         {/* Summary Cards */}
@@ -33,7 +93,7 @@ export default function CobrarScreen() {
                 <DollarSign size={18} color="#2563eb" />
               </View>
               <Text style={styles.summaryValue}>
-                {data ? formatCurrency(data.totalFacturado) : '-'}
+                {formatCurrency(resumen.totalFacturado)}
               </Text>
               <Text style={styles.summaryLabel}>Facturado</Text>
             </View>
@@ -42,7 +102,7 @@ export default function CobrarScreen() {
                 <TrendingUp size={18} color="#16a34a" />
               </View>
               <Text style={styles.summaryValue}>
-                {data ? formatCurrency(data.totalCobrado) : '-'}
+                {formatCurrency(resumen.totalCobrado)}
               </Text>
               <Text style={styles.summaryLabel}>Cobrado</Text>
             </View>
@@ -53,14 +113,14 @@ export default function CobrarScreen() {
               <View>
                 <Text style={styles.pendingBannerLabel}>Pendiente de Cobro</Text>
                 <Text style={styles.pendingBannerValue}>
-                  {data ? formatCurrency(data.totalPendiente) : '-'}
+                  {formatCurrency(resumen.totalPendiente)}
                 </Text>
               </View>
             </View>
-            {data && data.clientesConSaldo > 0 && (
+            {resumen.clientesConSaldo > 0 && (
               <View style={styles.clientCountBadge}>
                 <Text style={styles.clientCountText}>
-                  {data.clientesConSaldo} cliente{data.clientesConSaldo !== 1 ? 's' : ''}
+                  {resumen.clientesConSaldo} cliente{resumen.clientesConSaldo !== 1 ? 's' : ''}
                 </Text>
               </View>
             )}
@@ -78,10 +138,10 @@ export default function CobrarScreen() {
         </View>
       </View>
     );
-  }, [resumen.data, clientes.length]);
+  }, [resumen, clientes.length]);
 
   const renderItem = useCallback(
-    ({ item }: { item: SaldoCliente }) => (
+    ({ item }: { item: ClienteSaldo }) => (
       <Card
         className="mx-4 mb-3"
         onPress={() => router.push(`/(tabs)/cobrar/estado-cuenta/${item.clienteId}` as any)}
@@ -114,7 +174,7 @@ export default function CobrarScreen() {
     [router]
   );
 
-  if (resumen.isLoading && saldos.isLoading) {
+  if (loadingPedidos && loadingCobros) {
     return (
       <View style={styles.container}>
         <LoadingSpinner message="Cargando cartera..." />
@@ -126,7 +186,7 @@ export default function CobrarScreen() {
     <View style={styles.container}>
       <FlatList
         data={clientes}
-        keyExtractor={(item) => String(item.clienteId)}
+        keyExtractor={(item) => item.clienteId}
         renderItem={renderItem}
         ListHeaderComponent={renderHeader}
         contentContainerStyle={styles.listContent}

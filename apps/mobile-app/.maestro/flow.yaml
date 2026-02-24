@@ -2,8 +2,10 @@ appId: host.exp.exponent
 name: "Handy Suites Full E2E"
 ---
 
-# 0. Open project in Expo Go via deep link
-# Requires: adb reverse tcp:8081 tcp:8081
+# 0. Launch Expo Go and connect to Metro
+# Requires: Metro running via `npx expo start`
+# Requires: adb reverse tcp:8081 tcp:8081 && adb reverse tcp:1052 tcp:1052
+- clearState
 - openLink: "exp://127.0.0.1:8081"
 
 # 0b. Handle onboarding (first launch) or skip to login
@@ -21,16 +23,21 @@ name: "Handy Suites Full E2E"
 
 # 4. Cobrar
 - runFlow: cobrar/01-saldos.yaml
+- runFlow: cobrar/02-registrar-cobro.yaml
 
-# 5. Más → Clientes
+# 5. Mas -> Clientes
 - runFlow: clients/01-list-from-mas.yaml
 - runFlow: clients/02-detail.yaml
 
-# 6. Más → Ruta
+# 6. Mas -> Ruta
 - runFlow: ruta/01-ruta-dia.yaml
+- runFlow: ruta/02-visita-activa-evidence.yaml
 
-# 7. Más → Config + Sync
+# 7. Mas -> Sync (enhanced with MOB-4 features)
+- runFlow: sync/01-sync-screen.yaml
+
+# 8. Mas -> Config + full menu nav
 - runFlow: mas/01-menu-nav.yaml
 
-# 8. Logout
+# 9. Logout
 - runFlow: auth/02-logout.yaml

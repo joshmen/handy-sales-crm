@@ -1,7 +1,19 @@
-import { schemaMigrations } from '@nozbe/watermelondb/Schema/migrations';
+import { schemaMigrations, addColumns } from '@nozbe/watermelondb/Schema/migrations';
 
-// Initial schema is version 1 — no migrations needed yet.
-// When the schema changes, add migration steps here and bump schema version.
 export const migrations = schemaMigrations({
-  migrations: [],
+  migrations: [
+    {
+      toVersion: 2,
+      steps: [
+        addColumns({
+          table: 'pedidos',
+          columns: [
+            { name: 'numero_pedido', type: 'string', isOptional: true },
+            { name: 'fecha_pedido', type: 'number', isOptional: true },
+            { name: 'descuento', type: 'number' },
+          ],
+        }),
+      ],
+    },
+  ],
 });

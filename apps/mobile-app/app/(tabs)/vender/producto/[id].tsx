@@ -1,21 +1,19 @@
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { useProductDetail, useProductStock } from '@/hooks';
+import { useOfflineProductById } from '@/hooks';
 import { useOrderDraftStore } from '@/stores';
 import { Card, Button, LoadingSpinner } from '@/components/ui';
 import { QuantityStepper } from '@/components/shared/QuantityStepper';
 import { formatCurrency } from '@/utils/format';
-import { Package, Layers, Tag, Ruler, AlertTriangle, ShoppingBag } from 'lucide-react-native';
+import { Package, Ruler, AlertTriangle, ShoppingBag } from 'lucide-react-native';
 
 export default function ProductoDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const productId = Number(id);
 
-  const { data: product, isLoading } = useProductDetail(productId);
-  const { data: stock } = useProductStock(productId);
+  const { data: product, isLoading } = useOfflineProductById(id || '');
   const { items, addItem, updateQuantity, removeItem } = useOrderDraftStore();
 
-  const draftItem = items.find((i) => i.productoId === productId);
+  const draftItem = items.find((i) => i.productoId === id);
   const qty = draftItem?.cantidad || 0;
 
   if (isLoading || !product) {
@@ -34,8 +32,8 @@ export default function ProductoDetailScreen() {
           <Package size={40} color="#2563eb" />
         </View>
         <Text style={styles.productName}>{product.nombre}</Text>
-        <Text style={styles.productSku}>{product.codigoBarra || 'Sin código'}</Text>
-        <Text style={styles.productPrice}>{formatCurrency(product.precioBase)}</Text>
+        <Text style={styles.productSku}>{product.codigoBarras || 'Sin código'}</Text>
+        <Text style={styles.productPrice}>{formatCurrency(product.precio)}</Text>
       </View>
 
       {/* Info Cards */}
@@ -48,54 +46,34 @@ export default function ProductoDetailScreen() {
         )}
 
         <View style={styles.infoGrid}>
-          {product.categoriaNombre && (
-            <View style={styles.infoItem}>
-              <Tag size={16} color="#7c3aed" />
-              <View>
-                <Text style={styles.infoItemLabel}>Categoría</Text>
-                <Text style={styles.infoItemValue}>{product.categoriaNombre}</Text>
-              </View>
-            </View>
-          )}
-          {product.familiaNombre && (
-            <View style={styles.infoItem}>
-              <Layers size={16} color="#2563eb" />
-              <View>
-                <Text style={styles.infoItemLabel}>Familia</Text>
-                <Text style={styles.infoItemValue}>{product.familiaNombre}</Text>
-              </View>
-            </View>
-          )}
-          {product.unidadNombre && (
+          {product.unidadMedidaNombre && (
             <View style={styles.infoItem}>
               <Ruler size={16} color="#d97706" />
               <View>
                 <Text style={styles.infoItemLabel}>Unidad</Text>
-                <Text style={styles.infoItemValue}>{product.unidadNombre}</Text>
+                <Text style={styles.infoItemValue}>{product.unidadMedidaNombre}</Text>
               </View>
             </View>
           )}
         </View>
 
         {/* Stock */}
-        {stock && (
-          <Card className="mb-3">
-            <View style={styles.stockRow}>
-              <View>
-                <Text style={styles.infoLabel}>Stock Disponible</Text>
-                <Text style={[styles.stockValue, stock.enAlerta ? styles.stockAlert : styles.stockGood]}>
-                  {stock.stock} unidades
-                </Text>
-              </View>
-              {stock.enAlerta && (
-                <View style={styles.alertBadge}>
-                  <AlertTriangle size={14} color="#ef4444" />
-                  <Text style={styles.alertText}>Stock bajo</Text>
-                </View>
-              )}
+        <Card className="mb-3">
+          <View style={styles.stockRow}>
+            <View>
+              <Text style={styles.infoLabel}>Stock Disponible</Text>
+              <Text style={[styles.stockValue, product.stockDisponible <= (product.stockMinimo || 0) ? styles.stockAlert : styles.stockGood]}>
+                {product.stockDisponible} unidades
+              </Text>
             </View>
-          </Card>
-        )}
+            {product.stockDisponible <= (product.stockMinimo || 0) && (
+              <View style={styles.alertBadge}>
+                <AlertTriangle size={14} color="#ef4444" />
+                <Text style={styles.alertText}>Stock bajo</Text>
+              </View>
+            )}
+          </View>
+        </Card>
       </View>
 
       {/* Add to Order */}
@@ -107,8 +85,8 @@ export default function ProductoDetailScreen() {
             <QuantityStepper
               value={qty}
               onChange={(val) => {
-                if (val <= 0) removeItem(productId);
-                else updateQuantity(productId, val);
+                if (val <= 0) removeItem(id || '');
+                else updateQuantity(id || '', val);
               }}
             />
           </View>

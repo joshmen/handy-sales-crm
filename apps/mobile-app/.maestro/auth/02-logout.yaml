@@ -2,31 +2,36 @@ appId: host.exp.exponent
 name: "Logout"
 ---
 
-# Ir al tab Más (logout está ahí)
-- tapOn: "Más"
+# Ir al tab Mas (logout esta ahi)
+- tapOn:
+    id: "tab-mas"
+    optional: true
+- tapOn:
+    text: "Mas"
+    optional: true
 
 - extendedWaitUntil:
-    visible: "Navegación"
+    visible: "Navegaci"
     timeout: 15000
 
 - takeScreenshot: mas-before-logout
 
-# Scroll para ver el botón Cerrar Sesión (está al final)
+# Scroll para ver el boton Cerrar Sesion (esta al final)
 - scrollUntilVisible:
-    element: "Cerrar Sesión"
+    element: "Cerrar Sesi"
     direction: DOWN
     timeout: 10000
 
 # Tap logout
-- tapOn: "Cerrar Sesión"
+- tapOn: "Cerrar Sesi"
 
 # Confirmar si hay alert
 - tapOn:
-    text: "Sí"
+    text: "Si"
     optional: true
 
 - tapOn:
-    text: "Cerrar Sesión"
+    text: "Cerrar Sesi"
     optional: true
 
 - tapOn:
@@ -35,7 +40,7 @@ name: "Logout"
 
 # Esperar que vuelva al login
 - extendedWaitUntil:
-    visible: "Iniciar Sesión"
+    visible: "Iniciar Sesi"
     timeout: 15000
 
 - takeScreenshot: logged-out

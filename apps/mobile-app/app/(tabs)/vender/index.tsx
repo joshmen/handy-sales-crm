@@ -1,13 +1,14 @@
-import { useState, useCallback } from 'react';
-import { View, Text, FlatList, RefreshControl, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { useState, useCallback, useMemo } from 'react';
+import { View, Text, FlatList, RefreshControl, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useOrdersList } from '@/hooks';
+import { useOfflineOrders, useClientNameMap } from '@/hooks';
 import { Card, LoadingSpinner, EmptyState } from '@/components/ui';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { ORDER_STATUS_COLORS } from '@/utils/constants';
 import { formatCurrency, formatDate } from '@/utils/format';
 import { ShoppingCart, ChevronRight, Calendar, Plus } from 'lucide-react-native';
-import type { MobilePedido } from '@/types';
+import { performSync } from '@/sync/syncEngine';
+import type Pedido from '@/db/models/Pedido';
 
 const STATUS_FILTERS = [
   { label: 'Todos', value: undefined },
@@ -22,20 +23,19 @@ export default function VenderListScreen() {
   const [statusFilter, setStatusFilter] = useState<number | undefined>(undefined);
   const router = useRouter();
 
-  const {
-    data,
-    isLoading,
-    isFetchingNextPage,
-    hasNextPage,
-    fetchNextPage,
-    refetch,
-  } = useOrdersList({ estado: statusFilter });
+  const { data: allOrders, isLoading } = useOfflineOrders();
+  const clientNames = useClientNameMap();
 
-  const orders = data?.pages.flatMap((page) => page.data) ?? [];
-  const total = data?.pages[0]?.pagination?.total ?? 0;
+  const orders = useMemo(() => {
+    if (!allOrders) return [];
+    if (statusFilter === undefined) return allOrders;
+    return allOrders.filter((o) => o.estado === statusFilter);
+  }, [allOrders, statusFilter]);
+
+  const total = orders.length;
 
   const renderItem = useCallback(
-    ({ item }: { item: MobilePedido }) => (
+    ({ item }: { item: Pedido }) => (
       <Card
         className="mx-4 mb-3"
         onPress={() => router.push(`/(tabs)/vender/${item.id}` as any)}
@@ -52,16 +52,20 @@ export default function VenderListScreen() {
           </View>
           <View style={styles.orderContent}>
             <View style={styles.orderHeader}>
-              <Text style={styles.orderNumber}>#{item.numeroPedido}</Text>
+              <Text style={styles.orderNumber}>
+                {item.numeroPedido ? `#${item.numeroPedido}` : `#${item.serverId || item.id.slice(0, 6)}`}
+              </Text>
               <StatusBadge type="order" status={item.estado} />
             </View>
             <Text style={styles.clientName} numberOfLines={1}>
-              {item.clienteNombre}
+              {clientNames.get(item.clienteId) || 'Cliente'}
             </Text>
             <View style={styles.orderFooter}>
               <View style={styles.dateRow}>
                 <Calendar size={11} color="#94a3b8" />
-                <Text style={styles.dateText}>{formatDate(item.fechaPedido)}</Text>
+                <Text style={styles.dateText}>
+                  {formatDate(item.fechaPedido || item.createdAt)}
+                </Text>
               </View>
               <Text style={styles.totalText}>{formatCurrency(item.total)}</Text>
             </View>
@@ -70,27 +74,8 @@ export default function VenderListScreen() {
         </View>
       </Card>
     ),
-    [router]
+    [router, clientNames]
   );
-
-  const renderFooter = useCallback(() => {
-    if (isFetchingNextPage) {
-      return (
-        <View style={styles.footerLoader}>
-          <ActivityIndicator size="small" color="#2563eb" />
-          <Text style={styles.footerLoadingText}>Cargando más...</Text>
-        </View>
-      );
-    }
-    if (orders.length > 0 && !hasNextPage) {
-      return (
-        <Text style={styles.footerEnd}>
-          Mostrando {orders.length} de {total} pedidos
-        </Text>
-      );
-    }
-    return null;
-  }, [isFetchingNextPage, hasNextPage, orders.length, total]);
 
   if (isLoading) {
     return (
@@ -125,13 +110,13 @@ export default function VenderListScreen() {
             );
           })}
         </ScrollView>
-        {(total > 0 || orders.length > 0) && (
+        {total > 0 && (
           <View style={styles.countRow}>
             <View style={styles.countBadge}>
-              <Text style={styles.countBadgeText}>{total > 0 ? total : orders.length}</Text>
+              <Text style={styles.countBadgeText}>{total}</Text>
             </View>
             <Text style={styles.countText}>
-              pedido{(total || orders.length) !== 1 ? 's' : ''}
+              pedido{total !== 1 ? 's' : ''}
             </Text>
           </View>
         )}
@@ -139,16 +124,12 @@ export default function VenderListScreen() {
 
       <FlatList
         data={orders}
-        keyExtractor={(item) => String(item.id)}
+        keyExtractor={(item) => item.id}
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
         refreshControl={
-          <RefreshControl refreshing={false} onRefresh={() => refetch()} tintColor="#2563eb" colors={['#2563eb']} />
+          <RefreshControl refreshing={false} onRefresh={() => performSync()} tintColor="#2563eb" colors={['#2563eb']} />
         }
-        onEndReached={() => {
-          if (hasNextPage && !isFetchingNextPage) fetchNextPage();
-        }}
-        onEndReachedThreshold={0.5}
         ListEmptyComponent={
           <EmptyState
             icon={<ShoppingCart size={48} color="#cbd5e1" />}
@@ -156,7 +137,6 @@ export default function VenderListScreen() {
             message="No tienes pedidos registrados"
           />
         }
-        ListFooterComponent={renderFooter}
       />
 
       {/* FAB Nuevo Pedido */}
@@ -194,8 +174,5 @@ const styles = StyleSheet.create({
   dateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   dateText: { fontSize: 11, color: '#94a3b8' },
   totalText: { fontSize: 14, fontWeight: '700', color: '#0f172a' },
-  footerLoader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, gap: 8 },
-  footerLoadingText: { fontSize: 13, color: '#64748b' },
-  footerEnd: { textAlign: 'center', fontSize: 13, color: '#64748b', fontWeight: '500', paddingVertical: 16, marginHorizontal: 16, borderTopWidth: 1, borderTopColor: '#e2e8f0' },
   fab: { position: 'absolute', right: 20, bottom: 20, width: 56, height: 56, borderRadius: 16, backgroundColor: '#2563eb', alignItems: 'center', justifyContent: 'center', shadowColor: '#2563eb', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 },
 });

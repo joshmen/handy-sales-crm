@@ -12,8 +12,11 @@ export default class Pedido extends Model {
   @field('cliente_id') clienteId!: string;
   @field('cliente_server_id') clienteServerId!: number | null;
   @field('usuario_id') usuarioId!: number;
+  @text('numero_pedido') numeroPedido!: string | null;
+  @date('fecha_pedido') fechaPedido!: Date | null;
   @field('estado') estado!: number;
   @field('subtotal') subtotal!: number;
+  @field('descuento') descuento!: number;
   @field('impuesto') impuesto!: number;
   @field('total') total!: number;
   @text('notas') notas!: string | null;

@@ -54,11 +54,28 @@ export const syncCursors = {
     AsyncStorage.setItem(`${PREFIX}syncInProgress`, String(inProgress));
   },
 
+  getLastSyncSummary(): { pulled: number; pushed: number; conflicts: number } | null {
+    const val = _cache[`${PREFIX}lastSyncSummary`];
+    if (!val) return null;
+    try {
+      return JSON.parse(val);
+    } catch {
+      return null;
+    }
+  },
+
+  setLastSyncSummary(summary: { pulled: number; pushed: number; conflicts: number }): void {
+    const json = JSON.stringify(summary);
+    _cache[`${PREFIX}lastSyncSummary`] = json;
+    AsyncStorage.setItem(`${PREFIX}lastSyncSummary`, json);
+  },
+
   clear(): void {
     const keys = [
       `${PREFIX}lastPulledAt`,
       `${PREFIX}lastSyncAt`,
       `${PREFIX}syncInProgress`,
+      `${PREFIX}lastSyncSummary`,
     ];
     keys.forEach((k) => delete _cache[k]);
     AsyncStorage.multiRemove(keys);

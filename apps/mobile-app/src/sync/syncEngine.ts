@@ -3,10 +3,17 @@ import { database } from '@/db/database';
 import { api } from '@/api/client';
 import { syncCursors } from './cursors';
 import { mapPullToWatermelon, mapPushFromWatermelon } from './mappers';
+import { uploadPendingAttachments, cleanUploadedFiles } from '@/services/evidenceManager';
+
+export interface SyncSummary {
+  pulled: number;
+  pushed: number;
+  conflicts: number;
+}
 
 interface SyncOptions {
   onStart?: () => void;
-  onFinish?: (info: { pulled: number; pushed: number }) => void;
+  onFinish?: (info: SyncSummary) => void;
   onError?: (error: Error) => void;
 }
 
@@ -18,6 +25,10 @@ export async function performSync(options?: SyncOptions): Promise<void> {
 
   options?.onStart?.();
   syncCursors.setSyncInProgress(true);
+
+  let pullCount = 0;
+  let pushCount = 0;
+  let conflictCount = 0;
 
   try {
     await synchronize({
@@ -38,6 +49,11 @@ export async function performSync(options?: SyncOptions): Promise<void> {
         const serverChanges = body.data ?? body;
         const serverTimestamp = body.serverTimestamp ?? serverChanges.serverTimestamp;
 
+        // Count pulled records
+        for (const entityData of Object.values(serverChanges)) {
+          if (Array.isArray(entityData)) pullCount += entityData.length;
+        }
+
         const timestamp = new Date(serverTimestamp).getTime();
         const changes = mapPullToWatermelon(serverChanges, lastPulledAt ?? null);
 
@@ -45,23 +61,45 @@ export async function performSync(options?: SyncOptions): Promise<void> {
       },
 
       pushChanges: async ({ changes }) => {
-        const payload = mapPushFromWatermelon(changes);
+        const payload = await mapPushFromWatermelon(changes);
+
+        // Count pushed records
+        for (const arr of Object.values(payload)) {
+          if (Array.isArray(arr)) pushCount += arr.length;
+        }
 
         // Only push if there are actual changes
-        const hasChanges = Object.values(payload).some(
-          (arr: any) => Array.isArray(arr) && arr.length > 0
-        );
+        const hasChanges = pushCount > 0;
         if (!hasChanges) return;
 
-        await api.post('/api/mobile/sync/push', payload);
+        const response = await api.post('/api/mobile/sync/push', payload);
+        const body = response.data as any;
+
+        // Count conflicts from server response
+        if (body?.conflicts) {
+          conflictCount = Array.isArray(body.conflicts) ? body.conflicts.length : 0;
+        }
       },
 
       sendCreatedAsUpdated: false,
       _unsafeBatchPerCollection: true,
     });
 
+    // Phase 3: Upload pending attachments (deferred, non-fatal)
+    try {
+      const uploaded = await uploadPendingAttachments();
+      if (uploaded > 0) {
+        console.log(`[Sync] Uploaded ${uploaded} attachments`);
+        await cleanUploadedFiles();
+      }
+    } catch (attachmentError) {
+      console.warn('[Sync] Attachment upload failed (non-fatal):', attachmentError);
+    }
+
+    const summary: SyncSummary = { pulled: pullCount, pushed: pushCount, conflicts: conflictCount };
     syncCursors.setLastSyncAt(Date.now());
-    options?.onFinish?.({ pulled: 0, pushed: 0 });
+    syncCursors.setLastSyncSummary(summary);
+    options?.onFinish?.(summary);
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));
     console.error('[Sync] Failed:', err.message);

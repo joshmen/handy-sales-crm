@@ -1,7 +1,11 @@
 import { useState } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert, Image, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useCrearCobro } from '@/hooks';
+import { useAuthStore } from '@/stores';
+import { useOfflineClientById } from '@/hooks';
+import { createCobroOffline } from '@/db/actions';
+import { capturePhoto, saveAttachmentRecord } from '@/services/evidenceManager';
+import { performSync } from '@/sync/syncEngine';
 import { Button } from '@/components/ui';
 import { formatCurrency } from '@/utils/format';
 import { METODO_PAGO } from '@/types/cobro';
@@ -13,6 +17,8 @@ import {
   MoreHorizontal,
   User,
   Check,
+  Camera,
+  X,
 } from 'lucide-react-native';
 
 const METODO_ICONS: Record<number, React.ReactNode> = {
@@ -26,25 +32,28 @@ const METODO_ICONS: Record<number, React.ReactNode> = {
 
 export default function RegistrarCobroScreen() {
   const router = useRouter();
+  const { user } = useAuthStore();
   const params = useLocalSearchParams<{
     clienteId: string;
     clienteNombre: string;
     saldo: string;
   }>();
 
-  const clienteId = Number(params.clienteId);
+  const clienteId = params.clienteId || '';
   const clienteNombre = decodeURIComponent(params.clienteNombre || '');
   const saldoPendiente = Number(params.saldo || 0);
+
+  const { data: cliente } = useOfflineClientById(clienteId);
 
   const [monto, setMonto] = useState('');
   const [metodoPago, setMetodoPago] = useState(0);
   const [referencia, setReferencia] = useState('');
   const [notas, setNotas] = useState('');
-
-  const crearCobro = useCrearCobro();
+  const [receiptPhoto, setReceiptPhoto] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
 
   const montoNum = parseFloat(monto) || 0;
-  const isValid = montoNum > 0 && clienteId > 0;
+  const isValid = montoNum > 0 && !!clienteId;
 
   const handleConfirmar = () => {
     if (!isValid) return;
@@ -56,26 +65,38 @@ export default function RegistrarCobroScreen() {
         { text: 'Cancelar', style: 'cancel' },
         {
           text: 'Confirmar',
-          onPress: () => {
-            crearCobro.mutate(
-              {
+          onPress: async () => {
+            setSending(true);
+            try {
+              const cobro = await createCobroOffline(
                 clienteId,
-                monto: montoNum,
+                cliente?.serverId ?? null,
+                user?.id ? Number(user.id) : 0,
+                montoNum,
                 metodoPago,
-                referencia: referencia || undefined,
-                notas: notas || undefined,
-              },
-              {
-                onSuccess: () => {
-                  Alert.alert('Cobro Registrado', 'El cobro se registró exitosamente', [
-                    { text: 'OK', onPress: () => router.back() },
-                  ]);
-                },
-                onError: () => {
-                  Alert.alert('Error', 'No se pudo registrar el cobro');
-                },
+                referencia || undefined,
+                notas || undefined
+              );
+
+              // Save receipt photo attachment
+              if (receiptPhoto) {
+                await saveAttachmentRecord({
+                  eventType: 'cobro',
+                  eventLocalId: cobro.id,
+                  tipo: 'receipt',
+                  localUri: receiptPhoto,
+                });
               }
-            );
+
+              performSync().catch(() => {});
+              Alert.alert('Cobro Registrado', 'El cobro se registró exitosamente', [
+                { text: 'OK', onPress: () => router.back() },
+              ]);
+            } catch {
+              Alert.alert('Error', 'No se pudo registrar el cobro');
+            } finally {
+              setSending(false);
+            }
           },
         },
       ]
@@ -165,6 +186,32 @@ export default function RegistrarCobroScreen() {
           onChangeText={setNotas}
           textAlignVertical="top"
         />
+
+        {/* Receipt Photo */}
+        <Text style={styles.sectionLabel}>Comprobante (opcional)</Text>
+        {receiptPhoto ? (
+          <View style={styles.receiptPreview}>
+            <Image source={{ uri: receiptPhoto }} style={styles.receiptImage} />
+            <TouchableOpacity
+              style={styles.receiptRemove}
+              onPress={() => setReceiptPhoto(null)}
+            >
+              <X size={14} color="#ffffff" />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={styles.receiptBtn}
+            onPress={async () => {
+              const uri = await capturePhoto();
+              if (uri) setReceiptPhoto(uri);
+            }}
+            activeOpacity={0.7}
+          >
+            <Camera size={24} color="#2563eb" />
+            <Text style={styles.receiptBtnText}>Tomar foto del comprobante</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
 
       {/* Confirm Button */}
@@ -173,7 +220,7 @@ export default function RegistrarCobroScreen() {
           title={`Confirmar Cobro · ${formatCurrency(montoNum)}`}
           onPress={handleConfirmar}
           disabled={!isValid}
-          loading={crearCobro.isPending}
+          loading={sending}
           fullWidth
         />
       </View>
@@ -281,6 +328,47 @@ const styles = StyleSheet.create({
     borderColor: '#e2e8f0',
   },
   textArea: { minHeight: 80 },
+  receiptPreview: {
+    position: 'relative',
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  receiptImage: {
+    width: '100%',
+    height: 160,
+    borderRadius: 12,
+    backgroundColor: '#f1f5f9',
+  },
+  receiptRemove: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#ef4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  receiptBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    paddingVertical: 16,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#e2e8f0',
+    borderStyle: 'dashed',
+    backgroundColor: '#f8fafc',
+  },
+  receiptBtnText: { fontSize: 14, fontWeight: '500', color: '#2563eb' },
   footer: {
     position: 'absolute',
     bottom: 0,

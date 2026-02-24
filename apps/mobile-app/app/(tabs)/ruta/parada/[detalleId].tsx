@@ -1,18 +1,26 @@
+import { useState, useCallback } from 'react';
 import { View, Text, ScrollView, Alert, Linking, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useRouteToday } from '@/hooks';
-import { visitasApi } from '@/api';
+import MapView, { Marker, Circle } from 'react-native-maps';
+import {
+  useOfflineRutaHoy,
+  useOfflineRutaDetalles,
+  useOfflineClientById,
+} from '@/hooks';
+import { useUserLocation } from '@/hooks/useLocation';
+import { useAuthStore } from '@/stores';
+import { performCheckIn, formatDistance } from '@/services/geoCheckin';
+import { createVisitaOffline } from '@/db/actions';
+import { performSync } from '@/sync/syncEngine';
+import { getGeofenceColor } from '@/utils/mapColors';
 import { Card, Button, LoadingSpinner } from '@/components/ui';
 import { Badge } from '@/components/ui';
 import { formatTime } from '@/utils/format';
 import {
   MapPin,
-  Phone,
   Clock,
   Navigation,
   Play,
-  SkipForward,
   ShoppingBag,
   Wallet,
 } from 'lucide-react-native';
@@ -27,34 +35,81 @@ const STOP_STATUS_NAMES: Record<number, string> = {
 export default function ParadaDetailScreen() {
   const { detalleId } = useLocalSearchParams<{ detalleId: string }>();
   const router = useRouter();
-  const queryClient = useQueryClient();
-  const routeToday = useRouteToday();
+  const user = useAuthStore((s) => s.user);
+  const { location } = useUserLocation();
 
-  const route = routeToday.data;
-  const stop = route?.detalles?.find((d) => d.id === Number(detalleId));
+  const [checkingIn, setCheckingIn] = useState(false);
+  const [distance, setDistance] = useState<number | null>(null);
 
-  const checkInMutation = useMutation({
-    mutationFn: async () => {
-      if (!stop) return;
-      return visitasApi.create({
-        clienteId: stop.clienteId,
-        tipoVisita: 0,
-        notas: `Parada de ruta: ${route?.nombre}`,
-      });
-    },
-    onSuccess: (visita) => {
-      queryClient.invalidateQueries({ queryKey: ['route'] });
-      queryClient.invalidateQueries({ queryKey: ['visits'] });
-      if (visita) {
-        router.push('/(tabs)/ruta/visita-activa' as any);
-      }
-    },
-    onError: () => {
-      Alert.alert('Error', 'No se pudo iniciar la visita');
-    },
-  });
+  // Get route + stop from WDB
+  const { data: rutas, isLoading: rutaLoading } = useOfflineRutaHoy();
+  const route = rutas?.[0] ?? null;
+  const { data: detalles } = useOfflineRutaDetalles(route?.id ?? '');
+  const stop = detalles?.find((d) => d.id === detalleId) ?? null;
 
-  if (routeToday.isLoading || !route) {
+  // Get client from WDB
+  const { data: client } = useOfflineClientById(stop?.clienteId ?? '');
+
+  const clientLat = client?.latitud ?? null;
+  const clientLng = client?.longitud ?? null;
+
+  // Compute distance when location and client coords available
+  const userDistance = (() => {
+    if (distance != null) return distance;
+    if (!location || !clientLat || !clientLng) return null;
+    const { haversineDistance } = require('@/services/geoCheckin');
+    return Math.round(haversineDistance(location, { latitude: clientLat, longitude: clientLng }));
+  })();
+  const distanceColor = userDistance != null ? getGeofenceColor(userDistance) : '#94a3b8';
+
+  const handleNavegar = useCallback(() => {
+    if (clientLat && clientLng) {
+      const url = `https://www.google.com/maps/dir/?api=1&destination=${clientLat},${clientLng}`;
+      Linking.openURL(url);
+    }
+  }, [clientLat, clientLng]);
+
+  const handleLlegar = useCallback(() => {
+    if (!stop || !client) return;
+    Alert.alert('Iniciar Visita', `¿Llegaste a ${client.nombre}?`, [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Sí, llegué',
+        onPress: async () => {
+          setCheckingIn(true);
+          try {
+            if (!clientLat || !clientLng) {
+              Alert.alert('Error', 'El cliente no tiene ubicación registrada');
+              return;
+            }
+
+            const result = await performCheckIn({ latitude: clientLat, longitude: clientLng });
+            setDistance(result.distance);
+
+            await createVisitaOffline(
+              stop.clienteId,
+              client.serverId,
+              Number(user?.id ?? 0),
+              result.coords.latitude,
+              result.coords.longitude,
+              result.distance,
+              route?.id
+            );
+
+            await stop.arrive(result.coords.latitude, result.coords.longitude);
+            performSync().catch(() => {});
+            router.push('/(tabs)/ruta/visita-activa' as any);
+          } catch {
+            Alert.alert('Error', 'No se pudo iniciar la visita');
+          } finally {
+            setCheckingIn(false);
+          }
+        },
+      },
+    ]);
+  }, [stop, client, clientLat, clientLng, user, route, router]);
+
+  if (rutaLoading || !route) {
     return <View style={styles.container}><LoadingSpinner message="Cargando..." /></View>;
   }
 
@@ -72,22 +127,45 @@ export default function ParadaDetailScreen() {
   const isEnProgreso = stop.estado === 1;
   const statusColor = STOP_STATUS_COLORS[stop.estado] || '#6b7280';
 
-  const handleNavegar = () => {
-    if (stop.clienteLatitud && stop.clienteLongitud) {
-      const url = `https://www.google.com/maps/dir/?api=1&destination=${stop.clienteLatitud},${stop.clienteLongitud}`;
-      Linking.openURL(url);
-    }
-  };
-
-  const handleLlegar = () => {
-    Alert.alert('Iniciar Visita', `¿Llegaste a ${stop.clienteNombre}?`, [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Sí, llegué', onPress: () => checkInMutation.mutate() },
-    ]);
-  };
-
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      {/* Mini Map */}
+      {clientLat && clientLng && (
+        <View style={styles.miniMapContainer}>
+          <MapView
+            style={styles.miniMap}
+            initialRegion={{
+              latitude: clientLat,
+              longitude: clientLng,
+              latitudeDelta: 0.008,
+              longitudeDelta: 0.008,
+            }}
+            scrollEnabled={false}
+            zoomEnabled={false}
+            rotateEnabled={false}
+            pitchEnabled={false}
+            showsUserLocation
+          >
+            <Marker coordinate={{ latitude: clientLat, longitude: clientLng }} pinColor="#2563eb" />
+            <Circle
+              center={{ latitude: clientLat, longitude: clientLng }}
+              radius={200}
+              fillColor="rgba(37,99,235,0.08)"
+              strokeColor="rgba(37,99,235,0.25)"
+              strokeWidth={1}
+            />
+          </MapView>
+          {userDistance != null && (
+            <View style={[styles.distanceBadge, { backgroundColor: distanceColor + '15', borderColor: distanceColor + '40' }]}>
+              <MapPin size={12} color={distanceColor} />
+              <Text style={[styles.distanceText, { color: distanceColor }]}>
+                A {formatDistance(userDistance)}
+              </Text>
+            </View>
+          )}
+        </View>
+      )}
+
       {/* Status Banner */}
       <View style={[styles.statusBanner, { backgroundColor: `${statusColor}15`, borderColor: `${statusColor}30` }]}>
         <Badge
@@ -97,39 +175,32 @@ export default function ParadaDetailScreen() {
           size="md"
         />
         <Text style={[styles.statusOrder, { color: statusColor }]}>
-          Parada #{stop.ordenVisita}
+          Parada #{stop.orden}
         </Text>
       </View>
 
       {/* Client Info */}
       <Card className="mx-4 mb-3">
         <Text style={styles.cardLabel}>Cliente</Text>
-        <Text style={styles.clientName}>{stop.clienteNombre}</Text>
+        <Text style={styles.clientName}>{client?.nombre ?? 'Cargando...'}</Text>
 
-        {stop.clienteDireccion && (
+        {client?.direccion && (
           <View style={styles.infoRow}>
             <MapPin size={14} color="#94a3b8" />
-            <Text style={styles.infoText}>{stop.clienteDireccion}</Text>
+            <Text style={styles.infoText}>{client.direccion}</Text>
           </View>
         )}
 
-        {stop.horaEstimadaLlegada && (
+        {stop.horaLlegada && (
           <View style={styles.infoRow}>
             <Clock size={14} color="#94a3b8" />
-            <Text style={styles.infoText}>Estimada: {formatTime(stop.horaEstimadaLlegada)}</Text>
-          </View>
-        )}
-
-        {stop.distanciaDesdeAnterior !== undefined && stop.distanciaDesdeAnterior > 0 && (
-          <View style={styles.infoRow}>
-            <Navigation size={14} color="#94a3b8" />
-            <Text style={styles.infoText}>{stop.distanciaDesdeAnterior.toFixed(1)} km desde anterior</Text>
+            <Text style={styles.infoText}>Llegada: {formatTime(stop.horaLlegada)}</Text>
           </View>
         )}
       </Card>
 
-      {/* Navigation Card */}
-      {stop.clienteLatitud && stop.clienteLongitud && (
+      {/* Navigation */}
+      {clientLat && clientLng && (
         <Card className="mx-4 mb-3">
           <Button
             title="Navegar con Google Maps"
@@ -153,7 +224,7 @@ export default function ParadaDetailScreen() {
           />
           <Button
             title="Registrar Cobro"
-            onPress={() => router.push(`/(tabs)/cobrar/registrar?clienteId=${stop.clienteId}&clienteNombre=${encodeURIComponent(stop.clienteNombre)}&saldo=0` as any)}
+            onPress={() => router.push(`/(tabs)/cobrar/registrar?clienteId=${stop.clienteId}&clienteNombre=${encodeURIComponent(client?.nombre ?? '')}&saldo=0` as any)}
             variant="secondary"
             fullWidth
             icon={<Wallet size={18} color="#2563eb" />}
@@ -161,13 +232,13 @@ export default function ParadaDetailScreen() {
         </View>
       )}
 
-      {/* Action Buttons */}
+      {/* Check-in Button */}
       {isPendiente && (
         <View style={styles.mainActions}>
           <Button
             title="Llegué — Iniciar Visita"
             onPress={handleLlegar}
-            loading={checkInMutation.isPending}
+            loading={checkingIn}
             fullWidth
             icon={<Play size={18} color="#ffffff" />}
           />
@@ -189,12 +260,28 @@ const styles = StyleSheet.create({
   content: { paddingBottom: 32 },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
   emptyText: { fontSize: 14, color: '#94a3b8' },
+  miniMapContainer: { marginHorizontal: 16, marginTop: 12, marginBottom: 8, borderRadius: 16, overflow: 'hidden', position: 'relative' },
+  miniMap: { height: 160, borderRadius: 16 },
+  distanceBadge: {
+    position: 'absolute',
+    bottom: 10,
+    left: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
+    borderWidth: 1,
+    backgroundColor: '#ffffff',
+  },
+  distanceText: { fontSize: 12, fontWeight: '700' },
   statusBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginHorizontal: 16,
-    marginTop: 12,
+    marginTop: 8,
     marginBottom: 12,
     padding: 14,
     borderRadius: 14,

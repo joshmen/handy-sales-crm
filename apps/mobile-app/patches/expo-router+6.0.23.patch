@@ -1,0 +1,17 @@
+diff --git a/node_modules/expo-router/build/useScreens.js b/node_modules/expo-router/build/useScreens.js
+index af29ef7..9000e02 100644
+--- a/node_modules/expo-router/build/useScreens.js
++++ b/node_modules/expo-router/build/useScreens.js
+@@ -125,7 +125,11 @@ function useSortedScreens(order, protectedScreens, useOnlyUserDefinedScreens = f
+         return routeToScreen(value.route, value.props);
+     }), [sorted, protectedScreens]);
+ }
+-function fromImport(value, { ErrorBoundary, ...component }) {
++function fromImport(value, _mod) {
++    // Guard against undefined module (e.g. when native module errors cause loadRoute to fail)
++    if (!_mod) return { default: EmptyRoute_1.EmptyRoute };
++    var { ErrorBoundary, ...component } = _mod;
++    // Original function body follows:
+     // If possible, add a more helpful display name for the component stack to improve debugging of React errors such as `Text strings must be rendered within a <Text> component.`.
+     if (component?.default && __DEV__) {
+         component.default.displayName ??= `${component.default.name ?? 'Route'}(${value.contextKey})`;

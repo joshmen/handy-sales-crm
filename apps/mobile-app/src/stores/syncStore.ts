@@ -1,25 +1,25 @@
 import { create } from 'zustand';
 import { performSync } from '@/sync/syncEngine';
 import { syncCursors } from '@/sync/cursors';
+import type { SyncSummary } from '@/sync/syncEngine';
 
 type SyncStatus = 'idle' | 'syncing' | 'success' | 'error';
 
 interface SyncState {
   status: SyncStatus;
   lastSyncAt: number | null;
+  lastSummary: SyncSummary | null;
   error: string | null;
-  pendingCount: number;
 
   sync: () => Promise<void>;
-  setPendingCount: (count: number) => void;
   reset: () => void;
 }
 
 export const useSyncStore = create<SyncState>((set, get) => ({
   status: 'idle',
   lastSyncAt: syncCursors.getLastSyncAt(),
+  lastSummary: syncCursors.getLastSyncSummary(),
   error: null,
-  pendingCount: 0,
 
   sync: async () => {
     if (get().status === 'syncing') return;
@@ -29,9 +29,9 @@ export const useSyncStore = create<SyncState>((set, get) => ({
     try {
       await performSync({
         onStart: () => set({ status: 'syncing' }),
-        onFinish: () => {
+        onFinish: (summary) => {
           const now = Date.now();
-          set({ status: 'success', lastSyncAt: now, error: null });
+          set({ status: 'success', lastSyncAt: now, lastSummary: summary, error: null });
           // Reset to idle after 3s
           setTimeout(() => {
             if (get().status === 'success') set({ status: 'idle' });
@@ -47,10 +47,8 @@ export const useSyncStore = create<SyncState>((set, get) => ({
     }
   },
 
-  setPendingCount: (count) => set({ pendingCount: count }),
-
   reset: () => {
     syncCursors.clear();
-    set({ status: 'idle', lastSyncAt: null, error: null, pendingCount: 0 });
+    set({ status: 'idle', lastSyncAt: null, lastSummary: null, error: null });
   },
 }));

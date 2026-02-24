@@ -9,3 +9,21 @@ export { useProductsList, useProductDetail, useProductStock } from './useProduct
 export { useUserLocation } from './useLocation';
 export { useNetworkStatus } from './useNetworkStatus';
 export { useAutoSync } from './useAutoSync';
+
+// Offline-first hooks (WatermelonDB)
+export { useObservable } from './useObservable';
+export { useOfflineClients, useOfflineClientById } from './useOfflineClients';
+export { useOfflineProducts, useOfflineProductById } from './useOfflineProducts';
+export { useOfflineOrders, useOfflineOrderById, useOfflineOrderDetalles } from './useOfflineOrders';
+export { useOfflineRoutes, useOfflineRutaHoy, useOfflineRutaById, useOfflineRutaDetalles } from './useOfflineRoutes';
+export { useOfflineVisits, useOfflineVisitById, useOfflineTodayVisits } from './useOfflineVisits';
+export { useOfflineCobros, useOfflineCobroById, useOfflineTodayCobros } from './useOfflineCobros';
+export { usePendingCount } from './usePendingCount';
+export { useClientNameMap } from './useClientNameMap';
+
+// Evidence hooks
+export { useAttachmentsForEvent, usePendingAttachmentCount } from './useOfflineAttachments';
+
+// Map hooks
+export { useMapData } from './useMapData';
+export { useLocationTracking } from './useLocationTracking';

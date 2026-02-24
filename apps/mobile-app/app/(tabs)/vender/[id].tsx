@@ -1,14 +1,16 @@
 import { View, Text, ScrollView, Alert, StyleSheet } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { useOrderDetail, useEnviarPedido, useCancelarPedido } from '@/hooks';
+import { useOfflineOrderById, useOfflineOrderDetalles, useClientNameMap, useEnviarPedido, useCancelarPedido } from '@/hooks';
 import { Card, Button, LoadingSpinner } from '@/components/ui';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { formatCurrency, formatDate } from '@/utils/format';
-import { Calendar, Truck, Send, XCircle, Package } from 'lucide-react-native';
+import { Calendar, Send, XCircle, Package } from 'lucide-react-native';
 
 export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data: order, isLoading } = useOrderDetail(Number(id));
+  const { data: order, isLoading } = useOfflineOrderById(id!);
+  const { data: detalles } = useOfflineOrderDetalles(id!);
+  const clientNames = useClientNameMap();
   const enviarMutation = useEnviarPedido();
   const cancelarMutation = useCancelarPedido();
 
@@ -18,18 +20,19 @@ export default function OrderDetailScreen() {
 
   const isBorrador = order.estado === 0;
   const canCancel = order.estado < 5 && order.estado !== 6;
+  const clienteNombre = clientNames.get(order.clienteId) || 'Cliente';
 
   const handleEnviar = () => {
     Alert.alert('Enviar Pedido', '¿Estás seguro de enviar este pedido?', [
       { text: 'Cancelar', style: 'cancel' },
-      { text: 'Enviar', onPress: () => enviarMutation.mutate(order.id) },
+      { text: 'Enviar', onPress: () => enviarMutation.mutate(order.serverId ?? 0) },
     ]);
   };
 
   const handleCancelar = () => {
     Alert.alert('Cancelar Pedido', '¿Estás seguro de cancelar este pedido?', [
       { text: 'No', style: 'cancel' },
-      { text: 'Sí, cancelar', style: 'destructive', onPress: () => cancelarMutation.mutate({ id: order.id, razon: 'Cancelado desde app móvil' }) },
+      { text: 'Sí, cancelar', style: 'destructive', onPress: () => cancelarMutation.mutate({ id: order.serverId ?? 0, razon: 'Cancelado desde app móvil' }) },
     ]);
   };
 
@@ -39,22 +42,18 @@ export default function OrderDetailScreen() {
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <View>
-            <Text style={styles.orderNumber}>#{order.numeroPedido}</Text>
-            <Text style={styles.clientName}>{order.clienteNombre}</Text>
+            <Text style={styles.orderNumber}>
+              {order.numeroPedido ? `#${order.numeroPedido}` : `#${order.serverId || order.id.slice(0, 6)}`}
+            </Text>
+            <Text style={styles.clientName}>{clienteNombre}</Text>
           </View>
           <StatusBadge type="order" status={order.estado} />
         </View>
         <View style={styles.dateRow}>
           <View style={styles.dateItem}>
             <Calendar size={13} color="#94a3b8" />
-            <Text style={styles.dateText}>{formatDate(order.fechaPedido)}</Text>
+            <Text style={styles.dateText}>{formatDate(order.fechaPedido || order.createdAt)}</Text>
           </View>
-          {order.fechaEntregaEstimada && (
-            <View style={styles.dateItem}>
-              <Truck size={13} color="#94a3b8" />
-              <Text style={styles.dateText}>{formatDate(order.fechaEntregaEstimada)}</Text>
-            </View>
-          )}
         </View>
       </View>
 
@@ -62,15 +61,15 @@ export default function OrderDetailScreen() {
       <Card className="mx-4 mb-4">
         <View style={styles.sectionHeader}>
           <Package size={16} color="#2563eb" />
-          <Text style={styles.sectionTitle}>Productos ({order.detalles?.length || 0})</Text>
+          <Text style={styles.sectionTitle}>Productos ({detalles?.length || 0})</Text>
         </View>
-        {order.detalles?.map((item) => (
+        {detalles?.map((item) => (
           <View key={item.id} style={styles.lineItem}>
             <View style={styles.lineItemContent}>
               <Text style={styles.productName}>{item.productoNombre}</Text>
               <Text style={styles.productQty}>{item.cantidad} x {formatCurrency(item.precioUnitario)}</Text>
             </View>
-            <Text style={styles.lineTotal}>{formatCurrency(item.total)}</Text>
+            <Text style={styles.lineTotal}>{formatCurrency(item.subtotal)}</Text>
           </View>
         ))}
         <View style={styles.totalsSection}>
@@ -86,7 +85,7 @@ export default function OrderDetailScreen() {
           )}
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Impuestos</Text>
-            <Text style={styles.totalValue}>{formatCurrency(order.impuestos)}</Text>
+            <Text style={styles.totalValue}>{formatCurrency(order.impuesto)}</Text>
           </View>
           <View style={styles.grandTotalRow}>
             <Text style={styles.grandTotalLabel}>Total</Text>

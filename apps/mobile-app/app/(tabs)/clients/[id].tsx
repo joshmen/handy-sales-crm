@@ -1,6 +1,6 @@
 import { View, Text, ScrollView, Linking, StyleSheet } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { useClientDetail } from '@/hooks';
+import { useOfflineClientById } from '@/hooks';
 import { Card, Button, LoadingSpinner } from '@/components/ui';
 import { Badge } from '@/components/ui';
 import {
@@ -14,7 +14,7 @@ import {
 
 export default function ClientDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data: client, isLoading } = useClientDetail(Number(id));
+  const { data: client, isLoading } = useOfflineClientById(id!);
 
   if (isLoading || !client) {
     return (
@@ -38,9 +38,7 @@ export default function ClientDetailScreen() {
           </Text>
         </View>
         <Text style={styles.clientName}>{client.nombre}</Text>
-        {client.categoriaNombre && (
-          <Text style={styles.categoryText}>{client.categoriaNombre}</Text>
-        )}
+        {/* Category name not available in offline mode */}
         <View style={styles.badgeRow}>
           <Badge
             label={client.activo ? 'Activo' : 'Inactivo'}
@@ -77,14 +75,14 @@ export default function ClientDetailScreen() {
               </View>
             </View>
           )}
-          {client.correo && (
+          {client.email && (
             <View style={styles.infoRow}>
               <View style={[styles.infoIcon, { backgroundColor: '#dbeafe' }]}>
                 <Mail size={14} color="#2563eb" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.infoLabel}>Correo</Text>
-                <Text style={styles.infoValue} numberOfLines={1}>{client.correo}</Text>
+                <Text style={styles.infoValue} numberOfLines={1}>{client.email}</Text>
               </View>
             </View>
           )}
@@ -99,17 +97,7 @@ export default function ClientDetailScreen() {
               </View>
             </View>
           )}
-          {client.zonaNombre && (
-            <View style={styles.infoRow}>
-              <View style={[styles.infoIcon, { backgroundColor: '#ede9fe' }]}>
-                <Building2 size={14} color="#7c3aed" />
-              </View>
-              <View>
-                <Text style={styles.infoLabel}>Zona</Text>
-                <Text style={styles.infoValue}>{client.zonaNombre}</Text>
-              </View>
-            </View>
-          )}
+          {/* Zone name not available in offline mode */}
         </View>
       </Card>
 
@@ -124,10 +112,10 @@ export default function ClientDetailScreen() {
             icon={<Phone size={18} color="#ffffff" />}
           />
         )}
-        {client.correo && (
+        {client.email && (
           <Button
             title="Enviar Correo"
-            onPress={() => Linking.openURL(`mailto:${client.correo}`)}
+            onPress={() => Linking.openURL(`mailto:${client.email}`)}
             variant="outline"
             fullWidth
             icon={<Mail size={18} color="#2563eb" />}

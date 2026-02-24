@@ -9,7 +9,7 @@ name: "Clientes - Detalle"
       enabled: true
 
 - extendedWaitUntil:
-    visible: "Teléfono"
+    visible: "Tel"
     timeout: 15000
     optional: true
 

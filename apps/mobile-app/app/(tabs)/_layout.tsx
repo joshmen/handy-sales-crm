@@ -4,11 +4,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CalendarClock, Map, ShoppingBag, Wallet, Menu } from 'lucide-react-native';
 import { useAutoSync } from '@/hooks/useAutoSync';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { usePendingCount } from '@/hooks';
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   useAutoSync();
   usePushNotifications();
+  const { data: pendingCount = 0 } = usePendingCount();
 
   return (
     <Tabs
@@ -72,6 +74,8 @@ export default function TabsLayout() {
         options={{
           title: 'Más',
           tabBarIcon: ({ color, size }) => <Menu size={size} color={color} />,
+          tabBarBadge: pendingCount > 0 ? pendingCount : undefined,
+          tabBarBadgeStyle: pendingCount > 0 ? { backgroundColor: '#f59e0b', fontSize: 10 } : undefined,
         }}
       />
       {/* Hidden tabs — accessible via navigation from Más */}

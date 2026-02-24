@@ -60,12 +60,14 @@ export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [activeIndex, setActiveIndex] = useState(0);
+  const activeIndexRef = useRef(0);
   const flatListRef = useRef<FlatList>(null);
 
   const onViewableItemsChanged = useRef(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
       if (viewableItems.length > 0 && viewableItems[0].index != null) {
         setActiveIndex(viewableItems[0].index);
+        activeIndexRef.current = viewableItems[0].index;
       }
     }
   ).current;
@@ -82,8 +84,9 @@ export default function OnboardingScreen() {
   };
 
   const handleNext = () => {
-    if (activeIndex < SLIDES.length - 1) {
-      flatListRef.current?.scrollToIndex({ index: activeIndex + 1, animated: true });
+    const current = activeIndexRef.current;
+    if (current < SLIDES.length - 1) {
+      flatListRef.current?.scrollToIndex({ index: current + 1, animated: true });
     } else {
       handleComplete();
     }

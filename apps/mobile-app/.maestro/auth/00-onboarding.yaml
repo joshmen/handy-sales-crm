@@ -2,35 +2,36 @@ appId: host.exp.exponent
 name: "Onboarding - Skip or Complete"
 ---
 
-# Esperar a que el bundle cargue (splash → onboarding o login)
+# Wait for bundle to load (splash -> onboarding or login)
 - extendedWaitUntil:
-    visible: "Omitir|Vende en ruta|Iniciar Sesión"
+    visible: "Omitir|Vende en ruta|Iniciar Sesi"
     timeout: 60000
 
-# Swipe through all 3 slides (left = advance)
+# Swipe left through 3 onboarding slides (more reliable than tap)
 - swipe:
     direction: LEFT
-    duration: 500
+    duration: 400
 - swipe:
     direction: LEFT
-    duration: 500
+    duration: 400
 - swipe:
     direction: LEFT
-    duration: 500
+    duration: 400
 
-# Now on last slide — tap the "Comenzar" button by testID
+# Tap Comenzar (last slide) or Omitir (any slide) via point
+# "Comenzar"/"Siguiente" button is at bottom center ~y=2150
 - tapOn:
-    id: "onboarding-action"
+    point: "540,2150"
     optional: true
 
-# If still stuck, try tapping "Omitir" by testID
+# Fallback: tap "Omitir" link at top-right ~y=100
 - tapOn:
-    id: "skip-onboarding"
+    text: "Omitir"
     optional: true
 
-# Wait for login
+# Wait for login screen (use partial text to avoid encoding issues)
 - extendedWaitUntil:
-    visible: "Iniciar Sesión"
+    visible: "Iniciar Sesi"
     timeout: 30000
 
 - takeScreenshot: post-onboarding-login

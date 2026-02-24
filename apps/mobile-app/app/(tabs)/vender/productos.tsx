@@ -1,11 +1,12 @@
 import { useState, useCallback } from 'react';
-import { View, Text, FlatList, TextInput, RefreshControl, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, FlatList, TextInput, RefreshControl, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useProductsList, useCategoriasProducto } from '@/hooks';
+import { useOfflineProducts, useCategoriasProducto } from '@/hooks';
 import { Card, LoadingSpinner, EmptyState } from '@/components/ui';
 import { formatCurrency } from '@/utils/format';
 import { Package, Search, ChevronRight } from 'lucide-react-native';
-import type { MobileProducto } from '@/types';
+import { performSync } from '@/sync/syncEngine';
+import type Producto from '@/db/models/Producto';
 
 export default function ProductosListScreen() {
   const router = useRouter();
@@ -13,19 +14,10 @@ export default function ProductosListScreen() {
   const [categoriaId, setCategoriaId] = useState<number | undefined>(undefined);
 
   const categorias = useCategoriasProducto();
-  const {
-    data,
-    isLoading,
-    isFetchingNextPage,
-    hasNextPage,
-    fetchNextPage,
-    refetch,
-  } = useProductsList({ busqueda: busqueda || undefined, categoriaId });
-
-  const productos = data?.pages.flatMap((page) => page.data) ?? [];
+  const { data: productos, isLoading } = useOfflineProducts(busqueda || undefined, categoriaId);
 
   const renderItem = useCallback(
-    ({ item }: { item: MobileProducto }) => (
+    ({ item }: { item: Producto }) => (
       <Card
         className="mx-4 mb-3"
         onPress={() => router.push(`/(tabs)/vender/producto/${item.id}` as any)}
@@ -36,32 +28,27 @@ export default function ProductosListScreen() {
           </View>
           <View style={styles.productContent}>
             <Text style={styles.productName} numberOfLines={1}>{item.nombre}</Text>
-            <Text style={styles.productSku}>{item.codigoBarra || 'Sin SKU'}</Text>
+            <Text style={styles.productSku}>{item.codigoBarras || 'Sin SKU'}</Text>
             <View style={styles.productMeta}>
-              {item.categoriaNombre && (
-                <Text style={styles.categoryText}>{item.categoriaNombre}</Text>
-              )}
-              {item.cantidadActual !== undefined && (
-                <View style={[
-                  styles.stockBadge,
-                  item.cantidadActual <= (item.stockMinimo || 0)
-                    ? styles.stockLow
-                    : styles.stockOk,
+              <View style={[
+                styles.stockBadge,
+                item.stockDisponible <= (item.stockMinimo || 0)
+                  ? styles.stockLow
+                  : styles.stockOk,
+              ]}>
+                <Text style={[
+                  styles.stockText,
+                  item.stockDisponible <= (item.stockMinimo || 0)
+                    ? styles.stockTextLow
+                    : styles.stockTextOk,
                 ]}>
-                  <Text style={[
-                    styles.stockText,
-                    item.cantidadActual <= (item.stockMinimo || 0)
-                      ? styles.stockTextLow
-                      : styles.stockTextOk,
-                  ]}>
-                    Stock: {item.cantidadActual}
-                  </Text>
-                </View>
-              )}
+                  Stock: {item.stockDisponible}
+                </Text>
+              </View>
             </View>
           </View>
           <View style={styles.productRight}>
-            <Text style={styles.priceText}>{formatCurrency(item.precioBase)}</Text>
+            <Text style={styles.priceText}>{formatCurrency(item.precio)}</Text>
             <ChevronRight size={16} color="#cbd5e1" />
           </View>
         </View>
@@ -122,30 +109,19 @@ export default function ProductosListScreen() {
       </View>
 
       <FlatList
-        data={productos}
-        keyExtractor={(item) => String(item.id)}
+        data={productos ?? []}
+        keyExtractor={(item) => item.id}
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
         refreshControl={
-          <RefreshControl refreshing={false} onRefresh={() => refetch()} tintColor="#2563eb" colors={['#2563eb']} />
+          <RefreshControl refreshing={false} onRefresh={() => performSync()} tintColor="#2563eb" colors={['#2563eb']} />
         }
-        onEndReached={() => {
-          if (hasNextPage && !isFetchingNextPage) fetchNextPage();
-        }}
-        onEndReachedThreshold={0.5}
         ListEmptyComponent={
           <EmptyState
             icon={<Package size={48} color="#cbd5e1" />}
             title="Sin productos"
             message="No se encontraron productos"
           />
-        }
-        ListFooterComponent={
-          isFetchingNextPage ? (
-            <View style={styles.footer}>
-              <ActivityIndicator size="small" color="#2563eb" />
-            </View>
-          ) : null
         }
       />
     </View>

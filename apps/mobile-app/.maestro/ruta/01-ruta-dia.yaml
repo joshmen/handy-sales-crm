@@ -1,19 +1,24 @@
 appId: host.exp.exponent
-name: "Ruta del Día"
+name: "Ruta del Dia"
 ---
 
-# Ir al tab Más
-- tapOn: "Más"
+# Ir al tab Mas
+- tapOn:
+    id: "tab-mas"
+    optional: true
+- tapOn:
+    text: "Mas"
+    optional: true
 
 - extendedWaitUntil:
-    visible: "Navegación"
+    visible: "Navegaci"
     timeout: 15000
 
-# Tap en Ruta del Día
-- tapOn: "Ruta del Día"
+# Tap en Ruta del Dia
+- tapOn: "Ruta del D"
 
 - extendedWaitUntil:
-    visible: "Ruta del Día"
+    visible: "Ruta del D"
     timeout: 15000
 
 - takeScreenshot: ruta-dia
@@ -23,5 +28,10 @@ name: "Ruta del Día"
 
 - takeScreenshot: ruta-dia-scrolled
 
-# Volver al tab Más
-- tapOn: "Más"
+# Volver al tab Mas
+- tapOn:
+    id: "tab-mas"
+    optional: true
+- tapOn:
+    text: "Mas"
+    optional: true

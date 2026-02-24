@@ -1,15 +1,15 @@
 import { useState, useCallback } from 'react';
-import { View, Text, FlatList, TextInput, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, FlatList, TextInput, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useProductsList, useCategoriasProducto } from '@/hooks';
+import { useOfflineProducts, useCategoriasProducto } from '@/hooks';
 import { useOrderDraftStore } from '@/stores';
 import { ProgressSteps } from '@/components/shared/ProgressSteps';
 import { QuantityStepper } from '@/components/shared/QuantityStepper';
 import { CartBar } from '@/components/shared/CartBar';
-import { Card, EmptyState } from '@/components/ui';
+import { EmptyState } from '@/components/ui';
 import { formatCurrency } from '@/utils/format';
 import { Package, Search, Plus } from 'lucide-react-native';
-import type { MobileProducto } from '@/types';
+import type Producto from '@/db/models/Producto';
 
 const STEPS = ['Cliente', 'Productos', 'Revisar'];
 
@@ -21,23 +21,15 @@ export default function CrearPedidoStep2() {
   const { items, addItem, updateQuantity, removeItem, itemCount, total } = useOrderDraftStore();
   const categorias = useCategoriasProducto();
 
-  const {
-    data,
-    isLoading,
-    isFetchingNextPage,
-    hasNextPage,
-    fetchNextPage,
-  } = useProductsList({ busqueda: busqueda || undefined, categoriaId });
+  const { data: productos, isLoading } = useOfflineProducts(busqueda || undefined, categoriaId);
 
-  const productos = data?.pages.flatMap((page) => page.data) ?? [];
-
-  const getItemQuantity = (productoId: number) => {
+  const getItemQuantity = (productoId: string) => {
     const item = items.find((i) => i.productoId === productoId);
     return item?.cantidad || 0;
   };
 
   const renderItem = useCallback(
-    ({ item }: { item: MobileProducto }) => {
+    ({ item }: { item: Producto }) => {
       const qty = getItemQuantity(item.id);
 
       return (
@@ -48,19 +40,17 @@ export default function CrearPedidoStep2() {
             </View>
             <View style={styles.productInfo}>
               <Text style={styles.productName} numberOfLines={1}>{item.nombre}</Text>
-              <Text style={styles.productPrice}>{formatCurrency(item.precioBase)}</Text>
-              {item.cantidadActual !== undefined && (
-                <Text
-                  style={[
-                    styles.stockLabel,
-                    item.cantidadActual <= (item.stockMinimo || 0)
-                      ? styles.stockLow
-                      : styles.stockOk,
-                  ]}
-                >
-                  Stock: {item.cantidadActual}
-                </Text>
-              )}
+              <Text style={styles.productPrice}>{formatCurrency(item.precio)}</Text>
+              <Text
+                style={[
+                  styles.stockLabel,
+                  item.stockDisponible <= (item.stockMinimo || 0)
+                    ? styles.stockLow
+                    : styles.stockOk,
+                ]}
+              >
+                Stock: {item.stockDisponible}
+              </Text>
             </View>
             <View style={styles.productActions}>
               {qty > 0 ? (
@@ -133,14 +123,10 @@ export default function CrearPedidoStep2() {
       </View>
 
       <FlatList
-        data={productos}
-        keyExtractor={(item) => String(item.id)}
+        data={productos ?? []}
+        keyExtractor={(item) => item.id}
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
-        onEndReached={() => {
-          if (hasNextPage && !isFetchingNextPage) fetchNextPage();
-        }}
-        onEndReachedThreshold={0.5}
         ListEmptyComponent={
           !isLoading ? (
             <EmptyState
@@ -148,11 +134,6 @@ export default function CrearPedidoStep2() {
               title="Sin productos"
               message="No se encontraron productos"
             />
-          ) : null
-        }
-        ListFooterComponent={
-          isFetchingNextPage ? (
-            <View style={styles.footer}><ActivityIndicator size="small" color="#2563eb" /></View>
           ) : null
         }
       />

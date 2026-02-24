@@ -9,7 +9,7 @@ name: "Vender - Flujo Crear Pedido"
     visible: "Pedidos"
     timeout: 15000
 
-# Navegar a crear pedido — tap botón "+" o "Nuevo Pedido"
+# Navegar a crear pedido - tap boton "+" o "Nuevo Pedido"
 - tapOn:
     text: "Nuevo Pedido"
     optional: true

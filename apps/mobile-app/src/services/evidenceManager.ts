@@ -11,6 +11,7 @@ import {
 import { database } from '@/db/database';
 import Attachment from '@/db/models/Attachment';
 import { API_CONFIG } from '@/utils/constants';
+import { getAccessToken } from '@/api/client';
 
 const EVIDENCE_DIR = `${documentDirectory}evidence/`;
 
@@ -97,6 +98,7 @@ export async function uploadPendingAttachments(): Promise<number> {
     try {
       await attachment.markUploading();
 
+      const token = getAccessToken();
       const response = await uploadAsync(
         `${API_CONFIG.BASE_URL}/api/mobile/attachments/upload`,
         attachment.localUri,
@@ -104,6 +106,7 @@ export async function uploadPendingAttachments(): Promise<number> {
           httpMethod: 'POST',
           uploadType: FileSystemUploadType.MULTIPART,
           fieldName: 'file',
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
           parameters: {
             eventType: attachment.eventType,
             eventLocalId: attachment.eventLocalId,

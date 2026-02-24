@@ -1,5 +1,6 @@
 import type { SyncDatabaseChangeSet } from '@nozbe/watermelondb/sync';
 import type { DirtyRaw } from '@nozbe/watermelondb/RawRecord';
+import { database } from '@/db/database';
 
 // ────────────────────────────────────────────────────────────────
 // PULL: Server → WatermelonDB
@@ -13,6 +14,7 @@ interface ServerChanges {
   pedidos?: any[];
   visitas?: any[];
   rutas?: any[];
+  cobros?: any[];
 }
 
 export function mapPullToWatermelon(
@@ -29,7 +31,7 @@ export function mapPullToWatermelon(
     rutas: splitByOperation(server.rutas, isFirstSync, mapRutaToRaw),
     ruta_detalles: extractDetallesRuta(server.rutas, isFirstSync),
     visitas: splitByOperation(server.visitas, isFirstSync, mapVisitaToRaw),
-    cobros: { created: [], updated: [], deleted: [] },
+    cobros: splitByOperation(server.cobros, isFirstSync, mapCobroToRaw),
     attachments: { created: [], updated: [], deleted: [] },
   };
 }
@@ -47,7 +49,6 @@ function splitByOperation(
 
   for (const item of items) {
     if (item.isDeleted || item.operation === 2) {
-      // Use server ID as string for deletion
       deleted.push(String(item.id));
     } else if (isFirstSync || item.operation === 0) {
       created.push(mapper(item));
@@ -119,8 +120,11 @@ function mapPedidoToRaw(p: any): DirtyRaw {
     cliente_id: String(p.clienteId),
     cliente_server_id: p.clienteId,
     usuario_id: 0,
+    numero_pedido: p.numeroPedido ?? null,
+    fecha_pedido: toTimestamp(p.fechaPedido),
     estado: p.estado ?? 0,
     subtotal: p.subtotal ?? 0,
+    descuento: p.descuento ?? 0,
     impuesto: p.impuestos ?? 0,
     total: p.total ?? 0,
     notas: p.notas ?? null,
@@ -257,17 +261,70 @@ function mapVisitaToRaw(v: any): DirtyRaw {
   };
 }
 
+function mapCobroToRaw(c: any): DirtyRaw {
+  return {
+    id: String(c.id),
+    server_id: c.id,
+    cliente_id: String(c.clienteId),
+    cliente_server_id: c.clienteId,
+    usuario_id: 0,
+    monto: c.monto ?? 0,
+    metodo_pago: c.metodoPago ?? 0,
+    referencia: c.referencia ?? null,
+    notas: c.notas ?? null,
+    activo: c.activo ?? true,
+    version: c.version ?? 1,
+    created_at: toTimestamp(c.fechaCobro ?? c.actualizadoEn),
+    updated_at: toTimestamp(c.actualizadoEn),
+  };
+}
+
 // ────────────────────────────────────────────────────────────────
 // PUSH: WatermelonDB → Server
 // WatermelonDB gives us { table: { created: [], updated: [], deleted: [] } }
-// Backend expects { clientes: [], pedidos: [], visitas: [], rutas: [] }
+// Backend expects { clientes: [], pedidos: [], visitas: [], cobros: [] }
 // with Operation enum per record (0=Create, 1=Update, 2=Delete)
 // ────────────────────────────────────────────────────────────────
 
-export function mapPushFromWatermelon(changes: SyncDatabaseChangeSet): any {
+export async function mapPushFromWatermelon(changes: SyncDatabaseChangeSet): Promise<any> {
   const c = (changes as any).clientes;
   const p = (changes as any).pedidos;
+  const dp = (changes as any).detalle_pedidos;
   const v = (changes as any).visitas;
+  const co = (changes as any).cobros;
+
+  // Build pedidos with their detalles included
+  const pedidos = [
+    ...mapPushEntities(p?.created, 0, rawToPedidoDto),
+    ...mapPushEntities(p?.updated, 1, rawToPedidoDto),
+    ...mapDeleteIds(p?.deleted),
+  ];
+
+  // Attach detalles to their respective pedidos
+  const allDetalles = [
+    ...(dp?.created ?? []),
+    ...(dp?.updated ?? []),
+  ];
+  for (const detalle of allDetalles) {
+    const pedido = pedidos.find(
+      (ped: any) => ped.localId === detalle.pedido_id || String(ped.id) === detalle.pedido_id
+    );
+    if (pedido && !pedido.isDeleted) {
+      pedido.detalles.push({
+        id: detalle.server_id ?? 0,
+        localId: detalle.id,
+        productoId: detalle.producto_server_id ?? (parseInt(String(detalle.producto_id), 10) || 0),
+        cantidad: detalle.cantidad ?? 0,
+        precioUnitario: detalle.precio_unitario ?? 0,
+        descuento: detalle.descuento ?? 0,
+        porcentajeDescuento: 0,
+        subtotal: detalle.subtotal ?? 0,
+        impuesto: (detalle.subtotal ?? 0) * 0.16,
+        total: (detalle.subtotal ?? 0) * 1.16,
+        version: detalle.version ?? 1,
+      });
+    }
+  }
 
   return {
     clientes: [
@@ -275,15 +332,16 @@ export function mapPushFromWatermelon(changes: SyncDatabaseChangeSet): any {
       ...mapPushEntities(c?.updated, 1, rawToClienteDto),
       ...mapDeleteIds(c?.deleted),
     ],
-    pedidos: [
-      ...mapPushEntities(p?.created, 0, rawToPedidoDto),
-      ...mapPushEntities(p?.updated, 1, rawToPedidoDto),
-      ...mapDeleteIds(p?.deleted),
-    ],
+    pedidos,
     visitas: [
       ...mapPushEntities(v?.created, 0, rawToVisitaDto),
       ...mapPushEntities(v?.updated, 1, rawToVisitaDto),
       ...mapDeleteIds(v?.deleted),
+    ],
+    cobros: [
+      ...mapPushEntities(co?.created, 0, rawToCobroDto),
+      ...mapPushEntities(co?.updated, 1, rawToCobroDto),
+      ...mapDeleteIds(co?.deleted),
     ],
     // Rutas are read-only for vendors (admin-assigned)
   };
@@ -331,6 +389,7 @@ function rawToPedidoDto(raw: DirtyRaw, operation: number): any {
     id: raw.server_id ?? 0,
     localId: raw.id,
     clienteId: raw.cliente_server_id ?? (parseInt(String(raw.cliente_id), 10) || 0),
+    fechaPedido: new Date(raw.created_at).toISOString(),
     estado: raw.estado ?? 0,
     subtotal: raw.subtotal ?? 0,
     impuestos: raw.impuesto ?? 0,
@@ -353,6 +412,23 @@ function rawToVisitaDto(raw: DirtyRaw, operation: number): any {
     latitudInicio: raw.latitud_check_in,
     longitudInicio: raw.longitud_check_in,
     estado: raw.resultado ?? 0,
+    notas: raw.notas,
+    activo: raw.activo ?? true,
+    version: raw.version ?? 1,
+    operation,
+  };
+}
+
+function rawToCobroDto(raw: DirtyRaw, operation: number): any {
+  return {
+    id: raw.server_id ?? 0,
+    localId: raw.id,
+    clienteId: raw.cliente_server_id ?? (parseInt(String(raw.cliente_id), 10) || 0),
+    pedidoId: 0,
+    monto: raw.monto ?? 0,
+    metodoPago: raw.metodo_pago ?? 0,
+    fechaCobro: new Date(raw.created_at).toISOString(),
+    referencia: raw.referencia,
     notas: raw.notas,
     activo: raw.activo ?? true,
     version: raw.version ?? 1,

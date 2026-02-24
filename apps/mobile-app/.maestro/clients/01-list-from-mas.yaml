@@ -1,12 +1,17 @@
 appId: host.exp.exponent
-name: "Clientes - Acceder desde Más"
+name: "Clientes - Acceder desde Mas"
 ---
 
-# Ir al tab Más
-- tapOn: "Más"
+# Ir al tab Mas
+- tapOn:
+    id: "tab-mas"
+    optional: true
+- tapOn:
+    text: "Mas"
+    optional: true
 
 - extendedWaitUntil:
-    visible: "Navegación"
+    visible: "Navegaci"
     timeout: 15000
 
 - takeScreenshot: mas-menu

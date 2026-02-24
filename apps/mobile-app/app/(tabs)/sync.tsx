@@ -1,8 +1,12 @@
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Card, Button } from '@/components/ui';
-import { Wifi, WifiOff, RefreshCcw, CheckCircle, Clock, AlertTriangle } from 'lucide-react-native';
+import {
+  Wifi, WifiOff, RefreshCcw, CheckCircle, Clock,
+  AlertTriangle, ArrowDownToLine, ArrowUpFromLine, ImageIcon,
+} from 'lucide-react-native';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import { usePendingCount, usePendingAttachmentCount } from '@/hooks';
 import { useSyncStore } from '@/stores';
 
 function formatLastSync(timestamp: number | null): string {
@@ -17,7 +21,9 @@ function formatLastSync(timestamp: number | null): string {
 export default function SyncScreen() {
   const insets = useSafeAreaInsets();
   const { isConnected: isOnline } = useNetworkStatus();
-  const { status, lastSyncAt, error, pendingCount, sync } = useSyncStore();
+  const { status, lastSyncAt, lastSummary, error, sync } = useSyncStore();
+  const { data: pendingCount = 0 } = usePendingCount();
+  const { data: pendingAttachments = 0 } = usePendingAttachmentCount();
 
   const isSyncing = status === 'syncing';
 
@@ -50,6 +56,16 @@ export default function SyncScreen() {
         </View>
       )}
 
+      {/* Conflict banner */}
+      {lastSummary && lastSummary.conflicts > 0 && (
+        <View style={styles.conflictBanner}>
+          <AlertTriangle size={18} color="#d97706" />
+          <Text style={styles.conflictText}>
+            {lastSummary.conflicts} registro{lastSummary.conflicts !== 1 ? 's' : ''} actualizado{lastSummary.conflicts !== 1 ? 's' : ''} por el servidor
+          </Text>
+        </View>
+      )}
+
       {/* Last Sync */}
       <Card className="mb-4">
         <View style={styles.syncRow}>
@@ -75,6 +91,51 @@ export default function SyncScreen() {
           </View>
         </View>
       </Card>
+
+      {/* Pending Attachments */}
+      {pendingAttachments > 0 && (
+        <Card className="mb-4">
+          <View style={styles.syncRow}>
+            <View style={[styles.syncIcon, { backgroundColor: '#eff6ff' }]}>
+              <ImageIcon size={18} color="#2563eb" />
+            </View>
+            <View style={styles.syncContent}>
+              <Text style={styles.syncLabel}>Fotos pendientes de subir</Text>
+              <Text style={styles.syncValue}>{pendingAttachments} archivo{pendingAttachments !== 1 ? 's' : ''}</Text>
+            </View>
+          </View>
+        </Card>
+      )}
+
+      {/* Last Sync Summary */}
+      {lastSummary && (lastSummary.pulled > 0 || lastSummary.pushed > 0) && (
+        <Card className="mb-4">
+          <Text style={styles.summaryTitle}>Resumen última sync</Text>
+          <View style={styles.summaryRow}>
+            <View style={styles.summaryItem}>
+              <ArrowDownToLine size={16} color="#2563eb" />
+              <Text style={styles.summaryValue}>{lastSummary.pulled}</Text>
+              <Text style={styles.summaryLabel}>recibidos</Text>
+            </View>
+            <View style={styles.summaryDivider} />
+            <View style={styles.summaryItem}>
+              <ArrowUpFromLine size={16} color="#16a34a" />
+              <Text style={styles.summaryValue}>{lastSummary.pushed}</Text>
+              <Text style={styles.summaryLabel}>enviados</Text>
+            </View>
+            {lastSummary.conflicts > 0 && (
+              <>
+                <View style={styles.summaryDivider} />
+                <View style={styles.summaryItem}>
+                  <AlertTriangle size={16} color="#d97706" />
+                  <Text style={styles.summaryValue}>{lastSummary.conflicts}</Text>
+                  <Text style={styles.summaryLabel}>conflictos</Text>
+                </View>
+              </>
+            )}
+          </View>
+        </Card>
+      )}
 
       {/* Sync Button */}
       <Button
@@ -124,6 +185,18 @@ const styles = StyleSheet.create({
     borderColor: '#fecaca',
   },
   errorText: { flex: 1, fontSize: 13, color: '#dc2626', fontWeight: '500' },
+  conflictBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#fffbeb',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#fde68a',
+  },
+  conflictText: { flex: 1, fontSize: 13, color: '#92400e', fontWeight: '500' },
   syncRow: { flexDirection: 'row', alignItems: 'center' },
   syncIcon: {
     width: 36,
@@ -136,6 +209,12 @@ const styles = StyleSheet.create({
   syncContent: { flex: 1 },
   syncLabel: { fontSize: 13, color: '#94a3b8', fontWeight: '500' },
   syncValue: { fontSize: 15, fontWeight: '600', color: '#1e293b', marginTop: 2 },
+  summaryTitle: { fontSize: 13, fontWeight: '600', color: '#475569', marginBottom: 12 },
+  summaryRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  summaryItem: { alignItems: 'center', gap: 4, flex: 1 },
+  summaryValue: { fontSize: 20, fontWeight: '800', color: '#0f172a' },
+  summaryLabel: { fontSize: 11, color: '#94a3b8', fontWeight: '500' },
+  summaryDivider: { width: 1, height: 36, backgroundColor: '#e2e8f0' },
   offlineHint: {
     textAlign: 'center',
     fontSize: 13,

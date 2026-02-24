@@ -1,0 +1,13 @@
+diff --git a/node_modules/@nozbe/watermelondb/adapters/sqlite/makeDispatcher/index.native.js b/node_modules/@nozbe/watermelondb/adapters/sqlite/makeDispatcher/index.native.js
+index 9f3bd8b..7605c55 100644
+--- a/node_modules/@nozbe/watermelondb/adapters/sqlite/makeDispatcher/index.native.js
++++ b/node_modules/@nozbe/watermelondb/adapters/sqlite/makeDispatcher/index.native.js
+@@ -110,7 +110,7 @@ var initializeJSI = function () {
+     return true;
+   }
+   var bridge = WMDatabaseBridge;
+-  if (bridge.initializeJSI) {
++  if (bridge && bridge.initializeJSI) {
+     try {
+       bridge.initializeJSI();
+       return !!global.nativeWatermelonCreateAdapter;

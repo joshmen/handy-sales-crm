@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { View, Text, ScrollView, RefreshControl, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/stores';
-import { useVisitsSummary, useRouteToday, useResumenCartera } from '@/hooks';
+import { useOfflineTodayVisits, useOfflineRutaHoy, useOfflineRutaDetalles, useOfflineOrders, useOfflineCobros } from '@/hooks';
 import { Card, LoadingSpinner } from '@/components/ui';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { formatCurrency } from '@/utils/format';
@@ -16,10 +16,9 @@ import {
   TrendingUp,
   CheckCircle,
   Clock,
-  ChevronRight,
-  Zap,
 } from 'lucide-react-native';
 import { HandyLogo } from '@/components/shared/HandyLogo';
+import { performSync } from '@/sync/syncEngine';
 
 export default function HoyScreen() {
   const insets = useSafeAreaInsets();
@@ -27,24 +26,39 @@ export default function HoyScreen() {
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
 
-  const visitsSummary = useVisitsSummary();
-  const routeToday = useRouteToday();
-  const resumenCartera = useResumenCartera();
+  // Local WDB data
+  const { data: todayVisits } = useOfflineTodayVisits();
+  const { data: rutas, isLoading: loadingRuta } = useOfflineRutaHoy();
+  const route = rutas?.[0] ?? null;
+  const { data: detalles } = useOfflineRutaDetalles(route?.id ?? '');
+  const { data: pedidos } = useOfflineOrders();
+  const { data: cobros } = useOfflineCobros();
+
+  // Compute KPIs
+  const visitasCompletadas = todayVisits?.filter((v) => v.checkOutAt != null).length ?? 0;
+  const visitasConVenta = todayVisits?.length ?? 0; // simplified: count all today visits
+
+  const totalPendiente = useMemo(() => {
+    const facturado = (pedidos ?? [])
+      .filter((p) => p.estado >= 1 && p.estado !== 4)
+      .reduce((sum, p) => sum + (p.total || 0), 0);
+    const cobrado = (cobros ?? []).reduce((sum, c) => sum + (c.monto || 0), 0);
+    return facturado - cobrado;
+  }, [pedidos, cobros]);
+
+  // Route progress from detalles
+  const stats = useMemo(() => {
+    const total = detalles?.length ?? 0;
+    const completadas = detalles?.filter((d) => d.estado === 2).length ?? 0;
+    return { total, completadas };
+  }, [detalles]);
+  const progress = stats.total > 0 ? (stats.completadas / stats.total) * 100 : 0;
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([
-      visitsSummary.refetch(),
-      routeToday.refetch(),
-      resumenCartera.refetch(),
-    ]);
+    await performSync();
     setRefreshing(false);
   };
-
-  const route = routeToday.data;
-  const progress = route && route.totalParadas > 0
-    ? (route.paradasCompletadas / route.totalParadas) * 100
-    : 0;
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -98,18 +112,14 @@ export default function HoyScreen() {
           <View style={[styles.kpiIcon, { backgroundColor: '#dbeafe' }]}>
             <TrendingUp size={18} color="#2563eb" />
           </View>
-          <Text style={styles.kpiValue}>
-            {visitsSummary.data?.visitasConVenta ?? '-'}
-          </Text>
-          <Text style={styles.kpiLabel}>Ventas</Text>
+          <Text style={styles.kpiValue}>{visitasConVenta}</Text>
+          <Text style={styles.kpiLabel}>Visitas</Text>
         </View>
         <View style={[styles.kpiCard, { backgroundColor: '#f0fdf4' }]}>
           <View style={[styles.kpiIcon, { backgroundColor: '#dcfce7' }]}>
             <CheckCircle size={18} color="#16a34a" />
           </View>
-          <Text style={styles.kpiValue}>
-            {visitsSummary.data?.visitasCompletadas ?? '-'}
-          </Text>
+          <Text style={styles.kpiValue}>{visitasCompletadas}</Text>
           <Text style={styles.kpiLabel}>Completadas</Text>
         </View>
         <View style={[styles.kpiCard, { backgroundColor: '#fef2f2' }]}>
@@ -117,9 +127,7 @@ export default function HoyScreen() {
             <Wallet size={18} color="#ef4444" />
           </View>
           <Text style={styles.kpiValue}>
-            {resumenCartera.data
-              ? formatCurrency(resumenCartera.data.totalPendiente)
-              : '-'}
+            {formatCurrency(totalPendiente > 0 ? totalPendiente : 0)}
           </Text>
           <Text style={styles.kpiLabel}>Pendiente</Text>
         </View>
@@ -127,7 +135,7 @@ export default function HoyScreen() {
 
       {/* Route Progress */}
       <Text style={styles.sectionTitle}>Ruta del Día</Text>
-      {routeToday.isLoading ? (
+      {loadingRuta ? (
         <LoadingSpinner size="small" />
       ) : route ? (
         <Card
@@ -140,12 +148,6 @@ export default function HoyScreen() {
             </View>
             <View style={styles.routeInfo}>
               <Text style={styles.routeName}>{route.nombre}</Text>
-              {route.zonaNombre && (
-                <View style={styles.routeZone}>
-                  <MapPin size={12} color="#94a3b8" />
-                  <Text style={styles.routeZoneText}>{route.zonaNombre}</Text>
-                </View>
-              )}
             </View>
             <StatusBadge type="route" status={route.estado} />
           </View>
@@ -155,7 +157,7 @@ export default function HoyScreen() {
             </View>
             <View style={styles.progressRow}>
               <Text style={styles.progressText}>
-                {route.paradasCompletadas}/{route.totalParadas} paradas
+                {stats.completadas}/{stats.total} paradas
               </Text>
               <Text style={styles.progressPercent}>{Math.round(progress)}%</Text>
             </View>
@@ -257,8 +259,6 @@ const styles = StyleSheet.create({
   },
   routeInfo: { flex: 1 },
   routeName: { fontSize: 15, fontWeight: '600', color: '#1e293b' },
-  routeZone: { flexDirection: 'row', alignItems: 'center', marginTop: 2, gap: 4 },
-  routeZoneText: { fontSize: 12, color: '#94a3b8' },
   progressSection: { marginTop: 14, gap: 6 },
   progressTrack: {
     height: 8,

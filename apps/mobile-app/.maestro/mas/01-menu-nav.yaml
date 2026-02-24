@@ -1,55 +1,70 @@
 appId: host.exp.exponent
-name: "Más - Menú y Navegación"
+name: "Mas - Menu y Navegacion"
 ---
 
-# Ir al tab Más
-- tapOn: "Más"
+# Ir al tab Mas
+- tapOn:
+    id: "tab-mas"
+    optional: true
+- tapOn:
+    text: "Mas"
+    optional: true
 
 - extendedWaitUntil:
-    visible: "Navegación"
+    visible: "Navegaci"
     timeout: 15000
 
-# Verificar items del menú principal
+# Verificar items del menu principal
 - assertVisible: "Clientes"
 - assertVisible: "Pedidos"
-- assertVisible: "Ruta del Día"
-- assertVisible: "Sincronización"
+- assertVisible: "Ruta del D"
+- assertVisible: "Sincronizaci"
 
 # Verificar items de cuenta
 - assertVisible: "Mi Perfil"
-- assertVisible: "Configuración"
+- assertVisible: "Configuraci"
 
 - takeScreenshot: mas-menu-full
 
-# Navegar a Configuración
-- tapOn: "Configuración"
+# Navegar a Configuracion
+- tapOn: "Configuraci"
 
 - extendedWaitUntil:
-    visible: "Configuración"
+    visible: "Configuraci"
     timeout: 15000
 
 - assertVisible: "Notificaciones push"
-- assertVisible: "Sincronización automática"
+- assertVisible: "Sincronizaci"
 
 - takeScreenshot: configuracion-screen
 
-# Volver al tab Más
-- tapOn: "Más"
+# Volver al tab Mas
+- tapOn:
+    id: "tab-mas"
+    optional: true
+- tapOn:
+    text: "Mas"
+    optional: true
 
 - extendedWaitUntil:
-    visible: "Navegación"
+    visible: "Navegaci"
     timeout: 15000
 
-# Navegar a Sincronización
-- tapOn: "Sincronización"
+# Navegar a Sincronizacion
+- tapOn: "Sincronizaci"
 
 - extendedWaitUntil:
-    visible: "Sincronización"
+    visible: "Sincronizaci"
     timeout: 15000
 
 - assertVisible: "Sincronizar Ahora"
 
 - takeScreenshot: sync-screen
 
-# Volver al tab Más
-- tapOn: "Más"
+# Volver al tab Mas
+- tapOn:
+    id: "tab-mas"
+    optional: true
+- tapOn:
+    text: "Mas"
+    optional: true

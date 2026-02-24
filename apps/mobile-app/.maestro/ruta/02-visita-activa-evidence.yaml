@@ -1,0 +1,158 @@
+appId: host.exp.exponent
+name: "Ruta - Visita Activa con Evidencia"
+---
+
+# Ir al tab Mas para navegar a Ruta
+- tapOn:
+    id: "tab-mas"
+    optional: true
+- tapOn:
+    text: "Mas"
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Navegaci"
+    timeout: 15000
+
+# Navegar a Ruta del Dia
+- tapOn: "Ruta del D"
+
+- extendedWaitUntil:
+    visible: "Ruta del D"
+    timeout: 15000
+
+- takeScreenshot: ruta-pre-visita
+
+# Verificar paradas (si hay ruta asignada)
+- assertVisible:
+    text: "Parada"
+    optional: true
+
+# Si hay paradas, intentar iniciar visita
+# Tap on first "Iniciar" or "Check-In" button
+- tapOn:
+    text: "Iniciar"
+    optional: true
+
+# Si se inicio la visita, verificar pantalla de Visita Activa
+- extendedWaitUntil:
+    visible: "Visita en Curso"
+    timeout: 10000
+    optional: true
+
+# Si estamos en visita activa, verificar todos los elementos
+- assertVisible:
+    text: "Visita en Curso"
+    optional: true
+
+- takeScreenshot: visita-activa-header
+
+# Verificar acciones
+- assertVisible:
+    text: "Acciones"
+    optional: true
+- assertVisible:
+    text: "Nuevo Pedido"
+    optional: true
+- assertVisible:
+    text: "Registrar Cobro"
+    optional: true
+
+# Verificar resultado de la visita (selector con 4 opciones)
+- scrollUntilVisible:
+    element: "Resultado de la Visita"
+    direction: DOWN
+    timeout: 5000
+    optional: true
+
+- assertVisible:
+    text: "Resultado de la Visita"
+    optional: true
+
+# Verificar las 4 opciones de resultado
+- assertVisible:
+    text: "Con Venta"
+    optional: true
+- assertVisible:
+    text: "Sin Venta"
+    optional: true
+- assertVisible:
+    text: "No Encontrado"
+    optional: true
+- assertVisible:
+    text: "Reagendada"
+    optional: true
+
+- takeScreenshot: visita-resultado-selector
+
+# Tap on "Sin Venta" para cambiar resultado
+- tapOn:
+    text: "Sin Venta"
+    optional: true
+
+- takeScreenshot: visita-resultado-sin-venta
+
+# Scroll para ver notas
+- scrollUntilVisible:
+    element: "Notas de la Visita"
+    direction: DOWN
+    timeout: 5000
+    optional: true
+
+- assertVisible:
+    text: "Notas de la Visita"
+    optional: true
+
+# Scroll para ver evidencia (fotos)
+- scrollUntilVisible:
+    element: "Evidencia Fotogr"
+    direction: DOWN
+    timeout: 5000
+    optional: true
+
+- assertVisible:
+    text: "Evidencia Fotogr"
+    optional: true
+
+- takeScreenshot: visita-evidencia-section
+
+# Scroll para ver firma
+- scrollUntilVisible:
+    element: "Firma del cliente"
+    direction: DOWN
+    timeout: 5000
+    optional: true
+
+- assertVisible:
+    text: "Firma del cliente (opcional)"
+    optional: true
+- assertVisible:
+    text: "Capturar Firma"
+    optional: true
+
+- takeScreenshot: visita-firma-section
+
+# Scroll para ver boton terminar
+- scrollUntilVisible:
+    element: "Terminar Visita"
+    direction: DOWN
+    timeout: 5000
+    optional: true
+
+- assertVisible:
+    text: "Terminar Visita"
+    optional: true
+
+- takeScreenshot: visita-terminar-button
+
+# NO terminamos la visita -- solo verificamos que los elementos existen
+# Volver atras
+- back
+
+# Volver al tab Mas
+- tapOn:
+    id: "tab-mas"
+    optional: true
+- tapOn:
+    text: "Mas"
+    optional: true

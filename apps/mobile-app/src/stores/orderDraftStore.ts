@@ -1,8 +1,9 @@
 import { create } from 'zustand';
-import type { MobileProducto } from '@/types';
+import type Producto from '@/db/models/Producto';
 
 export interface DraftItem {
-  productoId: number;
+  productoId: string;
+  productoServerId: number | null;
   nombre: string;
   precioUnitario: number;
   cantidad: number;
@@ -11,15 +12,16 @@ export interface DraftItem {
 }
 
 interface OrderDraftState {
-  clienteId: number | null;
+  clienteId: string | null;
+  clienteServerId: number | null;
   clienteNombre: string;
   items: DraftItem[];
   notas: string;
 
-  setCliente: (id: number, nombre: string) => void;
-  addItem: (producto: MobileProducto, cantidad?: number) => void;
-  removeItem: (productoId: number) => void;
-  updateQuantity: (productoId: number, cantidad: number) => void;
+  setCliente: (id: string, serverId: number | null, nombre: string) => void;
+  addItem: (producto: Producto, cantidad?: number) => void;
+  removeItem: (productoId: string) => void;
+  updateQuantity: (productoId: string, cantidad: number) => void;
   setNotas: (notas: string) => void;
   reset: () => void;
 
@@ -34,11 +36,13 @@ const IVA_RATE = 0.16;
 
 export const useOrderDraftStore = create<OrderDraftState>((set, get) => ({
   clienteId: null,
+  clienteServerId: null,
   clienteNombre: '',
   items: [],
   notas: '',
 
-  setCliente: (id, nombre) => set({ clienteId: id, clienteNombre: nombre }),
+  setCliente: (id, serverId, nombre) =>
+    set({ clienteId: id, clienteServerId: serverId, clienteNombre: nombre }),
 
   addItem: (producto, cantidad = 1) => {
     const items = get().items;
@@ -57,11 +61,12 @@ export const useOrderDraftStore = create<OrderDraftState>((set, get) => ({
           ...items,
           {
             productoId: producto.id,
+            productoServerId: producto.serverId,
             nombre: producto.nombre,
-            precioUnitario: producto.precioBase,
+            precioUnitario: producto.precio,
             cantidad,
-            imagenUrl: producto.imagenUrl,
-            unidadNombre: producto.unidadNombre,
+            imagenUrl: producto.imagenUrl ?? undefined,
+            unidadNombre: producto.unidadMedidaNombre ?? undefined,
           },
         ],
       });
@@ -86,7 +91,7 @@ export const useOrderDraftStore = create<OrderDraftState>((set, get) => ({
   setNotas: (notas) => set({ notas }),
 
   reset: () =>
-    set({ clienteId: null, clienteNombre: '', items: [], notas: '' }),
+    set({ clienteId: null, clienteServerId: null, clienteNombre: '', items: [], notas: '' }),
 
   itemCount: () => get().items.reduce((sum, i) => sum + i.cantidad, 0),
   subtotal: () =>

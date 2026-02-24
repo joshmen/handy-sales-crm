@@ -1,12 +1,12 @@
 import { useState, useCallback } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useClientsList } from '@/hooks';
+import { useOfflineClients } from '@/hooks';
 import { useOrderDraftStore } from '@/stores';
 import { ProgressSteps } from '@/components/shared/ProgressSteps';
 import { LoadingSpinner, EmptyState, Button } from '@/components/ui';
 import { User, Search, Check } from 'lucide-react-native';
-import type { MobileCliente } from '@/types';
+import type Cliente from '@/db/models/Cliente';
 
 const STEPS = ['Cliente', 'Productos', 'Revisar'];
 
@@ -15,12 +15,11 @@ export default function CrearPedidoStep1() {
   const [busqueda, setBusqueda] = useState('');
   const { clienteId, setCliente } = useOrderDraftStore();
 
-  const { data, isLoading } = useClientsList({ busqueda: busqueda || undefined });
-  const clientes = data?.pages.flatMap((page) => page.data) ?? [];
+  const { data: clientes, isLoading } = useOfflineClients(busqueda || undefined);
 
   const handleSelect = useCallback(
-    (cliente: MobileCliente) => {
-      setCliente(cliente.id, cliente.nombre);
+    (cliente: Cliente) => {
+      setCliente(cliente.id, cliente.serverId, cliente.nombre);
     },
     [setCliente]
   );
@@ -32,7 +31,7 @@ export default function CrearPedidoStep1() {
   };
 
   const renderItem = useCallback(
-    ({ item }: { item: MobileCliente }) => {
+    ({ item }: { item: Cliente }) => {
       const isSelected = clienteId === item.id;
       return (
         <TouchableOpacity
@@ -87,8 +86,8 @@ export default function CrearPedidoStep1() {
         <LoadingSpinner message="Cargando clientes..." />
       ) : (
         <FlatList
-          data={clientes}
-          keyExtractor={(item) => String(item.id)}
+          data={clientes ?? []}
+          keyExtractor={(item) => item.id}
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={

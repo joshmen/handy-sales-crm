@@ -166,7 +166,7 @@ export function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
   }));
 
   return (
-    <Animated.View style={[styles.container, containerAnimatedStyle]}>
+    <Animated.View style={[styles.container, containerAnimatedStyle]} pointerEvents="none">
       {/* Content cluster */}
       <View style={styles.content}>
         {/* Glow behind logo */}

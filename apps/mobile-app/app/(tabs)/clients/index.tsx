@@ -1,35 +1,27 @@
 import { useState, useCallback } from 'react';
-import { View, Text, FlatList, RefreshControl, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, FlatList, RefreshControl, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useClientsList } from '@/hooks';
+import { useOfflineClients } from '@/hooks';
 import { Card, LoadingSpinner, EmptyState } from '@/components/ui';
 import { SearchBar } from '@/components/shared/SearchBar';
 import { Badge } from '@/components/ui';
-import { Phone, MapPin, ChevronRight, Users } from 'lucide-react-native';
-import type { MobileCliente } from '@/types';
+import { Phone, ChevronRight, Users } from 'lucide-react-native';
+import { performSync } from '@/sync/syncEngine';
+import type Cliente from '@/db/models/Cliente';
 
 export default function ClientsListScreen() {
   const [search, setSearch] = useState('');
   const router = useRouter();
 
-  const {
-    data,
-    isLoading,
-    isFetchingNextPage,
-    hasNextPage,
-    fetchNextPage,
-    refetch,
-  } = useClientsList({ busqueda: search || undefined });
-
-  const clients = data?.pages.flatMap((page) => page.data) ?? [];
-  const total = data?.pages[0]?.pagination?.total ?? 0;
+  const { data: clients, isLoading } = useOfflineClients(search || undefined);
+  const total = clients?.length ?? 0;
 
   const handleSearch = useCallback((query: string) => {
     setSearch(query);
   }, []);
 
   const renderItem = useCallback(
-    ({ item }: { item: MobileCliente }) => (
+    ({ item }: { item: Cliente }) => (
       <Card
         className="mx-4 mb-3"
         onPress={() => router.push(`/(tabs)/clients/${item.id}`)}
@@ -64,12 +56,6 @@ export default function ClientsListScreen() {
                   <Text style={styles.metaText}>{item.telefono}</Text>
                 </View>
               )}
-              {item.zonaNombre && (
-                <View style={styles.metaItem}>
-                  <MapPin size={12} color="#94a3b8" />
-                  <Text style={styles.metaText}>{item.zonaNombre}</Text>
-                </View>
-              )}
             </View>
           </View>
           <ChevronRight size={18} color="#cbd5e1" style={styles.chevron} />
@@ -78,25 +64,6 @@ export default function ClientsListScreen() {
     ),
     [router]
   );
-
-  const renderFooter = useCallback(() => {
-    if (isFetchingNextPage) {
-      return (
-        <View style={styles.footerLoader}>
-          <ActivityIndicator size="small" color="#2563eb" />
-          <Text style={styles.footerLoadingText}>Cargando más...</Text>
-        </View>
-      );
-    }
-    if (clients.length > 0 && !hasNextPage) {
-      return (
-        <Text style={styles.footerEnd}>
-          Mostrando {clients.length} de {total} clientes
-        </Text>
-      );
-    }
-    return null;
-  }, [isFetchingNextPage, hasNextPage, clients.length, total]);
 
   if (isLoading) {
     return (
@@ -113,38 +80,32 @@ export default function ClientsListScreen() {
           placeholder="Buscar cliente..."
           onSearch={handleSearch}
         />
-        {(total > 0 || clients.length > 0) && (
+        {total > 0 && (
           <View style={styles.countRow}>
             <View style={styles.countBadge}>
-              <Text style={styles.countBadgeText}>
-                {total > 0 ? total : clients.length}
-              </Text>
+              <Text style={styles.countBadgeText}>{total}</Text>
             </View>
             <Text style={styles.countText}>
-              cliente{(total || clients.length) !== 1 ? 's' : ''}
-              {search ? ` encontrado${(total || clients.length) !== 1 ? 's' : ''}` : ''}
+              cliente{total !== 1 ? 's' : ''}
+              {search ? ` encontrado${total !== 1 ? 's' : ''}` : ''}
             </Text>
           </View>
         )}
       </View>
 
       <FlatList
-        data={clients}
-        keyExtractor={(item) => String(item.id)}
+        data={clients ?? []}
+        keyExtractor={(item) => item.id}
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl
             refreshing={false}
-            onRefresh={() => refetch()}
+            onRefresh={() => performSync()}
             tintColor="#2563eb"
             colors={['#2563eb']}
           />
         }
-        onEndReached={() => {
-          if (hasNextPage && !isFetchingNextPage) fetchNextPage();
-        }}
-        onEndReachedThreshold={0.5}
         ListEmptyComponent={
           <EmptyState
             icon={<Users size={48} color="#cbd5e1" />}
@@ -156,7 +117,13 @@ export default function ClientsListScreen() {
             }
           />
         }
-        ListFooterComponent={renderFooter}
+        ListFooterComponent={
+          total > 0 ? (
+            <Text style={styles.footerEnd}>
+              Mostrando {total} cliente{total !== 1 ? 's' : ''}
+            </Text>
+          ) : null
+        }
       />
     </View>
   );
