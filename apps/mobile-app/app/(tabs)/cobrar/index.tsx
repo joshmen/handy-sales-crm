@@ -4,8 +4,9 @@ import { useRouter } from 'expo-router';
 import { useOfflineOrders, useOfflineCobros, useClientNameMap } from '@/hooks';
 import { Card, LoadingSpinner, EmptyState } from '@/components/ui';
 import { formatCurrency } from '@/utils/format';
-import { Wallet, ChevronRight, TrendingDown, TrendingUp, DollarSign, User } from 'lucide-react-native';
+import { Wallet, ChevronRight, TrendingDown, TrendingUp, DollarSign, User, Plus, Clock, HandCoins } from 'lucide-react-native';
 import { performSync } from '@/sync/syncEngine';
+import { TouchableOpacity } from 'react-native';
 
 interface ClienteSaldo {
   clienteId: string;
@@ -125,6 +126,26 @@ export default function CobrarScreen() {
               </View>
             )}
           </View>
+        </View>
+
+        {/* Quick Actions */}
+        <View style={styles.actionsRow}>
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: '#16a34a' }]}
+            onPress={() => router.push('/(tabs)/cobrar/registrar' as any)}
+            activeOpacity={0.8}
+          >
+            <HandCoins size={18} color="#ffffff" />
+            <Text style={styles.actionButtonText}>Registrar Cobro</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: '#2563eb' }]}
+            onPress={() => router.push('/(tabs)/cobrar/historial' as any)}
+            activeOpacity={0.8}
+          >
+            <Clock size={18} color="#ffffff" />
+            <Text style={styles.actionButtonText}>Historial</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Section Header */}
@@ -285,4 +306,24 @@ const styles = StyleSheet.create({
   metaDot: { fontSize: 11, color: '#cbd5e1' },
   clientRight: { alignItems: 'flex-end', marginLeft: 8, gap: 2 },
   saldoAmount: { fontSize: 15, fontWeight: '700', color: '#ef4444' },
+  actionsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  actionButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#ffffff',
+  },
 });
