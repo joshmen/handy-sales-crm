@@ -1,0 +1,39 @@
+# EAS Build ignore file
+# NOTE: This overrides .gitignore for EAS uploads
+# android/ and ios/ must NOT be ignored here (EAS needs them to build)
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+
+# local env files
+.env*.local
+
+# Firebase config files
+firebase-service-account-key.json
+*-firebase-adminsdk-*.json
+
+# typescript
+*.tsbuildinfo
+
+# Maestro tests (not needed for build)
+.maestro/
+
+# Maestro screenshot artifacts
+*.png
+!assets/*.png
