@@ -15,22 +15,21 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.handysuites.app",
-      "googleServicesFile": "./GoogleService-Info.plist"
+      "bundleIdentifier": "com.handysuites.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#2563eb"
       },
-      "package": "com.handysuites.app",
-      "googleServicesFile": "./google-services.json"
+      "package": "com.handysuites.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-router",
+      "expo-dev-client",
       "expo-secure-store",
       [
         "expo-notifications",
