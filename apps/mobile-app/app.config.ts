@@ -33,6 +33,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
     package: "com.handysuites.app",
     googleServicesFile: "./google-services.json",
+    permissions: [
+      "android.permission.BLUETOOTH",
+      "android.permission.BLUETOOTH_ADMIN",
+      "android.permission.BLUETOOTH_CONNECT",
+      "android.permission.BLUETOOTH_SCAN",
+      "android.permission.ACCESS_FINE_LOCATION",
+      "android.permission.ACCESS_COARSE_LOCATION",
+    ],
     config: {
       googleMaps: {
         apiKey: GOOGLE_MAPS_API_KEY,
