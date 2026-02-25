@@ -137,6 +137,7 @@ export default function ImpresoraScreen() {
         referencia: 'TEST-001',
         fecha: new Date().toISOString(),
         vendedorName: user?.name || 'Vendedor',
+        logoUri: user?.tenantLogo || undefined,
       });
       if (ok) {
         Alert.alert('Listo', 'Impresión de prueba enviada');

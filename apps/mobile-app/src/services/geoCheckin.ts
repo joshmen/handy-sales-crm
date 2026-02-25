@@ -1,4 +1,5 @@
 import * as Location from 'expo-location';
+import { requestLocationWithDialog } from '@/utils/permissions';
 
 const MAX_CHECKIN_DISTANCE_METERS = 200;
 
@@ -15,8 +16,8 @@ interface CheckInResult {
 }
 
 export async function getCurrentPosition(): Promise<Coordinates> {
-  const { status } = await Location.requestForegroundPermissionsAsync();
-  if (status !== 'granted') {
+  const granted = await requestLocationWithDialog();
+  if (!granted) {
     throw new Error('Permiso de ubicación denegado');
   }
 
@@ -77,8 +78,8 @@ export async function watchPosition(
   callback: (coords: Coordinates) => void,
   intervalMs = 10000
 ): Promise<Location.LocationSubscription> {
-  const { status } = await Location.requestForegroundPermissionsAsync();
-  if (status !== 'granted') {
+  const granted = await requestLocationWithDialog();
+  if (!granted) {
     throw new Error('Permiso de ubicación denegado');
   }
 

@@ -11,7 +11,9 @@
  */
 import { Platform, PermissionsAndroid } from 'react-native';
 import Constants from 'expo-constants';
+import { File, Directory, Paths } from 'expo-file-system';
 import { METODO_PAGO } from '@/types/cobro';
+import { requestBluetoothWithDialog } from '@/utils/permissions';
 
 // ---------- Types ----------
 export type ConnectionType = 'bluetooth' | 'wifi';
@@ -61,40 +63,9 @@ export function isNativeAvailable(): boolean {
 // ---------- Bluetooth ----------
 
 async function requestBluetoothPermissions(): Promise<boolean> {
-  if (Platform.OS !== 'android') return true;
-
-  // Android 12+ (API 31): only need BLUETOOTH_CONNECT + BLUETOOTH_SCAN
-  // Location is NOT required for BT when neverForLocation flag is set in manifest
-  if (Platform.Version >= 31) {
-    try {
-      const results = await PermissionsAndroid.requestMultiple([
-        PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
-        PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
-      ]);
-
-      const allGranted = Object.values(results).every(
-        (r) => r === PermissionsAndroid.RESULTS.GRANTED,
-      );
-
-      if (!allGranted) {
-        console.warn('[Printer] Bluetooth permissions denied:', results);
-      }
-      return allGranted;
-    } catch (e) {
-      console.warn('[Printer] Permission request failed:', e);
-      return false;
-    }
-  }
-
-  // Android <12 (API <=30): needs ACCESS_FINE_LOCATION for BT scanning
-  try {
-    const granted = await PermissionsAndroid.request(
-      PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-    );
-    return granted === PermissionsAndroid.RESULTS.GRANTED;
-  } catch {
-    return false;
-  }
+  // Pre-permission dialog handles platform checks, already-granted checks,
+  // and shows an explanatory Alert before the system prompt.
+  return requestBluetoothWithDialog();
 }
 
 export async function enableBluetooth(): Promise<boolean> {
@@ -177,6 +148,100 @@ export async function connectDevice(device: PrinterDevice): Promise<boolean> {
   return connectWifi(host, port);
 }
 
+// ---------- Logo Printing ----------
+
+/** Max width in pixels for thermal printer logos (80mm paper). */
+const LOGO_MAX_WIDTH = 384;
+
+/** Cache directory for downloaded logo images (auto-created on first use). */
+const logoCacheDir = new Directory(Paths.cache, 'printer-logos');
+
+/**
+ * Downloads a remote image (or reads a local file) and returns its base64 string.
+ * The result is cached locally so subsequent prints don't re-download.
+ */
+async function getImageBase64(imageUri: string): Promise<string | null> {
+  try {
+    // If the URI is already a local file, read it directly
+    if (imageUri.startsWith('file://') || imageUri.startsWith('/')) {
+      const localPath = imageUri.startsWith('file://') ? imageUri : `file://${imageUri}`;
+      const localFile = new File(localPath);
+      if (!localFile.exists) {
+        console.warn('[Printer] Local logo file not found:', localPath);
+        return null;
+      }
+      return await localFile.base64();
+    }
+
+    // Remote URL — download to cache first
+    if (!logoCacheDir.exists) {
+      logoCacheDir.create();
+    }
+
+    // Create a deterministic filename from the URL
+    const hash = imageUri.replace(/[^a-zA-Z0-9]/g, '_').slice(-80);
+    const ext = imageUri.match(/\.(png|jpg|jpeg|bmp|gif)(\?.*)?$/i)?.[1] || 'png';
+    const cachedFile = new File(logoCacheDir, `${hash}.${ext}`);
+
+    // Download directly to the deterministic cached path if not already cached
+    if (!cachedFile.exists) {
+      await File.downloadFileAsync(imageUri, cachedFile, {
+        idempotent: true,
+      });
+    }
+
+    if (!cachedFile.exists) {
+      console.warn('[Printer] Logo download did not produce cached file');
+      return null;
+    }
+
+    return await cachedFile.base64();
+  } catch (e) {
+    console.warn('[Printer] Failed to get image base64:', e);
+    return null;
+  }
+}
+
+/**
+ * Prints a logo image on the thermal printer.
+ * Downloads the image, converts to base64, and sends it via printPic.
+ * The library handles monochrome conversion internally.
+ *
+ * @param imageUri - URL (http/https) or local file path of the logo
+ * @returns true if printed successfully, false otherwise
+ */
+export async function printLogo(imageUri: string): Promise<boolean> {
+  loadNativeModules();
+  if (!nativeAvailable || !BluetoothEscposPrinter) return false;
+
+  try {
+    const base64 = await getImageBase64(imageUri);
+    if (!base64) {
+      console.warn('[Printer] No base64 data for logo, skipping');
+      return false;
+    }
+
+    const P = BluetoothEscposPrinter;
+    const ALIGN = P.ALIGN || { LEFT: 0, CENTER: 1, RIGHT: 2 };
+
+    // Center the logo
+    await P.printerAlign(ALIGN.CENTER);
+
+    // printPic sends the base64 image to the printer.
+    // width = max paper width; the library scales/crops as needed.
+    // left = 0 because we already set alignment to center.
+    await P.printPic(base64, { width: LOGO_MAX_WIDTH, left: 0 });
+
+    // Small line feed after logo for spacing
+    await P.printText('\n', {});
+
+    return true;
+  } catch (e) {
+    console.warn('[Printer] Logo print failed (non-fatal):', e);
+    return false;
+  }
+}
+
 // ---------- Receipt Printing ----------
 
 export interface ReceiptData {
@@ -188,6 +253,7 @@ export interface ReceiptData {
   notas?: string;
   fecha: string;
   vendedorName: string;
+  logoUri?: string;
 }
 
 export async function printReceipt(data: ReceiptData): Promise<boolean> {
@@ -197,6 +263,15 @@ export async function printReceipt(data: ReceiptData): Promise<boolean> {
   try {
     const P = BluetoothEscposPrinter;
     const ALIGN = P.ALIGN || { LEFT: 0, CENTER: 1, RIGHT: 2 };
+
+    // Logo (optional — failure is non-fatal, text header still prints)
+    if (data.logoUri) {
+      try {
+        await printLogo(data.logoUri);
+      } catch (e) {
+        console.warn('[Printer] Logo print skipped:', e);
+      }
+    }
 
     // Header
     await P.printerAlign(ALIGN.CENTER);

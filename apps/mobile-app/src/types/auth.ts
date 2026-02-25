@@ -15,6 +15,7 @@ export interface AuthUser {
   name: string;
   role: 'SUPER_ADMIN' | 'ADMIN' | 'VENDEDOR';
   tenantName?: string;
+  tenantLogo?: string;
 }
 
 export interface RefreshRequest {

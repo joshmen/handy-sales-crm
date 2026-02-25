@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import * as Location from 'expo-location';
+import { requestLocationWithDialog } from '@/utils/permissions';
 
 interface UserLocation {
   latitude: number;
@@ -16,8 +17,8 @@ export function useUserLocation() {
 
     (async () => {
       try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
+        const granted = await requestLocationWithDialog();
+        if (!granted) {
           if (mounted) {
             setError('Permiso de ubicación denegado');
             setLoading(false);

@@ -78,6 +78,7 @@ export default function ReciboScreen() {
         notas,
         fecha,
         vendedorName: user?.name || 'Vendedor',
+        logoUri: user?.tenantLogo || undefined,
       });
       if (!ok) {
         const { Alert } = require('react-native');
