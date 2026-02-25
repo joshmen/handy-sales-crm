@@ -31,6 +31,13 @@ public class MobileAuthService
 
         var role = usuario.EsSuperAdmin ? "SUPER_ADMIN" : (usuario.EsAdmin ? "ADMIN" : "VENDEDOR");
 
+        // Fetch company logo for the tenant (nullable)
+        var companyLogo = await _db.CompanySettings
+            .AsNoTracking()
+            .Where(cs => cs.TenantId == usuario.TenantId)
+            .Select(cs => cs.CompanyLogo)
+            .FirstOrDefaultAsync();
+
         return new
         {
             user = new
@@ -38,7 +45,8 @@ public class MobileAuthService
                 id = usuario.Id.ToString(),
                 email = usuario.Email,
                 name = usuario.Nombre,
-                role = role
+                role = role,
+                tenantLogo = companyLogo
             },
             token = token,
             refreshToken = refreshToken.Token
@@ -69,6 +77,13 @@ public class MobileAuthService
 
         await _db.SaveChangesAsync();
 
+        // Fetch company logo for the tenant (nullable)
+        var companyLogo = await _db.CompanySettings
+            .AsNoTracking()
+            .Where(cs => cs.TenantId == tokenEntity.Usuario.TenantId)
+            .Select(cs => cs.CompanyLogo)
+            .FirstOrDefaultAsync();
+
         return new
         {
             user = new
@@ -76,7 +91,8 @@ public class MobileAuthService
                 id = tokenEntity.Usuario.Id.ToString(),
                 email = tokenEntity.Usuario.Email,
                 name = tokenEntity.Usuario.Nombre,
-                role = tokenEntity.Usuario.EsAdmin ? "ADMIN" : "VENDEDOR"
+                role = tokenEntity.Usuario.EsAdmin ? "ADMIN" : "VENDEDOR",
+                tenantLogo = companyLogo
             },
             token = newAccessToken,
             refreshToken = newRefreshToken.Token
