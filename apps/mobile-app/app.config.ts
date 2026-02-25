@@ -21,7 +21,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ios: {
     supportsTablet: true,
     bundleIdentifier: "com.handysuites.app",
-    googleServicesFile: "./GoogleService-Info.plist",
+    googleServicesFile:
+      process.env.GOOGLE_SERVICES_INFOPLIST || "./GoogleService-Info.plist",
     config: {
       googleMapsApiKey: GOOGLE_MAPS_API_KEY,
     },
@@ -32,7 +33,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       backgroundColor: "#2563eb",
     },
     package: "com.handysuites.app",
-    googleServicesFile: "./google-services.json",
+    googleServicesFile:
+      process.env.GOOGLE_SERVICES_JSON || "./google-services.json",
     permissions: [
       "android.permission.BLUETOOTH",
       "android.permission.BLUETOOTH_ADMIN",
