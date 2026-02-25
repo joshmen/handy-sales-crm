@@ -1,4 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
+import { loginAsAdmin, loginAsVendedor } from './helpers/auth';
 
 /**
  * RBAC Tests: Verificar que vendedor y admin ven datos correctos
@@ -8,39 +9,6 @@ import { test, expect, Page } from '@playwright/test';
  * - Dashboard vendedor muestra "Mi Rendimiento"
  * - Dashboard admin muestra "Tablero"
  */
-
-// ─── Auth helpers (API-based login for reliability) ──────────────
-async function loginAsAdmin(page: Page) {
-  const csrfRes = await page.request.get('/api/auth/csrf');
-  const { csrfToken } = await csrfRes.json();
-
-  await page.request.post('/api/auth/callback/credentials', {
-    form: {
-      email: 'admin@jeyma.com',
-      password: 'test123',
-      csrfToken,
-    },
-  });
-
-  await page.goto('/dashboard');
-  await expect(page).toHaveURL(/dashboard/, { timeout: 15000 });
-}
-
-async function loginAsVendedor(page: Page) {
-  const csrfRes = await page.request.get('/api/auth/csrf');
-  const { csrfToken } = await csrfRes.json();
-
-  await page.request.post('/api/auth/callback/credentials', {
-    form: {
-      email: 'vendedor1@jeyma.com',
-      password: 'test123',
-      csrfToken,
-    },
-  });
-
-  await page.goto('/dashboard');
-  await expect(page).toHaveURL(/dashboard/, { timeout: 15000 });
-}
 
 // Helper to wait for page data to load
 async function waitForPageLoad(page: Page) {

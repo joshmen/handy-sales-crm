@@ -23,7 +23,9 @@ export async function createPedidoOffline(
   clienteServerId: number | null,
   usuarioId: number,
   items: OfflineOrderItem[],
-  notas?: string
+  notas?: string,
+  tipoVenta: number = 0,
+  estado: number = 0
 ): Promise<Pedido> {
   const subtotal = items.reduce((sum, i) => sum + i.precioUnitario * i.cantidad, 0);
   const impuesto = subtotal * IVA_RATE;
@@ -37,7 +39,8 @@ export async function createPedidoOffline(
       record.usuarioId = usuarioId;
       record.numeroPedido = null;
       record.fechaPedido = new Date();
-      record.estado = 0; // Borrador
+      record.estado = estado;
+      record.tipoVenta = tipoVenta;
       record.subtotal = subtotal;
       record.descuento = 0;
       record.impuesto = impuesto;
@@ -66,6 +69,80 @@ export async function createPedidoOffline(
     }
 
     return pedido;
+  });
+}
+
+/**
+ * Create a venta directa offline: atomically creates a Pedido (estado=5, tipoVenta=1)
+ * + Cobro linked by pedido_id in a single database.write() call.
+ */
+export async function createVentaDirectaOffline(
+  clienteId: string,
+  clienteServerId: number | null,
+  usuarioId: number,
+  items: OfflineOrderItem[],
+  metodoPago: number,
+  monto: number,
+  referencia?: string,
+  notas?: string
+): Promise<{ pedido: Pedido; cobro: Cobro }> {
+  const subtotal = items.reduce((sum, i) => sum + i.precioUnitario * i.cantidad, 0);
+  const impuesto = subtotal * IVA_RATE;
+  const total = subtotal + impuesto;
+
+  return database.write(async () => {
+    const pedido = await database.get<Pedido>('pedidos').create((record: any) => {
+      record.serverId = null;
+      record.clienteId = clienteId;
+      record.clienteServerId = clienteServerId;
+      record.usuarioId = usuarioId;
+      record.numeroPedido = null;
+      record.fechaPedido = new Date();
+      record.estado = 5; // Entregado
+      record.tipoVenta = 1; // VentaDirecta
+      record.subtotal = subtotal;
+      record.descuento = 0;
+      record.impuesto = impuesto;
+      record.total = total;
+      record.notas = notas || null;
+      record.activo = true;
+      record.version = 1;
+      record.updatedAt = new Date();
+    });
+
+    for (const item of items) {
+      const lineSubtotal = item.precioUnitario * item.cantidad;
+      await database.get<DetallePedido>('detalle_pedidos').create((record: any) => {
+        record.serverId = null;
+        record.pedidoId = pedido.id;
+        record.productoId = item.productoId;
+        record.productoServerId = item.productoServerId;
+        record.productoNombre = item.productoNombre;
+        record.cantidad = item.cantidad;
+        record.precioUnitario = item.precioUnitario;
+        record.descuento = 0;
+        record.subtotal = lineSubtotal;
+        record.version = 1;
+        record.updatedAt = new Date();
+      });
+    }
+
+    const cobro = await database.get<Cobro>('cobros').create((record: any) => {
+      record.serverId = null;
+      record.clienteId = clienteId;
+      record.clienteServerId = clienteServerId;
+      record.usuarioId = usuarioId;
+      record.pedidoId = pedido.id;
+      record.monto = monto;
+      record.metodoPago = metodoPago;
+      record.referencia = referencia || null;
+      record.notas = notas || null;
+      record.activo = true;
+      record.version = 1;
+      record.updatedAt = new Date();
+    });
+
+    return { pedido, cobro };
   });
 }
 

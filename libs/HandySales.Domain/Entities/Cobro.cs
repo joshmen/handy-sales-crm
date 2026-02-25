@@ -23,7 +23,7 @@ public class Cobro : AuditableEntity
     public int TenantId { get; set; }
 
     [Column("pedido_id")]
-    public int PedidoId { get; set; }
+    public int? PedidoId { get; set; }
 
     [Column("cliente_id")]
     public int ClienteId { get; set; }
@@ -48,7 +48,7 @@ public class Cobro : AuditableEntity
 
     // Navigation properties
     public Tenant Tenant { get; set; } = null!;
-    public Pedido Pedido { get; set; } = null!;
+    public Pedido? Pedido { get; set; }
     public Cliente Cliente { get; set; } = null!;
     public Usuario Usuario { get; set; } = null!;
 }

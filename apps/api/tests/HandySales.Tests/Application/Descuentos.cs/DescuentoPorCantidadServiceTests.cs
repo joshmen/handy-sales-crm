@@ -54,6 +54,8 @@ namespace HandySales.Tests.Application.Descuentos
         {
             var dto = new DescuentoPorCantidadCreateDto { ProductoId = 1, CantidadMinima = 5, DescuentoPorcentaje = 10, TenantId = 1, TipoAplicacion = "Test" };
 
+            _repoMock.Setup(r => r.ExisteCantidadMinimaAsync(1, 5, 1, null)).ReturnsAsync(false);
+            _repoMock.Setup(r => r.ObtenerEscalaDescuentosAsync(1, 1, null)).ReturnsAsync(new List<DescuentoPorCantidadDto>());
             _repoMock.Setup(r => r.CrearAsync(dto, 1)).ReturnsAsync(123);
 
             var id = await _service.CrearDescuentoAsync(dto);
@@ -66,7 +68,11 @@ namespace HandySales.Tests.Application.Descuentos
         public async Task ActualizarDescuentoAsync_DeberiaPasarTenant()
         {
             var dto = new DescuentoPorCantidadCreateDto { ProductoId = 1, CantidadMinima = 1, DescuentoPorcentaje = 5, TenantId = 1, TipoAplicacion = "Test" };
+            var existing = new DescuentoPorCantidadDto { ProductoId = 1, TipoAplicacion = "Test" };
 
+            _repoMock.Setup(r => r.ObtenerPorIdAsync(77, 1)).ReturnsAsync(existing);
+            _repoMock.Setup(r => r.ExisteCantidadMinimaAsync(1, 1, 1, 77)).ReturnsAsync(false);
+            _repoMock.Setup(r => r.ObtenerEscalaDescuentosAsync(1, 1, 77)).ReturnsAsync(new List<DescuentoPorCantidadDto>());
             _repoMock.Setup(r => r.ActualizarAsync(77, dto, 1)).ReturnsAsync(true);
 
             var result = await _service.ActualizarDescuentoAsync(77, dto);

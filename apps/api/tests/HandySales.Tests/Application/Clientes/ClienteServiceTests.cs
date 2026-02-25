@@ -21,6 +21,7 @@ namespace HandySales.Tests.Application.Clientes
             _repoMock = new Mock<IClienteRepository>();
             _tenantMock = new Mock<ICurrentTenant>();
             _tenantMock.Setup(t => t.TenantId).Returns(1);
+            _tenantMock.Setup(t => t.IsAdmin).Returns(true);
 
             _service = new ClienteService(_repoMock.Object, _tenantMock.Object);
         }
@@ -51,25 +52,28 @@ namespace HandySales.Tests.Application.Clientes
         }
 
         [Fact]
-        public async Task CrearClienteAsync_DeberiaRetornarNuevoId()
+        public async Task CrearClienteAsync_DeberiaRetornarSuccessConId()
         {
             var dto = new ClienteCreateDto { Nombre = "Carlos", RFC = "RFC123456ABC", Correo = "a@a.com", Telefono = "1234567890", Direccion = "Direc", IdZona = 1, CategoriaClienteId = 1 };
+            _repoMock.Setup(r => r.ExisteNombreEnTenantAsync(dto.Nombre, 1, null)).ReturnsAsync(false);
             _repoMock.Setup(r => r.CrearAsync(dto, 1)).ReturnsAsync(10);
 
-            var id = await _service.CrearClienteAsync(dto);
+            var result = await _service.CrearClienteAsync(dto);
 
-            id.Should().Be(10);
+            result.Success.Should().BeTrue();
+            result.Id.Should().Be(10);
         }
 
         [Fact]
-        public async Task ActualizarClienteAsync_DeberiaRetornarTrueSiActualiza()
+        public async Task ActualizarClienteAsync_DeberiaRetornarSuccessTrueSiActualiza()
         {
             var dto = new ClienteCreateDto { Nombre = "Update", RFC = "RFC123456ABC", Correo = "update@a.com", Telefono = "1234567890", Direccion = "Dir", IdZona = 1, CategoriaClienteId = 1 };
+            _repoMock.Setup(r => r.ExisteNombreEnTenantAsync(dto.Nombre, 1, 3)).ReturnsAsync(false);
             _repoMock.Setup(r => r.ActualizarAsync(3, dto, 1)).ReturnsAsync(true);
 
             var resultado = await _service.ActualizarClienteAsync(3, dto);
 
-            resultado.Should().BeTrue();
+            resultado.Success.Should().BeTrue();
         }
 
         [Fact]

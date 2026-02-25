@@ -5,6 +5,8 @@ using HandySales.Application.Zonas.DTOs;
 using HandySales.Application.Zonas.Interfaces;
 using HandySales.Application.Zonas.Services;
 using HandySales.Shared.Multitenancy;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace HandySales.Tests.Application.Zonas
 {
@@ -70,13 +72,14 @@ namespace HandySales.Tests.Application.Zonas
         }
 
         [Fact]
-        public async Task EliminarZonaAsync_DeberiaRetornarTrue()
+        public async Task EliminarZonaAsync_DeberiaRetornarSuccessTrue()
         {
+            _repoMock.Setup(r => r.ContarClientesPorZonaAsync(1, 1)).ReturnsAsync(0);
             _repoMock.Setup(r => r.EliminarAsync(1, 1)).ReturnsAsync(true);
 
             var result = await _service.EliminarZonaAsync(1);
 
-            result.Should().BeTrue();
+            result.Success.Should().BeTrue();
         }
     }
 }

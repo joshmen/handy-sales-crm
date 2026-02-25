@@ -15,6 +15,8 @@ public class PedidoDto
     public DateTime? FechaEntregaReal { get; set; }
     public EstadoPedido Estado { get; set; }
     public string EstadoNombre => Estado.ToString();
+    public TipoVenta TipoVenta { get; set; }
+    public string TipoVentaNombre => TipoVenta.ToString();
     public decimal Subtotal { get; set; }
     public decimal Descuento { get; set; }
     public decimal Impuestos { get; set; }

@@ -15,6 +15,7 @@ export default class Pedido extends Model {
   @text('numero_pedido') numeroPedido!: string | null;
   @date('fecha_pedido') fechaPedido!: Date | null;
   @field('estado') estado!: number;
+  @field('tipo_venta') tipoVenta!: number;
   @field('subtotal') subtotal!: number;
   @field('descuento') descuento!: number;
   @field('impuesto') impuesto!: number;

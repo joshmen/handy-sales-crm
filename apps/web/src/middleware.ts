@@ -23,6 +23,7 @@ const ROLE_RESTRICTED_ROUTES = {
   '/global-settings': [UserRole.SUPER_ADMIN], // Solo SUPER_ADMIN puede acceder a configuración global
   '/reports/financial': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
   '/routes/admin': [UserRole.ADMIN, UserRole.SUPERVISOR, UserRole.SUPER_ADMIN],
+  '/devices': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
 };
 
 export default withAuth(

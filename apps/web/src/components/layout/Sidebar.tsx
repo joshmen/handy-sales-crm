@@ -34,6 +34,7 @@ import {
   ArrowsLeftRight,
   ChartBar,
   Megaphone,
+  DeviceMobile,
   IconContext,
 } from '@phosphor-icons/react';
 import { useSidebar } from '@/stores/useUIStore';
@@ -285,6 +286,13 @@ const sidebarItems: SidebarItem[] = [
     badge: '2',
   },
   {
+    id: 'devices',
+    label: 'Dispositivos',
+    icon: DeviceMobile,
+    href: '/devices',
+    permission: 'manage_devices',
+  },
+  {
     id: 'administration',
     label: 'Administración',
     icon: ShieldCheck,
@@ -392,6 +400,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'manage_all_users',
     'view_all_data',
     'manage_catalogs', // Gestión de categorías y unidades
+    'manage_devices', // Gestión de dispositivos móviles
   ],
   ADMIN: [
     'view_dashboard',
@@ -410,6 +419,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'view_settings',
     'view_company_settings', // Solo ADMIN tiene acceso a configuración de empresa
     'manage_catalogs', // Gestión de categorías y unidades
+    'manage_devices', // Gestión de dispositivos móviles
   ],
   VENDEDOR: [
     'view_dashboard',

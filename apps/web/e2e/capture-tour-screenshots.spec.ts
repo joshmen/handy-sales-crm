@@ -1,5 +1,6 @@
 import { test } from '@playwright/test';
 import path from 'path';
+import { loginAsAdmin } from './helpers/auth';
 
 const OUTPUT_DIR = path.resolve(__dirname, '../public/images/tour');
 
@@ -12,14 +13,7 @@ test('Capture fresh tour screenshots', async ({ page }, testInfo) => {
   test.setTimeout(60000);
 
   // Login
-  await page.goto('/login');
-  await page.waitForLoadState('networkidle');
-  await page.keyboard.press('Escape');
-  await page.waitForTimeout(500);
-  await page.locator('#email').fill('admin@jeyma.com');
-  await page.locator('#password').fill('test123');
-  await page.getByRole('button', { name: /Iniciar Sesión/i }).click({ force: true });
-  await page.waitForURL(/dashboard/, { timeout: 15000 });
+  await loginAsAdmin(page);
   await page.waitForLoadState('networkidle');
   await page.waitForTimeout(2000);
 

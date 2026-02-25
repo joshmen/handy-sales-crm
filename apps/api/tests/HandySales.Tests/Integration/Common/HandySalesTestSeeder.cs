@@ -13,18 +13,14 @@ public static class HandySalesTestSeeder
         db.Tenants.Add(new Tenant
         {
             Id = 1,
-            NombreEmpresa = "Tenant Test",
-            RFC = "TEST123",
-            Contacto = "contacto@fake.com"
+            NombreEmpresa = "Tenant Test"
         });
 
         // Tenant 2 - Para pruebas de aislamiento multi-tenant
         db.Tenants.Add(new Tenant
         {
             Id = 2,
-            NombreEmpresa = "Tenant Secundario",
-            RFC = "TEST456",
-            Contacto = "contacto2@fake.com"
+            NombreEmpresa = "Tenant Secundario"
         });
 
         db.FamiliasProductos.Add(new FamiliaProducto { Id = 1, Nombre = "Familia Test", TenantId = 1 });

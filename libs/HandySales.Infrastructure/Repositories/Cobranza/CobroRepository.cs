@@ -42,7 +42,7 @@ public class CobroRepository : ICobroRepository
             {
                 Id = c.Id,
                 PedidoId = c.PedidoId,
-                NumeroPedido = c.Pedido.NumeroPedido,
+                NumeroPedido = c.Pedido != null ? c.Pedido.NumeroPedido : null,
                 ClienteId = c.ClienteId,
                 ClienteNombre = c.Cliente.Nombre,
                 UsuarioId = c.UsuarioId,
@@ -76,7 +76,7 @@ public class CobroRepository : ICobroRepository
             {
                 Id = c.Id,
                 PedidoId = c.PedidoId,
-                NumeroPedido = c.Pedido.NumeroPedido,
+                NumeroPedido = c.Pedido != null ? c.Pedido.NumeroPedido : null,
                 ClienteId = c.ClienteId,
                 ClienteNombre = c.Cliente.Nombre,
                 UsuarioId = c.UsuarioId,
@@ -177,7 +177,7 @@ public class CobroRepository : ICobroRepository
         var allPedidoIds = pedidosPorCliente.SelectMany(p => p.PedidoIds).ToList();
         var cobrosPorPedido = await _db.Cobros
             .AsNoTracking()
-            .Where(c => c.TenantId == tenantId && c.Activo && allPedidoIds.Contains(c.PedidoId))
+            .Where(c => c.TenantId == tenantId && c.Activo && c.PedidoId.HasValue && allPedidoIds.Contains(c.PedidoId.Value))
             .GroupBy(c => c.ClienteId)
             .Select(g => new { ClienteId = g.Key, TotalCobrado = g.Sum(c => c.Monto) })
             .ToListAsync();
@@ -231,7 +231,7 @@ public class CobroRepository : ICobroRepository
         var pedidoIds = pedidos.Select(p => p.Id).ToList();
         var cobros = await _db.Cobros
             .AsNoTracking()
-            .Where(c => c.TenantId == tenantId && c.Activo && pedidoIds.Contains(c.PedidoId))
+            .Where(c => c.TenantId == tenantId && c.Activo && c.PedidoId.HasValue && pedidoIds.Contains(c.PedidoId.Value))
             .Select(c => new { c.Id, c.PedidoId, c.Monto, c.MetodoPago, c.FechaCobro, c.Referencia })
             .ToListAsync();
 

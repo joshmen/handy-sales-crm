@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { Alert } from 'react-native';
 import type { AuthUser } from '@/types';
 import { secureStorage } from '@/utils/storage';
 import { STORAGE_KEYS } from '@/utils/constants';
@@ -69,4 +70,13 @@ export const useAuthStore = create<AuthState>((set) => ({
 // Listen for force logout from API interceptor
 authEventEmitter.on('forceLogout', () => {
   useAuthStore.getState().logout();
+});
+
+// Listen for device revocation by admin
+authEventEmitter.on('deviceRevoked', () => {
+  Alert.alert(
+    'Dispositivo Desvinculado',
+    'Tu administrador ha desvinculado este dispositivo. Contacta a tu administrador para volver a acceder.',
+    [{ text: 'Aceptar', onPress: () => useAuthStore.getState().logout() }]
+  );
 });

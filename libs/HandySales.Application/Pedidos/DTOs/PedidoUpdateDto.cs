@@ -24,6 +24,7 @@ public class PedidoFiltroDto
     public int? ClienteId { get; set; }
     public int? UsuarioId { get; set; }
     public EstadoPedido? Estado { get; set; }
+    public TipoVenta? TipoVenta { get; set; }
     public DateTime? FechaDesde { get; set; }
     public DateTime? FechaHasta { get; set; }
     public string? Busqueda { get; set; }
@@ -46,6 +47,8 @@ public class PedidoListaDto
     public DateTime? FechaEntregaEstimada { get; set; }
     public EstadoPedido Estado { get; set; }
     public string EstadoNombre => Estado.ToString();
+    public TipoVenta TipoVenta { get; set; }
+    public string TipoVentaNombre => TipoVenta.ToString();
     public decimal Total { get; set; }
     public int CantidadProductos { get; set; }
 }

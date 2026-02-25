@@ -41,6 +41,7 @@ namespace HandySales.Tests.Application.UnidadesMedida
         {
             var dto = new UnidadMedidaCreateDto { Nombre = "Pieza", TenandId = 1, Abreviatura = "PZ" };
 
+            _repoMock.Setup(r => r.ExisteNombreAsync(dto.Nombre, 1, null)).ReturnsAsync(false);
             _repoMock.Setup(r => r.CrearAsync(dto, 1)).ReturnsAsync(1);
 
             var id = await _service.CrearUnidadAsync(dto);
@@ -65,6 +66,7 @@ namespace HandySales.Tests.Application.UnidadesMedida
         {
             var dto = new UnidadMedidaCreateDto { Nombre = "Caja", TenandId = 1, Abreviatura = "CJ" };
 
+            _repoMock.Setup(r => r.ExisteNombreAsync(dto.Nombre, 1, 5)).ReturnsAsync(false);
             _repoMock.Setup(r => r.ActualizarAsync(5, dto, 1)).ReturnsAsync(true);
 
             var result = await _service.ActualizarUnidadAsync(5, dto);
@@ -74,14 +76,15 @@ namespace HandySales.Tests.Application.UnidadesMedida
         }
 
         [Fact]
-        public async Task EliminarUnidadAsync_DeberiaLlamarRepositorio()
+        public async Task EliminarUnidadAsync_DeberiaRetornarSuccessTrue()
         {
+            _repoMock.Setup(r => r.ContarProductosPorUnidadAsync(3, 1)).ReturnsAsync(0);
             _repoMock.Setup(r => r.EliminarAsync(3, 1)).ReturnsAsync(true);
 
             var result = await _service.EliminarUnidadAsync(3);
 
             _repoMock.Verify(r => r.EliminarAsync(3, 1), Times.Once);
-            Assert.True(result);
+            Assert.True(result.Success);
         }
     }
 }

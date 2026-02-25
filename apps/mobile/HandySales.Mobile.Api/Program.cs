@@ -19,6 +19,7 @@ builder.Services.AddCustomCors(builder.Configuration);
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddMobileServices(builder.Configuration);
 builder.Services.AddAuthorization();
+builder.Services.AddMemoryCache();
 
 var app = builder.Build();
 
@@ -43,6 +44,7 @@ app.UseStaticFiles(new StaticFileOptions
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<MobileSessionValidationMiddleware>();
 
 // MOBILE-SPECIFIC ENDPOINTS
 app.MapMobileAuthEndpoints();
@@ -56,6 +58,7 @@ app.MapMobileCobroEndpoints();
 app.MapMobileCatalogosEndpoints();
 app.MapMobileNotificationEndpoints();
 app.MapMobileAttachmentEndpoints();
+app.MapMobileVentaDirectaEndpoints();
 app.MapHealthEndpoints();
 
 app.Run();

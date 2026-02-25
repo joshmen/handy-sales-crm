@@ -28,7 +28,7 @@ namespace HandySales.Tests.Integration.FamiliasProductos
         {
             var dto = new FamiliaProductoCreateDto
             {
-                TenandId = 1,
+                TenantId = 1,
                 Nombre = "Familia Test",
                 Descripcion = "Descripción de prueba"
             };
@@ -42,7 +42,7 @@ namespace HandySales.Tests.Integration.FamiliasProductos
         {
             var dto = new FamiliaProductoCreateDto
             {
-                TenandId = 1,
+                TenantId = 1,
                 Nombre = "Familia Consulta",
                 Descripcion = "Detalle"
             };
@@ -60,7 +60,7 @@ namespace HandySales.Tests.Integration.FamiliasProductos
         {
             var dto = new FamiliaProductoCreateDto
             {
-                TenandId = 1,
+                TenantId = 1,
                 Nombre = "Familia Editable",
                 Descripcion = "Original"
             };
@@ -71,7 +71,7 @@ namespace HandySales.Tests.Integration.FamiliasProductos
 
             var updateDto = new FamiliaProductoCreateDto
             {
-                TenandId = 1,
+                TenantId = 1,
                 Nombre = "Familia Modificada",
                 Descripcion = "Editada"
             };
@@ -85,7 +85,7 @@ namespace HandySales.Tests.Integration.FamiliasProductos
         {
             var dto = new FamiliaProductoCreateDto
             {
-                TenandId = 1,
+                TenantId = 1,
                 Nombre = "Familia Eliminar",
                 Descripcion = "Eliminar"
             };

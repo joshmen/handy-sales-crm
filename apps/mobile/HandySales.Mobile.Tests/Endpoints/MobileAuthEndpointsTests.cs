@@ -42,8 +42,7 @@ public class MobileAuthEndpointsTests : IDisposable
         var tenant = new Tenant
         {
             Id = 1,
-            NombreEmpresa = "Test Tenant",
-            RFC = "XAXX010101000"
+            NombreEmpresa = "Test Tenant"
         };
         _db.Tenants.Add(tenant);
 
@@ -77,45 +76,49 @@ public class MobileAuthEndpointsTests : IDisposable
     }
 
     [Fact]
-    public async Task LoginAsync_ReturnsNull_ForInvalidCredentials()
+    public async Task LoginAsync_ReturnsFailed_ForInvalidCredentials()
     {
         // Act
         var result = await _authService.LoginAsync("invalid@test.com", "wrongpassword");
 
         // Assert
-        result.Should().BeNull();
+        result.Should().NotBeNull();
+        result.Success.Should().BeFalse();
     }
 
     [Fact]
-    public async Task LoginAsync_ReturnsNull_ForWrongPassword()
+    public async Task LoginAsync_ReturnsFailed_ForWrongPassword()
     {
         // Act
         var result = await _authService.LoginAsync("vendedor@test.com", "wrongpassword");
 
         // Assert
-        result.Should().BeNull();
+        result.Should().NotBeNull();
+        result.Success.Should().BeFalse();
     }
 
     [Fact]
-    public async Task LoginAsync_ReturnsTokens_ForValidCredentials()
+    public async Task LoginAsync_ReturnsSuccess_ForValidCredentials()
     {
         // Act
         var result = await _authService.LoginAsync("vendedor@test.com", "Test123!");
 
         // Assert
         result.Should().NotBeNull();
+        result.Success.Should().BeTrue();
+        result.Data.Should().NotBeNull();
 
-        var resultType = result!.GetType();
-        var tokenProp = resultType.GetProperty("token");
-        var refreshTokenProp = resultType.GetProperty("refreshToken");
-        var userProp = resultType.GetProperty("user");
+        var dataType = result.Data!.GetType();
+        var tokenProp = dataType.GetProperty("token");
+        var refreshTokenProp = dataType.GetProperty("refreshToken");
+        var userProp = dataType.GetProperty("user");
 
         tokenProp.Should().NotBeNull();
         refreshTokenProp.Should().NotBeNull();
         userProp.Should().NotBeNull();
 
-        var token = tokenProp!.GetValue(result) as string;
-        var refreshToken = refreshTokenProp!.GetValue(result) as string;
+        var token = tokenProp!.GetValue(result.Data) as string;
+        var refreshToken = refreshTokenProp!.GetValue(result.Data) as string;
 
         token.Should().NotBeNullOrEmpty();
         refreshToken.Should().NotBeNullOrEmpty();
@@ -128,10 +131,10 @@ public class MobileAuthEndpointsTests : IDisposable
         var result = await _authService.LoginAsync("vendedor@test.com", "Test123!");
 
         // Assert
-        result.Should().NotBeNull();
+        result.Success.Should().BeTrue();
 
-        var userProp = result!.GetType().GetProperty("user");
-        var user = userProp!.GetValue(result);
+        var userProp = result.Data!.GetType().GetProperty("user");
+        var user = userProp!.GetValue(result.Data);
         var roleProp = user!.GetType().GetProperty("role");
         var role = roleProp!.GetValue(user) as string;
 
@@ -145,10 +148,10 @@ public class MobileAuthEndpointsTests : IDisposable
         var result = await _authService.LoginAsync("admin@test.com", "Test123!");
 
         // Assert
-        result.Should().NotBeNull();
+        result.Success.Should().BeTrue();
 
-        var userProp = result!.GetType().GetProperty("user");
-        var user = userProp!.GetValue(result);
+        var userProp = result.Data!.GetType().GetProperty("user");
+        var user = userProp!.GetValue(result.Data);
         var roleProp = user!.GetType().GetProperty("role");
         var role = roleProp!.GetValue(user) as string;
 
@@ -193,8 +196,8 @@ public class MobileAuthEndpointsTests : IDisposable
     {
         // Arrange
         var loginResult = await _authService.LoginAsync("vendedor@test.com", "Test123!");
-        var refreshTokenProp = loginResult!.GetType().GetProperty("refreshToken");
-        var originalRefreshToken = refreshTokenProp!.GetValue(loginResult) as string;
+        var refreshTokenProp = loginResult.Data!.GetType().GetProperty("refreshToken");
+        var originalRefreshToken = refreshTokenProp!.GetValue(loginResult.Data) as string;
 
         // Act
         var result = await _authService.RefreshTokenAsync(originalRefreshToken!);
@@ -218,8 +221,8 @@ public class MobileAuthEndpointsTests : IDisposable
     {
         // Arrange
         var loginResult = await _authService.LoginAsync("vendedor@test.com", "Test123!");
-        var refreshTokenProp = loginResult!.GetType().GetProperty("refreshToken");
-        var originalRefreshToken = refreshTokenProp!.GetValue(loginResult) as string;
+        var refreshTokenProp = loginResult.Data!.GetType().GetProperty("refreshToken");
+        var originalRefreshToken = refreshTokenProp!.GetValue(loginResult.Data) as string;
 
         // Act
         await _authService.RefreshTokenAsync(originalRefreshToken!);
@@ -236,8 +239,8 @@ public class MobileAuthEndpointsTests : IDisposable
     {
         // Arrange
         var loginResult = await _authService.LoginAsync("vendedor@test.com", "Test123!");
-        var refreshTokenProp = loginResult!.GetType().GetProperty("refreshToken");
-        var originalRefreshToken = refreshTokenProp!.GetValue(loginResult) as string;
+        var refreshTokenProp = loginResult.Data!.GetType().GetProperty("refreshToken");
+        var originalRefreshToken = refreshTokenProp!.GetValue(loginResult.Data) as string;
 
         // Use the token once (which revokes it)
         await _authService.RefreshTokenAsync(originalRefreshToken!);

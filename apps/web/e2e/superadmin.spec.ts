@@ -1,4 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
+import { loginAsAdmin, loginAsSuperAdmin } from './helpers/auth';
 
 /**
  * SA-1 to SA-5: SuperAdmin Features E2E Tests
@@ -13,40 +14,6 @@ import { test, expect, Page } from '@playwright/test';
 
 test.describe.configure({ mode: 'serial' });
 test.use({ navigationTimeout: 60000, actionTimeout: 15000 });
-
-// ─── Auth helpers ──────────────────────────────────────────────
-async function loginAsSuperAdmin(page: Page) {
-  const csrfRes = await page.request.get('/api/auth/csrf');
-  const { csrfToken } = await csrfRes.json();
-
-  await page.request.post('/api/auth/callback/credentials', {
-    form: {
-      email: 'superadmin@handysales.com',
-      password: 'test123',
-      csrfToken,
-    },
-  });
-
-  // SuperAdmin is redirected from /dashboard to /admin/system-dashboard
-  await page.goto('/dashboard');
-  await page.waitForTimeout(3000);
-}
-
-async function loginAsAdmin(page: Page) {
-  const csrfRes = await page.request.get('/api/auth/csrf');
-  const { csrfToken } = await csrfRes.json();
-
-  await page.request.post('/api/auth/callback/credentials', {
-    form: {
-      email: 'admin@jeyma.com',
-      password: 'test123',
-      csrfToken,
-    },
-  });
-
-  await page.goto('/dashboard');
-  await expect(page).toHaveURL(/dashboard/, { timeout: 15000 });
-}
 
 async function waitForPageLoad(page: Page) {
   await page.waitForTimeout(1000);

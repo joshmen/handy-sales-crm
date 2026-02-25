@@ -67,13 +67,14 @@ namespace HandySales.Tests.Application.CategoriasClientes
         }
 
         [Fact]
-        public async Task EliminarCategoriaAsync_DeberiaRetornarTrue()
+        public async Task EliminarCategoriaAsync_DeberiaRetornarSuccessTrue()
         {
+            _repoMock.Setup(r => r.ContarClientesPorCategoriaAsync(4, 1)).ReturnsAsync(0);
             _repoMock.Setup(r => r.EliminarAsync(4, 1)).ReturnsAsync(true);
 
             var result = await _service.EliminarCategoriaAsync(4);
 
-            result.Should().BeTrue();
+            result.Success.Should().BeTrue();
         }
     }
 }

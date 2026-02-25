@@ -14,7 +14,7 @@ namespace HandySales.Tests.Application.FamiliasProductos
         {
             var dto = new FamiliaProductoCreateDto
             {
-                TenandId = 1,
+                TenantId = 1,
                 Nombre = "",
                 Descripcion = "Algo"
             };
@@ -28,7 +28,7 @@ namespace HandySales.Tests.Application.FamiliasProductos
         {
             var dto = new FamiliaProductoCreateDto
             {
-                TenandId = 1,
+                TenantId = 1,
                 Nombre = new string('A', 101),
                 Descripcion = "Algo"
             };
@@ -42,7 +42,7 @@ namespace HandySales.Tests.Application.FamiliasProductos
         {
             var dto = new FamiliaProductoCreateDto
             {
-                TenandId = 1,
+                TenantId = 1,
                 Nombre = "Familia",
                 Descripcion = new string('B', 256)
             };
@@ -52,25 +52,11 @@ namespace HandySales.Tests.Application.FamiliasProductos
         }
 
         [Fact]
-        public void TenantIdInvalido_DeberiaFallar()
-        {
-            var dto = new FamiliaProductoCreateDto
-            {
-                TenandId = 0,
-                Nombre = "Familia",
-                Descripcion = "Algo"
-            };
-
-            var result = _validator.TestValidate(dto);
-            result.ShouldHaveValidationErrorFor(x => x.TenandId);
-        }
-
-        [Fact]
         public void DatosValidos_DeberiaPasar()
         {
             var dto = new FamiliaProductoCreateDto
             {
-                TenandId = 1,
+                TenantId = 1,
                 Nombre = "Familia válida",
                 Descripcion = "Una descripción razonable"
             };

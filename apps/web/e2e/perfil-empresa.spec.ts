@@ -1,14 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
-
-async function loginAsAdmin(page: Page) {
-  await page.goto('/login');
-  await page.keyboard.press('Escape');
-  await page.waitForTimeout(500);
-  await page.locator('#email').fill('admin@jeyma.com');
-  await page.locator('#password').fill('test123');
-  await page.getByRole('button', { name: /Iniciar Sesión/i }).click({ force: true });
-  await expect(page).toHaveURL(/dashboard/, { timeout: 20000 });
-}
+import { loginAsAdmin, loginAsVendedor } from './helpers/auth';
 
 async function goToPerfilTab(page: Page) {
   await page.goto('/settings');
@@ -124,13 +115,7 @@ test.describe('Perfil de Empresa (Settings Tab)', () => {
 
 test.describe('Perfil de Empresa - RBAC', () => {
   test('vendedor should NOT see Perfil tab in Settings', async ({ page }) => {
-    await page.goto('/login');
-    await page.keyboard.press('Escape');
-    await page.waitForTimeout(500);
-    await page.locator('#email').fill('vendedor1@jeyma.com');
-    await page.locator('#password').fill('test123');
-    await page.getByRole('button', { name: /Iniciar Sesión/i }).click({ force: true });
-    await expect(page).toHaveURL(/dashboard/, { timeout: 20000 });
+    await loginAsVendedor(page);
 
     await page.goto('/settings');
     await page.waitForTimeout(2000);

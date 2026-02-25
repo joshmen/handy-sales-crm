@@ -19,6 +19,8 @@ export interface OrderListItem {
   usuarioId: number;
   usuarioNombre: string;
   estado: OrderStatus;
+  tipoVenta: number; // 0=Preventa, 1=VentaDirecta
+  tipoVentaNombre: string;
   subtotal: number;
   descuento: number;
   impuestos: number;
@@ -88,6 +90,7 @@ export interface OrderFilterParams {
   clienteId?: number;
   usuarioId?: number;
   estado?: string;
+  tipoVenta?: number; // 0=Preventa, 1=VentaDirecta
   fechaInicio?: string;
   fechaFin?: string;
   busqueda?: string;

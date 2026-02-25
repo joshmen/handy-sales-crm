@@ -3,8 +3,10 @@ import axios, {
   InternalAxiosRequestConfig,
   AxiosError,
 } from 'axios';
+import { Platform } from 'react-native';
 import * as Application from 'expo-application';
 import * as Device from 'expo-device';
+import * as Crypto from 'expo-crypto';
 import { API_CONFIG, STORAGE_KEYS } from '@/utils/constants';
 import { secureStorage } from '@/utils/storage';
 
@@ -55,17 +57,41 @@ class AuthEventEmitter {
 
 export const authEventEmitter = new AuthEventEmitter();
 
-// --- Device ID (persistent, generated once) ---
+// --- Device ID (hardware-based, persists across reinstalls) ---
 let _deviceId: string | null = null;
+let _deviceFingerprint: string | null = null;
+
+async function getPlatformDeviceId(): Promise<string> {
+  if (Platform.OS === 'android') {
+    // Application.getAndroidId() returns a unique ID per device+app signing key.
+    // Persists across reinstalls (unlike random UUIDs).
+    const androidId = Application.getAndroidId();
+    return androidId || `android-${Device.modelName}-fallback`;
+  }
+  if (Platform.OS === 'ios') {
+    const vendorId = await Application.getIosIdForVendorAsync();
+    return vendorId || `ios-${Device.modelName}-fallback`;
+  }
+  return `${Device.modelName || 'device'}-${Platform.OS}`;
+}
 
 async function getDeviceId(): Promise<string> {
   if (_deviceId) return _deviceId;
-  _deviceId = await secureStorage.get(STORAGE_KEYS.DEVICE_ID);
-  if (!_deviceId) {
-    _deviceId = `${Device.modelName || 'device'}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    await secureStorage.set(STORAGE_KEYS.DEVICE_ID, _deviceId);
-  }
+  _deviceId = await getPlatformDeviceId();
+  // Also persist to secure storage for backward compat
+  await secureStorage.set(STORAGE_KEYS.DEVICE_ID, _deviceId);
   return _deviceId;
+}
+
+async function getDeviceFingerprint(): Promise<string> {
+  if (_deviceFingerprint) return _deviceFingerprint;
+  const platformId = await getDeviceId();
+  const raw = `${platformId}|${Device.brand || ''}|${Device.modelName || ''}|${Platform.OS}`;
+  _deviceFingerprint = await Crypto.digestStringAsync(
+    Crypto.CryptoDigestAlgorithm.SHA256,
+    raw
+  );
+  return _deviceFingerprint;
 }
 
 // --- Request interceptor: Bearer token + device headers ---
@@ -80,45 +106,56 @@ apiInstance.interceptors.request.use(async (config: InternalAxiosRequestConfig) 
   }
 
   config.headers['X-Device-Id'] = await getDeviceId();
+  config.headers['X-Device-Fingerprint'] = await getDeviceFingerprint();
   config.headers['X-App-Version'] =
     Application.nativeApplicationVersion || '1.0.0';
 
   return config;
 });
 
-// --- Response interceptor: 401 handling with token refresh ---
+// --- Response interceptor: 401 handling with token refresh + device binding ---
 apiInstance.interceptors.response.use(
   (response) => response,
-  async (error: AxiosError) => {
+  async (error: AxiosError<{ code?: string; message?: string }>) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & {
       _retry?: boolean;
     };
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
+    if (error.response?.status === 401) {
+      const errorCode = error.response.data?.code;
 
-      if (!isRefreshing) {
-        isRefreshing = true;
-        refreshPromise = tryRefreshToken();
-        refreshPromise.finally(() => {
-          isRefreshing = false;
-          refreshPromise = null;
-        });
+      // Device was revoked by admin — force logout with specific message
+      if (errorCode === 'DEVICE_REVOKED' || errorCode === 'SESSION_REVOKED') {
+        authEventEmitter.emit('deviceRevoked');
+        return Promise.reject(error);
       }
 
-      try {
-        const newToken = await refreshPromise;
-        if (newToken) {
-          originalRequest.headers.Authorization = `Bearer ${newToken}`;
-          processQueue(newToken);
-          return apiInstance(originalRequest);
+      if (!originalRequest._retry) {
+        originalRequest._retry = true;
+
+        if (!isRefreshing) {
+          isRefreshing = true;
+          refreshPromise = tryRefreshToken();
+          refreshPromise.finally(() => {
+            isRefreshing = false;
+            refreshPromise = null;
+          });
         }
-      } catch {
-        // fall through
-      }
 
-      processQueueError(new Error('Token refresh failed'));
-      authEventEmitter.emit('forceLogout');
+        try {
+          const newToken = await refreshPromise;
+          if (newToken) {
+            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            processQueue(newToken);
+            return apiInstance(originalRequest);
+          }
+        } catch {
+          // fall through
+        }
+
+        processQueueError(new Error('Token refresh failed'));
+        authEventEmitter.emit('forceLogout');
+      }
     }
 
     return Promise.reject(error);

@@ -1,4 +1,5 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
+import { loginAsAdmin } from './helpers/auth';
 
 /**
  * Visual Audit: Homologación de páginas del dashboard
@@ -10,26 +11,6 @@ import { test, expect, Page } from '@playwright/test';
  * - Tabla en desktop / Cards en mobile
  * - Layout responsive correcto (título + botón se apilan en mobile)
  */
-
-// ─── Auth helper (API-based login for reliability) ──────────────
-async function login(page: Page) {
-  // 1. Get CSRF token from NextAuth
-  const csrfRes = await page.request.get('/api/auth/csrf');
-  const { csrfToken } = await csrfRes.json();
-
-  // 2. Sign in via NextAuth callback API (sets session cookie directly)
-  await page.request.post('/api/auth/callback/credentials', {
-    form: {
-      email: 'admin@jeyma.com',
-      password: 'test123',
-      csrfToken,
-    },
-  });
-
-  // 3. Navigate to dashboard to verify session works
-  await page.goto('/dashboard');
-  await expect(page).toHaveURL(/dashboard/, { timeout: 10000 });
-}
 
 // ─── Pages to audit ─────────────────────────────────────────────
 interface PageAudit {
@@ -241,7 +222,7 @@ test.use({ navigationTimeout: 60000, actionTimeout: 15000 });
 test.describe('Visual Audit - Dashboard Pages', () => {
 
   test.beforeEach(async ({ page }) => {
-    await login(page);
+    await loginAsAdmin(page);
   });
 
   for (const pg of PAGES) {

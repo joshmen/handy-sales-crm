@@ -27,6 +27,8 @@ export interface Order {
   address?: string;
   paymentMethod: "cash" | "credit" | "transfer" | "check";
   paymentStatus: "pending" | "partial" | "paid";
+  tipoVenta?: number; // 0=Preventa, 1=VentaDirecta
+  tipoVentaNombre?: string;
   createdAt: Date;
   updatedAt: Date;
 }

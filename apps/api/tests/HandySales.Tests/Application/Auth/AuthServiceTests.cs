@@ -27,11 +27,11 @@ namespace HandySales.Tests.Integration.Auth
             _activityTracking = scope.ServiceProvider.GetRequiredService<IActivityTrackingService>();
             _httpContextAccessor = scope.ServiceProvider.GetRequiredService<IHttpContextAccessor>();
             _cloudinaryService = scope.ServiceProvider.GetRequiredService<ICloudinaryService>();
-            _authService = new AuthService(_db, _jwt, _activityTracking, _httpContextAccessor, scope.ServiceProvider, _cloudinaryService);
+            _authService = scope.ServiceProvider.GetRequiredService<AuthService>();
         }
 
         [Fact]
-        public async Task RegisterAsync_DeberiaCrearUsuarioYRetornarTrue()
+        public async Task RegisterAsync_DeberiaCrearUsuarioYRetornarNoNull()
         {
             var dto = new UsuarioRegisterDto
             {
@@ -43,7 +43,7 @@ namespace HandySales.Tests.Integration.Auth
 
             var result = await _authService.RegisterAsync(dto);
 
-            result.Should().BeTrue();
+            result.Should().NotBeNull();
             _db.Usuarios.Any(u => u.Email == dto.Email).Should().BeTrue();
             _db.Tenants.Any(t => t.NombreEmpresa == dto.NombreEmpresa).Should().BeTrue();
         }
@@ -202,7 +202,7 @@ namespace HandySales.Tests.Integration.Auth
                 password = password
             };
             var loginResult = await _authService.LoginAsync(loginDto);
-            
+
             // Extraer refresh token del resultado del login
             var loginResultType = loginResult.GetType();
             var refreshTokenProperty = loginResultType.GetProperty("refreshToken");
@@ -215,7 +215,7 @@ namespace HandySales.Tests.Integration.Auth
 
             // Assert
             refreshResult.Should().NotBeNull();
-            
+
             // Verificar que el token anterior fue revocado
             var oldToken = await _db.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == refreshToken);
             oldToken.Should().NotBeNull();

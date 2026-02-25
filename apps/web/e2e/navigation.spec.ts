@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { loginAsAdmin } from './helpers/auth';
 
 // Authenticated test fixture - run serially to avoid session conflicts
 test.describe('Navigation (Authenticated)', () => {
@@ -6,14 +7,7 @@ test.describe('Navigation (Authenticated)', () => {
   test.describe.configure({ mode: 'serial' });
 
   test.beforeEach(async ({ page }) => {
-    // Login before each test (using same selectors as passing auth tests)
-    await page.goto('/login');
-    await page.keyboard.press('Escape');
-    await page.waitForTimeout(500);
-    await page.locator('#email').fill('superadmin@handy.com');
-    await page.locator('#password').fill('password123');
-    await page.getByRole('button', { name: /Iniciar Sesión/i }).click({ force: true });
-    await expect(page).toHaveURL(/dashboard/, { timeout: 20000 });
+    await loginAsAdmin(page);
   });
 
   test('should be on Dashboard after login', async ({ page }) => {

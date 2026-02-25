@@ -28,6 +28,7 @@ public class PedidoRepository : IPedidoRepository
             FechaPedido = DateTime.UtcNow,
             FechaEntregaEstimada = dto.FechaEntregaEstimada,
             Estado = EstadoPedido.Borrador,
+            TipoVenta = dto.TipoVenta,
             Notas = dto.Notas,
             DireccionEntrega = dto.DireccionEntrega,
             Latitud = dto.Latitud,
@@ -96,6 +97,7 @@ public class PedidoRepository : IPedidoRepository
                 FechaEntregaEstimada = p.FechaEntregaEstimada,
                 FechaEntregaReal = p.FechaEntregaReal,
                 Estado = p.Estado,
+                TipoVenta = p.TipoVenta,
                 Subtotal = p.Subtotal,
                 Descuento = p.Descuento,
                 Impuestos = p.Impuestos,
@@ -155,6 +157,9 @@ public class PedidoRepository : IPedidoRepository
         if (filtro.Estado.HasValue)
             query = query.Where(p => p.Estado == filtro.Estado.Value);
 
+        if (filtro.TipoVenta.HasValue)
+            query = query.Where(p => p.TipoVenta == filtro.TipoVenta.Value);
+
         if (filtro.FechaDesde.HasValue)
             query = query.Where(p => p.FechaPedido >= filtro.FechaDesde.Value);
 
@@ -186,6 +191,7 @@ public class PedidoRepository : IPedidoRepository
                 FechaPedido = p.FechaPedido,
                 FechaEntregaEstimada = p.FechaEntregaEstimada,
                 Estado = p.Estado,
+                TipoVenta = p.TipoVenta,
                 Total = p.Total,
                 CantidadProductos = p.Detalles.Count(d => d.Activo)
             })
@@ -217,6 +223,7 @@ public class PedidoRepository : IPedidoRepository
                 FechaPedido = p.FechaPedido,
                 FechaEntregaEstimada = p.FechaEntregaEstimada,
                 Estado = p.Estado,
+                TipoVenta = p.TipoVenta,
                 Total = p.Total,
                 CantidadProductos = p.Detalles.Count(d => d.Activo)
             })
@@ -240,6 +247,7 @@ public class PedidoRepository : IPedidoRepository
                 FechaPedido = p.FechaPedido,
                 FechaEntregaEstimada = p.FechaEntregaEstimada,
                 Estado = p.Estado,
+                TipoVenta = p.TipoVenta,
                 Total = p.Total,
                 CantidadProductos = p.Detalles.Count(d => d.Activo)
             })

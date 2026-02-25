@@ -18,7 +18,9 @@ public enum SessionStatus
     LoggedOut = 1,
     Expired = 2,
     RevokedByAdmin = 3,
-    RevokedByUser = 4
+    RevokedByUser = 4,
+    PendingUnbind = 5,
+    Unbound = 6
 }
 
 [Table("DeviceSessions")]
@@ -50,6 +52,9 @@ public class DeviceSession : AuditableEntity
 
     [Column("app_version")]
     public string? AppVersion { get; set; }
+
+    [Column("device_fingerprint")]
+    public string? DeviceFingerprint { get; set; }
 
     [Column("push_token")]
     public string? PushToken { get; set; }

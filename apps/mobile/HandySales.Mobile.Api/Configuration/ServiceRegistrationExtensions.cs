@@ -95,6 +95,14 @@ public static class ServiceRegistrationExtensions
         // Push Notifications (HttpClient for Expo Push API)
         services.AddHttpClient<PushNotificationService>();
 
+        // Sync notification bridge (Mobile API → Main API via HTTP)
+        var mainApiUrl = config["MainApiUrl"] ?? "http://localhost:1050";
+        services.AddHttpClient<SyncNotificationService>(client =>
+        {
+            client.BaseAddress = new Uri(mainApiUrl);
+            client.Timeout = TimeSpan.FromSeconds(5);
+        });
+
         // Usuarios
         services.AddScoped<IUsuarioRepository, UsuarioRepository>();
         services.AddValidatorsFromAssemblyContaining<UsuarioLoginDtoValidator>();

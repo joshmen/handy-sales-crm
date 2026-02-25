@@ -3,6 +3,8 @@ using System.Net.Http.Json;
 using FluentAssertions;
 using HandySales.Application.Promociones.DTOs;
 using Xunit;
+using System;
+using System.Collections.Generic;
 
 namespace HandySales.Tests.Integration.Promociones
 {
@@ -28,12 +30,11 @@ namespace HandySales.Tests.Integration.Promociones
             var dto = new PromocionCreateDto
             {
                 Nombre = "Promo de prueba",
-                ProductoId = 1,
+                ProductoIds = new List<int> { 1 },
                 Descripcion = "Promocion Descripcion",
                 DescuentoPorcentaje = 10,
                 FechaInicio = DateTime.Now,
-                FechaFin = DateTime.Now.AddYears(2),
-                TenandId = 1
+                FechaFin = DateTime.Now.AddYears(2)
             };
 
             var response = await _client.PostAsJsonAsync("/promociones", dto);
@@ -46,11 +47,10 @@ namespace HandySales.Tests.Integration.Promociones
             var dto = new PromocionCreateDto
             {
                 Nombre = "Actualización",
-                ProductoId = 1,
+                ProductoIds = new List<int> { 1 },
                 DescuentoPorcentaje = 10,
                 FechaInicio = DateTime.Now,
-                FechaFin = DateTime.Now.AddYears(2),
-                TenandId = 1
+                FechaFin = DateTime.Now.AddYears(2)
             };
 
             var response = await _client.PutAsJsonAsync("/promociones/9999", dto);

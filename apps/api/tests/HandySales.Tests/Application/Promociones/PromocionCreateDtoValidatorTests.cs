@@ -2,6 +2,7 @@ using Xunit;
 using FluentValidation.TestHelper;
 using HandySales.Application.Promociones.DTOs;
 using System;
+using System.Collections.Generic;
 
 namespace HandySales.Tests.Application.Promociones
 {
@@ -17,14 +18,12 @@ namespace HandySales.Tests.Application.Promociones
             result.ShouldHaveValidationErrorFor(x => x.Nombre);
         }
 
-        [Theory]
-        [InlineData(0)]
-        [InlineData(-5)]
-        public void ProductoIdInvalido_DeberiaFallar(int productoId)
+        [Fact]
+        public void ProductoIdsVacio_DeberiaFallar()
         {
-            var dto = new PromocionCreateDto { ProductoId = productoId };
+            var dto = new PromocionCreateDto { ProductoIds = new List<int>() };
             var result = _validator.TestValidate(dto);
-            result.ShouldHaveValidationErrorFor(x => x.ProductoId);
+            result.ShouldHaveValidationErrorFor(x => x.ProductoIds);
         }
 
         [Theory]
@@ -51,12 +50,11 @@ namespace HandySales.Tests.Application.Promociones
             var dto = new PromocionCreateDto
             {
                 Nombre = "Promo verano",
-                ProductoId = 1,
+                ProductoIds = new List<int> { 1 },
                 DescuentoPorcentaje = 15,
                 FechaInicio = DateTime.Today,
                 FechaFin = DateTime.Now.AddMonths(1),
-                Descripcion = "descripción",
-                TenandId = 1
+                Descripcion = "descripción"
             };
 
             var result = _validator.TestValidate(dto);

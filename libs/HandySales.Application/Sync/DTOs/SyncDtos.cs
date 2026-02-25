@@ -133,6 +133,7 @@ public class SyncPedidoDto
     public DateTime FechaPedido { get; set; }
     public DateTime? FechaEntregaEstimada { get; set; }
     public int Estado { get; set; }
+    public int TipoVenta { get; set; }
     public decimal Subtotal { get; set; }
     public decimal Descuento { get; set; }
     public decimal Impuestos { get; set; }
@@ -258,7 +259,7 @@ public class SyncCobroDto
     public int Id { get; set; }
     public string? LocalId { get; set; }
     public int ClienteId { get; set; }
-    public int PedidoId { get; set; }
+    public int? PedidoId { get; set; }
     public decimal Monto { get; set; }
     public int MetodoPago { get; set; }
     public DateTime FechaCobro { get; set; }

@@ -29,6 +29,7 @@ public static class MobilePedidoEndpoints
 
         group.MapGet("/mis-pedidos", async (
             [FromQuery] int? estado,
+            [FromQuery] int? tipoVenta,
             [FromQuery] int pagina,
             [FromQuery] int porPagina,
             [FromServices] PedidoService servicio) =>
@@ -39,6 +40,12 @@ public static class MobilePedidoEndpoints
             if (estado.HasValue)
             {
                 pedidos = pedidos.Where(p => (int)p.Estado == estado.Value).ToList();
+            }
+
+            // Filtrar por tipo de venta si se proporciona
+            if (tipoVenta.HasValue)
+            {
+                pedidos = pedidos.Where(p => (int)p.TipoVenta == tipoVenta.Value).ToList();
             }
 
             var total = pedidos.Count;

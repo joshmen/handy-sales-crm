@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export const schema = appSchema({
-  version: 2,
+  version: 3,
   tables: [
     // ─── Clientes ──────────────────────────────────────────
     tableSchema({
@@ -67,6 +67,7 @@ export const schema = appSchema({
         { name: 'numero_pedido', type: 'string', isOptional: true },
         { name: 'fecha_pedido', type: 'number', isOptional: true },
         { name: 'estado', type: 'number' }, // 0=Borrador..6=Cancelado
+        { name: 'tipo_venta', type: 'number' }, // 0=Preventa, 1=VentaDirecta
         { name: 'subtotal', type: 'number' },
         { name: 'descuento', type: 'number' },
         { name: 'impuesto', type: 'number' },
@@ -171,6 +172,7 @@ export const schema = appSchema({
         { name: 'cliente_id', type: 'string', isIndexed: true },
         { name: 'cliente_server_id', type: 'number', isOptional: true },
         { name: 'usuario_id', type: 'number' },
+        { name: 'pedido_id', type: 'string', isOptional: true },
         { name: 'monto', type: 'number' },
         { name: 'metodo_pago', type: 'number' }, // 0=Efectivo..5=Otro
         { name: 'referencia', type: 'string', isOptional: true },

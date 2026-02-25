@@ -18,6 +18,7 @@ import { productCategoryService } from './productCategories';
 import { productFamilyService } from './productFamilies';
 import { unitService } from './units';
 import { impersonationService } from './impersonation';
+import { deviceSessionService } from './deviceSessions';
 
 // 2) Re-exporta todo (tipos, funciones, etc.)
 export * from './auth';
@@ -37,6 +38,7 @@ export * from './productCategories';
 export * from './productFamilies';
 export * from './units';
 export * from './impersonation';
+export * from './deviceSessions';
 
 // 3) (Opcional) re-exporta también las instancias por nombre
 export {
@@ -58,6 +60,7 @@ export {
   productFamilyService,
   unitService,
   impersonationService,
+  deviceSessionService,
 };
 
 // 4) Objeto centralizado
@@ -80,6 +83,7 @@ export const services = {
   productFamilies: productFamilyService,
   units: unitService,
   impersonation: impersonationService,
+  deviceSessions: deviceSessionService,
 } as const;
 
 export default services;

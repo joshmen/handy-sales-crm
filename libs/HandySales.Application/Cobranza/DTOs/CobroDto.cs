@@ -3,8 +3,8 @@ namespace HandySales.Application.Cobranza.DTOs;
 public class CobroDto
 {
     public int Id { get; set; }
-    public int PedidoId { get; set; }
-    public string NumeroPedido { get; set; } = null!;
+    public int? PedidoId { get; set; }
+    public string? NumeroPedido { get; set; }
     public int ClienteId { get; set; }
     public string ClienteNombre { get; set; } = null!;
     public int UsuarioId { get; set; }
@@ -20,7 +20,7 @@ public class CobroDto
 }
 
 public record CobroCreateDto(
-    int PedidoId,
+    int? PedidoId,
     int ClienteId,
     decimal Monto,
     int MetodoPago,

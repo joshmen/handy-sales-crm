@@ -1,14 +1,10 @@
 import { test, expect } from '@playwright/test';
+import { loginAsAdmin } from './helpers/auth';
 
 // TODO: Update selectors after Pencil redesign
 test.describe.skip('Clients CRUD', () => {
   test.beforeEach(async ({ page }) => {
-    // Login before each test
-    await page.goto('/login');
-    await page.getByLabel(/email|correo/i).fill('superadmin@handy.com');
-    await page.getByLabel(/password|contraseña/i).fill('password123');
-    await page.getByRole('button', { name: /iniciar|login|entrar/i }).click();
-    await expect(page).toHaveURL(/dashboard/, { timeout: 15000 });
+    await loginAsAdmin(page);
 
     // Navigate to clients
     await page.getByRole('link', { name: /clientes|clients/i }).click();

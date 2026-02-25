@@ -1,4 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
+import { loginAsSuperAdmin } from './helpers/auth';
 
 /**
  * Debug test for impersonation flow.
@@ -7,19 +8,6 @@ import { test, expect, Page } from '@playwright/test';
 
 test.describe.configure({ mode: 'serial' });
 test.use({ navigationTimeout: 60000, actionTimeout: 15000 });
-
-async function loginAsSuperAdmin(page: Page) {
-  await page.goto('/login');
-  await page.keyboard.press('Escape');
-  await page.waitForTimeout(500);
-
-  await page.locator('#email').fill('superadmin@handy.com');
-  await page.locator('#password').fill('password123');
-  await page.getByRole('button', { name: /Iniciar Sesión/i }).click({ force: true });
-
-  await expect(page).toHaveURL(/dashboard|system-dashboard/, { timeout: 15000 });
-  console.log('Login successful, URL:', page.url());
-}
 
 async function waitForPageLoad(page: Page) {
   await page.waitForTimeout(1000);

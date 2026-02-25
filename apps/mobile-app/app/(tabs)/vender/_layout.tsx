@@ -13,6 +13,7 @@ export default function VenderLayout() {
       <Stack.Screen name="[id]" options={{ title: 'Detalle Pedido' }} />
       <Stack.Screen name="productos" options={{ title: 'Productos' }} />
       <Stack.Screen name="producto/[id]" options={{ title: 'Producto' }} />
+      <Stack.Screen name="crear/modo" options={{ title: 'Nuevo Pedido' }} />
       <Stack.Screen name="crear/index" options={{ title: 'Nuevo Pedido' }} />
       <Stack.Screen name="crear/productos" options={{ title: 'Agregar Productos' }} />
       <Stack.Screen name="crear/revision" options={{ title: 'Revisar Pedido' }} />

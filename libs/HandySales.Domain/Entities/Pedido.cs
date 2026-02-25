@@ -14,6 +14,12 @@ public enum EstadoPedido
     Cancelado = 6
 }
 
+public enum TipoVenta
+{
+    Preventa = 0,
+    VentaDirecta = 1
+}
+
 [Table("Pedidos")]
 public class Pedido : AuditableEntity
 {
@@ -43,6 +49,9 @@ public class Pedido : AuditableEntity
 
     [Column("estado")]
     public EstadoPedido Estado { get; set; } = EstadoPedido.Borrador;
+
+    [Column("tipo_venta")]
+    public TipoVenta TipoVenta { get; set; } = TipoVenta.Preventa;
 
     [Column("subtotal")]
     public decimal Subtotal { get; set; }

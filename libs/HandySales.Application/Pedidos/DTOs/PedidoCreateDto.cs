@@ -1,8 +1,11 @@
+using HandySales.Domain.Entities;
+
 namespace HandySales.Application.Pedidos.DTOs;
 
 public class PedidoCreateDto
 {
     public int ClienteId { get; set; }
+    public TipoVenta TipoVenta { get; set; } = TipoVenta.Preventa;
     public DateTime? FechaEntregaEstimada { get; set; }
     public string? Notas { get; set; }
     public string? DireccionEntrega { get; set; }

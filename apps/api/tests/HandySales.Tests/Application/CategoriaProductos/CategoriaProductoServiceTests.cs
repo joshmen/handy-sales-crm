@@ -56,6 +56,7 @@ namespace HandySales.Tests.Application.CategoriasProductos
         {
             // Arrange
             var dto = new CategoriaProductoCreateDto { Nombre = "Nueva" };
+            _repoMock.Setup(r => r.ExisteNombreAsync(dto.Nombre, 1, null)).ReturnsAsync(false);
             _repoMock.Setup(r => r.CrearAsync(dto, 1)).ReturnsAsync(10);
 
             // Act
@@ -71,6 +72,7 @@ namespace HandySales.Tests.Application.CategoriasProductos
         {
             // Arrange
             var dto = new CategoriaProductoCreateDto { Nombre = "Actualizada" };
+            _repoMock.Setup(r => r.ExisteNombreAsync(dto.Nombre, 1, 2)).ReturnsAsync(false);
             _repoMock.Setup(r => r.ActualizarAsync(2, dto, 1)).ReturnsAsync(true);
 
             // Act
@@ -82,16 +84,17 @@ namespace HandySales.Tests.Application.CategoriasProductos
         }
 
         [Fact]
-        public async Task EliminarCategoriaAsync_DeberiaLlamarRepositorioConTenant()
+        public async Task EliminarCategoriaAsync_DeberiaRetornarSuccessTrue()
         {
             // Arrange
+            _repoMock.Setup(r => r.ContarProductosPorCategoriaAsync(3, 1)).ReturnsAsync(0);
             _repoMock.Setup(r => r.EliminarAsync(3, 1)).ReturnsAsync(true);
 
             // Act
             var resultado = await _service.EliminarCategoriaAsync(3);
 
             // Assert
-            Assert.True(resultado);
+            Assert.True(resultado.Success);
             _repoMock.Verify(r => r.EliminarAsync(3, 1), Times.Once);
         }
     }

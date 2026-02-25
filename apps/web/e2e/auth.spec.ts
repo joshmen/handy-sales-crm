@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { loginAsAdmin } from './helpers/auth';
 
 test.describe('Authentication', () => {
   test('should show login page', async ({ page }) => {
@@ -55,16 +56,7 @@ test.describe('Authentication', () => {
 
   test.skip('should logout successfully', async ({ page }) => {
     // TODO: Implement once logout button is identified in the UI
-    // First login (using same selectors as the passing login test)
-    await page.goto('/login');
-    await page.keyboard.press('Escape');
-    await page.waitForTimeout(500);
-
-    await page.locator('#email').fill('superadmin@handy.com');
-    await page.locator('#password').fill('password123');
-    await page.getByRole('button', { name: /Iniciar Sesión/i }).click({ force: true });
-
-    await expect(page).toHaveURL(/dashboard/, { timeout: 15000 });
+    await loginAsAdmin(page);
 
     // Click logout - look for logout button in the sidebar or header
     const logoutButton = page.getByRole('button', { name: /logout|salir|cerrar/i });

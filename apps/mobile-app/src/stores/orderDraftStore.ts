@@ -17,12 +17,16 @@ interface OrderDraftState {
   clienteNombre: string;
   items: DraftItem[];
   notas: string;
+  tipoVenta: number; // 0=Preventa, 1=VentaDirecta
+  metodoPago: number; // 0=Efectivo, 1=Transferencia, 2=Cheque, 3=T.Crédito, 4=T.Débito, 5=Otro
 
   setCliente: (id: string, serverId: number | null, nombre: string) => void;
   addItem: (producto: Producto, cantidad?: number) => void;
   removeItem: (productoId: string) => void;
   updateQuantity: (productoId: string, cantidad: number) => void;
   setNotas: (notas: string) => void;
+  setTipoVenta: (tipoVenta: number) => void;
+  setMetodoPago: (metodoPago: number) => void;
   reset: () => void;
 
   // Computed-like
@@ -40,6 +44,8 @@ export const useOrderDraftStore = create<OrderDraftState>((set, get) => ({
   clienteNombre: '',
   items: [],
   notas: '',
+  tipoVenta: 0,
+  metodoPago: 0,
 
   setCliente: (id, serverId, nombre) =>
     set({ clienteId: id, clienteServerId: serverId, clienteNombre: nombre }),
@@ -90,8 +96,12 @@ export const useOrderDraftStore = create<OrderDraftState>((set, get) => ({
 
   setNotas: (notas) => set({ notas }),
 
+  setTipoVenta: (tipoVenta) => set({ tipoVenta }),
+
+  setMetodoPago: (metodoPago) => set({ metodoPago }),
+
   reset: () =>
-    set({ clienteId: null, clienteServerId: null, clienteNombre: '', items: [], notas: '' }),
+    set({ clienteId: null, clienteServerId: null, clienteNombre: '', items: [], notas: '', tipoVenta: 0, metodoPago: 0 }),
 
   itemCount: () => get().items.reduce((sum, i) => sum + i.cantidad, 0),
   subtotal: () =>

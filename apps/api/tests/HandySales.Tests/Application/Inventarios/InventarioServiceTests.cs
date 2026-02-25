@@ -59,14 +59,16 @@ namespace HandySales.Tests.Application.Inventario
         }
 
         [Fact]
-        public async Task CrearInventarioAsync_DeberiaRetornarId()
+        public async Task CrearInventarioAsync_DeberiaRetornarSuccessConId()
         {
             var dto = new InventarioCreateDto();
+            _repoMock.Setup(r => r.ObtenerPorProductoIdAsync(dto.ProductoId, 1)).ReturnsAsync((InventarioDto?)null);
             _repoMock.Setup(r => r.CrearAsync(dto, 1)).ReturnsAsync(123);
 
-            var id = await _service.CrearInventarioAsync(dto);
+            var result = await _service.CrearInventarioAsync(dto);
 
-            Assert.Equal(123, id);
+            Assert.True(result.Success);
+            Assert.Equal(123, result.Id);
             _repoMock.Verify(r => r.CrearAsync(dto, 1), Times.Once);
         }
 

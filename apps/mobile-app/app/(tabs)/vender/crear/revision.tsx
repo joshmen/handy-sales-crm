@@ -1,17 +1,26 @@
 import { useState } from 'react';
-import { View, Text, ScrollView, TextInput, Alert, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TextInput, Alert, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useOrderDraftStore } from '@/stores';
 import { useAuthStore } from '@/stores';
-import { createPedidoOffline } from '@/db/actions';
+import { createPedidoOffline, createVentaDirectaOffline } from '@/db/actions';
 import { performSync } from '@/sync/syncEngine';
 import { ProgressSteps } from '@/components/shared/ProgressSteps';
 import { Card, Button } from '@/components/ui';
 import { QuantityStepper } from '@/components/shared/QuantityStepper';
 import { formatCurrency } from '@/utils/format';
-import { User, Package, Send } from 'lucide-react-native';
+import { User, Package, Send, Zap, Banknote, Building2, FileText, CreditCard, Wallet, MoreHorizontal } from 'lucide-react-native';
 
 const STEPS = ['Cliente', 'Productos', 'Revisar'];
+
+const METODO_PAGO_OPTIONS = [
+  { value: 0, label: 'Efectivo', icon: Banknote },
+  { value: 1, label: 'Transferencia', icon: Building2 },
+  { value: 2, label: 'Cheque', icon: FileText },
+  { value: 3, label: 'T. Crédito', icon: CreditCard },
+  { value: 4, label: 'T. Débito', icon: Wallet },
+  { value: 5, label: 'Otro', icon: MoreHorizontal },
+];
 
 export default function CrearPedidoStep3() {
   const router = useRouter();
@@ -24,45 +33,75 @@ export default function CrearPedidoStep3() {
     clienteNombre,
     items,
     notas,
+    tipoVenta,
+    metodoPago,
     updateQuantity,
     removeItem,
     setNotas,
+    setMetodoPago,
     subtotal,
     impuestos,
     total,
     reset,
   } = useOrderDraftStore();
 
+  const isDirecta = tipoVenta === 1;
+
   const handleEnviar = () => {
     if (!clienteId || items.length === 0) return;
 
+    const alertTitle = isDirecta ? 'Venta Directa' : 'Levantar Pedido';
+    const alertMessage = isDirecta
+      ? `¿Confirmar venta directa para ${clienteNombre}?\n\nTotal: ${formatCurrency(total())}`
+      : `¿Confirmar pedido para ${clienteNombre}?\n\nTotal: ${formatCurrency(total())}`;
+    const confirmText = isDirecta ? 'Cobrar' : 'Enviar';
+
     Alert.alert(
-      'Enviar Pedido',
-      `¿Confirmar pedido para ${clienteNombre}?\n\nTotal: ${formatCurrency(total())}`,
+      alertTitle,
+      alertMessage,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
-          text: 'Enviar',
+          text: confirmText,
           onPress: async () => {
             setSending(true);
             try {
-              const pedido = await createPedidoOffline(
-                clienteId,
-                clienteServerId,
-                user?.id ? Number(user.id) : 0,
-                items.map((item) => ({
-                  productoId: item.productoId,
-                  productoServerId: item.productoServerId,
-                  productoNombre: item.nombre,
-                  cantidad: item.cantidad,
-                  precioUnitario: item.precioUnitario,
-                })),
-                notas || undefined
-              );
-              reset();
-              // Try to sync immediately if online
-              performSync().catch(() => {});
-              router.replace(`/(tabs)/vender/crear/exito?numero=${pedido.id.slice(0, 8)}&id=${pedido.id}` as any);
+              const mappedItems = items.map((item) => ({
+                productoId: item.productoId,
+                productoServerId: item.productoServerId,
+                productoNombre: item.nombre,
+                cantidad: item.cantidad,
+                precioUnitario: item.precioUnitario,
+              }));
+
+              if (isDirecta) {
+                const { pedido } = await createVentaDirectaOffline(
+                  clienteId,
+                  clienteServerId,
+                  user?.id ? Number(user.id) : 0,
+                  mappedItems,
+                  metodoPago,
+                  total(),
+                  undefined,
+                  notas || undefined
+                );
+                reset();
+                performSync().catch(() => {});
+                router.replace(`/(tabs)/vender/crear/exito?numero=${pedido.id.slice(0, 8)}&id=${pedido.id}&tipo=directa` as any);
+              } else {
+                const pedido = await createPedidoOffline(
+                  clienteId,
+                  clienteServerId,
+                  user?.id ? Number(user.id) : 0,
+                  mappedItems,
+                  notas || undefined,
+                  0, // tipoVenta = Preventa
+                  1  // estado = Enviado
+                );
+                reset();
+                performSync().catch(() => {});
+                router.replace(`/(tabs)/vender/crear/exito?numero=${pedido.id.slice(0, 8)}&id=${pedido.id}` as any);
+              }
             } catch {
               Alert.alert('Error', 'No se pudo crear el pedido. Intenta de nuevo.');
             } finally {
@@ -135,6 +174,44 @@ export default function CrearPedidoStep3() {
           </View>
         </Card>
 
+        {/* Payment Method (Venta Directa only) */}
+        {isDirecta && (
+          <Card className="mx-4 mb-3">
+            <Text style={styles.paymentLabel}>Método de Pago</Text>
+            <View style={styles.paymentGrid}>
+              {METODO_PAGO_OPTIONS.map((option) => {
+                const isSelected = metodoPago === option.value;
+                const Icon = option.icon;
+                return (
+                  <TouchableOpacity
+                    key={option.value}
+                    style={[
+                      styles.paymentOption,
+                      isSelected && styles.paymentOptionSelected,
+                    ]}
+                    onPress={() => setMetodoPago(option.value)}
+                    activeOpacity={0.7}
+                  >
+                    <Icon
+                      size={20}
+                      color={isSelected ? '#16a34a' : '#64748b'}
+                    />
+                    <Text
+                      style={[
+                        styles.paymentOptionText,
+                        isSelected && styles.paymentOptionTextSelected,
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </Card>
+        )}
+
         {/* Notes */}
         <Card className="mx-4 mb-4">
           <Text style={styles.notesLabel}>Notas (opcional)</Text>
@@ -154,12 +231,15 @@ export default function CrearPedidoStep3() {
       {/* Send Button */}
       <View style={styles.footer}>
         <Button
-          title="Enviar Pedido"
+          title={isDirecta ? 'Cobrar y Entregar' : 'Levantar Pedido'}
           onPress={handleEnviar}
           loading={sending}
           disabled={items.length === 0}
           fullWidth
-          icon={<Send size={18} color="#ffffff" />}
+          icon={isDirecta
+            ? <Zap size={18} color="#ffffff" />
+            : <Send size={18} color="#ffffff" />
+          }
         />
       </View>
     </View>
@@ -221,6 +301,35 @@ const styles = StyleSheet.create({
   },
   grandTotalLabel: { fontSize: 16, fontWeight: '800', color: '#0f172a' },
   grandTotalValue: { fontSize: 16, fontWeight: '800', color: '#0f172a' },
+  paymentLabel: { fontSize: 13, fontWeight: '600', color: '#1e293b', marginBottom: 12 },
+  paymentGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  paymentOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: '#f1f5f9',
+    borderWidth: 1.5,
+    borderColor: '#f1f5f9',
+  },
+  paymentOptionSelected: {
+    backgroundColor: '#f0fdf4',
+    borderColor: '#16a34a',
+  },
+  paymentOptionText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#64748b',
+  },
+  paymentOptionTextSelected: {
+    color: '#16a34a',
+  },
   notesLabel: { fontSize: 13, fontWeight: '600', color: '#1e293b', marginBottom: 8 },
   notesInput: {
     backgroundColor: '#f8fafc',

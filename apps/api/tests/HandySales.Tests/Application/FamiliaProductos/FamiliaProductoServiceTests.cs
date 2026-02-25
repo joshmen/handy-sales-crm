@@ -55,7 +55,8 @@ namespace HandySales.Tests.Application.FamiliasProductos
         [Fact]
         public async Task CrearFamiliaAsync_DeberiaRetornarNuevoId()
         {
-            var dto = new FamiliaProductoCreateDto { TenandId = 1, Nombre = "Nueva", Descripcion = "Detalle" };
+            var dto = new FamiliaProductoCreateDto { TenantId = 1, Nombre = "Nueva", Descripcion = "Detalle" };
+            _repoMock.Setup(r => r.ExisteNombreAsync(dto.Nombre, 1, null)).ReturnsAsync(false);
             _repoMock.Setup(r => r.CrearAsync(dto, 1)).ReturnsAsync(99);
 
             var result = await _service.CrearFamiliaAsync(dto);
@@ -66,7 +67,8 @@ namespace HandySales.Tests.Application.FamiliasProductos
         [Fact]
         public async Task ActualizarFamiliaAsync_DeberiaRetornarTrue_SiExito()
         {
-            var dto = new FamiliaProductoCreateDto { TenandId = 1, Nombre = "Editada", Descripcion = "Modificado" };
+            var dto = new FamiliaProductoCreateDto { TenantId = 1, Nombre = "Editada", Descripcion = "Modificado" };
+            _repoMock.Setup(r => r.ExisteNombreAsync(dto.Nombre, 1, 1)).ReturnsAsync(false);
             _repoMock.Setup(r => r.ActualizarAsync(1, dto, 1)).ReturnsAsync(true);
 
             var result = await _service.ActualizarFamiliaAsync(1, dto);
@@ -75,13 +77,14 @@ namespace HandySales.Tests.Application.FamiliasProductos
         }
 
         [Fact]
-        public async Task EliminarFamiliaAsync_DeberiaRetornarTrue_SiExito()
+        public async Task EliminarFamiliaAsync_DeberiaRetornarSuccessTrue_SiExito()
         {
+            _repoMock.Setup(r => r.ContarProductosPorFamiliaAsync(1, 1)).ReturnsAsync(0);
             _repoMock.Setup(r => r.EliminarAsync(1, 1)).ReturnsAsync(true);
 
             var result = await _service.EliminarFamiliaAsync(1);
 
-            result.Should().BeTrue();
+            result.Success.Should().BeTrue();
         }
     }
 }

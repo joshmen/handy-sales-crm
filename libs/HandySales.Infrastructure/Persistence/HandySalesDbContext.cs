@@ -545,10 +545,11 @@ public class HandySalesDbContext : DbContext
                   .HasForeignKey(c => c.TenantId)
                   .OnDelete(DeleteBehavior.Cascade);
 
-            // Relación con Pedido
+            // Relación con Pedido (nullable — cobros can be standalone payments)
             entity.HasOne(c => c.Pedido)
                   .WithMany()
                   .HasForeignKey(c => c.PedidoId)
+                  .IsRequired(false)
                   .OnDelete(DeleteBehavior.Restrict);
 
             // Relación con Cliente

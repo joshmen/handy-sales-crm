@@ -15,5 +15,22 @@ export const migrations = schemaMigrations({
         }),
       ],
     },
+    {
+      toVersion: 3,
+      steps: [
+        addColumns({
+          table: 'pedidos',
+          columns: [
+            { name: 'tipo_venta', type: 'number' },
+          ],
+        }),
+        addColumns({
+          table: 'cobros',
+          columns: [
+            { name: 'pedido_id', type: 'string', isOptional: true },
+          ],
+        }),
+      ],
+    },
   ],
 });

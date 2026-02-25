@@ -126,6 +126,8 @@ function mapApiOrderToOrder(apiOrder: OrderListItem): Order {
     notes: '',
     paymentMethod: 'cash',
     paymentStatus: 'pending',
+    tipoVenta: apiOrder.tipoVenta,
+    tipoVentaNombre: apiOrder.tipoVentaNombre,
     createdAt: new Date(apiOrder.creadoEn),
     updatedAt: new Date(apiOrder.creadoEn),
   };
@@ -149,6 +151,7 @@ export default function OrdersPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterUser, setFilterUser] = useState('all');
+  const [tipoVentaFilter, setTipoVentaFilter] = useState<'' | '0' | '1'>('');
   const [activeTab, setActiveTab] = useState<'lista' | 'mapa'>('lista');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -166,8 +169,9 @@ export default function OrdersPage() {
     try {
       setLoading(true);
       setError(null);
-      const params: { page: number; pageSize: number; usuarioId?: number } = { page: currentPage, pageSize };
+      const params: { page: number; pageSize: number; usuarioId?: number; tipoVenta?: number } = { page: currentPage, pageSize };
       if (filterUser !== 'all') params.usuarioId = parseInt(filterUser);
+      if (tipoVentaFilter !== '') params.tipoVenta = parseInt(tipoVentaFilter);
       const response = await orderService.getOrders(params);
       const mappedOrders = response.items.map(mapApiOrderToOrder);
       setOrders(mappedOrders);
@@ -180,7 +184,7 @@ export default function OrdersPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, filterUser]);
+  }, [currentPage, filterUser, tipoVentaFilter]);
 
   const fetchFormData = useCallback(async () => {
     // Load clients and products independently so one failure doesn't block the other
@@ -380,6 +384,17 @@ export default function OrdersPage() {
             </div>
             )}
 
+            {/* Tipo Venta Filter */}
+            <select
+              value={tipoVentaFilter}
+              onChange={(e) => { setTipoVentaFilter(e.target.value as '' | '0' | '1'); setCurrentPage(1); }}
+              className="px-3 py-2 h-10 text-[13px] text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            >
+              <option value="">Todos los tipos</option>
+              <option value="0">Preventa</option>
+              <option value="1">Venta Directa</option>
+            </select>
+
             {/* More Filters Button */}
             <button className="flex items-center gap-2 px-4 py-2 h-10 text-[13px] font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 transition-colors">
               <Filter className="w-4 h-4 text-violet-500" />
@@ -481,6 +496,16 @@ export default function OrdersPage() {
                         {statusLabels[order.status]}
                       </span>
                     </div>
+                    {/* TipoVenta badge */}
+                    <div className="flex justify-end mt-1">
+                      <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full ${
+                        order.tipoVenta === 1
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-blue-100 text-blue-700'
+                      }`}>
+                        {order.tipoVenta === 1 ? 'Venta Directa' : 'Preventa'}
+                      </span>
+                    </div>
                     {/* Row 2: Metrics */}
                     <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 mb-2.5">
                       <span className="flex items-center gap-1">
@@ -522,12 +547,13 @@ export default function OrdersPage() {
             {/* Orders Table */}
             <div className="hidden sm:block bg-white border border-gray-200 rounded-lg overflow-x-auto" data-tour="orders-table">
               {/* Table Header - Always visible */}
-              <div className="flex items-center bg-gray-50 px-4 h-10 border-b border-gray-200 min-w-[820px]">
+              <div className="flex items-center bg-gray-50 px-4 h-10 border-b border-gray-200 min-w-[920px]">
                 <div className="w-[100px] text-xs font-semibold text-gray-700"># Pedido</div>
                 <div className="flex-1 text-xs font-semibold text-gray-700">Cliente</div>
                 <div className="w-[120px] text-xs font-semibold text-gray-700">Vendedor</div>
                 <div className="w-[100px] text-xs font-semibold text-gray-700">Fecha</div>
                 <div className="w-[100px] text-xs font-semibold text-gray-700">Estado</div>
+                <div className="w-[100px] text-xs font-semibold text-gray-700">Tipo</div>
                 <div className="w-[100px] text-xs font-semibold text-gray-700 text-right">Total</div>
                 <div className="w-[100px] text-xs font-semibold text-gray-700 text-center">Acciones</div>
               </div>
@@ -562,7 +588,7 @@ export default function OrdersPage() {
                     {filteredOrders.map((order) => (
                   <div
                     key={order.id}
-                    className="flex items-center px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors min-w-[820px]"
+                    className="flex items-center px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors min-w-[920px]"
                   >
                     <div className="w-[100px] text-[13px] text-gray-900 font-medium">
                       {order.code}
@@ -579,6 +605,15 @@ export default function OrdersPage() {
                     <div className="w-[100px]">
                       <span className={`px-2 py-1 text-[11px] font-medium rounded-full ${statusColors[order.status]}`}>
                         {statusLabels[order.status]}
+                      </span>
+                    </div>
+                    <div className="w-[100px]">
+                      <span className={`px-2 py-1 text-[11px] font-medium rounded-full ${
+                        order.tipoVenta === 1
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-blue-100 text-blue-700'
+                      }`}>
+                        {order.tipoVenta === 1 ? 'Venta Directa' : 'Preventa'}
                       </span>
                     </div>
                     <div className="w-[100px] text-[13px] text-gray-900 font-medium text-right">

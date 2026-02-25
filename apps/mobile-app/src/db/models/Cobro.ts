@@ -8,6 +8,7 @@ export default class Cobro extends Model {
   @field('cliente_id') clienteId!: string;
   @field('cliente_server_id') clienteServerId!: number | null;
   @field('usuario_id') usuarioId!: number;
+  @field('pedido_id') pedidoId!: string | null;
   @field('monto') monto!: number;
   @field('metodo_pago') metodoPago!: number;
   @text('referencia') referencia!: string | null;

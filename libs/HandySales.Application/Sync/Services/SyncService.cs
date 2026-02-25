@@ -319,6 +319,7 @@ public class SyncService
                 FechaPedido = p.FechaPedido,
                 FechaEntregaEstimada = p.FechaEntregaEstimada,
                 Estado = (int)p.Estado,
+                TipoVenta = (int)p.TipoVenta,
                 Subtotal = p.Subtotal,
                 Descuento = p.Descuento,
                 Impuestos = p.Impuestos,

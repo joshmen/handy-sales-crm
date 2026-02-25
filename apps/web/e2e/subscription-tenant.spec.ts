@@ -1,4 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
+import { loginAsAdmin, loginAsSuperAdmin } from './helpers/auth';
 
 /**
  * Subscription + Tenant Deactivation E2E Tests
@@ -18,40 +19,6 @@ const API_BASE = 'http://localhost:1050';
 
 test.describe.configure({ mode: 'serial' });
 test.use({ navigationTimeout: 60000, actionTimeout: 15000 });
-
-// ─── Auth helpers ──────────────────────────────────────────────
-
-async function loginAsSuperAdmin(page: Page) {
-  const csrfRes = await page.request.get('/api/auth/csrf');
-  const { csrfToken } = await csrfRes.json();
-
-  await page.request.post('/api/auth/callback/credentials', {
-    form: {
-      email: 'superadmin@handysales.com',
-      password: 'test123',
-      csrfToken,
-    },
-  });
-
-  await page.goto('/dashboard');
-  await page.waitForTimeout(3000);
-}
-
-async function loginAsAdmin(page: Page) {
-  const csrfRes = await page.request.get('/api/auth/csrf');
-  const { csrfToken } = await csrfRes.json();
-
-  await page.request.post('/api/auth/callback/credentials', {
-    form: {
-      email: 'admin@jeyma.com',
-      password: 'test123',
-      csrfToken,
-    },
-  });
-
-  await page.goto('/dashboard');
-  await expect(page).toHaveURL(/dashboard/, { timeout: 15000 });
-}
 
 async function getBackendToken(page: Page, email: string, password: string): Promise<string> {
   const res = await page.request.post(`${API_BASE}/auth/login`, {

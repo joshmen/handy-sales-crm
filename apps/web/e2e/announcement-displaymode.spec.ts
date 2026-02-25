@@ -1,4 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
+import { loginAsAdmin, loginAsSuperAdmin } from './helpers/auth';
 
 /**
  * E2E Tests for Announcement DisplayMode Feature
@@ -13,27 +14,6 @@ import { test, expect, Page } from '@playwright/test';
 
 test.describe.configure({ mode: 'serial' });
 test.use({ navigationTimeout: 60000, actionTimeout: 15000 });
-
-// ─── Auth helpers ──────────────────────────────────────────────
-async function loginViaAPI(page: Page, email: string, password: string) {
-  const csrfRes = await page.request.get('/api/auth/csrf');
-  const { csrfToken } = await csrfRes.json();
-  await page.request.post('/api/auth/callback/credentials', {
-    form: { email, password, csrfToken },
-  });
-}
-
-async function loginAsSuperAdmin(page: Page) {
-  await loginViaAPI(page, 'superadmin@handysales.com', 'test123');
-  await page.goto('/admin/system-dashboard');
-  await page.waitForTimeout(3000);
-}
-
-async function loginAsAdmin(page: Page) {
-  await loginViaAPI(page, 'admin@jeyma.com', 'test123');
-  await page.goto('/dashboard');
-  await expect(page).toHaveURL(/dashboard/, { timeout: 15000 });
-}
 
 async function waitForPageLoad(page: Page) {
   await page.waitForTimeout(1000);

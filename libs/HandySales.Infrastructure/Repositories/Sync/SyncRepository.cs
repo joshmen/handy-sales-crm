@@ -192,6 +192,7 @@ public class SyncRepository : ISyncRepository
 
                 existing.FechaEntregaEstimada = dto.FechaEntregaEstimada;
                 existing.Estado = (EstadoPedido)dto.Estado;
+                existing.TipoVenta = (TipoVenta)dto.TipoVenta;
                 existing.Notas = dto.Notas;
                 existing.DireccionEntrega = dto.DireccionEntrega;
                 existing.Latitud = dto.Latitud;
@@ -250,6 +251,7 @@ public class SyncRepository : ISyncRepository
             FechaPedido = dto.FechaPedido,
             FechaEntregaEstimada = dto.FechaEntregaEstimada,
             Estado = (EstadoPedido)dto.Estado,
+            TipoVenta = (TipoVenta)dto.TipoVenta,
             Subtotal = dto.Subtotal,
             Descuento = dto.Descuento,
             Impuestos = dto.Impuestos,

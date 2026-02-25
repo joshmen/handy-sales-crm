@@ -7,23 +7,36 @@ import { CheckCircle, Eye, Plus, Home } from 'lucide-react-native';
 export default function PedidoExitoScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { numero, id } = useLocalSearchParams<{ numero: string; id: string }>();
+  const { numero, id, tipo } = useLocalSearchParams<{ numero: string; id: string; tipo?: string }>();
+
+  const isDirecta = tipo === 'directa';
+  const title = isDirecta ? 'Venta Completada' : 'Pedido Levantado';
+  const subtitle = isDirecta
+    ? 'Venta cobrada y entregada exitosamente'
+    : 'Tu pedido ha sido levantado exitosamente';
+  const iconColor = isDirecta ? '#16a34a' : '#16a34a';
+  const badgeBg = isDirecta ? '#f0fdf4' : '#f0fdf4';
+  const badgeBorder = isDirecta ? '#dcfce7' : '#dcfce7';
+  const badgeLabelColor = isDirecta ? '#16a34a' : '#16a34a';
+  const badgeNumberColor = isDirecta ? '#15803d' : '#15803d';
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 40 }]}>
       <View style={styles.iconContainer}>
         <View style={styles.iconCircle}>
-          <CheckCircle size={56} color="#16a34a" />
+          <CheckCircle size={56} color={iconColor} />
         </View>
       </View>
 
-      <Text style={styles.title}>Pedido Enviado</Text>
-      <Text style={styles.subtitle}>Tu pedido ha sido creado y enviado exitosamente</Text>
+      <Text style={styles.title}>{title}</Text>
+      <Text style={styles.subtitle}>{subtitle}</Text>
 
       {numero && (
-        <View style={styles.orderBadge}>
-          <Text style={styles.orderBadgeLabel}>Número de Pedido</Text>
-          <Text style={styles.orderBadgeNumber}>#{numero}</Text>
+        <View style={[styles.orderBadge, { backgroundColor: badgeBg, borderColor: badgeBorder }]}>
+          <Text style={[styles.orderBadgeLabel, { color: badgeLabelColor }]}>
+            {isDirecta ? 'Referencia' : 'Número de Pedido'}
+          </Text>
+          <Text style={[styles.orderBadgeNumber, { color: badgeNumberColor }]}>#{numero}</Text>
         </View>
       )}
 
@@ -38,7 +51,7 @@ export default function PedidoExitoScreen() {
         )}
         <Button
           title="Nuevo Pedido"
-          onPress={() => router.replace('/(tabs)/vender/crear' as any)}
+          onPress={() => router.replace('/(tabs)/vender/crear/modo' as any)}
           variant="secondary"
           fullWidth
           icon={<Plus size={18} color="#2563eb" />}
@@ -85,25 +98,21 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   orderBadge: {
-    backgroundColor: '#f0fdf4',
     borderRadius: 16,
     paddingHorizontal: 24,
     paddingVertical: 16,
     alignItems: 'center',
     marginBottom: 32,
     borderWidth: 1,
-    borderColor: '#dcfce7',
   },
   orderBadgeLabel: {
     fontSize: 12,
-    color: '#16a34a',
     fontWeight: '500',
     marginBottom: 4,
   },
   orderBadgeNumber: {
     fontSize: 28,
     fontWeight: '800',
-    color: '#15803d',
   },
   actions: {
     width: '100%',
