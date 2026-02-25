@@ -443,11 +443,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
   // SIEMPRE llamar useCompany para mantener orden de hooks
   const { settings: companySettings } = useCompany();
   const router = useRouter();
-  const shouldShowCompanySettings =
-    session?.user?.role === 'ADMIN' || session?.user?.role === 'VENDEDOR';
   const { profile } = useProfile();
   const { isImpersonating } = useImpersonationStore();
   const isSuperAdminDirect = session?.user?.role === 'SUPER_ADMIN' && !isImpersonating;
+  const shouldShowCompanySettings =
+    session?.user?.role === 'ADMIN' || session?.user?.role === 'VENDEDOR' || isImpersonating;
   const { open: sidebarOpen, collapsed: sidebarCollapsed, toggle, toggleCollapsed } = useSidebar();
   const pathname = usePathname();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
@@ -515,8 +515,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
     if (!permission) return true;
     if (!session?.user?.role) return false;
 
-    const userRole = session.user.role;
-    const userPermissions = ROLE_PERMISSIONS[userRole] || [];
+    // Cuando impersonamos, usar permisos de ADMIN (no SUPER_ADMIN)
+    // para que el sidebar muestre exactamente lo que vería el admin del tenant
+    const effectiveRole = (session.user.role === 'SUPER_ADMIN' && isImpersonating)
+      ? 'ADMIN'
+      : session.user.role;
+    const userPermissions = ROLE_PERMISSIONS[effectiveRole] || [];
 
     if (Array.isArray(permission)) {
       return permission.some(p => userPermissions.includes(p));
@@ -883,12 +887,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
                   </div>
                 </div>
               ) : shouldShowCompanySettings ? (
-                // Non-super admin sees company info with company logo
+                // Non-super admin (or impersonating) sees company info with company logo
                 <div
                   className={`flex items-center space-x-3 p-3 rounded-xl bg-gradient-to-r from-green-50 to-blue-50 hover:from-green-100 hover:to-blue-100 transition-all duration-200
-                      ${session.user.role === 'ADMIN' ? 'cursor-pointer' : 'cursor-default'}`}
+                      ${(session.user.role === 'ADMIN' || isImpersonating) ? 'cursor-pointer' : 'cursor-default'}`}
                   onClick={() => {
-                    if (session.user.role === 'ADMIN') {
+                    if (session.user.role === 'ADMIN' || isImpersonating) {
                       router.push('/settings?tab=company');
                     }
                   }}
@@ -911,13 +915,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
                     </p>
                     <div className="mt-1">
                       <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                          session.user.role === 'ADMIN'
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-green-100 text-green-800'
-                        }`}
+                        className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
                       >
-                        {session.user.role}
+                        {isImpersonating ? 'ADMIN (Soporte)' : session.user.role}
                       </span>
                     </div>
                   </div>

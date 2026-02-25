@@ -110,10 +110,16 @@ export default withAuth(
       }
     }
 
+    // Cuando impersonamos, el rol efectivo es ADMIN (no SUPER_ADMIN)
+    // para que el acceso a rutas sea idéntico al del admin del tenant
+    const effectiveRole = (userRole === UserRole.SUPER_ADMIN && token.isImpersonating)
+      ? UserRole.ADMIN
+      : userRole;
+
     // Verificar restricciones de rol para rutas específicas
     for (const [route, allowedRoles] of Object.entries(ROLE_RESTRICTED_ROUTES)) {
       if (pathname.startsWith(route)) {
-        if (!allowedRoles.includes(userRole)) {
+        if (!allowedRoles.includes(effectiveRole)) {
           // Redirigir a dashboard con mensaje de error
           return NextResponse.redirect(new URL('/dashboard?error=unauthorized', req.url));
         }
@@ -121,7 +127,7 @@ export default withAuth(
     }
 
     // Verificar permisos específicos
-    const userPermissions = ROLE_PERMISSIONS[userRole] || [];
+    const userPermissions = ROLE_PERMISSIONS[effectiveRole] || [];
 
     for (const [route, requiredPermissions] of Object.entries(ROUTE_PERMISSIONS)) {
       if (pathname.startsWith(route)) {
