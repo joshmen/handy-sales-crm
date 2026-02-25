@@ -63,13 +63,13 @@ export function isNativeAvailable(): boolean {
 async function requestBluetoothPermissions(): Promise<boolean> {
   if (Platform.OS !== 'android') return true;
 
-  // Android 12+ (API 31) requires runtime Bluetooth permissions
+  // Android 12+ (API 31): only need BLUETOOTH_CONNECT + BLUETOOTH_SCAN
+  // Location is NOT required for BT when neverForLocation flag is set in manifest
   if (Platform.Version >= 31) {
     try {
       const results = await PermissionsAndroid.requestMultiple([
         PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
         PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
       ]);
 
       const allGranted = Object.values(results).every(
@@ -86,7 +86,7 @@ async function requestBluetoothPermissions(): Promise<boolean> {
     }
   }
 
-  // Android <12 only needs location for BT scan
+  // Android <12 (API <=30): needs ACCESS_FINE_LOCATION for BT scanning
   try {
     const granted = await PermissionsAndroid.request(
       PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
