@@ -9,6 +9,7 @@
  * - Bluetooth Classic (SPP) — PT-210, PT-220, MTP-II, etc.
  * - WiFi/Red (TCP/IP) — any ESC/POS network printer
  */
+import { Platform, PermissionsAndroid } from 'react-native';
 import Constants from 'expo-constants';
 import { METODO_PAGO } from '@/types/cobro';
 
@@ -59,13 +60,56 @@ export function isNativeAvailable(): boolean {
 
 // ---------- Bluetooth ----------
 
+async function requestBluetoothPermissions(): Promise<boolean> {
+  if (Platform.OS !== 'android') return true;
+
+  // Android 12+ (API 31) requires runtime Bluetooth permissions
+  if (Platform.Version >= 31) {
+    try {
+      const results = await PermissionsAndroid.requestMultiple([
+        PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+        PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+      ]);
+
+      const allGranted = Object.values(results).every(
+        (r) => r === PermissionsAndroid.RESULTS.GRANTED,
+      );
+
+      if (!allGranted) {
+        console.warn('[Printer] Bluetooth permissions denied:', results);
+      }
+      return allGranted;
+    } catch (e) {
+      console.warn('[Printer] Permission request failed:', e);
+      return false;
+    }
+  }
+
+  // Android <12 only needs location for BT scan
+  try {
+    const granted = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+    );
+    return granted === PermissionsAndroid.RESULTS.GRANTED;
+  } catch {
+    return false;
+  }
+}
+
 export async function enableBluetooth(): Promise<boolean> {
   loadNativeModules();
   if (!nativeAvailable) return false;
+
+  // Request runtime permissions first
+  const permsOk = await requestBluetoothPermissions();
+  if (!permsOk) return false;
+
   try {
     const result = await BluetoothManager.enableBluetooth();
     return !!result;
-  } catch {
+  } catch (e) {
+    console.warn('[Printer] enableBluetooth failed:', e);
     return false;
   }
 }

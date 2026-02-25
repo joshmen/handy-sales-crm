@@ -196,7 +196,7 @@ export default function ReciboScreen() {
       {/* Action Buttons */}
       <View style={styles.footer}>
         <View style={styles.footerButtons}>
-          {printerAvailable && (
+          {printerAvailable ? (
             <View style={styles.actionBtn}>
               <Button
                 title="Imprimir"
@@ -207,7 +207,17 @@ export default function ReciboScreen() {
                 icon={<Printer size={16} color="#2563eb" />}
               />
             </View>
-          )}
+          ) : isNativeAvailable() ? (
+            <View style={styles.actionBtn}>
+              <Button
+                title="Impresora"
+                onPress={() => router.push('/(tabs)/impresora' as any)}
+                variant="outline"
+                fullWidth
+                icon={<Printer size={16} color="#94a3b8" />}
+              />
+            </View>
+          ) : null}
           <View style={styles.actionBtn}>
             <Button
               title="Compartir"

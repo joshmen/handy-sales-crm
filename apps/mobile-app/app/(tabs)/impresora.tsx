@@ -62,7 +62,13 @@ export default function ImpresoraScreen() {
     try {
       const btOn = await enableBluetooth();
       if (!btOn) {
-        Alert.alert('Bluetooth', 'No se pudo activar el Bluetooth. Actívalo manualmente.');
+        Alert.alert(
+          'Bluetooth',
+          'No se pudo activar el Bluetooth.\n\n' +
+          '1. Verifica que el Bluetooth esté encendido\n' +
+          '2. Acepta los permisos de Bluetooth cuando aparezcan\n' +
+          '3. Si los denegaste, ve a Ajustes > Apps > Handy Suites > Permisos',
+        );
         return;
       }
       const found = await scanBluetoothDevices();
