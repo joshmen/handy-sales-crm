@@ -17,9 +17,10 @@ async function fillLoginForm(page: Page, email: string, password: string): Promi
   // Dismiss any Next.js error overlay or modal that may block the form
   await page.keyboard.press('Escape');
   await page.waitForTimeout(500);
-  await page.locator('#email').fill(email);
-  await page.locator('#password').fill(password);
-  await page.getByRole('button', { name: /Iniciar Sesión/i }).click({ force: true });
+  // Use .first() to handle React Strict Mode double-mount edge case
+  await page.locator('#email').first().fill(email);
+  await page.locator('#password').first().fill(password);
+  await page.getByRole('button', { name: /Iniciar Sesión/i }).first().click({ force: true });
 }
 
 /**

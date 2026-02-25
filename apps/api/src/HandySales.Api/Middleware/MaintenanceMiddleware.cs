@@ -54,7 +54,7 @@ public class MaintenanceMiddleware
 
         // SuperAdmin is always exempt
         var isSuperAdmin = context.User.FindFirstValue("es_super_admin") == "True"
-                          || context.User.HasClaim(ClaimTypes.Role, "SuperAdmin");
+                          || context.User.HasClaim(ClaimTypes.Role, "SUPER_ADMIN");
 
         if (isSuperAdmin)
         {

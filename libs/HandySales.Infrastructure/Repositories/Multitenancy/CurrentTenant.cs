@@ -56,7 +56,7 @@ public class CurrentTenant : ICurrentTenant
             if (!_isAdmin.HasValue)
             {
                 var user = _accessor.HttpContext?.User;
-                _isAdmin = user?.FindFirst("es_admin")?.Value == "True" || user?.HasClaim(ClaimTypes.Role, "Admin") == true;
+                _isAdmin = user?.FindFirst("es_admin")?.Value == "True" || user?.HasClaim(ClaimTypes.Role, "ADMIN") == true;
             }
             return _isAdmin.Value;
         }
@@ -69,7 +69,7 @@ public class CurrentTenant : ICurrentTenant
             if (!_isSuperAdmin.HasValue)
             {
                 var user = _accessor.HttpContext?.User;
-                _isSuperAdmin = user?.FindFirst("es_super_admin")?.Value == "True" || user?.HasClaim(ClaimTypes.Role, "SuperAdmin") == true;
+                _isSuperAdmin = user?.FindFirst("es_super_admin")?.Value == "True" || user?.HasClaim(ClaimTypes.Role, "SUPER_ADMIN") == true;
             }
             return _isSuperAdmin.Value;
         }

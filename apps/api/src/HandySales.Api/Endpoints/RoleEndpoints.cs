@@ -18,7 +18,7 @@ public static class RoleEndpoints
         group.MapGet("/", GetAllRoles)
             .WithName("GetAllRoles")
             .WithSummary("Obtiene todos los roles del sistema")
-            .RequireAuthorization(policy => policy.RequireRole("Admin", "SuperAdmin"));
+            .RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         // GET /api/roles/active - Obtener solo roles activos (Para selects)
         group.MapGet("/active", GetActiveRoles)
@@ -29,25 +29,25 @@ public static class RoleEndpoints
         group.MapGet("/{id:int}", GetRoleById)
             .WithName("GetRoleById")
             .WithSummary("Obtiene un rol por su ID")
-            .RequireAuthorization(policy => policy.RequireRole("Admin", "SuperAdmin"));
+            .RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         // POST /api/roles - Crear nuevo rol
         group.MapPost("/", CreateRole)
             .WithName("CreateRole")
             .WithSummary("Crea un nuevo rol")
-            .RequireAuthorization(policy => policy.RequireRole("Admin", "SuperAdmin"));
+            .RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         // PUT /api/roles/{id} - Actualizar rol
         group.MapPut("/{id:int}", UpdateRole)
             .WithName("UpdateRole")
             .WithSummary("Actualiza un rol existente")
-            .RequireAuthorization(policy => policy.RequireRole("Admin", "SuperAdmin"));
+            .RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         // DELETE /api/roles/{id} - Eliminar rol
         group.MapDelete("/{id:int}", DeleteRole)
             .WithName("DeleteRole")
             .WithSummary("Elimina un rol")
-            .RequireAuthorization(policy => policy.RequireRole("SuperAdmin")); // Solo SuperAdmin
+            .RequireAuthorization(policy => policy.RequireRole("SUPER_ADMIN")); // Solo SuperAdmin
     }
 
     private static async Task<IResult> GetAllRoles(
