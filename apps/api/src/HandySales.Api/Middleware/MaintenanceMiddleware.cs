@@ -16,7 +16,7 @@ public class MaintenanceMiddleware
     private static readonly TimeSpan CacheDuration = TimeSpan.FromSeconds(15);
 
     // Paths that are always allowed regardless of maintenance mode
-    private static readonly string[] AllowedPrefixes = { "/auth", "/health", "/swagger" };
+    private static readonly string[] AllowedPrefixes = { "/auth", "/health", "/swagger", "/api/superadmin", "/api/notificaciones/banners" };
 
     // HTTP methods considered "write" operations
     private static readonly string[] WriteMethods = { "POST", "PUT", "PATCH", "DELETE" };

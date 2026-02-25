@@ -77,18 +77,11 @@ namespace HandySales.Tests.Integration.Auth
         [Fact]
         public async Task LoginAsync_DeberiaRegistrarActivityLog_CuandoLoginEsExitoso()
         {
-            // Arrange
-            var email = $"test{Guid.NewGuid():N}@example.com";
-            var password = "TestPassword123";
-
-            var registerDto = new UsuarioRegisterDto
-            {
-                Email = email,
-                Password = password,
-                Nombre = "Test User",
-                NombreEmpresa = "Test Company"
-            };
-            await _authService.RegisterAsync(registerDto);
+            // Arrange — use pre-seeded user with EmailVerificado=true so login completes
+            // and activity log is recorded. Registering a new user requires email verification
+            // which would prevent the login from completing.
+            var email = "user124@test.com";
+            var password = "Test123!";
 
             var loginDto = new UsuarioLoginDto
             {
@@ -110,7 +103,7 @@ namespace HandySales.Tests.Integration.Auth
             activityLogs.Should().NotBeEmpty();
             var loginActivity = activityLogs.FirstOrDefault(a => a.Description.Contains(email));
             loginActivity.Should().NotBeNull();
-            loginActivity.ActivityCategory.Should().Be("auth");
+            loginActivity!.ActivityCategory.Should().Be("auth");
             loginActivity.ActivityType.Should().Be("login");
             loginActivity.ActivityStatus.Should().Be("success");
         }
@@ -184,22 +177,12 @@ namespace HandySales.Tests.Integration.Auth
         [Fact]
         public async Task RefreshTokenAsync_DeberiaCrearNuevoRefreshToken_CuandoTokenEsValido()
         {
-            // Arrange - Crear usuario y hacer login para obtener refresh token
-            var email = $"test{Guid.NewGuid():N}@example.com";
-            var password = "TestPassword123";
-            var registerDto = new UsuarioRegisterDto
-            {
-                Email = email,
-                Password = password,
-                Nombre = "Test User",
-                NombreEmpresa = "Test Company"
-            };
-            await _authService.RegisterAsync(registerDto);
-
+            // Arrange - Use pre-seeded user with EmailVerificado=true so login returns a refresh token
+            // (newly registered users require email verification and won't return a token)
             var loginDto = new UsuarioLoginDto
             {
-                email = email,
-                password = password
+                email = "user123@test.com",
+                password = "Test123!"
             };
             var loginResult = await _authService.LoginAsync(loginDto);
 

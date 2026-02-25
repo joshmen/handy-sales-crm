@@ -118,10 +118,10 @@ namespace HandySales.Tests.Infrastructure.ActivityTracking
         [Fact]
         public async Task GetActivityLogsAsync_DeberiaFiltrarPorUsuario_CuandoSeEspecifica()
         {
-            // Arrange
-            var tenantId = 1;
-            var userId = 123;
-            var otherUserId = 124;
+            // Arrange — use unique IDs to avoid data leakage from other tests
+            var tenantId = 9001;
+            var userId = 9001;
+            var otherUserId = 9002;
 
             var userActivity = new ActivityLog
             {
@@ -161,16 +161,17 @@ namespace HandySales.Tests.Infrastructure.ActivityTracking
         [Fact]
         public async Task GetActivitiesCountAsync_DeberiaContarActividades_DelTenantEspecificado()
         {
-            // Arrange
-            var tenantId = 1;
-            var otherTenantId = 2;
+            // Arrange — use unique IDs to avoid data leakage from other tests
+            // tenantId=9010 has userId=9010; tenantId=9020 has userId=9020 (seeded)
+            var tenantId = 9010;
+            var otherTenantId = 9020;
             var today = DateTime.UtcNow.Date;
 
             // Actividades de hoy para tenant 1
             await _repository.CreateActivityLogAsync(new ActivityLog
             {
                 TenantId = tenantId,
-                UserId = 123,
+                UserId = 9010,
                 ActivityType = "login",
                 ActivityCategory = "auth",
                 ActivityStatus = "success",
@@ -181,7 +182,7 @@ namespace HandySales.Tests.Infrastructure.ActivityTracking
             await _repository.CreateActivityLogAsync(new ActivityLog
             {
                 TenantId = tenantId,
-                UserId = 123,
+                UserId = 9010,
                 ActivityType = "logout",
                 ActivityCategory = "auth",
                 ActivityStatus = "success",
@@ -193,7 +194,7 @@ namespace HandySales.Tests.Infrastructure.ActivityTracking
             await _repository.CreateActivityLogAsync(new ActivityLog
             {
                 TenantId = tenantId,
-                UserId = 123,
+                UserId = 9010,
                 ActivityType = "login",
                 ActivityCategory = "auth",
                 ActivityStatus = "success",
@@ -205,7 +206,7 @@ namespace HandySales.Tests.Infrastructure.ActivityTracking
             await _repository.CreateActivityLogAsync(new ActivityLog
             {
                 TenantId = otherTenantId,
-                UserId = 123,
+                UserId = 9020,
                 ActivityType = "login",
                 ActivityCategory = "auth",
                 ActivityStatus = "success",
@@ -223,13 +224,14 @@ namespace HandySales.Tests.Infrastructure.ActivityTracking
         [Fact]
         public async Task GetActivitiesCountAsync_DeberiaFiltrarPorTipo_CuandoSeEspecifica()
         {
-            // Arrange
-            var tenantId = 1;
+            // Arrange — use unique IDs to avoid data leakage from other tests
+            // tenantId=9020 has userId=9020 (seeded)
+            var tenantId = 9020;
 
             await _repository.CreateActivityLogAsync(new ActivityLog
             {
                 TenantId = tenantId,
-                UserId = 123,
+                UserId = 9020,
                 ActivityType = "login",
                 ActivityCategory = "auth",
                 ActivityStatus = "success",
@@ -240,7 +242,7 @@ namespace HandySales.Tests.Infrastructure.ActivityTracking
             await _repository.CreateActivityLogAsync(new ActivityLog
             {
                 TenantId = tenantId,
-                UserId = 123,
+                UserId = 9020,
                 ActivityType = "create",
                 ActivityCategory = "entities",
                 ActivityStatus = "success",

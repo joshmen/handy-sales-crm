@@ -29,7 +29,7 @@ namespace HandySales.Tests.Integration.FamiliasProductos
             var dto = new FamiliaProductoCreateDto
             {
                 TenantId = 1,
-                Nombre = "Familia Test",
+                Nombre = $"Familia Nueva {Guid.NewGuid():N}",
                 Descripcion = "Descripción de prueba"
             };
 

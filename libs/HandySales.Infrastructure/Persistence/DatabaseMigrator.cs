@@ -31,19 +31,23 @@ public static class DatabaseMigrator
 
         var connection = dbContext.Database.GetDbConnection();
         await connection.OpenAsync();
+        var isMySql = connection.GetType().Name.Contains("MySql", StringComparison.OrdinalIgnoreCase);
 
         try
         {
-            // MySQL advisory lock prevents concurrent migration runs
-            using var lockCommand = connection.CreateCommand();
-            lockCommand.CommandText = "SELECT GET_LOCK('handysales_migration', 30)";
-            var lockResult = await lockCommand.ExecuteScalarAsync();
-
-            if (lockResult?.ToString() != "1")
+            if (isMySql)
             {
-                logger.LogWarning(
-                    "Could not acquire migration lock. Another instance may be migrating. Skipping.");
-                return;
+                // MySQL advisory lock prevents concurrent migration runs
+                using var lockCommand = connection.CreateCommand();
+                lockCommand.CommandText = "SELECT GET_LOCK('handysales_migration', 30)";
+                var lockResult = await lockCommand.ExecuteScalarAsync();
+
+                if (lockResult?.ToString() != "1")
+                {
+                    logger.LogWarning(
+                        "Could not acquire migration lock. Another instance may be migrating. Skipping.");
+                    return;
+                }
             }
 
             try
@@ -53,9 +57,12 @@ public static class DatabaseMigrator
             }
             finally
             {
-                using var unlockCommand = connection.CreateCommand();
-                unlockCommand.CommandText = "SELECT RELEASE_LOCK('handysales_migration')";
-                await unlockCommand.ExecuteScalarAsync();
+                if (isMySql)
+                {
+                    using var unlockCommand = connection.CreateCommand();
+                    unlockCommand.CommandText = "SELECT RELEASE_LOCK('handysales_migration')";
+                    await unlockCommand.ExecuteScalarAsync();
+                }
             }
         }
         finally

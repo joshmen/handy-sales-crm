@@ -51,8 +51,16 @@ namespace HandySales.Tests.Integration.CategoriasClientes
         [Fact]
         public async Task DeleteCategoria_DeberiaEliminarCategoria()
         {
-            // Asegúrate de que el ID 1 existe, o crea uno antes si es necesario
-            var response = await _client.DeleteAsync("/categorias-clientes/1");
+            // Create a new category to delete (ID=1 is referenced by a client, causing 409)
+            var createDto = new CategoriaClienteCreateDto { Nombre = $"Para Eliminar {Guid.NewGuid():N}" };
+            var createResponse = await _client.PostAsJsonAsync("/categorias-clientes", createDto);
+            createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+            var body = await createResponse.Content.ReadFromJsonAsync<Dictionary<string, int>>();
+            body.Should().ContainKey("id");
+            var newId = body!["id"];
+
+            var response = await _client.DeleteAsync($"/categorias-clientes/{newId}");
             if (response.StatusCode == HttpStatusCode.NotFound) return;
             response.EnsureSuccessStatusCode();
         }

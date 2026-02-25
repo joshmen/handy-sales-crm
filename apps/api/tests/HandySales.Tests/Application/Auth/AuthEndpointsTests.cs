@@ -35,8 +35,10 @@ namespace HandySales.Tests.Integration.Auth
             var response = await _client.PostAsJsonAsync("/auth/register", dto);
             response.StatusCode.Should().Be(HttpStatusCode.OK);
 
+            // Registration now requires email verification — response has requiresVerification flag
             var content = await response.Content.ReadFromJsonAsync<JsonElement>();
-            content.GetProperty("message").GetString().Should().Be("Usuario registrado");
+            content.TryGetProperty("requiresVerification", out var reqVer).Should().BeTrue();
+            reqVer.GetBoolean().Should().BeTrue();
         }
 
         [Fact]
@@ -63,36 +65,19 @@ namespace HandySales.Tests.Integration.Auth
         [Fact]
         public async Task Login_DeberiaRetornarToken_CuandoCredencialesValidas()
         {
-            var email = $"user{Guid.NewGuid():N}@test.com";
-            var password = "Password123";
-
-            // Registro previo
-            var registro = new UsuarioRegisterDto
-            {
-                Email = email,
-                Password = password,
-                Nombre = "Usuario",
-                NombreEmpresa = "Empresa",
-                Contacto = "Test",
-                RFC = "IULS910501JUY"
-            };
-            await _client.PostAsJsonAsync("/auth/register", registro);
-
+            // Use the pre-seeded user who has EmailVerificado=true so login returns a token
             var login = new UsuarioLoginDto
             {
-                email = email,
-                password = password
+                email = "user123@test.com",
+                password = "Test123!"
             };
 
-            // var generator = _factory.Services.GetRequiredService<JwtTokenGenerator>();
-            // var token = generator.GenerateToken(email, 1); //(email, 1);
-            // _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
             var response = await _client.PostAsJsonAsync("/auth/login", login);
-            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            var content = await response.Content.ReadAsStringAsync();
+            response.StatusCode.Should().Be(HttpStatusCode.OK, $"Response: {content}");
 
-            var content = await response.Content.ReadFromJsonAsync<JsonElement>();
-            content.GetProperty("token").GetString().Should().NotBeNullOrEmpty();
+            var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+            json.GetProperty("token").GetString().Should().NotBeNullOrEmpty();
         }
 
         [Fact]

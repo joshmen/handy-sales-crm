@@ -17,7 +17,7 @@ public class NotificationEndpointsTests : IClassFixture<CustomWebApplicationFact
     [Fact]
     public async Task GetNotificaciones_DeberiaRetornarListaPaginada()
     {
-        var response = await _client.GetAsync("/notificaciones?Pagina=1&TamanoPagina=20");
+        var response = await _client.GetAsync("/api/notificaciones?Pagina=1&TamanoPagina=20");
         response.EnsureSuccessStatusCode();
 
         var resultado = await response.Content.ReadFromJsonAsync<NotificationPaginatedResult>();
@@ -28,7 +28,7 @@ public class NotificationEndpointsTests : IClassFixture<CustomWebApplicationFact
     [Fact]
     public async Task GetConteoNoLeidas_DeberiaRetornarConteo()
     {
-        var response = await _client.GetAsync("/notificaciones/no-leidas/count");
+        var response = await _client.GetAsync("/api/notificaciones/no-leidas/count");
         response.EnsureSuccessStatusCode();
 
         var result = await response.Content.ReadFromJsonAsync<Dictionary<string, int>>();
@@ -39,14 +39,14 @@ public class NotificationEndpointsTests : IClassFixture<CustomWebApplicationFact
     [Fact]
     public async Task PostMarcarComoLeida_NotificacionNoExistente_DeberiaRetornarNotFound()
     {
-        var response = await _client.PostAsync("/notificaciones/9999/leer", null);
+        var response = await _client.PostAsync("/api/notificaciones/9999/leer", null);
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [Fact]
     public async Task PostMarcarTodasComoLeidas_DeberiaRetornarConteo()
     {
-        var response = await _client.PostAsync("/notificaciones/leer-todas", null);
+        var response = await _client.PostAsync("/api/notificaciones/leer-todas", null);
         response.EnsureSuccessStatusCode();
 
         var result = await response.Content.ReadFromJsonAsync<Dictionary<string, int>>();
@@ -57,7 +57,7 @@ public class NotificationEndpointsTests : IClassFixture<CustomWebApplicationFact
     [Fact]
     public async Task DeleteNotificacion_NoExistente_DeberiaRetornarNotFound()
     {
-        var response = await _client.DeleteAsync("/notificaciones/9999");
+        var response = await _client.DeleteAsync("/api/notificaciones/9999");
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
@@ -70,7 +70,7 @@ public class NotificationEndpointsTests : IClassFixture<CustomWebApplicationFact
             PushToken = "test-fcm-token-abc123"
         };
 
-        var response = await _client.PostAsJsonAsync("/notificaciones/push-token", dto);
+        var response = await _client.PostAsJsonAsync("/api/notificaciones/push-token", dto);
 
         // Puede fallar si no hay sesión de dispositivo, aceptamos BadRequest
         Assert.True(response.IsSuccessStatusCode ||
@@ -88,12 +88,12 @@ public class NotificationEndpointsTests : IClassFixture<CustomWebApplicationFact
             Tipo = "General"
         };
 
-        var response = await _client.PostAsJsonAsync("/notificaciones/enviar", dto);
+        var response = await _client.PostAsJsonAsync("/api/notificaciones/enviar", dto);
 
-        // Puede ser OK (con Success=false) o BadRequest
-        var result = await response.Content.ReadFromJsonAsync<NotificationSendResultDto>();
-        // El servicio puede manejar esto gracefully o fallar
-        Assert.NotNull(result);
+        // Puede ser OK (con Success=false) o BadRequest — ambos son válidos
+        Assert.True(response.IsSuccessStatusCode ||
+                    response.StatusCode == HttpStatusCode.BadRequest,
+                    $"Expected success or BadRequest, got {response.StatusCode}");
     }
 
     [Fact]
@@ -107,7 +107,7 @@ public class NotificationEndpointsTests : IClassFixture<CustomWebApplicationFact
             Tipo = "System"
         };
 
-        var response = await _client.PostAsJsonAsync("/notificaciones/broadcast", dto);
+        var response = await _client.PostAsJsonAsync("/api/notificaciones/broadcast", dto);
         response.EnsureSuccessStatusCode();
 
         var result = await response.Content.ReadFromJsonAsync<BroadcastResultDto>();
@@ -117,7 +117,7 @@ public class NotificationEndpointsTests : IClassFixture<CustomWebApplicationFact
     [Fact]
     public async Task GetNotificaciones_ConFiltroTipo_DeberiaFiltrar()
     {
-        var response = await _client.GetAsync("/notificaciones?Tipo=Order&Pagina=1&TamanoPagina=10");
+        var response = await _client.GetAsync("/api/notificaciones?Tipo=Order&Pagina=1&TamanoPagina=10");
         response.EnsureSuccessStatusCode();
 
         var resultado = await response.Content.ReadFromJsonAsync<NotificationPaginatedResult>();
@@ -127,7 +127,7 @@ public class NotificationEndpointsTests : IClassFixture<CustomWebApplicationFact
     [Fact]
     public async Task GetNotificaciones_ConFiltroNoLeidas_DeberiaFiltrar()
     {
-        var response = await _client.GetAsync("/notificaciones?NoLeidas=true&Pagina=1&TamanoPagina=10");
+        var response = await _client.GetAsync("/api/notificaciones?NoLeidas=true&Pagina=1&TamanoPagina=10");
         response.EnsureSuccessStatusCode();
 
         var resultado = await response.Content.ReadFromJsonAsync<NotificationPaginatedResult>();
