@@ -1,5 +1,4 @@
 # EAS Build: Exclude non-mobile files to reduce archive size
-# With requireCommit:true, .gitignore handles node_modules/.expo/.next etc.
 
 # .NET projects
 apps/api/
@@ -31,3 +30,20 @@ efbundle
 *.log
 response.json
 tmpswagger.json
+
+# Node/Expo/Next caches (previously handled by .gitignore)
+node_modules/
+.next/
+.expo/
+.claude/
+*.tsbuildinfo
+
+# Mobile app build caches
+apps/mobile-app/android/build/
+apps/mobile-app/android/.gradle/
+apps/mobile-app/android/app/build/
+apps/mobile-app/.maestro/
+apps/mobile-app/dist/
+
+# Emulator screenshots
+emulator_screen*.png
