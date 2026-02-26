@@ -51,10 +51,16 @@ public class ImpersonationService : IImpersonationService
         string? userAgent,
         CancellationToken cancellationToken = default)
     {
-        // Validaciones
-        if (string.IsNullOrWhiteSpace(request.Reason) || request.Reason.Length < MinReasonLength)
+        // H5: Justificación obligatoria solo para READ_WRITE, opcional para READ_ONLY
+        var isWriteAccess = request.AccessLevel == ImpersonationAccessLevel.ReadWrite;
+        if (isWriteAccess && (string.IsNullOrWhiteSpace(request.Reason) || request.Reason.Length < MinReasonLength))
         {
-            throw new ArgumentException($"La justificación debe tener al menos {MinReasonLength} caracteres.");
+            throw new ArgumentException($"La justificación debe tener al menos {MinReasonLength} caracteres para acceso de lectura/escritura.");
+        }
+        // For READ_ONLY, default to a generic reason if empty
+        if (!isWriteAccess && string.IsNullOrWhiteSpace(request.Reason))
+        {
+            request = request with { Reason = "Revisión de soporte (solo lectura)" };
         }
 
         // Verificar que no hay sesión activa (auto-expirar sesiones vencidas)

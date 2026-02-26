@@ -1,5 +1,62 @@
 # HandySales - Project Context
 
+> **MANDATORY**: The following workflow rules are non-negotiable and override all other behavior.
+
+## Workflow Orchestration
+
+### 1. Plan-First Mode (Default)
+- Enter planning mode for ANY non-trivial task (more than 3 steps or architectural decisions)
+- If something goes wrong, STOP and go back to planning immediately; don't keep forcing
+- Use planning mode for verification steps, not just for building
+- Write detailed specifications upfront to reduce ambiguity
+
+### 2. Subagent Strategy
+- Use subagents frequently to keep the main context window clean
+- Delegate research, exploration, and parallel analysis to subagents
+- For complex problems, dedicate more compute via subagents
+- One task per subagent for focused execution
+
+### 3. Self-Improvement Loop
+- After ANY user correction: update `tasks/lessons.md` with the pattern
+- Write rules for yourself that prevent the same mistake
+- Iterate relentlessly on these lessons until the error rate drops
+- Review lessons at session start for the corresponding project
+
+### 4. Verify Before Completing
+- Never mark a task as completed without proving it works
+- Compare the diff of behavior between the main branch and your changes when relevant
+- Ask yourself: "Would a Staff Engineer approve this?"
+- Run tests, check the logs, and demonstrate correctness of the code
+
+### 5. Demand Elegance (Balance)
+- For non-trivial changes: pause and ask "is there a more elegant way?"
+- If a fix looks hacky: "Knowing everything I know now, implement the elegant solution"
+- Skip this for simple, obvious fixes; don't over-engineer
+- Question your own work before presenting it
+
+### 6. Autonomous Error Correction
+- When you receive an error report: just fix it. Don't ask to be hand-held
+- Identify logs, errors, or failing tests and then resolve them
+- Zero need for context-switching from the user
+- Go fix CI tests that fail without being told how
+
+## Task Management
+
+1. **Plan First**: Write the plan in `tasks/todo.md` with verifiable items
+2. **Verify Plan**: Confirm before starting implementation
+3. **Track Progress**: Mark items as completed as you go
+4. **Explain Changes**: High-level summary at each step
+5. **Document Results**: Add a review section to `tasks/todo.md`
+6. **Capture Lessons**: Update `tasks/lessons.md` after corrections
+
+## Fundamental Principles
+
+- **Simplicity First**: Make each change as simple as possible. Touch the minimum code necessary.
+- **No Laziness**: Find root causes. No temporary fixes. Senior developer standards.
+- **Minimum Impact**: Changes should only touch what's necessary. Avoid introducing errors.
+
+---
+
 CRM/ERP system for Mexican SMEs with SAT billing compliance. Multi-tenant, microservices architecture.
 
 ## Architecture

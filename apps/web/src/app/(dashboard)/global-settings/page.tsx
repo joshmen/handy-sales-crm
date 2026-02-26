@@ -194,6 +194,7 @@ export default function GlobalSettingsPage() {
               <div className="flex items-center space-x-3 mb-6">
                 <Palette className="h-5 w-5 text-blue-600" />
                 <h2 className="text-xl font-semibold text-gray-900">Marca de la Plataforma</h2>
+                <span className="text-xs bg-blue-50 text-blue-500 px-2 py-0.5 rounded-full">Logo y nombre activos</span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -316,6 +317,7 @@ export default function GlobalSettingsPage() {
               <div className="flex items-center space-x-3 mb-6">
                 <Globe className="h-5 w-5 text-green-600" />
                 <h2 className="text-xl font-semibold text-gray-900">Configuración Regional</h2>
+                <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">Próximamente</span>
               </div>
 
               <div data-tour="settings-regional" className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -395,6 +397,7 @@ export default function GlobalSettingsPage() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Máximo usuarios por empresa
+                      <span className="ml-2 text-xs bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded">No aplicado aún</span>
                     </label>
                     <Input
                       type="number"
@@ -407,11 +410,13 @@ export default function GlobalSettingsPage() {
                       }
                       placeholder="Sin límite"
                     />
+                    <p className="text-xs text-gray-400 mt-1">El límite se define por plan en cada empresa</p>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Máximo almacenamiento por empresa (MB)
+                      <span className="ml-2 text-xs bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded">No aplicado aún</span>
                     </label>
                     <Input
                       type="number"
@@ -429,47 +434,33 @@ export default function GlobalSettingsPage() {
               </div>
             </Card>
 
-            {/* Maintenance Mode */}
+            {/* H9: Maintenance Mode — redirected to Announcements */}
             <Card className="p-6">
-              <div className="flex items-center space-x-3 mb-6">
+              <div className="flex items-center space-x-3 mb-4">
                 <AlertTriangle className="h-5 w-5 text-red-600" />
                 <h2 className="text-xl font-semibold text-gray-900">Modo de Mantenimiento</h2>
               </div>
 
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-900">
-                      Activar modo de mantenimiento
-                    </h3>
-                    <p className="text-sm text-gray-500">
-                      Bloquea el acceso a la plataforma para todos los usuarios excepto Super Admin
-                    </p>
-                  </div>
-                  <Switch
-                    checked={settings.maintenanceMode}
-                    onCheckedChange={checked =>
-                      setSettings({ ...settings, maintenanceMode: checked })
-                    }
-                  />
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div>
+                  <p className="text-sm text-gray-700">
+                    El modo de mantenimiento se gestiona desde el módulo de Anuncios, donde puedes activarlo con un mensaje personalizado y banner automático.
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Estado actual: {settings.maintenanceMode ? (
+                      <span className="text-red-600 font-medium">Activo</span>
+                    ) : (
+                      <span className="text-green-600 font-medium">Inactivo</span>
+                    )}
+                  </p>
                 </div>
-
-                {settings.maintenanceMode && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Mensaje de mantenimiento
-                    </label>
-                    <textarea
-                      value={settings.maintenanceMessage || ''}
-                      onChange={e =>
-                        setSettings({ ...settings, maintenanceMessage: e.target.value || null })
-                      }
-                      placeholder="La plataforma está en mantenimiento. Volveremos pronto."
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                )}
+                <Button
+                  variant="outline"
+                  onClick={() => router.push('/admin/announcements')}
+                  className="flex-shrink-0 ml-4"
+                >
+                  Ir a Anuncios
+                </Button>
               </div>
             </Card>
 

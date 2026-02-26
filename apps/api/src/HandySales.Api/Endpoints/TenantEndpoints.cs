@@ -427,6 +427,15 @@ public static class TenantEndpoints
         if (tenant == null)
             return Results.NotFound(new { message = "Tenant no encontrado" });
 
+        // H2: Validar MaxUsuarios antes de crear
+        var currentUserCount = await context.Usuarios
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .CountAsync(u => u.TenantId == id && u.Activo);
+
+        if (currentUserCount >= tenant.MaxUsuarios)
+            return Results.BadRequest(new { message = $"Límite de usuarios alcanzado ({tenant.MaxUsuarios}). Actualiza el plan para agregar más usuarios." });
+
         // Verificar email duplicado
         var emailExists = await context.Usuarios
             .IgnoreQueryFilters()
@@ -435,17 +444,26 @@ public static class TenantEndpoints
         if (emailExists)
             return Results.BadRequest(new { message = "Ya existe un usuario con ese email" });
 
-        // Determinar rol
-        var isAdmin = dto.Rol?.ToUpperInvariant() == "ADMIN";
+        // H1: Determinar rol (siempre obligatorio)
+        var rolNormalized = (dto.Rol ?? "").Trim().ToUpperInvariant();
+        if (string.IsNullOrEmpty(rolNormalized))
+            return Results.BadRequest(new { message = "El rol es obligatorio" });
+
+        var isAdmin = rolNormalized == "ADMIN";
         int? roleId = null;
 
-        if (!isAdmin && !string.IsNullOrEmpty(dto.Rol))
+        if (!isAdmin)
         {
+            // Buscar rol por nombre (case-insensitive)
             var role = await context.Roles
                 .IgnoreQueryFilters()
                 .AsNoTracking()
-                .FirstOrDefaultAsync(r => r.Nombre == dto.Rol);
-            roleId = role?.Id;
+                .FirstOrDefaultAsync(r => r.Nombre.ToUpper() == rolNormalized);
+
+            if (role == null)
+                return Results.BadRequest(new { message = $"Rol '{dto.Rol}' no encontrado" });
+
+            roleId = role.Id;
         }
 
         var usuario = new Usuario

@@ -21,6 +21,9 @@ import {
   Package,
   ShoppingCart,
   AlertTriangle,
+  RefreshCw,
+  Copy,
+  Check,
 } from 'lucide-react';
 import {
   TenantDetail,
@@ -62,25 +65,49 @@ export default function TenantDetailPage() {
 
   // Impersonation modal
   const [isImpersonationOpen, setIsImpersonationOpen] = useState(false);
+  const [copiedPassword, setCopiedPassword] = useState(false);
+
+  // H4: Plan → maxUsuarios mapping
+  const PLAN_LIMITS: Record<string, number> = {
+    free: 5,
+    basic: 25,
+    pro: 100,
+  };
+
+  // H3: Generar contraseña aleatoria
+  const generatePassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%';
+    let pass = '';
+    for (let i = 0; i < 12; i++) pass += chars[Math.floor(Math.random() * chars.length)];
+    return pass;
+  };
 
   // Forms
   const {
     register,
     handleSubmit,
     reset,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<TenantFormData>({
     defaultValues: { maxUsuarios: 10 },
   });
 
+  const watchPlan = watch('planTipo');
+
   const {
     register: registerUser,
     handleSubmit: handleSubmitUser,
     reset: resetUser,
+    setValue: setUserValue,
+    watch: watchUser,
     formState: { errors: userErrors },
   } = useForm<AddUserFormData>({
     defaultValues: { rol: 'ADMIN' },
   });
+
+  const watchPassword = watchUser('password');
 
   // Load tenant detail + users
   useEffect(() => {
@@ -334,42 +361,40 @@ export default function TenantDetailPage() {
               )}
             </div>
 
-            {/* Plan Tipo */}
+            {/* H4: Plan Tipo (auto-sets maxUsuarios) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Plan</label>
               <select
                 {...register('planTipo')}
+                onChange={(e) => {
+                  const plan = e.target.value;
+                  setValue('planTipo', plan);
+                  const limit = PLAN_LIMITS[plan];
+                  if (limit) setValue('maxUsuarios', limit);
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="free">Gratis</option>
-                <option value="basic">Básico</option>
-                <option value="pro">Pro</option>
+                <option value="free">Gratis (hasta 5 usuarios)</option>
+                <option value="basic">Básico (hasta 25 usuarios)</option>
+                <option value="pro">Pro (hasta 100 usuarios)</option>
               </select>
             </div>
 
-            {/* Max Usuarios */}
+            {/* Max Usuarios (auto-set by plan, read-only display) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Máximo de Usuarios <span className="text-red-500">*</span>
+                Máximo de Usuarios
               </label>
-              <div className="relative">
-                <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="number"
-                  {...register('maxUsuarios', {
-                    required: 'El máximo de usuarios es requerido',
-                    min: { value: 1, message: 'Mínimo 1 usuario' },
-                    max: { value: 1000, message: 'Máximo 1000 usuarios' },
-                  })}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="10"
-                  min={1}
-                  max={1000}
-                />
+              <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+                <Users className="h-4 w-4 text-gray-400" />
+                <span className="text-sm font-medium text-gray-900">
+                  {PLAN_LIMITS[watchPlan || ''] || watch('maxUsuarios')} usuarios
+                </span>
+                <span className="text-xs text-gray-500 ml-auto">
+                  Definido por el plan
+                </span>
               </div>
-              {errors.maxUsuarios && (
-                <p className="text-sm text-red-600 mt-1">{errors.maxUsuarios.message}</p>
-              )}
+              <input type="hidden" {...register('maxUsuarios')} />
             </div>
           </div>
 
@@ -518,11 +543,28 @@ export default function TenantDetailPage() {
           className="flex-1 flex flex-col overflow-hidden"
         >
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {/* Tenant Badge */}
-            <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
-              <Building2 className="h-4 w-4 text-blue-600" />
-              <span className="text-sm font-medium text-blue-800">{tenant.nombreEmpresa}</span>
+            {/* Tenant Badge + H2: User count */}
+            <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+              <div className="flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-blue-600" />
+                <span className="text-sm font-medium text-blue-800">{tenant.nombreEmpresa}</span>
+              </div>
+              <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                tenant.stats.usuarios >= tenant.maxUsuarios
+                  ? 'bg-red-100 text-red-700'
+                  : 'bg-blue-100 text-blue-700'
+              }`}>
+                {tenant.stats.usuarios} / {tenant.maxUsuarios} usuarios
+              </span>
             </div>
+
+            {/* Warning if limit reached */}
+            {tenant.stats.usuarios >= tenant.maxUsuarios && (
+              <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+                <p>Se alcanzó el límite de usuarios. Actualiza el plan de esta empresa para agregar más.</p>
+              </div>
+            )}
 
             {/* Email */}
             <div>
@@ -582,20 +624,52 @@ export default function TenantDetailPage() {
               </select>
             </div>
 
-            {/* Contraseña */}
+            {/* H3: Contraseña con generador */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Contraseña Temporal <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
-                {...registerUser('password', {
-                  required: 'La contraseña es requerida',
-                  minLength: { value: 6, message: 'Mínimo 6 caracteres' },
-                })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Contraseña temporal"
-              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  {...registerUser('password', {
+                    required: 'La contraseña es requerida',
+                    minLength: { value: 6, message: 'Mínimo 6 caracteres' },
+                  })}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                  placeholder="Contraseña temporal"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const pass = generatePassword();
+                    setUserValue('password', pass);
+                    setCopiedPassword(false);
+                  }}
+                  className="px-3 py-2 text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+                  title="Generar contraseña"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </button>
+                {watchPassword && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(watchPassword);
+                      setCopiedPassword(true);
+                      setTimeout(() => setCopiedPassword(false), 2000);
+                    }}
+                    className={`px-3 py-2 border rounded-lg transition-colors ${
+                      copiedPassword
+                        ? 'text-green-600 bg-green-50 border-green-200'
+                        : 'text-gray-600 bg-gray-50 border-gray-200 hover:bg-gray-100'
+                    }`}
+                    title={copiedPassword ? 'Copiado' : 'Copiar'}
+                  >
+                    {copiedPassword ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </button>
+                )}
+              </div>
               {userErrors.password && (
                 <p className="text-sm text-red-600 mt-1">{userErrors.password.message}</p>
               )}
@@ -623,7 +697,7 @@ export default function TenantDetailPage() {
             </button>
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || tenant.stats.usuarios >= tenant.maxUsuarios}
               className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {submitting ? (

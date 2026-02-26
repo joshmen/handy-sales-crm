@@ -509,12 +509,14 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
                   variant="ghost"
                   className="w-full justify-start h-12 text-gray-700 hover:bg-gray-50"
                   onClick={() => {
-                    router.push('/settings');
+                    // SA sin impersonar → global-settings (no tiene acceso a /settings)
+                    const target = currentUser.role === 'SUPER_ADMIN' ? '/global-settings' : '/settings';
+                    router.push(target);
                     setIsUserMenuOpen(false);
                   }}
                 >
                   <Settings className="h-4 w-4 mr-3 text-gray-500" />
-                  Configuración
+                  {currentUser.role === 'SUPER_ADMIN' ? 'Configuración Global' : 'Configuración'}
                 </Button>
               )}
               {/* Solo SUPER_ADMIN puede impersonar empresas */}

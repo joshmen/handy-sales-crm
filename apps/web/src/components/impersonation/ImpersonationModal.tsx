@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import {
   Dialog,
@@ -13,6 +13,7 @@ import {
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { impersonationService } from '@/services/api/impersonation';
+import { tenantService } from '@/services/api/tenants';
 import { useImpersonationStore } from '@/stores/useImpersonationStore';
 import { toast } from '@/hooks/useToast';
 import { CurrentImpersonationState } from '@/types/impersonation';
@@ -26,6 +27,8 @@ import {
   FileText,
   Clock,
   XCircle,
+  Search,
+  ChevronRight,
 } from 'lucide-react';
 
 interface Tenant {
@@ -44,7 +47,7 @@ interface ImpersonationModalProps {
  * Modal para iniciar una sesión de impersonación.
  * Requiere justificación obligatoria y muestra advertencias de auditoría.
  */
-export function ImpersonationModal({ isOpen, onClose, tenant }: ImpersonationModalProps) {
+export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: ImpersonationModalProps) {
   const [reason, setReason] = useState('');
   const [ticketNumber, setTicketNumber] = useState('');
   const [accessLevel, setAccessLevel] = useState<'READ_ONLY' | 'READ_WRITE'>('READ_ONLY');
@@ -52,8 +55,43 @@ export function ImpersonationModal({ isOpen, onClose, tenant }: ImpersonationMod
   const [agreedToPolicy, setAgreedToPolicy] = useState(false);
   const [existingSession, setExistingSession] = useState<CurrentImpersonationState | null>(null);
 
+  // Tenant selection state (when opened without a pre-selected tenant)
+  const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(initialTenant);
+  const [allTenants, setAllTenants] = useState<{ id: number; nombre: string; activo: boolean }[]>([]);
+  const [tenantsLoading, setTenantsLoading] = useState(false);
+  const [tenantSearch, setTenantSearch] = useState('');
+
+  const tenant = initialTenant ?? selectedTenant;
+  const needsTenantSelection = !initialTenant;
+
   const { startImpersonation } = useImpersonationStore();
   const { update: updateSession } = useSession();
+
+  // Fetch tenants when modal opens without a pre-selected tenant
+  useEffect(() => {
+    if (isOpen && needsTenantSelection && allTenants.length === 0) {
+      setTenantsLoading(true);
+      tenantService.getAll()
+        .then((tenants) => setAllTenants(tenants.map(t => ({ id: t.id, nombre: t.nombreEmpresa, activo: t.activo }))))
+        .catch(() => toast({ title: 'Error', description: 'No se pudieron cargar las empresas', variant: 'destructive' }))
+        .finally(() => setTenantsLoading(false));
+    }
+  }, [isOpen, needsTenantSelection, allTenants.length]);
+
+  // Reset selected tenant when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectedTenant(initialTenant);
+      setTenantSearch('');
+    }
+  }, [isOpen, initialTenant]);
+
+  const filteredTenants = useMemo(() => {
+    const active = allTenants.filter(t => t.activo);
+    if (!tenantSearch.trim()) return active;
+    const q = tenantSearch.toLowerCase();
+    return active.filter(t => t.nombre.toLowerCase().includes(q));
+  }, [allTenants, tenantSearch]);
 
   const executeStart = async () => {
     if (!tenant) return;
@@ -96,16 +134,18 @@ export function ImpersonationModal({ isOpen, onClose, tenant }: ImpersonationMod
   const handleStart = async () => {
     if (!tenant) return;
 
-    if (!reason.trim()) {
+    // H5: Justificación obligatoria solo para READ_WRITE
+    const isWriteAccess = accessLevel === 'READ_WRITE';
+    if (isWriteAccess && !reason.trim()) {
       toast({
         title: 'Error',
-        description: 'Debes proporcionar una justificación',
+        description: 'La justificación es obligatoria para acceso de lectura/escritura',
         variant: 'destructive',
       });
       return;
     }
 
-    if (reason.trim().length < 20) {
+    if (isWriteAccess && reason.trim().length < 20) {
       toast({
         title: 'Error',
         description: 'La justificación debe tener al menos 20 caracteres',
@@ -186,10 +226,79 @@ export function ImpersonationModal({ isOpen, onClose, tenant }: ImpersonationMod
     setAccessLevel('READ_ONLY');
     setAgreedToPolicy(false);
     setExistingSession(null);
+    setSelectedTenant(initialTenant);
+    setTenantSearch('');
     onClose();
   };
 
-  if (!tenant) return null;
+  // Vista: Selección de tenant (cuando se abre desde el Header sin tenant pre-seleccionado)
+  if (needsTenantSelection && !tenant) {
+    return (
+      <Dialog open={isOpen} onOpenChange={handleClose}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5 text-purple-500" />
+              Seleccionar Empresa
+            </DialogTitle>
+            <DialogDescription>
+              Elige la empresa a la que deseas acceder como soporte.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2">
+            {/* Buscador */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                value={tenantSearch}
+                onChange={(e) => setTenantSearch(e.target.value)}
+                placeholder="Buscar empresa..."
+                className="pl-9"
+              />
+            </div>
+
+            {/* Lista de tenants */}
+            <div className="max-h-72 overflow-y-auto space-y-1 border rounded-lg p-1">
+              {tenantsLoading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                </div>
+              ) : filteredTenants.length === 0 ? (
+                <div className="text-center py-6 text-gray-500 text-sm">
+                  {tenantSearch ? 'No se encontraron empresas' : 'No hay empresas disponibles'}
+                </div>
+              ) : (
+                filteredTenants.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                    onClick={() => setSelectedTenant({ id: t.id, nombre: t.nombre })}
+                  >
+                    <div className="h-9 w-9 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Building2 className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-900 text-sm truncate">{t.nombre}</p>
+                      <p className="text-xs text-gray-500">ID: {t.id}</p>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={handleClose}>
+              Cancelar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   // Vista: Sesión activa existente detectada
   if (existingSession) {
@@ -303,15 +412,27 @@ export function ImpersonationModal({ isOpen, onClose, tenant }: ImpersonationMod
           </div>
 
           {/* Info del tenant */}
-          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-            <div className="h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
-              <Building2 className="h-5 w-5 text-blue-600" />
+          {tenant && (
+            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+              <div className="h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                <Building2 className="h-5 w-5 text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <p className="font-medium text-gray-900">{tenant.nombre}</p>
+                <p className="text-sm text-gray-500">ID: {tenant.id}</p>
+              </div>
+              {needsTenantSelection && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-blue-600"
+                  onClick={() => setSelectedTenant(null)}
+                >
+                  Cambiar
+                </Button>
+              )}
             </div>
-            <div>
-              <p className="font-medium text-gray-900">{tenant.nombre}</p>
-              <p className="text-sm text-gray-500">ID: {tenant.id}</p>
-            </div>
-          </div>
+          )}
 
           {/* Nivel de acceso */}
           <div className="space-y-2">
@@ -350,31 +471,41 @@ export function ImpersonationModal({ isOpen, onClose, tenant }: ImpersonationMod
             </div>
           </div>
 
-          {/* Justificación */}
+          {/* H5: Justificación — obligatoria solo para READ_WRITE */}
           <div className="space-y-2">
             <label className="text-sm font-medium">
-              Justificación <span className="text-red-500">*</span>
+              Justificación {accessLevel === 'READ_WRITE' ? (
+                <span className="text-red-500">*</span>
+              ) : (
+                <span className="text-gray-400 font-normal">(opcional)</span>
+              )}
             </label>
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Describe el motivo del acceso (mínimo 20 caracteres)..."
+              placeholder={accessLevel === 'READ_WRITE'
+                ? 'Describe el motivo del acceso (mínimo 20 caracteres)...'
+                : 'Opcional — describe brevemente el motivo del acceso...'
+              }
               className="w-full min-h-[80px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
             />
-            <p className="text-xs text-gray-500">{reason.length}/20 caracteres mínimos</p>
+            {accessLevel === 'READ_WRITE' && (
+              <p className="text-xs text-gray-500">{reason.length}/20 caracteres mínimos</p>
+            )}
           </div>
 
-          {/* Número de ticket */}
+          {/* H6: Número de ticket — referencia a sistema externo */}
           <div className="space-y-2">
             <label className="text-sm font-medium flex items-center gap-1">
               <FileText className="h-4 w-4" />
-              Número de ticket (opcional)
+              Referencia de ticket <span className="text-gray-400 font-normal">(opcional)</span>
             </label>
             <Input
               value={ticketNumber}
               onChange={(e) => setTicketNumber(e.target.value)}
-              placeholder="Ej: TICKET-12345"
+              placeholder="Ej: JIRA-123, Zendesk #456, Freshdesk 789"
             />
+            <p className="text-xs text-gray-400">Número de ticket en tu sistema de soporte externo</p>
           </div>
 
           {/* Aceptar política */}
@@ -405,7 +536,7 @@ export function ImpersonationModal({ isOpen, onClose, tenant }: ImpersonationMod
           </Button>
           <Button
             onClick={handleStart}
-            disabled={isLoading || !agreedToPolicy || reason.trim().length < 20}
+            disabled={isLoading || !agreedToPolicy || (accessLevel === 'READ_WRITE' && reason.trim().length < 20)}
             className="bg-amber-500 hover:bg-amber-600 text-white"
           >
             {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
