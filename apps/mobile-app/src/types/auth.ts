@@ -1,23 +1,5 @@
-export interface LoginRequest {
-  email: string;
-  password: string;
-}
+// Response types — re-exported from Zod schemas (source of truth)
+export type { AuthUser, LoginResponse } from '@/api/schemas/auth';
 
-export interface LoginResponse {
-  user: AuthUser;
-  token: string;
-  refreshToken: string;
-}
-
-export interface AuthUser {
-  id: string;
-  email: string;
-  name: string;
-  role: 'SUPER_ADMIN' | 'ADMIN' | 'VENDEDOR';
-  tenantName?: string;
-  tenantLogo?: string;
-}
-
-export interface RefreshRequest {
-  RefreshToken: string;
-}
+// Request types — re-exported from schemas (plain interfaces, no Zod)
+export type { LoginRequest, RefreshRequest } from '@/api/schemas/auth';

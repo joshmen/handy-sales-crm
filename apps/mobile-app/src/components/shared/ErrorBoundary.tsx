@@ -1,10 +1,15 @@
-import { Component, type ReactNode } from 'react';
+import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { AlertTriangle, RefreshCcw } from 'lucide-react-native';
+import { crashReporter } from '@/services/crashReporter';
 
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
+  /** Nombre del componente/pantalla para identificar el crash */
+  componentName?: string;
+  /** Callback opcional cuando ocurre un error */
+  onError?: (error: Error, errorInfo: ErrorInfo) => void;
 }
 
 interface State {
@@ -20,6 +25,12 @@ export class ErrorBoundary extends Component<Props, State> {
 
   static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+    const component = this.props.componentName || errorInfo.componentStack?.split('\n')[1]?.trim() || 'unknown';
+    crashReporter.reportCrash(error, component, 'CRASH');
+    this.props.onError?.(error, errorInfo);
   }
 
   handleReset = () => {

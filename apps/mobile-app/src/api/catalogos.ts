@@ -1,38 +1,62 @@
 import api from './client';
+import { validateResponse } from './validateResponse';
+import { ApiResponseSchema, CatalogoItemSchema } from './schemas';
+import { z } from 'zod';
 import type { ApiResponse } from '@/types';
+
+// Re-export the type from schemas (was originally defined here)
+export type { CatalogoItem } from './schemas';
+
+const CatalogoListResponseSchema = ApiResponseSchema(z.array(CatalogoItemSchema));
 
 const BASE = '/api/mobile/catalogos';
 
-export interface CatalogoItem {
-  id: number;
-  nombre: string;
-  descripcion?: string;
-}
-
 export const catalogosApi = {
   getZonas: async () => {
-    const { data } = await api.get<ApiResponse<CatalogoItem[]>>(`${BASE}/zonas`);
-    return data.data;
+    const { data } = await api.get<ApiResponse<import('./schemas').CatalogoItem[]>>(
+      `${BASE}/zonas`
+    );
+    const validated = validateResponse(
+      CatalogoListResponseSchema,
+      data,
+      'GET /api/mobile/catalogos/zonas'
+    );
+    return validated.data;
   },
 
   getCategoriasCliente: async () => {
-    const { data } = await api.get<ApiResponse<CatalogoItem[]>>(
+    const { data } = await api.get<ApiResponse<import('./schemas').CatalogoItem[]>>(
       `${BASE}/categorias-cliente`
     );
-    return data.data;
+    const validated = validateResponse(
+      CatalogoListResponseSchema,
+      data,
+      'GET /api/mobile/catalogos/categorias-cliente'
+    );
+    return validated.data;
   },
 
   getCategoriasProducto: async () => {
-    const { data } = await api.get<ApiResponse<CatalogoItem[]>>(
+    const { data } = await api.get<ApiResponse<import('./schemas').CatalogoItem[]>>(
       `${BASE}/categorias-producto`
     );
-    return data.data;
+    const validated = validateResponse(
+      CatalogoListResponseSchema,
+      data,
+      'GET /api/mobile/catalogos/categorias-producto'
+    );
+    return validated.data;
   },
 
   getFamiliasProducto: async () => {
-    const { data } = await api.get<ApiResponse<CatalogoItem[]>>(
+    const { data } = await api.get<ApiResponse<import('./schemas').CatalogoItem[]>>(
       `${BASE}/familias-producto`
     );
-    return data.data;
+    const validated = validateResponse(
+      CatalogoListResponseSchema,
+      data,
+      'GET /api/mobile/catalogos/familias-producto'
+    );
+    return validated.data;
   },
 };

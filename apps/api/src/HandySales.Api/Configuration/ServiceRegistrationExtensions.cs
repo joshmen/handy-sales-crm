@@ -1,5 +1,6 @@
 using HandySales.Infrastructure.Persistence;
 using HandySales.Shared.Multitenancy;
+using HandySales.Application.CrashReporting;
 using HandySales.Application.Clientes.Interfaces;
 using HandySales.Application.Clientes.Services;
 using Microsoft.EntityFrameworkCore;
@@ -287,6 +288,9 @@ public static class ServiceRegistrationExtensions
 
         // Stripe Payment Service
         services.AddScoped<IStripeService, StripeService>();
+
+        // Crash Reports (log-level, no service layer needed)
+        services.AddScoped<ICrashReportRepository, CrashReportRepository>();
 
         return services;
     }

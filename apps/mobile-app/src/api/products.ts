@@ -1,10 +1,21 @@
 import { api } from './client';
+import { validateResponse } from './validateResponse';
+import {
+  ApiResponseSchema,
+  PaginatedApiResponseSchema,
+  MobileProductoSchema,
+  ProductStockSchema,
+} from './schemas';
 import type {
   ApiResponse,
   PaginatedApiResponse,
   MobileProducto,
   ProductStock,
 } from '@/types';
+
+const ProductoResponseSchema = ApiResponseSchema(MobileProductoSchema);
+const ProductoListResponseSchema = PaginatedApiResponseSchema(MobileProductoSchema);
+const StockResponseSchema = ApiResponseSchema(ProductStockSchema);
 
 interface ProductListParams {
   busqueda?: string;
@@ -28,9 +39,14 @@ class MobileProductosApi {
     const response = await api.get<PaginatedApiResponse<MobileProducto>>(
       `${this.basePath}?${qs}`
     );
+    const validated = validateResponse(
+      ProductoListResponseSchema,
+      response.data,
+      'GET /api/mobile/productos'
+    );
     return {
-      data: response.data.data,
-      pagination: response.data.pagination,
+      data: validated.data,
+      pagination: validated.pagination,
     };
   }
 
@@ -38,21 +54,36 @@ class MobileProductosApi {
     const response = await api.get<ApiResponse<MobileProducto>>(
       `${this.basePath}/${id}`
     );
-    return response.data.data;
+    const validated = validateResponse(
+      ProductoResponseSchema,
+      response.data,
+      `GET /api/mobile/productos/${id}`
+    );
+    return validated.data;
   }
 
   async getStock(id: number): Promise<ProductStock> {
     const response = await api.get<ApiResponse<ProductStock>>(
       `${this.basePath}/${id}/stock`
     );
-    return response.data.data;
+    const validated = validateResponse(
+      StockResponseSchema,
+      response.data,
+      `GET /api/mobile/productos/${id}/stock`
+    );
+    return validated.data;
   }
 
   async getByBarcode(codigo: string): Promise<MobileProducto> {
     const response = await api.get<ApiResponse<MobileProducto>>(
       `${this.basePath}/codigo/${encodeURIComponent(codigo)}`
     );
-    return response.data.data;
+    const validated = validateResponse(
+      ProductoResponseSchema,
+      response.data,
+      `GET /api/mobile/productos/codigo/${codigo}`
+    );
+    return validated.data;
   }
 }
 

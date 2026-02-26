@@ -1,7 +1,9 @@
 import { Stack } from 'expo-router';
+import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 
 export default function VenderLayout() {
   return (
+    <ErrorBoundary componentName="VenderStack">
     <Stack
       screenOptions={{
         headerStyle: { backgroundColor: '#ffffff' },
@@ -19,5 +21,6 @@ export default function VenderLayout() {
       <Stack.Screen name="crear/revision" options={{ title: 'Revisar Pedido' }} />
       <Stack.Screen name="crear/exito" options={{ title: '', headerShown: false }} />
     </Stack>
+    </ErrorBoundary>
   );
 }

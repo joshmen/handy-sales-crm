@@ -1,7 +1,9 @@
 import { Stack } from 'expo-router';
+import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 
 export default function CobrarLayout() {
   return (
+    <ErrorBoundary componentName="CobrarStack">
     <Stack
       screenOptions={{
         headerStyle: { backgroundColor: '#ffffff' },
@@ -15,5 +17,6 @@ export default function CobrarLayout() {
       <Stack.Screen name="historial" options={{ title: 'Historial de Cobros' }} />
       <Stack.Screen name="recibo" options={{ title: 'Recibo', headerBackVisible: false }} />
     </Stack>
+    </ErrorBoundary>
   );
 }

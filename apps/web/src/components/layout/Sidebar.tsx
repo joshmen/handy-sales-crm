@@ -35,6 +35,7 @@ import {
   ChartBar,
   Megaphone,
   DeviceMobile,
+  Bug,
   IconContext,
 } from '@phosphor-icons/react';
 import { useSidebar } from '@/stores/useUIStore';
@@ -372,6 +373,12 @@ const superAdminItems: SidebarItem[] = [
     href: '/admin/announcements',
   },
   {
+    id: 'sa-crash-reports',
+    label: 'Crash Reports',
+    icon: Bug,
+    href: '/admin/crash-reports',
+  },
+  {
     id: 'sa-settings',
     label: 'Configuración',
     icon: GearSix,
@@ -638,6 +645,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
       'system-dashboard': {
         active: 'text-blue-600',
         inactive: 'text-blue-500 group-hover:text-blue-600',
+      },
+      'sa-crash-reports': {
+        active: 'text-red-600',
+        inactive: 'text-red-500 group-hover:text-red-600',
       },
       settings: {
         active: 'text-slate-600',

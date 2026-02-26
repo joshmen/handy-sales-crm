@@ -1,7 +1,9 @@
 import { Stack } from 'expo-router';
+import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 
 export default function RutaLayout() {
   return (
+    <ErrorBoundary componentName="RutaStack">
     <Stack
       screenOptions={{
         headerStyle: { backgroundColor: '#ffffff' },
@@ -14,5 +16,6 @@ export default function RutaLayout() {
       <Stack.Screen name="visita-activa" options={{ title: 'Visita en Curso', headerShown: false }} />
       <Stack.Screen name="resumen" options={{ title: 'Resumen del Día' }} />
     </Stack>
+    </ErrorBoundary>
   );
 }

@@ -1,4 +1,14 @@
 import api from './client';
+import { validateResponse } from './validateResponse';
+import {
+  ApiResponseSchema,
+  PaginatedApiResponseSchema,
+  SaldoClienteSchema,
+  ResumenCarteraSchema,
+  EstadoCuentaSchema,
+  MobileCobroSchema,
+} from './schemas';
+import { z } from 'zod';
 import type {
   SaldoCliente,
   ResumenCartera,
@@ -7,6 +17,14 @@ import type {
   CobroCreateRequest,
 } from '@/types/cobro';
 import type { PaginatedApiResponse, ApiResponse } from '@/types';
+
+const SaldosResponseSchema = ApiResponseSchema(z.array(SaldoClienteSchema));
+const ResumenResponseSchema = ApiResponseSchema(ResumenCarteraSchema);
+const EstadoCuentaResponseSchema = ApiResponseSchema(EstadoCuentaSchema);
+const CrearCobroResponseSchema = ApiResponseSchema(
+  z.object({ id: z.number() }).passthrough()
+);
+const CobrosListResponseSchema = PaginatedApiResponseSchema(MobileCobroSchema);
 
 const BASE = '/api/mobile/cobros';
 
@@ -17,26 +35,46 @@ export const cobrosApi = {
       `${BASE}/saldos`,
       { params }
     );
-    return data.data;
+    const validated = validateResponse(
+      SaldosResponseSchema,
+      data,
+      'GET /api/mobile/cobros/saldos'
+    );
+    return validated.data;
   },
 
   getResumenCartera: async () => {
     const { data } = await api.get<ApiResponse<ResumenCartera>>(
       `${BASE}/saldos/resumen`
     );
-    return data.data;
+    const validated = validateResponse(
+      ResumenResponseSchema,
+      data,
+      'GET /api/mobile/cobros/saldos/resumen'
+    );
+    return validated.data;
   },
 
   getEstadoCuenta: async (clienteId: number) => {
     const { data } = await api.get<ApiResponse<EstadoCuenta>>(
       `${BASE}/cliente/${clienteId}/estado-cuenta`
     );
-    return data.data;
+    const validated = validateResponse(
+      EstadoCuentaResponseSchema,
+      data,
+      `GET /api/mobile/cobros/cliente/${clienteId}/estado-cuenta`
+    );
+    return validated.data;
   },
 
   crear: async (cobro: CobroCreateRequest) => {
     const { data } = await api.post<ApiResponse<{ id: number }>>(BASE, cobro);
-    return data.data;
+    const validated = validateResponse(
+      CrearCobroResponseSchema,
+      data,
+      'POST /api/mobile/cobros'
+    );
+    return validated.data;
   },
 
   misCobros: async (params: {
@@ -50,6 +88,11 @@ export const cobrosApi = {
       `${BASE}/mis-cobros`,
       { params }
     );
-    return { data: data.data, pagination: data.pagination };
+    const validated = validateResponse(
+      CobrosListResponseSchema,
+      data,
+      'GET /api/mobile/cobros/mis-cobros'
+    );
+    return { data: validated.data, pagination: validated.pagination };
   },
 };

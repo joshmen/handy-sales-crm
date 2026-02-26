@@ -1,6 +1,13 @@
 import { AxiosError } from 'axios';
 import { api } from './client';
+import { validateResponse } from './validateResponse';
+import {
+  ApiResponseSchema,
+  LoginResponseSchema,
+} from './schemas';
 import type { ApiResponse, LoginResponse } from '@/types';
+
+const LoginResponseWrapperSchema = ApiResponseSchema(LoginResponseSchema);
 
 class MobileAuthApi {
   private basePath = '/api/mobile/auth';
@@ -11,10 +18,15 @@ class MobileAuthApi {
         `${this.basePath}/login`,
         { email, password }
       );
-      if (!response.data.success) {
-        throw new Error(response.data.message || 'Error al iniciar sesión');
+      const validated = validateResponse(
+        LoginResponseWrapperSchema,
+        response.data,
+        'POST /api/mobile/auth/login'
+      );
+      if (!validated.success) {
+        throw new Error(validated.message || 'Error al iniciar sesión');
       }
-      return response.data.data;
+      return validated.data;
     } catch (error) {
       if (error instanceof AxiosError && error.response?.status === 403) {
         const code = error.response.data?.code;
@@ -35,10 +47,15 @@ class MobileAuthApi {
       `${this.basePath}/refresh`,
       { RefreshToken: refreshToken }
     );
-    if (!response.data.success) {
+    const validated = validateResponse(
+      LoginResponseWrapperSchema,
+      response.data,
+      'POST /api/mobile/auth/refresh'
+    );
+    if (!validated.success) {
       throw new Error('Error al renovar sesión');
     }
-    return response.data.data;
+    return validated.data;
   }
 
   async logout(): Promise<void> {

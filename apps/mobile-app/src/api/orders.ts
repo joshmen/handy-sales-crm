@@ -1,4 +1,12 @@
 import { api } from './client';
+import { validateResponse } from './validateResponse';
+import {
+  ApiResponseSchema,
+  PaginatedApiResponseSchema,
+  MobilePedidoSchema,
+  MobileDetallePedidoSchema,
+} from './schemas';
+import { z } from 'zod';
 import type {
   ApiResponse,
   PaginatedApiResponse,
@@ -7,6 +15,11 @@ import type {
   DetallePedidoCreateRequest,
   MobileDetallePedido,
 } from '@/types';
+
+const PedidoResponseSchema = ApiResponseSchema(MobilePedidoSchema);
+const PedidoListResponseSchema = PaginatedApiResponseSchema(MobilePedidoSchema);
+const PedidoArrayResponseSchema = ApiResponseSchema(z.array(MobilePedidoSchema));
+const DetalleResponseSchema = ApiResponseSchema(MobileDetallePedidoSchema);
 
 interface OrderListParams {
   estado?: number;
@@ -26,9 +39,14 @@ class MobilePedidosApi {
     const response = await api.get<PaginatedApiResponse<MobilePedido>>(
       `${this.basePath}/mis-pedidos?${qs}`
     );
+    const validated = validateResponse(
+      PedidoListResponseSchema,
+      response.data,
+      'GET /api/mobile/pedidos/mis-pedidos'
+    );
     return {
-      data: response.data.data,
-      pagination: response.data.pagination,
+      data: validated.data,
+      pagination: validated.pagination,
     };
   }
 
@@ -36,14 +54,24 @@ class MobilePedidosApi {
     const response = await api.get<ApiResponse<MobilePedido>>(
       `${this.basePath}/${id}`
     );
-    return response.data.data;
+    const validated = validateResponse(
+      PedidoResponseSchema,
+      response.data,
+      `GET /api/mobile/pedidos/${id}`
+    );
+    return validated.data;
   }
 
   async getByCliente(clienteId: number) {
     const response = await api.get<ApiResponse<MobilePedido[]>>(
       `${this.basePath}/cliente/${clienteId}`
     );
-    return response.data.data;
+    const validated = validateResponse(
+      PedidoArrayResponseSchema,
+      response.data,
+      `GET /api/mobile/pedidos/cliente/${clienteId}`
+    );
+    return validated.data;
   }
 
   async create(data: PedidoCreateRequest): Promise<MobilePedido> {
@@ -51,7 +79,12 @@ class MobilePedidosApi {
       this.basePath,
       data
     );
-    return response.data.data;
+    const validated = validateResponse(
+      PedidoResponseSchema,
+      response.data,
+      'POST /api/mobile/pedidos'
+    );
+    return validated.data;
   }
 
   async update(id: number, data: Partial<PedidoCreateRequest>): Promise<MobilePedido> {
@@ -59,7 +92,12 @@ class MobilePedidosApi {
       `${this.basePath}/${id}`,
       data
     );
-    return response.data.data;
+    const validated = validateResponse(
+      PedidoResponseSchema,
+      response.data,
+      `PUT /api/mobile/pedidos/${id}`
+    );
+    return validated.data;
   }
 
   async delete(id: number): Promise<void> {
@@ -70,7 +108,12 @@ class MobilePedidosApi {
     const response = await api.post<ApiResponse<MobilePedido>>(
       `${this.basePath}/${id}/enviar`
     );
-    return response.data.data;
+    const validated = validateResponse(
+      PedidoResponseSchema,
+      response.data,
+      `POST /api/mobile/pedidos/${id}/enviar`
+    );
+    return validated.data;
   }
 
   async cancelar(id: number, razon: string): Promise<MobilePedido> {
@@ -78,7 +121,12 @@ class MobilePedidosApi {
       `${this.basePath}/${id}/cancelar`,
       { razon }
     );
-    return response.data.data;
+    const validated = validateResponse(
+      PedidoResponseSchema,
+      response.data,
+      `POST /api/mobile/pedidos/${id}/cancelar`
+    );
+    return validated.data;
   }
 
   async addProducto(pedidoId: number, data: DetallePedidoCreateRequest): Promise<MobileDetallePedido> {
@@ -86,7 +134,12 @@ class MobilePedidosApi {
       `${this.basePath}/${pedidoId}/productos`,
       data
     );
-    return response.data.data;
+    const validated = validateResponse(
+      DetalleResponseSchema,
+      response.data,
+      `POST /api/mobile/pedidos/${pedidoId}/productos`
+    );
+    return validated.data;
   }
 
   async updateProducto(pedidoId: number, detalleId: number, data: Partial<DetallePedidoCreateRequest>): Promise<MobileDetallePedido> {
@@ -94,7 +147,12 @@ class MobilePedidosApi {
       `${this.basePath}/${pedidoId}/productos/${detalleId}`,
       data
     );
-    return response.data.data;
+    const validated = validateResponse(
+      DetalleResponseSchema,
+      response.data,
+      `PUT /api/mobile/pedidos/${pedidoId}/productos/${detalleId}`
+    );
+    return validated.data;
   }
 
   async removeProducto(pedidoId: number, detalleId: number): Promise<void> {

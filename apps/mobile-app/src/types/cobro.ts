@@ -1,60 +1,16 @@
-export interface SaldoCliente {
-  clienteId: number;
-  clienteNombre: string;
-  totalFacturado: number;
-  totalCobrado: number;
-  saldoPendiente: number;
-  ultimoCobro?: string;
-}
+// Response types — re-exported from Zod schemas (source of truth)
+export type {
+  SaldoCliente,
+  ResumenCartera,
+  EstadoCuenta,
+  EstadoCuentaMovimiento,
+  MobileCobro,
+} from '@/api/schemas/cobro';
 
-export interface ResumenCartera {
-  totalFacturado: number;
-  totalCobrado: number;
-  totalPendiente: number;
-  clientesConSaldo: number;
-}
+// Request types — re-exported from schemas (plain interfaces, no Zod)
+export type { CobroCreateRequest } from '@/api/schemas/cobro';
 
-export interface EstadoCuenta {
-  clienteId: number;
-  clienteNombre: string;
-  totalFacturado: number;
-  totalCobrado: number;
-  saldoPendiente: number;
-  movimientos: EstadoCuentaMovimiento[];
-}
-
-export interface EstadoCuentaMovimiento {
-  id: number;
-  tipo: 'factura' | 'cobro';
-  fecha: string;
-  concepto: string;
-  monto: number;
-  saldo: number;
-}
-
-export interface MobileCobro {
-  id: number;
-  clienteId: number;
-  clienteNombre: string;
-  monto: number;
-  metodoPago: number;
-  metodoPagoNombre: string;
-  referencia?: string;
-  notas?: string;
-  fecha: string;
-  usuarioId: number;
-  usuarioNombre: string;
-  creadoEn: string;
-}
-
-export interface CobroCreateRequest {
-  clienteId: number;
-  monto: number;
-  metodoPago: number;
-  referencia?: string;
-  notas?: string;
-}
-
+// Constants (not part of Zod schemas)
 export const METODO_PAGO: Record<number, string> = {
   0: 'Efectivo',
   1: 'Transferencia',

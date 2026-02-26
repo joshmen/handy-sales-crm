@@ -626,7 +626,7 @@ When requesting tasks, Claude will automatically select the appropriate agent:
 - **react-native-maps** + expo-location para mapas
 - **@react-native-firebase/messaging** para push (FCM + APNs via FCM)
 - **EAS Build + EAS Submit** para CI/CD (TestFlight + Play Internal)
-- **Sentry React Native** para crash reporting
+- **Crash reporting propio** (tabla CrashReports + endpoint API + handler mobile → futuro: bot Telegram alertas)
 
 ### Folder Structure
 
@@ -724,7 +724,7 @@ eas update --channel production --message "Fix order total"
 
 ### Observability
 
-- Sentry React Native: crashes, breadcrumbs, source maps
+- Crash reporting propio: tabla CrashReports en MySQL, endpoint POST /api/crash-reports, handler en mobile. Futuro: bot Telegram para alertas en tiempo real
 - Custom metrics: sync_duration_ms, sync_records_pushed, sync_conflicts
 - MMKV counters: offline_orders_created, offline_duration_seconds
 
@@ -1092,7 +1092,7 @@ docs/design/pencil/pencil-admin.pen       # Mismo contenido
 - [x] **MOB-3**: ~~Route & Map~~ — react-native-maps + clustering + polylines, GPS check-in 200m geofence, location tracking, 7 map components
 - [x] **MOB-4**: ~~Evidence & Payments~~ — Fotos/firma en visita-activa, foto comprobante en cobrar, JWT upload, sync Phase 3, pending count en sync screen
 - [x] **MOB-5**: ~~Push & Notifications~~ — Expo Push API funcional (device-token, send, test endpoints), canales Android, deep links. Deployed to Railway
-- [ ] **MOB-6**: Polish & Testing — Error boundaries, Sentry, E2E (Detox), performance (2 sem)
+- [ ] **MOB-6**: Polish & Testing — Crash reporting propio, error boundaries, Zod validation (2 sem)
 - [ ] **MOB-7**: Store Release — EAS Submit, TestFlight beta, Play Internal, producción (1 sem)
 
 ### 🟢 BAJA — Futuro
@@ -1172,11 +1172,11 @@ docs/design/pencil/pencil-admin.pen       # Mismo contenido
 
 ### 🟡 Paso 5: MOB-6 — Polish
 
-- [ ] **MOB-6a**: Sentry React Native setup (crash reporting + source maps)
-- [ ] **MOB-6b**: Error boundaries en cada tab/screen group
+- [ ] **MOB-6a**: Crash reporting propio (tabla CrashReports + endpoint POST + handler mobile + pantalla SA). Futuro: bot Telegram para alertas
+- [ ] **MOB-6b**: Error boundaries en cada tab/screen group (ya existe root-level, falta por tab)
 - [ ] **MOB-6c**: Zod validation en API responses (robustez)
-- [ ] **MOB-6d**: Session timeout por inactividad
-- [ ] **MOB-6e**: Performance audit (FlatList optimization, image caching)
+- ~~MOB-6d~~: ~~Session timeout~~ ELIMINADO — innecesario para app de vendedores de ruta (token expiry 24h + revocación remota cubren seguridad)
+- ~~MOB-6e~~: ~~Performance audit~~ DIFERIDO — pendiente hasta completar funcionalidad móvil
 
 ### 🟢 Paso 6: Billing API — Completar para facturación real
 

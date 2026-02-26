@@ -61,6 +61,9 @@ public class HandySalesDbContext : DbContext
     public DbSet<ScheduledAction> ScheduledActions => Set<ScheduledAction>();
     public DbSet<SubscriptionPlan> SubscriptionPlans => Set<SubscriptionPlan>();
 
+    // Log (sin filtro de tenant ni soft-delete)
+    public DbSet<CrashReport> CrashReports => Set<CrashReport>();
+
     // Platform-level (sin filtro de tenant)
     public DbSet<ImpersonationSession> ImpersonationSessions => Set<ImpersonationSession>();
     public DbSet<Announcement> Announcements => Set<Announcement>();

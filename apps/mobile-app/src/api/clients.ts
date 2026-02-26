@@ -1,6 +1,19 @@
 import { api } from './client';
+import { validateResponse } from './validateResponse';
+import {
+  ApiResponseSchema,
+  PaginatedApiResponseSchema,
+  MobileClienteSchema,
+  ClienteLocationSchema,
+} from './schemas';
+import { z } from 'zod';
 import type { ApiResponse, PaginatedApiResponse, MobileCliente } from '@/types';
 import type { ClienteCreateRequest } from '@/types/client';
+
+const ClienteResponseSchema = ApiResponseSchema(MobileClienteSchema);
+const ClienteListResponseSchema = PaginatedApiResponseSchema(MobileClienteSchema);
+const ClienteLocationResponseSchema = ApiResponseSchema(ClienteLocationSchema);
+const ClienteArrayResponseSchema = ApiResponseSchema(z.array(MobileClienteSchema));
 
 interface ClientListParams {
   busqueda?: string;
@@ -22,9 +35,14 @@ class MobileClientesApi {
     const response = await api.get<PaginatedApiResponse<MobileCliente>>(
       `${this.basePath}?${qs}`
     );
+    const validated = validateResponse(
+      ClienteListResponseSchema,
+      response.data,
+      'GET /api/mobile/clientes'
+    );
     return {
-      data: response.data.data,
-      pagination: response.data.pagination,
+      data: validated.data,
+      pagination: validated.pagination,
     };
   }
 
@@ -32,14 +50,24 @@ class MobileClientesApi {
     const response = await api.get<ApiResponse<MobileCliente>>(
       `${this.basePath}/${id}`
     );
-    return response.data.data;
+    const validated = validateResponse(
+      ClienteResponseSchema,
+      response.data,
+      `GET /api/mobile/clientes/${id}`
+    );
+    return validated.data;
   }
 
   async getLocation(id: number) {
     const response = await api.get<ApiResponse<{ latitud: number; longitud: number; direccion: string }>>(
       `${this.basePath}/${id}/ubicacion`
     );
-    return response.data.data;
+    const validated = validateResponse(
+      ClienteLocationResponseSchema,
+      response.data,
+      `GET /api/mobile/clientes/${id}/ubicacion`
+    );
+    return validated.data;
   }
 
   async create(data: ClienteCreateRequest): Promise<MobileCliente> {
@@ -47,14 +75,24 @@ class MobileClientesApi {
       this.basePath,
       data
     );
-    return response.data.data;
+    const validated = validateResponse(
+      ClienteResponseSchema,
+      response.data,
+      'POST /api/mobile/clientes'
+    );
+    return validated.data;
   }
 
   async getNearby(latitud: number, longitud: number, radioKm: number) {
     const response = await api.get<ApiResponse<MobileCliente[]>>(
       `${this.basePath}/cercanos?latitud=${latitud}&longitud=${longitud}&radioKm=${radioKm}`
     );
-    return response.data.data;
+    const validated = validateResponse(
+      ClienteArrayResponseSchema,
+      response.data,
+      'GET /api/mobile/clientes/cercanos'
+    );
+    return validated.data;
   }
 }
 

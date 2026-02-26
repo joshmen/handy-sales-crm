@@ -1,7 +1,9 @@
 import { Stack } from 'expo-router';
+import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 
 export default function ClientsLayout() {
   return (
+    <ErrorBoundary componentName="ClientsStack">
     <Stack
       screenOptions={{
         headerStyle: { backgroundColor: '#ffffff' },
@@ -13,5 +15,6 @@ export default function ClientsLayout() {
       <Stack.Screen name="[id]" options={{ title: 'Detalle Cliente' }} />
       <Stack.Screen name="crear" options={{ title: 'Nuevo Cliente' }} />
     </Stack>
+    </ErrorBoundary>
   );
 }

@@ -1,30 +1,5 @@
-export interface MobileCliente {
-  id: number;
-  nombre: string;
-  rfc: string;
-  correo: string;
-  telefono: string;
-  direccion: string;
-  idZona: number;
-  categoriaClienteId: number;
-  latitud?: number;
-  longitud?: number;
-  vendedorId?: number;
-  activo: boolean;
-  zonaNombre?: string;
-  categoriaNombre?: string;
-  creadoEn?: string;
-  actualizadoEn?: string;
-}
+// Response types — re-exported from Zod schemas (source of truth)
+export type { MobileCliente } from '@/api/schemas/client';
 
-export interface ClienteCreateRequest {
-  nombre: string;
-  rfc?: string;
-  correo?: string;
-  telefono?: string;
-  direccion?: string;
-  idZona?: number;
-  categoriaClienteId?: number;
-  latitud?: number;
-  longitud?: number;
-}
+// Request types — re-exported from schemas (plain interfaces, no Zod)
+export type { ClienteCreateRequest } from '@/api/schemas/client';
