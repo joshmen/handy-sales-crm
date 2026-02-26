@@ -1,49 +1,91 @@
 import { test, Page, expect } from '@playwright/test';
+import path from 'path';
 
 /**
  * Shared auth helpers for E2E tests.
  *
- * Uses UI-based login (fills the form) instead of the flaky API-based
- * CSRF pattern. All credentials match the seed data defined in CLAUDE.md.
+ * THREE levels of user isolation to prevent session_version conflicts:
  *
- * Each Playwright project gets DEDICATED users to avoid single-session
- * enforcement conflicts during parallel execution (fullyParallel: true).
+ * 1. PROJECT-level: Desktop Chrome vs Mobile Chrome use different admin users
+ *    (storageState set once by auth.setup.ts, shared by all workers via fast-path)
  *
- * Desktop Chrome users:
- *   admin@jeyma.com              — Admin, tenant Jeyma (id=3)
- *   vendedor1@jeyma.com          — Vendedor, tenant Jeyma (id=3)
- *   superadmin@handysales.com    — SuperAdmin (platform-level)
+ * 2. FILE-level: Each test file that logins as SA or Vendedor gets its OWN
+ *    dedicated user, so parallel workers never bump the same session_version.
  *
- * Mobile Chrome users:
- *   e2e-mobile-admin@jeyma.com   — Admin, tenant Jeyma (id=3)
- *   e2e-mobile-vendedor@jeyma.com — Vendedor, tenant Jeyma (id=3)
- *   e2e-mobile-sa@handysales.com — SuperAdmin (platform-level)
+ * 3. LOGIN-TEST: Tests that explicitly test the login flow use a separate
+ *    "loginAdmin" user to avoid invalidating the storageState admin session.
  *
- * Password: test123 for all.
+ * Password: test123 for all. See 06_e2e_parallel_users.sql for seed data.
  */
 
 const TEST_PASSWORD = 'test123';
 
 const API_BASE = 'http://localhost:1050';
 
+// ── File → dedicated SuperAdmin user mapping ──
+// Each key is the spec file basename (without .spec.ts).
+const SA_SLOT: Record<string, number> = {
+  'superadmin': 1,
+  'announcement-displaymode': 2,
+  'security-announcements': 3,
+  'subscription-tenant': 4,
+  'impersonation-sidebar': 5,
+};
+
+// ── File → dedicated Vendedor user mapping ──
+const VEND_SLOT: Record<string, number> = {
+  'rbac': 1,
+  'perfil-empresa': 2,
+};
+
 /**
- * Returns project-specific test emails to avoid session conflicts
- * between Desktop Chrome and Mobile Chrome workers.
+ * Returns test emails isolated by project AND file.
  *
- * Call from within a test, beforeEach, or afterEach — requires test context.
+ * - `admin`: storageState admin (used by fast-path loginAsAdmin, never re-login)
+ * - `loginAdmin`: separate admin for tests that explicitly test the login flow
+ * - `superAdmin`: per-file SA user (avoids parallel session conflicts)
+ * - `vendedor`: per-file vendedor user (avoids parallel session conflicts)
  */
 export function getTestEmails() {
   let isMobile = false;
+  let fileName = '';
   try {
     isMobile = test.info().project.name === 'Mobile Chrome';
+    fileName = path.basename(test.info().file).replace('.spec.ts', '');
   } catch {
-    // Outside test context — default to desktop
+    // Outside test context — default to desktop, no file mapping
+  }
+
+  const saSlot = SA_SLOT[fileName];
+  const vendSlot = VEND_SLOT[fileName];
+
+  let superAdmin: string;
+  if (saSlot) {
+    superAdmin = isMobile
+      ? `e2e-mob-sa-${saSlot}@handysales.com`
+      : `e2e-sa-${saSlot}@handysales.com`;
+  } else {
+    superAdmin = isMobile
+      ? 'e2e-mobile-sa@handysales.com'
+      : 'superadmin@handysales.com';
+  }
+
+  let vendedor: string;
+  if (vendSlot) {
+    vendedor = isMobile
+      ? `e2e-mob-vend-${vendSlot}@jeyma.com`
+      : `e2e-vend-${vendSlot}@jeyma.com`;
+  } else {
+    vendedor = isMobile
+      ? 'e2e-mobile-vendedor@jeyma.com'
+      : 'vendedor1@jeyma.com';
   }
 
   return {
     admin: isMobile ? 'e2e-mobile-admin@jeyma.com' : 'admin@jeyma.com',
-    vendedor: isMobile ? 'e2e-mobile-vendedor@jeyma.com' : 'vendedor1@jeyma.com',
-    superAdmin: isMobile ? 'e2e-mobile-sa@handysales.com' : 'superadmin@handysales.com',
+    loginAdmin: isMobile ? 'e2e-mob-login-admin@jeyma.com' : 'e2e-login-admin@jeyma.com',
+    vendedor,
+    superAdmin,
     password: TEST_PASSWORD,
     apiBase: API_BASE,
   };
@@ -51,17 +93,12 @@ export function getTestEmails() {
 
 async function fillLoginForm(page: Page, email: string, password: string): Promise<void> {
   await page.goto('/login');
-  // Dismiss any Next.js error overlay or modal that may block the form
   await page.keyboard.press('Escape');
   await page.waitForTimeout(500);
-  // Use .first() to handle React Strict Mode double-mount edge case
   await page.locator('#email').first().fill(email);
   await page.locator('#password').first().fill(password);
   await page.getByRole('button', { name: /Iniciar Sesión/i }).first().click({ force: true });
 
-  // After clicking login, wait for EITHER:
-  // 1. Redirect to /dashboard (success) — most common path
-  // 2. Session conflict "Cerrar sesión anterior" button (409 response)
   const replaceBtn = page.getByRole('button', { name: /Cerrar sesión anterior/i });
   try {
     await Promise.race([
@@ -69,21 +106,16 @@ async function fillLoginForm(page: Page, email: string, password: string): Promi
       replaceBtn.waitFor({ state: 'visible', timeout: 10000 }),
     ]);
   } catch {
-    // Neither happened — login may have failed or another UI step appeared
+    // Neither happened
   }
 
-  // If session conflict button appeared, click it to force-login
   if (await replaceBtn.isVisible().catch(() => false)) {
     await replaceBtn.click();
   }
 }
 
 /**
- * Login as Admin and wait for the dashboard.
- *
- * Fast-path: if the browser already has a session cookie (from Playwright's
- * setup project storageState), skip the login form entirely and just navigate
- * to /dashboard. This avoids bumping session_version and breaking other workers.
+ * Login as Admin via storageState fast-path (no form fill if cookies exist).
  */
 export async function loginAsAdmin(page: Page): Promise<void> {
   const cookies = await page.context().cookies();
@@ -107,10 +139,7 @@ export async function loginAsAdmin(page: Page): Promise<void> {
 }
 
 /**
- * Login as Vendedor and wait for the dashboard.
- *
- * Clears cookies first because the storageState contains Admin credentials.
- * Vendedor tests run in serial describes, so no session conflict risk.
+ * Login as Vendedor (per-file dedicated user). Clears admin storageState first.
  */
 export async function loginAsVendedor(page: Page): Promise<void> {
   await page.context().clearCookies();
@@ -120,10 +149,7 @@ export async function loginAsVendedor(page: Page): Promise<void> {
 }
 
 /**
- * Login as SuperAdmin and wait for the dashboard.
- *
- * Clears cookies first because the storageState contains Admin credentials.
- * SuperAdmin tests run in serial describes, so no session conflict risk.
+ * Login as SuperAdmin (per-file dedicated user). Clears admin storageState first.
  */
 export async function loginAsSuperAdmin(page: Page): Promise<void> {
   await page.context().clearCookies();

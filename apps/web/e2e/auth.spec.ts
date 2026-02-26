@@ -40,8 +40,8 @@ test.describe('Authentication', () => {
     await page.keyboard.press('Escape');
     await page.waitForTimeout(500);
 
-    const { admin, password } = getTestEmails();
-    await page.locator('#email').fill(admin);
+    const { loginAdmin, password } = getTestEmails();
+    await page.locator('#email').fill(loginAdmin);
     await page.locator('#password').fill(password);
 
     // Use force click to bypass any overlay

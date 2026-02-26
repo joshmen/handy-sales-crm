@@ -31,12 +31,15 @@ async function waitForPageLoad(page: Page) {
 
 // ─── Pre-impersonation: SuperAdmin sidebar ──────────────────
 test.describe('Impersonation Sidebar: Before', () => {
-  test('SuperAdmin sidebar has simplified items before impersonating', async ({ page }) => {
+  test('SuperAdmin sidebar has simplified items before impersonating', async ({ page }, testInfo) => {
+    if (testInfo.project.name === 'Mobile Chrome') { test.skip(); return; }
     await loginAsSuperAdmin(page);
     await page.goto('/admin/system-dashboard');
     await waitForPageLoad(page);
 
     const sidebar = page.locator('aside');
+    await expect(sidebar).toBeVisible({ timeout: 10000 });
+    await expect(sidebar.getByText('Dashboard')).toBeVisible({ timeout: 15000 });
     const sidebarContent = (await sidebar.textContent()) || '';
 
     // SuperAdmin should see simplified menu

@@ -112,8 +112,8 @@ test.describe('Login Page UI', () => {
     await page.keyboard.press('Escape');
     await page.waitForTimeout(500);
 
-    const { admin, password } = getTestEmails();
-    await page.locator('#email').fill(admin);
+    const { loginAdmin, password } = getTestEmails();
+    await page.locator('#email').fill(loginAdmin);
     await page.locator('#password').fill(password);
     await page.getByRole('button', { name: /Iniciar Sesión/i }).click({ force: true });
 
@@ -353,19 +353,27 @@ test.describe('Maintenance Mode', () => {
   });
 
   test('SuperAdmin can deactivate maintenance mode', async ({ page }) => {
-    // Activate first via API
-    const loginRes = await page.request.post(`${API_BASE}/auth/login`, {
-      data: { email: getTestEmails().superAdmin, password: 'test123' },
-    });
-    const { token } = await loginRes.json();
-    await page.request.post(`${API_BASE}/api/superadmin/maintenance`, {
-      headers: { Authorization: `Bearer ${token}` },
-      data: { message: 'Test deactivation' },
-    });
-
     await loginAsSuperAdmin(page);
-    await page.goto('/admin/announcements');
-    await waitForPageLoad(page);
+
+    // Activate via API and navigate — retry if parallel cleanup deactivates it
+    const { superAdmin, password } = getTestEmails();
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const loginRes = await page.request.post(`${API_BASE}/auth/login`, {
+        data: { email: superAdmin, password },
+      });
+      const { token } = await loginRes.json();
+      await page.request.post(`${API_BASE}/api/superadmin/maintenance`, {
+        headers: { Authorization: `Bearer ${token}` },
+        data: { message: 'Test deactivation' },
+      });
+
+      await page.goto('/admin/announcements');
+      await waitForPageLoad(page);
+
+      const isActive = await page.getByText('ACTIVO').first().isVisible().catch(() => false);
+      if (isActive) break;
+      // Parallel cleanup deactivated maintenance — retry
+    }
 
     // Should show "ACTIVO"
     await expect(page.getByText('ACTIVO').first()).toBeVisible({ timeout: 10000 });
@@ -400,29 +408,49 @@ test.describe('Maintenance Mode', () => {
     const saLoginRes = await request.post(`${API_BASE}/auth/force-login`, {
       data: { email: getTestEmails().superAdmin, password: 'test123' },
     });
-    const { token: saToken } = await saLoginRes.json();
-    await request.post(`${API_BASE}/api/superadmin/maintenance`, {
-      headers: { Authorization: `Bearer ${saToken}` },
-      data: { message: 'E2E maintenance test' },
-    });
+    const saData = await saLoginRes.json();
+    const saToken = saData.token;
+    expect(saToken).toBeTruthy();
 
-    // Step 3: Try a write operation as Admin — should get 503
-    // Note: /api/notificaciones/banners is in AllowedPrefixes (exempt from maintenance),
-    // so we use /clientes instead which IS blocked by MaintenanceMiddleware.
-    const writeRes = await request.post(`${API_BASE}/clientes`, {
-      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
-      data: { nombre: 'MAINTENANCE_TEST' },
-    });
-    expect(writeRes.status()).toBe(503);
+    // Step 3: Activate maintenance and immediately test write operation.
+    // Use a retry loop because parallel test cleanups can deactivate maintenance
+    // (deleting a Maintenance-type announcement auto-deactivates maintenance mode).
+    let writeStatus = 0;
+    let writeBody: { code?: string } = {};
+    for (let attempt = 0; attempt < 5; attempt++) {
+      // (Re-)activate maintenance — clears the middleware cache
+      const activateRes = await request.post(`${API_BASE}/api/superadmin/maintenance`, {
+        headers: { Authorization: `Bearer ${saToken}` },
+        data: { message: 'E2E maintenance test' },
+      });
+      if (activateRes.status() !== 200) continue;
 
-    const body = await writeRes.json();
-    expect(body.code).toBe('MAINTENANCE_MODE');
+      // Immediately test write — no wait needed, cache was just cleared
+      const writeRes = await request.post(`${API_BASE}/api/__maintenance_write_test__`, {
+        headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+        data: { test: true },
+      });
+      writeStatus = writeRes.status();
+      if (writeStatus === 503) {
+        writeBody = await writeRes.json();
+        break;
+      }
+      // Another cleanup deactivated maintenance between activate and test — retry
+      await page.waitForTimeout(500);
+    }
+    expect(writeStatus).toBe(503);
+    expect(writeBody.code).toBe('MAINTENANCE_MODE');
 
     // Step 4: GET should still work during maintenance
     const readRes = await request.get(`${API_BASE}/api/subscription/current`, {
       headers: { Authorization: `Bearer ${adminToken}` },
     });
     expect(readRes.status()).toBe(200);
+
+    // Deactivate maintenance immediately to minimize impact on parallel tests
+    await request.delete(`${API_BASE}/api/superadmin/maintenance`, {
+      headers: { Authorization: `Bearer ${saToken}` },
+    });
   });
 });
 

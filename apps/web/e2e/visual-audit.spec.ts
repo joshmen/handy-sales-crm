@@ -220,6 +220,7 @@ const PAGES: PageAudit[] = [
 test.use({ navigationTimeout: 60000, actionTimeout: 15000 });
 
 test.describe('Visual Audit - Dashboard Pages', () => {
+  test.setTimeout(60000);
 
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);

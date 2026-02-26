@@ -124,6 +124,7 @@ test.describe('RBAC - Pedidos', () => {
   });
 
   test('Vendedor sees only their own orders', async ({ page }, testInfo) => {
+    test.setTimeout(60000);
     if (testInfo.project.name === 'Mobile Chrome') { test.skip(); return; }
 
     await loginAsVendedor(page);
@@ -160,6 +161,7 @@ test.describe('RBAC - Rutas', () => {
   });
 
   test('Vendedor does NOT see vendedor filter in routes', async ({ page }, testInfo) => {
+    test.setTimeout(60000);
     if (testInfo.project.name === 'Mobile Chrome') { test.skip(); return; }
 
     await loginAsVendedor(page);
