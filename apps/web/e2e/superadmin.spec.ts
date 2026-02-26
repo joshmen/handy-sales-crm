@@ -157,77 +157,68 @@ test.describe('SA-1: Gestión de Empresas', () => {
     expect(hasFilters).toBeTruthy();
   });
 
-  test('Click on tenant opens detail drawer', async ({ page }) => {
+  test('Click on tenant opens detail page', async ({ page }) => {
+    test.setTimeout(120000);
     await page.goto('/admin/tenants');
     await waitForPageLoad(page);
 
-    // Click on the first tenant row (desktop) or card (mobile)
-    const tenantRow = page.locator('table tbody tr').first();
-    if (await tenantRow.isVisible()) {
-      await tenantRow.click();
-    } else {
-      // Mobile: click on first card
-      const tenantCard = page
-        .locator('.bg-white.rounded-lg.border')
-        .first();
-      await tenantCard.click();
-    }
+    // Wait for a tenant name to appear, then click it (navigates to detail page)
+    const tenantLink = page.getByText('Demo Corp SA de CV').first();
+    await tenantLink.waitFor({ state: 'visible', timeout: 60000 });
+    await tenantLink.click();
 
-    await page.waitForTimeout(1500);
+    // Should navigate to /admin/tenants/[id]
+    await page.waitForURL(/\/admin\/tenants\/\d+/, { timeout: 15000 });
+    await waitForPageLoad(page);
 
-    // Detail drawer should be open
-    const drawerContent = await page.textContent('body');
-    expect(drawerContent).toContain('Detalle de Empresa');
-    expect(drawerContent).toContain('Estadísticas');
-    expect(drawerContent).toContain('Usuarios del Tenant');
+    // Detail page should show tenant info
+    const pageContent = await page.textContent('body');
+    expect(pageContent).toContain('Estadísticas');
+    expect(pageContent).toContain('Impersonar');
 
     await page.screenshot({
-      path: 'e2e/screenshots/sa-tenant-detail-drawer.png',
+      path: 'e2e/screenshots/sa-tenant-detail-page.png',
       fullPage: true,
     });
   });
 
-  test('Detail drawer shows impersonar button', async ({ page }) => {
+  test('Detail page shows impersonar button', async ({ page }) => {
     await page.goto('/admin/tenants');
     await waitForPageLoad(page);
 
-    // Click on first tenant row
-    const tenantRow = page.locator('table tbody tr').first();
-    if (await tenantRow.isVisible()) {
-      await tenantRow.click();
-    }
-    await page.waitForTimeout(1500);
+    // Click on a tenant name to navigate to detail page
+    const tenantLink = page.getByText('Demo Corp SA de CV').first();
+    await tenantLink.waitFor({ state: 'visible', timeout: 60000 });
+    await tenantLink.click();
+    await page.waitForURL(/\/admin\/tenants\/\d+/, { timeout: 15000 });
+    await waitForPageLoad(page);
 
-    // Should have Impersonar button
+    // Should have Impersonar button on the detail page
     const impersonarBtn = page.getByRole('button', {
-      name: /impersonar empresa/i,
+      name: /impersonar/i,
     });
-    await expect(impersonarBtn).toBeVisible({ timeout: 5000 });
+    await expect(impersonarBtn).toBeVisible({ timeout: 10000 });
   });
 
-  test('Detail drawer shows edit and suspend buttons', async ({ page }) => {
+  test('Detail page shows edit and suspend buttons', async ({ page }) => {
     await page.goto('/admin/tenants');
     await waitForPageLoad(page);
 
-    const tenantRow = page.locator('table tbody tr').first();
-    if (await tenantRow.isVisible()) {
-      await tenantRow.click();
-    }
-    await page.waitForTimeout(1500);
+    const tenantLink = page.getByText('Demo Corp SA de CV').first();
+    await tenantLink.waitFor({ state: 'visible', timeout: 60000 });
+    await tenantLink.click();
+    await page.waitForURL(/\/admin\/tenants\/\d+/, { timeout: 15000 });
+    await waitForPageLoad(page);
 
-    // Scope to the drawer overlay
-    const drawer = page.locator('.animate-slide-in-right');
-    await expect(drawer).toBeVisible({ timeout: 5000 });
-
-    // Edit button inside drawer footer
-    const editBtn = drawer.getByRole('button', { name: /editar/i });
-    await expect(editBtn).toBeVisible({ timeout: 5000 });
+    // Edit button on detail page
+    const editBtn = page.getByRole('button', { name: /editar/i });
+    await expect(editBtn).toBeVisible({ timeout: 10000 });
 
     // Suspend/Reactivar button
-    const suspendBtn = drawer.getByRole('button', {
+    const suspendBtn = page.getByRole('button', {
       name: /suspender|reactivar/i,
     });
-    await expect(suspendBtn).toBeVisible({ timeout: 5000 });
+    await expect(suspendBtn).toBeVisible({ timeout: 10000 });
   });
 });
 
@@ -330,16 +321,16 @@ test.describe('SA-4: Impersonation Trigger', () => {
     await page.goto('/admin/tenants');
     await waitForPageLoad(page);
 
-    // Open detail drawer
-    const tenantRow = page.locator('table tbody tr').first();
-    if (await tenantRow.isVisible()) {
-      await tenantRow.click();
-    }
-    await page.waitForTimeout(1500);
+    // Navigate to tenant detail page
+    const tenantLink = page.getByText('Demo Corp SA de CV').first();
+    await tenantLink.waitFor({ state: 'visible', timeout: 60000 });
+    await tenantLink.click();
+    await page.waitForURL(/\/admin\/tenants\/\d+/, { timeout: 15000 });
+    await waitForPageLoad(page);
 
-    // Click Impersonar button
+    // Click Impersonar button on detail page
     const impersonarBtn = page.getByRole('button', {
-      name: /impersonar empresa/i,
+      name: /impersonar/i,
     });
     await impersonarBtn.click();
     await page.waitForTimeout(1000);

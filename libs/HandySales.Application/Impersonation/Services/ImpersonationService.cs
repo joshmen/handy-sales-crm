@@ -57,11 +57,22 @@ public class ImpersonationService : IImpersonationService
             throw new ArgumentException($"La justificación debe tener al menos {MinReasonLength} caracteres.");
         }
 
-        // Verificar que no hay sesión activa
+        // Verificar que no hay sesión activa (auto-expirar sesiones vencidas)
         var existingSession = await _repository.GetActiveSessionForUserAsync(superAdminId);
         if (existingSession != null)
         {
-            throw new InvalidOperationException("Ya tienes una sesión de impersonación activa. Finalízala antes de iniciar otra.");
+            // Si la sesión está expirada por tiempo, cerrarla automáticamente
+            if (DateTime.UtcNow > existingSession.ExpiresAt)
+            {
+                await _repository.EndSessionAsync(existingSession.Id, DateTime.UtcNow);
+                _logger.LogInformation(
+                    "Auto-expired stale impersonation session {SessionId} for SuperAdmin {SuperAdminId}",
+                    existingSession.Id, superAdminId);
+            }
+            else
+            {
+                throw new InvalidOperationException("Ya tienes una sesión de impersonación activa. Finalízala antes de iniciar otra.");
+            }
         }
 
         // Obtener datos del SUPER_ADMIN

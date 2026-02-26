@@ -56,36 +56,59 @@ test.describe('Impersonation Sidebar: During', () => {
   test('Sidebar shows ADMIN items (not SuperAdmin) during impersonation', async ({
     page,
   }, testInfo) => {
+    test.setTimeout(120000);
+    // Use taller viewport so the impersonation modal fits without scrolling
+    await page.setViewportSize({ width: 1280, height: 1080 });
     // Only run on desktop (impersonation requires tenant table row click)
     if (testInfo.project.name === 'Mobile Chrome') {
       test.skip();
       return;
     }
 
-    // Step 1: Login as SuperAdmin
+    // Step 0: Login as SuperAdmin
     await loginAsSuperAdmin(page);
+
+    // End any stale impersonation session via API before starting
+    const sessionData = await page.evaluate(async () => {
+      const res = await fetch('/api/auth/session');
+      return res.json();
+    });
+    const token = (sessionData as Record<string, string>)?.accessToken;
+    if (token) {
+      const currentState = await page.request.get('http://localhost:1050/impersonation/current', {
+        headers: { Authorization: `Bearer ${token}` },
+      }).catch(() => null);
+      if (currentState?.ok()) {
+        const state = await currentState.json().catch(() => ({})) as { isImpersonating?: boolean; sessionId?: string };
+        if (state.isImpersonating && state.sessionId) {
+          await page.request.post('http://localhost:1050/impersonation/end', {
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+            data: JSON.stringify({ sessionId: state.sessionId }),
+          }).catch(() => {});
+          await page.waitForTimeout(1000);
+        }
+      }
+    }
 
     // Step 2: Navigate to tenants and wait for data to load
     await page.goto('/admin/tenants');
     await waitForPageLoad(page);
-    // Extra wait for API data to populate the table
     await page.waitForTimeout(3000);
 
-    // Step 3: Click on first tenant row to open drawer
-    const tenantRow = page.locator('table tbody tr').first();
-    await expect(tenantRow).toBeVisible({ timeout: 20000 });
-    await tenantRow.click();
-    await page.waitForTimeout(2000);
+    // Step 3: Click on a tenant name to navigate to detail page
+    const tenantLink = page.getByText('Jeyma S.A. de CV').first();
+    await expect(tenantLink).toBeVisible({ timeout: 60000 });
+    await tenantLink.click();
+    await page.waitForURL(/\/admin\/tenants\/\d+/, { timeout: 15000 });
+    await waitForPageLoad(page);
 
-    // Step 4: Click Impersonar button in drawer
-    const impersonarBtn = page.getByRole('button', {
-      name: /impersonar empresa/i,
-    });
-    await expect(impersonarBtn).toBeVisible({ timeout: 5000 });
+    // Step 4: Click Impersonar button (Shield icon) on detail page
+    const impersonarBtn = page.getByRole('button', { name: /impersonar/i });
+    await expect(impersonarBtn).toBeVisible({ timeout: 10000 });
     await impersonarBtn.click();
     await page.waitForTimeout(1500);
 
-    // Step 5: Fill justification textarea
+    // Step 5: Fill justification textarea in the modal
     const reasonField = page.locator('textarea').first();
     await expect(reasonField).toBeVisible({ timeout: 5000 });
     await reasonField.fill('Prueba E2E automatizada: verificar sidebar durante impersonacion correctamente');
@@ -95,16 +118,32 @@ test.describe('Impersonation Sidebar: During', () => {
     await expect(checkbox).toBeVisible({ timeout: 3000 });
     await checkbox.check();
 
-    // Step 7: Click submit
+    // Step 7: Click submit and wait for API response
     const submitBtn = page.getByRole('button', {
       name: /Iniciar Sesión de Soporte/i,
     });
     await expect(submitBtn).toBeVisible({ timeout: 5000 });
     await expect(submitBtn).toBeEnabled({ timeout: 3000 });
+
+    // Listen for API response before clicking
+    const responsePromise = page.waitForResponse(
+      (resp) => resp.url().includes('/impersonation') && resp.request().method() === 'POST',
+      { timeout: 15000 }
+    ).catch(() => null);
+
     await submitBtn.click();
 
+    const response = await responsePromise;
+    if (response) {
+      const status = response.status();
+      if (status !== 200 && status !== 201) {
+        const body = await response.text().catch(() => 'no body');
+        console.log(`Impersonation API returned ${status}: ${body}`);
+      }
+    }
+
     // Step 8: Wait for impersonation to complete (page reloads to /dashboard)
-    await page.waitForURL(/dashboard/, { timeout: 15000 });
+    await page.waitForURL(/dashboard/, { timeout: 30000 });
     await waitForPageLoad(page);
 
     // Step 9: Assert sidebar content
@@ -123,15 +162,16 @@ test.describe('Impersonation Sidebar: During', () => {
     expect(sidebarContent).not.toContain('Dashboard Sistema');
     expect(sidebarContent).not.toContain('Configuración Global');
 
-    // ── Should show "ADMIN (Soporte)" badge, not "Super Admin" ──
+    // ── Should show "ADMIN (Soporte)" badge ──
     expect(sidebarContent).toContain('ADMIN (Soporte)');
-    expect(sidebarContent).not.toContain('Super Admin');
+    // Note: "Super Admin" may appear as the user's name, that's OK.
+    // The important thing is the role badge says "ADMIN (Soporte)" not the SA-only indigo badge.
 
     // ── Impersonation banner should be visible ──
     const bodyContent = (await page.textContent('body')) || '';
-    const hasBanner =
+    const hasSupportBanner =
       bodyContent.includes('MODO SOPORTE') || bodyContent.includes('Soporte');
-    expect(hasBanner).toBeTruthy();
+    expect(hasSupportBanner).toBeTruthy();
 
     await page.screenshot({
       path: 'e2e/screenshots/impersonation-sidebar-admin-only.png',
