@@ -1,5 +1,7 @@
 import { test, expect, Page } from '@playwright/test';
-import { loginAsSuperAdmin } from './helpers/auth';
+import { loginAsSuperAdmin, getTestEmails } from './helpers/auth';
+
+const API_BASE = 'http://localhost:1050';
 
 /**
  * Impersonation Sidebar Fix E2E Tests
@@ -75,13 +77,13 @@ test.describe('Impersonation Sidebar: During', () => {
     });
     const token = (sessionData as Record<string, string>)?.accessToken;
     if (token) {
-      const currentState = await page.request.get('http://localhost:1050/impersonation/current', {
+      const currentState = await page.request.get(`${API_BASE}/impersonation/current`, {
         headers: { Authorization: `Bearer ${token}` },
       }).catch(() => null);
       if (currentState?.ok()) {
         const state = await currentState.json().catch(() => ({})) as { isImpersonating?: boolean; sessionId?: string };
         if (state.isImpersonating && state.sessionId) {
-          await page.request.post('http://localhost:1050/impersonation/end', {
+          await page.request.post(`${API_BASE}/impersonation/end`, {
             headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
             data: JSON.stringify({ sessionId: state.sessionId }),
           }).catch(() => {});

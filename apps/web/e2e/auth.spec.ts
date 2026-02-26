@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { loginAsAdmin } from './helpers/auth';
+import { loginAsAdmin, getTestEmails } from './helpers/auth';
 
 test.describe('Authentication', () => {
   test('should show login page', async ({ page }) => {
@@ -37,8 +37,9 @@ test.describe('Authentication', () => {
     await page.keyboard.press('Escape');
     await page.waitForTimeout(500);
 
-    await page.locator('#email').fill('admin@jeyma.com');
-    await page.locator('#password').fill('test123');
+    const { admin, password } = getTestEmails();
+    await page.locator('#email').fill(admin);
+    await page.locator('#password').fill(password);
 
     // Use force click to bypass any overlay
     await page.getByRole('button', { name: /Iniciar Sesión/i }).click({ force: true });

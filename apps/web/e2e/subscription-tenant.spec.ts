@@ -1,5 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
-import { loginAsAdmin, loginAsSuperAdmin } from './helpers/auth';
+import { loginAsAdmin, loginAsSuperAdmin, getTestEmails } from './helpers/auth';
 
 /**
  * Subscription + Tenant Deactivation E2E Tests
@@ -44,7 +44,7 @@ async function waitForPageLoad(page: Page) {
 
 test.describe('SUB-1: Subscription Plans API', () => {
   test('GET /api/subscription/plans returns 3 plans', async ({ page }) => {
-    const token = await getBackendToken(page, 'admin@jeyma.com', 'test123');
+    const token = await getBackendToken(page, getTestEmails().admin, 'test123');
 
     const res = await page.request.get(`${API_BASE}/api/subscription/plans`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -77,7 +77,7 @@ test.describe('SUB-1: Subscription Plans API', () => {
   });
 
   test('Plans are sorted by orden', async ({ page }) => {
-    const token = await getBackendToken(page, 'admin@jeyma.com', 'test123');
+    const token = await getBackendToken(page, getTestEmails().admin, 'test123');
 
     const res = await page.request.get(`${API_BASE}/api/subscription/plans`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -94,7 +94,7 @@ test.describe('SUB-1: Subscription Plans API', () => {
 
 test.describe('SUB-2: Current Subscription API', () => {
   test('GET /api/subscription/current returns tenant status', async ({ page }) => {
-    const token = await getBackendToken(page, 'admin@jeyma.com', 'test123');
+    const token = await getBackendToken(page, getTestEmails().admin, 'test123');
 
     const res = await page.request.get(`${API_BASE}/api/subscription/current`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -249,7 +249,7 @@ test.describe('SEC-T1: Tenant Deactivation Security', () => {
     // Step 1: Get SuperAdmin token
     const saToken = await getBackendToken(
       page,
-      'superadmin@handysales.com',
+      getTestEmails().superAdmin,
       'test123'
     );
 
@@ -327,7 +327,7 @@ test.describe('SEC-T2: Session Invalidation on Deactivation', () => {
     // Step 2: SuperAdmin deactivates the tenant
     const saToken = await getBackendToken(
       page,
-      'superadmin@handysales.com',
+      getTestEmails().superAdmin,
       'test123'
     );
 
@@ -375,7 +375,7 @@ test.describe('SEC-T3: Frontend Login Error Handling', () => {
     // Step 1: SuperAdmin deactivates the tenant
     const saToken = await getBackendToken(
       page,
-      'superadmin@handysales.com',
+      getTestEmails().superAdmin,
       'test123'
     );
 
@@ -436,7 +436,7 @@ test.describe('SUB-6: Subscription Endpoint Access Control', () => {
     // Login as vendedor (non-admin)
     const vendedorToken = await getBackendToken(
       page,
-      'vendedor1@jeyma.com',
+      getTestEmails().vendedor,
       'test123'
     );
 
@@ -460,7 +460,7 @@ test.describe('SUB-6: Subscription Endpoint Access Control', () => {
   test('Cancel endpoint requires admin role', async ({ page }) => {
     const vendedorToken = await getBackendToken(
       page,
-      'vendedor1@jeyma.com',
+      getTestEmails().vendedor,
       'test123'
     );
 
@@ -477,7 +477,7 @@ test.describe('SUB-6: Subscription Endpoint Access Control', () => {
   test('Portal endpoint requires admin role', async ({ page }) => {
     const vendedorToken = await getBackendToken(
       page,
-      'vendedor1@jeyma.com',
+      getTestEmails().vendedor,
       'test123'
     );
 

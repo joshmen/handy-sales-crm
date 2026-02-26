@@ -1,5 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
-import { loginAsAdmin, loginAsSuperAdmin } from './helpers/auth';
+import { loginAsAdmin, loginAsSuperAdmin, getTestEmails } from './helpers/auth';
 
 /**
  * E2E Tests for Announcement DisplayMode Feature
@@ -11,6 +11,8 @@ import { loginAsAdmin, loginAsSuperAdmin } from './helpers/auth';
  * - DisplayMode badge in announcement list
  * - Notification creation when DisplayMode includes Notification
  */
+
+const API_BASE = 'http://localhost:1050';
 
 test.describe.configure({ mode: 'serial' });
 test.use({ navigationTimeout: 60000, actionTimeout: 15000 });
@@ -25,9 +27,10 @@ async function waitForPageLoad(page: Page) {
 }
 
 function getSuperAdminToken(page: Page) {
+  const { superAdmin, password, apiBase } = getTestEmails();
   return page.request
-    .post('http://localhost:1050/auth/login', {
-      data: { email: 'superadmin@handysales.com', password: 'test123' },
+    .post(`${apiBase}/auth/login`, {
+      data: { email: superAdmin, password },
     })
     .then((r) => r.json())
     .then((d) => d.token as string);
@@ -41,7 +44,7 @@ async function createAnnouncementViaAPI(
   prioridad = 'Normal'
 ) {
   const token = await getSuperAdminToken(page);
-  const res = await page.request.post('http://localhost:1050/api/superadmin/announcements', {
+  const res = await page.request.post(`${API_BASE}/api/superadmin/announcements`, {
     headers: { Authorization: `Bearer ${token}` },
     data: { titulo, mensaje: `Test: ${titulo}`, tipo, prioridad, displayMode, isDismissible: true },
   });
@@ -51,17 +54,17 @@ async function createAnnouncementViaAPI(
 async function cleanupAnnouncements(page: Page) {
   const token = await getSuperAdminToken(page);
 
-  await page.request.delete('http://localhost:1050/api/superadmin/maintenance', {
+  await page.request.delete(`${API_BASE}/api/superadmin/maintenance`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 
-  const listRes = await page.request.get('http://localhost:1050/api/superadmin/announcements?pageSize=50', {
+  const listRes = await page.request.get(`${API_BASE}/api/superadmin/announcements?pageSize=50`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   const listData = await listRes.json();
   for (const ann of listData.items || []) {
     if (ann.activo) {
-      await page.request.delete(`http://localhost:1050/api/superadmin/announcements/${ann.id}`, {
+      await page.request.delete(`${API_BASE}/api/superadmin/announcements/${ann.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
     }
@@ -262,12 +265,13 @@ test.describe('DisplayMode API', () => {
     await createAnnouncementViaAPI(page, 'API Both Mode', 'Banner', 'Both');
 
     // Login as admin and fetch banners
-    const loginRes = await page.request.post('http://localhost:1050/auth/login', {
-      data: { email: 'admin@jeyma.com', password: 'test123' },
+    const { admin, password, apiBase } = getTestEmails();
+    const loginRes = await page.request.post(`${apiBase}/auth/login`, {
+      data: { email: admin, password },
     });
     const { token } = await loginRes.json();
 
-    const res = await page.request.get('http://localhost:1050/api/notificaciones/banners', {
+    const res = await page.request.get(`${apiBase}/api/notificaciones/banners`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     expect(res.status()).toBe(200);
@@ -282,12 +286,13 @@ test.describe('DisplayMode API', () => {
   test('Banner response includes displayMode field', async ({ page }) => {
     await createAnnouncementViaAPI(page, 'API DM Field', 'Banner', 'Both');
 
-    const loginRes = await page.request.post('http://localhost:1050/auth/login', {
-      data: { email: 'admin@jeyma.com', password: 'test123' },
+    const { admin, password, apiBase } = getTestEmails();
+    const loginRes = await page.request.post(`${apiBase}/auth/login`, {
+      data: { email: admin, password },
     });
     const { token } = await loginRes.json();
 
-    const res = await page.request.get('http://localhost:1050/api/notificaciones/banners', {
+    const res = await page.request.get(`${apiBase}/api/notificaciones/banners`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     const banners = await res.json();
@@ -300,7 +305,7 @@ test.describe('DisplayMode API', () => {
     await createAnnouncementViaAPI(page, 'SA List DM', 'Banner', 'Notification');
 
     const token = await getSuperAdminToken(page);
-    const res = await page.request.get('http://localhost:1050/api/superadmin/announcements?pageSize=50', {
+    const res = await page.request.get(`${API_BASE}/api/superadmin/announcements?pageSize=50`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     expect(res.status()).toBe(200);
@@ -317,7 +322,7 @@ test.describe('DisplayMode API', () => {
 
     // Verify sentCount via SuperAdmin detail endpoint
     const token = await getSuperAdminToken(page);
-    const res = await page.request.get(`http://localhost:1050/api/superadmin/announcements/${created.id}`, {
+    const res = await page.request.get(`${API_BASE}/api/superadmin/announcements/${created.id}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     expect(res.status()).toBe(200);
@@ -330,7 +335,7 @@ test.describe('DisplayMode API', () => {
 
     // Verify sentCount = 0 (no notifications created)
     const token = await getSuperAdminToken(page);
-    const res = await page.request.get(`http://localhost:1050/api/superadmin/announcements/${created.id}`, {
+    const res = await page.request.get(`${API_BASE}/api/superadmin/announcements/${created.id}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     expect(res.status()).toBe(200);

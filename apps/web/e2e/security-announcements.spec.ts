@@ -1,5 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
-import { loginAsAdmin, loginAsSuperAdmin } from './helpers/auth';
+import { loginAsAdmin, loginAsSuperAdmin, getTestEmails } from './helpers/auth';
 
 /**
  * E2E Tests for Security Features + Announcements
@@ -33,8 +33,9 @@ async function waitForPageLoad(page: Page) {
 // Helper: create an announcement via API directly (SuperAdmin)
 async function createAnnouncementViaAPI(page: Page, titulo: string, tipo: string, prioridad = 'Normal') {
   // Get a SuperAdmin JWT token
+  const { superAdmin, password } = getTestEmails();
   const loginRes = await page.request.post(`${API_BASE}/auth/login`, {
-    data: { email: 'superadmin@handysales.com', password: 'test123' },
+    data: { email: superAdmin, password },
   });
   const loginData = await loginRes.json();
   const token = loginData.token;
@@ -48,8 +49,9 @@ async function createAnnouncementViaAPI(page: Page, titulo: string, tipo: string
 
 // Helper: cleanup — expire all active announcements and deactivate maintenance
 async function cleanupAnnouncements(page: Page) {
+  const { superAdmin, password } = getTestEmails();
   const loginRes = await page.request.post(`${API_BASE}/auth/login`, {
-    data: { email: 'superadmin@handysales.com', password: 'test123' },
+    data: { email: superAdmin, password },
   });
   const loginData = await loginRes.json();
   const token = loginData.token;
@@ -107,8 +109,9 @@ test.describe('Login Page UI', () => {
     await page.keyboard.press('Escape');
     await page.waitForTimeout(500);
 
-    await page.locator('#email').fill('admin@jeyma.com');
-    await page.locator('#password').fill('test123');
+    const { admin, password } = getTestEmails();
+    await page.locator('#email').fill(admin);
+    await page.locator('#password').fill(password);
     await page.getByRole('button', { name: /Iniciar Sesión/i }).click({ force: true });
 
     // Handle session conflict if admin already has an active session
@@ -349,7 +352,7 @@ test.describe('Maintenance Mode', () => {
   test('SuperAdmin can deactivate maintenance mode', async ({ page }) => {
     // Activate first via API
     const loginRes = await page.request.post(`${API_BASE}/auth/login`, {
-      data: { email: 'superadmin@handysales.com', password: 'test123' },
+      data: { email: getTestEmails().superAdmin, password: 'test123' },
     });
     const { token } = await loginRes.json();
     await page.request.post(`${API_BASE}/api/superadmin/maintenance`, {
@@ -392,7 +395,7 @@ test.describe('Maintenance Mode', () => {
 
     // Step 2: Activate maintenance via SuperAdmin API
     const saLoginRes = await request.post(`${API_BASE}/auth/force-login`, {
-      data: { email: 'superadmin@handysales.com', password: 'test123' },
+      data: { email: getTestEmails().superAdmin, password: 'test123' },
     });
     const { token: saToken } = await saLoginRes.json();
     await request.post(`${API_BASE}/api/superadmin/maintenance`, {
@@ -476,7 +479,7 @@ test.describe('Banner Rendering', () => {
   test('Maintenance banner shows in layout when maintenance active', async ({ page }) => {
     // Activate maintenance
     const loginRes = await page.request.post(`${API_BASE}/auth/login`, {
-      data: { email: 'superadmin@handysales.com', password: 'test123' },
+      data: { email: getTestEmails().superAdmin, password: 'test123' },
     });
     const { token } = await loginRes.json();
     await page.request.post(`${API_BASE}/api/superadmin/maintenance`, {
@@ -525,7 +528,7 @@ test.describe('Announcement API Integration', () => {
 
   test('SuperAdmin can create and list announcements via API', async ({ page }) => {
     const loginRes = await page.request.post(`${API_BASE}/auth/login`, {
-      data: { email: 'superadmin@handysales.com', password: 'test123' },
+      data: { email: getTestEmails().superAdmin, password: 'test123' },
     });
     const { token } = await loginRes.json();
 
@@ -555,7 +558,7 @@ test.describe('Announcement API Integration', () => {
 
   test('Admin cannot access SuperAdmin announcement endpoints', async ({ page }) => {
     const loginRes = await page.request.post(`${API_BASE}/auth/login`, {
-      data: { email: 'admin@jeyma.com', password: 'test123' },
+      data: { email: getTestEmails().admin, password: 'test123' },
     });
     const { token } = await loginRes.json();
 
@@ -571,7 +574,7 @@ test.describe('Announcement API Integration', () => {
 
     // Login as Admin and fetch banners
     const loginRes = await page.request.post(`${API_BASE}/auth/login`, {
-      data: { email: 'admin@jeyma.com', password: 'test123' },
+      data: { email: getTestEmails().admin, password: 'test123' },
     });
     const { token } = await loginRes.json();
 
@@ -587,7 +590,7 @@ test.describe('Announcement API Integration', () => {
     const created = await createAnnouncementViaAPI(page, 'Dismissable', 'Banner');
 
     const loginRes = await page.request.post(`${API_BASE}/auth/login`, {
-      data: { email: 'admin@jeyma.com', password: 'test123' },
+      data: { email: getTestEmails().admin, password: 'test123' },
     });
     const { token } = await loginRes.json();
 
