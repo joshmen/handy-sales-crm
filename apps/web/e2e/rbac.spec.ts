@@ -54,21 +54,17 @@ test.describe('RBAC - Dashboard', () => {
     await loginAsVendedor(page);
     await waitForPageLoad(page);
 
+    // Wait for vendedor dashboard to render with API data.
+    // The h1 "Mi Rendimiento" only appears when /api/dashboard/my-performance succeeds.
+    // If we see "Tablero" instead, the API failed — that's a real regression we must catch.
+    const vendedorH1 = page.locator('h1', { hasText: /Mi Rendimiento/i });
+    await expect(vendedorH1).toBeVisible({ timeout: 15000 });
+
     // Take screenshot
     await page.screenshot({
       path: 'e2e/screenshots/rbac-dashboard-vendedor.png',
       fullPage: true,
     });
-
-    // Vendedor should see "Mi Rendimiento" or personalized greeting
-    const h1 = page.locator('h1');
-    await expect(h1.first()).toBeVisible({ timeout: 10000 });
-    const titleText = await h1.first().textContent();
-    // Should contain "rendimiento" or "Hola" (personalized greeting)
-    const isVendedorDashboard =
-      titleText?.toLowerCase().includes('rendimiento') ||
-      titleText?.toLowerCase().includes('hola');
-    expect(isVendedorDashboard).toBeTruthy();
   });
 
   test('Vendedor dashboard shows performance metrics', async ({ page }, testInfo) => {

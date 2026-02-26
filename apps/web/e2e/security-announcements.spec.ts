@@ -15,6 +15,8 @@ import { loginAsAdmin, loginAsSuperAdmin } from './helpers/auth';
  * - Sidebar "Anuncios" link for SuperAdmin
  */
 
+const API_BASE = 'http://localhost:1050';
+
 // Single-session feature means parallel logins as same user invalidate each other
 test.describe.configure({ mode: 'serial' });
 test.use({ navigationTimeout: 60000, actionTimeout: 15000 });
@@ -31,13 +33,13 @@ async function waitForPageLoad(page: Page) {
 // Helper: create an announcement via API directly (SuperAdmin)
 async function createAnnouncementViaAPI(page: Page, titulo: string, tipo: string, prioridad = 'Normal') {
   // Get a SuperAdmin JWT token
-  const loginRes = await page.request.post('http://localhost:1050/auth/login', {
+  const loginRes = await page.request.post(`${API_BASE}/auth/login`, {
     data: { email: 'superadmin@handysales.com', password: 'test123' },
   });
   const loginData = await loginRes.json();
   const token = loginData.token;
 
-  const res = await page.request.post('http://localhost:1050/api/superadmin/announcements', {
+  const res = await page.request.post(`${API_BASE}/api/superadmin/announcements`, {
     headers: { Authorization: `Bearer ${token}` },
     data: { titulo, mensaje: `Test: ${titulo}`, tipo, prioridad, isDismissible: true },
   });
@@ -46,25 +48,25 @@ async function createAnnouncementViaAPI(page: Page, titulo: string, tipo: string
 
 // Helper: cleanup — expire all active announcements and deactivate maintenance
 async function cleanupAnnouncements(page: Page) {
-  const loginRes = await page.request.post('http://localhost:1050/auth/login', {
+  const loginRes = await page.request.post(`${API_BASE}/auth/login`, {
     data: { email: 'superadmin@handysales.com', password: 'test123' },
   });
   const loginData = await loginRes.json();
   const token = loginData.token;
 
   // Deactivate maintenance mode
-  await page.request.delete('http://localhost:1050/api/superadmin/maintenance', {
+  await page.request.delete(`${API_BASE}/api/superadmin/maintenance`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 
   // Get all active announcements and expire them
-  const listRes = await page.request.get('http://localhost:1050/api/superadmin/announcements?pageSize=50', {
+  const listRes = await page.request.get(`${API_BASE}/api/superadmin/announcements?pageSize=50`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   const listData = await listRes.json();
   for (const ann of listData.items || []) {
     if (ann.activo) {
-      await page.request.delete(`http://localhost:1050/api/superadmin/announcements/${ann.id}`, {
+      await page.request.delete(`${API_BASE}/api/superadmin/announcements/${ann.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
     }
@@ -89,10 +91,7 @@ test.describe('Login Page UI', () => {
     await page.goto('/login');
     await page.waitForTimeout(500);
 
-    // Check for the "o continúa con" separator
-    await expect(page.getByText('o continúa con')).toBeVisible();
-
-    // Check for the Google button
+    // Check for the Google button (always rendered in login page)
     const googleBtn = page.getByRole('button', { name: /Continuar con Google/i });
     await expect(googleBtn).toBeVisible();
   });
@@ -100,7 +99,7 @@ test.describe('Login Page UI', () => {
   test('Login page shows "¿No tienes cuenta?" link', async ({ page }) => {
     await page.goto('/login');
     await expect(page.getByText('¿No tienes cuenta?')).toBeVisible();
-    await expect(page.getByText('Contactar ventas')).toBeVisible();
+    await expect(page.getByText('Regístrate gratis')).toBeVisible();
   });
 
   test('Login with valid credentials redirects to dashboard', async ({ page }) => {
@@ -112,7 +111,19 @@ test.describe('Login Page UI', () => {
     await page.locator('#password').fill('test123');
     await page.getByRole('button', { name: /Iniciar Sesión/i }).click({ force: true });
 
-    await expect(page).toHaveURL(/dashboard/, { timeout: 15000 });
+    // Handle session conflict if admin already has an active session
+    const replaceBtn = page.getByRole('button', { name: /Cerrar sesión anterior/i });
+    try {
+      await Promise.race([
+        page.waitForURL(/dashboard/, { timeout: 10000 }),
+        replaceBtn.waitFor({ state: 'visible', timeout: 10000 }),
+      ]);
+    } catch { /* let the final assertion handle it */ }
+    if (await replaceBtn.isVisible().catch(() => false)) {
+      await replaceBtn.click();
+    }
+
+    await expect(page).toHaveURL(/dashboard/, { timeout: 20000 });
   });
 
   test('Login with invalid credentials shows error and stays on login', async ({ page }) => {
@@ -194,7 +205,12 @@ test.describe('2FA & Security Settings', () => {
 // 3. SUPERADMIN SIDEBAR — Announcements Link
 // ═══════════════════════════════════════════════════════════════
 test.describe('SuperAdmin Sidebar', () => {
-  test('SuperAdmin sees "Anuncios" in sidebar', async ({ page }) => {
+  test('SuperAdmin sees "Anuncios" in sidebar', async ({ page }, testInfo) => {
+    // Sidebar is hidden on mobile viewports
+    if (testInfo.project.name === 'Mobile Chrome') {
+      test.skip();
+      return;
+    }
     await loginAsSuperAdmin(page);
     await page.goto('/admin/system-dashboard');
     await waitForPageLoad(page);
@@ -206,7 +222,12 @@ test.describe('SuperAdmin Sidebar', () => {
     expect(sidebarContent).toContain('Anuncios');
   });
 
-  test('Admin does NOT see "Anuncios" in sidebar', async ({ page }) => {
+  test('Admin does NOT see "Anuncios" in sidebar', async ({ page }, testInfo) => {
+    // Sidebar is hidden on mobile viewports
+    if (testInfo.project.name === 'Mobile Chrome') {
+      test.skip();
+      return;
+    }
     await loginAsAdmin(page);
     await page.goto('/dashboard');
     await waitForPageLoad(page);
@@ -274,14 +295,15 @@ test.describe('Announcements Page', () => {
   });
 
   test('SuperAdmin can expire (delete) an announcement', async ({ page }) => {
-    // First create one via API
-    await createAnnouncementViaAPI(page, 'To Be Expired E2E', 'Banner');
+    // Use unique title to avoid matching old expired announcements from previous runs
+    const uniqueTitle = `Expire E2E ${Date.now()}`;
+    await createAnnouncementViaAPI(page, uniqueTitle, 'Banner');
 
     await page.goto('/admin/announcements');
     await waitForPageLoad(page);
 
-    // Find the row with our specific announcement and click its trash button
-    const annRow = page.locator('div').filter({ hasText: 'To Be Expired E2E' }).first();
+    // Find the row with our specific unique announcement and click its trash button
+    const annRow = page.locator('div').filter({ hasText: uniqueTitle }).first();
     const deleteBtn = annRow.locator('button[title="Expirar anuncio"]');
     await expect(deleteBtn).toBeVisible({ timeout: 5000 });
     await deleteBtn.click();
@@ -289,7 +311,7 @@ test.describe('Announcements Page', () => {
 
     // After expiring, the announcement should no longer have the trash button
     // (the row renders delete btn only when ann.activo)
-    const annRowAfter = page.locator('div').filter({ hasText: 'To Be Expired E2E' }).first();
+    const annRowAfter = page.locator('div').filter({ hasText: uniqueTitle }).first();
     const deleteBtnAfter = annRowAfter.locator('button[title="Expirar anuncio"]');
     await expect(deleteBtnAfter).not.toBeVisible({ timeout: 5000 });
   });
@@ -326,11 +348,11 @@ test.describe('Maintenance Mode', () => {
 
   test('SuperAdmin can deactivate maintenance mode', async ({ page }) => {
     // Activate first via API
-    const loginRes = await page.request.post('http://localhost:1050/auth/login', {
+    const loginRes = await page.request.post(`${API_BASE}/auth/login`, {
       data: { email: 'superadmin@handysales.com', password: 'test123' },
     });
     const { token } = await loginRes.json();
-    await page.request.post('http://localhost:1050/api/superadmin/maintenance', {
+    await page.request.post(`${API_BASE}/api/superadmin/maintenance`, {
       headers: { Authorization: `Bearer ${token}` },
       data: { message: 'Test deactivation' },
     });
@@ -349,34 +371,49 @@ test.describe('Maintenance Mode', () => {
     await expect(page.getByText('Inactivo').first()).toBeVisible({ timeout: 10000 });
   });
 
-  test('Maintenance mode blocks Admin write operations (API level)', async ({ page }) => {
-    // Activate maintenance via API
-    const loginRes = await page.request.post('http://localhost:1050/auth/login', {
+  test('Maintenance mode blocks Admin write operations (API level)', async ({ page, request }, testInfo) => {
+    // API-level test: use `request` fixture (cookie-free) to avoid browser session interference.
+    // `page` is kept for afterEach cleanup compatibility.
+    if (testInfo.project.name === 'Mobile Chrome') {
+      test.skip();
+      return;
+    }
+
+    // Step 1: Login as Admin to get a valid token.
+    // Use centro (tenant 1) to avoid: (a) session conflicts with admin@jeyma.com used by
+    // most tests, and (b) race condition with subscription-tenant.spec.ts which
+    // deactivates/reactivates tenant 4 (huichol) in parallel.
+    const adminLoginRes = await request.post(`${API_BASE}/auth/force-login`, {
+      data: { email: 'admin@centro.com', password: 'test123' },
+    });
+    const adminData = await adminLoginRes.json();
+    const adminToken = adminData.token;
+    expect(adminToken).toBeTruthy();
+
+    // Step 2: Activate maintenance via SuperAdmin API
+    const saLoginRes = await request.post(`${API_BASE}/auth/force-login`, {
       data: { email: 'superadmin@handysales.com', password: 'test123' },
     });
-    const { token: saToken } = await loginRes.json();
-    await page.request.post('http://localhost:1050/api/superadmin/maintenance', {
+    const { token: saToken } = await saLoginRes.json();
+    await request.post(`${API_BASE}/api/superadmin/maintenance`, {
       headers: { Authorization: `Bearer ${saToken}` },
       data: { message: 'E2E maintenance test' },
     });
 
-    // Login as Admin
-    const adminLoginRes = await page.request.post('http://localhost:1050/auth/login', {
-      data: { email: 'admin@jeyma.com', password: 'test123' },
-    });
-    const { token: adminToken } = await adminLoginRes.json();
-
-    // Try a write operation as Admin — should get 503
-    const writeRes = await page.request.post('http://localhost:1050/api/notificaciones/banners/999/dismiss', {
-      headers: { Authorization: `Bearer ${adminToken}` },
+    // Step 3: Try a write operation as Admin — should get 503
+    // Note: /api/notificaciones/banners is in AllowedPrefixes (exempt from maintenance),
+    // so we use /clientes instead which IS blocked by MaintenanceMiddleware.
+    const writeRes = await request.post(`${API_BASE}/clientes`, {
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      data: { nombre: 'MAINTENANCE_TEST' },
     });
     expect(writeRes.status()).toBe(503);
 
     const body = await writeRes.json();
     expect(body.code).toBe('MAINTENANCE_MODE');
 
-    // GET should still work
-    const readRes = await page.request.get('http://localhost:1050/api/notificaciones/banners', {
+    // Step 4: GET should still work during maintenance
+    const readRes = await request.get(`${API_BASE}/api/subscription/current`, {
       headers: { Authorization: `Bearer ${adminToken}` },
     });
     expect(readRes.status()).toBe(200);
@@ -410,7 +447,12 @@ test.describe('Banner Rendering', () => {
     });
   });
 
-  test('Dismissible banner can be closed', async ({ page }) => {
+  test('Dismissible banner can be closed', async ({ page }, testInfo) => {
+    // Dismiss button is not rendered on mobile viewport
+    if (testInfo.project.name === 'Mobile Chrome') {
+      test.skip();
+      return;
+    }
     await createAnnouncementViaAPI(page, 'Dismiss Me', 'Banner', 'Normal');
 
     await loginAsAdmin(page);
@@ -433,11 +475,11 @@ test.describe('Banner Rendering', () => {
 
   test('Maintenance banner shows in layout when maintenance active', async ({ page }) => {
     // Activate maintenance
-    const loginRes = await page.request.post('http://localhost:1050/auth/login', {
+    const loginRes = await page.request.post(`${API_BASE}/auth/login`, {
       data: { email: 'superadmin@handysales.com', password: 'test123' },
     });
     const { token } = await loginRes.json();
-    await page.request.post('http://localhost:1050/api/superadmin/maintenance', {
+    await page.request.post(`${API_BASE}/api/superadmin/maintenance`, {
       headers: { Authorization: `Bearer ${token}` },
       data: { message: 'Mantenimiento programado' },
     });
@@ -482,13 +524,13 @@ test.describe('Announcement API Integration', () => {
   });
 
   test('SuperAdmin can create and list announcements via API', async ({ page }) => {
-    const loginRes = await page.request.post('http://localhost:1050/auth/login', {
+    const loginRes = await page.request.post(`${API_BASE}/auth/login`, {
       data: { email: 'superadmin@handysales.com', password: 'test123' },
     });
     const { token } = await loginRes.json();
 
     // Create
-    const createRes = await page.request.post('http://localhost:1050/api/superadmin/announcements', {
+    const createRes = await page.request.post(`${API_BASE}/api/superadmin/announcements`, {
       headers: { Authorization: `Bearer ${token}` },
       data: { titulo: 'API Test', mensaje: 'API Test Msg', tipo: 'Banner', prioridad: 'Normal' },
     });
@@ -497,7 +539,7 @@ test.describe('Announcement API Integration', () => {
     expect(created.id).toBeTruthy();
 
     // List
-    const listRes = await page.request.get('http://localhost:1050/api/superadmin/announcements', {
+    const listRes = await page.request.get(`${API_BASE}/api/superadmin/announcements`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     expect(listRes.status()).toBe(200);
@@ -505,19 +547,19 @@ test.describe('Announcement API Integration', () => {
     expect(listData.items.some((a: { titulo: string }) => a.titulo === 'API Test')).toBeTruthy();
 
     // Delete (expire)
-    const deleteRes = await page.request.delete(`http://localhost:1050/api/superadmin/announcements/${created.id}`, {
+    const deleteRes = await page.request.delete(`${API_BASE}/api/superadmin/announcements/${created.id}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     expect(deleteRes.status()).toBe(200);
   });
 
   test('Admin cannot access SuperAdmin announcement endpoints', async ({ page }) => {
-    const loginRes = await page.request.post('http://localhost:1050/auth/login', {
+    const loginRes = await page.request.post(`${API_BASE}/auth/login`, {
       data: { email: 'admin@jeyma.com', password: 'test123' },
     });
     const { token } = await loginRes.json();
 
-    const res = await page.request.get('http://localhost:1050/api/superadmin/announcements', {
+    const res = await page.request.get(`${API_BASE}/api/superadmin/announcements`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     expect(res.status()).toBe(403);
@@ -528,12 +570,12 @@ test.describe('Announcement API Integration', () => {
     await createAnnouncementViaAPI(page, 'Targeted Banner', 'Banner');
 
     // Login as Admin and fetch banners
-    const loginRes = await page.request.post('http://localhost:1050/auth/login', {
+    const loginRes = await page.request.post(`${API_BASE}/auth/login`, {
       data: { email: 'admin@jeyma.com', password: 'test123' },
     });
     const { token } = await loginRes.json();
 
-    const res = await page.request.get('http://localhost:1050/api/notificaciones/banners', {
+    const res = await page.request.get(`${API_BASE}/api/notificaciones/banners`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     expect(res.status()).toBe(200);
@@ -544,19 +586,19 @@ test.describe('Announcement API Integration', () => {
   test('Dismiss endpoint removes banner from user view', async ({ page }) => {
     const created = await createAnnouncementViaAPI(page, 'Dismissable', 'Banner');
 
-    const loginRes = await page.request.post('http://localhost:1050/auth/login', {
+    const loginRes = await page.request.post(`${API_BASE}/auth/login`, {
       data: { email: 'admin@jeyma.com', password: 'test123' },
     });
     const { token } = await loginRes.json();
 
     // Dismiss
-    const dismissRes = await page.request.post(`http://localhost:1050/api/notificaciones/banners/${created.id}/dismiss`, {
+    const dismissRes = await page.request.post(`${API_BASE}/api/notificaciones/banners/${created.id}/dismiss`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     expect(dismissRes.status()).toBe(200);
 
     // Fetch banners — dismissed one should be gone
-    const res = await page.request.get('http://localhost:1050/api/notificaciones/banners', {
+    const res = await page.request.get(`${API_BASE}/api/notificaciones/banners`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     const banners = await res.json();

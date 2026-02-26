@@ -21,6 +21,24 @@ async function fillLoginForm(page: Page, email: string, password: string): Promi
   await page.locator('#email').first().fill(email);
   await page.locator('#password').first().fill(password);
   await page.getByRole('button', { name: /Iniciar Sesión/i }).first().click({ force: true });
+
+  // After clicking login, wait for EITHER:
+  // 1. Redirect to /dashboard (success) — most common path
+  // 2. Session conflict "Cerrar sesión anterior" button (409 response)
+  const replaceBtn = page.getByRole('button', { name: /Cerrar sesión anterior/i });
+  try {
+    await Promise.race([
+      page.waitForURL(/dashboard/, { timeout: 10000 }),
+      replaceBtn.waitFor({ state: 'visible', timeout: 10000 }),
+    ]);
+  } catch {
+    // Neither happened — login may have failed or another UI step appeared
+  }
+
+  // If session conflict button appeared, click it to force-login
+  if (await replaceBtn.isVisible().catch(() => false)) {
+    await replaceBtn.click();
+  }
 }
 
 /**

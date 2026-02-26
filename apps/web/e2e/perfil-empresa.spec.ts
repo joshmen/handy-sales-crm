@@ -114,13 +114,14 @@ test.describe('Perfil de Empresa (Settings Tab)', () => {
 });
 
 test.describe('Perfil de Empresa - RBAC', () => {
-  test('vendedor should NOT see Perfil tab in Settings', async ({ page }) => {
+  test('vendedor is blocked from /settings entirely by middleware', async ({ page }) => {
     await loginAsVendedor(page);
 
     await page.goto('/settings');
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(3000);
 
-    const perfilTab = page.getByRole('tab', { name: /Perfil/i });
-    await expect(perfilTab).toBeHidden();
+    // Middleware restricts /settings to ADMIN only — vendedor should be redirected
+    const url = page.url();
+    expect(url).not.toContain('/settings');
   });
 });

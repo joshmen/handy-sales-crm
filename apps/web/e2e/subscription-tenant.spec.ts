@@ -208,14 +208,14 @@ test.describe('SUB-5: Tenant Suspended Page', () => {
     const pageContent = (await page.textContent('body')) || '';
 
     // Brand
-    expect(pageContent).toContain('HandySales');
+    expect(pageContent).toContain('Handy Suites');
 
     // Message
     expect(pageContent).toContain('Cuenta Desactivada');
     expect(pageContent).toContain('desactivada');
 
     // Contact info
-    expect(pageContent).toContain('soporte@handysales.com');
+    expect(pageContent).toContain('soporte@handysuites.com');
 
     // Back to login button
     const loginBtn = page.getByRole('button', {

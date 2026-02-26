@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { loginAsAdmin } from './helpers/auth';
 
 test.describe('Logo & Branding Verification', () => {
 
@@ -68,7 +69,7 @@ test.describe('Logo & Branding Verification', () => {
     await expect(page.getByRole('heading', { name: /La plataforma todo-en-uno/i })).toBeVisible();
   });
 
-  test('Login page shows centered form (no dark panel)', async ({ page }, testInfo) => {
+  test('Login page shows split layout with form on right', async ({ page }, testInfo) => {
     if (testInfo.project.name !== 'Desktop Chrome') {
       test.skip();
       return;
@@ -80,25 +81,23 @@ test.describe('Logo & Branding Verification', () => {
 
     await page.screenshot({ path: 'test-results/login-desktop-full.png', fullPage: true });
 
-    // Verify top bar logo links to landing
-    const logoLink = page.locator('a[href="/"]').first();
-    await expect(logoLink).toBeVisible();
+    // Verify logo visible
     await expect(page.locator('img[src="/logo-icon.svg"]').first()).toBeVisible();
 
     // Verify "Volver al inicio" link
     await expect(page.getByText('Volver al inicio')).toBeVisible();
 
-    // Verify centered form heading
-    await expect(page.getByRole('heading', { name: /Bienvenido de vuelta/i })).toBeVisible();
+    // Verify form heading
+    await expect(page.getByRole('heading', { name: /Iniciar sesión/i })).toBeVisible();
 
     // Verify form fields
     await expect(page.locator('#email')).toBeVisible();
     await expect(page.locator('#password')).toBeVisible();
     await expect(page.getByRole('button', { name: /Iniciar Sesión/i })).toBeVisible();
 
-    // Verify NO dark panel exists
-    const darkPanel = page.locator('.bg-gradient-to-br.from-\\[\\#020617\\]');
-    await expect(darkPanel).toHaveCount(0);
+    // Verify split layout: left panel with gradient overlay exists on desktop
+    const leftPanel = page.locator('.bg-gradient-to-t');
+    await expect(leftPanel).toBeVisible();
 
     // Verify footer
     await expect(page.getByText('© 2026 Handy Suites®')).toBeVisible();
@@ -117,7 +116,7 @@ test.describe('Logo & Branding Verification', () => {
     await page.screenshot({ path: 'test-results/login-mobile-full.png', fullPage: true });
 
     // Verify heading and form visible
-    await expect(page.getByRole('heading', { name: /Bienvenido de vuelta/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Iniciar sesión/i })).toBeVisible();
     await expect(page.locator('#email')).toBeVisible();
     await expect(page.getByRole('button', { name: /Iniciar Sesión/i })).toBeVisible();
   });
@@ -147,16 +146,7 @@ test.describe('Logo & Branding Verification', () => {
       return;
     }
 
-    await page.goto('/login');
-    await page.waitForLoadState('networkidle');
-    await page.keyboard.press('Escape');
-    await page.waitForTimeout(500);
-
-    await page.locator('#email').fill('admin@jeyma.com');
-    await page.locator('#password').fill('test123');
-    await page.getByRole('button', { name: /Iniciar Sesión/i }).click({ force: true });
-
-    await expect(page).toHaveURL(/dashboard/, { timeout: 15000 });
+    await loginAsAdmin(page);
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(2000);
 
