@@ -43,24 +43,7 @@ export default withAuth(
       pathname === '/verify-email';
     const isAuthPage = pathname.startsWith('/login') || pathname === '/register' || pathname === '/verify-email';
     const isApiRoute = pathname.startsWith('/api');
-    const isMobileApiRoute = pathname.startsWith('/api/mobile');
-
-    // Si es una ruta de API móvil, aplicar autenticación específica
-    if (isMobileApiRoute) {
-      const authHeader = req.headers.get('authorization');
-
-      // Permitir acceso a login móvil
-      if (pathname === '/api/mobile/auth' && req.method === 'POST') {
-        return NextResponse.next();
-      }
-
-      // Verificar token para otras rutas móviles
-      if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return NextResponse.json({ error: 'Token no proporcionado' }, { status: 401 });
-      }
-
-      return NextResponse.next();
-    }
+    // Mobile API routes removed — mobile app calls .NET Mobile API (port 1052) directly
 
     // Si es una ruta de API regular, dejar que pase (se maneja auth en cada endpoint)
     if (isApiRoute) {

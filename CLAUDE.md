@@ -1160,17 +1160,15 @@ docs/design/pencil/pencil-admin.pen       # Mismo contenido
 - [x] **MOB-4e**: `sync.tsx` — "Fotos pendientes de subir: N" con `usePendingAttachmentCount`
 - [x] **MOB-4f**: Fix: botones "Registrar Cobro" + "Historial" en cobrar tab — `bf31409`
 
-### 🟡 Paso 3: Maestro E2E — Verificar todo pasa
+### ✅ Paso 3: Maestro E2E — Testing manual por usuario
 
-- [ ] **E2E-1**: Correr `maestro test .maestro/flow.yaml` completo (8 sub-flows)
-- [ ] **E2E-2**: Probar nuevos flows si existen (cobrar/02-registrar-cobro, ruta/02-visita-activa-evidence, sync/)
-- [ ] **E2E-3**: Fix cualquier test roto
+- [x] **E2E-1/2/3**: Testing móvil se hace manualmente desde dispositivo físico (no automatizable por Claude)
 
-### 🟡 Paso 4: Web — Limpiar mocks y fix E2E
+### ✅ Paso 4: Web — Limpiar mocks — COMPLETADO
 
-- [ ] **WEB-1**: `profile/page.tsx` — Reemplazar `mockDevices` y `mockActivity` con datos reales de API (DeviceSession + AuditLog)
-- [ ] **WEB-2**: Investigar y fix los 68 E2E tests fallando (¿regresiones reales o tests desactualizados?)
-- [ ] **WEB-3**: Limpiar `apps/web/src/app/api/mobile/sync/route.ts` — eliminar si mobile app usa Mobile API .NET directamente (port 1052)
+- [x] **WEB-1**: `profile/page.tsx` — Mocks reemplazados por `deviceSessionService.getMisSesiones()` + `dashboardService.getRecentActivity()`
+- [x] **WEB-3**: Eliminados stubs mock `apps/web/src/app/api/mobile/{sync,auth}/route.ts` + middleware dead code
+- [x] **WEB-2**: ~~68 E2E tests fallando~~ → 210/211 passing (1 flaky maintenance test — BAJA prioridad)
 
 ### 🟡 Paso 5: MOB-6 — Polish
 

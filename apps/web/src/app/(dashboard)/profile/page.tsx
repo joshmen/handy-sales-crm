@@ -19,6 +19,8 @@ import {
 import { toast } from '@/hooks/useToast';
 import { useSession } from 'next-auth/react';
 import { useProfile } from '@/contexts/ProfileContext';
+import { deviceSessionService, type DeviceSessionDto } from '@/services/api/deviceSessions';
+import { dashboardService, type ActivityLogEntry } from '@/services/dashboardService';
 import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
 import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
 import { TwoFactorSetup as TwoFactorSetupDialog } from '@/components/settings/TwoFactorSetup';
@@ -61,57 +63,6 @@ enum UserRole {
   VENDEDOR = 'VENDEDOR',
 }
 
-const mockDevices = [
-  {
-    id: '1',
-    name: 'iPhone 14 Pro',
-    type: 'mobile',
-    platform: 'iOS',
-    lastActive: new Date('2025-01-14T10:30:00'),
-    current: true,
-  },
-  {
-    id: '2',
-    name: 'Chrome - Windows',
-    type: 'desktop',
-    platform: 'Windows',
-    lastActive: new Date('2025-01-14T09:15:00'),
-    current: false,
-  },
-  {
-    id: '3',
-    name: 'Safari - MacBook',
-    type: 'desktop',
-    platform: 'macOS',
-    lastActive: new Date('2025-01-10T14:20:00'),
-    current: false,
-  },
-];
-
-const mockActivity = [
-  {
-    id: '1',
-    action: 'Inicio de sesión',
-    timestamp: new Date('2025-01-14T08:00:00'),
-    device: 'iPhone 14 Pro',
-    ip: '192.168.1.100',
-  },
-  {
-    id: '2',
-    action: 'Cambio de contraseña',
-    timestamp: new Date('2025-01-10T15:30:00'),
-    device: 'Chrome - Windows',
-    ip: '192.168.1.101',
-  },
-  {
-    id: '3',
-    action: 'Actualización de perfil',
-    timestamp: new Date('2025-01-08T11:20:00'),
-    device: 'Safari - MacBook',
-    ip: '192.168.1.102',
-  },
-];
-
 export default function ProfilePage() {
   // TODOS los hooks deben estar al inicio para cumplir las reglas de hooks
   const { data: session } = useSession();
@@ -144,8 +95,10 @@ export default function ProfilePage() {
 
   const [setupOpen, setSetupOpen] = useState(false);
   const [tfaStatus, setTfaStatus] = useState<{ enabled: boolean; enabledAt: string | null; remainingRecoveryCodes: number } | null>(null);
+  const [devices, setDevices] = useState<DeviceSessionDto[]>([]);
+  const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
 
-  // Load 2FA status
+  // Load 2FA status + devices + activity
   useEffect(() => {
     const load2FAStatus = async () => {
       try {
@@ -158,7 +111,25 @@ export default function ProfilePage() {
         // Silent fail
       }
     };
+    const loadDevices = async () => {
+      try {
+        const sessions = await deviceSessionService.getMisSesiones();
+        setDevices(sessions);
+      } catch {
+        // Silent fail — devices section will show empty
+      }
+    };
+    const loadActivity = async () => {
+      try {
+        const res = await dashboardService.getRecentActivity(10);
+        setActivityLog(res.activities);
+      } catch {
+        // Silent fail — activity section will show empty
+      }
+    };
     load2FAStatus();
+    loadDevices();
+    loadActivity();
   }, []);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -494,11 +465,21 @@ export default function ProfilePage() {
     }
   };
 
-  const handleRevokeDevice = (deviceId: string) => {
-    toast({
-      title: 'Dispositivo revocado',
-      description: 'El dispositivo ha sido desconectado de tu cuenta',
-    });
+  const handleRevokeDevice = async (sessionId: number) => {
+    try {
+      await deviceSessionService.cerrarSesion(sessionId, 'Cerrado desde perfil');
+      setDevices(prev => prev.filter(d => d.id !== sessionId));
+      toast({
+        title: 'Dispositivo revocado',
+        description: 'La sesión ha sido cerrada correctamente',
+      });
+    } catch {
+      toast({
+        title: 'Error',
+        description: 'No se pudo cerrar la sesión',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleToggle2FA = () => {
@@ -1142,29 +1123,31 @@ export default function ProfilePage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {mockDevices.map(device => (
+                  {devices.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">No hay sesiones activas</p>
+                  ) : devices.map(device => (
                     <div
                       key={device.id}
                       className="flex items-center justify-between p-4 border rounded-lg"
                     >
                       <div className="flex items-center gap-3">
-                        {device.type === 'mobile' ? (
+                        {device.deviceType === 2 || device.deviceType === 3 ? (
                           <Smartphone className="h-5 w-5 text-muted-foreground" />
                         ) : (
                           <Monitor className="h-5 w-5 text-muted-foreground" />
                         )}
                         <div>
-                          <p className="font-medium">{device.name}</p>
+                          <p className="font-medium">{device.deviceName || device.deviceTypeNombre}</p>
                           <p className="text-sm text-muted-foreground">
-                            {device.platform} • Último acceso: {formatTime(device.lastActive)}
+                            {device.deviceTypeNombre}{device.ipAddress ? ` • ${device.ipAddress}` : ''} • Último acceso: {formatTime(new Date(device.lastActivity))}
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        {device.current && (
+                        {device.esSesionActual && (
                           <Badge className="bg-green-500 text-white">Sesión actual</Badge>
                         )}
-                        {!device.current && (
+                        {!device.esSesionActual && (
                           <Button
                             variant="outline"
                             size="sm"
@@ -1198,7 +1181,9 @@ export default function ProfilePage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {mockActivity.map(activity => (
+                  {activityLog.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">No hay actividad reciente</p>
+                  ) : activityLog.map(activity => (
                     <div
                       key={activity.id}
                       className="flex items-start gap-3 p-3 hover:bg-muted/50 rounded-lg transition-colors"
@@ -1207,12 +1192,12 @@ export default function ProfilePage() {
                         <Clock className="h-4 w-4 text-muted-foreground" />
                       </div>
                       <div className="flex-1">
-                        <p className="font-medium">{activity.action}</p>
+                        <p className="font-medium">{activity.description}</p>
                         <p className="text-sm text-muted-foreground">
-                          {formatTime(activity.timestamp)}
+                          {activity.timeAgo}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {activity.device} • IP: {activity.ip}
+                          {activity.browser && `${activity.browser}`}{activity.operatingSystem ? ` • ${activity.operatingSystem}` : ''}{activity.ipAddress ? ` • IP: ${activity.ipAddress}` : ''}
                         </p>
                       </div>
                     </div>
