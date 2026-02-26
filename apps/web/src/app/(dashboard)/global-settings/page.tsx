@@ -169,8 +169,7 @@ export default function GlobalSettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="space-y-6">
           {/* Header */}
           <div className="mb-8">
             <div className="flex items-center space-x-3 mb-2">
@@ -497,10 +496,9 @@ export default function GlobalSettingsPage() {
           </div>
 
           {/* Footer Info */}
-          <div className="mt-8 text-center text-sm text-gray-500">
+          <div className="text-center text-sm text-gray-500">
             Última actualización: {new Date(settings.updatedAt).toLocaleString('es-MX')}
           </div>
-        </div>
       </div>
   );
 }

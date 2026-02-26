@@ -24,6 +24,7 @@ const ROLE_RESTRICTED_ROUTES = {
   '/reports/financial': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
   '/routes/admin': [UserRole.ADMIN, UserRole.SUPERVISOR, UserRole.SUPER_ADMIN],
   '/devices': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
+  '/roles': [UserRole.SUPER_ADMIN],
 };
 
 export default withAuth(
@@ -85,7 +86,8 @@ export default withAuth(
       const isSuperAdminRoute =
         pathname.startsWith('/admin') ||
         pathname.startsWith('/global-settings') ||
-        pathname === '/dashboard'; // dashboard redirige a system-dashboard via page logic
+        pathname === '/dashboard' || // dashboard redirige a system-dashboard via page logic
+        pathname === '/profile'; // SA necesita acceder a su perfil
 
       if (!isSuperAdminRoute) {
         // Redirigir a página de acceso no disponible

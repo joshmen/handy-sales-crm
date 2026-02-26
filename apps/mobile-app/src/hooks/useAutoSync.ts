@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import NetInfo from '@react-native-community/netinfo';
 import { AppState, type AppStateStatus } from 'react-native';
 import { useSyncStore } from '@/stores';
+import { crashReporter } from '@/services/crashReporter';
 
 const MIN_SYNC_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
@@ -15,6 +16,9 @@ export function useAutoSync() {
       const isOnline = state.isConnected ?? false;
 
       if (isOnline && wasOffline.current) {
+        // Flush crash reports immediately on reconnect (don't wait for sync interval)
+        crashReporter.flushPendingReports().catch(() => {});
+
         const timeSinceSync = lastSyncAt ? Date.now() - lastSyncAt : Infinity;
         if (timeSinceSync > MIN_SYNC_INTERVAL && status !== 'syncing') {
           console.log('[AutoSync] Network restored, syncing...');

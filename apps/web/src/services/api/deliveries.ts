@@ -401,15 +401,16 @@ class DeliveryService {
 
       routes.items.forEach(route => {
         switch (route.estado) {
-          case 'Pendiente':
-          case 'Programada':
+          case 'Planificada':
+          case 'PendienteAceptar':
+          case 'CargaAceptada':
             stats.totalPendientes++;
             break;
           case 'EnProgreso':
-          case 'Iniciada':
             stats.totalEnRuta++;
             break;
           case 'Completada':
+          case 'Cerrada':
             stats.totalCompletadas++;
             break;
           case 'Cancelada':
@@ -433,17 +434,23 @@ class DeliveryService {
 
   getStatusColor(estado: string): string {
     switch (estado) {
-      case 'Pendiente':
-      case 'Programada':
+      case 'Planificada':
+      case 'PendienteAceptar':
         return 'bg-gray-100 text-gray-800';
+      case 'CargaAceptada':
+        return 'bg-yellow-100 text-yellow-800';
       case 'EnProgreso':
-      case 'Iniciada':
         return 'bg-blue-100 text-blue-800';
       case 'Completada':
-      case 'Entregado':
+      case 'Cerrada':
         return 'bg-green-100 text-green-800';
       case 'Cancelada':
         return 'bg-red-100 text-red-800';
+      // Pedido states
+      case 'Entregado':
+        return 'bg-green-100 text-green-800';
+      case 'EnRuta':
+        return 'bg-blue-100 text-blue-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -451,15 +458,18 @@ class DeliveryService {
 
   getStatusLabel(estado: string): string {
     switch (estado) {
-      case 'Pendiente':
-        return 'Pendiente';
-      case 'Programada':
-        return 'Programada';
+      case 'Planificada':
+        return 'Planificada';
+      case 'PendienteAceptar':
+        return 'Pendiente de Aceptar';
+      case 'CargaAceptada':
+        return 'Carga Aceptada';
       case 'EnProgreso':
-      case 'Iniciada':
         return 'En Progreso';
       case 'Completada':
         return 'Completada';
+      case 'Cerrada':
+        return 'Cerrada';
       case 'Cancelada':
         return 'Cancelada';
       case 'Entregado':

@@ -28,6 +28,7 @@ import { useSession } from 'next-auth/react';
 import { usePaginatedUsers, useCreateUser, useUpdateUser, useDeleteUser } from '@/hooks/useUsers';
 import { roleService, Role } from '@/services/api/roleService';
 import { usersService } from '@/services/api/users';
+import { zoneService } from '@/services/api/zones';
 import { UserRole, UserStatus, type User } from '@/types/users';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 
@@ -49,6 +50,7 @@ export default function UsersPage() {
   const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN';
 
   const [roles, setRoles] = useState<Role[]>([]);
+  const [zones, setZones] = useState<{ id: string; name: string }[]>([]);
   const [filterZona, setFilterZona] = useState('all');
   const [filterRole, setFilterRole] = useState('all');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -85,7 +87,7 @@ export default function UsersPage() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isCreateModalOpen, isEditModalOpen, isBatchConfirmOpen]);
 
-  // Load roles
+  // Load roles and zones
   useEffect(() => {
     const loadRoles = async () => {
       try {
@@ -95,7 +97,16 @@ export default function UsersPage() {
         console.error('Error loading roles:', error);
       }
     };
+    const loadZones = async () => {
+      try {
+        const { zones: zonesData } = await zoneService.getZones({ limit: 100 });
+        setZones(zonesData.map(z => ({ id: z.id, name: z.name })));
+      } catch (error) {
+        console.error('Error loading zones:', error);
+      }
+    };
     loadRoles();
+    loadZones();
   }, []);
 
   // Convert API users to display format
@@ -347,12 +358,11 @@ export default function UsersPage() {
               <SearchableSelect
                 options={[
                   { value: 'all', label: 'Todas las zonas' },
-                  { value: 'zona2', label: 'Zona 2' },
-                  { value: 'zona3', label: 'Zona 3' },
+                  ...zones.map(z => ({ value: z.id, label: z.name })),
                 ]}
                 value={filterZona}
                 onChange={(val) => setFilterZona(val ? String(val) : 'all')}
-                placeholder="Zona 1"
+                placeholder="Todas las zonas"
               />
             </div>
 
@@ -361,9 +371,7 @@ export default function UsersPage() {
               <SearchableSelect
                 options={[
                   { value: 'all', label: 'Todos los roles' },
-                  { value: 'admin', label: 'Administrador de compañía' },
-                  { value: 'supervisor', label: 'Supervisor' },
-                  { value: 'mobile', label: 'Usuario móvil' },
+                  ...roles.map(r => ({ value: r.nombre, label: r.nombre })),
                 ]}
                 value={filterRole}
                 onChange={(val) => setFilterRole(val ? String(val) : 'all')}

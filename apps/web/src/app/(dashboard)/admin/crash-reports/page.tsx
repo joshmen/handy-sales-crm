@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   ChevronRight,
   Loader2,
@@ -32,6 +32,7 @@ import {
   SelectValue,
 } from '@/components/ui/Select';
 import { toast } from '@/hooks/useToast';
+import { useSignalR } from '@/contexts/SignalRContext';
 import {
   crashReportService,
   CrashReportDto,
@@ -111,6 +112,8 @@ function truncateText(text: string, maxLength: number) {
 }
 
 export default function CrashReportsPage() {
+  const { isConnected, on, off } = useSignalR();
+
   // Data state
   const [reports, setReports] = useState<CrashReportDto[]>([]);
   const [estadisticas, setEstadisticas] = useState<CrashReportEstadisticas | null>(null);
@@ -194,6 +197,42 @@ export default function CrashReportsPage() {
   useEffect(() => {
     setPage(1);
   }, [severityFilter, resueltoFilter, appliedSearchVersion]);
+
+  // ---- Real-time SignalR events ----
+
+  useEffect(() => {
+    if (!isConnected) return;
+
+    const handleCrashCreated = (...args: unknown[]) => {
+      const data = args[0] as Record<string, unknown>;
+      const severity = (data?.severity ?? data?.Severity) as string;
+      toast({
+        title: `Nuevo ${severity || 'crash report'}`,
+        description: ((data?.errorMessage ?? data?.ErrorMessage) as string)?.substring(0, 80) || 'Se recibio un nuevo reporte',
+      });
+      // Refresh both list and stats
+      loadReports();
+      loadEstadisticas();
+    };
+
+    const handleCrashResolved = (...args: unknown[]) => {
+      const data = args[0] as Record<string, unknown>;
+      const reportId = (data?.id ?? data?.Id) as number;
+      // Update the report in the current list without full reload
+      setReports(prev =>
+        prev.map(r => r.id === reportId ? { ...r, resuelto: true } : r)
+      );
+      loadEstadisticas();
+    };
+
+    on('CrashReportCreated', handleCrashCreated);
+    on('CrashReportResolved', handleCrashResolved);
+
+    return () => {
+      off('CrashReportCreated', handleCrashCreated);
+      off('CrashReportResolved', handleCrashResolved);
+    };
+  }, [isConnected, on, off, loadReports, loadEstadisticas]);
 
   // ---- Handlers ----
 

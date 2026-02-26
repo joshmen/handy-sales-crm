@@ -254,9 +254,12 @@ export default function DeliveriesPage() {
             <SearchableSelect
               options={[
                 { value: 'all', label: 'Todos los estados' },
-                { value: 'Pendiente', label: 'Pendiente' },
+                { value: 'Planificada', label: 'Planificada' },
+                { value: 'PendienteAceptar', label: 'Pendiente de Aceptar' },
+                { value: 'CargaAceptada', label: 'Carga Aceptada' },
                 { value: 'EnProgreso', label: 'En Progreso' },
                 { value: 'Completada', label: 'Completada' },
+                { value: 'Cerrada', label: 'Cerrada' },
                 { value: 'Cancelada', label: 'Cancelada' },
               ]}
               value={selectedStatus}

@@ -23,6 +23,7 @@ interface PageAudit {
   hasMobileCards: boolean;
   hasToggle: boolean;       // has active/inactive toggle
   hasCheckbox: boolean;     // has multi-select checkboxes
+  superAdminOnly?: boolean; // skip when logged in as admin
 }
 
 const PAGES: PageAudit[] = [
@@ -190,6 +191,7 @@ const PAGES: PageAudit[] = [
     hasMobileCards: false,
     hasToggle: false,
     hasCheckbox: false,
+    superAdminOnly: true,
   },
   {
     name: 'Cobranza',
@@ -233,6 +235,11 @@ test.describe('Visual Audit - Dashboard Pages', () => {
       test(`[Desktop] título, botón y estructura`, async ({ page, browserName }, testInfo) => {
         // Only run desktop tests on Desktop Chrome project
         if (testInfo.project.name === 'Mobile Chrome') {
+          test.skip();
+          return;
+        }
+        // Skip SuperAdmin-only pages when logged in as Admin
+        if (pg.superAdminOnly) {
           test.skip();
           return;
         }
@@ -299,6 +306,11 @@ test.describe('Visual Audit - Dashboard Pages', () => {
       test(`[Mobile] título, botón y cards`, async ({ page, browserName }, testInfo) => {
         // Only run mobile tests on Mobile Chrome project
         if (testInfo.project.name === 'Desktop Chrome') {
+          test.skip();
+          return;
+        }
+        // Skip SuperAdmin-only pages when logged in as Admin
+        if (pg.superAdminOnly) {
           test.skip();
           return;
         }

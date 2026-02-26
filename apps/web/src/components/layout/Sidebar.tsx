@@ -422,7 +422,6 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'view_orders',
     'view_deliveries',
     'view_users',
-    'manage_roles',
     'view_settings',
     'view_company_settings', // Solo ADMIN tiene acceso a configuración de empresa
     'manage_catalogs', // Gestión de categorías y unidades

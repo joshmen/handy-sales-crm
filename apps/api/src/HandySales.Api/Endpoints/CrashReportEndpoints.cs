@@ -1,5 +1,7 @@
 using HandySales.Application.CrashReporting;
 using HandySales.Domain.Entities;
+using Microsoft.AspNetCore.SignalR;
+using HandySales.Api.Hubs;
 
 namespace HandySales.Api.Endpoints;
 
@@ -10,7 +12,8 @@ public static class CrashReportEndpoints
         // POST es AllowAnonymous — el crash puede ocurrir sin token válido
         app.MapPost("/api/crash-reports", async (
             CrashReportCreateDto dto,
-            ICrashReportRepository repo) =>
+            ICrashReportRepository repo,
+            IHubContext<NotificationHub> hubContext) =>
         {
             if (string.IsNullOrWhiteSpace(dto.ErrorMessage))
                 return Results.BadRequest(new { message = "ErrorMessage es requerido" });
@@ -33,6 +36,21 @@ public static class CrashReportEndpoints
             };
 
             await repo.CreateAsync(report);
+
+            // Broadcast to all connected clients (SuperAdmin will see it in real-time)
+            await hubContext.Clients.All.SendAsync("CrashReportCreated", new
+            {
+                id = report.Id,
+                severity = report.Severity,
+                errorMessage = report.ErrorMessage.Length > 100
+                    ? report.ErrorMessage[..100] + "..."
+                    : report.ErrorMessage,
+                deviceName = report.DeviceName,
+                appVersion = report.AppVersion,
+                componentName = report.ComponentName,
+                creadoEn = report.CreadoEn
+            });
+
             return Results.Created($"/api/crash-reports/{report.Id}", new { id = report.Id });
         })
         .AllowAnonymous()
@@ -85,6 +103,7 @@ public static class CrashReportEndpoints
             int id,
             MarcarResueltoDto dto,
             ICrashReportRepository repo,
+            IHubContext<NotificationHub> hubContext,
             HttpContext ctx) =>
         {
             var userIdClaim = ctx.User.FindFirst("userId")?.Value
@@ -94,6 +113,15 @@ public static class CrashReportEndpoints
             var ok = await repo.MarcarResueltoAsync(id, dto.Nota, userId);
             if (!ok)
                 return Results.NotFound(new { message = "Crash report no encontrado" });
+
+            // Broadcast resolution to all connected clients
+            await hubContext.Clients.All.SendAsync("CrashReportResolved", new
+            {
+                id,
+                resuelto = true,
+                nota = dto.Nota,
+                resueltoPor = userId
+            });
 
             return Results.Ok(new { message = "Marcado como resuelto" });
         });

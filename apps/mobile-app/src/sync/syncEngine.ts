@@ -4,6 +4,7 @@ import { api } from '@/api/client';
 import { syncCursors } from './cursors';
 import { mapPullToWatermelon, mapPushFromWatermelon } from './mappers';
 import { uploadPendingAttachments, cleanUploadedFiles } from '@/services/evidenceManager';
+import { crashReporter } from '@/services/crashReporter';
 
 export interface SyncSummary {
   pulled: number;
@@ -31,6 +32,13 @@ export async function performSync(options?: SyncOptions): Promise<void> {
   let conflictCount = 0;
 
   try {
+    // Phase 0: Flush any pending crash reports from offline queue
+    try {
+      await crashReporter.flushPendingReports();
+    } catch (flushError) {
+      console.warn('[Sync] Crash report flush failed (non-fatal):', flushError);
+    }
+
     await synchronize({
       database,
 
