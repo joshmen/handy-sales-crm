@@ -80,9 +80,27 @@ async function fillLoginForm(page: Page, email: string, password: string): Promi
 
 /**
  * Login as Admin and wait for the dashboard.
- * Uses project-specific user to avoid parallel session conflicts.
+ *
+ * Fast-path: if the browser already has a session cookie (from Playwright's
+ * setup project storageState), skip the login form entirely and just navigate
+ * to /dashboard. This avoids bumping session_version and breaking other workers.
  */
 export async function loginAsAdmin(page: Page): Promise<void> {
+  const cookies = await page.context().cookies();
+  const hasSession = cookies.some(
+    (c) => c.name.includes('session-token') || c.name.includes('next-auth'),
+  );
+
+  if (hasSession) {
+    await page.goto('/dashboard');
+    try {
+      await expect(page).toHaveURL(/dashboard/, { timeout: 15000 });
+      return;
+    } catch {
+      // Session cookie was stale — fall through to full login
+    }
+  }
+
   const { admin } = getTestEmails();
   await fillLoginForm(page, admin, TEST_PASSWORD);
   await expect(page).toHaveURL(/dashboard/, { timeout: 20000 });
@@ -90,9 +108,12 @@ export async function loginAsAdmin(page: Page): Promise<void> {
 
 /**
  * Login as Vendedor and wait for the dashboard.
- * Uses project-specific user to avoid parallel session conflicts.
+ *
+ * Clears cookies first because the storageState contains Admin credentials.
+ * Vendedor tests run in serial describes, so no session conflict risk.
  */
 export async function loginAsVendedor(page: Page): Promise<void> {
+  await page.context().clearCookies();
   const { vendedor } = getTestEmails();
   await fillLoginForm(page, vendedor, TEST_PASSWORD);
   await expect(page).toHaveURL(/dashboard/, { timeout: 20000 });
@@ -100,11 +121,12 @@ export async function loginAsVendedor(page: Page): Promise<void> {
 
 /**
  * Login as SuperAdmin and wait for the dashboard.
- * SuperAdmin is redirected from /dashboard → /admin/system-dashboard, so we
- * only assert that the URL contains "dashboard" (either variant).
- * Uses project-specific user to avoid parallel session conflicts.
+ *
+ * Clears cookies first because the storageState contains Admin credentials.
+ * SuperAdmin tests run in serial describes, so no session conflict risk.
  */
 export async function loginAsSuperAdmin(page: Page): Promise<void> {
+  await page.context().clearCookies();
   const { superAdmin } = getTestEmails();
   await fillLoginForm(page, superAdmin, TEST_PASSWORD);
   await expect(page).toHaveURL(/dashboard/, { timeout: 20000 });

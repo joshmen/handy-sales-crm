@@ -2,6 +2,8 @@ import { test, expect } from '@playwright/test';
 import { loginAsAdmin } from './helpers/auth';
 
 test.describe('Logo & Branding Verification', () => {
+  // Clear storageState — most tests here verify public/login pages without auth
+  test.use({ storageState: { cookies: [], origins: [] } });
 
   test('Landing page renders correctly on desktop', async ({ page }, testInfo) => {
     if (testInfo.project.name !== 'Desktop Chrome') {

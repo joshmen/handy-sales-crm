@@ -2,6 +2,9 @@ import { test, expect } from '@playwright/test';
 import { loginAsAdmin, getTestEmails } from './helpers/auth';
 
 test.describe('Authentication', () => {
+  // Clear storageState — these tests verify login/redirect behavior without pre-existing auth
+  test.use({ storageState: { cookies: [], origins: [] } });
+
   test('should show login page', async ({ page }) => {
     await page.goto('/login');
 

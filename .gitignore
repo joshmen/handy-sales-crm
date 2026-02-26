@@ -83,6 +83,7 @@ HandySales/
 # ── Playwright test artifacts ────────────
 apps/web/test-results/
 apps/web/playwright-report/
+apps/web/e2e/.auth/
 
 # ── Pencil generated images ──────────────
 docs/design/pencil/images/

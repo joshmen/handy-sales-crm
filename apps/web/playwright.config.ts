@@ -14,13 +14,35 @@ export default defineConfig({
     video: 'retain-on-failure',
   },
   projects: [
+    // ── Setup: authenticate once per platform, save state ──
     {
-      name: 'Desktop Chrome',
+      name: 'setup-desktop',
+      testMatch: /auth\.setup\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
     {
-      name: 'Mobile Chrome',
+      name: 'setup-mobile',
+      testMatch: /auth\.setup\.ts/,
       use: { ...devices['Pixel 5'] },
+    },
+    // ── Tests: reuse saved auth state (no repeated logins) ──
+    {
+      name: 'Desktop Chrome',
+      dependencies: ['setup-desktop'],
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'e2e/.auth/admin-desktop.json',
+      },
+      testIgnore: /auth\.setup\.ts/,
+    },
+    {
+      name: 'Mobile Chrome',
+      dependencies: ['setup-mobile'],
+      use: {
+        ...devices['Pixel 5'],
+        storageState: 'e2e/.auth/admin-mobile.json',
+      },
+      testIgnore: /auth\.setup\.ts/,
     },
   ],
   webServer: {

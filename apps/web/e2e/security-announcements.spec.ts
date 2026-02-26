@@ -79,6 +79,9 @@ async function cleanupAnnouncements(page: Page) {
 // 1. LOGIN PAGE — UI Elements
 // ═══════════════════════════════════════════════════════════════
 test.describe('Login Page UI', () => {
+  // Clear storageState — these tests verify the login page without pre-existing auth
+  test.use({ storageState: { cookies: [], origins: [] } });
+
   test('Login page shows credentials form', async ({ page }) => {
     await page.goto('/login');
     await page.waitForTimeout(500);
