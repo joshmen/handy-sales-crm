@@ -27,6 +27,16 @@ export interface PaginatedResult<T> {
   hasPreviousPage: boolean;
 }
 
+export interface UsuarioUbicacion {
+  usuarioId: number;
+  nombre: string;
+  avatarUrl?: string;
+  latitud: number;
+  longitud: number;
+  fechaUbicacion?: string;
+  clienteNombre?: string;
+}
+
 export interface CreateUserRequest {
   email: string;
   password: string;
@@ -134,6 +144,10 @@ class UsersService {
     return this.request<void>(`/api/usuarios/${id}`, {
       method: 'DELETE',
     });
+  }
+
+  async getUbicaciones(): Promise<ApiResponse<UsuarioUbicacion[]>> {
+    return this.request<UsuarioUbicacion[]>('/api/usuarios/ubicaciones', { method: 'GET' });
   }
 
   async batchToggleActive(ids: number[], activo: boolean): Promise<ApiResponse<{ actualizados: number }>> {

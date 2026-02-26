@@ -179,6 +179,46 @@ public class UsuarioRepository : IUsuarioRepository
             .FirstOrDefaultAsync();
     }
 
+    public async Task<List<UsuarioUbicacionDto>> ObtenerUbicacionesAsync(int tenantId)
+    {
+        // Get the most recent visit with GPS data for each user
+        var ubicaciones = await _db.ClienteVisitas
+            .AsNoTracking()
+            .Include(v => v.Cliente)
+            .Where(v => v.TenantId == tenantId
+                && v.LatitudInicio != null
+                && v.LongitudInicio != null)
+            .GroupBy(v => v.UsuarioId)
+            .Select(g => g.OrderByDescending(v => v.FechaHoraInicio).First())
+            .ToListAsync();
+
+        if (ubicaciones.Count == 0)
+            return new List<UsuarioUbicacionDto>();
+
+        var userIds = ubicaciones.Select(u => u.UsuarioId).ToList();
+        var usuarios = await _db.Usuarios
+            .AsNoTracking()
+            .Where(u => userIds.Contains(u.Id) && u.Activo)
+            .Select(u => new { u.Id, u.Nombre, u.AvatarUrl })
+            .ToListAsync();
+
+        var userMap = usuarios.ToDictionary(u => u.Id);
+
+        return ubicaciones
+            .Where(u => userMap.ContainsKey(u.UsuarioId))
+            .Select(u => new UsuarioUbicacionDto
+            {
+                UsuarioId = u.UsuarioId,
+                Nombre = userMap[u.UsuarioId].Nombre,
+                AvatarUrl = userMap[u.UsuarioId].AvatarUrl,
+                Latitud = u.LatitudInicio!.Value,
+                Longitud = u.LongitudInicio!.Value,
+                FechaUbicacion = u.FechaHoraInicio,
+                ClienteNombre = u.Cliente?.Nombre
+            })
+            .ToList();
+    }
+
     private static IQueryable<Usuario> ApplySorting(IQueryable<Usuario> query, string? sortBy, string? sortDirection)
     {
         if (string.IsNullOrWhiteSpace(sortBy))

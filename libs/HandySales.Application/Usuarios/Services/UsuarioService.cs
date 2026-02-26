@@ -500,4 +500,12 @@ public class UsuarioService
         return new PaginatedResult<UsuarioDto>(usuariosDto, totalCount, searchDto.Page, searchDto.PageSize);
     }
 
+    public async Task<List<UsuarioUbicacionDto>> ObtenerUbicacionesAsync()
+    {
+        if (!_tenant.IsSuperAdmin && !_tenant.IsAdmin)
+            throw new UnauthorizedAccessException("No tienes permisos para ver ubicaciones");
+
+        return await _repo.ObtenerUbicacionesAsync(_tenant.TenantId);
+    }
+
 }

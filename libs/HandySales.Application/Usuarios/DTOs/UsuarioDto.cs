@@ -8,3 +8,14 @@ public class UsuarioDto
     public bool EsSuperAdmin { get; set; }
     public string? AvatarUrl { get; set; }
 }
+
+public class UsuarioUbicacionDto
+{
+    public int UsuarioId { get; set; }
+    public required string Nombre { get; set; }
+    public string? AvatarUrl { get; set; }
+    public double Latitud { get; set; }
+    public double Longitud { get; set; }
+    public DateTime? FechaUbicacion { get; set; }
+    public string? ClienteNombre { get; set; }
+}

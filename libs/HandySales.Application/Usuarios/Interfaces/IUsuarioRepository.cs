@@ -17,4 +17,5 @@ public interface IUsuarioRepository
     Task<(List<Usuario> usuarios, int totalCount)> BuscarUsuariosAsync(UsuarioSearchDto searchDto);
     Task<int> BatchToggleActivoAsync(List<int> ids, bool activo, int tenantId);
     Task<Role?> ObtenerRolPorNombreAsync(string nombre);
+    Task<List<UsuarioUbicacionDto>> ObtenerUbicacionesAsync(int tenantId);
 }

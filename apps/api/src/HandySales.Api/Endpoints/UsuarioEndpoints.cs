@@ -62,6 +62,10 @@ public static class UsuarioEndpoints
         usuarios.MapPatch("/batch-toggle", BatchToggleUsuarios)
             .WithName("BatchToggleUsuarios")
             .WithSummary("Activar/desactivar múltiples usuarios");
+
+        usuarios.MapGet("/ubicaciones", GetUbicaciones)
+            .WithName("GetUbicaciones")
+            .WithSummary("Obtener última ubicación GPS de cada vendedor activo");
     }
 
     private static async Task<IResult> GetUsuarios(
@@ -302,6 +306,23 @@ public static class UsuarioEndpoints
         catch (Exception ex)
         {
             return Results.Problem($"Error al cambiar estado de usuarios: {ex.Message}");
+        }
+    }
+
+    private static async Task<IResult> GetUbicaciones(UsuarioService service)
+    {
+        try
+        {
+            var ubicaciones = await service.ObtenerUbicacionesAsync();
+            return Results.Ok(ubicaciones);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Results.Forbid();
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error al obtener ubicaciones: {ex.Message}");
         }
     }
 
