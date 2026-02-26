@@ -25,14 +25,73 @@ export function ImpersonationBanner() {
   const [minutesRemaining, setMinutesRemaining] = useState(0);
   const [isEnding, setIsEnding] = useState(false);
 
+  // FIX-3: Validar con el servidor al montar — si la sesión expiró server-side, limpiar
+  useEffect(() => {
+    if (!isImpersonating || !sessionId) return;
+    let cancelled = false;
+
+    impersonationService.getCurrentState().then((state) => {
+      if (cancelled) return;
+      if (!state.isImpersonating) {
+        // El servidor dice que no hay sesión activa — limpiar estado stale
+        endImpersonation();
+        updateSession({ isImpersonating: false });
+        window.location.href = '/admin/tenants';
+      }
+    }).catch(() => {
+      // Si falla la llamada (ej: token inválido), limpiar por seguridad
+      if (cancelled) return;
+      endImpersonation();
+      updateSession({ isImpersonating: false });
+      window.location.href = '/admin/tenants';
+    });
+
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isImpersonating, sessionId]);
+
   useEffect(() => {
     if (!isImpersonating) return;
 
-    const updateTime = () => setMinutesRemaining(updateTimeRemaining());
-    updateTime();
-    const interval = setInterval(updateTime, 60000);
+    const updateTime = () => {
+      const remaining = updateTimeRemaining();
+      setMinutesRemaining(remaining);
+      return remaining;
+    };
+    const remaining = updateTime();
+
+    // Si ya expiró al montar, terminar sesión inmediatamente
+    if (remaining <= 0) {
+      handleAutoEnd();
+      return;
+    }
+
+    const interval = setInterval(() => {
+      const r = updateTime();
+      if (r <= 0) {
+        clearInterval(interval);
+        handleAutoEnd();
+      }
+    }, 30000); // Check cada 30s para detectar expiración más rápido
     return () => clearInterval(interval);
-  }, [isImpersonating, updateTimeRemaining]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isImpersonating]);
+
+  const handleAutoEnd = async () => {
+    try {
+      if (sessionId) {
+        await impersonationService.endSession(sessionId).catch(() => {});
+      }
+    } finally {
+      endImpersonation();
+      updateSession({ isImpersonating: false });
+      toast({
+        title: 'Sesión expirada',
+        description: 'La sesión de impersonación ha expirado automáticamente',
+      });
+      window.location.href = '/admin/tenants';
+    }
+  };
 
   const handleEndSession = async () => {
     if (!sessionId) return;

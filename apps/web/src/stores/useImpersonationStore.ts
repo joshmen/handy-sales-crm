@@ -121,6 +121,14 @@ export const useImpersonationStore = create<ImpersonationStore>()(
         accessLevel: state.accessLevel,
         expiresAt: state.expiresAt,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (!state?.isImpersonating || !state.expiresAt) return;
+        const expires = new Date(state.expiresAt);
+        if (expires.getTime() <= Date.now()) {
+          // Sesión expirada — limpiar estado stale
+          state.clear();
+        }
+      },
     }
   )
 );
