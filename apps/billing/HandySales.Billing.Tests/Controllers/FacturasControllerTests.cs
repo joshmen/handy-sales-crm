@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using HandySales.Billing.Api.Controllers;
 using HandySales.Billing.Api.Data;
@@ -29,7 +30,10 @@ public class FacturasControllerTests : IDisposable
         _context = new BillingDbContext(options);
         var logger = new LoggerFactory().CreateLogger<FacturasController>();
         var pdfService = new InvoicePdfService();
-        _controller = new FacturasController(_context, logger, pdfService);
+        var emailLogger = new LoggerFactory().CreateLogger<BillingEmailService>();
+        var config = new ConfigurationBuilder().AddInMemoryCollection().Build();
+        var emailService = new BillingEmailService(config, emailLogger);
+        _controller = new FacturasController(_context, logger, pdfService, emailService);
 
         // Setup user claims
         SetupUserClaims();

@@ -70,7 +70,7 @@ services:
       Jwt__ExpirationMinutes: 60
       Multitenancy__DefaultTenantId: "00000000-0000-0000-0000-000000000001"
       Multitenancy__DefaultTenantName: "Default"
-      Cloudinary__Url: "cloudinary://000000000000000:placeholder@demo"
+      Cloudinary__Url: "cloudinary://899432929937183:Pxxn5PaFCujbBMJ7ut38v4f2g78@dq0o1nbyh"
       Seq__ServerUrl: "http://seq:5341"
       SENDGRID_API_KEY: "${SENDGRID_API_KEY}"
       SENDGRID_FROM_EMAIL: "${SENDGRID_FROM_EMAIL}"
@@ -113,6 +113,9 @@ services:
       SAT__CertificadoPath: "/app/certificates"
       SAT__WebServiceUrl: "https://consultaqr.facturaelectronica.sat.gob.mx/ConsultaCFDIService.svc"
       Seq__ServerUrl: "http://seq:5341"
+      SENDGRID_API_KEY: ""
+      SENDGRID_FROM_EMAIL: "noreply@handysuites.com"
+      SENDGRID_FROM_NAME: "Handy Suites"
     ports:
       - "1051:1051"
     depends_on:

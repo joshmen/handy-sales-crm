@@ -37,6 +37,7 @@ builder.Services.AddCors(options =>
         policy.WithOrigins(
                 "http://localhost:3000",           // Next.js dev
                 "https://localhost:3000",
+                "http://localhost:1083",           // Next.js dev (HandySales port)
                 "http://localhost:3001",           // Alternative port
                 "https://*.vercel.app",            // Vercel deployments
                 "https://handysales.vercel.app",   // Your production domain
@@ -72,6 +73,9 @@ builder.Services.AddAuthorization();
 
 // PDF generation service
 builder.Services.AddSingleton<IInvoicePdfService, InvoicePdfService>();
+
+// Email service (SendGrid)
+builder.Services.AddSingleton<IBillingEmailService, BillingEmailService>();
 
 // Health checks
 builder.Services.AddHealthChecks()

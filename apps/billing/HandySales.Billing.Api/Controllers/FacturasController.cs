@@ -17,12 +17,18 @@ public class FacturasController : ControllerBase
     private readonly BillingDbContext _context;
     private readonly ILogger<FacturasController> _logger;
     private readonly IInvoicePdfService _pdfService;
+    private readonly IBillingEmailService _emailService;
 
-    public FacturasController(BillingDbContext context, ILogger<FacturasController> logger, IInvoicePdfService pdfService)
+    public FacturasController(
+        BillingDbContext context,
+        ILogger<FacturasController> logger,
+        IInvoicePdfService pdfService,
+        IBillingEmailService emailService)
     {
         _context = context;
         _logger = logger;
         _pdfService = pdfService;
+        _emailService = emailService;
     }
 
     private string GetTenantId() => User.FindFirst("TenantId")?.Value ?? "00000000-0000-0000-0000-000000000001";
@@ -295,6 +301,8 @@ public class FacturasController : ControllerBase
         var userId = GetUserId();
 
         var factura = await _context.Facturas
+            .Include(f => f.Detalles)
+            .Include(f => f.Impuestos)
             .Where(f => f.Id == id && f.TenantId == tenantId)
             .FirstOrDefaultAsync();
 
@@ -304,10 +312,57 @@ public class FacturasController : ControllerBase
         if (factura.Estado != "TIMBRADA")
             return BadRequest("Solo se pueden enviar facturas timbradas");
 
-        // TODO: Implementar envío por correo
-        RegistrarAuditoria(tenantId, factura.Id, "ENVIAR", $"Factura enviada a: {request.Email}", userId);
+        // Generate PDF if requested
+        byte[]? pdfBytes = null;
+        string? pdfFileName = null;
+        if (request.IncluirPdf)
+        {
+            var config = await _context.ConfiguracionesFiscales
+                .Where(c => c.TenantId == tenantId && c.Activo)
+                .FirstOrDefaultAsync();
 
-        return Ok(new { message = $"Factura enviada a {request.Email}" });
+            pdfBytes = _pdfService.GeneratePdf(factura, config);
+            pdfFileName = $"Factura_{factura.Serie ?? ""}_{factura.Folio}.pdf";
+        }
+
+        // XML attachment if requested
+        string? xmlContent = request.IncluirXml ? factura.XmlContent : null;
+        string? xmlFileName = request.IncluirXml && !string.IsNullOrEmpty(factura.XmlContent)
+            ? $"Factura_{factura.Serie ?? ""}_{factura.Folio}.xml"
+            : null;
+
+        // Build email
+        var subject = $"Factura {factura.Serie}-{factura.Folio} — {factura.EmisorNombre}";
+        var htmlBody = BillingEmailTemplates.FacturaEmail(
+            factura.Serie ?? "",
+            factura.Folio,
+            factura.ReceptorNombre,
+            factura.EmisorNombre,
+            factura.Total,
+            factura.Moneda,
+            factura.FechaEmision,
+            pdfBytes != null,
+            xmlContent != null);
+
+        var sent = await _emailService.SendFacturaAsync(
+            request.Email, subject, htmlBody,
+            pdfBytes, pdfFileName,
+            xmlContent, xmlFileName);
+
+        var attachments = new List<string>();
+        if (pdfBytes != null) attachments.Add("PDF");
+        if (xmlContent != null) attachments.Add("XML");
+
+        RegistrarAuditoria(tenantId, factura.Id, "ENVIAR",
+            $"Factura enviada a: {request.Email} (adjuntos: {string.Join(", ", attachments)})", userId);
+        await _context.SaveChangesAsync();
+
+        return Ok(new
+        {
+            message = sent ? $"Factura enviada a {request.Email}" : "Email en cola (SendGrid no configurado)",
+            email = request.Email,
+            attachments = attachments
+        });
     }
 
     private async Task<int> GetNextFolio(string tenantId, string serie)
