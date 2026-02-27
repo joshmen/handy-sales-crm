@@ -55,7 +55,7 @@ export interface CrashReportFilters {
 // ============ SERVICIO ============
 
 class CrashReportService {
-  private basePath = '/crash-reports';
+  private basePath = '/api/crash-reports';
 
   async getAll(params: CrashReportFilters = {}): Promise<CrashReportPaginatedResponse> {
     try {

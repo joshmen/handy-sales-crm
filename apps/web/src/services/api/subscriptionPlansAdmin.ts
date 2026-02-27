@@ -13,6 +13,7 @@ export interface SubscriptionPlanAdminDto {
   maxClientesPorMes: number;
   incluyeReportes: boolean;
   incluyeSoportePrioritario: boolean;
+  caracteristicas: string[];
   activo: boolean;
   orden: number;
   tenantCount: number;
@@ -28,6 +29,7 @@ export interface SubscriptionPlanCreateDto {
   maxClientesPorMes: number;
   incluyeReportes: boolean;
   incluyeSoportePrioritario: boolean;
+  caracteristicas: string[];
   orden: number;
 }
 
@@ -40,6 +42,7 @@ export interface SubscriptionPlanUpdateDto {
   maxClientesPorMes: number;
   incluyeReportes: boolean;
   incluyeSoportePrioritario: boolean;
+  caracteristicas: string[];
   activo: boolean;
   orden: number;
 }
@@ -47,7 +50,7 @@ export interface SubscriptionPlanUpdateDto {
 // ============ SERVICIO ============
 
 class SubscriptionPlanAdminService {
-  private basePath = '/superadmin/subscription-plans';
+  private basePath = '/api/superadmin/subscription-plans';
 
   async getAll(): Promise<SubscriptionPlanAdminDto[]> {
     try {

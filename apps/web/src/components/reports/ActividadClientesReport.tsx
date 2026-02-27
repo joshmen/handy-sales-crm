@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ReportFilters } from './ReportFilters';
 import { ReportKPICards } from './ReportKPICards';
 import { ReportTable, ReportColumn } from './ReportTable';
@@ -25,18 +25,28 @@ export function ActividadClientesReport() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const limit = 30;
+  const datesRef = useRef(dates);
+  datesRef.current = dates;
 
-  const fetch = useCallback(async () => {
+  const fetchData = async (p: number) => {
     try {
       setLoading(true);
-      const res = await getActividadClientes({ ...dates, page, limit });
+      const res = await getActividadClientes({ ...datesRef.current, page: p, limit });
       setData(res.clientes);
       setTotal(res.total);
     } catch { toast.error('Error al cargar reporte'); }
     finally { setLoading(false); }
-  }, [dates, page]);
+  };
 
-  useEffect(() => { fetch(); }, []);
+  // Initial load
+  useEffect(() => { fetchData(1); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Re-fetch when page changes (from pagination buttons)
+  const isInitialMount = useRef(true);
+  useEffect(() => {
+    if (isInitialMount.current) { isInitialMount.current = false; return; }
+    fetchData(page);
+  }, [page]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const totalPages = Math.ceil(total / limit);
 
@@ -53,9 +63,14 @@ export function ActividadClientesReport() {
   const totalVentas = data.reduce((s, c) => s + c.ventasTotales, 0);
   const totalPedidos = data.reduce((s, c) => s + c.pedidos, 0);
 
+  const handleApply = () => {
+    setPage(1);
+    fetchData(1);
+  };
+
   return (
     <div className="space-y-4">
-      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={() => { setPage(1); fetch(); }} loading={loading} />
+      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={handleApply} loading={loading} />
 
       <ReportKPICards cards={[
         { label: 'Clientes', value: total, color: 'blue' },
@@ -77,11 +92,11 @@ export function ActividadClientesReport() {
             Mostrando {(page - 1) * limit + 1} - {Math.min(page * limit, total)} de {total}
           </p>
           <div className="flex items-center gap-1">
-            <button onClick={() => { setPage(p => p - 1); fetch(); }} disabled={page <= 1} className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30">
+            <button onClick={() => setPage(p => p - 1)} disabled={page <= 1} className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30">
               <ChevronLeft className="w-4 h-4" />
             </button>
             <span className="text-xs text-gray-600 px-2">Pág. {page}/{totalPages}</span>
-            <button onClick={() => { setPage(p => p + 1); fetch(); }} disabled={page >= totalPages} className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30">
+            <button onClick={() => setPage(p => p + 1)} disabled={page >= totalPages} className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30">
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>

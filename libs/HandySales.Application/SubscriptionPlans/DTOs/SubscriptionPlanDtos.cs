@@ -12,6 +12,7 @@ public class SubscriptionPlanAdminDto
     public int MaxClientesPorMes { get; set; }
     public bool IncluyeReportes { get; set; }
     public bool IncluyeSoportePrioritario { get; set; }
+    public List<string> Caracteristicas { get; set; } = new();
     public bool Activo { get; set; }
     public int Orden { get; set; }
     public int TenantCount { get; set; }
@@ -27,6 +28,7 @@ public record SubscriptionPlanCreateDto(
     int MaxClientesPorMes,
     bool IncluyeReportes,
     bool IncluyeSoportePrioritario,
+    List<string> Caracteristicas,
     int Orden
 );
 
@@ -39,6 +41,7 @@ public record SubscriptionPlanUpdateDto(
     int MaxClientesPorMes,
     bool IncluyeReportes,
     bool IncluyeSoportePrioritario,
+    List<string> Caracteristicas,
     bool Activo,
     int Orden
 );

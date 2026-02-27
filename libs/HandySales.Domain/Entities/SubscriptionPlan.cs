@@ -35,6 +35,9 @@ public class SubscriptionPlan
     [Column("incluye_soporte_prioritario")]
     public bool IncluyeSoportePrioritario { get; set; }
 
+    [Column("caracteristicas")]
+    public List<string> Caracteristicas { get; set; } = new();
+
     [Column("stripe_price_id_mensual")]
     public string? StripePriceIdMensual { get; set; }
 

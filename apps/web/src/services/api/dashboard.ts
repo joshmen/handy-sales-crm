@@ -52,7 +52,7 @@ export interface DashboardChartsData {
 }
 
 class DashboardService {
-  private readonly basePath = '/dashboard';
+  private readonly basePath = '/api/dashboard';
 
   async getMetrics(dateRange?: DashboardDateRange): Promise<DashboardMetrics> {
     try {

@@ -84,6 +84,7 @@ public static class SubscriptionPlanAdminEndpoints
             MaxClientesPorMes = dto.MaxClientesPorMes,
             IncluyeReportes = dto.IncluyeReportes,
             IncluyeSoportePrioritario = dto.IncluyeSoportePrioritario,
+            Caracteristicas = dto.Caracteristicas ?? new List<string>(),
             Activo = true,
             Orden = dto.Orden
         };
@@ -113,6 +114,7 @@ public static class SubscriptionPlanAdminEndpoints
         plan.MaxClientesPorMes = dto.MaxClientesPorMes;
         plan.IncluyeReportes = dto.IncluyeReportes;
         plan.IncluyeSoportePrioritario = dto.IncluyeSoportePrioritario;
+        plan.Caracteristicas = dto.Caracteristicas ?? new List<string>();
         plan.Activo = dto.Activo;
         plan.Orden = dto.Orden;
 

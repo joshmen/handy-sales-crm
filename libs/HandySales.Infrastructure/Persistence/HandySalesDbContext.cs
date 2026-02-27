@@ -1,6 +1,8 @@
+using System.Text.Json;
 using HandySales.Domain.Common;
 using HandySales.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace HandySales.Infrastructure.Persistence;
 
@@ -97,6 +99,22 @@ public class HandySalesDbContext : DbContext
         //modelBuilder.Entity<PrecioPorProducto>().ToTable("PreciosPorProducto");
         //modelBuilder.Entity<DescuentoPorCantidad>().ToTable("DescuentosPorCantidad");
         //modelBuilder.Entity<Promocion>().ToTable("Promociones");
+
+        // SubscriptionPlan: JSON value converter for Caracteristicas
+        modelBuilder.Entity<SubscriptionPlan>(entity =>
+        {
+            var stringListComparer = new ValueComparer<List<string>>(
+                (c1, c2) => c1!.SequenceEqual(c2!),
+                c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
+                c => c.ToList());
+
+            entity.Property(p => p.Caracteristicas)
+                  .HasConversion(
+                      v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                      v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>())
+                  .HasColumnType("json")
+                  .Metadata.SetValueComparer(stringListComparer);
+        });
 
         // Configure RefreshToken explicitly
         modelBuilder.Entity<RefreshToken>(entity =>

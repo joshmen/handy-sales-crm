@@ -4,6 +4,7 @@ using HandySales.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HandySales.Infrastructure.Migrations
 {
     [DbContext(typeof(HandySalesDbContext))]
-    partial class HandySalesDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260227061152_FixSubscriptionPlansCollation")]
+    partial class FixSubscriptionPlansCollation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -3439,11 +3442,6 @@ namespace HandySales.Infrastructure.Migrations
                     b.Property<bool>("Activo")
                         .HasColumnType("tinyint(1)")
                         .HasColumnName("activo");
-
-                    b.Property<string>("Caracteristicas")
-                        .IsRequired()
-                        .HasColumnType("json")
-                        .HasColumnName("caracteristicas");
 
                     b.Property<string>("Codigo")
                         .IsRequired()

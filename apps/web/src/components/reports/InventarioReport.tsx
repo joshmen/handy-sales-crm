@@ -84,9 +84,10 @@ export function InventarioReport() {
                     outerRadius={100}
                     label={({ name, value }) => `${name}: ${value}`}
                   >
-                    {pieData.map((d, i) => (
-                      <Cell key={i} fill={estadoColors[Object.keys(estadoColors)[['Sin Stock', 'Stock Bajo', 'Normal', 'Exceso'].indexOf(d.name)]]?.pie || '#999'} />
-                    ))}
+                    {pieData.map((d, i) => {
+                      const colorKey = Object.entries(estadoColors).find(([, v]) => v.label === d.name)?.[1]?.pie || '#999';
+                      return <Cell key={i} fill={colorKey} />;
+                    })}
                   </Pie>
                   <Tooltip />
                   <Legend />

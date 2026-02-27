@@ -36,6 +36,7 @@ public class SubscriptionPlanRepository : ISubscriptionPlanRepository
                 MaxClientesPorMes = p.MaxClientesPorMes,
                 IncluyeReportes = p.IncluyeReportes,
                 IncluyeSoportePrioritario = p.IncluyeSoportePrioritario,
+                Caracteristicas = p.Caracteristicas,
                 Activo = p.Activo,
                 Orden = p.Orden,
                 TenantCount = _db.Tenants
