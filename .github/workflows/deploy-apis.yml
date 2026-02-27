@@ -54,10 +54,60 @@ jobs:
               - 'libs/**'
               - 'infra/docker/Dockerfile.Mobile.Prod'
 
+  run-tests:
+    name: Run Backend Tests
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: |
+      needs.detect-changes.outputs.main-api == 'true' ||
+      needs.detect-changes.outputs.billing-api == 'true' ||
+      needs.detect-changes.outputs.mobile-api == 'true' ||
+      needs.detect-changes.outputs.deploy-all == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Run Main API Tests
+        if: |
+          needs.detect-changes.outputs.main-api == 'true' ||
+          needs.detect-changes.outputs.mobile-api == 'true' ||
+          needs.detect-changes.outputs.deploy-all == 'true'
+        run: dotnet test apps/api/tests/HandySales.Tests/HandySales.Tests.csproj --configuration Release --logger "trx;LogFileName=main-api-results.trx" --results-directory ./test-results
+
+      - name: Run Billing API Tests
+        if: |
+          needs.detect-changes.outputs.billing-api == 'true' ||
+          needs.detect-changes.outputs.deploy-all == 'true'
+        run: dotnet test apps/billing/HandySales.Billing.Tests/HandySales.Billing.Tests.csproj --configuration Release --logger "trx;LogFileName=billing-results.trx" --results-directory ./test-results
+
+      - name: Run Mobile API Tests
+        if: |
+          needs.detect-changes.outputs.mobile-api == 'true' ||
+          needs.detect-changes.outputs.deploy-all == 'true'
+        run: dotnet test apps/mobile/HandySales.Mobile.Tests/HandySales.Mobile.Tests.csproj --configuration Release --logger "trx;LogFileName=mobile-results.trx" --results-directory ./test-results
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: ./test-results/
+          retention-days: 7
+
   migrate-database:
     name: Apply Database Migrations
     runs-on: ubuntu-latest
-    needs: detect-changes
+    needs: [detect-changes, run-tests]
     if: |
       needs.detect-changes.outputs.main-api == 'true' ||
       needs.detect-changes.outputs.mobile-api == 'true' ||
@@ -92,7 +142,7 @@ jobs:
   deployment-summary:
     name: Deployment Summary
     runs-on: ubuntu-latest
-    needs: [detect-changes, migrate-database]
+    needs: [detect-changes, run-tests, migrate-database]
     if: always()
     steps:
       - name: Print deployment results
@@ -101,6 +151,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Step | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend Tests | ${{ needs.run-tests.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Database Migrations | ${{ needs.migrate-database.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Railway auto-deploys from main branch after CI passes." >> $GITHUB_STEP_SUMMARY
