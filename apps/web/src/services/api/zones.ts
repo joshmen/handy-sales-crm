@@ -116,6 +116,7 @@ class ZoneService {
   async updateZone(data: { id: string; name: string; description?: string; isEnabled?: boolean; centroLatitud?: number; centroLongitud?: number; radioKm?: number }): Promise<Zone> {
     try {
       await api.put(`${this.basePath}/${data.id}`, {
+        id: parseInt(data.id, 10),
         nombre: data.name,
         descripcion: data.description || '',
         activo: data.isEnabled ?? true,
