@@ -4,6 +4,7 @@ using FluentAssertions;
 using HandySales.Application.Clientes.DTOs;
 using HandySales.Application.Clientes.Interfaces;
 using HandySales.Application.Clientes.Services;
+using HandySales.Application.Usuarios.Interfaces;
 using HandySales.Shared.Multitenancy;
 using Moq;
 using Xunit;
@@ -14,16 +15,18 @@ namespace HandySales.Tests.Application.Clientes
     {
         private readonly Mock<IClienteRepository> _repoMock;
         private readonly Mock<ICurrentTenant> _tenantMock;
+        private readonly Mock<IUsuarioRepository> _usuarioRepoMock;
         private readonly ClienteService _service;
 
         public ClienteServiceTests()
         {
             _repoMock = new Mock<IClienteRepository>();
             _tenantMock = new Mock<ICurrentTenant>();
+            _usuarioRepoMock = new Mock<IUsuarioRepository>();
             _tenantMock.Setup(t => t.TenantId).Returns(1);
             _tenantMock.Setup(t => t.IsAdmin).Returns(true);
 
-            _service = new ClienteService(_repoMock.Object, _tenantMock.Object);
+            _service = new ClienteService(_repoMock.Object, _tenantMock.Object, _usuarioRepoMock.Object);
         }
 
         [Fact]

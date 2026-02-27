@@ -1,6 +1,7 @@
 using HandySales.Application.Clientes.DTOs;
 using HandySales.Application.Clientes.Interfaces;
 using HandySales.Application.Clientes.Services;
+using HandySales.Application.Usuarios.Interfaces;
 using HandySales.Shared.Multitenancy;
 using Moq;
 
@@ -10,6 +11,7 @@ public class MobileClienteEndpointsTests
 {
     private readonly Mock<IClienteRepository> _repoMock;
     private readonly Mock<ICurrentTenant> _tenantMock;
+    private readonly Mock<IUsuarioRepository> _usuarioRepoMock;
     private readonly ClienteService _clienteService;
     private readonly List<ClienteDto> _testClientes;
 
@@ -17,9 +19,10 @@ public class MobileClienteEndpointsTests
     {
         _repoMock = new Mock<IClienteRepository>();
         _tenantMock = new Mock<ICurrentTenant>();
+        _usuarioRepoMock = new Mock<IUsuarioRepository>();
         _tenantMock.Setup(t => t.TenantId).Returns(1);
 
-        _clienteService = new ClienteService(_repoMock.Object, _tenantMock.Object);
+        _clienteService = new ClienteService(_repoMock.Object, _tenantMock.Object, _usuarioRepoMock.Object);
 
         _testClientes = new List<ClienteDto>
         {
@@ -315,7 +318,7 @@ public class MobileClienteEndpointsTests
             Pagina = 1,
             TamanoPagina = 10
         };
-        _repoMock.Setup(r => r.ObtenerPorFiltroAsync(filtro, 1))
+        _repoMock.Setup(r => r.ObtenerPorFiltroAsync(filtro, 1, null))
             .ReturnsAsync(expectedResult);
 
         // Act

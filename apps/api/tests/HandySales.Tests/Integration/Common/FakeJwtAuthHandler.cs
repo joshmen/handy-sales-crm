@@ -33,6 +33,10 @@ public class FakeJwtAuthHandler : AuthenticationHandler<AuthenticationSchemeOpti
             ? Request.Headers["X-Test-TenantId"].ToString() : "1";
         var isSuperAdmin = Request.Headers.ContainsKey("X-Test-SuperAdmin");
 
+        // Allow overriding role via X-Test-Role header
+        var customRole = Request.Headers.ContainsKey("X-Test-Role")
+            ? Request.Headers["X-Test-Role"].ToString() : null;
+
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, userId),
@@ -40,7 +44,14 @@ public class FakeJwtAuthHandler : AuthenticationHandler<AuthenticationSchemeOpti
             new("sub", userId),
         };
 
-        if (isSuperAdmin)
+        if (customRole != null)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, customRole));
+            if (customRole == "SUPER_ADMIN") claims.Add(new Claim("es_super_admin", "True"));
+            else if (customRole == "ADMIN") claims.Add(new Claim("es_admin", "True"));
+            else if (customRole == "SUPERVISOR") claims.Add(new Claim("es_admin", "False"));
+        }
+        else if (isSuperAdmin)
         {
             claims.Add(new Claim("es_super_admin", "True"));
             claims.Add(new Claim(ClaimTypes.Role, "SUPER_ADMIN"));
