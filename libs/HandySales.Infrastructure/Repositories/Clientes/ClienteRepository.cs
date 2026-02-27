@@ -103,7 +103,7 @@ public class ClienteRepository : IClienteRepository
         return true;
     }
 
-    public async Task<ClientePaginatedResult> ObtenerPorFiltroAsync(ClienteFiltroDto filtro, int tenantId)
+    public async Task<ClientePaginatedResult> ObtenerPorFiltroAsync(ClienteFiltroDto filtro, int tenantId, List<int>? filterByVendedorIds = null)
     {
         var query = _db.Clientes.AsNoTracking().Where(c => c.TenantId == tenantId);
 
@@ -119,8 +119,10 @@ public class ClienteRepository : IClienteRepository
         if (filtro.CategoriaClienteId.HasValue)
             query = query.Where(c => c.CategoriaClienteId == filtro.CategoriaClienteId.Value);
 
-        // Filtrar por vendedor asignado
-        if (filtro.VendedorId.HasValue)
+        // Filtrar por vendedor asignado (supervisor team or single vendedor)
+        if (filterByVendedorIds is { Count: > 0 })
+            query = query.Where(c => c.VendedorId.HasValue && filterByVendedorIds.Contains(c.VendedorId.Value) || c.VendedorId == null);
+        else if (filtro.VendedorId.HasValue)
             query = query.Where(c => c.VendedorId == filtro.VendedorId.Value || c.VendedorId == null);
 
         // Búsqueda por texto

@@ -1,5 +1,6 @@
 using HandySales.Application.Clientes.DTOs;
 using HandySales.Application.Clientes.Interfaces;
+using HandySales.Application.Usuarios.Interfaces;
 using HandySales.Shared.Multitenancy;
 
 namespace HandySales.Application.Clientes.Services;
@@ -8,11 +9,13 @@ public class ClienteService
 {
     private readonly IClienteRepository _repo;
     private readonly ICurrentTenant _tenant;
+    private readonly IUsuarioRepository _usuarioRepository;
 
-    public ClienteService(IClienteRepository repo, ICurrentTenant tenant)
+    public ClienteService(IClienteRepository repo, ICurrentTenant tenant, IUsuarioRepository usuarioRepository)
     {
         _repo = repo;
         _tenant = tenant;
+        _usuarioRepository = usuarioRepository;
     }
 
     public async Task<List<ClienteDto>> ObtenerClientesAsync()
@@ -56,14 +59,22 @@ public class ClienteService
 
     public async Task<ClientePaginatedResult> ObtenerPorFiltroAsync(ClienteFiltroDto filtro)
     {
-        // RBAC: Vendedor solo ve sus clientes asignados (o sin asignar)
-        if (!_tenant.IsAdmin && !_tenant.IsSuperAdmin)
+        // RBAC: Supervisor ve su equipo, Vendedor solo sus clientes
+        List<int>? filterByVendedorIds = null;
+        if (_tenant.IsSupervisor)
+        {
+            var supervisorId = int.Parse(_tenant.UserId);
+            var subordinadoIds = await _usuarioRepository.ObtenerSubordinadoIdsAsync(supervisorId, _tenant.TenantId);
+            subordinadoIds.Add(supervisorId);
+            filterByVendedorIds = subordinadoIds;
+        }
+        else if (!_tenant.IsAdmin && !_tenant.IsSuperAdmin)
         {
             if (int.TryParse(_tenant.UserId, out var vendedorId))
                 filtro.VendedorId = vendedorId;
         }
 
-        return await _repo.ObtenerPorFiltroAsync(filtro, _tenant.TenantId);
+        return await _repo.ObtenerPorFiltroAsync(filtro, _tenant.TenantId, filterByVendedorIds);
     }
 
     public Task<bool> CambiarActivoAsync(int id, bool activo)

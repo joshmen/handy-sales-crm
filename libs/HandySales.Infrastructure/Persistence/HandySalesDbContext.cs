@@ -171,6 +171,14 @@ public class HandySalesDbContext : DbContext
                   .WithMany(r => r.Usuarios)
                   .HasForeignKey(u => u.RoleId)
                   .OnDelete(DeleteBehavior.SetNull);
+
+            // Supervisor self-referencing FK
+            entity.HasOne(u => u.Supervisor)
+                  .WithMany(u => u.Subordinados)
+                  .HasForeignKey(u => u.SupervisorId)
+                  .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(u => u.SupervisorId);
         });
         
         // Configure DatosFacturacion entity

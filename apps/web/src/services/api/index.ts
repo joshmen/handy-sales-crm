@@ -22,6 +22,7 @@ import { deviceSessionService } from './deviceSessions';
 import { crashReportService } from './crashReports';
 import { subscriptionPlanAdminService } from './subscriptionPlansAdmin';
 import { activityLogService } from './activityLogs';
+import { supervisorService } from './supervisor';
 
 // 2) Re-exporta todo (tipos, funciones, etc.)
 export * from './auth';
@@ -45,6 +46,7 @@ export * from './deviceSessions';
 export * from './crashReports';
 export * from './subscriptionPlansAdmin';
 export * from './activityLogs';
+export * from './supervisor';
 
 // 3) (Opcional) re-exporta también las instancias por nombre
 export {
@@ -70,6 +72,7 @@ export {
   crashReportService,
   subscriptionPlanAdminService,
   activityLogService,
+  supervisorService,
 };
 
 // 4) Objeto centralizado
@@ -96,6 +99,7 @@ export const services = {
   crashReports: crashReportService,
   subscriptionPlansAdmin: subscriptionPlanAdminService,
   activityLogs: activityLogService,
+  supervisor: supervisorService,
 } as const;
 
 export default services;

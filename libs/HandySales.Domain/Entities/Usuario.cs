@@ -78,7 +78,13 @@ public class Usuario : AuditableEntity
     [Column("codigo_verificacion_expiry")]
     public DateTime? CodigoVerificacionExpiry { get; set; }
 
+    // Supervisor relationship (self-referencing)
+    [Column("supervisor_id")]
+    public int? SupervisorId { get; set; }
+
     // Navigation properties
     public Tenant Tenant { get; set; } = null!;
     public Role? Role { get; set; }
+    public Usuario? Supervisor { get; set; }
+    public ICollection<Usuario> Subordinados { get; set; } = new List<Usuario>();
 }

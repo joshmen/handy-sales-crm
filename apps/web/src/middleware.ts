@@ -23,6 +23,7 @@ const ROLE_RESTRICTED_ROUTES = {
   '/global-settings': [UserRole.SUPER_ADMIN], // Solo SUPER_ADMIN puede acceder a configuración global
   '/reports/financial': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
   '/routes/admin': [UserRole.ADMIN, UserRole.SUPERVISOR, UserRole.SUPER_ADMIN],
+  '/team': [UserRole.SUPERVISOR, UserRole.ADMIN, UserRole.SUPER_ADMIN],
   '/devices': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
   '/activity-logs': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
   '/roles': [UserRole.SUPER_ADMIN],
@@ -135,8 +136,8 @@ export default withAuth(
       }
     }
 
-    // Vendedores y Viewers: add identification headers for downstream filtering
-    if (effectiveRole === UserRole.VENDEDOR || effectiveRole === UserRole.VIEWER) {
+    // Vendedores, Viewers, and Supervisores: add identification headers for downstream filtering
+    if (effectiveRole === UserRole.VENDEDOR || effectiveRole === UserRole.VIEWER || effectiveRole === UserRole.SUPERVISOR) {
       const response = NextResponse.next();
       response.headers.set('x-user-id', token.id as string);
       response.headers.set('x-user-role', effectiveRole);

@@ -18,4 +18,5 @@ public interface IUsuarioRepository
     Task<int> BatchToggleActivoAsync(List<int> ids, bool activo, int tenantId);
     Task<Role?> ObtenerRolPorNombreAsync(string nombre);
     Task<List<UsuarioUbicacionDto>> ObtenerUbicacionesAsync(int tenantId);
+    Task<List<int>> ObtenerSubordinadoIdsAsync(int supervisorId, int tenantId);
 }

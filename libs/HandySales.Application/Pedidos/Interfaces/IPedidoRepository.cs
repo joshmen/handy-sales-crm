@@ -8,7 +8,7 @@ public interface IPedidoRepository
     Task<int> CrearAsync(PedidoCreateDto dto, int usuarioId, int tenantId);
     Task<PedidoDto?> ObtenerPorIdAsync(int id, int tenantId);
     Task<PedidoDto?> ObtenerPorNumeroAsync(string numeroPedido, int tenantId);
-    Task<PaginatedResult<PedidoListaDto>> ObtenerPorFiltroAsync(PedidoFiltroDto filtro, int tenantId);
+    Task<PaginatedResult<PedidoListaDto>> ObtenerPorFiltroAsync(PedidoFiltroDto filtro, int tenantId, List<int>? filterByUsuarioIds = null);
     Task<List<PedidoListaDto>> ObtenerPorClienteAsync(int clienteId, int tenantId);
     Task<List<PedidoListaDto>> ObtenerPorUsuarioAsync(int usuarioId, int tenantId);
     Task<bool> ActualizarAsync(int id, PedidoUpdateDto dto, int tenantId);

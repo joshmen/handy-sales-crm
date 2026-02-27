@@ -30,6 +30,15 @@ INSERT IGNORE INTO Usuarios (tenant_id, email, password_hash, nombre, es_admin, 
 INSERT IGNORE INTO Usuarios (tenant_id, email, password_hash, nombre, es_admin, activo, email_verificado, rol, creado_en) VALUES
 (3, 'viewer@jeyma.com', '$2a$11$eTUvJkg3sBW3jEhrBpz3DeeoKTOwQb8fEhwBO1SVFhlGu0OA.vHnO', 'Viewer Jeyma', 0, 1, 1, 'VIEWER', NOW());
 
+-- SUPERVISOR user (team manager, Jeyma tenant)
+INSERT IGNORE INTO Usuarios (tenant_id, email, password_hash, nombre, es_admin, activo, email_verificado, rol, creado_en) VALUES
+(3, 'supervisor@jeyma.com', '$2a$11$eTUvJkg3sBW3jEhrBpz3DeeoKTOwQb8fEhwBO1SVFhlGu0OA.vHnO', 'Supervisor Jeyma', 0, 1, 1, 'SUPERVISOR', NOW());
+
+-- Assign vendedores to supervisor (must run after users exist)
+-- This uses a subquery to find the supervisor and vendedor IDs dynamically
+UPDATE Usuarios SET supervisor_id = (SELECT id FROM (SELECT id FROM Usuarios WHERE email = 'supervisor@jeyma.com') AS t)
+WHERE email IN ('vendedor1@jeyma.com', 'vendedor2@jeyma.com') AND supervisor_id IS NULL;
+
 -- Ensure email_verificado is set for all test users (login requires it)
 UPDATE Usuarios SET email_verificado = 1 WHERE email_verificado = 0 AND email LIKE '%@jeyma.com' OR email LIKE '%@huichol.com' OR email LIKE '%@centro.com' OR email LIKE '%@rutasnorte.com';
 

@@ -141,6 +141,7 @@ app.MapStripeWebhookEndpoints();
 app.MapInternalEndpoints();
 app.MapCrashReportEndpoints();
 app.MapActivityLogEndpoints();
+app.MapSupervisorEndpoints();
 
 // SignalR hub
 app.MapHub<NotificationHub>("/hubs/notifications");

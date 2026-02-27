@@ -1,5 +1,6 @@
 using HandySales.Application.Pedidos.DTOs;
 using HandySales.Application.Pedidos.Interfaces;
+using HandySales.Application.Usuarios.Interfaces;
 using HandySales.Domain.Entities;
 using HandySales.Shared.Multitenancy;
 
@@ -9,11 +10,13 @@ public class PedidoService
 {
     private readonly IPedidoRepository _repository;
     private readonly ICurrentTenant _tenant;
+    private readonly IUsuarioRepository _usuarioRepository;
 
-    public PedidoService(IPedidoRepository repository, ICurrentTenant tenant)
+    public PedidoService(IPedidoRepository repository, ICurrentTenant tenant, IUsuarioRepository usuarioRepository)
     {
         _repository = repository;
         _tenant = tenant;
+        _usuarioRepository = usuarioRepository;
     }
 
     public async Task<int> CrearAsync(PedidoCreateDto dto)
@@ -34,14 +37,22 @@ public class PedidoService
 
     public async Task<PaginatedResult<PedidoListaDto>> ObtenerPorFiltroAsync(PedidoFiltroDto filtro)
     {
-        // RBAC: Vendedor solo ve sus pedidos
-        if (!_tenant.IsAdmin && !_tenant.IsSuperAdmin)
+        // RBAC: Supervisor ve su equipo, Vendedor solo sus pedidos
+        List<int>? filterByUsuarioIds = null;
+        if (_tenant.IsSupervisor)
+        {
+            var supervisorId = int.Parse(_tenant.UserId);
+            var subordinadoIds = await _usuarioRepository.ObtenerSubordinadoIdsAsync(supervisorId, _tenant.TenantId);
+            subordinadoIds.Add(supervisorId);
+            filterByUsuarioIds = subordinadoIds;
+        }
+        else if (!_tenant.IsAdmin && !_tenant.IsSuperAdmin)
         {
             if (int.TryParse(_tenant.UserId, out var vendedorId))
                 filtro.UsuarioId = vendedorId;
         }
 
-        return await _repository.ObtenerPorFiltroAsync(filtro, _tenant.TenantId);
+        return await _repository.ObtenerPorFiltroAsync(filtro, _tenant.TenantId, filterByUsuarioIds);
     }
 
     public async Task<List<PedidoListaDto>> ObtenerPorClienteAsync(int clienteId)

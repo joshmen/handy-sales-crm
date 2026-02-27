@@ -285,6 +285,13 @@ const sidebarItems: SidebarItem[] = [
     badge: '2',
   },
   {
+    id: 'team',
+    label: 'Mi Equipo',
+    icon: Users,
+    href: '/team',
+    permission: 'view_team',
+  },
+  {
     id: 'devices',
     label: 'Dispositivos',
     icon: DeviceMobile,
@@ -445,6 +452,18 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'manage_catalogs', // Gestión de categorías y unidades
     'manage_devices', // Gestión de dispositivos móviles
     'view_activity_logs', // Registro de actividad
+  ],
+  SUPERVISOR: [
+    'view_dashboard',
+    'view_clients',
+    'view_products',
+    'view_orders',
+    'view_deliveries',
+    'view_routes',
+    'view_zones',
+    'view_visits',
+    'view_team',
+    'view_reports',
   ],
   VENDEDOR: [
     'view_dashboard',

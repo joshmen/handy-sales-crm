@@ -219,6 +219,17 @@ public class UsuarioRepository : IUsuarioRepository
             .ToList();
     }
 
+    public async Task<List<int>> ObtenerSubordinadoIdsAsync(int supervisorId, int tenantId)
+    {
+        return await _db.Usuarios
+            .AsNoTracking()
+            .Where(u => u.SupervisorId == supervisorId
+                     && u.TenantId == tenantId
+                     && u.EliminadoEn == null)
+            .Select(u => u.Id)
+            .ToListAsync();
+    }
+
     private static IQueryable<Usuario> ApplySorting(IQueryable<Usuario> query, string? sortBy, string? sortDirection)
     {
         if (string.IsNullOrWhiteSpace(sortBy))

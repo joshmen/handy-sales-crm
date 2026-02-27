@@ -147,7 +147,7 @@ public class PedidoRepository : IPedidoRepository
         return await ObtenerPorIdAsync(pedido, tenantId);
     }
 
-    public async Task<PaginatedResult<PedidoListaDto>> ObtenerPorFiltroAsync(PedidoFiltroDto filtro, int tenantId)
+    public async Task<PaginatedResult<PedidoListaDto>> ObtenerPorFiltroAsync(PedidoFiltroDto filtro, int tenantId, List<int>? filterByUsuarioIds = null)
     {
         var query = _db.Pedidos
             .AsNoTracking()
@@ -156,7 +156,9 @@ public class PedidoRepository : IPedidoRepository
         if (filtro.ClienteId.HasValue)
             query = query.Where(p => p.ClienteId == filtro.ClienteId.Value);
 
-        if (filtro.UsuarioId.HasValue)
+        if (filterByUsuarioIds is { Count: > 0 })
+            query = query.Where(p => filterByUsuarioIds.Contains(p.UsuarioId));
+        else if (filtro.UsuarioId.HasValue)
             query = query.Where(p => p.UsuarioId == filtro.UsuarioId.Value);
 
         if (filtro.Estado.HasValue)
