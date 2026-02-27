@@ -98,7 +98,23 @@ export default function PrivacidadPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900">6. Uso de cookies y tecnologías de rastreo</h2>
+            <h2 className="text-xl font-semibold text-gray-900">6. Revocación del consentimiento y portabilidad</h2>
+            <p className="mt-2">
+              Usted puede revocar su consentimiento para el tratamiento de sus datos personales en cualquier
+              momento, sin efectos retroactivos, enviando su solicitud a{' '}
+              <a href="mailto:privacidad@handysuites.com" className="text-blue-600 hover:underline">privacidad@handysuites.com</a>.
+              Tenga en cuenta que la revocación del consentimiento para finalidades primarias podría
+              implicar la imposibilidad de continuar prestando el servicio.
+            </p>
+            <p className="mt-2">
+              Asimismo, tiene derecho a solicitar la portabilidad de sus datos personales en un formato
+              estructurado y de uso común. Los datos de su negocio (clientes, productos, pedidos, facturas)
+              pueden exportarse en cualquier momento desde la configuración de su cuenta.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-semibold text-gray-900">7. Uso de cookies y tecnologías de rastreo</h2>
             <p className="mt-2">
               Utilizamos cookies y tecnologías similares para mejorar su experiencia de navegación, recordar sus
               preferencias y analizar el uso de nuestro sitio. Las cookies que utilizamos son:
@@ -113,7 +129,7 @@ export default function PrivacidadPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900">7. Cambios al aviso de privacidad</h2>
+            <h2 className="text-xl font-semibold text-gray-900">8. Cambios al aviso de privacidad</h2>
             <p className="mt-2">
               Nos reservamos el derecho de modificar este aviso de privacidad. Cualquier cambio será notificado
               a través de nuestra plataforma o por correo electrónico. Le recomendamos revisar periódicamente
@@ -122,7 +138,7 @@ export default function PrivacidadPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900">8. Contacto</h2>
+            <h2 className="text-xl font-semibold text-gray-900">9. Contacto</h2>
             <p className="mt-2">
               Para cualquier duda o aclaración sobre este aviso de privacidad, puede contactarnos en:
             </p>
