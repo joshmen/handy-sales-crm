@@ -87,11 +87,9 @@ public class MobileAuthService
             await _db.SaveChangesAsync();
         }
 
-        var token = _jwt.GenerateTokenWithRoles(usuario.Id.ToString(), usuario.TenantId, usuario.EsAdmin, usuario.EsSuperAdmin);
+        var token = _jwt.GenerateTokenWithRoles(usuario.Id.ToString(), usuario.TenantId, usuario.Rol);
 
         var refreshToken = await CreateRefreshTokenAsync(usuario.Id);
-
-        var role = usuario.EsSuperAdmin ? "SUPER_ADMIN" : (usuario.EsAdmin ? "ADMIN" : "VENDEDOR");
 
         // Fetch company logo for the tenant (nullable)
         var companyLogo = await _db.CompanySettings
@@ -110,7 +108,7 @@ public class MobileAuthService
                     id = usuario.Id.ToString(),
                     email = usuario.Email,
                     name = usuario.Nombre,
-                    role = role,
+                    role = usuario.Rol,
                     tenantLogo = companyLogo
                 },
                 token = token,
@@ -136,7 +134,9 @@ public class MobileAuthService
         tokenEntity.IsRevoked = true;
         tokenEntity.RevokedAt = DateTime.UtcNow;
 
-        var newAccessToken = _jwt.GenerateToken(tokenEntity.Usuario.Id.ToString(), tokenEntity.Usuario.TenantId);
+        var newAccessToken = _jwt.GenerateTokenWithRoles(
+            tokenEntity.Usuario.Id.ToString(), tokenEntity.Usuario.TenantId,
+            tokenEntity.Usuario.Rol);
 
         var newRefreshToken = await CreateRefreshTokenAsync(tokenEntity.UserId);
         tokenEntity.ReplacedByToken = newRefreshToken.Token;
@@ -157,7 +157,7 @@ public class MobileAuthService
                 id = tokenEntity.Usuario.Id.ToString(),
                 email = tokenEntity.Usuario.Email,
                 name = tokenEntity.Usuario.Nombre,
-                role = tokenEntity.Usuario.EsAdmin ? "ADMIN" : "VENDEDOR",
+                role = tokenEntity.Usuario.Rol,
                 tenantLogo = companyLogo
             },
             token = newAccessToken,

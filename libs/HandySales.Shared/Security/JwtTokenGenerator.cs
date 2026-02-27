@@ -18,11 +18,14 @@ public class JwtTokenGenerator
 
     public string GenerateToken(string userId, int tenantId, int sessionVersion = 1)
     {
-        return GenerateTokenWithRoles(userId, tenantId, false, false, sessionVersion);
+        return GenerateTokenWithRoles(userId, tenantId, "VENDEDOR", sessionVersion);
     }
 
-    public string GenerateTokenWithRoles(string userId, int tenantId, bool isAdmin, bool isSuperAdmin, int sessionVersion = 1)
+    public string GenerateTokenWithRoles(string userId, int tenantId, string role, int sessionVersion = 1)
     {
+        var isAdmin = role == "ADMIN" || role == "SUPER_ADMIN" || role == "SUPERVISOR";
+        var isSuperAdmin = role == "SUPER_ADMIN";
+
         var claims = new List<Claim>
         {
             new Claim(JwtRegisteredClaimNames.Sub, userId),
@@ -30,16 +33,9 @@ public class JwtTokenGenerator
             new Claim("es_admin", isAdmin.ToString()),
             new Claim("es_super_admin", isSuperAdmin.ToString()),
             new Claim("session_version", sessionVersion.ToString()),
+            new Claim(ClaimTypes.Role, role),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
-
-        // Add role claims for easier access
-        if (isSuperAdmin)
-            claims.Add(new Claim(ClaimTypes.Role, "SUPER_ADMIN"));
-        else if (isAdmin)
-            claims.Add(new Claim(ClaimTypes.Role, "ADMIN"));
-        else
-            claims.Add(new Claim(ClaimTypes.Role, "VENDEDOR"));
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Secret));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -59,8 +55,11 @@ public class JwtTokenGenerator
     /// Generates a short-lived temp token for 2FA verification during login.
     /// Contains userId, tenantId, and 2fa_pending flag. Expires in 5 minutes.
     /// </summary>
-    public string GenerateTempToken(string userId, int tenantId, bool isAdmin, bool isSuperAdmin)
+    public string GenerateTempToken(string userId, int tenantId, string role)
     {
+        var isAdmin = role == "ADMIN" || role == "SUPER_ADMIN" || role == "SUPERVISOR";
+        var isSuperAdmin = role == "SUPER_ADMIN";
+
         var claims = new List<Claim>
         {
             new Claim(JwtRegisteredClaimNames.Sub, userId),

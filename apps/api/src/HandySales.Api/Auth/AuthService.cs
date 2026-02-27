@@ -351,8 +351,7 @@ public class AuthService
             }
 
             var tempToken = _jwt.GenerateTempToken(
-                usuario.Id.ToString(), usuario.TenantId,
-                usuario.EsAdmin, usuario.EsSuperAdmin);
+                usuario.Id.ToString(), usuario.TenantId, usuario.Rol);
 
             return new
             {
@@ -597,8 +596,7 @@ public class AuthService
             var tempToken = _jwt.GenerateTempToken(
                 usuario.Id.ToString(),
                 usuario.TenantId,
-                usuario.EsAdmin,
-                usuario.EsSuperAdmin);
+                usuario.Rol);
 
             return new
             {
@@ -624,15 +622,12 @@ public class AuthService
     {
         var token = _jwt.GenerateTokenWithRoles(
             usuario.Id.ToString(), usuario.TenantId,
-            usuario.EsAdmin, usuario.EsSuperAdmin,
-            usuario.SessionVersion);
+            usuario.Rol, usuario.SessionVersion);
 
         var refreshToken = await CreateRefreshTokenAsync(usuario.Id);
 
         await LogActivityAsync(usuario.TenantId, usuario.Id, "login", "auth",
             $"Usuario {usuario.Email} inició sesión exitosamente");
-
-        var role = usuario.EsSuperAdmin ? "SUPER_ADMIN" : (usuario.EsAdmin ? "ADMIN" : "VENDEDOR");
 
         return new
         {
@@ -641,7 +636,7 @@ public class AuthService
                 id = usuario.Id.ToString(),
                 email = usuario.Email,
                 name = usuario.Nombre,
-                role = role
+                role = usuario.Rol
             },
             token = token,
             refreshToken = refreshToken.Token
@@ -707,9 +702,8 @@ public class AuthService
         // Crear nuevo access token (include session version)
         var newAccessToken = _jwt.GenerateTokenWithRoles(
             tokenEntity.Usuario.Id.ToString(), tokenEntity.Usuario.TenantId,
-            tokenEntity.Usuario.EsAdmin, tokenEntity.Usuario.EsSuperAdmin,
-            tokenEntity.Usuario.SessionVersion);
-        
+            tokenEntity.Usuario.Rol, tokenEntity.Usuario.SessionVersion);
+
         // Crear nuevo refresh token
         var newRefreshToken = await CreateRefreshTokenAsync(tokenEntity.UserId);
         tokenEntity.ReplacedByToken = newRefreshToken.Token;
@@ -723,9 +717,7 @@ public class AuthService
                 id = tokenEntity.Usuario.Id.ToString(),
                 email = tokenEntity.Usuario.Email,
                 name = tokenEntity.Usuario.Nombre,
-                role = tokenEntity.Usuario.EsSuperAdmin ? "SUPER_ADMIN"
-                     : tokenEntity.Usuario.EsAdmin ? "ADMIN"
-                     : "VENDEDOR"
+                role = tokenEntity.Usuario.Rol
             },
             token = newAccessToken,
             refreshToken = newRefreshToken.Token

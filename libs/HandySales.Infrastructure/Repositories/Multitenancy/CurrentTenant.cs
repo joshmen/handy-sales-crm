@@ -9,8 +9,7 @@ public class CurrentTenant : ICurrentTenant
     private readonly IHttpContextAccessor _accessor;
     private int? _tenantId;
     private string? _userId;
-    private bool? _isAdmin;
-    private bool? _isSuperAdmin;
+    private string? _role;
 
     public CurrentTenant(IHttpContextAccessor accessor)
     {
@@ -49,29 +48,31 @@ public class CurrentTenant : ICurrentTenant
         }
     }
 
-    public bool IsAdmin
+    public string Role
     {
         get
         {
-            if (!_isAdmin.HasValue)
+            if (_role == null)
             {
                 var user = _accessor.HttpContext?.User;
-                _isAdmin = user?.FindFirst("es_admin")?.Value == "True" || user?.HasClaim(ClaimTypes.Role, "ADMIN") == true;
+                // Primary: read from ClaimTypes.Role (set by JwtTokenGenerator)
+                _role = user?.FindFirst(ClaimTypes.Role)?.Value;
+
+                // Fallback: derive from legacy boolean claims
+                if (string.IsNullOrEmpty(_role))
+                {
+                    var isSuperAdmin = user?.FindFirst("es_super_admin")?.Value == "True";
+                    var isAdmin = user?.FindFirst("es_admin")?.Value == "True";
+                    _role = isSuperAdmin ? "SUPER_ADMIN" : isAdmin ? "ADMIN" : "VENDEDOR";
+                }
             }
-            return _isAdmin.Value;
+            return _role;
         }
     }
 
-    public bool IsSuperAdmin
-    {
-        get
-        {
-            if (!_isSuperAdmin.HasValue)
-            {
-                var user = _accessor.HttpContext?.User;
-                _isSuperAdmin = user?.FindFirst("es_super_admin")?.Value == "True" || user?.HasClaim(ClaimTypes.Role, "SUPER_ADMIN") == true;
-            }
-            return _isSuperAdmin.Value;
-        }
-    }
+    public bool IsAdmin => Role is "ADMIN" or "SUPER_ADMIN" or "SUPERVISOR";
+
+    public bool IsSuperAdmin => Role == "SUPER_ADMIN";
+
+    public bool IsSupervisor => Role == "SUPERVISOR";
 }

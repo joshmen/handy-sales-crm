@@ -21,6 +21,13 @@ public class Usuario : AuditableEntity
     [Column("es_super_admin")]
     public bool EsSuperAdmin { get; set; } = false;
 
+    /// <summary>
+    /// Computed role string derived from boolean flags.
+    /// Supports: SUPER_ADMIN, ADMIN, VENDEDOR (future: VIEWER, SUPERVISOR via RoleId).
+    /// </summary>
+    [NotMapped]
+    public string Rol => EsSuperAdmin ? "SUPER_ADMIN" : EsAdmin ? "ADMIN" : "VENDEDOR";
+
     [Column("role_id")]
     public int? RoleId { get; set; }
 
