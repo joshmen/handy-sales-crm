@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useClientOnly } from '@/hooks/useClientOnly';
 import { useCompany } from '@/contexts/CompanyContext';
@@ -17,7 +17,7 @@ import { AppearanceTab } from './components/AppearanceTab';
 import { SystemTab } from './components/SystemTab';
 import { BillingTab } from './components/BillingTab';
 
-export default function SettingsPage() {
+function SettingsPageContent() {
   const { data: session } = useSession();
   useClientOnly();
   const { settings, isUpdating, updateSettings, uploadLogo, deleteLogo } = useCompany();
@@ -209,5 +209,13 @@ export default function SettingsPage() {
           </TabsContent>
         </Tabs>
       </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600" /></div>}>
+      <SettingsPageContent />
+    </Suspense>
   );
 }

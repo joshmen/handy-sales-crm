@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { VisitList, VisitForm } from '@/components/visits';
 import { VisitCalendarView } from '@/components/visits/VisitCalendarView';
@@ -21,7 +21,7 @@ import { startOfMonth, endOfMonth } from 'date-fns';
 
 type ViewMode = 'list' | 'calendar';
 
-export default function VisitsPage() {
+function VisitsPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const viewParam = searchParams.get('view') as ViewMode | null;
@@ -394,5 +394,13 @@ export default function VisitsPage() {
         )}
       </div>
     </>
+  );
+}
+
+export default function VisitsPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600" /></div>}>
+      <VisitsPageContent />
+    </Suspense>
   );
 }

@@ -213,13 +213,7 @@ function ResetPasswordForm() {
 export default function ResetPasswordPage() {
   return (
     <AuthLayout>
-      <Suspense
-        fallback={
-          <div className="flex justify-center py-8">
-            <div className="w-8 h-8 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
-          </div>
-        }
-      >
+      <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600" /></div>}>
         <ResetPasswordForm />
       </Suspense>
     </AuthLayout>

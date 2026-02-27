@@ -631,13 +631,7 @@ function LoginContent() {
 
 export default function LoginPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center bg-white">
-          <Image src="/logo.svg" alt="Handy Suites" width={220} height={48} priority />
-        </div>
-      }
-    >
+    <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600" /></div>}>
       <LoginContent />
     </Suspense>
   );
