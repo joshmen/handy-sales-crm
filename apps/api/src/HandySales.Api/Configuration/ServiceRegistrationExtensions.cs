@@ -100,6 +100,7 @@ using HandySales.Application.MovimientosInventario.Validators;
 using HandySales.Infrastructure.MovimientosInventario.Repositories;
 using HandySales.Application.Cobranza.Interfaces;
 using HandySales.Application.Cobranza.Services;
+using HandySales.Application.Cobranza.Validators;
 using HandySales.Infrastructure.Repositories.Cobranza;
 using HandySales.Api.Payments;
 using HandySales.Api.TwoFactor;
@@ -117,7 +118,6 @@ public static class ServiceRegistrationExtensions
     public static IServiceCollection AddCustomServices(this IServiceCollection services, IConfiguration config)
     {
         var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
-        Console.WriteLine($"Entorno actual: {environment}");
 
         // HttpContextAccessor es necesario para ITenantContextService
         services.AddHttpContextAccessor();
@@ -263,6 +263,7 @@ public static class ServiceRegistrationExtensions
         // Cobranza
         services.AddScoped<ICobroRepository, CobroRepository>();
         services.AddScoped<CobroService>();
+        services.AddValidatorsFromAssemblyContaining<CobroCreateDtoValidator>();
 
         // Tenant Repository (Platform-level)
         services.AddScoped<ITenantRepository, TenantRepository>();

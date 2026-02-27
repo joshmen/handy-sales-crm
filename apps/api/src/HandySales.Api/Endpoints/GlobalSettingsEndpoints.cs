@@ -109,8 +109,10 @@ namespace HandySales.Api.Endpoints
                 IFormFile logo,
                 ICloudinaryService cloudinaryService,
                 HandySalesDbContext dbContext,
-                [FromServices] ICurrentTenant currentTenant) =>
+                [FromServices] ICurrentTenant currentTenant,
+                [FromServices] ILoggerFactory loggerFactory) =>
             {
+                var logger = loggerFactory.CreateLogger("GlobalSettingsEndpoints");
                 try
                 {
                     // Solo SUPER_ADMIN puede subir logo de la plataforma
@@ -172,8 +174,8 @@ namespace HandySales.Api.Endpoints
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Error al subir logo de plataforma: {ex.Message}");
-                    return Results.Problem($"Error interno del servidor: {ex.Message}");
+                    logger.LogError(ex, "Error al subir logo de plataforma");
+                    return Results.Problem("Error interno del servidor");
                 }
             })
             .WithName("UploadPlatformLogo")
@@ -187,8 +189,10 @@ namespace HandySales.Api.Endpoints
             group.MapDelete("/delete-logo", async (
                 HandySalesDbContext dbContext,
                 ICloudinaryService cloudinaryService,
-                [FromServices] ICurrentTenant currentTenant) =>
+                [FromServices] ICurrentTenant currentTenant,
+                [FromServices] ILoggerFactory loggerFactory) =>
             {
+                var logger = loggerFactory.CreateLogger("GlobalSettingsEndpoints");
                 try
                 {
                     if (!currentTenant.IsSuperAdmin)
@@ -223,8 +227,8 @@ namespace HandySales.Api.Endpoints
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Error al eliminar logo de plataforma: {ex.Message}");
-                    return Results.Problem($"Error interno del servidor: {ex.Message}");
+                    logger.LogError(ex, "Error al eliminar logo de plataforma");
+                    return Results.Problem("Error interno del servidor");
                 }
             })
             .WithName("DeletePlatformLogo")

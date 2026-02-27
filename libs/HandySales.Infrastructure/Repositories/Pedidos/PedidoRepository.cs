@@ -41,11 +41,16 @@ public class PedidoRepository : IPedidoRepository
         _db.Pedidos.Add(pedido);
         await _db.SaveChangesAsync();
 
+        // Batch-load all referenced products (avoids N+1)
+        var productoIds = dto.Detalles.Select(d => d.ProductoId).Distinct().ToList();
+        var productos = await _db.Productos
+            .Where(p => productoIds.Contains(p.Id))
+            .ToDictionaryAsync(p => p.Id);
+
         // Agregar detalles
         foreach (var detalleDto in dto.Detalles)
         {
-            var producto = await _db.Productos.FindAsync(detalleDto.ProductoId);
-            if (producto == null) continue;
+            if (!productos.TryGetValue(detalleDto.ProductoId, out var producto)) continue;
 
             var precioUnitario = detalleDto.PrecioUnitario ?? producto.PrecioBase;
             var descuento = detalleDto.Descuento ?? 0;
@@ -283,11 +288,16 @@ public class PedidoRepository : IPedidoRepository
                 detalle.Activo = false;
             }
 
+            // Batch-load productos (avoid N+1)
+            var productoIds = dto.Detalles.Select(d => d.ProductoId).Distinct().ToList();
+            var productos = await _db.Productos
+                .Where(p => productoIds.Contains(p.Id))
+                .ToDictionaryAsync(p => p.Id);
+
             // Agregar nuevos detalles
             foreach (var detalleDto in dto.Detalles)
             {
-                var producto = await _db.Productos.FindAsync(detalleDto.ProductoId);
-                if (producto == null) continue;
+                if (!productos.TryGetValue(detalleDto.ProductoId, out var producto)) continue;
 
                 var precioUnitario = detalleDto.PrecioUnitario ?? producto.PrecioBase;
                 var descuento = detalleDto.Descuento ?? 0;

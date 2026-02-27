@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using HandySales.Api.Configuration;
 using HandySales.Api.Endpoints;
 using HandySales.Api.Hubs;
@@ -5,6 +6,7 @@ using HandySales.Api.Middleware;
 using HandySales.Api.Workers;
 using HandySales.Infrastructure.Persistence;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.ResponseCompression;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,6 +42,20 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
 });
 
+// Response compression (gzip + brotli)
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
+    options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
+        new[] { "application/json", "text/json" });
+});
+builder.Services.Configure<BrotliCompressionProviderOptions>(options =>
+    options.Level = CompressionLevel.Fastest);
+builder.Services.Configure<GzipCompressionProviderOptions>(options =>
+    options.Level = CompressionLevel.SmallestSize);
+
 // Background workers
 builder.Services.AddHostedService<ScheduledActionProcessor>();
 builder.Services.AddHostedService<SubscriptionMonitor>();
@@ -63,6 +79,7 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
     ForwardLimit = 2, // Railway proxy + potential nginx
 });
 
+app.UseResponseCompression();
 app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseMiddleware<RequestLoggingMiddleware>();
 
