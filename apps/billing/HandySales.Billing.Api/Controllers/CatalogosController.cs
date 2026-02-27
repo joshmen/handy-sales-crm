@@ -167,14 +167,13 @@ public class CatalogosController : ControllerBase
 
     [HttpPost("configuracion-fiscal/{id}/certificado")]
     [Authorize(Roles = "Admin,SuperAdmin")]
+    [Consumes("multipart/form-data")]
     public async Task<ActionResult> UploadCertificado(
         int id,
-        [FromForm] IFormFile certificado,
-        [FromForm] IFormFile llavePrivada,
-        [FromForm] string password)
+        [FromForm] UploadCertificadoRequest request)
     {
         var tenantId = GetTenantId();
-        
+
         var config = await _context.ConfiguracionesFiscales
             .Where(c => c.Id == id && c.TenantId == tenantId)
             .FirstOrDefaultAsync();
@@ -186,17 +185,17 @@ public class CatalogosController : ControllerBase
         {
             // TODO: Validar certificado con el SAT
             // Por ahora solo guardamos los archivos como base64
-            
+
             using var msCert = new MemoryStream();
-            await certificado.CopyToAsync(msCert);
+            await request.Certificado.CopyToAsync(msCert);
             config.CertificadoSat = Convert.ToBase64String(msCert.ToArray());
 
             using var msKey = new MemoryStream();
-            await llavePrivada.CopyToAsync(msKey);
+            await request.LlavePrivada.CopyToAsync(msKey);
             config.LlavePrivada = Convert.ToBase64String(msKey.ToArray());
 
             // Encrypt certificate password before storing (never store plaintext)
-            config.PasswordCertificado = EncryptPassword(password);
+            config.PasswordCertificado = EncryptPassword(request.Password);
             config.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
@@ -264,7 +263,7 @@ public class CatalogosController : ControllerBase
     /// </summary>
     private static string EncryptPassword(string plaintext)
     {
-        var key = Environment.GetEnvironmentVariable("JWT__SecretKey") ?? "billing-default-key";
+        var key = Environment.GetEnvironmentVariable("Jwt__Secret") ?? "billing-default-key";
         using var sha = System.Security.Cryptography.SHA256.Create();
         var keyBytes = sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(key));
 
@@ -318,4 +317,11 @@ public class CreateNumeracionRequest
     public string? Serie { get; set; }
     public int FolioInicial { get; set; } = 1;
     public int? FolioFinal { get; set; }
+}
+
+public class UploadCertificadoRequest
+{
+    public IFormFile Certificado { get; set; } = default!;
+    public IFormFile LlavePrivada { get; set; } = default!;
+    public string Password { get; set; } = default!;
 }
