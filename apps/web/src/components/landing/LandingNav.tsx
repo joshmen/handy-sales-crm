@@ -23,6 +23,7 @@ export function LandingNav() {
 
   return (
     <nav
+      aria-label="Navegación principal"
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-200 ${
         scrolled
           ? 'bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-100'
@@ -35,8 +36,8 @@ export function LandingNav() {
           <Image src="/logo-icon.svg" alt="" width={32} height={32} />
           <div className="flex items-baseline gap-1">
             <span className="text-lg font-black text-gray-900 tracking-tight">Handy</span>
-            <span className="text-lg font-normal text-gray-400 tracking-tight">
-              Suites<sup className="text-[9px] text-gray-400">®</sup>
+            <span className="text-lg font-normal text-gray-500 tracking-tight">
+              Suites<sup className="text-[9px] text-gray-500">®</sup>
             </span>
           </div>
         </Link>
@@ -75,6 +76,7 @@ export function LandingNav() {
           onClick={() => setMobileOpen(!mobileOpen)}
           className="md:hidden p-2 text-gray-600 hover:text-gray-900"
           aria-label="Menú"
+          aria-expanded={mobileOpen}
         >
           {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>

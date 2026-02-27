@@ -392,7 +392,7 @@ function LoginContent() {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-gray-600"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
                       tabIndex={-1}
                     >
                       {showPassword ? <EyeOff className="h-[18px] w-[18px]" /> : <Eye className="h-[18px] w-[18px]" />}
@@ -428,7 +428,7 @@ function LoginContent() {
                   <div className="w-full border-t border-[#E5E7EB]" />
                 </div>
                 <div className="relative flex justify-center text-xs">
-                  <span className="bg-white px-3 text-[#9CA3AF]">o</span>
+                  <span className="bg-white px-3 text-gray-500">o</span>
                 </div>
               </div>
 

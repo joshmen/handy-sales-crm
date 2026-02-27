@@ -67,6 +67,9 @@ export function SearchableSelect({
       <Popover.Trigger asChild disabled={disabled}>
         <button
           type="button"
+          role="combobox"
+          aria-expanded={open}
+          aria-haspopup="listbox"
           className={cn(
             'flex items-center justify-between w-full px-3 py-2 text-sm border rounded-lg bg-white transition-colors',
             'focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent',
@@ -85,6 +88,8 @@ export function SearchableSelect({
             {selected && !disabled && (
               <span
                 role="button"
+                aria-label="Limpiar selección"
+                tabIndex={0}
                 className="p-0.5 hover:bg-gray-100 rounded"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -114,6 +119,7 @@ export function SearchableSelect({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={searchPlaceholder}
+              aria-label="Buscar opciones"
               className="flex-1 text-sm outline-none bg-transparent placeholder:text-gray-400"
             />
             {search && (
@@ -152,7 +158,7 @@ export function SearchableSelect({
           )}
 
           {/* Options list */}
-          <div className="max-h-[220px] overflow-y-auto">
+          <div role="listbox" className="max-h-[220px] overflow-y-auto">
             {filtered.length === 0 ? (
               <div className="px-3 py-6 text-center text-sm text-gray-400">
                 {emptyMessage}
@@ -164,6 +170,8 @@ export function SearchableSelect({
                   <button
                     key={option.value}
                     type="button"
+                    role="option"
+                    aria-selected={isSelected}
                     onClick={() => {
                       onChange(option.value);
                       setOpen(false);

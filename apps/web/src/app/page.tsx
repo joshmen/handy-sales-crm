@@ -217,7 +217,7 @@ export default function LandingPage() {
           </p>
           <div className="flex flex-wrap justify-center items-center gap-x-10 gap-y-4">
             {['Jeyma Distribuciones', 'Rutas Norte', 'Centro Comercial', 'Huichol Foods', 'Distribuidora MX'].map((name) => (
-              <span key={name} className="text-gray-300 font-semibold text-lg tracking-tight">
+              <span key={name} className="text-gray-500 font-semibold text-lg tracking-tight">
                 {name}
               </span>
             ))}

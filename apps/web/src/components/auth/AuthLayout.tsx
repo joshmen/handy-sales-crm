@@ -161,7 +161,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 text-center text-xs text-gray-400">
+        <div className="px-6 py-4 text-center text-xs text-gray-500">
           &copy; 2026 Handy Suites&reg; — Todos los derechos reservados
         </div>
       </div>
