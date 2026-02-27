@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using HandySales.Billing.Api.Data;
 using HandySales.Billing.Api.Models;
 using HandySales.Billing.Api.DTOs;
+using HandySales.Billing.Api.Services;
 using System.Security.Claims;
 
 namespace HandySales.Billing.Api.Controllers;
@@ -15,11 +16,13 @@ public class FacturasController : ControllerBase
 {
     private readonly BillingDbContext _context;
     private readonly ILogger<FacturasController> _logger;
+    private readonly IInvoicePdfService _pdfService;
 
-    public FacturasController(BillingDbContext context, ILogger<FacturasController> logger)
+    public FacturasController(BillingDbContext context, ILogger<FacturasController> logger, IInvoicePdfService pdfService)
     {
         _context = context;
         _logger = logger;
+        _pdfService = pdfService;
     }
 
     private string GetTenantId() => User.FindFirst("TenantId")?.Value ?? "00000000-0000-0000-0000-000000000001";
@@ -246,18 +249,25 @@ public class FacturasController : ControllerBase
     public async Task<ActionResult> GetPdf(long id)
     {
         var tenantId = GetTenantId();
-        
+
         var factura = await _context.Facturas
             .Include(f => f.Detalles)
+            .Include(f => f.Impuestos)
             .Where(f => f.Id == id && f.TenantId == tenantId)
             .FirstOrDefaultAsync();
 
         if (factura == null)
             return NotFound();
 
-        // TODO: Generar PDF real
-        // Por ahora retornamos un placeholder
-        return Ok(new { message = "PDF generation not implemented yet", facturaId = id });
+        // Load fiscal configuration for emisor details
+        var config = await _context.ConfiguracionesFiscales
+            .Where(c => c.TenantId == tenantId && c.Activo)
+            .FirstOrDefaultAsync();
+
+        var pdfBytes = _pdfService.GeneratePdf(factura, config);
+        var fileName = $"Factura_{factura.Serie ?? ""}_{factura.Folio}_{factura.FechaEmision:yyyyMMdd}.pdf";
+
+        return File(pdfBytes, "application/pdf", fileName);
     }
 
     [HttpGet("{id}/xml")]

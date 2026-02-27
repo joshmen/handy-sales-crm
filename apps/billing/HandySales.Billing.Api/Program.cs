@@ -1,9 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using HandySales.Billing.Api.Data;
 using HandySales.Billing.Api.Configuration;
+using HandySales.Billing.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using QuestPDF.Infrastructure;
+
+// QuestPDF Community License (free for <$1M annual revenue)
+QuestPDF.Settings.License = LicenseType.Community;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -64,6 +69,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
+
+// PDF generation service
+builder.Services.AddSingleton<IInvoicePdfService, InvoicePdfService>();
 
 // Health checks
 builder.Services.AddHealthChecks()

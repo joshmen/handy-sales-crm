@@ -6,6 +6,8 @@ using HandySales.Billing.Api.Controllers;
 using HandySales.Billing.Api.Data;
 using HandySales.Billing.Api.DTOs;
 using HandySales.Billing.Api.Models;
+using HandySales.Billing.Api.Services;
+using QuestPDF.Infrastructure;
 using System.Security.Claims;
 
 namespace HandySales.Billing.Tests.Controllers;
@@ -18,13 +20,16 @@ public class FacturasControllerTests : IDisposable
 
     public FacturasControllerTests()
     {
+        QuestPDF.Settings.License = LicenseType.Community;
+
         var options = new DbContextOptionsBuilder<BillingDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
 
         _context = new BillingDbContext(options);
         var logger = new LoggerFactory().CreateLogger<FacturasController>();
-        _controller = new FacturasController(_context, logger);
+        var pdfService = new InvoicePdfService();
+        _controller = new FacturasController(_context, logger, pdfService);
 
         // Setup user claims
         SetupUserClaims();
@@ -275,13 +280,16 @@ public class FacturasControllerTests : IDisposable
     }
 
     [Fact]
-    public async Task GetPdf_ReturnsOkForExistingFactura()
+    public async Task GetPdf_ReturnsPdfForExistingFactura()
     {
         // Act
         var result = await _controller.GetPdf(1);
 
         // Assert
-        result.Should().BeOfType<OkObjectResult>();
+        var fileResult = result as FileContentResult;
+        fileResult.Should().NotBeNull();
+        fileResult!.ContentType.Should().Be("application/pdf");
+        fileResult.FileContents.Length.Should().BeGreaterThan(0);
     }
 
     [Fact]

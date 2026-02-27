@@ -3,10 +3,13 @@ FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
 WORKDIR /app
 EXPOSE 5001
 
-# Instalar herramientas de desarrollo
+# Instalar herramientas de desarrollo + fonts para QuestPdf/SkiaSharp
 RUN apt-get update && apt-get install -y \
     curl \
     procps \
+    fontconfig \
+    libfreetype6 \
+    libstdc++6 \
     && rm -rf /var/lib/apt/lists/*
 
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build

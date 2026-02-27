@@ -25,8 +25,8 @@ RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
 FROM mcr.microsoft.com/dotnet/aspnet:9.0-alpine AS final
 WORKDIR /app
 
-# Install ICU for globalization + curl for health checks
-RUN apk add --no-cache icu-libs curl
+# Install ICU for globalization + curl for health checks + fonts for QuestPdf/SkiaSharp
+RUN apk add --no-cache icu-libs curl fontconfig freetype libstdc++
 
 # Create non-root user
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
