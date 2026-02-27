@@ -59,6 +59,11 @@ export default withAuth(
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }
 
+    // Si está en la landing page y ya está autenticado, redirigir a dashboard
+    if (pathname === '/' && isAuth) {
+      return NextResponse.redirect(new URL("/dashboard", req.url));
+    }
+
     // Si es página pública, permitir acceso
     if (isPublicPage) {
       return NextResponse.next();
