@@ -26,7 +26,8 @@ builder.Services.AddDbContext<BillingDbContext>(options =>
 {
     var connectionString = builder.Configuration.GetConnectionString("BillingConnection");
     var serverVersion = new MySqlServerVersion(new Version(8, 0, 0));
-    options.UseMySql(connectionString, serverVersion);
+    options.UseMySql(connectionString, serverVersion)
+        .UseSnakeCaseNamingConvention();
 });
 
 // CORS configuration
@@ -107,19 +108,18 @@ app.MapGet("/", () => new
     documentation = "/swagger"
 });
 
-// Apply migrations on startup (solo en desarrollo)
-if (app.Environment.IsDevelopment())
+// Ensure database tables exist on startup (all environments)
 {
     using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
     try
     {
-        dbContext.Database.Migrate();
+        dbContext.Database.EnsureCreated();
     }
     catch (Exception ex)
     {
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "Error applying migrations");
+        logger.LogWarning(ex, "Database initialization check — tables may already exist from SQL scripts");
     }
 }
 
