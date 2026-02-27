@@ -31,7 +31,7 @@ public class FacturasController : ControllerBase
         _emailService = emailService;
     }
 
-    private string GetTenantId() => User.FindFirst("TenantId")?.Value ?? "00000000-0000-0000-0000-000000000001";
+    private string GetTenantId() => User.FindFirst("tenant_id")?.Value ?? "00000000-0000-0000-0000-000000000001";
     private int GetUserId() => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
 
     [HttpGet]

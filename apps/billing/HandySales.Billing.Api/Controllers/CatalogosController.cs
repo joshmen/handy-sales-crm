@@ -20,7 +20,7 @@ public class CatalogosController : ControllerBase
         _logger = logger;
     }
 
-    private string GetTenantId() => User.FindFirst("TenantId")?.Value ?? "00000000-0000-0000-0000-000000000001";
+    private string GetTenantId() => User.FindFirst("tenant_id")?.Value ?? "00000000-0000-0000-0000-000000000001";
 
     [HttpGet("tipos-comprobante")]
     public async Task<ActionResult<IEnumerable<TipoComprobante>>> GetTiposComprobante()

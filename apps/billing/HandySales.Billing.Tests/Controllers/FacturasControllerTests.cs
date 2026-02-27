@@ -47,7 +47,7 @@ public class FacturasControllerTests : IDisposable
         var claims = new List<Claim>
         {
             new Claim(ClaimTypes.NameIdentifier, "1"),
-            new Claim("TenantId", _testTenantId),
+            new Claim("tenant_id", _testTenantId),
             new Claim(ClaimTypes.Email, "test@example.com")
         };
 

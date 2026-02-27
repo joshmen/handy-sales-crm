@@ -34,7 +34,7 @@ public class CatalogosControllerTests : IDisposable
         var claims = new List<Claim>
         {
             new Claim(ClaimTypes.NameIdentifier, "1"),
-            new Claim("TenantId", _testTenantId),
+            new Claim("tenant_id", _testTenantId),
             new Claim(ClaimTypes.Role, "Admin")
         };
 
@@ -209,7 +209,7 @@ public class CatalogosControllerTests : IDisposable
         var newTenantClaims = new List<Claim>
         {
             new Claim(ClaimTypes.NameIdentifier, "2"),
-            new Claim("TenantId", "new-tenant-002")
+            new Claim("tenant_id", "new-tenant-002")
         };
         _controller.ControllerContext.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity(newTenantClaims, "TestAuth"));
 

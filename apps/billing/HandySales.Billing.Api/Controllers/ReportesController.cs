@@ -19,7 +19,7 @@ public class ReportesController : ControllerBase
         _logger = logger;
     }
 
-    private string GetTenantId() => User.FindFirst("TenantId")?.Value ?? "00000000-0000-0000-0000-000000000001";
+    private string GetTenantId() => User.FindFirst("tenant_id")?.Value ?? "00000000-0000-0000-0000-000000000001";
 
     [HttpGet("dashboard")]
     public async Task<ActionResult<BillingDashboardDto>> GetDashboard(
