@@ -30,6 +30,7 @@ const registerSchema = z.object({
   nombreEmpresa: z.string().min(1, 'El nombre de la empresa es obligatorio'),
   rfc: z.string().max(13, 'El RFC no debe exceder 13 caracteres').optional().or(z.literal('')),
   contacto: z.string().max(100).optional().or(z.literal('')),
+  aceptaTerminos: z.literal(true, { errorMap: () => ({ message: 'Debes aceptar los términos y el aviso de privacidad' }) }),
 }).refine((data) => data.password === data.confirmPassword, {
   message: 'Las contraseñas no coinciden',
   path: ['confirmPassword'],
@@ -42,6 +43,7 @@ const googleRegisterSchema = z.object({
   nombreEmpresa: z.string().min(1, 'El nombre de la empresa es obligatorio'),
   rfc: z.string().max(13, 'El RFC no debe exceder 13 caracteres').optional().or(z.literal('')),
   contacto: z.string().max(100).optional().or(z.literal('')),
+  aceptaTerminos: z.literal(true, { errorMap: () => ({ message: 'Debes aceptar los términos y el aviso de privacidad' }) }),
 });
 
 type RegisterFormData = z.infer<typeof registerSchema>;
@@ -253,6 +255,30 @@ function RegisterContent() {
               </div>
             </div>
 
+            <div className="space-y-1">
+              <label className="flex items-start gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  {...googleForm.register('aceptaTerminos')}
+                  disabled={submitting}
+                  className="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <span className="text-[13px] text-[#64748B] leading-tight">
+                  Acepto los{' '}
+                  <a href="/terminos" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-700 underline">
+                    Términos y Condiciones
+                  </a>{' '}
+                  y el{' '}
+                  <a href="/privacidad" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-700 underline">
+                    Aviso de Privacidad
+                  </a>
+                </span>
+              </label>
+              {googleForm.formState.errors.aceptaTerminos && (
+                <p className="text-xs text-red-500 ml-6">{googleForm.formState.errors.aceptaTerminos.message}</p>
+              )}
+            </div>
+
             <button
               type="submit"
               disabled={submitting}
@@ -373,6 +399,30 @@ function RegisterContent() {
                     className={inputClassName(!!manualForm.formState.errors.contacto)}
                   />
                 </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="flex items-start gap-2.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    {...manualForm.register('aceptaTerminos')}
+                    disabled={submitting}
+                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <span className="text-[13px] text-[#64748B] leading-tight">
+                    Acepto los{' '}
+                    <a href="/terminos" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-700 underline">
+                      Términos y Condiciones
+                    </a>{' '}
+                    y el{' '}
+                    <a href="/privacidad" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-700 underline">
+                      Aviso de Privacidad
+                    </a>
+                  </span>
+                </label>
+                {manualForm.formState.errors.aceptaTerminos && (
+                  <p className="text-xs text-red-500 ml-6">{manualForm.formState.errors.aceptaTerminos.message}</p>
+                )}
               </div>
 
               <button
