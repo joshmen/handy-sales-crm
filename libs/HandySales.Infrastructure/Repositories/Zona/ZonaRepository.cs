@@ -26,7 +26,10 @@ public class ZonaRepository : IZonaRepository
                 Nombre = z.Nombre,
                 Descripcion = z.Descripcion,
                 Activo = z.Activo,
-                ClientesActivos = _db.Clientes.Count(c => c.IdZona == z.Id && c.TenantId == tenantId && c.Activo)
+                ClientesActivos = _db.Clientes.Count(c => c.IdZona == z.Id && c.TenantId == tenantId && c.Activo),
+                CentroLatitud = z.CentroLatitud,
+                CentroLongitud = z.CentroLongitud,
+                RadioKm = z.RadioKm
             })
             .ToListAsync();
     }
@@ -42,7 +45,10 @@ public class ZonaRepository : IZonaRepository
                 Nombre = z.Nombre,
                 Descripcion = z.Descripcion,
                 Activo = z.Activo,
-                ClientesActivos = _db.Clientes.Count(c => c.IdZona == z.Id && c.TenantId == tenantId && c.Activo)
+                ClientesActivos = _db.Clientes.Count(c => c.IdZona == z.Id && c.TenantId == tenantId && c.Activo),
+                CentroLatitud = z.CentroLatitud,
+                CentroLongitud = z.CentroLongitud,
+                RadioKm = z.RadioKm
             })
             .FirstOrDefaultAsync();
     }
@@ -54,6 +60,9 @@ public class ZonaRepository : IZonaRepository
             TenantId = tenantId,
             Nombre = dto.Nombre,
             Descripcion = dto.Descripcion,
+            CentroLatitud = dto.CentroLatitud,
+            CentroLongitud = dto.CentroLongitud,
+            RadioKm = dto.RadioKm,
             Activo = true,
             CreadoEn = DateTime.UtcNow,
             CreadoPor = creadoPor
@@ -74,6 +83,9 @@ public class ZonaRepository : IZonaRepository
         zona.Nombre = dto.Nombre;
         zona.Descripcion = dto.Descripcion;
         zona.Activo = dto.Activo;
+        zona.CentroLatitud = dto.CentroLatitud;
+        zona.CentroLongitud = dto.CentroLongitud;
+        zona.RadioKm = dto.RadioKm;
         zona.ActualizadoEn = DateTime.UtcNow;
         zona.ActualizadoPor = actualizadoPor;
 

@@ -27,12 +27,14 @@ interface VisitFormProps {
   clients: Client[];
   onSave: (data: ClienteVisitaCreateDto) => void;
   onCancel: () => void;
+  defaultDate?: string;
 }
 
 export const VisitForm: React.FC<VisitFormProps> = ({
   clients,
   onSave,
   onCancel,
+  defaultDate,
 }) => {
   const {
     register,
@@ -45,7 +47,7 @@ export const VisitForm: React.FC<VisitFormProps> = ({
     defaultValues: {
       clienteId: 0,
       tipoVisita: TipoVisita.Rutina,
-      fechaProgramada: '',
+      fechaProgramada: defaultDate || '',
       notas: '',
     },
   });

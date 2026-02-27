@@ -1,12 +1,19 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Label } from '@/components/ui/Label';
 import { Separator } from '@/components/ui/Separator';
-import { Trash2, Download, AlertCircle } from 'lucide-react';
+import { Trash2, Download, AlertCircle, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/useToast';
+
+interface HealthResponse {
+  status: string;
+  timestamp: string;
+  service: string;
+  version: string;
+}
 
 interface SystemTabProps {
   profile: any;
@@ -25,6 +32,43 @@ export const SystemTab: React.FC<SystemTabProps> = ({
   isAdmin,
   isSuperAdmin
 }) => {
+  const [health, setHealth] = useState<HealthResponse | null>(null);
+  const [healthLoading, setHealthLoading] = useState(true);
+  const [healthError, setHealthError] = useState(false);
+
+  useEffect(() => {
+    const fetchHealth = async () => {
+      try {
+        setHealthLoading(true);
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1050';
+        const res = await fetch(`${apiUrl}/health`);
+        if (res.ok) {
+          const data = await res.json();
+          setHealth(data);
+          setHealthError(false);
+        } else {
+          setHealthError(true);
+        }
+      } catch {
+        setHealthError(true);
+      } finally {
+        setHealthLoading(false);
+      }
+    };
+    fetchHealth();
+  }, []);
+
+  const formatTimestamp = (ts: string) => {
+    try {
+      return new Date(ts).toLocaleString('es-MX', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      });
+    } catch {
+      return ts;
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -34,22 +78,55 @@ export const SystemTab: React.FC<SystemTabProps> = ({
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <Label>Versión de la aplicación</Label>
-            <p className="text-sm text-muted-foreground">v1.0.0-beta</p>
+            {healthLoading ? (
+              <div className="flex items-center gap-2">
+                <Loader2 className="h-3 w-3 animate-spin text-gray-400" />
+                <p className="text-sm text-muted-foreground">Cargando...</p>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                {health?.version ? `v${health.version}` : 'No disponible'}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
-            <Label>Última actualización</Label>
-            <p className="text-sm text-muted-foreground">15 de enero, 2024</p>
+            <Label>Última verificación</Label>
+            <p className="text-sm text-muted-foreground">
+              {health?.timestamp ? formatTimestamp(health.timestamp) : 'No disponible'}
+            </p>
           </div>
 
           <div className="space-y-2">
             <Label>Base de datos</Label>
-            <p className="text-sm text-muted-foreground">Conectado</p>
+            <div className="flex items-center gap-2">
+              {healthLoading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-gray-400" />
+              ) : healthError ? (
+                <XCircle className="h-3.5 w-3.5 text-red-500" />
+              ) : (
+                <CheckCircle className="h-3.5 w-3.5 text-green-500" />
+              )}
+              <p className="text-sm text-muted-foreground">
+                {healthLoading ? 'Verificando...' : healthError ? 'Error de conexión' : 'Conectado'}
+              </p>
+            </div>
           </div>
 
           <div className="space-y-2">
             <Label>Servidor</Label>
-            <p className="text-sm text-muted-foreground">Online</p>
+            <div className="flex items-center gap-2">
+              {healthLoading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-gray-400" />
+              ) : healthError ? (
+                <XCircle className="h-3.5 w-3.5 text-red-500" />
+              ) : (
+                <CheckCircle className="h-3.5 w-3.5 text-green-500" />
+              )}
+              <p className="text-sm text-muted-foreground">
+                {healthLoading ? 'Verificando...' : healthError ? 'Sin respuesta' : health?.status === 'healthy' ? 'Online' : 'Degradado'}
+              </p>
+            </div>
           </div>
         </div>
 

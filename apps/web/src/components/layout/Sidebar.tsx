@@ -231,7 +231,7 @@ const sidebarItems: SidebarItem[] = [
     id: 'calendar',
     label: 'Calendario',
     icon: CalendarDots,
-    href: '/calendar',
+    href: '/visits?view=calendar',
     permission: 'view_dashboard',
   },
   {

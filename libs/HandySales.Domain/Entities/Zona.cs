@@ -15,5 +15,14 @@ public class Zona : AuditableEntity
     [Column("descripcion")]
     public string? Descripcion { get; set; }
 
+    [Column("centro_latitud")]
+    public double? CentroLatitud { get; set; }
+
+    [Column("centro_longitud")]
+    public double? CentroLongitud { get; set; }
+
+    [Column("radio_km")]
+    public double? RadioKm { get; set; }
+
     public Tenant Tenant { get; set; } = null!;
 }

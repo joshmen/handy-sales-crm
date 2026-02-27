@@ -14,6 +14,9 @@ interface ZonaBackend {
   descripcion?: string;
   activo: boolean;
   clientesActivos: number;
+  centroLatitud?: number | null;
+  centroLongitud?: number | null;
+  radioKm?: number | null;
 }
 
 // Map backend DTO to frontend Zone type
@@ -27,6 +30,18 @@ function mapZona(z: ZonaBackend, index: number): Zone {
     userIds: [],
     clientCount: z.clientesActivos || 0,
     prospectCount: 0,
+    mapSettings: z.centroLatitud != null && z.centroLongitud != null
+      ? { centerLatitude: z.centroLatitud, centerLongitude: z.centroLongitud, zoomLevel: z.radioKm ?? undefined }
+      : undefined,
+    boundaries: z.centroLatitud != null && z.centroLongitud != null && z.radioKm != null
+      ? [{
+          id: `zone-${z.id}-circle`,
+          zoneId: String(z.id),
+          coordinates: [{ latitude: z.centroLatitud, longitude: z.centroLongitud }],
+          type: 'circle' as const,
+          radius: z.radioKm,
+        }]
+      : undefined,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -74,11 +89,14 @@ class ZoneService {
     }
   }
 
-  async createZone(data: { name: string; description?: string; isEnabled?: boolean }): Promise<Zone> {
+  async createZone(data: { name: string; description?: string; isEnabled?: boolean; centroLatitud?: number; centroLongitud?: number; radioKm?: number }): Promise<Zone> {
     try {
       const response = await api.post<{ id: number }>(this.basePath, {
         nombre: data.name,
         descripcion: data.description || '',
+        centroLatitud: data.centroLatitud ?? null,
+        centroLongitud: data.centroLongitud ?? null,
+        radioKm: data.radioKm ?? null,
       });
       return {
         id: String(response.data.id),
@@ -95,12 +113,15 @@ class ZoneService {
     }
   }
 
-  async updateZone(data: { id: string; name: string; description?: string; isEnabled?: boolean }): Promise<Zone> {
+  async updateZone(data: { id: string; name: string; description?: string; isEnabled?: boolean; centroLatitud?: number; centroLongitud?: number; radioKm?: number }): Promise<Zone> {
     try {
       await api.put(`${this.basePath}/${data.id}`, {
         nombre: data.name,
         descripcion: data.description || '',
         activo: data.isEnabled ?? true,
+        centroLatitud: data.centroLatitud ?? null,
+        centroLongitud: data.centroLongitud ?? null,
+        radioKm: data.radioKm ?? null,
       });
       return {
         id: data.id,

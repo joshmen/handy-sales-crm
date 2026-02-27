@@ -6,7 +6,10 @@ import {
   useJsApiLoader,
   Marker,
   InfoWindow,
+  Circle,
 } from '@react-google-maps/api';
+
+export { Circle };
 import { Loader2 } from 'lucide-react';
 
 const DEFAULT_CENTER = { lat: 20.6597, lng: -103.3496 }; // Guadalajara, México

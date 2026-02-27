@@ -1,13 +1,17 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Label } from '@/components/ui/Label';
 import { Separator } from '@/components/ui/Separator';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
-import { Sun, Moon, Globe, Calendar, Save } from 'lucide-react';
+import { Sun, Moon, Save, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from '@/hooks/useToast';
+
+const STORAGE_KEY_LANG = 'handysuites-language';
+const STORAGE_KEY_TZ = 'handysuites-timezone';
 
 interface AppearanceTabProps {
   isDarkMode: boolean;
@@ -18,6 +22,28 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
   isDarkMode,
   setIsDarkMode
 }) => {
+  const [language, setLanguage] = useState('es');
+  const [timezone, setTimezone] = useState('America/Mexico_City');
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    const savedLang = localStorage.getItem(STORAGE_KEY_LANG);
+    const savedTz = localStorage.getItem(STORAGE_KEY_TZ);
+    if (savedLang) setLanguage(savedLang);
+    if (savedTz) setTimezone(savedTz);
+  }, []);
+
+  const handleSave = () => {
+    localStorage.setItem(STORAGE_KEY_LANG, language);
+    localStorage.setItem(STORAGE_KEY_TZ, timezone);
+    setSaved(true);
+    toast({
+      title: 'Configuración guardada',
+      description: 'Las preferencias de apariencia se han actualizado.',
+    });
+    setTimeout(() => setSaved(false), 2000);
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -64,8 +90,8 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                 { value: 'es', label: 'Español' },
                 { value: 'en', label: 'English' },
               ]}
-              value="es"
-              onChange={() => {}}
+              value={language}
+              onChange={(val) => setLanguage(String(val ?? 'es'))}
               placeholder="Seleccionar idioma"
             />
           </div>
@@ -77,18 +103,26 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                 { value: 'America/Mexico_City', label: 'Ciudad de México (GMT-6)' },
                 { value: 'America/Tijuana', label: 'Tijuana (GMT-8)' },
                 { value: 'America/Cancun', label: 'Cancún (GMT-5)' },
+                { value: 'America/Monterrey', label: 'Monterrey (GMT-6)' },
+                { value: 'America/Chihuahua', label: 'Chihuahua (GMT-6)' },
+                { value: 'America/Hermosillo', label: 'Hermosillo (GMT-7)' },
+                { value: 'America/Mazatlan', label: 'Mazatlán (GMT-7)' },
               ]}
-              value="America/Mexico_City"
-              onChange={() => {}}
+              value={timezone}
+              onChange={(val) => setTimezone(String(val ?? 'America/Mexico_City'))}
               placeholder="Seleccionar zona horaria"
             />
           </div>
         </div>
 
         <div className="flex justify-end">
-          <Button>
-            <Save className="mr-2 h-4 w-4" />
-            Guardar configuración
+          <Button onClick={handleSave}>
+            {saved ? (
+              <Check className="mr-2 h-4 w-4" />
+            ) : (
+              <Save className="mr-2 h-4 w-4" />
+            )}
+            {saved ? 'Guardado' : 'Guardar configuración'}
           </Button>
         </div>
       </CardContent>
