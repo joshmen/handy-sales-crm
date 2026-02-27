@@ -127,6 +127,7 @@ app.MapTestEndpoints();
 app.MapHealthEndpoints();
 app.MapNotificationEndpoints();
 app.MapImpersonationEndpoints();
+app.MapTenantImpersonationHistoryEndpoints();
 app.MapTenantEndpoints();
 app.MapImportExportEndpoints();
 app.MapReportEndpoints();

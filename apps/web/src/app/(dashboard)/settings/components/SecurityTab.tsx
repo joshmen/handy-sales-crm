@@ -17,12 +17,17 @@ import {
   Loader2,
   RefreshCw,
 } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import { profileService, TwoFactorStatus } from '@/services/api/profileService';
 import { TwoFactorSetup } from '@/components/settings/TwoFactorSetup';
 import { TwoFactorDisable } from '@/components/settings/TwoFactorDisable';
+import { ImpersonationHistoryCard } from '@/components/settings/ImpersonationHistoryCard';
 import { toast } from '@/hooks/useToast';
 
 export const SecurityTab: React.FC = () => {
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === 'ADMIN';
+
   // Password state
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -304,6 +309,9 @@ export const SecurityTab: React.FC = () => {
         onOpenChange={setDisableOpen}
         onComplete={loadTfaStatus}
       />
+
+      {/* Impersonation History (Admin only) */}
+      {isAdmin && <ImpersonationHistoryCard />}
 
       {/* Regenerate Recovery Codes Dialog */}
       {regenerateOpen && (

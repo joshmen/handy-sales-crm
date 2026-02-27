@@ -106,6 +106,34 @@ export const impersonationService = {
   },
 
   /**
+   * Obtiene el historial de impersonación para el tenant actual (Admin only).
+   * Usa endpoint separado que auto-filtra por tenant.
+   */
+  async getTenantHistory(params: {
+    page?: number;
+    pageSize?: number;
+    status?: string;
+    fromDate?: string;
+    toDate?: string;
+  } = {}): Promise<ImpersonationHistoryResponse> {
+    try {
+      const queryParams = new URLSearchParams();
+      queryParams.append('page', (params.page || 1).toString());
+      queryParams.append('pageSize', (params.pageSize || 10).toString());
+      if (params.status) queryParams.append('status', params.status);
+      if (params.fromDate) queryParams.append('fromDate', params.fromDate);
+      if (params.toDate) queryParams.append('toDate', params.toDate);
+
+      const response = await api.get<ImpersonationHistoryResponse>(
+        `/api/impersonation-history?${queryParams.toString()}`
+      );
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  /**
    * Extiende la sesión de impersonación actual (máximo 1 hora adicional).
    */
   async extendSession(sessionId: string, additionalMinutes: number = 30): Promise<void> {

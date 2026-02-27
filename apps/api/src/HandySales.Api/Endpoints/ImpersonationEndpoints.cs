@@ -161,6 +161,44 @@ public static class ImpersonationEndpoints
         });
     }
 
+    /// <summary>
+    /// Endpoints de historial de impersonación accesibles para ADMIN del tenant.
+    /// Auto-filtra por tenant actual — nunca expone datos cross-tenant.
+    /// </summary>
+    public static void MapTenantImpersonationHistoryEndpoints(this IEndpointRouteBuilder app)
+    {
+        var group = app.MapGroup("/api/impersonation-history")
+            .WithTags("Impersonation History")
+            .RequireAuthorization();
+
+        group.MapGet("/", async (
+            HttpContext context,
+            [FromServices] IImpersonationService service,
+            [FromServices] HandySales.Shared.Multitenancy.ICurrentTenant currentTenant,
+            [FromQuery] string? status,
+            [FromQuery] DateTime? fromDate,
+            [FromQuery] DateTime? toDate,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10) =>
+        {
+            if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
+                return Results.Forbid();
+
+            var filter = new ImpersonationHistoryFilter
+            {
+                TargetTenantId = currentTenant.TenantId,
+                FromDate = fromDate,
+                ToDate = toDate?.Date.AddDays(1).AddTicks(-1),
+                Status = status,
+                Page = page > 0 ? page : 1,
+                PageSize = pageSize > 0 ? Math.Min(pageSize, 50) : 10
+            };
+
+            var history = await service.GetHistoryAsync(filter);
+            return Results.Ok(history);
+        });
+    }
+
     private static int? GetUserId(HttpContext context)
     {
         var userIdClaim = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
