@@ -35,6 +35,7 @@ import {
   Megaphone,
   DeviceMobile,
   Bug,
+  ClockCounterClockwise,
   IconContext,
 } from '@phosphor-icons/react';
 import { useSidebar } from '@/stores/useUIStore';
@@ -332,6 +333,13 @@ const sidebarItems: SidebarItem[] = [
         permission: 'manage_global_settings',
       },
       {
+        id: 'activity-logs',
+        label: 'Registro de actividad',
+        icon: ClockCounterClockwise,
+        href: '/activity-logs',
+        permission: 'view_activity_logs',
+      },
+      {
         id: 'company-settings',
         label: 'Configuración',
         icon: Buildings,
@@ -376,6 +384,12 @@ const superAdminItems: SidebarItem[] = [
     href: '/admin/subscription-plans',
   },
   {
+    id: 'sa-activity-logs',
+    label: 'Registro de actividad',
+    icon: ClockCounterClockwise,
+    href: '/activity-logs',
+  },
+  {
     id: 'sa-crash-reports',
     label: 'Crash Reports',
     icon: Bug,
@@ -411,6 +425,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'view_all_data',
     'manage_catalogs', // Gestión de categorías y unidades
     'manage_devices', // Gestión de dispositivos móviles
+    'view_activity_logs', // Registro de actividad
   ],
   ADMIN: [
     'view_dashboard',
@@ -429,6 +444,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'view_company_settings', // Solo ADMIN tiene acceso a configuración de empresa
     'manage_catalogs', // Gestión de categorías y unidades
     'manage_devices', // Gestión de dispositivos móviles
+    'view_activity_logs', // Registro de actividad
   ],
   VENDEDOR: [
     'view_dashboard',

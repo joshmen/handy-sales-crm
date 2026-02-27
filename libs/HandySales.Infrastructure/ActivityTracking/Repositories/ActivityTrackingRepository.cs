@@ -38,6 +38,62 @@ public class ActivityTrackingRepository : IActivityTrackingRepository
             .ToListAsync();
     }
 
+    public async Task<(IEnumerable<ActivityLog> Items, int TotalCount)> GetActivityLogsPaginatedAsync(
+        int tenantId,
+        int page = 1,
+        int pageSize = 20,
+        string? activityType = null,
+        string? activityCategory = null,
+        string? activityStatus = null,
+        int? userId = null,
+        string? entityType = null,
+        DateTime? dateFrom = null,
+        DateTime? dateTo = null,
+        string? search = null)
+    {
+        var query = _context.ActivityLogs
+            .AsNoTracking()
+            .Include(a => a.Usuario)
+            .Where(a => a.TenantId == tenantId);
+
+        if (!string.IsNullOrEmpty(activityType))
+            query = query.Where(a => a.ActivityType == activityType);
+
+        if (!string.IsNullOrEmpty(activityCategory))
+            query = query.Where(a => a.ActivityCategory == activityCategory);
+
+        if (!string.IsNullOrEmpty(activityStatus))
+            query = query.Where(a => a.ActivityStatus == activityStatus);
+
+        if (userId.HasValue)
+            query = query.Where(a => a.UserId == userId.Value);
+
+        if (!string.IsNullOrEmpty(entityType))
+            query = query.Where(a => a.EntityType == entityType);
+
+        if (dateFrom.HasValue)
+            query = query.Where(a => a.CreatedAt >= dateFrom.Value);
+
+        if (dateTo.HasValue)
+            query = query.Where(a => a.CreatedAt <= dateTo.Value);
+
+        if (!string.IsNullOrEmpty(search))
+            query = query.Where(a =>
+                (a.Description != null && a.Description.Contains(search)) ||
+                (a.EntityName != null && a.EntityName.Contains(search)) ||
+                (a.IpAddress != null && a.IpAddress.Contains(search)));
+
+        var totalCount = await query.CountAsync();
+
+        var items = await query
+            .OrderByDescending(a => a.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return (items, totalCount);
+    }
+
     public async Task<int> GetActivitiesCountAsync(int tenantId, DateTime? fromDate = null, string? activityType = null, string? status = null)
     {
         var query = _context.ActivityLogs.Where(a => a.TenantId == tenantId);

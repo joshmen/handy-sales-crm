@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from '@/hooks/useToast';
 import {
   Download,
@@ -10,198 +10,158 @@ import {
   FileText,
 } from 'lucide-react';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
+import { activityLogService, type ActivityLogDto } from '@/services/api/activityLogs';
 
-type ActionType = 'create' | 'update' | 'delete' | 'login' | 'logout';
-type EntityType = 'cliente' | 'producto' | 'pedido' | 'ruta' | 'usuario' | 'sesion' | 'inventario';
-
-interface ActivityLog {
-  id: string;
-  userId: string;
-  userName: string;
-  userInitials: string;
-  userColor: string;
-  action: ActionType;
-  entity: EntityType;
-  details: string;
-  timestamp: Date;
-  ipAddress: string;
-}
-
-const mockLogs: ActivityLog[] = [
-  {
-    id: '1',
-    userId: 'u1',
-    userName: 'Juan García',
-    userInitials: 'JG',
-    userColor: 'bg-blue-100 text-blue-600',
-    action: 'create',
-    entity: 'cliente',
-    details: 'Creó nuevo cliente: Distribuidora López S.A. de C.V.',
-    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    ipAddress: '192.168.1.45',
-  },
-  {
-    id: '2',
-    userId: 'u2',
-    userName: 'María Rodríguez',
-    userInitials: 'MR',
-    userColor: 'bg-red-100 text-red-600',
-    action: 'update',
-    entity: 'producto',
-    details: 'Actualizó precio de: Coca-Cola 600ml de $18.00 a $19.50',
-    timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000),
-    ipAddress: '10.0.0.102',
-  },
-  {
-    id: '3',
-    userId: 'u3',
-    userName: 'Carlos Pérez',
-    userInitials: 'CP',
-    userColor: 'bg-indigo-100 text-indigo-600',
-    action: 'delete',
-    entity: 'pedido',
-    details: 'Canceló pedido #1234 - Motivo: Cliente solicitó cancelación',
-    timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000),
-    ipAddress: '192.168.1.23',
-  },
-  {
-    id: '4',
-    userId: 'u1',
-    userName: 'Juan García',
-    userInitials: 'JG',
-    userColor: 'bg-blue-100 text-blue-600',
-    action: 'login',
-    entity: 'sesion',
-    details: 'Inicio de sesión desde dispositivo móvil (Android)',
-    timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000),
-    ipAddress: '187.45.32.91',
-  },
-  {
-    id: '5',
-    userId: 'u2',
-    userName: 'María Rodríguez',
-    userInitials: 'MR',
-    userColor: 'bg-red-100 text-red-600',
-    action: 'create',
-    entity: 'ruta',
-    details: 'Creó ruta para Zona Norte - 15 clientes asignados',
-    timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000),
-    ipAddress: '10.0.0.102',
-  },
-  {
-    id: '6',
-    userId: 'u4',
-    userName: 'Ana Martínez',
-    userInitials: 'AM',
-    userColor: 'bg-green-100 text-green-600',
-    action: 'update',
-    entity: 'inventario',
-    details: 'Ajustó inventario: Aceite 5W-30 +50 unidades (entrada de almacén)',
-    timestamp: new Date(Date.now() - 48 * 60 * 60 * 1000),
-    ipAddress: '192.168.1.78',
-  },
-  {
-    id: '7',
-    userId: 'u3',
-    userName: 'Carlos Pérez',
-    userInitials: 'CP',
-    userColor: 'bg-indigo-100 text-indigo-600',
-    action: 'create',
-    entity: 'usuario',
-    details: 'Creó nuevo usuario: vendedor@empresa.com con rol Vendedor',
-    timestamp: new Date(Date.now() - 72 * 60 * 60 * 1000),
-    ipAddress: '192.168.1.23',
-  },
-  {
-    id: '8',
-    userId: 'u1',
-    userName: 'Juan García',
-    userInitials: 'JG',
-    userColor: 'bg-blue-100 text-blue-600',
-    action: 'logout',
-    entity: 'sesion',
-    details: 'Cierre de sesión manual',
-    timestamp: new Date(Date.now() - 96 * 60 * 60 * 1000),
-    ipAddress: '187.45.32.91',
-  },
-];
-
-const actionLabels: Record<ActionType, string> = {
+const actionLabels: Record<string, string> = {
   create: 'Crear',
   update: 'Actualizar',
   delete: 'Eliminar',
   login: 'Login',
   logout: 'Logout',
+  view: 'Ver',
+  export: 'Exportar',
+  error: 'Error',
 };
 
-const actionColors: Record<ActionType, string> = {
+const actionColors: Record<string, string> = {
   create: 'bg-green-100 text-green-700',
   update: 'bg-yellow-100 text-yellow-700',
   delete: 'bg-red-100 text-red-700',
   login: 'bg-blue-100 text-blue-700',
   logout: 'bg-gray-100 text-gray-700',
+  view: 'bg-indigo-100 text-indigo-700',
+  export: 'bg-emerald-100 text-emerald-700',
+  error: 'bg-red-100 text-red-700',
 };
 
-const entityLabels: Record<EntityType, string> = {
-  cliente: 'Cliente',
-  producto: 'Producto',
-  pedido: 'Pedido',
-  ruta: 'Ruta',
-  usuario: 'Usuario',
-  sesion: 'Sesión',
-  inventario: 'Inventario',
+const categoryLabels: Record<string, string> = {
+  auth: 'Autenticación',
+  users: 'Usuarios',
+  products: 'Productos',
+  orders: 'Pedidos',
+  clients: 'Clientes',
+  system: 'Sistema',
+  security: 'Seguridad',
 };
+
+const statusColors: Record<string, string> = {
+  success: 'text-green-600',
+  failed: 'text-red-600',
+  warning: 'text-yellow-600',
+  pending: 'text-gray-500',
+  info: 'text-blue-600',
+};
+
+function getInitials(name: string): string {
+  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+}
+
+const userColorPool = [
+  'bg-blue-100 text-blue-600',
+  'bg-red-100 text-red-600',
+  'bg-indigo-100 text-indigo-600',
+  'bg-green-100 text-green-600',
+  'bg-amber-100 text-amber-600',
+  'bg-purple-100 text-purple-600',
+  'bg-pink-100 text-pink-600',
+  'bg-cyan-100 text-cyan-600',
+];
+
+function getUserColor(userId: number): string {
+  return userColorPool[userId % userColorPool.length];
+}
+
+function getDateRange(filter: string): { dateFrom?: string; dateTo?: string } {
+  const now = new Date();
+  if (filter === 'today') {
+    const today = now.toISOString().split('T')[0];
+    return { dateFrom: today, dateTo: today };
+  }
+  if (filter === '7days') {
+    const from = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    return { dateFrom: from.toISOString().split('T')[0] };
+  }
+  if (filter === '30days') {
+    const from = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    return { dateFrom: from.toISOString().split('T')[0] };
+  }
+  return {};
+}
 
 export default function ActivityLogsPage() {
-  const [logs, setLogs] = useState<ActivityLog[]>([]);
+  const [logs, setLogs] = useState<ActivityLogDto[]>([]);
   const [loading, setLoading] = useState(true);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterAction, setFilterAction] = useState('all');
-  const [filterEntity, setFilterEntity] = useState('all');
+  const [filterCategory, setFilterCategory] = useState('all');
   const [filterDate, setFilterDate] = useState('7days');
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 10;
+  const pageSize = 20;
+
+  const fetchLogs = useCallback(async () => {
+    setLoading(true);
+    try {
+      const dateRange = getDateRange(filterDate);
+      const result = await activityLogService.getAll({
+        page: currentPage,
+        pageSize,
+        activityType: filterAction !== 'all' ? filterAction : undefined,
+        activityCategory: filterCategory !== 'all' ? filterCategory : undefined,
+        search: searchTerm || undefined,
+        ...dateRange,
+      });
+      setLogs(result.items);
+      setTotalCount(result.totalCount);
+      setTotalPages(result.totalPages);
+    } catch {
+      toast.error('Error al cargar los logs de actividad');
+      setLogs([]);
+      setTotalCount(0);
+      setTotalPages(0);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentPage, filterAction, filterCategory, filterDate, searchTerm]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setLogs(mockLogs);
-      setLoading(false);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, []);
+    fetchLogs();
+  }, [fetchLogs]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterAction, filterCategory, filterDate, searchTerm]);
 
   const handleExport = () => {
-    toast.success('Exportando logs de actividad...');
+    if (logs.length === 0) {
+      toast.error('No hay datos para exportar');
+      return;
+    }
+    const headers = ['Fecha', 'Usuario', 'Acción', 'Categoría', 'Estado', 'Descripción', 'IP'];
+    const rows = logs.map(log => [
+      new Date(log.createdAt).toLocaleString('es-MX'),
+      log.userName,
+      log.activityType,
+      log.activityCategory,
+      log.activityStatus,
+      log.description || '',
+      log.ipAddress || '',
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `activity-logs-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Logs exportados correctamente');
   };
 
-  const filteredLogs = logs.filter(log => {
-    const matchesSearch = searchTerm === '' ||
-      log.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.details.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesAction = filterAction === 'all' || log.action === filterAction;
-    const matchesEntity = filterEntity === 'all' || log.entity === filterEntity;
-
-    // Date filter
-    const now = new Date();
-    const daysDiff = Math.floor((now.getTime() - log.timestamp.getTime()) / (1000 * 60 * 60 * 24));
-    let matchesDate = true;
-    if (filterDate === 'today') matchesDate = daysDiff === 0;
-    else if (filterDate === '7days') matchesDate = daysDiff <= 7;
-    else if (filterDate === '30days') matchesDate = daysDiff <= 30;
-
-    return matchesSearch && matchesAction && matchesEntity && matchesDate;
-  });
-
-  const totalItems = filteredLogs.length;
-  const totalPages = Math.ceil(totalItems / pageSize);
-  const startItem = totalItems > 0 ? (currentPage - 1) * pageSize + 1 : 0;
-  const endItem = Math.min(currentPage * pageSize, totalItems);
-  const paginatedLogs = filteredLogs.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
-
-  const formatDateTime = (date: Date) => {
+  const formatDateTime = (dateStr: string) => {
+    const date = new Date(dateStr);
     return date.toLocaleDateString('es-MX', {
       day: '2-digit',
       month: '2-digit',
@@ -211,6 +171,9 @@ export default function ActivityLogsPage() {
       minute: '2-digit',
     });
   };
+
+  const startItem = totalCount > 0 ? (currentPage - 1) * pageSize + 1 : 0;
+  const endItem = Math.min(currentPage * pageSize, totalCount);
 
   return (
     <div className="flex flex-col h-full">
@@ -235,28 +198,28 @@ export default function ActivityLogsPage() {
               style={{ fontFamily: 'Space Grotesk, sans-serif' }}
             >
               <Download className="w-4 h-4" />
-              <span>Exportar</span>
+              <span>Exportar CSV</span>
             </button>
           </div>
 
           {/* Filter Row */}
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 data-tour="logs-search"
                 type="text"
-                placeholder="Buscar por usuario o acción..."
+                placeholder="Buscar por descripción, IP..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-[300px] pl-10 pr-3 py-2.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-[280px] pl-10 pr-3 py-2.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                 style={{ fontFamily: 'Space Grotesk, sans-serif' }}
               />
             </div>
 
             {/* Action Filter */}
-            <div data-tour="logs-filter-action" className="min-w-[180px]">
+            <div data-tour="logs-filter-action" className="min-w-[170px]">
               <SearchableSelect
                 options={[
                   { value: 'all', label: 'Todas las acciones' },
@@ -265,6 +228,8 @@ export default function ActivityLogsPage() {
                   { value: 'delete', label: 'Eliminar' },
                   { value: 'login', label: 'Login' },
                   { value: 'logout', label: 'Logout' },
+                  { value: 'view', label: 'Ver' },
+                  { value: 'error', label: 'Error' },
                 ]}
                 value={filterAction}
                 onChange={(val) => setFilterAction(val ? String(val) : 'all')}
@@ -272,8 +237,27 @@ export default function ActivityLogsPage() {
               />
             </div>
 
+            {/* Category Filter */}
+            <div className="min-w-[170px]">
+              <SearchableSelect
+                options={[
+                  { value: 'all', label: 'Todas las categorías' },
+                  { value: 'auth', label: 'Autenticación' },
+                  { value: 'users', label: 'Usuarios' },
+                  { value: 'products', label: 'Productos' },
+                  { value: 'orders', label: 'Pedidos' },
+                  { value: 'clients', label: 'Clientes' },
+                  { value: 'security', label: 'Seguridad' },
+                  { value: 'system', label: 'Sistema' },
+                ]}
+                value={filterCategory}
+                onChange={(val) => setFilterCategory(val ? String(val) : 'all')}
+                placeholder="Todas las categorías"
+              />
+            </div>
+
             {/* Date Filter */}
-            <div className="min-w-[180px]">
+            <div className="min-w-[170px]">
               <SearchableSelect
                 options={[
                   { value: 'today', label: 'Hoy' },
@@ -282,26 +266,8 @@ export default function ActivityLogsPage() {
                   { value: 'all', label: 'Todo el tiempo' },
                 ]}
                 value={filterDate}
-                onChange={(val) => setFilterDate(val ? String(val) : 'today')}
-                placeholder="Hoy"
-              />
-            </div>
-
-            {/* Entity Filter */}
-            <div data-tour="logs-filter-entity" className="min-w-[180px]">
-              <SearchableSelect
-                options={[
-                  { value: 'all', label: 'Todas las entidades' },
-                  { value: 'cliente', label: 'Cliente' },
-                  { value: 'producto', label: 'Producto' },
-                  { value: 'pedido', label: 'Pedido' },
-                  { value: 'ruta', label: 'Ruta' },
-                  { value: 'usuario', label: 'Usuario' },
-                  { value: 'inventario', label: 'Inventario' },
-                ]}
-                value={filterEntity}
-                onChange={(val) => setFilterEntity(val ? String(val) : 'all')}
-                placeholder="Todas las entidades"
+                onChange={(val) => setFilterDate(val ? String(val) : '7days')}
+                placeholder="Últimos 7 días"
               />
             </div>
           </div>
@@ -316,7 +282,7 @@ export default function ActivityLogsPage() {
                 <div className="flex items-center justify-center h-64">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
                 </div>
-              ) : paginatedLogs.length === 0 ? (
+              ) : logs.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-64 py-20">
                   <FileText className="w-16 h-16 text-gray-300 mb-4" />
                   <h3 className="text-lg font-semibold text-gray-700 mb-2">No hay registros</h3>
@@ -326,67 +292,95 @@ export default function ActivityLogsPage() {
                 </div>
               ) : (
                 <>
-                  {/* Table Header */}
-                  <div className="flex items-center bg-gray-50 px-4 h-10 border-b border-gray-200">
-                    <div className="w-[160px] text-xs font-semibold text-gray-600">Usuario</div>
-                    <div className="w-[100px] text-xs font-semibold text-gray-600">Acción</div>
-                    <div className="w-[100px] text-xs font-semibold text-gray-600">Entidad</div>
-                    <div className="flex-1 text-xs font-semibold text-gray-600">Detalles</div>
-                    <div className="w-[140px] text-xs font-semibold text-gray-600">Fecha/Hora</div>
-                    <div className="w-[120px] text-xs font-semibold text-gray-600">IP</div>
+                  {/* Desktop Table */}
+                  <div className="hidden md:block">
+                    {/* Table Header */}
+                    <div className="flex items-center bg-gray-50 px-4 h-10 border-b border-gray-200">
+                      <div className="w-[160px] text-xs font-semibold text-gray-600">Usuario</div>
+                      <div className="w-[100px] text-xs font-semibold text-gray-600">Acción</div>
+                      <div className="w-[110px] text-xs font-semibold text-gray-600">Categoría</div>
+                      <div className="w-[80px] text-xs font-semibold text-gray-600">Estado</div>
+                      <div className="flex-1 text-xs font-semibold text-gray-600">Descripción</div>
+                      <div className="w-[140px] text-xs font-semibold text-gray-600">Fecha/Hora</div>
+                      <div className="w-[120px] text-xs font-semibold text-gray-600">IP</div>
+                    </div>
+
+                    {/* Table Rows */}
+                    {logs.map((log) => (
+                      <div
+                        key={log.id}
+                        className="flex items-center px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="w-[160px] flex items-center gap-2">
+                          <div className={`w-7 h-7 rounded-full ${getUserColor(log.userId)} flex items-center justify-center text-[10px] font-medium shrink-0`}>
+                            {getInitials(log.userName)}
+                          </div>
+                          <span className="text-[13px] text-gray-900 truncate">{log.userName}</span>
+                        </div>
+
+                        <div className="w-[100px]">
+                          <span className={`px-2 py-0.5 text-[11px] font-medium rounded ${actionColors[log.activityType] || 'bg-gray-100 text-gray-700'}`}>
+                            {actionLabels[log.activityType] || log.activityType}
+                          </span>
+                        </div>
+
+                        <div className="w-[110px] text-[13px] text-gray-700">
+                          {categoryLabels[log.activityCategory] || log.activityCategory}
+                        </div>
+
+                        <div className="w-[80px]">
+                          <span className={`text-[12px] font-medium ${statusColors[log.activityStatus] || 'text-gray-500'}`}>
+                            {log.activityStatus}
+                          </span>
+                        </div>
+
+                        <div className="flex-1 text-[13px] text-gray-700 truncate pr-4">
+                          {log.description || '-'}
+                        </div>
+
+                        <div className="w-[140px] text-[13px] text-gray-500">
+                          {formatDateTime(log.createdAt)}
+                        </div>
+
+                        <div className="w-[120px] text-[13px] text-gray-500 font-mono">
+                          {log.ipAddress || '-'}
+                        </div>
+                      </div>
+                    ))}
                   </div>
 
-                  {/* Table Rows */}
-                  {paginatedLogs.map((log) => (
-                    <div
-                      key={log.id}
-                      className="flex items-center px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors"
-                    >
-                      {/* User */}
-                      <div className="w-[160px] flex items-center gap-2">
-                        <div className={`w-7 h-7 rounded-full ${log.userColor} flex items-center justify-center text-[10px] font-medium`}>
-                          {log.userInitials}
+                  {/* Mobile Cards */}
+                  <div className="md:hidden space-y-2 p-3">
+                    {logs.map((log) => (
+                      <div key={log.id} className="border border-gray-200 rounded-lg p-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-7 h-7 rounded-full ${getUserColor(log.userId)} flex items-center justify-center text-[10px] font-medium`}>
+                              {getInitials(log.userName)}
+                            </div>
+                            <span className="text-[13px] font-medium text-gray-900">{log.userName}</span>
+                          </div>
+                          <span className={`px-2 py-0.5 text-[11px] font-medium rounded ${actionColors[log.activityType] || 'bg-gray-100 text-gray-700'}`}>
+                            {actionLabels[log.activityType] || log.activityType}
+                          </span>
                         </div>
-                        <span className="text-[13px] text-gray-900 truncate">{log.userName}</span>
+                        <p className="text-[13px] text-gray-700">{log.description || '-'}</p>
+                        <div className="flex items-center justify-between text-[12px] text-gray-500">
+                          <span>{categoryLabels[log.activityCategory] || log.activityCategory}</span>
+                          <span>{formatDateTime(log.createdAt)}</span>
+                        </div>
                       </div>
-
-                      {/* Action */}
-                      <div className="w-[100px]">
-                        <span className={`px-2 py-0.5 text-[11px] font-medium rounded ${actionColors[log.action]}`}>
-                          {actionLabels[log.action]}
-                        </span>
-                      </div>
-
-                      {/* Entity */}
-                      <div className="w-[100px] text-[13px] text-gray-700">
-                        {entityLabels[log.entity]}
-                      </div>
-
-                      {/* Details */}
-                      <div className="flex-1 text-[13px] text-gray-700 truncate pr-4">
-                        {log.details}
-                      </div>
-
-                      {/* Date/Time */}
-                      <div className="w-[140px] text-[13px] text-gray-500">
-                        {formatDateTime(log.timestamp)}
-                      </div>
-
-                      {/* IP */}
-                      <div className="w-[120px] text-[13px] text-gray-500">
-                        {log.ipAddress}
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </>
               )}
             </div>
 
             {/* Pagination */}
-            {!loading && totalItems > 0 && (
+            {!loading && totalCount > 0 && (
               <div className="flex items-center justify-between pt-4">
                 <span className="text-sm text-gray-500" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                  Mostrando {startItem}-{endItem} de {totalItems.toLocaleString()} registros
+                  Mostrando {startItem}-{endItem} de {totalCount.toLocaleString()} registros
                 </span>
                 <div className="flex items-center gap-2">
                   <button
@@ -399,35 +393,31 @@ export default function ActivityLogsPage() {
                     <span>Anterior</span>
                   </button>
 
-                  {Array.from({ length: Math.min(totalPages, 3) }, (_, i) => i + 1).map((page) => (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      className={`min-w-[32px] px-2 py-1 text-sm rounded-md transition-colors ${
-                        page === currentPage
-                          ? 'bg-green-600 text-white'
-                          : 'text-gray-600 hover:bg-gray-100'
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  ))}
-
-                  {totalPages > 4 && (
-                    <>
-                      <span className="text-gray-400">...</span>
+                  {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                    let page: number;
+                    if (totalPages <= 5) {
+                      page = i + 1;
+                    } else if (currentPage <= 3) {
+                      page = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      page = totalPages - 4 + i;
+                    } else {
+                      page = currentPage - 2 + i;
+                    }
+                    return (
                       <button
-                        onClick={() => setCurrentPage(totalPages)}
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
                         className={`min-w-[32px] px-2 py-1 text-sm rounded-md transition-colors ${
-                          totalPages === currentPage
+                          page === currentPage
                             ? 'bg-green-600 text-white'
                             : 'text-gray-600 hover:bg-gray-100'
                         }`}
                       >
-                        {totalPages}
+                        {page}
                       </button>
-                    </>
-                  )}
+                    );
+                  })}
 
                   <button
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}

@@ -24,6 +24,7 @@ const ROLE_RESTRICTED_ROUTES = {
   '/reports/financial': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
   '/routes/admin': [UserRole.ADMIN, UserRole.SUPERVISOR, UserRole.SUPER_ADMIN],
   '/devices': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
+  '/activity-logs': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
   '/roles': [UserRole.SUPER_ADMIN],
 };
 
@@ -88,6 +89,7 @@ export default withAuth(
       const isSuperAdminRoute =
         pathname.startsWith('/admin') ||
         pathname.startsWith('/global-settings') ||
+        pathname.startsWith('/activity-logs') || // SA puede ver logs sin impersonar
         pathname === '/dashboard' || // dashboard redirige a system-dashboard via page logic
         pathname === '/profile'; // SA necesita acceder a su perfil
 
@@ -159,6 +161,6 @@ export const config = {
      * - static assets (svg, png, jpg, etc.)
      * - login page
      */
-    '/((?!api/auth|_next/static|_next/image|favicon\\.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?|ttf|eot|css|js|map)$|login|register|verify-email).*)',
+    '/((?!api/auth|_next/static|_next/image|favicon\\.ico|manifest\\.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?|ttf|eot|css|js|map)$|login|register|verify-email).*)',
   ],
 };

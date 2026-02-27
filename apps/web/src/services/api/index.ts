@@ -21,6 +21,7 @@ import { impersonationService } from './impersonation';
 import { deviceSessionService } from './deviceSessions';
 import { crashReportService } from './crashReports';
 import { subscriptionPlanAdminService } from './subscriptionPlansAdmin';
+import { activityLogService } from './activityLogs';
 
 // 2) Re-exporta todo (tipos, funciones, etc.)
 export * from './auth';
@@ -43,6 +44,7 @@ export * from './impersonation';
 export * from './deviceSessions';
 export * from './crashReports';
 export * from './subscriptionPlansAdmin';
+export * from './activityLogs';
 
 // 3) (Opcional) re-exporta también las instancias por nombre
 export {
@@ -67,6 +69,7 @@ export {
   deviceSessionService,
   crashReportService,
   subscriptionPlanAdminService,
+  activityLogService,
 };
 
 // 4) Objeto centralizado
@@ -92,6 +95,7 @@ export const services = {
   deviceSessions: deviceSessionService,
   crashReports: crashReportService,
   subscriptionPlansAdmin: subscriptionPlanAdminService,
+  activityLogs: activityLogService,
 } as const;
 
 export default services;
