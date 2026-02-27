@@ -46,7 +46,6 @@ export function SignalRProvider({ children }: { children: React.ReactNode }) {
     subscribersRef.current.forEach((_, event) => {
       if (!dispatchersRef.current.has(event)) {
         conn.on(event, (...args: unknown[]) => {
-          console.log(`[SignalR] << ${event}`, args[0]);
           subscribersRef.current.get(event)?.forEach(handler => {
             try { handler(...args); } catch (e) { console.error(`[SignalR] handler error (${event}):`, e); }
           });
@@ -62,7 +61,6 @@ export function SignalRProvider({ children }: { children: React.ReactNode }) {
     if (!conn || dispatchersRef.current.has(event)) return;
 
     conn.on(event, (...args: unknown[]) => {
-      console.log(`[SignalR] << ${event}`, args[0]);
       subscribersRef.current.get(event)?.forEach(handler => {
         try { handler(...args); } catch (e) { console.error(`[SignalR] handler error (${event}):`, e); }
       });
@@ -102,17 +100,14 @@ export function SignalRProvider({ children }: { children: React.ReactNode }) {
       .build();
 
     connection.onreconnecting(() => {
-      console.log('[SignalR] Reconnecting...');
       setIsConnected(false);
     });
 
     connection.onreconnected(() => {
-      console.log('[SignalR] Reconnected');
       setIsConnected(true);
     });
 
     connection.onclose(() => {
-      console.log('[SignalR] Connection closed');
       setIsConnected(false);
     });
 
@@ -126,7 +121,6 @@ export function SignalRProvider({ children }: { children: React.ReactNode }) {
     connection
       .start()
       .then(() => {
-        console.log('[SignalR] Connected to', hubUrl);
         setIsConnected(true);
       })
       .catch((err) => {

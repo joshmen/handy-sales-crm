@@ -14,6 +14,7 @@ interface DrawerProps {
   isOpen: boolean;
   onClose: () => void;
   title?: string;
+  description?: string;
   icon?: React.ReactNode;
   children: React.ReactNode;
   footer?: React.ReactNode;

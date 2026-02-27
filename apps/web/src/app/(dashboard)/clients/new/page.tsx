@@ -111,7 +111,6 @@ export default function NewClientPage() {
     try {
       setSaving(true);
       const dto = mapFormToBackendDto(data);
-      console.log('Enviando DTO al backend:', dto);
       await clientService.createClient(dto);
       toast.success('Cliente creado exitosamente');
       router.push('/clients');
@@ -123,12 +122,9 @@ export default function NewClientPage() {
         message?: string;
       };
 
-      console.log('API Error completo:', apiError);
-
       if (apiError.status === 400 && apiError.validationErrors) {
         // Mostrar errores de FluentValidation
         const formErrors = mapBackendErrorsToForm(apiError.validationErrors);
-        console.log('Errores mapeados:', formErrors);
 
         Object.entries(formErrors).forEach(([field, message]) => {
           setError(field as keyof ClientFormInput, { type: 'server', message });
@@ -315,7 +311,7 @@ export default function NewClientPage() {
                         { value: 'credito', label: 'Solo crédito' },
                       ]}
                       value={watch('tiposPagoPermitidos') || null}
-                      onChange={(val) => setValue('tiposPagoPermitidos', val ? String(val) : 'contado_credito', { shouldValidate: true })}
+                      onChange={(val) => setValue('tiposPagoPermitidos', (val ? String(val) : 'contado_credito') as 'contado_credito' | 'contado' | 'credito', { shouldValidate: true })}
                       placeholder="Seleccionar tipo de pago"
                     />
                   </FormField>
@@ -326,7 +322,7 @@ export default function NewClientPage() {
                         { value: 'credito', label: 'Crédito' },
                       ]}
                       value={watch('tipoPagoPredeterminado') || null}
-                      onChange={(val) => setValue('tipoPagoPredeterminado', val ? String(val) : 'contado', { shouldValidate: true })}
+                      onChange={(val) => setValue('tipoPagoPredeterminado', (val ? String(val) : 'contado') as 'contado' | 'credito', { shouldValidate: true })}
                       placeholder="Seleccionar tipo predeterminado"
                     />
                   </FormField>

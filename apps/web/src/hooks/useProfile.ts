@@ -260,9 +260,9 @@ export const useProfile = () => {
     try {
       let response;
       if (enable) {
-        response = await profileService.enable2FA(session.user.id);
+        response = await profileService.enable2FA(token || '');
       } else {
-        response = await profileService.disable2FA(session.user.id, token || '');
+        response = await profileService.disable2FA(token || '');
       }
 
       if (response.success) {

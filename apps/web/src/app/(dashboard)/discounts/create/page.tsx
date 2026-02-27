@@ -139,7 +139,6 @@ function CreateDiscountForm() {
 
     setIsSubmitting(true);
     try {
-      console.log('Saving discount:', formData);
       // Aquí iría la lógica para guardar el descuento
       // await api.post('/descuentos', formData);
       router.push('/discounts');

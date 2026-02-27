@@ -240,11 +240,6 @@ export const handleApiError = (error: unknown): ApiError => {
   if (axios.isAxiosError(error)) {
     const responseData = error.response?.data;
 
-    // Log para debug
-    if (process.env.NODE_ENV === 'development') {
-      console.log('API Error Response:', responseData);
-    }
-
     // FluentValidation devuelve errores como { "FieldName": ["error1", "error2"] }
     // Detectar si es un objeto de validación (no tiene propiedad 'message' o 'errors')
     let validationErrors: Record<string, string[]> | undefined;

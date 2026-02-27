@@ -168,7 +168,6 @@ export default function RolesPage() {
         title: 'Error',
         description: `No se pudieron cargar los roles: ${apiError.message}`,
         variant: 'destructive',
-        duration: 5000,
       });
     }
   }, [apiError]);

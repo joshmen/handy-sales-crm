@@ -165,7 +165,6 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
     }
 
     // Aquí iría la lógica para guardar en el backend
-    console.log('Guardando datos de facturación:', billingData);
     toast({
       title: 'Configuración guardada',
       description: 'Los datos de facturación se han actualizado correctamente',
@@ -187,7 +186,6 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
       const file = (e.target as HTMLInputElement)?.files?.[0];
       if (file) {
         // Aquí iría la lógica para subir el archivo
-        console.log(`Subiendo ${field}:`, file.name);
         setBillingData({ ...billingData, [field]: file.name });
         toast({
           title: 'Archivo cargado',
@@ -247,8 +245,8 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
               <Label htmlFor="regimen">Régimen Fiscal *</Label>
               <SearchableSelect
                 value={billingData.regimenFiscal}
-                onValueChange={(value) =>
-                  setBillingData({ ...billingData, regimenFiscal: value })
+                onChange={(value) =>
+                  setBillingData({ ...billingData, regimenFiscal: String(value) })
                 }
                 options={REGIMENES_FISCALES}
                 placeholder="Selecciona un régimen fiscal"
@@ -435,8 +433,8 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
               <Label htmlFor="usoCfdi">Uso CFDI Predeterminado</Label>
               <SearchableSelect
                 value={billingData.usoCFDI}
-                onValueChange={(value) =>
-                  setBillingData({ ...billingData, usoCFDI: value })
+                onChange={(value) =>
+                  setBillingData({ ...billingData, usoCFDI: String(value) })
                 }
                 options={USOS_CFDI}
                 placeholder="Selecciona un uso CFDI"
@@ -450,8 +448,8 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
               <Label htmlFor="tipoComp">Tipo de Comprobante</Label>
               <SearchableSelect
                 value={billingData.tipoComprobantePredeterminado}
-                onValueChange={(value) =>
-                  setBillingData({ ...billingData, tipoComprobantePredeterminado: value })
+                onChange={(value) =>
+                  setBillingData({ ...billingData, tipoComprobantePredeterminado: String(value) })
                 }
                 options={TIPOS_COMPROBANTE}
                 placeholder="Selecciona un tipo de comprobante"
@@ -462,8 +460,8 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
               <Label htmlFor="formaPago">Forma de Pago</Label>
               <SearchableSelect
                 value={billingData.formaPagoPredeterminada}
-                onValueChange={(value) =>
-                  setBillingData({ ...billingData, formaPagoPredeterminada: value })
+                onChange={(value) =>
+                  setBillingData({ ...billingData, formaPagoPredeterminada: String(value) })
                 }
                 options={FORMAS_PAGO}
                 placeholder="Selecciona una forma de pago"
@@ -474,8 +472,8 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
               <Label htmlFor="metodoPago">Método de Pago</Label>
               <SearchableSelect
                 value={billingData.metodoPagoPredeterminado}
-                onValueChange={(value) =>
-                  setBillingData({ ...billingData, metodoPagoPredeterminado: value })
+                onChange={(value) =>
+                  setBillingData({ ...billingData, metodoPagoPredeterminado: String(value) })
                 }
                 options={METODOS_PAGO}
                 placeholder="Selecciona un método de pago"

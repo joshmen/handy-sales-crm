@@ -89,7 +89,6 @@ export default function ProfilePage() {
     compactView: boolean;
     showOnlineStatus: boolean;
   }) => {
-    console.log('updatePreferences not implemented yet:', data);
     return true;
   };
 

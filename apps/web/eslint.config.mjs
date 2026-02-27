@@ -14,6 +14,11 @@ const eslintConfig = [
   {
     ignores: ["src/__tests__/**/*"],
   },
+  {
+    rules: {
+      "no-console": ["warn", { allow: ["warn", "error"] }],
+    },
+  },
 ];
 
 export default eslintConfig;

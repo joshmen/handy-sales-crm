@@ -94,7 +94,7 @@ export function VentasProductoReport() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={v => tab === 'masVendidos' ? String(v) : `$${(v / 1000).toFixed(0)}k`} />
                   <YAxis type="category" dataKey="nombre" tick={{ fontSize: 10 }} width={150} />
-                  <Tooltip formatter={(v: number) => [tab === 'masVendidos' ? v : fmt(v), tab === 'masVendidos' ? 'Cantidad' : 'Ventas']} />
+                  <Tooltip formatter={(v) => [tab === 'masVendidos' ? v : fmt(Number(v)), tab === 'masVendidos' ? 'Cantidad' : 'Ventas']} />
                   <Bar dataKey={tab === 'masVendidos' ? 'cantidadVendida' : 'totalVentas'} fill={tab === 'masVendidos' ? '#2563eb' : '#16a34a'} radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -104,13 +104,13 @@ export function VentasProductoReport() {
           {tab === 'sinVenta' ? (
             <ReportTable
               data={data.sinVenta as unknown as Record<string, unknown>[]}
-              columns={sinVentaColumns as ReportColumn<Record<string, unknown>>[]}
+              columns={sinVentaColumns as unknown as ReportColumn<Record<string, unknown>>[]}
               showIndex
             />
           ) : (
             <ReportTable
               data={(currentData as VentaProducto[]) as unknown as Record<string, unknown>[]}
-              columns={productColumns as ReportColumn<Record<string, unknown>>[]}
+              columns={productColumns as unknown as ReportColumn<Record<string, unknown>>[]}
               showIndex
             />
           )}

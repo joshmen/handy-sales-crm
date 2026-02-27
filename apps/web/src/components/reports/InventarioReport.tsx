@@ -97,7 +97,7 @@ export function InventarioReport() {
 
           <ReportTable
             data={data.productos as unknown as Record<string, unknown>[]}
-            columns={columns as ReportColumn<Record<string, unknown>>[]}
+            columns={columns as unknown as ReportColumn<Record<string, unknown>>[]}
             maxHeight="600px"
           />
         </>

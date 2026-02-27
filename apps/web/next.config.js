@@ -5,7 +5,7 @@ const nextConfig = {
   compress: true,
   poweredByHeader: false,
 
-  reactStrictMode: false, // true causa doble API calls en dev (useEffect runs 2x)
+  reactStrictMode: true,
 
   // Configuración para trabajar con el backend .NET
   async rewrites() {
@@ -77,14 +77,12 @@ const nextConfig = {
     formats: ["image/avif", "image/webp"],
   },
 
-  // Configuración de TypeScript y ESLint
-  // TODO: Corregir errores de tipos en servicios y cambiar a false
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
 
   eslint: {
-    ignoreDuringBuilds: true, // TODO: Corregir warnings de ESLint y cambiar a false
+    ignoreDuringBuilds: false,
   },
 
   // Configuración experimental

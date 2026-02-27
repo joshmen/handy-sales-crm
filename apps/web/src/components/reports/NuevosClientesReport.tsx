@@ -69,7 +69,7 @@ export function NuevosClientesReport() {
 
           <ReportTable
             data={data.clientes as unknown as Record<string, unknown>[]}
-            columns={columns as ReportColumn<Record<string, unknown>>[]}
+            columns={columns as unknown as ReportColumn<Record<string, unknown>>[]}
             showIndex
           />
         </>

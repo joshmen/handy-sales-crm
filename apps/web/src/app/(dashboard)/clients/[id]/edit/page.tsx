@@ -158,7 +158,6 @@ export default function EditClientPage() {
     try {
       setSaving(true);
       const dto = mapFormToBackendDto(data);
-      console.log('Actualizando cliente:', dto);
       await clientService.updateClient(parseInt(clientId), dto);
       toast.success('Cliente actualizado exitosamente');
       router.push('/clients');
@@ -384,7 +383,7 @@ export default function EditClientPage() {
                         { value: 'credito', label: 'Solo crédito' },
                       ]}
                       value={watch('tiposPagoPermitidos') || null}
-                      onChange={(val) => setValue('tiposPagoPermitidos', val ? String(val) : 'contado_credito', { shouldValidate: true })}
+                      onChange={(val) => setValue('tiposPagoPermitidos', (val ? String(val) : 'contado_credito') as 'contado_credito' | 'contado' | 'credito', { shouldValidate: true })}
                       placeholder="Seleccionar tipo de pago"
                     />
                   </FormField>
@@ -395,7 +394,7 @@ export default function EditClientPage() {
                         { value: 'credito', label: 'Crédito' },
                       ]}
                       value={watch('tipoPagoPredeterminado') || null}
-                      onChange={(val) => setValue('tipoPagoPredeterminado', val ? String(val) : 'contado', { shouldValidate: true })}
+                      onChange={(val) => setValue('tipoPagoPredeterminado', (val ? String(val) : 'contado') as 'contado' | 'credito', { shouldValidate: true })}
                       placeholder="Seleccionar tipo predeterminado"
                     />
                   </FormField>

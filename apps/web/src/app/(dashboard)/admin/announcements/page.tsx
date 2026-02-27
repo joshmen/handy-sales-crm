@@ -519,7 +519,7 @@ export default function AnnouncementsPage() {
                                 setSelectedTenantIds(prev => prev.filter(id => !filteredIds.has(id)));
                               } else {
                                 const filteredIds = filtered.map(t => t.id);
-                                setSelectedTenantIds(prev => [...new Set([...prev, ...filteredIds])]);
+                                setSelectedTenantIds(prev => Array.from(new Set([...prev, ...filteredIds])));
                               }
                             }}
                             className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"

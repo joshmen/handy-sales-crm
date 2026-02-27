@@ -23,14 +23,11 @@ export function useRoles(params?: RolesParams) {
     setError(null);
 
     try {
-      console.log('Calling roleService.getAllRoles() with params:', memoizedParams);
       const response = await roleService.getAllRoles(memoizedParams);
-      console.log('Roles service response:', response);
 
       if (response.success && response.data) {
         // Pasar toda la respuesta - no extraer items aquí
         setData(response.data);
-        console.log(`Loaded ${Array.isArray(response.data) ? response.data.length : 'paginated'} roles`);
       } else {
         setError(response.error || 'Error loading roles');
         setData(null);
@@ -191,11 +188,9 @@ export function usePaginatedRoles(initialPage = 1, pageSize = 5) {
     if (data) {
       if ('items' in data && 'totalCount' in data) {
         // It's a PaginatedResult from the backend
-        console.log('Received paginated roles data:', data);
         setPaginationData(data as PaginatedResult<Role>);
       } else if (Array.isArray(data)) {
         // It's a simple array (when no pagination params)
-        console.log('Received simple roles array:', data.length, 'items');
         setPaginationData({
           items: data,
           totalCount: data.length,
@@ -217,7 +212,6 @@ export function usePaginatedRoles(initialPage = 1, pageSize = 5) {
   const hasPreviousPage = paginationData?.hasPreviousPage || false;
 
   const goToPage = (newPage: number) => {
-    console.log(`Changing roles page from ${page} to ${newPage}`);
     setPage(newPage);
     // No llamar refetch() aquí - el useEffect se encarga del refetch cuando cambia page
   };
@@ -225,7 +219,6 @@ export function usePaginatedRoles(initialPage = 1, pageSize = 5) {
   const nextPage = () => {
     if (hasNextPage) {
       const newPage = currentPage + 1;
-      console.log(`Going to next roles page: ${newPage}`);
       goToPage(newPage);
     }
   };
@@ -233,7 +226,6 @@ export function usePaginatedRoles(initialPage = 1, pageSize = 5) {
   const previousPage = () => {
     if (hasPreviousPage) {
       const newPage = currentPage - 1;
-      console.log(`Going to previous roles page: ${newPage}`);
       goToPage(newPage);
     }
   };
@@ -245,7 +237,6 @@ export function usePaginatedRoles(initialPage = 1, pageSize = 5) {
   // Cargar roles una sola vez al montar y cuando cambie página
   useEffect(() => {
     if (!loading) {
-      console.log('Loading roles for page:', page);
       execute();
     }
   }, [page, pageSize]); // eslint-disable-line react-hooks/exhaustive-deps

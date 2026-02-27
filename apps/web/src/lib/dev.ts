@@ -148,9 +148,9 @@ export const devShortcuts = {
     if (typeof window !== 'undefined' && DEV_CONFIG.ENABLE_LOGS) {
       if (storeName) {
         const storeData = localStorage.getItem(storeName);
-        console.log(`📦 Store [${storeName}]:`, JSON.parse(storeData || '{}'));
+        devLog.info(`Store [${storeName}]:`, JSON.parse(storeData || '{}'));
       } else {
-        console.log('📦 All localStorage:', { ...localStorage });
+        devLog.info('All localStorage:', { ...localStorage });
       }
     }
   },

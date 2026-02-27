@@ -25,8 +25,6 @@ export function QuickMigrationButton() {
         title: 'Migración completada',
         description: response.data.message,
       });
-
-      console.log('Resultados de migración:', response.data);
     } catch (error) {
       console.error('Error en migración:', error);
       toast({

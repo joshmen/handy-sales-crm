@@ -65,7 +65,7 @@ export function ActividadClientesReport() {
 
       <ReportTable
         data={data as unknown as Record<string, unknown>[]}
-        columns={columns as ReportColumn<Record<string, unknown>>[]}
+        columns={columns as unknown as ReportColumn<Record<string, unknown>>[]}
         showIndex
         maxHeight="600px"
       />

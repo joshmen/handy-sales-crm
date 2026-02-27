@@ -96,7 +96,6 @@ export default function CreatePromotionPage() {
 
     setIsSubmitting(true);
     try {
-      console.log('Creating promotion:', data);
       // Aquí iría la lógica para crear la promoción
       // await api.post('/promociones', data);
       router.push('/promotions');

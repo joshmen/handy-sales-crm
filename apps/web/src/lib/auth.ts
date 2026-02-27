@@ -210,7 +210,6 @@ export const authOptions: NextAuthOptions = {
               u => u.email === credentials.email && u.password === credentials.password
             );
             if (user) {
-              console.log('[Auth] Backend login failed, using mock auth for:', user.email);
               return {
                 id: user.id,
                 email: user.email,
@@ -228,12 +227,10 @@ export const authOptions: NextAuthOptions = {
         } catch (error) {
           // Backend unreachable - fall back to mock in development
           if (isDevOnly()) {
-            console.log('[Auth] Backend unreachable, trying mock auth...');
             const user = MOCK_USERS.find(
               u => u.email === credentials.email && u.password === credentials.password
             );
             if (user) {
-              console.log('[Auth] Using mock auth for:', user.email);
               return {
                 id: user.id,
                 email: user.email,

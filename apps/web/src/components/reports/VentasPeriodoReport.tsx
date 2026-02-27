@@ -70,7 +70,7 @@ export function VentasPeriodoReport() {
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                     <XAxis dataKey="fecha" tick={{ fontSize: 11 }} />
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} />
-                    <Tooltip formatter={(v: number) => [fmt(v), 'Ventas']} />
+                    <Tooltip formatter={(v) => [fmt(Number(v)), 'Ventas']} />
                     <Line type="monotone" dataKey="totalVentas" stroke="#16a34a" strokeWidth={2} dot={{ r: 3 }} />
                   </LineChart>
                 ) : (
@@ -78,7 +78,7 @@ export function VentasPeriodoReport() {
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                     <XAxis dataKey="fecha" tick={{ fontSize: 11 }} />
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} />
-                    <Tooltip formatter={(v: number) => [fmt(v), 'Ventas']} />
+                    <Tooltip formatter={(v) => [fmt(Number(v)), 'Ventas']} />
                     <Bar dataKey="totalVentas" fill="#16a34a" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 )}
@@ -88,7 +88,7 @@ export function VentasPeriodoReport() {
 
           <ReportTable
             data={data.periodos as unknown as Record<string, unknown>[]}
-            columns={columns as ReportColumn<Record<string, unknown>>[]}
+            columns={columns as unknown as ReportColumn<Record<string, unknown>>[]}
             footerRow={{ fecha: 'TOTAL', cantidadPedidos: data.totales.cantidadPedidos, totalVentas: fmt(data.totales.totalVentas), ticketPromedio: fmt(data.totales.ticketPromedio) }}
           />
         </>

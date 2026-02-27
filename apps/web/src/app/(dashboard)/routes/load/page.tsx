@@ -108,7 +108,6 @@ export default function RouteLoadPage() {
       products: routeProducts,
     };
 
-    console.log('Guardar ruta:', routeData);
     alert('Ruta guardada exitosamente');
   };
 

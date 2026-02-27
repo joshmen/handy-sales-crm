@@ -164,15 +164,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Log de sincronización
-    console.log('Sync request:', {
-      userId,
-      lastSyncDate,
-      deviceInfo,
-      dataTypes,
-      sessionUser: user.email,
-    });
-
     // Filtrar datos según los tipos solicitados
     const syncData: SyncResponse = {
       success: true,
@@ -215,7 +206,6 @@ export async function POST(request: NextRequest) {
     // Guardar información del dispositivo para notificaciones push
     if (deviceInfo?.deviceId) {
       // TODO: Guardar deviceToken en la base de datos para notificaciones push
-      console.log('Device registered for push notifications:', deviceInfo);
     }
 
     return NextResponse.json(syncData);

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import type { PieLabelRenderProps } from 'recharts';
 import { ReportFilters } from './ReportFilters';
 import { ReportKPICards } from './ReportKPICards';
 import { ReportTable, ReportColumn } from './ReportTable';
@@ -64,14 +65,14 @@ export function VentasZonaReport() {
                     cx="50%"
                     cy="50%"
                     outerRadius={100}
-                    label={({ nombre, percent }) => `${nombre} (${(percent * 100).toFixed(0)}%)`}
+                    label={(entry: PieLabelRenderProps) => `${entry.name} (${((entry.percent ?? 0) * 100).toFixed(0)}%)`}
                     labelLine={{ strokeWidth: 1 }}
                   >
                     {data.zonas.map((_, i) => (
                       <Cell key={i} fill={COLORS[i % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(v: number) => fmt(v)} />
+                  <Tooltip formatter={(v) => fmt(Number(v))} />
                   <Legend />
                 </PieChart>
               </ResponsiveContainer>
@@ -80,7 +81,7 @@ export function VentasZonaReport() {
 
           <ReportTable
             data={data.zonas as unknown as Record<string, unknown>[]}
-            columns={columns as ReportColumn<Record<string, unknown>>[]}
+            columns={columns as unknown as ReportColumn<Record<string, unknown>>[]}
             footerRow={{ nombre: 'TOTAL', totalClientes: data.totales.totalClientes, pedidos: data.totales.totalPedidos, ventasTotales: fmt(data.totales.totalVentas) }}
           />
         </>

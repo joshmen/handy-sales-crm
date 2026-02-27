@@ -111,7 +111,8 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
           titulo: ((raw.titulo ?? raw.Titulo) as string) ?? '',
           mensaje: ((raw.mensaje ?? raw.Mensaje) as string) ?? '',
           tipo: ((raw.tipo ?? raw.Tipo) as string) ?? 'info',
-          leidoEn: null,
+          status: 'sent',
+          leidoEn: undefined,
           creadoEn: new Date().toISOString(),
         };
         return [newNotif, ...prev];

@@ -89,7 +89,6 @@ export default function SettingsPage() {
 
   const handleSaveProfile = () => {
     // Aquí iría la lógica para guardar el perfil
-    console.log('Guardando perfil:', profile);
   };
 
   return (

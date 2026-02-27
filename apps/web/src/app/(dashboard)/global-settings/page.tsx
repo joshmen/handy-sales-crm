@@ -326,7 +326,7 @@ export default function GlobalSettingsPage() {
                   </label>
                   <SearchableSelect
                     value={settings.defaultLanguage}
-                    onValueChange={(value) => setSettings({ ...settings, defaultLanguage: value })}
+                    onChange={(value) => setSettings({ ...settings, defaultLanguage: String(value) })}
                     options={[
                       { value: 'es', label: 'Español' },
                       { value: 'en', label: 'English' }
@@ -341,7 +341,7 @@ export default function GlobalSettingsPage() {
                   </label>
                   <SearchableSelect
                     value={settings.defaultTimezone}
-                    onValueChange={(value) => setSettings({ ...settings, defaultTimezone: value })}
+                    onChange={(value) => setSettings({ ...settings, defaultTimezone: String(value) })}
                     options={[
                       { value: 'America/Mexico_City', label: 'México (GMT-6)' },
                       { value: 'America/New_York', label: 'Nueva York (GMT-5)' },

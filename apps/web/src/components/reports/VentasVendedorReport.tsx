@@ -92,7 +92,7 @@ export function VentasVendedorReport() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} />
                 <YAxis type="category" dataKey="nombre" tick={{ fontSize: 11 }} width={120} />
-                <Tooltip formatter={(v: number) => [fmt(v), 'Ventas']} />
+                <Tooltip formatter={(v) => [fmt(Number(v)), 'Ventas']} />
                 <Bar dataKey="totalVentas" fill="#16a34a" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -100,7 +100,7 @@ export function VentasVendedorReport() {
 
           <ReportTable
             data={data as unknown as Record<string, unknown>[]}
-            columns={columns as ReportColumn<Record<string, unknown>>[]}
+            columns={columns as unknown as ReportColumn<Record<string, unknown>>[]}
             showIndex
           />
         </>

@@ -136,16 +136,10 @@ export default function FormBuilderPage() {
       isActive: true,
     };
 
-    console.log("Guardar formulario:", formData);
     alert("Formulario guardado exitosamente");
   };
 
   const handlePreviewForm = () => {
-    console.log("Vista previa del formulario:", {
-      formName,
-      formType,
-      components,
-    });
     alert("Abriendo vista previa del formulario");
   };
 

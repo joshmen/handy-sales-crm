@@ -121,7 +121,7 @@ export const GlobalSettingsProvider: React.FC<GlobalSettingsProviderProps> = ({ 
 
       setGlobalSettings(prev => {
         if (!prev) return prev;
-        const updated = { ...prev, maintenanceMode: payload.active, updatedAt: new Date() };
+        const updated = { ...prev, maintenanceMode: payload.active!, updatedAt: new Date() };
         localStorage.setItem('global_settings', JSON.stringify(updated));
         return updated;
       });

@@ -1,5 +1,5 @@
 // src/services/api/productFamilies.ts
-import { api, handleApiResponse, handleApiError } from '@/lib/api';
+import { api, handleApiError } from '@/lib/api';
 import { ProductFamily, CreateProductFamilyDto, UpdateProductFamilyDto } from '@/types/product-families';
 
 const BASE_URL = '/familias-productos';
@@ -11,7 +11,7 @@ export const productFamilyService = {
   async getAll(): Promise<ProductFamily[]> {
     try {
       const response = await api.get<ProductFamily[]>(BASE_URL);
-      return handleApiResponse(response);
+      return response.data;
     } catch (error) {
       throw handleApiError(error);
     }
@@ -23,7 +23,7 @@ export const productFamilyService = {
   async getById(id: string): Promise<ProductFamily> {
     try {
       const response = await api.get<ProductFamily>(`${BASE_URL}/${id}`);
-      return handleApiResponse(response);
+      return response.data;
     } catch (error) {
       throw handleApiError(error);
     }
@@ -35,7 +35,7 @@ export const productFamilyService = {
   async create(data: CreateProductFamilyDto): Promise<{ id: string }> {
     try {
       const response = await api.post<{ id: string }>(BASE_URL, data);
-      return handleApiResponse(response);
+      return response.data;
     } catch (error) {
       throw handleApiError(error);
     }
