@@ -104,6 +104,13 @@ export async function performSync(options?: SyncOptions): Promise<void> {
       console.warn('[Sync] Attachment upload failed (non-fatal):', attachmentError);
     }
 
+    // Phase 4: Flush pending crash reports (deferred from offline)
+    try {
+      await crashReporter.flushPendingReports();
+    } catch {
+      // Never block sync for crash report flush
+    }
+
     const summary: SyncSummary = { pulled: pullCount, pushed: pushCount, conflicts: conflictCount };
     syncCursors.setLastSyncAt(Date.now());
     syncCursors.setLastSyncSummary(summary);

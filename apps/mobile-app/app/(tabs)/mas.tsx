@@ -19,6 +19,7 @@ import {
   Printer,
 } from 'lucide-react-native';
 import { HandyLogo } from '@/components/shared/HandyLogo';
+import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 
 const ROLE_LABELS: Record<string, string> = {
   SUPER_ADMIN: 'Super Admin',
@@ -39,7 +40,7 @@ interface MenuItem {
   onPress: () => void;
 }
 
-export default function MasScreen() {
+function MasScreenContent() {
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
   const router = useRouter();
@@ -282,3 +283,11 @@ const styles = StyleSheet.create({
   footerBrand: { fontSize: 14, fontWeight: '600', color: '#94a3b8', marginTop: 6 },
   footerVersion: { fontSize: 12, color: '#cbd5e1' },
 });
+
+export default function MasScreen() {
+  return (
+    <ErrorBoundary componentName="TabMas">
+      <MasScreenContent />
+    </ErrorBoundary>
+  );
+}

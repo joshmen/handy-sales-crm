@@ -18,9 +18,10 @@ import {
   Clock,
 } from 'lucide-react-native';
 import { HandyLogo } from '@/components/shared/HandyLogo';
+import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { performSync } from '@/sync/syncEngine';
 
-export default function HoyScreen() {
+function HoyScreenContent() {
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
   const router = useRouter();
@@ -294,3 +295,11 @@ const styles = StyleSheet.create({
   },
   activityEmptyText: { fontSize: 13, color: '#94a3b8' },
 });
+
+export default function HoyScreen() {
+  return (
+    <ErrorBoundary componentName="TabHoy">
+      <HoyScreenContent />
+    </ErrorBoundary>
+  );
+}

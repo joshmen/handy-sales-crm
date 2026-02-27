@@ -24,6 +24,7 @@ import { ClusterMarker } from '@/components/map/ClusterMarker';
 import { ClientDetailPanel } from '@/components/map/ClientDetailPanel';
 import { NextStopPanel } from '@/components/map/NextStopPanel';
 import { CheckInPanel } from '@/components/map/CheckInPanel';
+import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 
 const DEFAULT_REGION: Region = {
   latitude: 19.4326,
@@ -32,7 +33,7 @@ const DEFAULT_REGION: Region = {
   longitudeDelta: 0.08,
 };
 
-export default function MapaScreen() {
+function MapaScreenContent() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { mode: initialMode } = useLocalSearchParams<{ mode?: string }>();
@@ -470,3 +471,11 @@ const styles = StyleSheet.create({
   },
   emptyText: { fontSize: 13, color: '#94a3b8', textAlign: 'center', maxWidth: 200 },
 });
+
+export default function MapaScreen() {
+  return (
+    <ErrorBoundary componentName="TabMapa">
+      <MapaScreenContent />
+    </ErrorBoundary>
+  );
+}

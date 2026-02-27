@@ -5,6 +5,7 @@ import { CalendarClock, Map, ShoppingBag, Wallet, Menu } from 'lucide-react-nati
 import { useAutoSync } from '@/hooks/useAutoSync';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { usePendingCount } from '@/hooks';
+import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
@@ -13,6 +14,7 @@ export default function TabsLayout() {
   const { data: pendingCount = 0 } = usePendingCount();
 
   return (
+    <ErrorBoundary componentName="TabsRoot">
     <Tabs
       screenOptions={{
         headerShown: false,
@@ -86,5 +88,6 @@ export default function TabsLayout() {
       <Tabs.Screen name="impresora" options={{ href: null }} />
       <Tabs.Screen name="sync" options={{ href: null }} />
     </Tabs>
+    </ErrorBoundary>
   );
 }
