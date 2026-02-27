@@ -135,13 +135,11 @@ export default withAuth(
       }
     }
 
-    // Los vendedores solo pueden ver sus propias rutas y datos
-    if (userRole === UserRole.VENDEDOR) {
-      // Estas restricciones se manejan en los componentes con filtros
-      // pero podemos agregar headers para identificar al usuario
+    // Vendedores y Viewers: add identification headers for downstream filtering
+    if (effectiveRole === UserRole.VENDEDOR || effectiveRole === UserRole.VIEWER) {
       const response = NextResponse.next();
       response.headers.set('x-user-id', token.id as string);
-      response.headers.set('x-user-role', userRole);
+      response.headers.set('x-user-role', effectiveRole);
       return response;
     }
 

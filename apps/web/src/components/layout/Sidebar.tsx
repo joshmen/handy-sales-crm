@@ -455,6 +455,13 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'view_routes',
     'view_visits',
   ],
+  VIEWER: [
+    'view_dashboard',
+    'view_clients',
+    'view_products',
+    'view_orders',
+    'view_routes',
+  ],
 };
 
 interface SidebarProps {

@@ -6,6 +6,7 @@ public class UsuarioDto
     public int TenantId { get; set; }
     public bool EsAdmin { get; set; }
     public bool EsSuperAdmin { get; set; }
+    public string Rol { get; set; } = "VENDEDOR";
     public string? AvatarUrl { get; set; }
 }
 

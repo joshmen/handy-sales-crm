@@ -91,6 +91,7 @@ app.UseCors("HandySalesPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseMiddleware<SessionValidationMiddleware>();
+app.UseMiddleware<ViewerReadOnlyMiddleware>();
 app.UseMiddleware<MaintenanceMiddleware>();
 
 // ENDPOINTS

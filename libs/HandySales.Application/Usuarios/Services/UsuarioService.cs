@@ -146,6 +146,7 @@ public class UsuarioService
             Nombre = u.Nombre,
             EsAdmin = u.EsAdmin,
             EsSuperAdmin = u.EsSuperAdmin,
+            Rol = u.Rol,
             AvatarUrl = u.AvatarUrl
         }).ToList();
     }
@@ -186,6 +187,7 @@ public class UsuarioService
                 Nombre = u.Nombre,
                 EsAdmin = u.EsAdmin,
                 EsSuperAdmin = u.EsSuperAdmin,
+                Rol = u.Rol,
                 AvatarUrl = u.AvatarUrl
             })
             .ToList();
@@ -213,6 +215,7 @@ public class UsuarioService
             TenantId = usuario.TenantId,
             EsAdmin = usuario.EsAdmin,
             EsSuperAdmin = usuario.EsSuperAdmin,
+            Rol = usuario.Rol,
             AvatarUrl = usuario.AvatarUrl
         };
     }
@@ -494,6 +497,7 @@ public class UsuarioService
             Nombre = u.Nombre,
             EsAdmin = u.EsAdmin,
             EsSuperAdmin = u.EsSuperAdmin,
+            Rol = u.Rol,
             AvatarUrl = u.AvatarUrl
         }).ToList();
 

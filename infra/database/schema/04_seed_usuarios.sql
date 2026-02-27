@@ -26,5 +26,12 @@ INSERT IGNORE INTO Usuarios (tenant_id, email, password_hash, nombre, es_admin, 
 -- Rutas Express Norte (tenant_id = 2)
 (2, 'admin@rutasnorte.com', '$2a$11$eTUvJkg3sBW3jEhrBpz3DeeoKTOwQb8fEhwBO1SVFhlGu0OA.vHnO', 'Administrador Rutas Norte', 1, 1, NOW());
 
+-- VIEWER user (read-only role, Jeyma tenant)
+INSERT IGNORE INTO Usuarios (tenant_id, email, password_hash, nombre, es_admin, activo, email_verificado, rol, creado_en) VALUES
+(3, 'viewer@jeyma.com', '$2a$11$eTUvJkg3sBW3jEhrBpz3DeeoKTOwQb8fEhwBO1SVFhlGu0OA.vHnO', 'Viewer Jeyma', 0, 1, 1, 'VIEWER', NOW());
+
+-- Ensure email_verificado is set for all test users (login requires it)
+UPDATE Usuarios SET email_verificado = 1 WHERE email_verificado = 0 AND email LIKE '%@jeyma.com' OR email LIKE '%@huichol.com' OR email LIKE '%@centro.com' OR email LIKE '%@rutasnorte.com';
+
 -- Verificar usuarios creados
-SELECT id, email, nombre, tenant_id, es_admin FROM Usuarios ORDER BY tenant_id, es_admin DESC;
+SELECT id, email, nombre, tenant_id, es_admin, rol FROM Usuarios ORDER BY tenant_id, es_admin DESC;

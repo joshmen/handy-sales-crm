@@ -43,12 +43,12 @@ public class FakeJwtAuthHandler : AuthenticationHandler<AuthenticationSchemeOpti
         if (isSuperAdmin)
         {
             claims.Add(new Claim("es_super_admin", "True"));
-            claims.Add(new Claim(ClaimTypes.Role, "SuperAdmin"));
+            claims.Add(new Claim(ClaimTypes.Role, "SUPER_ADMIN"));
         }
         else
         {
             claims.Add(new Claim("es_admin", "True"));
-            claims.Add(new Claim(ClaimTypes.Role, "Admin"));
+            claims.Add(new Claim(ClaimTypes.Role, "ADMIN"));
         }
 
         var identity = new ClaimsIdentity(claims, Scheme);

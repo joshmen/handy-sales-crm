@@ -22,11 +22,18 @@ public class Usuario : AuditableEntity
     public bool EsSuperAdmin { get; set; } = false;
 
     /// <summary>
-    /// Computed role string derived from boolean flags.
-    /// Supports: SUPER_ADMIN, ADMIN, VENDEDOR (future: VIEWER, SUPERVISOR via RoleId).
+    /// Explicit role override. When set, takes precedence over boolean-derived role.
+    /// Values: SUPER_ADMIN, ADMIN, SUPERVISOR, VIEWER, VENDEDOR.
+    /// NULL = derive from EsAdmin/EsSuperAdmin (backward compatible).
+    /// </summary>
+    [Column("rol")]
+    public string? RolExplicito { get; set; }
+
+    /// <summary>
+    /// Computed role: uses RolExplicito if set, otherwise derives from boolean flags.
     /// </summary>
     [NotMapped]
-    public string Rol => EsSuperAdmin ? "SUPER_ADMIN" : EsAdmin ? "ADMIN" : "VENDEDOR";
+    public string Rol => RolExplicito ?? (EsSuperAdmin ? "SUPER_ADMIN" : EsAdmin ? "ADMIN" : "VENDEDOR");
 
     [Column("role_id")]
     public int? RoleId { get; set; }

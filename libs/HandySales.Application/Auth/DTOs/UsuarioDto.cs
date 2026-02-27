@@ -5,6 +5,7 @@ public record UsuarioDto(
     string Email,
     string Nombre,
     bool EsAdmin,
+    string Rol,
     int TenantId,
     DateTime CreadoEn,
     bool Activo
