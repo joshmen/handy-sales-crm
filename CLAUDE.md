@@ -1097,18 +1097,18 @@ docs/design/pencil/pencil-admin.pen       # Mismo contenido
 
 ### 🟢 BAJA — Futuro
 
-- [ ] **FUT-2**: Billing API deploy en producción
+- [x] **FUT-2**: ~~Billing API deploy en producción~~ — Railway service configurado
 - [ ] **FUT-3**: Migración a Azure (cuando 1,000+ users) — `AZURE_MIGRATION.md`
 - [ ] **FUT-4**: Custom domain (`app.handysales.com`)
 - [x] **FUT-5**: ~~Impersonation feature completa~~ — modal + banner + audit trail + session timeout implementado
 - [x] **FUT-6**: ~~2FA/MFA~~ TOTP implementado (endpoints + UI setup/disable en SecurityTab)
 - [x] **FUT-7**: ~~WebSocket para actualizaciones real-time~~ SignalR self-hosted implementado
 - [x] **FUT-9**: ~~Password Reset page~~ — `/forgot-password` + `/reset-password` con AuthLayout compartido
-- [ ] **FUT-10**: Rol VIEWER funcional
-- [ ] **SUP-1**: Implementar sidebar/permisos para SUPERVISOR — esperar demanda real
-- [ ] **SUP-2**: Dashboard de equipo para supervisor
-- [ ] **SUP-3**: Vista de rendimiento por subordinado
-- [ ] **INFRA-3**: Integration tests (parcial: rbac, security, visual-audit existen)
+- [x] **FUT-10**: ~~Rol VIEWER funcional~~ — read-only enforcement backend + frontend sidebar/middleware
+- [x] **SUP-1**: ~~Implementar sidebar/permisos para SUPERVISOR~~ — 8 endpoints + sidebar + middleware + team page
+- [x] **SUP-2**: ~~Dashboard de equipo para supervisor~~ — KPIs endpoint + team management UI
+- [x] **SUP-3**: ~~Vista de rendimiento por subordinado~~ — filtro pedidos/clientes por subordinados
+- [x] **INFRA-3**: ~~Integration tests~~ — 66 nuevos tests (Cobros, Rutas, Supervisores, Reports, Tenants, Impersonation, Subscriptions)
 - [ ] **INFRA-4**: 11 pantallas React sin diseño Pencil (diseño cuando se necesite)
 - [ ] **INFRA-5**: Message broker (Redis Streams) + Push Worker directo a FCM/APNs — reemplazar Expo Push API como intermediario cuando escala lo requiera
 - [ ] **RT-9**: SignalR real-time desde mobile sync → web backoffice — Al recibir push de sync móvil (cobros, pedidos, visitas), disparar evento SignalR al grupo del tenant para que el admin vea los datos entrar en vivo sin refrescar (CobroRecibido, PedidoCreado, VisitaRegistrada)
@@ -1181,9 +1181,9 @@ docs/design/pencil/pencil-admin.pen       # Mismo contenido
 ### 🟢 Paso 6: Billing API — Completar para facturación real
 
 - [ ] **BILL-1**: Conectar PAC real para timbrado CFDI (reemplazar mock)
-- [ ] **BILL-2**: Generación PDF real (reemplazar stub)
-- [ ] **BILL-3**: Envío de facturas por email (SendGrid integration)
-- [ ] **BILL-4**: Fix passwords plaintext → BCrypt
+- [x] **BILL-2**: ~~Generación PDF real~~ — QuestPdf CFDI layout completo
+- [x] **BILL-3**: ~~Envío de facturas por email~~ — SendGrid con attachments PDF+XML
+- [x] **BILL-4**: ~~Fix passwords plaintext → BCrypt~~ — Ya usa AES-256-CBC (no aplica)
 
 ### 🟢 Paso 7: MOB-7 — Store Release
 
