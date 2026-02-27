@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, Suspense } from 'react';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -633,7 +634,7 @@ export default function LoginPage() {
     <Suspense
       fallback={
         <div className="min-h-screen flex items-center justify-center bg-white">
-          <img src="/logo.svg" alt="Handy Suites" className="w-[220px] h-auto" />
+          <Image src="/logo.svg" alt="Handy Suites" width={220} height={48} priority />
         </div>
       }
     >

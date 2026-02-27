@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { CheckCircle, Monitor, Tablet, Smartphone } from 'lucide-react';
 import { Space_Grotesk } from 'next/font/google';
 
@@ -36,10 +37,13 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
       {/* ===== Panel izquierdo — Vendedor de ruta (hidden en mobile) ===== */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
         {/* Imagen de fondo — vendedor de ruta */}
-        <img
+        <Image
           src="/images/login-salesperson.png"
           alt=""
-          className="absolute inset-0 w-full h-full object-cover object-center"
+          fill
+          className="object-cover object-center"
+          priority
+          sizes="50vw"
         />
         {/* Overlay gradiente — claro arriba (cara), oscuro abajo (texto) */}
         <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/40 to-slate-900/30" />
@@ -48,7 +52,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
         <div className="relative z-10 flex flex-col justify-between p-12 text-white w-full">
           {/* Logo (arriba) */}
           <div className="flex items-center gap-3">
-            <img src="/logo-icon.svg" alt="" className="w-14 h-14" />
+            <Image src="/logo-icon.svg" alt="" width={56} height={56} />
             <div className="flex items-baseline gap-1.5">
               <span className="text-3xl font-black tracking-tight">Handy</span>
               <span className="text-3xl font-normal text-white/70 tracking-tight">
@@ -133,7 +137,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
         {/* Top bar */}
         <div className="px-6 py-4 flex items-center justify-between">
           <a href="/" className="flex items-center gap-2 lg:hidden">
-            <img src="/logo-icon.svg" alt="" className="w-8 h-8" />
+            <Image src="/logo-icon.svg" alt="" width={32} height={32} />
             <div className="flex items-baseline gap-1">
               <span className="text-[18px] font-black text-gray-900 tracking-tight">
                 Handy

@@ -11,11 +11,39 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Handy Suites® - Sistema de Gestión Empresarial",
-  description: "Plataforma integral de ventas, rutas, inventario y facturación para PyMEs",
+  metadataBase: new URL("https://app.handysuites.com"),
+  title: {
+    default: "Handy Suites® — La plataforma todo-en-uno para tu negocio",
+    template: "%s | Handy Suites®",
+  },
+  description:
+    "Gestiona clientes, ventas, rutas, inventario y facturación desde un solo lugar. Diseñado para PYMEs en México. Certificado SAT CFDI 4.0.",
   icons: {
     icon: "/favicon.svg",
     apple: "/favicon.svg",
+  },
+  openGraph: {
+    type: "website",
+    locale: "es_MX",
+    siteName: "Handy Suites®",
+    title: "Handy Suites® — La plataforma todo-en-uno para tu negocio",
+    description:
+      "Gestiona clientes, ventas, rutas, inventario y facturación desde un solo lugar. Diseñado para PYMEs en México.",
+    images: [
+      {
+        url: "/images/hero-dashboard.png",
+        width: 1200,
+        height: 630,
+        alt: "Handy Suites — Sistema de Gestión Empresarial",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Handy Suites® — La plataforma todo-en-uno para tu negocio",
+    description:
+      "Gestiona clientes, ventas, rutas, inventario y facturación desde un solo lugar. Diseñado para PYMEs en México.",
+    images: ["/images/hero-dashboard.png"],
   },
 };
 

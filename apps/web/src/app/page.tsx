@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import Image from 'next/image';
 import Link from 'next/link';
 import { Space_Grotesk } from 'next/font/google';
 import { LandingNav } from '@/components/landing/LandingNav';
@@ -93,9 +94,35 @@ const plans = [
   },
 ];
 
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'Handy Suites',
+  applicationCategory: 'BusinessApplication',
+  operatingSystem: 'Web, iOS, Android',
+  description: 'Gestiona clientes, ventas, rutas, inventario y facturación desde un solo lugar. Diseñado para PYMEs en México.',
+  url: 'https://app.handysuites.com',
+  offers: {
+    '@type': 'AggregateOffer',
+    priceCurrency: 'MXN',
+    lowPrice: '0',
+    highPrice: '1499',
+    offerCount: '3',
+  },
+  publisher: {
+    '@type': 'Organization',
+    name: 'Handy Suites',
+    url: 'https://handysuites.com',
+  },
+};
+
 export default function LandingPage() {
   return (
     <main>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <LandingNav />
 
       {/* ===== HERO ===== */}
@@ -162,11 +189,13 @@ export default function LandingPage() {
                   </div>
                 </div>
                 {/* Screenshot */}
-                <img
+                <Image
                   src="/images/hero-dashboard.png"
                   alt="Dashboard de Handy Suites mostrando KPIs, ventas y actividad reciente"
+                  width={1200}
+                  height={750}
                   className="w-full"
-                  loading="eager"
+                  priority
                 />
               </div>
               {/* Floating badge */}
@@ -235,11 +264,12 @@ export default function LandingPage() {
           {/* Row 1: Clients */}
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             <div className="rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
-              <img
+              <Image
                 src="/images/tour/clientes-crear.jpg"
                 alt="Módulo de creación de clientes en Handy Suites"
+                width={800}
+                height={500}
                 className="w-full"
-                loading="lazy"
               />
             </div>
             <div>
@@ -264,11 +294,12 @@ export default function LandingPage() {
           {/* Row 2: Orders (reversed) */}
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             <div className="lg:order-2 rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
-              <img
+              <Image
                 src="/images/tour/pedidos-crear.jpg"
                 alt="Módulo de creación de pedidos en Handy Suites"
+                width={800}
+                height={500}
                 className="w-full"
-                loading="lazy"
               />
             </div>
             <div className="lg:order-1">
@@ -427,7 +458,7 @@ export default function LandingPage() {
             {/* Brand */}
             <div className="md:col-span-1">
               <div className="flex items-center gap-2.5 mb-4">
-                <img src="/logo-icon.svg" alt="" className="w-8 h-8" />
+                <Image src="/logo-icon.svg" alt="" width={32} height={32} />
                 <div className="flex items-baseline gap-1">
                   <span className="text-lg font-black text-white tracking-tight">Handy</span>
                   <span className="text-lg font-normal text-gray-500 tracking-tight">

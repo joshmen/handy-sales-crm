@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
 import {
   X,
   Home,
@@ -129,8 +130,8 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
           <div className="p-4 border-t">
             <button
               onClick={() => {
-                console.log("Logout");
                 onClose();
+                signOut({ callbackUrl: '/login' });
               }}
               className="flex items-center space-x-3 w-full rounded-lg px-3 py-2 text-red-600 hover:bg-red-50"
             >
