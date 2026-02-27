@@ -64,8 +64,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidIssuer = builder.Configuration["JWT:Issuer"],
             ValidAudience = builder.Configuration["JWT:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["JWT:SecretKey"] ?? 
-                    throw new InvalidOperationException("JWT:SecretKey not configured")))
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Secret"] ??
+                    throw new InvalidOperationException("Jwt:Secret not configured")))
         };
     });
 
