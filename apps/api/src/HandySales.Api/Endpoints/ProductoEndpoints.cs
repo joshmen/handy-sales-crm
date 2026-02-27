@@ -3,7 +3,9 @@ using FluentValidation;
 using HandySales.Application.CompanySettings.Interfaces;
 using HandySales.Application.Productos.DTOs;
 using HandySales.Application.Productos.Services;
+using HandySales.Application.SubscriptionPlans.Interfaces;
 using HandySales.Infrastructure.Persistence;
+using HandySales.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -28,8 +30,14 @@ public static class ProductoEndpoints
         app.MapPost("/productos", async (
             ProductoCreateDto dto,
             IValidator<ProductoCreateDto> validator,
-            [FromServices] ProductoService servicio) =>
+            [FromServices] ProductoService servicio,
+            [FromServices] ISubscriptionEnforcementService enforcement,
+            [FromServices] ICurrentTenant currentTenant) =>
         {
+            var check = await enforcement.CanCreateProductoAsync(currentTenant.TenantId);
+            if (!check.Allowed)
+                return Results.Json(new { error = check.Message, current = check.Current, limit = check.Limit }, statusCode: 402);
+
             var validation = await validator.ValidateAsync(dto);
             if (!validation.IsValid)
                 return Results.BadRequest(validation.ToDictionary());

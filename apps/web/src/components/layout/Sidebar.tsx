@@ -373,6 +373,12 @@ const superAdminItems: SidebarItem[] = [
     href: '/admin/announcements',
   },
   {
+    id: 'sa-plans',
+    label: 'Planes',
+    icon: CreditCard,
+    href: '/admin/subscription-plans',
+  },
+  {
     id: 'sa-crash-reports',
     label: 'Crash Reports',
     icon: Bug,
@@ -644,6 +650,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
       'system-dashboard': {
         active: 'text-blue-600',
         inactive: 'text-blue-500 group-hover:text-blue-600',
+      },
+      'sa-plans': {
+        active: 'text-lime-600',
+        inactive: 'text-lime-500 group-hover:text-lime-600',
       },
       'sa-crash-reports': {
         active: 'text-red-600',

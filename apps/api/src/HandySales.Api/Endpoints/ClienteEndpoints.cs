@@ -1,6 +1,8 @@
 using FluentValidation;
 using HandySales.Application.Clientes.DTOs;
 using HandySales.Application.Clientes.Services;
+using HandySales.Application.SubscriptionPlans.Interfaces;
+using HandySales.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HandySales.Api.Endpoints;
@@ -12,8 +14,14 @@ public static class ClienteEndpoints
         app.MapPost("/clientes", async (
             ClienteCreateDto dto,
             IValidator<ClienteCreateDto> validator,
-            [FromServices] ClienteService servicio) =>
+            [FromServices] ClienteService servicio,
+            [FromServices] ISubscriptionEnforcementService enforcement,
+            [FromServices] ICurrentTenant currentTenant) =>
         {
+            var check = await enforcement.CanCreateClienteAsync(currentTenant.TenantId);
+            if (!check.Allowed)
+                return Results.Json(new { error = check.Message, current = check.Current, limit = check.Limit }, statusCode: 402);
+
             var validation = await validator.ValidateAsync(dto);
             if (!validation.IsValid)
                 return Results.BadRequest(validation.ToDictionary());

@@ -1,6 +1,9 @@
 using HandySales.Application.Usuarios.Services;
 using HandySales.Application.Usuarios.DTOs;
+using HandySales.Application.SubscriptionPlans.Interfaces;
+using HandySales.Shared.Multitenancy;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using HandySales.Application.Common.DTOs;
 
 namespace HandySales.Api.Endpoints;
@@ -127,10 +130,18 @@ public static class UsuarioEndpoints
         }
     }
 
-    private static async Task<IResult> CreateUsuario(CrearUsuarioDto dto, UsuarioService service)
+    private static async Task<IResult> CreateUsuario(
+        CrearUsuarioDto dto,
+        UsuarioService service,
+        [FromServices] ISubscriptionEnforcementService enforcement,
+        [FromServices] ICurrentTenant currentTenant)
     {
         try
         {
+            var check = await enforcement.CanCreateUsuarioAsync(currentTenant.TenantId);
+            if (!check.Allowed)
+                return Results.Json(new { error = check.Message, current = check.Current, limit = check.Limit }, statusCode: 402);
+
             var usuarioId = await service.CrearUsuarioAsync(dto);
             return Results.Created($"/api/usuarios/{usuarioId}", new { id = usuarioId });
         }

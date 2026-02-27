@@ -108,6 +108,7 @@ app.MapCobroEndpoints();
 app.MapTwoFactorEndpoints();
 app.MapAnnouncementEndpoints();
 app.MapSubscriptionEndpoints();
+app.MapSubscriptionPlanAdminEndpoints();
 app.MapStripeWebhookEndpoints();
 app.MapInternalEndpoints();
 app.MapCrashReportEndpoints();

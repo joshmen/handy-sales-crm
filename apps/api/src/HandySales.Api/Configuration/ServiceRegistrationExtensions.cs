@@ -107,6 +107,8 @@ using HandySales.Shared.Email;
 using HandySales.Application.Tenants.Interfaces;
 using HandySales.Infrastructure.Tenants.Services;
 using HandySales.Application.Auth.Validators;
+using HandySales.Application.SubscriptionPlans.Interfaces;
+using HandySales.Infrastructure.Repositories.SubscriptionPlans;
 
 namespace HandySales.Api.Configuration;
 
@@ -291,6 +293,10 @@ public static class ServiceRegistrationExtensions
 
         // Crash Reports (log-level, no service layer needed)
         services.AddScoped<ICrashReportRepository, CrashReportRepository>();
+
+        // Subscription Plans (SuperAdmin CRUD + Enforcement)
+        services.AddScoped<ISubscriptionPlanRepository, SubscriptionPlanRepository>();
+        services.AddScoped<ISubscriptionEnforcementService, SubscriptionEnforcementService>();
 
         return services;
     }

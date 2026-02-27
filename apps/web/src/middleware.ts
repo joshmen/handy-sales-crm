@@ -41,7 +41,9 @@ export default withAuth(
       pathname === '/forgot-password' ||
       pathname === '/reset-password' ||
       pathname === '/register' ||
-      pathname === '/verify-email';
+      pathname === '/verify-email' ||
+      pathname === '/privacidad' ||
+      pathname === '/terminos';
     const isAuthPage = pathname.startsWith('/login') || pathname === '/register' || pathname === '/verify-email';
     const isApiRoute = pathname.startsWith('/api');
     // Mobile API routes removed — mobile app calls .NET Mobile API (port 1052) directly

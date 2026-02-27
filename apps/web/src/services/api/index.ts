@@ -20,6 +20,7 @@ import { unitService } from './units';
 import { impersonationService } from './impersonation';
 import { deviceSessionService } from './deviceSessions';
 import { crashReportService } from './crashReports';
+import { subscriptionPlanAdminService } from './subscriptionPlansAdmin';
 
 // 2) Re-exporta todo (tipos, funciones, etc.)
 export * from './auth';
@@ -41,6 +42,7 @@ export * from './units';
 export * from './impersonation';
 export * from './deviceSessions';
 export * from './crashReports';
+export * from './subscriptionPlansAdmin';
 
 // 3) (Opcional) re-exporta también las instancias por nombre
 export {
@@ -64,6 +66,7 @@ export {
   impersonationService,
   deviceSessionService,
   crashReportService,
+  subscriptionPlanAdminService,
 };
 
 // 4) Objeto centralizado
@@ -88,6 +91,7 @@ export const services = {
   impersonation: impersonationService,
   deviceSessions: deviceSessionService,
   crashReports: crashReportService,
+  subscriptionPlansAdmin: subscriptionPlanAdminService,
 } as const;
 
 export default services;
