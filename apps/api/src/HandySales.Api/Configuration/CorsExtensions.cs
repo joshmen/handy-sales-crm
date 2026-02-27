@@ -26,7 +26,7 @@ public static class CorsExtensions
                 {
                     // Producción: Solo dominios propios (no wildcard *.vercel.app)
                     var allowedVercelHost = Environment.GetEnvironmentVariable("CORS_VERCEL_HOST")
-                        ?? "handysales.vercel.app";
+                        ?? "handy-sales-crm.vercel.app";
 
                     builder
                         .SetIsOriginAllowed(origin =>
@@ -48,7 +48,7 @@ public static class CorsExtensions
             options.AddPolicy("AdminPolicy", builder =>
             {
                 var adminVercelHost = Environment.GetEnvironmentVariable("CORS_VERCEL_HOST")
-                    ?? "handysales.vercel.app";
+                    ?? "handy-sales-crm.vercel.app";
 
                 builder
                     .WithOrigins(
