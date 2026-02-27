@@ -24,14 +24,18 @@ public static class CorsExtensions
                 }
                 else
                 {
-                    // Producción: Permitir dominios propios + cualquier deploy de Vercel
+                    // Producción: Solo dominios propios (no wildcard *.vercel.app)
+                    var allowedVercelHost = Environment.GetEnvironmentVariable("CORS_VERCEL_HOST")
+                        ?? "handysales.vercel.app";
+
                     builder
                         .SetIsOriginAllowed(origin =>
                         {
                             var uri = new Uri(origin);
-                            return uri.Host.EndsWith(".vercel.app") ||
-                                   uri.Host == "handysales.com" ||
-                                   uri.Host == "www.handysales.com";
+                            return uri.Host == allowedVercelHost ||
+                                   uri.Host == "handysuites.com" ||
+                                   uri.Host == "www.handysuites.com" ||
+                                   uri.Host == "app.handysuites.com";
                         })
                         .WithMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
                         .AllowAnyHeader()
@@ -40,14 +44,17 @@ public static class CorsExtensions
                 }
             });
 
-            // Política más restrictiva para endpoints administrativos
+            // Política restrictiva para endpoints administrativos (SuperAdmin)
             options.AddPolicy("AdminPolicy", builder =>
             {
+                var adminVercelHost = Environment.GetEnvironmentVariable("CORS_VERCEL_HOST")
+                    ?? "handysales.vercel.app";
+
                 builder
                     .WithOrigins(
-                        "http://localhost:3000",
-                        "https://localhost:3000",
-                        "https://handysales.vercel.app"
+                        "http://localhost:1083",
+                        $"https://{adminVercelHost}",
+                        "https://app.handysuites.com"
                     )
                     .WithMethods("GET", "POST", "PUT", "DELETE")
                     .WithHeaders("Authorization", "Content-Type")

@@ -74,10 +74,8 @@ type ApiLoginFail = { success: false; message?: string };
 
 type ApiLoginResponse = ApiLoginSuccessWrapped | ApiLoginSuccessFlat | ApiLoginFail | undefined;
 
-// arriba del file
-const isDevLike = () =>
-  process.env.ALLOW_DEV_LOGIN === 'true' || 
-  process.env.NODE_ENV === 'development';
+// Mock auth only in development — NEVER allow via env var in production
+const isDevOnly = () => process.env.NODE_ENV === 'development';
 
 // —— Type guards ——
 function isWrappedSuccess(r: unknown): r is ApiLoginSuccessWrapped {
@@ -207,7 +205,7 @@ export const authOptions: NextAuthOptions = {
           }
 
           // Backend responded but login failed - only fall back to mock in dev
-          if (isDevLike()) {
+          if (isDevOnly()) {
             const user = MOCK_USERS.find(
               u => u.email === credentials.email && u.password === credentials.password
             );
@@ -229,7 +227,7 @@ export const authOptions: NextAuthOptions = {
           return null;
         } catch (error) {
           // Backend unreachable - fall back to mock in development
-          if (isDevLike()) {
+          if (isDevOnly()) {
             console.log('[Auth] Backend unreachable, trying mock auth...');
             const user = MOCK_USERS.find(
               u => u.email === credentials.email && u.password === credentials.password

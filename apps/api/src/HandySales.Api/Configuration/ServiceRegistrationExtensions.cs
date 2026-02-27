@@ -277,8 +277,10 @@ public static class ServiceRegistrationExtensions
         services.AddScoped<IImpersonationRepository, ImpersonationRepository>();
         services.AddScoped<IImpersonationService, ImpersonationService>();
 
-        // 2FA TOTP Services
-        var totpEncryptionKey = config["Totp:EncryptionKey"] ?? config["Jwt:Secret"] ?? "HandySales-Default-TOTP-Key-2026";
+        // 2FA TOTP Services — encryption key MUST be configured (no insecure fallback)
+        var totpEncryptionKey = config["Totp:EncryptionKey"] ?? config["Jwt:Secret"]
+            ?? throw new InvalidOperationException(
+                "TOTP encryption key is required. Set 'Totp:EncryptionKey' or 'Jwt:Secret' in configuration.");
         services.AddSingleton(new TotpEncryptionService(totpEncryptionKey));
         services.AddScoped<TotpService>();
 

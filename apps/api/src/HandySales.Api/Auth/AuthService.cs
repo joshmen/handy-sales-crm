@@ -23,6 +23,7 @@ public class AuthService
     private readonly PwnedPasswordService _pwnedPasswords;
     private readonly IEmailService _emailService;
     private readonly ITenantSeedService _tenantSeedService;
+    private readonly ILogger<AuthService> _logger;
 
     public AuthService(
         HandySalesDbContext db,
@@ -34,7 +35,8 @@ public class AuthService
         TotpService totp,
         PwnedPasswordService pwnedPasswords,
         IEmailService emailService,
-        ITenantSeedService tenantSeedService)
+        ITenantSeedService tenantSeedService,
+        ILogger<AuthService> logger)
     {
         _db = db;
         _jwt = jwt;
@@ -46,6 +48,7 @@ public class AuthService
         _pwnedPasswords = pwnedPasswords;
         _emailService = emailService;
         _tenantSeedService = tenantSeedService;
+        _logger = logger;
     }
 
     public async Task<object?> RegisterAsync(UsuarioRegisterDto dto)
@@ -108,7 +111,7 @@ public class AuthService
 
         // Seed demo data
         try { await _tenantSeedService.SeedDemoDataAsync(tenant.Id); }
-        catch (Exception ex) { Console.WriteLine($"Error seeding demo data: {ex.Message}"); }
+        catch (Exception ex) { _logger.LogWarning(ex, "Error seeding demo data"); }
 
         // Enviar email de verificación
         await SendVerificationEmailAsync(dto.Email, dto.Nombre, verificationCode);
@@ -170,7 +173,7 @@ public class AuthService
 
         // Seed demo data
         try { await _tenantSeedService.SeedDemoDataAsync(tenant.Id); }
-        catch (Exception ex) { Console.WriteLine($"Error seeding demo data: {ex.Message}"); }
+        catch (Exception ex) { _logger.LogWarning(ex, "Error seeding demo data"); }
 
         await LogActivityAsync(tenant.Id, usuario.Id, "social_register", "auth",
             $"Nuevo usuario {dto.Email} se registró con {dto.Provider}");
@@ -253,7 +256,7 @@ public class AuthService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error enviando email de verificación: {ex.Message}");
+            _logger.LogWarning(ex, "Error sending verification email");
         }
     }
 
@@ -272,7 +275,7 @@ public class AuthService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error creando carpeta de Cloudinary: {ex.Message}");
+            _logger.LogWarning(ex, "Error creating Cloudinary folder");
         }
     }
 
@@ -713,14 +716,16 @@ public class AuthService
 
         await _db.SaveChangesAsync();
 
-        return new 
+        return new
         {
-            user = new 
+            user = new
             {
                 id = tokenEntity.Usuario.Id.ToString(),
                 email = tokenEntity.Usuario.Email,
                 name = tokenEntity.Usuario.Nombre,
-                role = tokenEntity.Usuario.EsAdmin ? "ADMIN" : "VENDEDOR"
+                role = tokenEntity.Usuario.EsSuperAdmin ? "SUPER_ADMIN"
+                     : tokenEntity.Usuario.EsAdmin ? "ADMIN"
+                     : "VENDEDOR"
             },
             token = newAccessToken,
             refreshToken = newRefreshToken.Token
@@ -809,24 +814,14 @@ public class AuthService
         catch (Exception ex)
         {
             // Log error pero no fallar el proceso principal
-            Console.WriteLine($"Error logging activity: {ex.Message}");
+            _logger.LogWarning(ex, "Error logging activity");
         }
     }
 
-    private string GetClientIpAddress(HttpContext context)
+    private static string GetClientIpAddress(HttpContext context)
     {
-        var forwarded = context.Request.Headers["X-Forwarded-For"].ToString();
-        if (!string.IsNullOrEmpty(forwarded))
-        {
-            return forwarded.Split(',').First().Trim();
-        }
-
-        var realIp = context.Request.Headers["X-Real-IP"].ToString();
-        if (!string.IsNullOrEmpty(realIp))
-        {
-            return realIp;
-        }
-
+        // ForwardedHeaders middleware (configured in Program.cs) already resolves
+        // X-Forwarded-For into RemoteIpAddress — no manual header parsing needed.
         return context.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
     }
 
@@ -848,9 +843,16 @@ public class AuthService
         // Build reset URL
         var resetUrl = $"{baseUrl}/reset-password?token={token}&email={Uri.EscapeDataString(email)}";
 
-        // Send email
+        // Send email (await to ensure delivery, log on failure)
         var html = EmailTemplates.PasswordReset(usuario.Nombre, resetUrl);
-        _ = _emailService.SendAsync(email, "Restablecer Contraseña - HandySales", html);
+        try
+        {
+            await _emailService.SendAsync(email, "Restablecer Contraseña - HandySales", html);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send password reset email to {Email}", email);
+        }
 
         await LogActivityAsync(usuario.TenantId, usuario.Id, "password_reset_request", "auth",
             $"Solicitud de restablecimiento de contraseña para {email}", "success");

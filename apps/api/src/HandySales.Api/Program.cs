@@ -4,6 +4,7 @@ using HandySales.Api.Hubs;
 using HandySales.Api.Middleware;
 using HandySales.Api.Workers;
 using HandySales.Infrastructure.Persistence;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -54,6 +55,14 @@ if (runMigrations.Equals("true", StringComparison.OrdinalIgnoreCase))
 }
 
 // MIDDLEWARE
+
+// ForwardedHeaders MUST be first — resolves real client IP from reverse proxies (Railway/nginx)
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+    ForwardLimit = 2, // Railway proxy + potential nginx
+});
+
 app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseMiddleware<RequestLoggingMiddleware>();
 

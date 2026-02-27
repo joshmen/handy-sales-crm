@@ -195,8 +195,8 @@ public class CatalogosController : ControllerBase
             await llavePrivada.CopyToAsync(msKey);
             config.LlavePrivada = Convert.ToBase64String(msKey.ToArray());
 
-            // TODO: Encriptar password antes de guardar
-            config.PasswordCertificado = password;
+            // Encrypt certificate password before storing (never store plaintext)
+            config.PasswordCertificado = EncryptPassword(password);
             config.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
@@ -256,6 +256,31 @@ public class CatalogosController : ControllerBase
         await _context.SaveChangesAsync();
 
         return CreatedAtAction(nameof(GetNumeracion), numeracion);
+    }
+
+    /// <summary>
+    /// Encrypts certificate passwords before database storage using AES-256-CBC.
+    /// Key is derived from JWT secret (same pattern as TotpEncryptionService in Main API).
+    /// </summary>
+    private static string EncryptPassword(string plaintext)
+    {
+        var key = Environment.GetEnvironmentVariable("JWT__SecretKey") ?? "billing-default-key";
+        using var sha = System.Security.Cryptography.SHA256.Create();
+        var keyBytes = sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(key));
+
+        using var aes = System.Security.Cryptography.Aes.Create();
+        aes.Key = keyBytes;
+        aes.GenerateIV();
+
+        using var encryptor = aes.CreateEncryptor();
+        var plaintextBytes = System.Text.Encoding.UTF8.GetBytes(plaintext);
+        var cipherBytes = encryptor.TransformFinalBlock(plaintextBytes, 0, plaintextBytes.Length);
+
+        var result = new byte[aes.IV.Length + cipherBytes.Length];
+        Buffer.BlockCopy(aes.IV, 0, result, 0, aes.IV.Length);
+        Buffer.BlockCopy(cipherBytes, 0, result, aes.IV.Length, cipherBytes.Length);
+
+        return Convert.ToBase64String(result);
     }
 }
 

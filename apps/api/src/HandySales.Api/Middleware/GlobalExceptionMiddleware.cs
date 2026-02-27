@@ -7,11 +7,13 @@ public class GlobalExceptionMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<GlobalExceptionMiddleware> _logger;
+    private readonly bool _isDevelopment;
 
-    public GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExceptionMiddleware> logger)
+    public GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExceptionMiddleware> logger, IWebHostEnvironment env)
     {
         _next = next;
         _logger = logger;
+        _isDevelopment = env.IsDevelopment();
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -22,21 +24,21 @@ public class GlobalExceptionMiddleware
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception occurred. Request: {Method} {Path}", 
+            _logger.LogError(ex, "Unhandled exception occurred. Request: {Method} {Path}",
                 context.Request.Method, context.Request.Path);
-            
-            await HandleExceptionAsync(context, ex);
+
+            await HandleExceptionAsync(context, ex, _isDevelopment);
         }
     }
 
-    private static async Task HandleExceptionAsync(HttpContext context, Exception exception)
+    private static async Task HandleExceptionAsync(HttpContext context, Exception exception, bool isDevelopment)
     {
         context.Response.ContentType = "application/json; charset=utf-8";
-        
+
         var response = new
         {
             Success = false,
-            Message = GetErrorMessage(exception),
+            Message = GetErrorMessage(exception, isDevelopment),
             Data = (object?)null
         };
 
@@ -50,10 +52,8 @@ public class GlobalExceptionMiddleware
         await context.Response.WriteAsync(jsonResponse);
     }
 
-    private static string GetErrorMessage(Exception exception)
+    private static string GetErrorMessage(Exception exception, bool isDevelopment)
     {
-        // TODO: Remove this debug output after fixing the issue
-        // Return detailed error message in development for debugging
         var baseMessage = exception switch
         {
             ArgumentException => "Invalid request parameters",
@@ -63,8 +63,11 @@ public class GlobalExceptionMiddleware
             _ => "An error occurred while processing your request"
         };
 
-        // Include actual exception details for debugging
-        return $"{baseMessage}: {exception.GetType().Name} - {exception.Message}";
+        // Only include exception details in development — never leak to production clients
+        if (isDevelopment)
+            return $"{baseMessage}: {exception.GetType().Name} - {exception.Message}";
+
+        return baseMessage;
     }
 
     private static int GetStatusCode(Exception exception)

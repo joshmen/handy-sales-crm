@@ -8,6 +8,11 @@ namespace HandySales.Api.Endpoints
     {
         public static void MapTestEndpoints(this IEndpointRouteBuilder app)
         {
+            // Only register test endpoints in Development — never expose in production
+            var env = app.ServiceProvider.GetRequiredService<IWebHostEnvironment>();
+            if (!env.IsDevelopment())
+                return;
+
             var group = app.MapGroup("/api/test")
                 .WithTags("Test")
                 .AllowAnonymous();
