@@ -501,7 +501,7 @@ export default function LandingPage() {
           </div>
 
           <div className="border-t border-gray-800 mt-12 pt-6 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs">
-            <p>© 2026 Handy Suites® — Todos los derechos reservados</p>
+            <p>© {new Date().getFullYear()} Handy Suites® — Todos los derechos reservados</p>
             <p>Hecho para PYMEs mexicanas</p>
           </div>
         </div>

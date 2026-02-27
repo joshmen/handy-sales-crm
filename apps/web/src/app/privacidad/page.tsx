@@ -150,7 +150,7 @@ export default function PrivacidadPage() {
         </div>
 
         <div className="mt-12 border-t border-gray-200 pt-6 text-center text-sm text-gray-500">
-          <p>© 2026 Handy Suites® — Todos los derechos reservados</p>
+          <p>© {new Date().getFullYear()} Handy Suites® — Todos los derechos reservados</p>
           <div className="mt-2 flex justify-center gap-4">
             <Link href="/terminos" className="text-blue-600 hover:underline">Términos de uso</Link>
             <Link href="/" className="text-blue-600 hover:underline">Inicio</Link>
