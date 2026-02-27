@@ -2,10 +2,10 @@
 
 import React, { useState, useCallback, useMemo } from 'react';
 import { Calendar, dateFnsLocalizer, type View } from 'react-big-calendar';
-import { format, parse, startOfWeek, getDay, startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns';
+import { format, parse, startOfWeek, getDay, startOfMonth, endOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { ClienteVisitaListaDto, TipoVisita } from '@/types/visits';
+import { ClienteVisitaListaDto } from '@/types/visits';
 
 const locales = { es };
 

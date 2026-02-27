@@ -21,6 +21,7 @@ export function DashboardEjecutivoReport() {
     finally { setLoading(false); }
   }, [periodo]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetch(); }, [periodo]);
 
   const periodoLabel = periodo === 'semana' ? 'esta semana' : periodo === 'trimestre' ? 'este trimestre' : 'este mes';

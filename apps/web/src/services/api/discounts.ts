@@ -1,14 +1,5 @@
 // src/services/api/discounts.ts
 import { api, handleApiError } from '@/lib/api';
-import {
-  Discount,
-  DiscountType,
-  DiscountMethod,
-  DiscountStatus,
-  CreateDiscountDto,
-  UpdateDiscountDto,
-  DiscountFilters
-} from '@/types/discounts';
 
 // ============ TIPOS DEL BACKEND ============
 

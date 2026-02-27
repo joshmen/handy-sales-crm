@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
@@ -12,7 +12,6 @@ import {
   ShoppingCart,
   MapPin,
   Calendar,
-  FileText,
   Truck,
   BarChart3,
   Settings,

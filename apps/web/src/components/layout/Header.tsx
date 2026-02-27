@@ -14,21 +14,13 @@ import {
   Settings,
   User,
   LogOut,
-  Moon,
-  Sun,
-  ChevronDown,
   Menu,
-  Home,
-  ChevronRight,
-  Calendar,
-  Users,
   Info,
   Building2,
 } from 'lucide-react';
 import { useSidebar, useTheme } from '@/stores/useUIStore';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import {
@@ -36,9 +28,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/Dialog';
-import { Separator } from '@/components/ui/Separator';
 import { getRoleDisplayName, getRoleColor } from '@/lib/roles';
 import { ImpersonationModal } from '@/components/impersonation';
 import { useNotifications } from '@/hooks/useNotifications';
@@ -96,7 +86,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
   const isClient = useClientOnly();
   const [mounted, setMounted] = useState(false);
   const { toggle } = useSidebar(); // fallback
-  const { theme, toggle: toggleTheme } = useTheme();
+  const { theme } = useTheme();
   const pathname = usePathname();
   const router = useRouter();
   const { data: session } = useSession();
@@ -110,7 +100,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
     markAllAsRead,
   } = useNotifications();
 
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [, setIsSearchOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isImpersonationOpen, setIsImpersonationOpen] = useState(false);
@@ -182,7 +172,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
     return crumbs;
   };
 
-  const breadcrumbs = generateBreadcrumbs();
+  generateBreadcrumbs();
   const unread = unreadCount;
 
   const getInitials = (name: string) =>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast } from '@/hooks/useToast';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import {
@@ -25,7 +25,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
-import { usePaginatedUsers, useCreateUser, useUpdateUser, useDeleteUser } from '@/hooks/useUsers';
+import { usePaginatedUsers, useCreateUser, useUpdateUser } from '@/hooks/useUsers';
 import { roleService, Role } from '@/services/api/roleService';
 import { usersService, type UsuarioUbicacion } from '@/services/api/users';
 import { zoneService } from '@/services/api/zones';
@@ -97,7 +97,7 @@ export default function UsersPage() {
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isCreateModalOpen, isEditModalOpen, isBatchConfirmOpen]);
+  }, [isCreateModalOpen, isEditModalOpen, isBatchConfirmOpen, isLocationModalOpen, isDistanceModalOpen]);
 
   // Load roles and zones
   useEffect(() => {
@@ -208,7 +208,7 @@ export default function UsersPage() {
       setIsCreateModalOpen(false);
       setFormData({ email: '', nombre: '', password: '', telefono: '', role: 'VENDEDOR' });
       loadUsers();
-    } catch (error) {
+    } catch (_error) {
       toast.error('Error al crear usuario');
     }
   };
@@ -227,7 +227,7 @@ export default function UsersPage() {
       setIsEditModalOpen(false);
       setSelectedUser(null);
       loadUsers();
-    } catch (error) {
+    } catch (_error) {
       toast.error('Error al actualizar usuario');
     }
   };

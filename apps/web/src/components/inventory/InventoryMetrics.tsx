@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Card, CardContent } from '@/components/ui/Card';
 import { Package, AlertTriangle, TrendingUp, DollarSign } from 'lucide-react';
 import { InventoryMetrics as IInventoryMetrics } from '@/types/inventory';
 

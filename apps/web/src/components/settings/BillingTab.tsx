@@ -3,10 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
-import { Separator } from '@/components/ui/Separator';
 import { Switch } from '@/components/ui/Switch';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
-import { Save, FileText, Upload } from 'lucide-react';
+import { Save, Upload } from 'lucide-react';
 import { toast } from '@/hooks/useToast';
 
 interface BillingData {

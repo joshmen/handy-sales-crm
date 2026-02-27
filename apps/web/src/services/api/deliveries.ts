@@ -1,7 +1,6 @@
 // src/services/api/deliveries.ts
 // Servicio para seguimiento de entregas - combina datos de rutas y pedidos
 import { api, handleApiError } from '@/lib/api';
-import { DeliveryStatus } from '@/types';
 
 // ============ Backend DTOs ============
 
@@ -255,7 +254,7 @@ class DeliveryService {
     try {
       const response = await api.get<RutaVendedorDto>(`${this.rutasPath}/mi-ruta-hoy`);
       return mapRutaToRouteItem(response.data);
-    } catch (error) {
+    } catch (_error) {
       // Si no hay ruta, retorna null
       return null;
     }

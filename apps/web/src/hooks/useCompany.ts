@@ -17,7 +17,7 @@ export const useCompany = () => {
       } else {
         setError(response.error || 'Error al cargar configuración de la empresa');
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Error al cargar configuración de la empresa');
     } finally {
       setIsLoading(false);

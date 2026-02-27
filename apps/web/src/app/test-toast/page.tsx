@@ -48,7 +48,7 @@ export default function TestToastPage() {
         title: "¡Operación exitosa!",
         description: "El proceso se completó correctamente",
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Error en la operación",
         description: "No se pudo completar el proceso",

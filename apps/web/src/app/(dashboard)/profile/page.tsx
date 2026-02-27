@@ -34,25 +34,18 @@ import {
   Smartphone,
   Monitor,
   Globe,
-  Calendar,
   Camera,
   Save,
-  AlertCircle,
-  CheckCircle,
   MapPin,
   Building,
-  Languages,
   Clock,
   Moon,
   Sun,
-  Volume2,
-  VolumeX,
   Palette,
   Eye,
   EyeOff,
   Trash2,
   Upload,
-  MoreHorizontal,
 } from 'lucide-react';
 
 // Roles del sistema
@@ -65,7 +58,7 @@ enum UserRole {
 
 export default function ProfilePage() {
   // TODOS los hooks deben estar al inicio para cumplir las reglas de hooks
-  const { data: session } = useSession();
+  useSession();
   const {
     profile,
     isLoading,
@@ -78,7 +71,7 @@ export default function ProfilePage() {
   } = useProfile();
 
   // Mock function para updatePreferences y toggle2FA (no implementadas en contexto aún)
-  const updatePreferences = async (data: {
+  const updatePreferences = async (_data: {
     language: string;
     timezone: string;
     theme: string;
@@ -257,7 +250,6 @@ export default function ProfilePage() {
     showDialog,
     setShowDialog,
     handleContinueNavigation,
-    handleSaveAndContinue,
     handleCancelNavigation,
   } = useUnsavedChanges({
     hasUnsavedChanges,
@@ -277,7 +269,6 @@ export default function ProfilePage() {
 
   // Determinar permisos según el rol (backend usa boolean flags)
   const isSuperAdmin = profile?.esSuperAdmin || false;
-  const isAdmin = profile?.esAdmin || false;
   const isVendedor = !profile?.esAdmin && !profile?.esSuperAdmin;
 
   // Renders condicionales DESPUÉS de todos los hooks
@@ -307,18 +298,6 @@ export default function ProfilePage() {
       .map(n => n[0])
       .join('')
       .toUpperCase();
-  };
-
-  // Función para determinar qué campos puede editar el usuario
-  const canEditField = (field: string): boolean => {
-    if (isSuperAdmin) return true; // Super admin puede editar todo menos el rol
-    if (isAdmin) return !['role'].includes(field); // Admin puede editar todo menos rol
-    if (isVendedor) return false; // Vendedor no puede editar campos del perfil
-    return false;
-  };
-
-  const canEditNotifications = (): boolean => {
-    return isSuperAdmin || isAdmin; // Solo admin y super admin
   };
 
   // Funciones de guardado por sección
@@ -490,13 +469,6 @@ export default function ProfilePage() {
     }
   };
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('es-MX', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
 
   const formatTime = (date: Date) => {
     return date.toLocaleString('es-MX', {

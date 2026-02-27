@@ -1,6 +1,6 @@
 // src/services/api/orders.ts
-import { api, handleApiError, ApiResponse } from '@/lib/api';
-import { Order, OrderItem, OrderStatus, OrderFilters } from '@/types';
+import { api, handleApiError } from '@/lib/api';
+import { OrderStatus } from '@/types';
 
 // ============ TIPOS ============
 

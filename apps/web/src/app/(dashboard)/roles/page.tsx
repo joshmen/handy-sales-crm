@@ -51,7 +51,7 @@ import {
   useUpdateRole,
   useDeleteRole,
 } from '@/hooks/useRoles';
-import { Role, CreateRoleDto, UpdateRoleDto } from '@/services/api/roleService';
+import { Role } from '@/services/api/roleService';
 import { Pagination } from '@/components/ui/Pagination';
 import { RolesTableSkeleton } from '@/components/ui/TableSkeleton';
 import { useAsyncPaginatedTable } from '@/hooks/useAsyncTableState';
@@ -124,13 +124,13 @@ export default function RolesPage() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   // React Hook Form - Create
-  const { register: registerCreate, handleSubmit: rhfCreateSubmit, reset: resetCreateForm, watch: watchCreate, setValue: setValueCreate, formState: { errors: createErrors, isDirty: isCreateDirty } } = useForm<RoleFormData>({
+  const { register: registerCreate, handleSubmit: rhfCreateSubmit, reset: resetCreateForm, formState: { errors: createErrors, isDirty: isCreateDirty } } = useForm<RoleFormData>({
     resolver: zodResolver(roleSchema),
     defaultValues: { nombre: '', descripcion: '', activo: true },
   });
 
   // React Hook Form - Edit
-  const { register: registerEdit, handleSubmit: rhfEditSubmit, reset: resetEditForm, watch: watchEdit, setValue: setValueEdit, formState: { errors: editErrors, isDirty: isEditDirty } } = useForm<RoleFormData>({
+  const { register: registerEdit, handleSubmit: rhfEditSubmit, reset: resetEditForm, formState: { errors: editErrors, isDirty: isEditDirty } } = useForm<RoleFormData>({
     resolver: zodResolver(roleSchema),
     defaultValues: { nombre: '', descripcion: '', activo: true },
   });
@@ -255,7 +255,7 @@ export default function RolesPage() {
       setIsDeleteOpen(false);
       setSelectedRole(null);
       loadRoles();
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: 'Error',
         description: 'No se pudo eliminar el rol',

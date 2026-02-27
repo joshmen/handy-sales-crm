@@ -8,7 +8,6 @@ import { toast } from '@/hooks/useToast';
 import {
   Search,
   Truck,
-  Package,
   Clock,
   CheckCircle,
   XCircle,
@@ -19,8 +18,6 @@ import {
   Calendar,
   Route,
   Play,
-  Square,
-  SkipForward,
 } from 'lucide-react';
 
 export default function DeliveriesPage() {
@@ -116,13 +113,6 @@ export default function DeliveriesPage() {
       (route.zonaNombre?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
     return matchesSearch;
   });
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency: 'MXN',
-    }).format(amount);
-  };
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('es-MX', {

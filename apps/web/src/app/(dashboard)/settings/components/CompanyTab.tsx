@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/Label';
 import { Separator } from '@/components/ui/Separator';
 import { Camera, Upload, Trash2, Save } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar';
+import { CompanySettings, UpdateCompanyRequest } from '@/services/api/companyService';
 
 interface CompanyTabProps {
   companySettings: {
@@ -41,16 +42,15 @@ interface CompanyTabProps {
   hasChanges: boolean;
   setHasChanges: React.Dispatch<React.SetStateAction<boolean>>;
   isUpdating: boolean;
-  updateSettings: (data: any) => Promise<boolean>;
+  updateSettings: (data: UpdateCompanyRequest) => Promise<boolean>;
   uploadLogo: (file: File) => Promise<boolean>;
   deleteLogo: () => Promise<boolean>;
-  settings: any;
+  settings: CompanySettings | null;
 }
 
 export const CompanyTab: React.FC<CompanyTabProps> = ({
   companySettings,
   setCompanySettings,
-  originalSettings,
   setOriginalSettings,
   hasChanges,
   setHasChanges,

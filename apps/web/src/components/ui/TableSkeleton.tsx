@@ -6,12 +6,12 @@ interface TableSkeletonProps {
   headerLabels?: string[];
 }
 
-export function TableSkeleton({ 
-  rows = 5, 
-  columns = 6, 
+export function TableSkeleton({
+  rows = 5,
+  columns = 6,
   className = "",
   showHeader = true,
-  headerLabels = []
+  headerLabels: _headerLabels = []
 }: TableSkeletonProps) {
   return (
     <div className={`animate-pulse ${className}`}>

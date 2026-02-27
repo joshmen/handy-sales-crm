@@ -1,3 +1,4 @@
+import type { Driver } from 'driver.js';
 import { TourConfig, boostDrawerForTour, closeDrawerForTour } from './types';
 
 /** Discounts, Promotions, Price Lists */
@@ -15,7 +16,7 @@ export const commercialTours: Record<string, TourConfig> = {
             'Haz clic aquí y elige entre descuento global (aplica a todos los productos) o por producto específico. Define el porcentaje y la cantidad mínima.',
           side: 'bottom',
           align: 'end',
-          onNextClick: (driverObj: any) => {
+          onNextClick: (driverObj: Driver) => {
             (document.querySelector('[data-tour="discounts-create-btn"]') as HTMLElement)?.click();
             setTimeout(() => {
               boostDrawerForTour();
@@ -30,11 +31,11 @@ export const commercialTours: Record<string, TourConfig> = {
           description:
             'Elige entre descuento global o por producto, define rangos de cantidad y porcentaje de descuento para cada rango.',
           side: 'over',
-          onPrevClick: (driverObj: any) => {
+          onPrevClick: (driverObj: Driver) => {
             closeDrawerForTour();
             setTimeout(() => driverObj.movePrevious(), 400);
           },
-          onNextClick: (driverObj: any) => {
+          onNextClick: (driverObj: Driver) => {
             closeDrawerForTour();
             setTimeout(() => driverObj.moveNext(), 400);
           },
@@ -96,7 +97,7 @@ export const commercialTours: Record<string, TourConfig> = {
             'Crea una nueva promoción con descuento para uno o más productos. Define nombre, productos, descuento y fechas de vigencia.',
           side: 'bottom',
           align: 'end',
-          onNextClick: (driverObj: any) => {
+          onNextClick: (driverObj: Driver) => {
             (document.querySelector('[data-tour="promotions-create-btn"]') as HTMLElement)?.click();
             setTimeout(() => {
               boostDrawerForTour();
@@ -111,11 +112,11 @@ export const commercialTours: Record<string, TourConfig> = {
           description:
             'Define el nombre, selecciona productos, establece el porcentaje de descuento y las fechas de vigencia de la promoción.',
           side: 'over',
-          onPrevClick: (driverObj: any) => {
+          onPrevClick: (driverObj: Driver) => {
             closeDrawerForTour();
             setTimeout(() => driverObj.movePrevious(), 400);
           },
-          onNextClick: (driverObj: any) => {
+          onNextClick: (driverObj: Driver) => {
             closeDrawerForTour();
             setTimeout(() => driverObj.moveNext(), 400);
           },
@@ -157,7 +158,7 @@ export const commercialTours: Record<string, TourConfig> = {
             'Crea una lista de precios con nombre y descripción. Después podrás asignar precios específicos por producto dentro de cada lista.',
           side: 'bottom',
           align: 'end',
-          onNextClick: (driverObj: any) => {
+          onNextClick: (driverObj: Driver) => {
             (document.querySelector('[data-tour="pricelists-new-btn"]') as HTMLElement)?.click();
             setTimeout(() => {
               boostDrawerForTour();
@@ -172,11 +173,11 @@ export const commercialTours: Record<string, TourConfig> = {
           description:
             'Define el nombre y descripción de la lista. Después podrás asignar precios específicos por producto.',
           side: 'over',
-          onPrevClick: (driverObj: any) => {
+          onPrevClick: (driverObj: Driver) => {
             closeDrawerForTour();
             setTimeout(() => driverObj.movePrevious(), 400);
           },
-          onNextClick: (driverObj: any) => {
+          onNextClick: (driverObj: Driver) => {
             closeDrawerForTour();
             setTimeout(() => driverObj.moveNext(), 400);
           },

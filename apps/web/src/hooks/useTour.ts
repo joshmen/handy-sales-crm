@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
+import type { Driver } from 'driver.js';
 import { getTourForPathname } from '@/data/tours';
 import { restoreDrawerFromTour, closeDrawerForTour } from '@/data/tours/types';
 
@@ -42,7 +43,7 @@ function ensureDriverCSS() {
 
 export function useTour() {
   const pathname = usePathname();
-  const driverRef = useRef<any>(null);
+  const driverRef = useRef<Driver | null>(null);
 
   const tourConfig = getTourForPathname(pathname);
 
@@ -103,10 +104,10 @@ export function useTour() {
             ? { popoverClass: `handy-tour-popover ${step.popover.popoverClass}` }
             : {}),
           ...(step.popover.onNextClick
-            ? { onNextClick: () => step.popover.onNextClick!(driverRef.current) }
+            ? { onNextClick: () => driverRef.current && step.popover.onNextClick!(driverRef.current) }
             : {}),
           ...(step.popover.onPrevClick
-            ? { onPrevClick: () => step.popover.onPrevClick!(driverRef.current) }
+            ? { onPrevClick: () => driverRef.current && step.popover.onPrevClick!(driverRef.current) }
             : {}),
         },
       })),

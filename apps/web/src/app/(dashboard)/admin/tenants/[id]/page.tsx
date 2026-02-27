@@ -115,6 +115,7 @@ export default function TenantDetailPage() {
       loadTenant();
       loadTenantUsers();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tenantId]);
 
   const loadTenant = async () => {
@@ -243,11 +244,11 @@ export default function TenantDetailPage() {
       });
       handleCloseDrawer();
       loadTenantUsers();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating user:', error);
       toast({
         title: 'Error',
-        description: error?.message || 'No se pudo crear el usuario',
+        description: error instanceof Error ? error.message : 'No se pudo crear el usuario',
         variant: 'destructive',
       });
     } finally {

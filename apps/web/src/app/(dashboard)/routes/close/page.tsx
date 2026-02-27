@@ -1,35 +1,24 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
-import { Table } from '@/components/ui/Table';
 import {
   DollarSign,
   Package,
   TrendingUp,
-  Clock,
   CheckCircle,
   XCircle,
-  AlertCircle,
   FileText,
-  Download,
   Calculator,
-  CreditCard,
-  Banknote,
-  ShoppingCart,
-  RotateCcw,
   Save,
-  Send,
   Printer,
   Eye,
   Calendar,
-  User,
   MapPin,
   Target,
-  TrendingDown,
   BarChart3,
   Plus,
 } from 'lucide-react';
@@ -116,9 +105,9 @@ const mockActiveRoutes = [
 
 export default function RouteClosePage() {
   const { toast } = useToast();
-  const { routes, completeRoute } = useRouteStore();
+  const { completeRoute } = useRouteStore();
 
-  const [selectedRoute, setSelectedRoute] = useState<string>('');
+  const [, setSelectedRoute] = useState<string>('');
   const [closeSummary, setCloseSummary] = useState<CloseSummary | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -150,14 +139,6 @@ export default function RouteClosePage() {
     amount: 0,
     category: 'combustible',
   });
-
-  const [returnedProducts, setReturnedProducts] = useState<
-    Array<{
-      productId: string;
-      quantity: number;
-      reason: string;
-    }>
-  >([]);
 
   const [notes, setNotes] = useState('');
 

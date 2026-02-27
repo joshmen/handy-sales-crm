@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, Controller } from 'react-hook-form';
+import type { Control } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { clientService } from '@/services/api/clients';
 import { api } from '@/lib/api';
@@ -480,7 +481,8 @@ function Checkbox({
   label,
 }: {
   name: keyof ClientFormData;
-  control: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  control: Control<any>;
   label: string;
 }) {
   return (
@@ -542,8 +544,3 @@ function inputClass(error?: { message?: string }) {
   }`;
 }
 
-function selectClass(error?: { message?: string }) {
-  return `w-full h-9 px-3 text-[13px] border rounded focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent appearance-none bg-white ${
-    error ? 'border-red-500' : 'border-gray-300'
-  }`;
-}

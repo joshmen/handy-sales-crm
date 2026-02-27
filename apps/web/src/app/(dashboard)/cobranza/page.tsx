@@ -32,7 +32,6 @@ import {
   createCobro,
   deleteCobro,
   Cobro,
-  CobroCreateDto,
   ResumenCartera,
   SaldoCliente,
   EstadoCuenta,

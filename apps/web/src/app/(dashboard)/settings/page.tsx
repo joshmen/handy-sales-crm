@@ -19,7 +19,7 @@ import { BillingTab } from './components/BillingTab';
 
 export default function SettingsPage() {
   const { data: session } = useSession();
-  const isClient = useClientOnly();
+  useClientOnly();
   const { settings, isUpdating, updateSettings, uploadLogo, deleteLogo } = useCompany();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -28,7 +28,6 @@ export default function SettingsPage() {
   const userRole = session?.user?.role || 'VENDEDOR';
   const isSuperAdmin = userRole === 'SUPER_ADMIN';
   const isAdmin = userRole === 'ADMIN';
-  const isVendedor = userRole === 'VENDEDOR';
 
   // Get tab from URL params, default to "perfil-empresa" for admins, "notifications" for others
   // Note: Only ADMIN (not SUPER_ADMIN) can access company settings as they are tenant-specific
@@ -41,9 +40,7 @@ export default function SettingsPage() {
     sms: false,
     desktop: true,
   });
-  const [originalNotifications, setOriginalNotifications] = useState(notifications);
-
-  const [profile, setProfile] = useState({
+  const [profile] = useState({
     name: session?.user?.name || 'Carlos Mendoza',
     email: session?.user?.email || 'carlos.mendoza@handy.com',
     phone: '+52 644 123 4567',
@@ -86,10 +83,6 @@ export default function SettingsPage() {
     const changed = JSON.stringify(companySettings) !== JSON.stringify(originalSettings);
     setHasChanges(changed);
   }, [companySettings, originalSettings]);
-
-  const handleSaveProfile = () => {
-    // Aquí iría la lógica para guardar el perfil
-  };
 
   return (
     <div className="flex-1 space-y-6 p-6">

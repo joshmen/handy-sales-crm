@@ -155,8 +155,8 @@ export default function UnitsPage() {
 
       setIsModalOpen(false);
       await loadUnits();
-    } catch (error: any) {
-      const message = error?.response?.data?.message || 'Ocurrió un error al guardar la unidad';
+    } catch (error: unknown) {
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Ocurrió un error al guardar la unidad';
       toast({
         title: 'Error',
         description: message,
@@ -182,8 +182,8 @@ export default function UnitsPage() {
       setIsDeleteModalOpen(false);
       setSelectedUnit(null);
       await loadUnits();
-    } catch (error: any) {
-      const message = error?.response?.data?.message || 'Ocurrió un error al eliminar la unidad';
+    } catch (error: unknown) {
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Ocurrió un error al eliminar la unidad';
       toast({
         title: 'No se puede eliminar',
         description: message,

@@ -16,10 +16,28 @@ interface HealthResponse {
 }
 
 interface SystemTabProps {
-  profile: any;
-  notifications: any;
+  profile: {
+    name: string;
+    email: string;
+    phone: string;
+    territory: string;
+    role: string;
+    avatar: string;
+    bio: string;
+  };
+  notifications: {
+    email: boolean;
+    push: boolean;
+    sms: boolean;
+    desktop: boolean;
+  };
   isDarkMode: boolean;
-  companySettings: any;
+  companySettings: {
+    name: string;
+    logo: string;
+    primaryColor: string;
+    secondaryColor: string;
+  };
   isAdmin: boolean;
   isSuperAdmin: boolean;
 }

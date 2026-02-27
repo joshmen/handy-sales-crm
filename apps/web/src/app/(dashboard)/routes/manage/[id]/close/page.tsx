@@ -8,7 +8,6 @@ import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import {
   Loader2,
   User,
-  DollarSign,
   ArrowDown,
   ArrowUp,
   Minus as MinusIcon,
@@ -97,7 +96,7 @@ export default function CloseRoutePage() {
         recAlmacen: updatedItem.recAlmacen,
         cargaVehiculo: updatedItem.cargaVehiculo,
       });
-    } catch (err) {
+    } catch (_err) {
       toast.error('Error al actualizar retorno');
       fetchData();
     }
@@ -148,8 +147,8 @@ export default function CloseRoutePage() {
       });
       toast.success('Ruta cerrada exitosamente');
       fetchData();
-    } catch (err: any) {
-      toast.error(err?.message || 'Error al cerrar ruta');
+    } catch (err: unknown) {
+      toast.error((err instanceof Error ? err.message : null) || 'Error al cerrar ruta');
     } finally {
       setClosing(false);
     }

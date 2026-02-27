@@ -46,6 +46,7 @@ export function useApiQuery<T = unknown>(
       lastFetchTime.current = Date.now();
       return result;
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, api.execute, isStale]);
 
   useEffect(() => {

@@ -4,7 +4,7 @@ import { VisitFilters } from './VisitFilters';
 import { VisitSummary } from './VisitSummary';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/common/EmptyState';
-import { ClienteVisitaListaDto, ResultadoVisita, TipoVisita } from '@/types/visits';
+import { ClienteVisitaListaDto, ResultadoVisita } from '@/types/visits';
 import { Plus, MapPin } from 'lucide-react';
 
 interface VisitListProps {

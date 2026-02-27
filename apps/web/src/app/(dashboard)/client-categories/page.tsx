@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/Input';
 import { toast } from '@/hooks/useToast';
 import { clientCategoryService } from '@/services/api';
 import { ApiError } from '@/lib/api';
-import { ClientCategory, ClientCategoryForm } from '@/types/catalogs';
+import { ClientCategory } from '@/types/catalogs';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';

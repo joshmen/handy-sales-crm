@@ -127,7 +127,7 @@ class ProfileService {
     }
   }
 
-  async getProfile(userId: string): Promise<ApiResponse<UserProfile>> {
+  async getProfile(_userId: string): Promise<ApiResponse<UserProfile>> {
     return this.request<UserProfile>(`/api/profile`, { method: 'GET' });
   }
 
@@ -143,8 +143,8 @@ class ProfileService {
 
   // Note: Preferences are not currently supported by the backend
   async updatePreferences(
-    userId: string,
-    data: UpdatePreferencesRequest
+    _userId: string,
+    _data: UpdatePreferencesRequest
   ): Promise<ApiResponse<UserProfile>> {
     // This would need to be implemented when backend supports preferences
     return {
@@ -186,9 +186,9 @@ class ProfileService {
     }
   }
 
-  async deleteAvatar(userId: string): Promise<ApiResponse<void>> {
+  async deleteAvatar(_userId: string): Promise<ApiResponse<void>> {
     try {
-      const response = await api.delete('/api/profile/avatar');
+      await api.delete('/api/profile/avatar');
 
       return {
         success: true,

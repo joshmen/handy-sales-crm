@@ -1,3 +1,4 @@
+import type { Driver } from 'driver.js';
 import { TourConfig, boostDrawerForTour, closeDrawerForTour } from './types';
 
 /** Orders, Inventory, Movements, Routes (all variants), Deliveries, Calendar, Visits */
@@ -15,7 +16,7 @@ export const operationTours: Record<string, TourConfig> = {
             'Haz clic aquí para crear un pedido. Selecciona un cliente, agrega productos con cantidades y precios, y el sistema calculará totales automáticamente.',
           side: 'bottom',
           align: 'end',
-          onNextClick: (driverObj: any) => {
+          onNextClick: (driverObj: Driver) => {
             (document.querySelector('[data-tour="orders-create-btn"]') as HTMLElement)?.click();
             setTimeout(() => {
               boostDrawerForTour();
@@ -30,11 +31,11 @@ export const operationTours: Record<string, TourConfig> = {
           description:
             'Selecciona el cliente, agrega productos con cantidades, define prioridad y método de pago. El sistema calcula subtotales, IVA y total automáticamente.',
           side: 'over',
-          onPrevClick: (driverObj: any) => {
+          onPrevClick: (driverObj: Driver) => {
             closeDrawerForTour();
             setTimeout(() => driverObj.movePrevious(), 400);
           },
-          onNextClick: (driverObj: any) => {
+          onNextClick: (driverObj: Driver) => {
             closeDrawerForTour();
             setTimeout(() => driverObj.moveNext(), 400);
           },
@@ -106,7 +107,7 @@ export const operationTours: Record<string, TourConfig> = {
             'Haz clic aquí para registrar un nuevo producto en el inventario con su cantidad inicial, stock mínimo y stock máximo.',
           side: 'bottom',
           align: 'end',
-          onNextClick: (driverObj: any) => {
+          onNextClick: (driverObj: Driver) => {
             (document.querySelector('[data-tour="inventory-add-btn"]') as HTMLElement)?.click();
             setTimeout(() => {
               boostDrawerForTour();
@@ -121,11 +122,11 @@ export const operationTours: Record<string, TourConfig> = {
           description:
             'Selecciona el producto, define la cantidad inicial, stock mínimo y stock máximo para mantener control de tu almacén.',
           side: 'over',
-          onPrevClick: (driverObj: any) => {
+          onPrevClick: (driverObj: Driver) => {
             closeDrawerForTour();
             setTimeout(() => driverObj.movePrevious(), 400);
           },
-          onNextClick: (driverObj: any) => {
+          onNextClick: (driverObj: Driver) => {
             closeDrawerForTour();
             setTimeout(() => driverObj.moveNext(), 400);
           },

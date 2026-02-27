@@ -13,6 +13,7 @@ export const DEV_CONFIG = {
 export const devLog = {
   info: (message: string, ...args: unknown[]) => {
     if (DEV_CONFIG.ENABLE_LOGS) {
+      // eslint-disable-next-line no-console
       console.log(`[Handy Suites] ${message}`, ...args);
     }
   },
@@ -28,6 +29,7 @@ export const devLog = {
   },
   success: (message: string, ...args: unknown[]) => {
     if (DEV_CONFIG.ENABLE_LOGS) {
+      // eslint-disable-next-line no-console
       console.log(`[Handy Suites] ${message}`, ...args);
     }
   },
@@ -120,12 +122,14 @@ export const generateMockProduct = (overrides: Record<string, unknown> = {}) => 
 export const performanceMonitor = {
   start: (label: string) => {
     if (DEV_CONFIG.ENABLE_LOGS) {
-      console.time(`⏱️ [${label}]`);
+      // eslint-disable-next-line no-console
+      console.time(`[${label}]`);
     }
   },
   end: (label: string) => {
     if (DEV_CONFIG.ENABLE_LOGS) {
-      console.timeEnd(`⏱️ [${label}]`);
+      // eslint-disable-next-line no-console
+      console.timeEnd(`[${label}]`);
     }
   },
   mark: (label: string) => {
@@ -202,7 +206,7 @@ export const DevInfo: React.FC = () => {
   );
 };
 
-export default {
+const devUtils = {
   DEV_CONFIG,
   devLog,
   mockDelay,
@@ -218,3 +222,5 @@ export default {
   FEATURE_FLAGS,
   DevInfo,
 };
+
+export default devUtils;

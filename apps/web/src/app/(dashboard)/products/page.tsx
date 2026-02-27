@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
 import { Product } from '@/types';
-import { productService, CreateProductRequest } from '@/services/api/products';
+import { productService } from '@/services/api/products';
 import { productCategoryService, unitService } from '@/services/api';
 import { api } from '@/lib/api';
 import { toast } from '@/hooks/useToast';
@@ -132,7 +132,7 @@ export default function ProductsPage() {
   // Image upload state
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [uploadingImage, setUploadingImage] = useState(false);
+  const [, setUploadingImage] = useState(false);
   const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null);
 
   // Combined isDirty that includes image
@@ -281,9 +281,10 @@ export default function ProductsPage() {
       await fetchProducts();
       setShowProductForm(false);
       setEditingProduct(null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error al guardar producto:', err);
-      toast.error(err?.response?.data?.message || 'Error al guardar el producto');
+      const e = err as { response?: { data?: { message?: string } }; message?: string };
+      toast.error(e?.response?.data?.message || e?.message || 'Error al guardar el producto');
     } finally {
       setSavingProduct(false);
     }

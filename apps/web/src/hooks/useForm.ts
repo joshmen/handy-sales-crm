@@ -11,7 +11,6 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { useToast } from './useToast';
-import { ZodSchema, ZodType } from 'zod/v3';
 
 /* ============================================================================
    Helpers seguros (sin any) para navegar errores/touched por path (a.b.c)

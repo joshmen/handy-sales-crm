@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { Card, CardHeader, CardContent, Button, Select } from "@/components/ui";
 import { Visit } from "@/types/calendar";
 
 interface CalendarViewProps {
@@ -19,7 +18,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   onVisitClick,
   selectedUser,
 }) => {
-  const [viewMode, setViewMode] = useState<"month" | "week" | "day">("month");
+  const [viewMode] = useState<"month" | "week" | "day">("month");
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();

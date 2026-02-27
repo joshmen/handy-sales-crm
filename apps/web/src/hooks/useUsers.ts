@@ -21,6 +21,7 @@ export function useUsers(params?: UsersParams) {
   const [error, setError] = useState<string | null>(null);
 
   // Memoizar params para evitar cambios innecesarios
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const memoizedParams = useMemo(() => params, [JSON.stringify(params)]);
 
   const execute = useCallback(async () => {

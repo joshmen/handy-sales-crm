@@ -39,14 +39,14 @@ export function ActividadClientesReport() {
   };
 
   // Initial load
-  useEffect(() => { fetchData(1); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchData(1); }, []);
 
   // Re-fetch when page changes (from pagination buttons)
   const isInitialMount = useRef(true);
   useEffect(() => {
     if (isInitialMount.current) { isInitialMount.current = false; return; }
     fetchData(page);
-  }, [page]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [page]);
 
   const totalPages = Math.ceil(total / limit);
 

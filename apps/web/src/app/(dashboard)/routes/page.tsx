@@ -310,8 +310,9 @@ export default function RoutesPage() {
       }
       setIsModalOpen(false);
       fetchRoutes();
-    } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.message || 'Error al guardar ruta';
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } }; message?: string };
+      const msg = e?.response?.data?.message || e?.message || 'Error al guardar ruta';
       toast.error(msg);
     } finally {
       setActionLoading(false);

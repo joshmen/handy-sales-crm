@@ -4,13 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { toast } from '@/hooks/useToast';
 import {
   Download,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Search,
-  Filter,
-  Calendar,
-  Database,
   FileText,
 } from 'lucide-react';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';

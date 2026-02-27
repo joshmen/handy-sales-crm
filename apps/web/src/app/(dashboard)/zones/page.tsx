@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
 import { toast } from '@/hooks/useToast';
-import { Zone, ZoneForm } from '@/types/zones';
+import { Zone } from '@/types/zones';
 import { zoneService } from '@/services/api';
 import { api } from '@/lib/api';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
@@ -174,10 +174,6 @@ export default function ZonesPage() {
     setShowZoneForm(true);
   };
 
-  const handleCancelForm = () => {
-    drawerRef.current?.requestClose();
-  };
-
   const handleCloseDrawer = () => {
     setShowZoneForm(false);
     setEditingZone(null);
@@ -209,9 +205,9 @@ export default function ZonesPage() {
           z.id === zone.id ? { ...z, isEnabled: newActive } : z
         ));
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error al cambiar estado:', err);
-      const message = err?.response?.data?.message || 'Error al cambiar el estado de la zona';
+      const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Error al cambiar el estado de la zona';
       toast.error(message);
     } finally {
       setTogglingId(null);
@@ -282,9 +278,9 @@ export default function ZonesPage() {
           ids.includes(parseInt(z.id)) ? { ...z, isEnabled: activo } : z
         ));
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error en batch toggle:', error);
-      const message = error?.response?.data?.message || 'Error al cambiar el estado de las zonas';
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Error al cambiar el estado de las zonas';
       toast.error(message);
     } finally {
       setBatchLoading(false);

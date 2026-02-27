@@ -107,7 +107,7 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
         });
         return true;
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: 'Error',
         description: 'No se pudo actualizar el perfil',
@@ -139,7 +139,7 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
         });
         return false;
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: 'Error',
         description: 'No se pudo cambiar la contraseña',
@@ -177,7 +177,7 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
         });
         return false;
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: 'Error',
         description: 'No se pudo subir la foto',
@@ -215,7 +215,7 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
         });
         return false;
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: 'Error',
         description: 'No se pudo eliminar la foto',

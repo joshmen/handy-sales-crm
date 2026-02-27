@@ -256,8 +256,9 @@ export default function PromotionsPage() {
 
       setIsModalOpen(false);
       await fetchPromotions();
-    } catch (error: any) {
-      const msg = error?.response?.data?.message || error?.message || 'Ocurrio un error';
+    } catch (error: unknown) {
+      const e = error as { response?: { data?: { message?: string } }; message?: string };
+      const msg = e?.response?.data?.message || e?.message || 'Ocurrio un error';
       toast.error(msg);
     } finally {
       setActionLoading(false);
@@ -273,8 +274,8 @@ export default function PromotionsPage() {
       setIsDeleteConfirmOpen(false);
       setDeletingPromotion(null);
       await fetchPromotions();
-    } catch (error: any) {
-      const msg = error?.response?.data?.message || 'Error al eliminar';
+    } catch (error: unknown) {
+      const msg = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Error al eliminar';
       toast.error(msg);
     } finally {
       setActionLoading(false);
@@ -295,8 +296,8 @@ export default function PromotionsPage() {
           p.id === promo.id ? { ...p, activo: newActivo } : p
         ));
       }
-    } catch (error: any) {
-      const msg = error?.response?.data?.message || 'Error al cambiar estado';
+    } catch (error: unknown) {
+      const msg = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Error al cambiar estado';
       toast.error(msg);
       await fetchPromotions();
     } finally {

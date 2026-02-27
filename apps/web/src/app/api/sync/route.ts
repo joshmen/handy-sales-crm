@@ -192,7 +192,6 @@ export async function POST(request: NextRequest) {
 
     // Si hay una fecha de última sincronización, filtrar solo datos nuevos/actualizados
     if (lastSyncDate) {
-      const lastSync = new Date(lastSyncDate);
       // Aquí filtrarías los datos que han sido modificados después de lastSync
       // Por ahora, enviamos todo en desarrollo
       syncData.deletedIds = {
@@ -216,7 +215,7 @@ export async function POST(request: NextRequest) {
 }
 
 // Endpoint GET para verificar el estado de sincronización
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 

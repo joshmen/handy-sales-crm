@@ -37,7 +37,6 @@ export default function RouteDetailPage() {
   // Add stop modal
   const [isAddStopOpen, setIsAddStopOpen] = useState(false);
   const [clients, setClients] = useState<{ value: string; label: string }[]>([]);
-  const [clientSearch, setClientSearch] = useState('');
   const [stopForm, setStopForm] = useState({ clienteId: 0, duracion: 30, notas: '' });
 
   // Cancel modal

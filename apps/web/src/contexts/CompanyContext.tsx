@@ -147,7 +147,7 @@ export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) =>
         });
         return true;
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: 'Error',
         description: 'No se pudo actualizar la configuración',

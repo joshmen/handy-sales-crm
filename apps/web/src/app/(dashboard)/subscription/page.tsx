@@ -39,7 +39,7 @@ const planColors: Record<string, string> = {
 };
 
 export default function SubscriptionPage() {
-  const { isAuthorized } = useRequireAdmin();
+  useRequireAdmin();
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -126,7 +126,6 @@ export default function SubscriptionPage() {
 
   const currentPlan = plans.find(p => p.codigo === subscription.planTipo?.toUpperCase());
   const statusInfo = statusLabels[subscription.subscriptionStatus] || statusLabels.Trial;
-  const isActive = subscription.subscriptionStatus === "Active" || subscription.subscriptionStatus === "Trial";
   const daysLeft = subscription.fechaExpiracion
     ? Math.max(0, Math.ceil((new Date(subscription.fechaExpiracion).getTime() - Date.now()) / 86400000))
     : null;

@@ -1,3 +1,4 @@
+import type { Driver } from 'driver.js';
 import { TourConfig, imageStep, boostDrawerForTour, closeDrawerForTour } from './types';
 
 /** Clients, Products, Zones, Client Categories, Product Categories, Product Families, Units */
@@ -88,7 +89,7 @@ export const catalogTours: Record<string, TourConfig> = {
             'Haz clic aquí para dar de alta un producto. Deberás capturar nombre, código de barras, familia, categoría, unidad de medida y precio base. También puedes subir una imagen.',
           side: 'bottom',
           align: 'end',
-          onNextClick: (driverObj: any) => {
+          onNextClick: (driverObj: Driver) => {
             (document.querySelector('[data-tour="products-new-btn"]') as HTMLElement)?.click();
             setTimeout(() => {
               boostDrawerForTour();
@@ -103,11 +104,11 @@ export const catalogTours: Record<string, TourConfig> = {
           description:
             'Captura nombre, código de barras, familia, categoría, unidad de medida, precio base y sube una imagen del producto.',
           side: 'over',
-          onPrevClick: (driverObj: any) => {
+          onPrevClick: (driverObj: Driver) => {
             closeDrawerForTour();
             setTimeout(() => driverObj.movePrevious(), 400);
           },
-          onNextClick: (driverObj: any) => {
+          onNextClick: (driverObj: Driver) => {
             closeDrawerForTour();
             setTimeout(() => driverObj.moveNext(), 400);
           },

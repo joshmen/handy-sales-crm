@@ -34,11 +34,6 @@ interface ProductFamily {
   activo: boolean;
 }
 
-interface ProductFamilyForm {
-  nombre: string;
-  descripcion: string;
-}
-
 const formSchema = z.object({
   nombre: z.string().min(1, 'El nombre es requerido'),
   descripcion: z.string(),
@@ -164,9 +159,9 @@ export default function ProductFamiliesPage() {
 
       setShowFamilyForm(false);
       await loadFamilies();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error al guardar familia:', error);
-      const message = error?.response?.data?.message || 'Error al guardar la familia';
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Error al guardar la familia';
       toast.error(message);
     } finally {
       setSavingFamily(false);
@@ -188,9 +183,9 @@ export default function ProductFamiliesPage() {
       setShowDeleteConfirm(false);
       setDeletingFamily(null);
       await loadFamilies();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error al eliminar:', error);
-      const message = error?.response?.data?.message || 'Ocurrió un error al eliminar la familia';
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Ocurrió un error al eliminar la familia';
       toast.error(message);
       setShowDeleteConfirm(false);
       setDeletingFamily(null);
@@ -213,9 +208,9 @@ export default function ProductFamiliesPage() {
           f.id === family.id ? { ...f, activo: newActivo } : f
         ));
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error al cambiar estado:', error);
-      const message = error?.response?.data?.message || 'Error al cambiar el estado de la familia';
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Error al cambiar el estado de la familia';
       toast.error(message);
     } finally {
       setTogglingId(null);
@@ -286,9 +281,9 @@ export default function ProductFamiliesPage() {
           ids.includes(f.id) ? { ...f, activo } : f
         ));
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error en batch toggle:', error);
-      const message = error?.response?.data?.message || 'Error al cambiar el estado de las familias';
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Error al cambiar el estado de las familias';
       toast.error(message);
     } finally {
       setBatchLoading(false);

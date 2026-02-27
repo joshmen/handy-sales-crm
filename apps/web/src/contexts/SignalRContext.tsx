@@ -79,6 +79,9 @@ export function SignalRProvider({ children }: { children: React.ReactNode }) {
     if (tokenRef.current === session.accessToken && connectionRef.current) return;
     tokenRef.current = session.accessToken;
 
+    // Capture ref value for cleanup to avoid stale ref warning
+    const dispatchers = dispatchersRef.current;
+
     // Stop existing connection before creating a new one
     const oldConnection = connectionRef.current;
     if (oldConnection) {
@@ -131,7 +134,7 @@ export function SignalRProvider({ children }: { children: React.ReactNode }) {
     return () => {
       connection.stop().catch(() => {});
       connectionRef.current = null;
-      dispatchersRef.current.clear();
+      dispatchers.clear();
       setIsConnected(false);
     };
   }, [status, session?.accessToken, bindDispatchers]);

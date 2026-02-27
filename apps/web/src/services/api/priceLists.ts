@@ -1,6 +1,5 @@
 // src/services/api/priceLists.ts
 import { api, handleApiError } from '@/lib/api';
-import { PriceList, PriceListProduct, CreatePriceListDto, UpdatePriceListDto } from '@/types/price-lists';
 
 // ============ TIPOS DEL BACKEND ============
 
@@ -202,7 +201,9 @@ class ProductPriceService {
 export const priceListService = new PriceListService();
 export const productPriceService = new ProductPriceService();
 
-export default {
+const priceListsDefault = {
   priceLists: priceListService,
   productPrices: productPriceService
 };
+
+export default priceListsDefault;

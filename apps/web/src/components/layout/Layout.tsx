@@ -1,7 +1,5 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { HelpPanel } from '@/components/help/HelpPanel';

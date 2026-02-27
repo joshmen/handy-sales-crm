@@ -48,7 +48,7 @@ if (typeof window !== 'undefined') {
       message.includes('There was an error while hydrating') ||
       message.includes('Text content did not match')
     ) {
-      console.info('🔇 Suppressed hydration warning (development)');
+      originalConsoleWarn('Suppressed hydration warning (development)');
       return;
     }
 

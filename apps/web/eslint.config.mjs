@@ -17,6 +17,12 @@ const eslintConfig = [
   {
     rules: {
       "no-console": ["warn", { allow: ["warn", "error"] }],
+      "@typescript-eslint/no-unused-vars": ["warn", {
+        argsIgnorePattern: "^_",
+        varsIgnorePattern: "^_",
+        caughtErrorsIgnorePattern: "^_",
+      }],
+      "@next/next/no-img-element": "off",
     },
   },
 ];

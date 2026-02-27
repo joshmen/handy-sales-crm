@@ -193,8 +193,9 @@ export default function InventoryPage() {
         toast.success('Inventario creado correctamente');
         setModalOpen(false);
         fetchInventory();
-      } catch (err: any) {
-        const msg = err?.response?.data?.message || err?.message || 'Error al crear inventario';
+      } catch (err: unknown) {
+        const e = err as { response?: { data?: { message?: string } }; message?: string };
+        const msg = e?.response?.data?.message || e?.message || 'Error al crear inventario';
         toast.error(msg);
       } finally {
         setSubmitting(false);
@@ -220,8 +221,9 @@ export default function InventoryPage() {
         toast.success('Inventario actualizado correctamente');
         setModalOpen(false);
         fetchInventory();
-      } catch (err: any) {
-        const msg = err?.response?.data?.message || err?.message || 'Error al actualizar inventario';
+      } catch (err: unknown) {
+        const e = err as { response?: { data?: { message?: string } }; message?: string };
+        const msg = e?.response?.data?.message || e?.message || 'Error al actualizar inventario';
         toast.error(msg);
       } finally {
         setSubmitting(false);

@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { CheckCircle, Monitor, Tablet, Smartphone } from 'lucide-react';
 import { Space_Grotesk } from 'next/font/google';
 
@@ -136,7 +137,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
       <div className="flex-1 flex flex-col bg-white">
         {/* Top bar */}
         <div className="px-6 py-4 flex items-center justify-between">
-          <a href="/" className="flex items-center gap-2 lg:hidden">
+          <Link href="/" className="flex items-center gap-2 lg:hidden">
             <Image src="/logo-icon.svg" alt="" width={32} height={32} />
             <div className="flex items-baseline gap-1">
               <span className="text-[18px] font-black text-gray-900 tracking-tight">
@@ -146,13 +147,13 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
                 Suites<sup className="text-[10px] text-gray-400">&reg;</sup>
               </span>
             </div>
-          </a>
-          <a
+          </Link>
+          <Link
             href="/"
             className="text-sm text-gray-500 hover:text-gray-700 transition-colors ml-auto"
           >
             &larr; Volver al inicio
-          </a>
+          </Link>
         </div>
 
         {/* Form centrado */}

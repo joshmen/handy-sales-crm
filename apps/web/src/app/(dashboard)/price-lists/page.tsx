@@ -34,11 +34,6 @@ interface ListaPrecio {
   actualizadoEn?: string;
 }
 
-interface ListaPrecioForm {
-  nombre: string;
-  descripcion: string;
-}
-
 const formSchema = z.object({
   nombre: z.string().min(1, 'El nombre es requerido'),
   descripcion: z.string(),
@@ -157,9 +152,9 @@ export default function PriceListsPage() {
 
       setShowListForm(false);
       await loadPriceLists();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error al guardar lista:', error);
-      const message = error?.response?.data?.message || 'Error al guardar la lista de precios';
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Error al guardar la lista de precios';
       toast.error(message);
     } finally{
       setSavingList(false);
@@ -185,9 +180,9 @@ export default function PriceListsPage() {
           l.id === list.id ? { ...l, activo: newActivo } : l
         ));
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error al cambiar estado:', error);
-      const message = error?.response?.data?.message || 'Error al cambiar el estado de la lista';
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Error al cambiar el estado de la lista';
       toast.error(message);
     } finally {
       setTogglingId(null);
@@ -258,9 +253,9 @@ export default function PriceListsPage() {
           ids.includes(l.id) ? { ...l, activo } : l
         ));
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error en batch toggle:', error);
-      const message = error?.response?.data?.message || 'Error al cambiar el estado de las listas';
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Error al cambiar el estado de las listas';
       toast.error(message);
     } finally {
       setBatchLoading(false);

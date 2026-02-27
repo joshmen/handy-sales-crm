@@ -1,13 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { SelectCompat as Select } from '@/components/ui/SelectCompat';
 import { Modal } from '@/components/ui/Modal';
 import { Badge } from '@/components/ui/Badge';
-import { Table } from '@/components/ui/Table';
 import {
   Plus,
   Edit,
@@ -17,23 +16,14 @@ import {
   Users,
   Filter,
   Download,
-  Upload,
-  Settings,
-  ChevronDown,
   Search,
   Map,
   Navigation,
   Target,
   Clock,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  RefreshCw,
   Copy,
-  Archive,
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
 import useRouteStore from '@/stores/useRouteStore';
 import { useToast } from '@/hooks/useToast';
 
@@ -107,7 +97,7 @@ const zones = [
 
 export default function RouteAdminPage() {
   const { toast } = useToast();
-  const { routes, addRoute, updateRoute, deleteRoute, getFilteredRoutes } = useRouteStore();
+  const { addRoute } = useRouteStore();
 
   const [templates, setTemplates] = useState<RouteTemplate[]>(mockTemplates);
   const [selectedTemplate, setSelectedTemplate] = useState<RouteTemplate | null>(null);
@@ -212,7 +202,7 @@ export default function RouteAdminPage() {
   };
 
   // Optimizar ruta (simulado)
-  const optimizeRoute = (templateId: string) => {
+  const optimizeRoute = (_templateId: string) => {
     toast.info('Optimizando ruta con algoritmo de distancia mínima...');
     setTimeout(() => {
       toast.success('Ruta optimizada exitosamente');

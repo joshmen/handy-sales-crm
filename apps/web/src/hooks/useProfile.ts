@@ -54,8 +54,8 @@ export const useProfile = () => {
           };
           setProfile(fallbackProfile);
         }
-      } catch (error) {
-        console.error('Error loading profile:', error);
+      } catch (_error) {
+        console.error('Error loading profile:', _error);
         toast({
           title: 'Error',
           description: 'No se pudo cargar el perfil del usuario',
@@ -67,7 +67,7 @@ export const useProfile = () => {
     };
 
     loadProfile();
-  }, [session?.user?.id, session?.user?.name, session?.user?.email, session?.user?.image]);
+  }, [session?.user?.id, session?.user?.name, session?.user?.email, session?.user?.image, session?.user?.role]);
 
   const updateProfile = async (data: UpdateProfileRequest): Promise<boolean> => {
     if (!profile || !session?.user?.id) return false;
@@ -91,7 +91,7 @@ export const useProfile = () => {
         });
         return true;
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: 'Error',
         description: 'No se pudo actualizar el perfil',
@@ -125,7 +125,7 @@ export const useProfile = () => {
         });
         return true;
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: 'Error',
         description: 'No se pudieron guardar las preferencias',
@@ -159,7 +159,7 @@ export const useProfile = () => {
         });
         return false;
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: 'Error',
         description: 'No se pudo cambiar la contraseña',
@@ -200,7 +200,7 @@ export const useProfile = () => {
         });
         return false;
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: 'Error',
         description: 'No se pudo subir la foto',
@@ -241,7 +241,7 @@ export const useProfile = () => {
         });
         return false;
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: 'Error',
         description: 'No se pudo eliminar la foto',
@@ -283,7 +283,7 @@ export const useProfile = () => {
         });
         return false;
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: 'Error',
         description: `No se pudo ${enable ? 'activar' : 'desactivar'} 2FA`,
@@ -303,8 +303,8 @@ export const useProfile = () => {
         if (response.success && response.data) {
           setProfile(response.data);
         }
-      } catch (error) {
-        console.error('Error refreshing profile:', error);
+      } catch (_error) {
+        console.error('Error refreshing profile:', _error);
       } finally {
         setIsLoading(false);
       }

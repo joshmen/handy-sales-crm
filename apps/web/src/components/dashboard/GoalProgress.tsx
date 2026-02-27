@@ -2,7 +2,6 @@ import React from "react";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import {
   Target,
-  TrendingUp,
   Calendar,
   Users,
   DollarSign,

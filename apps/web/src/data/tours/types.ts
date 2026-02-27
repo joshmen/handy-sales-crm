@@ -1,3 +1,5 @@
+import type { Driver } from 'driver.js';
+
 export interface TourStep {
   element?: string;
   popover: {
@@ -7,9 +9,9 @@ export interface TourStep {
     align?: 'start' | 'center' | 'end';
     popoverClass?: string;
     /** Custom handler when "Next" is clicked. Receives driverObj to call moveNext(). */
-    onNextClick?: (driverObj: any) => void;
+    onNextClick?: (driverObj: Driver) => void;
     /** Custom handler when "Previous" is clicked. Receives driverObj to call movePrevious(). */
-    onPrevClick?: (driverObj: any) => void;
+    onPrevClick?: (driverObj: Driver) => void;
   };
 }
 

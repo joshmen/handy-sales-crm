@@ -15,7 +15,6 @@ export const PerfilEmpresaTab: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<DatosEmpresa | null>(null);
 
   const [form, setForm] = useState<DatosEmpresaUpdate>({
     razonSocial: '',
@@ -53,7 +52,6 @@ export const PerfilEmpresaTab: React.FC = () => {
         setLoading(true);
         setError(null);
         const result = await datosEmpresaService.get();
-        setData(result);
         const formData = mapToForm(result);
         setForm(formData);
         setOriginal(formData);
@@ -77,7 +75,6 @@ export const PerfilEmpresaTab: React.FC = () => {
     try {
       setSaving(true);
       const result = await datosEmpresaService.update(form);
-      setData(result);
       const formData = mapToForm(result);
       setForm(formData);
       setOriginal(formData);

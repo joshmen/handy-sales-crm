@@ -727,7 +727,7 @@ export default function TenantsPage() {
         </div>
         <select
           value={planFilter}
-          onChange={(e) => setPlanFilter(e.target.value as any)}
+          onChange={(e) => setPlanFilter(e.target.value as 'todos' | 'free' | 'basic' | 'pro')}
           className="px-3 py-2 text-xs border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         >
           <option value="todos">Todos los planes</option>

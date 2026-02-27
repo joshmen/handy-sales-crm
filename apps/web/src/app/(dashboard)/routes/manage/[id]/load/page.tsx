@@ -29,6 +29,13 @@ interface ProductoOption {
   precioBase: number;
 }
 
+interface PedidoOption {
+  id: number;
+  numeroPedido?: string;
+  clienteNombre?: string;
+  total?: number;
+}
+
 export default function LoadInventoryPage() {
   const params = useParams();
   const router = useRouter();
@@ -53,7 +60,7 @@ export default function LoadInventoryPage() {
 
   // Add pedido modal
   const [isPedidoModalOpen, setIsPedidoModalOpen] = useState(false);
-  const [availablePedidos, setAvailablePedidos] = useState<any[]>([]);
+  const [availablePedidos, setAvailablePedidos] = useState<PedidoOption[]>([]);
   const [pedidoSearch, setPedidoSearch] = useState('');
   const [loadingPedidos, setLoadingPedidos] = useState(false);
 
@@ -97,7 +104,7 @@ export default function LoadInventoryPage() {
       setSaving(true);
       await routeService.updateEfectivoInicial(rutaId, parseFloat(efectivoInicial) || 0, comentarios || undefined);
       toast.success('Efectivo inicial actualizado');
-    } catch (err) {
+    } catch (_err) {
       toast.error('Error al guardar efectivo');
     } finally {
       setSaving(false);
@@ -122,8 +129,8 @@ export default function LoadInventoryPage() {
       setPrecioVenta('');
       const updated = await routeService.getCarga(rutaId);
       setCarga(updated);
-    } catch (err: any) {
-      toast.error(err?.message || 'Error al agregar producto');
+    } catch (err: unknown) {
+      toast.error((err instanceof Error ? err.message : null) || 'Error al agregar producto');
     }
   };
 
@@ -133,7 +140,7 @@ export default function LoadInventoryPage() {
       toast.success('Producto removido');
       const updated = await routeService.getCarga(rutaId);
       setCarga(updated);
-    } catch (err) {
+    } catch (_err) {
       toast.error('Error al remover producto');
     }
   };
@@ -142,7 +149,7 @@ export default function LoadInventoryPage() {
     setIsPedidoModalOpen(true);
     setLoadingPedidos(true);
     try {
-      const response = await api.get<{ items: any[] }>('/pedidos?pagina=1&tamanoPagina=100&estado=2');
+      const response = await api.get<{ items: PedidoOption[] }>('/pedidos?pagina=1&tamanoPagina=100&estado=2');
       setAvailablePedidos(Array.isArray(response.data) ? response.data : response.data.items || []);
     } catch (err) {
       console.error('Error:', err);
@@ -162,8 +169,8 @@ export default function LoadInventoryPage() {
       ]);
       setCarga(cargaData);
       setPedidos(pedidosData);
-    } catch (err: any) {
-      toast.error(err?.message || 'Error al asignar pedido');
+    } catch (err: unknown) {
+      toast.error((err instanceof Error ? err.message : null) || 'Error al asignar pedido');
     }
   };
 
@@ -177,7 +184,7 @@ export default function LoadInventoryPage() {
       ]);
       setCarga(cargaData);
       setPedidos(pedidosData);
-    } catch (err) {
+    } catch (_err) {
       toast.error('Error al remover pedido');
     }
   };
@@ -191,8 +198,8 @@ export default function LoadInventoryPage() {
       await routeService.enviarACarga(rutaId);
       toast.success('Ruta enviada a carga exitosamente');
       router.push('/routes/manage');
-    } catch (err: any) {
-      toast.error(err?.message || 'Error al enviar a carga');
+    } catch (err: unknown) {
+      toast.error((err instanceof Error ? err.message : null) || 'Error al enviar a carga');
     } finally {
       setSending(false);
     }

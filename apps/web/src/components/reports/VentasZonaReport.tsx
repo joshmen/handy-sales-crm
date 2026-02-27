@@ -33,6 +33,7 @@ export function VentasZonaReport() {
     finally { setLoading(false); }
   }, [dates]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetch(); }, []);
 
   const columns: ReportColumn<VentaZona>[] = [

@@ -19,9 +19,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import {
   dashboardService,
-  DashboardMetrics,
   VendedorPerformance,
-  getFallbackMetrics,
 } from '@/services/dashboardService';
 import { BrandedLoadingScreen } from '@/components/ui/BrandedLoadingScreen';
 import { useImpersonationStore } from '@/stores/useImpersonationStore';
@@ -109,7 +107,6 @@ export default function DashboardPage() {
   const router = useRouter();
   const { isImpersonating } = useImpersonationStore();
   const [isLoading, setIsLoading] = useState(true);
-  const [metrics, setMetrics] = useState<DashboardMetrics>(getFallbackMetrics());
   const [vendedorPerf, setVendedorPerf] = useState<VendedorPerformance | null>(null);
 
   const isVendedor = session?.user?.role === 'VENDEDOR';
@@ -183,8 +180,7 @@ export default function DashboardPage() {
           const perf = await dashboardService.getMyPerformance();
           setVendedorPerf(perf);
         } else {
-          const data = await dashboardService.getMetrics();
-          setMetrics(data);
+          await dashboardService.getMetrics();
         }
       } catch (error) {
         console.error('Error loading metrics:', error);

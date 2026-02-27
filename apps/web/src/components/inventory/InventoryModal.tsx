@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/Select';
 import { Label } from '@/components/ui/Label';
 import { Separator } from '@/components/ui/Separator';
-import { InventoryAdjustmentType, InventoryAdjustmentForm } from '@/types/inventory';
+import { InventoryAdjustmentType } from '@/types/inventory';
 import { Product } from '@/types';
 
 // Tipos específicos para diferentes modos del modal
@@ -95,6 +95,7 @@ export function InventoryModal({
       setFormData(initialData);
       setErrors({});
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, mode]);
 
   // Handle selectedProduct changes when modal is open

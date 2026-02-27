@@ -3,7 +3,6 @@ import { JWT } from 'next-auth/jwt';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
 import { serverApiCall, serverApiInstance } from '@/lib/server-api';
-import { API_CONFIG } from '@/lib/constants';
 
 // —— Usuarios mock para desarrollo (coinciden con seed de BD) ——
 // Password: test123 para todos
@@ -224,7 +223,7 @@ export const authOptions: NextAuthOptions = {
           }
 
           return null;
-        } catch (error) {
+        } catch (_error) {
           // Backend unreachable - fall back to mock in development
           if (isDevOnly()) {
             const user = MOCK_USERS.find(
@@ -316,7 +315,7 @@ export const authOptions: NextAuthOptions = {
       return false;
     },
 
-    async jwt({ token, user, trigger, session: updateData, account }) {
+    async jwt({ token, user, trigger, session: updateData, account: _account }) {
       // Initial login: store user data + token expiry
       if (user) {
         token.id = user.id;

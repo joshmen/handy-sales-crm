@@ -1,13 +1,12 @@
 import React from 'react'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
-import { 
-  Package, 
-  Users, 
-  ShoppingCart, 
-  FileText, 
+import {
+  Package,
+  Users,
+  ShoppingCart,
+  FileText,
   Search,
-  Plus,
   AlertCircle,
   Inbox,
   Calendar,

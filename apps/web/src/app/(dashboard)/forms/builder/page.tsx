@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useState } from "react";
@@ -6,11 +5,10 @@ import { Card, CardHeader, CardContent, Button, Input } from "@/components/ui";
 import { ComponentPalette } from "@/components/forms/ComponentPalette";
 import { FormPreview } from "@/components/forms/FormPreview";
 import { ComponentEditor } from "@/components/forms/ComponentEditor";
-import { FormComponent, Form } from "@/types/forms";
+import { FormComponent } from "@/types/forms";
 
 export default function FormBuilderPage() {
   const [formName, setFormName] = useState("test");
-  const [formType, setFormType] = useState("sales");
   const [components, setComponents] = useState<FormComponent[]>([
     {
       id: "comp-1",
@@ -127,14 +125,6 @@ export default function FormBuilderPage() {
       alert("Por favor ingresa un nombre para el formulario");
       return;
     }
-
-    const formData: Partial<Form> = {
-      name: formName,
-      type: formType as any,
-      components,
-      version: 1,
-      isActive: true,
-    };
 
     alert("Formulario guardado exitosamente");
   };

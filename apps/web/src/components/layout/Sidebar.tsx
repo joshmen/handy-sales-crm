@@ -19,7 +19,6 @@ import {
   ClipboardText,
   Bag,
   Truck,
-  UserGear,
   GearSix,
   CreditCard,
   Percent,
@@ -41,9 +40,7 @@ import {
 import { useSidebar } from '@/stores/useUIStore';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar';
-import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { Separator } from '@/components/ui/Separator';
 import { useCompany } from '@/contexts/CompanyContext';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useImpersonationStore } from '@/stores/useImpersonationStore';

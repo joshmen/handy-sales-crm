@@ -95,11 +95,6 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
     }
   };
 
-  const userOptions = users.map(user => ({
-    value: user.id,
-    label: user.name,
-  }));
-
   const viewModeOptions = [
     { value: 'month', label: 'Mes', icon: Grid3X3 },
     { value: 'week', label: 'Semana', icon: List },

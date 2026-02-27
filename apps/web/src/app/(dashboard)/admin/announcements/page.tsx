@@ -16,14 +16,12 @@ import {
   PowerOff,
   Clock,
   Eye,
-  ChevronDown,
   Bell,
   Monitor,
   Layers,
   Users,
   Building2,
   Globe,
-  Check,
   Search,
 } from 'lucide-react';
 import { Drawer } from '@/components/ui/Drawer';

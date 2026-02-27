@@ -61,7 +61,7 @@ export function GoogleMapWrapper({
   });
 
   const [selectedMarker, setSelectedMarker] = useState<MapMarker | null>(null);
-  const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [_map, setMap] = useState<google.maps.Map | null>(null);
 
   const onLoad = useCallback((map: google.maps.Map) => {
     setMap(map);

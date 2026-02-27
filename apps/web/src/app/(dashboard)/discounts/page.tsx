@@ -181,8 +181,9 @@ export default function DiscountsPage() {
 
       setIsModalOpen(false);
       await fetchDiscounts();
-    } catch (error: any) {
-      const message = error?.response?.data?.message || 'Ocurrió un error al guardar el descuento';
+    } catch (error: unknown) {
+      const e = error as { response?: { data?: { message?: string } } };
+      const message = e?.response?.data?.message || 'Ocurrió un error al guardar el descuento';
       toast.error(message);
     } finally {
       setActionLoading(false);
@@ -256,7 +257,7 @@ export default function DiscountsPage() {
       setDiscounts(prev => prev.map(d =>
         ids.includes(d.id) ? { ...d, activo } : d
       ));
-    } catch (error) {
+    } catch (_error) {
       toast.error('Error al cambiar el estado de los descuentos');
     } finally {
       setActionLoading(false);

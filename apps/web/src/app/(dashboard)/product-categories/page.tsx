@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { toast } from '@/hooks/useToast';
 import { api } from '@/lib/api';
-import { ProductCategory, ProductCategoryForm } from '@/types/catalogs';
+import { ProductCategory } from '@/types/catalogs';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -146,8 +146,8 @@ export default function ProductCategoriesPage() {
 
       setIsModalOpen(false);
       await loadCategories();
-    } catch (error: any) {
-      const message = error?.response?.data?.message || 'Ocurrió un error al guardar la categoría';
+    } catch (error: unknown) {
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Ocurrió un error al guardar la categoría';
       toast({
         title: 'Error',
         description: message,
@@ -173,8 +173,8 @@ export default function ProductCategoriesPage() {
       setIsDeleteModalOpen(false);
       setSelectedCategory(null);
       await loadCategories();
-    } catch (error: any) {
-      const message = error?.response?.data?.message || 'Ocurrió un error al eliminar la categoría';
+    } catch (error: unknown) {
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Ocurrió un error al eliminar la categoría';
       toast({
         title: 'No se puede eliminar',
         description: message,

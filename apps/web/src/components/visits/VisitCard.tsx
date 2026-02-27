@@ -11,7 +11,6 @@ import {
   Play,
   CheckCircle,
   ShoppingCart,
-  AlertCircle,
 } from 'lucide-react';
 
 interface VisitCardProps {

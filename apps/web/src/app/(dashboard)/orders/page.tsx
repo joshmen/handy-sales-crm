@@ -26,7 +26,6 @@ import {
   Edit,
   Trash2,
   Eye,
-  ClipboardList,
   ShoppingCart,
   Check,
   Loader2,
@@ -236,7 +235,7 @@ export default function OrdersPage() {
     try {
       const orderDetail = await orderService.getOrderById(parseInt(orderId));
       toast.info(`Pedido ${orderDetail.numeroPedido} - Total: $${orderDetail.total.toFixed(2)}`);
-    } catch (err) {
+    } catch (_err) {
       toast.error('Error al cargar los detalles del pedido');
     }
   };
@@ -247,7 +246,7 @@ export default function OrdersPage() {
         await orderService.deleteOrder(parseInt(orderId));
         setOrders(orders.filter(o => o.id !== orderId));
         toast.success('Pedido eliminado correctamente');
-      } catch (err) {
+      } catch (_err) {
         toast.error('Error al eliminar el pedido');
       }
     }
@@ -279,7 +278,7 @@ export default function OrdersPage() {
       await fetchOrders();
       setShowOrderForm(false);
       setEditingOrder(null);
-    } catch (err) {
+    } catch (_err) {
       toast.error('Error al guardar el pedido');
     }
   };

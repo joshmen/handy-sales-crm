@@ -210,6 +210,7 @@ export function useAsync<T, E = string>(asyncFunction: () => Promise<T>, immedia
     if (immediate) {
       execute();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [immediate]);
 
   return {

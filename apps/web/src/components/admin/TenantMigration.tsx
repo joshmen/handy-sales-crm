@@ -53,7 +53,7 @@ export function TenantMigration() {
       const response = await api.get<TenantsStatusResponse>('/api/migration/tenants-status');
       setTenants(response.data.tenants);
       setSummary(response.data.summary);
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: 'Error',
         description: 'No se pudo cargar el estado de los tenants',
@@ -78,7 +78,7 @@ export function TenantMigration() {
 
       // Recargar el estado
       await loadTenantsStatus();
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: 'Error en la migración',
         description: 'No se pudo completar la inicialización',

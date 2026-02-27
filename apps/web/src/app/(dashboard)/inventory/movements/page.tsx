@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { inventoryMovementService, InventoryMovement, CreateInventoryMovementRequest } from '@/services/api/inventoryMovements';
+import { inventoryMovementService, InventoryMovement } from '@/services/api/inventoryMovements';
 import { productService } from '@/services/api/products';
 import { inventoryService } from '@/services/api/inventory';
 import { toast } from '@/hooks/useToast';
@@ -13,14 +13,12 @@ import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import {
   Search,
   Bell,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Plus,
   Download,
   Package,
   RefreshCw,
-  X,
   Calendar,
   AlertTriangle,
   ArrowLeftRight,
@@ -155,6 +153,7 @@ export default function InventoryMovementsPage() {
     };
     fetchStock();
     return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchedProductoId]);
 
   // Reset stock state when drawer closes

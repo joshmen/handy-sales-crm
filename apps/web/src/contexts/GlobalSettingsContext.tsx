@@ -168,7 +168,7 @@ export const GlobalSettingsProvider: React.FC<GlobalSettingsProviderProps> = ({ 
         });
         return true;
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: 'Error',
         description: 'No se pudo actualizar la configuración global. Solo SUPER_ADMIN puede hacer estos cambios.',
@@ -204,8 +204,8 @@ export const GlobalSettingsProvider: React.FC<GlobalSettingsProviderProps> = ({ 
         });
         return false;
       }
-    } catch (error) {
-      console.error('Upload platform logo exception:', error);
+    } catch (_error) {
+      console.error('Upload platform logo exception:', _error);
       toast({
         title: 'Error',
         description: 'Error inesperado al subir el logo de la plataforma',
@@ -241,7 +241,7 @@ export const GlobalSettingsProvider: React.FC<GlobalSettingsProviderProps> = ({ 
         });
         return false;
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: 'Error',
         description: 'No se pudo eliminar el logo de la plataforma',

@@ -2,7 +2,7 @@ import React from 'react';
 import { Input } from '@/components/ui/Input';
 import { SelectCompat as Select } from '@/components/ui/SelectCompat';
 import { Button } from '@/components/ui/Button';
-import { Search, Filter, X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 
 interface OrderFiltersProps {
   searchTerm: string;

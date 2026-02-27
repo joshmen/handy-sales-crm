@@ -101,13 +101,6 @@ export default function RouteLoadPage() {
       return;
     }
 
-    const routeData = {
-      userId: selectedUser.id,
-      initialCash: parseFloat(initialCash),
-      comments,
-      products: routeProducts,
-    };
-
     alert('Ruta guardada exitosamente');
   };
 
