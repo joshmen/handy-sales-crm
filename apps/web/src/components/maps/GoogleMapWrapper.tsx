@@ -58,6 +58,7 @@ export function GoogleMapWrapper({
 }: GoogleMapWrapperProps) {
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
+    libraries: ['places'] as ('places')[],
   });
 
   const [selectedMarker, setSelectedMarker] = useState<MapMarker | null>(null);

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
 import { toast } from '@/hooks/useToast';
@@ -30,6 +30,10 @@ import {
 import { MapPin as MapPinIcon } from '@phosphor-icons/react';
 import { GoogleMapWrapper, Circle } from '@/components/maps/GoogleMapWrapper';
 import type { MapMarker } from '@/components/maps/GoogleMapWrapper';
+import { GoogleMap, useJsApiLoader, Marker as GMarker, Circle as GCircle, Autocomplete } from '@react-google-maps/api';
+
+const DEFAULT_CENTER = { lat: 20.6597, lng: -103.3496 }; // Guadalajara, México
+const MAPS_LIBRARIES: ('places')[] = ['places'];
 
 // Zod schema for zone form validation
 const zoneFormSchema = z.object({
@@ -72,6 +76,17 @@ export default function ZonesPage() {
   const [isMapOpen, setIsMapOpen] = useState(false);
   const [allZonesForMap, setAllZonesForMap] = useState<Zone[]>([]);
 
+  // Drawer map state
+  const [drawerMapCenter, setDrawerMapCenter] = useState(DEFAULT_CENTER);
+  const [drawerMapRadius, setDrawerMapRadius] = useState(5); // km
+  const circleRef = useRef<google.maps.Circle | null>(null);
+  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+
+  const { isLoaded: isMapsLoaded } = useJsApiLoader({
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
+    libraries: MAPS_LIBRARIES,
+  });
+
   // Form setup with react-hook-form
   const {
     register,
@@ -94,6 +109,31 @@ export default function ZonesPage() {
   });
 
   const watchedColor = watch('color');
+
+  // Move marker + update form values
+  const moveMarkerTo = useCallback((lat: number, lng: number) => {
+    setDrawerMapCenter({ lat, lng });
+    setValue('centroLatitud', lat, { shouldDirty: true });
+    setValue('centroLongitud', lng, { shouldDirty: true });
+  }, [setValue]);
+
+  // Handle Places Autocomplete selection
+  const handlePlaceSelected = useCallback(() => {
+    if (!autocompleteRef.current) return;
+    const place = autocompleteRef.current.getPlace();
+    if (place.geometry?.location) {
+      const lat = place.geometry.location.lat();
+      const lng = place.geometry.location.lng();
+      moveMarkerTo(lat, lng);
+    }
+  }, [moveMarkerTo]);
+
+  // Handle double-click on map to reposition marker
+  const handleMapDblClick = useCallback((e: google.maps.MapMouseEvent) => {
+    if (e.latLng) {
+      moveMarkerTo(e.latLng.lat(), e.latLng.lng());
+    }
+  }, [moveMarkerTo]);
 
   const fetchZones = useCallback(async () => {
     try {
@@ -132,6 +172,18 @@ export default function ZonesPage() {
       centroLongitud: undefined,
       radioKm: undefined,
     });
+    // Try to get user's location for new zones
+    setDrawerMapRadius(5);
+    setValue('radioKm', 5, { shouldDirty: true });
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => moveMarkerTo(pos.coords.latitude, pos.coords.longitude),
+        () => moveMarkerTo(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng),
+        { timeout: 5000 }
+      );
+    } else {
+      moveMarkerTo(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng);
+    }
     setShowZoneForm(true);
   };
 
@@ -162,15 +214,26 @@ export default function ZonesPage() {
 
   const handleEditZone = (zone: Zone) => {
     setEditingZone(zone);
+    const lat = zone.mapSettings?.centerLatitude;
+    const lng = zone.mapSettings?.centerLongitude;
+    const radius = zone.boundaries?.[0]?.radius;
     reset({
       name: zone.name,
       description: zone.description || '',
       color: zone.color || '#EC4899',
       isEnabled: zone.isEnabled,
-      centroLatitud: zone.mapSettings?.centerLatitude ?? undefined,
-      centroLongitud: zone.mapSettings?.centerLongitude ?? undefined,
-      radioKm: zone.boundaries?.[0]?.radius ?? undefined,
+      centroLatitud: lat ?? undefined,
+      centroLongitud: lng ?? undefined,
+      radioKm: radius ?? undefined,
     });
+    // Set drawer map to zone's position or default
+    if (lat && lng) {
+      setDrawerMapCenter({ lat, lng });
+      setDrawerMapRadius(radius ?? 5);
+    } else {
+      setDrawerMapCenter(DEFAULT_CENTER);
+      setDrawerMapRadius(5);
+    }
     setShowZoneForm(true);
   };
 
@@ -874,7 +937,7 @@ export default function ZonesPage() {
           onClose={handleCloseDrawer}
           title={editingZone ? 'Editar Zona' : 'Nueva Zona'}
           icon={<MapPin className="w-5 h-5" />}
-          width="sm"
+          width="lg"
           isDirty={isDirty}
           onSave={handleSubmit(handleSaveZone)}
           footer={
@@ -949,44 +1012,124 @@ export default function ZonesPage() {
               </div>
             </div>
 
-            {/* Geo fields */}
+            {/* Interactive Map */}
             <div className="border-t pt-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Ubicación en mapa <span className="text-xs text-gray-400 font-normal">(opcional)</span>
+                Ubicación en mapa
               </label>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Latitud</label>
-                  <input
-                    type="number"
-                    step="any"
-                    {...register('centroLatitud', { valueAsNumber: true })}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
-                    placeholder="20.6597"
-                  />
+              {isMapsLoaded ? (
+                <div className="space-y-3">
+                  {/* Place search */}
+                  <Autocomplete
+                    onLoad={(ac) => { autocompleteRef.current = ac; }}
+                    onPlaceChanged={handlePlaceSelected}
+                    restrictions={{ country: 'mx' }}
+                  >
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                      <input
+                        type="text"
+                        placeholder="Buscar lugar... (ej. Zapopan, Guadalajara)"
+                        className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                      />
+                    </div>
+                  </Autocomplete>
+
+                  {/* Map */}
+                  <div className="rounded-lg overflow-hidden border border-gray-200" style={{ height: 320 }}>
+                    <GoogleMap
+                      mapContainerStyle={{ width: '100%', height: '100%' }}
+                      center={drawerMapCenter}
+                      zoom={12}
+                      onDblClick={handleMapDblClick}
+                      options={{
+                        streetViewControl: false,
+                        mapTypeControl: false,
+                        fullscreenControl: false,
+                        disableDoubleClickZoom: true,
+                      }}
+                    >
+                      <GMarker
+                        position={drawerMapCenter}
+                        draggable
+                        onDragEnd={(e) => {
+                          if (e.latLng) {
+                            moveMarkerTo(e.latLng.lat(), e.latLng.lng());
+                          }
+                        }}
+                      />
+                      <GCircle
+                        center={drawerMapCenter}
+                        radius={drawerMapRadius * 1000}
+                        options={{
+                          fillColor: watchedColor || '#EC4899',
+                          fillOpacity: 0.15,
+                          strokeColor: watchedColor || '#EC4899',
+                          strokeOpacity: 0.6,
+                          strokeWeight: 2,
+                          editable: true,
+                          draggable: false,
+                        }}
+                        onLoad={(circle) => {
+                          circleRef.current = circle;
+                        }}
+                        onRadiusChanged={() => {
+                          if (circleRef.current) {
+                            const newRadius = circleRef.current.getRadius() / 1000;
+                            const clamped = Math.max(0.1, Math.round(newRadius * 10) / 10);
+                            setDrawerMapRadius(clamped);
+                            setValue('radioKm', clamped, { shouldDirty: true });
+                          }
+                        }}
+                        onCenterChanged={() => {
+                          if (circleRef.current) {
+                            const cc = circleRef.current.getCenter();
+                            if (cc && (cc.lat() !== drawerMapCenter.lat || cc.lng() !== drawerMapCenter.lng)) {
+                              circleRef.current.setCenter(drawerMapCenter);
+                            }
+                          }
+                        }}
+                      />
+                    </GoogleMap>
+                  </div>
+                  <p className="text-xs text-gray-400">
+                    Busca un lugar, haz doble clic en el mapa, o arrastra el marcador para posicionar la zona.
+                  </p>
+
+                  {/* Radius input + coordinates */}
+                  <div className="grid grid-cols-4 gap-2 items-end">
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Radio (km)</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0.1"
+                        max="100"
+                        value={drawerMapRadius}
+                        onChange={(e) => {
+                          const val = Math.max(0.1, Math.round(parseFloat(e.target.value || '0.1') * 10) / 10);
+                          setDrawerMapRadius(val);
+                          setValue('radioKm', val, { shouldDirty: true });
+                        }}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                      />
+                    </div>
+                    <div className="col-span-3">
+                      <div className="flex gap-3 text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2.5">
+                        <span><span className="font-medium">Lat:</span> {drawerMapCenter.lat.toFixed(4)}</span>
+                        <span><span className="font-medium">Lng:</span> {drawerMapCenter.lng.toFixed(4)}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Longitud</label>
-                  <input
-                    type="number"
-                    step="any"
-                    {...register('centroLongitud', { valueAsNumber: true })}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
-                    placeholder="-103.3496"
-                  />
+              ) : (
+                <div className="flex items-center justify-center h-40 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="flex items-center gap-2 text-sm text-gray-400">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Cargando mapa...
+                  </div>
                 </div>
-              </div>
-              <div className="mt-2">
-                <label className="block text-xs text-gray-500 mb-1">Radio (km)</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  {...register('radioKm', { valueAsNumber: true })}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
-                  placeholder="5"
-                />
-              </div>
+              )}
             </div>
 
             <div className="flex items-center gap-2">
