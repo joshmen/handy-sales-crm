@@ -77,29 +77,29 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
             </p>
 
             {/* Value props con checks verdes */}
-            <ul className="space-y-4 text-xl">
+            <ul className="space-y-3">
               <li className="flex items-center gap-3">
-                <CheckCircle className="w-7 h-7 text-emerald-400 shrink-0 drop-shadow" />
-                <span className="text-white/90 drop-shadow">
-                  CRM y gestión de clientes
+                <CheckCircle className="w-6 h-6 text-emerald-400 shrink-0 drop-shadow" />
+                <span className="text-lg text-white/90 drop-shadow">
+                  Control total de tu equipo en campo
                 </span>
               </li>
               <li className="flex items-center gap-3">
-                <CheckCircle className="w-7 h-7 text-emerald-400 shrink-0 drop-shadow" />
-                <span className="text-white/90 drop-shadow">
-                  Rutas y entregas optimizadas
+                <CheckCircle className="w-6 h-6 text-emerald-400 shrink-0 drop-shadow" />
+                <span className="text-lg text-white/90 drop-shadow">
+                  Reduce tu cartera vencida hasta 40%
                 </span>
               </li>
               <li className="flex items-center gap-3">
-                <CheckCircle className="w-7 h-7 text-emerald-400 shrink-0 drop-shadow" />
-                <span className="text-white/90 drop-shadow">
-                  Facturación electrónica SAT
+                <CheckCircle className="w-6 h-6 text-emerald-400 shrink-0 drop-shadow" />
+                <span className="text-lg text-white/90 drop-shadow">
+                  Facturación SAT en 3 clics
                 </span>
               </li>
               <li className="flex items-center gap-3">
-                <CheckCircle className="w-7 h-7 text-emerald-400 shrink-0 drop-shadow" />
-                <span className="text-white/90 drop-shadow">
-                  Reportes en tiempo real
+                <CheckCircle className="w-6 h-6 text-emerald-400 shrink-0 drop-shadow" />
+                <span className="text-lg text-white/90 drop-shadow">
+                  Funciona sin internet
                 </span>
               </li>
             </ul>

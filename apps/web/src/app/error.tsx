@@ -25,9 +25,10 @@ export default function GlobalError({
           <p className="text-sm text-gray-500">
             Ocurrió un error inesperado. Puedes intentar recargar la página o volver al inicio.
           </p>
-          {error.digest && (
-            <p className="text-xs text-gray-400 font-mono">Ref: {error.digest}</p>
-          )}
+          <p className="text-xs text-gray-400">
+            Si el problema persiste, contacta a soporte.
+            {error.digest && <span className="font-mono ml-1">(Ref: {error.digest})</span>}
+          </p>
         </div>
         <div className="flex items-center justify-center gap-3">
           <button

@@ -28,7 +28,7 @@ export default function DashboardError({
           {process.env.NODE_ENV === 'development' && (
             <details className="mt-3 text-left">
               <summary className="text-xs text-gray-400 cursor-pointer hover:text-gray-600">
-                Detalles del error
+                Detalles del error (solo visible en desarrollo)
               </summary>
               <pre className="mt-2 p-3 bg-gray-100 rounded-lg text-xs text-red-700 overflow-auto max-h-40">
                 {error.message}
@@ -36,9 +36,10 @@ export default function DashboardError({
               </pre>
             </details>
           )}
-          {error.digest && (
-            <p className="text-xs text-gray-400 font-mono">Ref: {error.digest}</p>
-          )}
+          <p className="text-xs text-gray-400">
+            Si el problema persiste, contacta a soporte.
+            {error.digest && <span className="font-mono ml-1">(Ref: {error.digest})</span>}
+          </p>
         </div>
         <div className="flex items-center justify-center gap-3">
           <button

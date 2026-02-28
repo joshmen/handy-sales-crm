@@ -252,6 +252,35 @@ body {
   display: none;
 }
 
+/* Company-themed primary button (standalone usage) */
+.btn-company-primary {
+  background-color: var(--company-primary-color, #16a34a);
+}
+
+.btn-company-primary:hover {
+  background-color: var(--company-primary-color, #16a34a);
+  filter: brightness(0.88);
+}
+
+.btn-company-primary:disabled {
+  filter: none;
+}
+
+/* Global company-themed buttons — targets elements with BOTH bg + hover classes (buttons only).
+   Toggle indicators (bg-green-600 + border-green-600, no hover) are NOT affected. */
+.bg-green-600.hover\:bg-green-700,
+.bg-blue-600.hover\:bg-blue-700,
+.bg-indigo-600.hover\:bg-indigo-700 {
+  background-color: var(--company-primary-color, #16a34a);
+}
+
+.bg-green-600.hover\:bg-green-700:hover,
+.bg-blue-600.hover\:bg-blue-700:hover,
+.bg-indigo-600.hover\:bg-indigo-700:hover {
+  background-color: var(--company-primary-color, #16a34a);
+  filter: brightness(0.88);
+}
+
 /* Google-style components */
 .google-card {
   @apply bg-white rounded-2xl shadow-sm border-0 hover:shadow-md transition-shadow duration-200;

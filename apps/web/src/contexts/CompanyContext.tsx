@@ -47,13 +47,16 @@ export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) =>
         setSettings(response.data);
         
         // Aplicar configuración visual inmediatamente
-        if (response.data.companyPrimaryColor) {
+        // Solo aplica si el color fue explícitamente configurado (no el default del sistema #007bff)
+        const SYSTEM_DEFAULT_PRIMARY = '#007bff';
+        const SYSTEM_DEFAULT_SECONDARY = '#6c757d';
+        if (response.data.companyPrimaryColor && response.data.companyPrimaryColor !== SYSTEM_DEFAULT_PRIMARY) {
           document.documentElement.style.setProperty('--company-primary-color', response.data.companyPrimaryColor);
         }
-        if (response.data.companySecondaryColor) {
+        if (response.data.companySecondaryColor && response.data.companySecondaryColor !== SYSTEM_DEFAULT_SECONDARY) {
           document.documentElement.style.setProperty('--company-secondary-color', response.data.companySecondaryColor);
         }
-        
+
         // Guardar en localStorage como respaldo
         localStorage.setItem('company_settings', JSON.stringify(response.data));
       } else {
@@ -120,13 +123,15 @@ export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) =>
         setSettings(response.data);
         
         // Aplicar cambios visuales inmediatamente
-        if (response.data.companyPrimaryColor) {
+        const SYS_DEFAULT_PRIMARY = '#007bff';
+        const SYS_DEFAULT_SECONDARY = '#6c757d';
+        if (response.data.companyPrimaryColor && response.data.companyPrimaryColor !== SYS_DEFAULT_PRIMARY) {
           document.documentElement.style.setProperty('--company-primary-color', response.data.companyPrimaryColor);
         }
-        if (response.data.companySecondaryColor) {
+        if (response.data.companySecondaryColor && response.data.companySecondaryColor !== SYS_DEFAULT_SECONDARY) {
           document.documentElement.style.setProperty('--company-secondary-color', response.data.companySecondaryColor);
         }
-        
+
         // Actualizar localStorage
         localStorage.setItem('company_settings', JSON.stringify(response.data));
         

@@ -117,7 +117,7 @@ export const Drawer = forwardRef<DrawerHandle, DrawerProps>(({
 
         {/* Sticky Footer */}
         {footer && (
-          <div className="flex-shrink-0 border-t border-gray-200 bg-white px-6 py-4">
+          <div className="drawer-footer flex-shrink-0 border-t border-gray-200 bg-white px-6 py-4">
             {footer}
           </div>
         )}
