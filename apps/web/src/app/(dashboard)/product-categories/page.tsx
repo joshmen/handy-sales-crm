@@ -1,32 +1,36 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/Dialog';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
-import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { toast } from '@/hooks/useToast';
 import { api } from '@/lib/api';
+import { exportToCsv } from '@/services/api/importExport';
+import { CsvImportModal } from '@/components/shared/CsvImportModal';
 import { ProductCategory } from '@/types/catalogs';
-import { Breadcrumb } from '@/components/ui/Breadcrumb';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { SearchBar } from '@/components/common/SearchBar';
+import { InactiveToggle } from '@/components/ui/InactiveToggle';
+import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
+import { ActiveToggle } from '@/components/ui/ActiveToggle';
+import { ListPagination } from '@/components/ui/ListPagination';
+import { useBatchOperations } from '@/hooks/useBatchOperations';
+import { BatchActionBar } from '@/components/shared/BatchActionBar';
+import { BatchConfirmModal } from '@/components/shared/BatchConfirmModal';
 import {
   Plus,
-  Search,
   Edit2,
-  Trash2,
   Package,
   Loader2,
-  ChevronLeft,
-  ChevronRight,
+  Check,
+  Minus,
+  RefreshCw,
+  Download,
+  Upload,
+  ChevronDown,
 } from 'lucide-react';
 import { Tag } from '@phosphor-icons/react';
 
@@ -40,8 +44,12 @@ export default function ProductCategoriesPage() {
   // State
   const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showInactive, setShowInactive] = useState(false);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [togglingId, setTogglingId] = useState<number | null>(null);
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [showDataMenu, setShowDataMenu] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
 
@@ -50,9 +58,7 @@ export default function ProductCategoriesPage() {
 
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<ProductCategory | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<ProductCategory | null>(null);
 
   // Form state with react-hook-form
   const { register, handleSubmit: rhfSubmit, reset, formState: { errors, isDirty } } = useForm<FormData>({
@@ -61,26 +67,24 @@ export default function ProductCategoriesPage() {
   });
 
   // Load categories
-  useEffect(() => {
-    loadCategories();
-  }, []);
-
   const loadCategories = async () => {
     try {
       setLoading(true);
-      const response = await api.get<ProductCategory[]>('/categorias-productos');
+      const response = await api.get<ProductCategory[]>('/categorias-productos', {
+        params: { incluirInactivos: showInactive || undefined },
+      });
       setCategories(response.data);
     } catch (error) {
       console.error('Error loading categories:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudieron cargar las categorías',
-        variant: 'destructive',
-      });
+      toast.error('No se pudieron cargar las categorías');
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadCategories();
+  }, [showInactive]);
 
   // Filtered categories
   const filteredCategories = useMemo(() => {
@@ -96,12 +100,17 @@ export default function ProductCategoriesPage() {
   // Pagination
   const totalItems = filteredCategories.length;
   const totalPages = Math.ceil(totalItems / pageSize);
-  const startItem = totalItems > 0 ? (currentPage - 1) * pageSize + 1 : 0;
-  const endItem = Math.min(currentPage * pageSize, totalItems);
   const paginatedCategories = filteredCategories.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   );
+
+  // Batch operations
+  const visibleIds = paginatedCategories.map(c => c.id);
+  const batch = useBatchOperations({
+    visibleIds,
+    clearDeps: [currentPage, searchTerm, showInactive],
+  });
 
   // Reset page when search changes
   useEffect(() => {
@@ -121,382 +130,407 @@ export default function ProductCategoriesPage() {
     setIsModalOpen(true);
   };
 
-  const handleOpenDelete = (category: ProductCategory) => {
-    setSelectedCategory(category);
-    setIsDeleteModalOpen(true);
-  };
-
   const handleSubmit = rhfSubmit(async (data) => {
     try {
       setActionLoading(true);
 
       if (editingCategory) {
         await api.put(`/categorias-productos/${editingCategory.id}`, data);
-        toast({
-          title: 'Categoría actualizada',
-          description: `La categoría "${data.nombre}" se actualizó exitosamente`,
-        });
+        toast.success(`Categoría "${data.nombre}" actualizada`);
       } else {
         await api.post('/categorias-productos', data);
-        toast({
-          title: 'Categoría creada',
-          description: `La categoría "${data.nombre}" se creó exitosamente`,
-        });
+        toast.success(`Categoría "${data.nombre}" creada`);
       }
 
       setIsModalOpen(false);
       await loadCategories();
     } catch (error: unknown) {
       const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Ocurrió un error al guardar la categoría';
-      toast({
-        title: 'Error',
-        description: message,
-        variant: 'destructive',
-      });
+      toast.error(message);
     } finally {
       setActionLoading(false);
     }
   });
 
-  const handleDelete = async () => {
-    if (!selectedCategory) return;
-
+  // Individual toggle active/inactive
+  const handleToggleActive = async (category: ProductCategory) => {
     try {
-      setActionLoading(true);
-      await api.delete(`/categorias-productos/${selectedCategory.id}`);
-
-      toast({
-        title: 'Categoría eliminada',
-        description: `La categoría "${selectedCategory.nombre}" se eliminó exitosamente`,
-      });
-
-      setIsDeleteModalOpen(false);
-      setSelectedCategory(null);
-      await loadCategories();
+      setTogglingId(category.id);
+      const newActive = !category.activo;
+      const result = await api.patch<{ actualizado?: boolean; message?: string }>(`/categorias-productos/${category.id}/activo`, { activo: newActive });
+      if (result.data.actualizado) {
+        toast.success(newActive ? 'Categoría activada' : 'Categoría desactivada');
+        if (!showInactive && !newActive) {
+          setCategories(prev => prev.filter(c => c.id !== category.id));
+        } else {
+          setCategories(prev => prev.map(c =>
+            c.id === category.id ? { ...c, activo: newActive } : c
+          ));
+        }
+      }
     } catch (error: unknown) {
-      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Ocurrió un error al eliminar la categoría';
-      toast({
-        title: 'No se puede eliminar',
-        description: message,
-        variant: 'destructive',
-      });
-      setIsDeleteModalOpen(false);
-      setSelectedCategory(null);
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Error al cambiar el estado';
+      toast.error(message);
     } finally {
-      setActionLoading(false);
+      setTogglingId(null);
+    }
+  };
+
+  // Batch toggle
+  const handleBatchToggle = async () => {
+    if (batch.selectedCount === 0) return;
+    try {
+      batch.setBatchLoading(true);
+      const ids = Array.from(batch.selectedIds);
+      const activo = batch.batchAction === 'activate';
+      await api.patch('/categorias-productos/batch-toggle', { ids, activo });
+      toast.success(
+        `${ids.length} categoría${ids.length > 1 ? 's' : ''} ${activo ? 'activada' : 'desactivada'}${ids.length > 1 ? 's' : ''}`
+      );
+      batch.completeBatch();
+      if (!showInactive && !activo) {
+        setCategories(prev => prev.filter(c => !ids.includes(c.id)));
+      } else {
+        setCategories(prev => prev.map(c =>
+          ids.includes(c.id) ? { ...c, activo } : c
+        ));
+      }
+    } catch (error: unknown) {
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Error al cambiar el estado';
+      toast.error(message);
+    } finally {
+      batch.setBatchLoading(false);
     }
   };
 
   return (
-      <div className="flex flex-col h-full">
-        {/* Header */}
-        <div className="bg-white px-4 py-4 sm:px-8 sm:py-6 border-b border-gray-200">
-          {/* Breadcrumb */}
-          <Breadcrumb items={[
-            { label: 'Inicio', href: '/dashboard' },
-            { label: 'Categorías de productos' },
-          ]} />
-
-          {/* Title Row */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3">
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                Categorías de productos
-              </h1>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleOpenCreate}
-                data-tour="product-categories-create-btn"
-                className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Nueva categoría</span>
-              </button>
-            </div>
+    <PageHeader
+      breadcrumbs={[
+        { label: 'Inicio', href: '/dashboard' },
+        { label: 'Categorías de productos' },
+      ]}
+      title="Categorías de productos"
+      actions={
+        <>
+          <div className="relative">
+            <button
+              onClick={() => setShowDataMenu(!showDataMenu)}
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+            >
+              <Download className="w-3.5 h-3.5 text-emerald-500" />
+              <span className="hidden sm:inline">Importar / Exportar</span>
+              <ChevronDown className="w-3 h-3 text-gray-400" />
+            </button>
+            {showDataMenu && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setShowDataMenu(false)} />
+                <div className="absolute right-0 mt-1 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1">
+                  <button
+                    onClick={async () => { setShowDataMenu(false); try { await exportToCsv('categorias-productos'); toast.success('Archivo CSV descargado'); } catch { toast.error('Error al exportar datos'); } }}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
+                  >
+                    <Download className="w-3.5 h-3.5 text-emerald-500" />
+                    Exportar CSV
+                  </button>
+                  <button
+                    onClick={() => { setShowDataMenu(false); setIsImportOpen(true); }}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
+                  >
+                    <Upload className="w-3.5 h-3.5 text-blue-500" />
+                    Importar CSV
+                  </button>
+                </div>
+              </>
+            )}
           </div>
+          <button
+            onClick={handleOpenCreate}
+            data-tour="product-categories-create-btn"
+            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Nueva categoría</span>
+          </button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        {/* Filter Row */}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <SearchBar
+            value={searchTerm}
+            onChange={(v) => { setSearchTerm(v); setCurrentPage(1); }}
+            placeholder="Buscar categoría..."
+            dataTour="product-categories-search"
+          />
+          <button
+            onClick={loadCategories}
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
+          >
+            <RefreshCw className="w-3.5 h-3.5 text-blue-500" />
+            <span className="hidden sm:inline">Actualizar</span>
+          </button>
+
+          <InactiveToggle
+            value={showInactive}
+            onChange={(v) => { setShowInactive(v); setCurrentPage(1); }}
+            className="ml-auto"
+          />
         </div>
 
-        {/* Body */}
-        <div className="flex-1 overflow-auto">
-          <div className="px-4 py-4 sm:px-8 sm:py-6">
-            {/* Search Row */}
-            <div className="flex items-center justify-between mb-4">
-              <div className="relative w-64" data-tour="product-categories-search">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Buscar categoría..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                />
-              </div>
-            </div>
+        {/* Selection Action Bar */}
+        <BatchActionBar
+          selectedCount={batch.selectedCount}
+          totalItems={totalItems}
+          entityLabel="categorías"
+          onActivate={() => batch.openBatchAction('activate')}
+          onDeactivate={() => batch.openBatchAction('deactivate')}
+          onClear={batch.handleClearSelection}
+          loading={batch.batchLoading}
+        />
 
-            {/* Mobile Cards */}
-            <div className="sm:hidden space-y-3">
-              {loading && (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+        {/* Mobile Cards */}
+        <div className="sm:hidden space-y-3">
+          {loading && (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+            </div>
+          )}
+          {!loading && paginatedCategories.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <Package className="w-12 h-12 text-purple-300 mb-3" />
+              <p className="text-sm text-gray-500">
+                {searchTerm ? 'No se encontraron categorías' : 'No hay categorías'}
+              </p>
+            </div>
+          ) : (
+            paginatedCategories.map((category) => (
+              <div
+                key={category.id}
+                className="border border-gray-200 rounded-lg p-3 bg-white"
+              >
+                {/* Row 1: Checkbox + Icon + Name/Description */}
+                <div className="flex items-center gap-3 mb-2">
+                  <button
+                    onClick={() => batch.handleToggleSelect(category.id)}
+                    className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                      batch.selectedIds.has(category.id)
+                        ? 'bg-green-600 border-green-600 text-white'
+                        : 'border-gray-300 hover:border-green-500'
+                    }`}
+                  >
+                    {batch.selectedIds.has(category.id) && <Check className="w-3 h-3" />}
+                  </button>
+                  <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
+                    <Tag className="w-5 h-5 text-orange-600" weight="duotone" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-gray-900 truncate" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                      {category.nombre}
+                    </div>
+                    <div className="text-xs text-gray-500 truncate">{category.descripcion || 'Sin descripción'}</div>
+                  </div>
                 </div>
-              )}
-              {!loading && paginatedCategories.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12">
-                  <Package className="w-12 h-12 text-purple-300 mb-3" />
-                  <p className="text-sm text-gray-500">
-                    {searchTerm ? 'No se encontraron categorías' : 'No hay categorías'}
-                  </p>
+                {/* Row 2: Toggle + Actions */}
+                <div className="flex items-center justify-between">
+                  <ActiveToggle
+                    isActive={category.activo}
+                    onToggle={() => handleToggleActive(category)}
+                    isLoading={togglingId === category.id}
+                  />
+                  <button
+                    onClick={() => handleOpenEdit(category)}
+                    className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors disabled:opacity-50"
+                  >
+                    <Edit2 className="w-3.5 h-3.5 text-amber-400 hover:text-amber-600" />
+                    <span>Editar</span>
+                  </button>
                 </div>
-              ) : (
-                paginatedCategories.map((category) => (
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Table */}
+        <div data-tour="product-categories-table" className="hidden sm:block bg-white border border-gray-200 rounded-lg overflow-x-auto">
+          {/* Table Header */}
+          <div className="min-w-[600px] flex items-center bg-gray-50 px-4 h-10 border-b border-gray-200">
+            <div className="w-[40px]">
+              <button
+                onClick={batch.handleSelectAllVisible}
+                className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                  batch.allVisibleSelected
+                    ? 'bg-green-600 border-green-600 text-white'
+                    : batch.someVisibleSelected
+                    ? 'bg-green-100 border-green-600'
+                    : 'border-gray-300 hover:border-green-500'
+                }`}
+              >
+                {batch.allVisibleSelected ? (
+                  <Check className="w-3 h-3" />
+                ) : batch.someVisibleSelected ? (
+                  <Minus className="w-3 h-3 text-green-600" />
+                ) : null}
+              </button>
+            </div>
+            <div className="w-[60px] text-xs font-semibold text-gray-600">ID</div>
+            <div className="flex-1 text-xs font-semibold text-gray-600">Nombre</div>
+            <div className="flex-1 text-xs font-semibold text-gray-600">Descripción</div>
+            <div className="w-[80px] text-xs font-semibold text-gray-600 text-center">Estado</div>
+            <div className="w-[80px] text-xs font-semibold text-gray-600 text-center">Acciones</div>
+          </div>
+
+          {/* Table Body */}
+          <div className="relative min-h-[200px]">
+            <TableLoadingOverlay loading={loading} message="Cargando categorías..." />
+
+            {!loading && paginatedCategories.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-64 py-20">
+                <Package className="w-16 h-16 text-purple-300 mb-4" />
+                <h3 className="text-lg font-semibold text-gray-700 mb-2">No hay categorías</h3>
+                <p className="text-sm text-gray-500 text-center">
+                  {searchTerm
+                    ? 'No se encontraron categorías con ese término'
+                    : 'Crea tu primera categoría de productos para comenzar'}
+                </p>
+              </div>
+            ) : (
+              <div className={`transition-opacity duration-200 ${loading ? 'opacity-50' : 'opacity-100'}`}>
+                {paginatedCategories.map((category) => (
                   <div
                     key={category.id}
-                    className="border border-gray-200 rounded-lg p-3 bg-white"
+                    className="min-w-[600px] flex items-center px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors"
                   >
-                    {/* Row 1: Icon + Name/Description */}
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
-                        <Tag className="w-5 h-5 text-orange-600" weight="duotone" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-gray-900 truncate" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                          {category.nombre}
-                        </div>
-                        <div className="text-xs text-gray-500 truncate">{category.descripcion || 'Sin descripción'}</div>
-                      </div>
+                    <div className="w-[40px]">
+                      <button
+                        onClick={() => batch.handleToggleSelect(category.id)}
+                        className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                          batch.selectedIds.has(category.id)
+                            ? 'bg-green-600 border-green-600 text-white'
+                            : 'border-gray-300 hover:border-green-500'
+                        }`}
+                      >
+                        {batch.selectedIds.has(category.id) && <Check className="w-3 h-3" />}
+                      </button>
                     </div>
-                    {/* Row 2: Actions */}
-                    <div className="flex justify-end">
+                    <div className="w-[60px] text-[13px] font-mono text-gray-500">
+                      {category.id}
+                    </div>
+                    <div className="flex-1 text-[13px] font-medium text-gray-900">
+                      {category.nombre}
+                    </div>
+                    <div className="flex-1 text-[13px] text-gray-500 truncate pr-4">
+                      {category.descripcion || '-'}
+                    </div>
+                    <div className="w-[80px] flex items-center justify-center">
+                      <ActiveToggle
+                        isActive={category.activo}
+                        onToggle={() => handleToggleActive(category)}
+                        isLoading={togglingId === category.id}
+                      />
+                    </div>
+                    <div className="w-[80px] flex items-center justify-center">
                       <button
                         onClick={() => handleOpenEdit(category)}
-                        className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors disabled:opacity-50"
+                        disabled={loading}
+                        className="p-1.5 text-amber-400 hover:text-amber-600 hover:bg-green-50 rounded transition-colors disabled:opacity-50"
+                        title="Editar"
                       >
-                        <Edit2 className="w-3.5 h-3.5 text-amber-400 hover:text-amber-600" />
-                        <span>Editar</span>
-                      </button>
-                      <button
-                        onClick={() => handleOpenDelete(category)}
-                        className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
-                      >
-                        <Trash2 className="w-3.5 h-3.5 text-red-400 hover:text-red-600" />
-                        <span>Eliminar</span>
+                        <Edit2 className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
-                ))
-              )}
-            </div>
-
-            {/* Table */}
-            <div data-tour="product-categories-table" className="hidden sm:block bg-white border border-gray-200 rounded-lg overflow-x-auto">
-              {/* Table Header - Always visible */}
-              <div className="min-w-[600px] flex items-center bg-gray-50 px-4 h-10 border-b border-gray-200">
-                <div className="w-[80px] text-xs font-semibold text-gray-600">ID</div>
-                <div className="flex-1 text-xs font-semibold text-gray-600">Nombre</div>
-                <div className="flex-1 text-xs font-semibold text-gray-600">Descripción</div>
-                <div className="w-[100px] text-xs font-semibold text-gray-600 text-center">Acciones</div>
-              </div>
-
-              {/* Table Body - With loading overlay */}
-              <div className="relative min-h-[200px]">
-                {/* Loading Overlay */}
-                {loading && (
-                  <div className="absolute inset-0 bg-white/80 backdrop-blur-[1px] z-10 flex items-center justify-center transition-opacity duration-200">
-                    <div className="flex flex-col items-center gap-2">
-                      <Loader2 className="h-8 w-8 animate-spin text-green-600" />
-                      <span className="text-sm text-gray-500">Cargando categorías...</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Empty State */}
-                {!loading && paginatedCategories.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-64 py-20">
-                    <Package className="w-16 h-16 text-purple-300 mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-700 mb-2">No hay categorías</h3>
-                    <p className="text-sm text-gray-500 text-center">
-                      {searchTerm
-                        ? 'No se encontraron categorías con ese término'
-                        : 'Crea tu primera categoría de productos para comenzar'}
-                    </p>
-                  </div>
-                ) : (
-                  /* Table Rows - With opacity transition */
-                  <div className={`transition-opacity duration-200 ${loading ? 'opacity-50' : 'opacity-100'}`}>
-                    {paginatedCategories.map((category) => (
-                      <div
-                        key={category.id}
-                        className="min-w-[600px] flex items-center px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors"
-                      >
-                        <div className="w-[80px] text-[13px] font-mono text-gray-500">
-                          {category.id}
-                        </div>
-                        <div className="flex-1 text-[13px] font-medium text-gray-900">
-                          {category.nombre}
-                        </div>
-                        <div className="flex-1 text-[13px] text-gray-500 truncate pr-4">
-                          {category.descripcion || '-'}
-                        </div>
-                        <div className="w-[100px] flex items-center justify-center gap-1">
-                          <button
-                            onClick={() => handleOpenEdit(category)}
-                            disabled={loading}
-                            className="p-1.5 text-amber-400 hover:text-amber-600 hover:bg-green-50 rounded transition-colors disabled:opacity-50"
-                            title="Editar"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleOpenDelete(category)}
-                            disabled={loading}
-                            className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
-                            title="Eliminar"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Pagination - Always visible when there are items */}
-            {(paginatedCategories.length > 0 || loading) && totalItems > 0 && (
-              <div className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pt-4 transition-opacity duration-200 ${loading ? 'opacity-60' : 'opacity-100'}`}>
-                <span className="text-sm text-gray-500" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                  Mostrando {startItem}-{endItem} de {totalItems} categorías
-                </span>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={currentPage === 1 || loading}
-                    className="px-3 py-2 border border-gray-200 rounded-md text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-
-                  {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map((page) => (
-                    <button
-                      key={page}
-                      onClick={() => !loading && setCurrentPage(page)}
-                      disabled={loading}
-                      className={`min-w-[32px] px-2 py-1 text-sm rounded-md transition-colors ${
-                        page === currentPage
-                          ? 'bg-green-600 text-white'
-                          : 'text-gray-600 hover:bg-gray-100'
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  ))}
-
-                  <button
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages || loading}
-                    className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
+                ))}
               </div>
             )}
           </div>
         </div>
 
-        {/* Create/Edit Drawer */}
-        <Drawer
-          ref={drawerRef}
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          title={editingCategory ? 'Editar Categoría' : 'Nueva Categoría'}
-          icon={<Tag className="w-5 h-5" />}
-          width="sm"
-          isDirty={isDirty}
-          onSave={handleSubmit}
-          footer={
-            <div className="flex items-center justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => drawerRef.current?.requestClose()}
-                disabled={actionLoading}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleSubmit}
-                disabled={actionLoading}
-                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
-              >
-                {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                {editingCategory ? 'Guardar Cambios' : 'Crear Categoría'}
-              </button>
-            </div>
-          }
-        >
-          <div className="p-6 space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">
-                Nombre <span className="text-red-500">*</span>
-              </label>
-              <Input
-                placeholder="Ej: Electrónicos, Ropa, Alimentos..."
-                {...register('nombre')}
-              />
-              {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre.message}</p>}
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Descripción</label>
-              <Input
-                placeholder="Descripción opcional de la categoría"
-                {...register('descripcion')}
-              />
-            </div>
-          </div>
-        </Drawer>
-
-        {/* Delete Confirmation Modal */}
-        <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>¿Eliminar categoría?</DialogTitle>
-            </DialogHeader>
-
-            <div className="py-4">
-              <p className="text-gray-500">
-                ¿Estás seguro de que deseas eliminar la categoría{' '}
-                <strong>&quot;{selectedCategory?.nombre}&quot;</strong>? Esta
-                acción no se puede deshacer.
-              </p>
-            </div>
-
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setIsDeleteModalOpen(false);
-                  setSelectedCategory(null);
-                }}
-                disabled={actionLoading}
-              >
-                Cancelar
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={handleDelete}
-                disabled={actionLoading}
-              >
-                {actionLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Eliminar
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        {/* Pagination */}
+        <ListPagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          itemLabel="categorías"
+          loading={loading}
+        />
       </div>
+
+      {/* CSV Import Modal */}
+      <CsvImportModal
+        isOpen={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
+        entity="categorias-productos"
+        entityLabel="categorías de productos"
+        onSuccess={() => loadCategories()}
+      />
+
+      {/* Batch Confirm Modal */}
+      <BatchConfirmModal
+        isOpen={batch.isBatchConfirmOpen}
+        onClose={batch.closeBatchConfirm}
+        onConfirm={handleBatchToggle}
+        action={batch.batchAction}
+        selectedCount={batch.selectedCount}
+        entityLabel="categorías"
+        loading={batch.batchLoading}
+      />
+
+      {/* Create/Edit Drawer */}
+      <Drawer
+        ref={drawerRef}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={editingCategory ? 'Editar Categoría' : 'Nueva Categoría'}
+        icon={<Tag className="w-5 h-5" />}
+        width="sm"
+        isDirty={isDirty}
+        onSave={handleSubmit}
+        footer={
+          <div className="flex items-center justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => drawerRef.current?.requestClose()}
+              disabled={actionLoading}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={actionLoading}
+              className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
+            >
+              {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+              {editingCategory ? 'Guardar Cambios' : 'Crear Categoría'}
+            </button>
+          </div>
+        }
+      >
+        <div className="p-6 space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              Nombre <span className="text-red-500">*</span>
+            </label>
+            <Input
+              placeholder="Ej: Electrónicos, Ropa, Alimentos..."
+              {...register('nombre')}
+            />
+            {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre.message}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Descripción</label>
+            <Input
+              placeholder="Descripción opcional de la categoría"
+              {...register('descripcion')}
+            />
+          </div>
+        </div>
+      </Drawer>
+    </PageHeader>
   );
 }

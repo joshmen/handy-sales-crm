@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 
 interface ExtendedUnit extends Unit {
-  activo?: boolean;
   productosActivos?: number;
   productosInactivos?: number;
   ultimaModificacion?: string;

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { Construction } from "lucide-react";
 import { Card, CardHeader, CardContent, Button, Input } from "@/components/ui";
 import { ComponentPalette } from "@/components/forms/ComponentPalette";
 import { FormPreview } from "@/components/forms/FormPreview";
@@ -135,6 +136,17 @@ export default function FormBuilderPage() {
 
   return (
     <div className="p-6">
+      {/* Próximamente Banner */}
+      <div className="flex items-start gap-3 p-4 mb-6 bg-amber-50 border border-amber-200 rounded-lg">
+        <Construction className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+        <div>
+          <p className="font-medium text-amber-800">Próximamente</p>
+          <p className="text-sm text-amber-700 mt-1">
+            El constructor de formularios está en desarrollo. Pronto podrás diseñar formularios personalizados para tus vendedores.
+          </p>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Constructor principal */}
         <div className="lg:col-span-3">

@@ -1,34 +1,33 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/Dialog';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
-import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { toast } from '@/hooks/useToast';
 import { clientCategoryService } from '@/services/api';
 import { ApiError } from '@/lib/api';
 import { ClientCategory } from '@/types/catalogs';
-import { Breadcrumb } from '@/components/ui/Breadcrumb';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
   Plus,
-  Search,
   Edit2,
-  Trash2,
   Loader2,
-  ChevronLeft,
-  ChevronRight,
+  Upload,
+  Download,
+  ChevronDown,
+  RefreshCw,
 } from 'lucide-react';
+import { ListPagination } from '@/components/ui/ListPagination';
+import { SearchBar } from '@/components/common/SearchBar';
+import { InactiveToggle } from '@/components/ui/InactiveToggle';
+import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
+import { ActiveToggle } from '@/components/ui/ActiveToggle';
 import { UsersThree } from '@phosphor-icons/react';
+import { exportToCsv } from '@/services/api/importExport';
+import { CsvImportModal } from '@/components/shared/CsvImportModal';
 
 const formSchema = z.object({
   nombre: z.string().min(1, 'El nombre es requerido'),
@@ -50,9 +49,11 @@ export default function ClientCategoriesPage() {
 
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<ClientCategory | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<ClientCategory | null>(null);
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [showDataMenu, setShowDataMenu] = useState(false);
+  const [togglingId, setTogglingId] = useState<number | null>(null);
+  const [showInactive, setShowInactive] = useState(false);
 
   // Form state with react-hook-form
   const { register, handleSubmit: rhfSubmit, reset, formState: { errors, isDirty } } = useForm<FormData>({
@@ -72,11 +73,7 @@ export default function ClientCategoriesPage() {
       setCategories(data);
     } catch (error) {
       console.error('Error loading categories:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudieron cargar las categorías',
-        variant: 'destructive',
-      });
+      toast.error('No se pudieron cargar las categorías');
     } finally {
       setLoading(false);
     }
@@ -84,29 +81,33 @@ export default function ClientCategoriesPage() {
 
   // Filtered categories
   const filteredCategories = useMemo(() => {
-    if (!searchTerm) return categories;
-    const term = searchTerm.toLowerCase();
-    return categories.filter(
-      (cat) =>
-        cat.nombre.toLowerCase().includes(term) ||
-        cat.descripcion?.toLowerCase().includes(term)
-    );
-  }, [categories, searchTerm]);
+    let filtered = categories;
+    if (!showInactive) {
+      filtered = filtered.filter(cat => cat.activo);
+    }
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (cat) =>
+          cat.nombre.toLowerCase().includes(term) ||
+          cat.descripcion?.toLowerCase().includes(term)
+      );
+    }
+    return filtered;
+  }, [categories, searchTerm, showInactive]);
 
   // Pagination
   const totalItems = filteredCategories.length;
   const totalPages = Math.ceil(totalItems / pageSize);
-  const startItem = totalItems > 0 ? (currentPage - 1) * pageSize + 1 : 0;
-  const endItem = Math.min(currentPage * pageSize, totalItems);
   const paginatedCategories = filteredCategories.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   );
 
-  // Reset page when search changes
+  // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm]);
+  }, [searchTerm, showInactive]);
 
   // Handlers
   const handleOpenCreate = () => {
@@ -121,9 +122,19 @@ export default function ClientCategoriesPage() {
     setIsModalOpen(true);
   };
 
-  const handleOpenDelete = (category: ClientCategory) => {
-    setSelectedCategory(category);
-    setIsDeleteModalOpen(true);
+  const handleToggleActive = async (category: ClientCategory) => {
+    try {
+      setTogglingId(category.id);
+      const newActivo = !category.activo;
+      await clientCategoryService.toggleActivo(category.id, newActivo);
+      toast.success(newActivo ? `"${category.nombre}" activada` : `"${category.nombre}" desactivada`);
+      setCategories(prev => prev.map(c => c.id === category.id ? { ...c, activo: newActivo } : c));
+    } catch (error) {
+      const apiError = error as ApiError;
+      toast.error(apiError.message || 'Error al cambiar estado');
+    } finally {
+      setTogglingId(null);
+    }
   };
 
   const handleSubmit = rhfSubmit(async (data) => {
@@ -132,105 +143,94 @@ export default function ClientCategoriesPage() {
 
       if (editingCategory) {
         await clientCategoryService.update(editingCategory.id, data);
-        toast({
-          title: 'Categoría actualizada',
-          description: `La categoría "${data.nombre}" se actualizó exitosamente`,
-        });
+        toast.success(`Categoría "${data.nombre}" actualizada`);
       } else {
         await clientCategoryService.create(data);
-        toast({
-          title: 'Categoría creada',
-          description: `La categoría "${data.nombre}" se creó exitosamente`,
-        });
+        toast.success(`Categoría "${data.nombre}" creada`);
       }
 
       setIsModalOpen(false);
       await loadCategories();
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Ocurrió un error',
-        variant: 'destructive',
-      });
+      toast.error(error instanceof Error ? error.message : 'Ocurrió un error');
     } finally {
       setActionLoading(false);
     }
   });
 
-  const handleDelete = async () => {
-    if (!selectedCategory) return;
-
-    try {
-      setActionLoading(true);
-      await clientCategoryService.delete(selectedCategory.id);
-
-      toast({
-        title: 'Categoría eliminada',
-        description: `La categoría "${selectedCategory.nombre}" se eliminó exitosamente`,
-      });
-
-      setIsDeleteModalOpen(false);
-      setSelectedCategory(null);
-      await loadCategories();
-    } catch (error) {
-      const apiError = error as ApiError;
-      toast({
-        title: 'No se puede eliminar',
-        description: apiError.message || 'Ocurrió un error al eliminar la categoría',
-        variant: 'destructive',
-      });
-      setIsDeleteModalOpen(false);
-      setSelectedCategory(null);
-    } finally {
-      setActionLoading(false);
-    }
-  };
 
   return (
-      <div className="flex flex-col h-full">
-        {/* Header */}
-        <div className="bg-white px-4 py-4 sm:px-8 sm:py-6 border-b border-gray-200">
-          {/* Breadcrumb */}
-          <Breadcrumb items={[
-            { label: 'Inicio', href: '/dashboard' },
-            { label: 'Categorías de clientes' },
-          ]} />
-
-          {/* Title Row */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3">
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                Categorías de clientes
-              </h1>
-            </div>
-            <div className="flex items-center gap-2">
+      <PageHeader
+        breadcrumbs={[
+          { label: 'Inicio', href: '/dashboard' },
+          { label: 'Categorías de clientes' },
+        ]}
+        title="Categorías de clientes"
+        actions={
+          <>
+            <div className="relative">
               <button
-                onClick={handleOpenCreate}
-                data-tour="client-categories-create-btn"
-                className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
+                onClick={() => setShowDataMenu(!showDataMenu)}
+                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
               >
-                <Plus className="w-4 h-4" />
-                <span>Nueva categoría</span>
+                <Download className="w-3.5 h-3.5 text-emerald-500" />
+                <span className="hidden sm:inline">Importar / Exportar</span>
+                <ChevronDown className="w-3 h-3 text-gray-400" />
               </button>
+              {showDataMenu && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setShowDataMenu(false)} />
+                  <div className="absolute right-0 mt-1 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1">
+                    <button
+                      onClick={async () => { setShowDataMenu(false); try { await exportToCsv('categorias-clientes'); toast.success('Archivo CSV descargado'); } catch { toast.error('Error al exportar datos'); } }}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
+                    >
+                      <Download className="w-3.5 h-3.5 text-emerald-500" />
+                      Exportar CSV
+                    </button>
+                    <button
+                      onClick={() => { setShowDataMenu(false); setIsImportOpen(true); }}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
+                    >
+                      <Upload className="w-3.5 h-3.5 text-blue-500" />
+                      Importar CSV
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
-          </div>
-        </div>
-
-        {/* Body */}
-        <div className="flex-1 overflow-auto">
-          <div className="px-4 py-4 sm:px-8 sm:py-6">
+            <button
+              onClick={handleOpenCreate}
+              data-tour="client-categories-create-btn"
+              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Nueva categoría</span>
+            </button>
+          </>
+        }
+      >
             {/* Search Row */}
-            <div className="flex items-center justify-between mb-4">
-              <div className="relative w-64" data-tour="client-categories-search">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Buscar categoría..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                />
-              </div>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4">
+              <SearchBar
+                value={searchTerm}
+                onChange={setSearchTerm}
+                placeholder="Buscar categoría..."
+                dataTour="client-categories-search"
+              />
+              <button
+                onClick={loadCategories}
+                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Actualizar</span>
+              </button>
+
+              <InactiveToggle
+                value={showInactive}
+                onChange={(v) => { setShowInactive(v); setCurrentPage(1); }}
+                className="ml-auto"
+              />
             </div>
 
             {/* Mobile Cards */}
@@ -266,7 +266,7 @@ export default function ClientCategoriesPage() {
                       </div>
                     </div>
                     {/* Row 2: Actions */}
-                    <div className="flex justify-end">
+                    <div className="flex items-center justify-end gap-3">
                       <button
                         onClick={() => handleOpenEdit(category)}
                         className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors disabled:opacity-50"
@@ -274,13 +274,13 @@ export default function ClientCategoriesPage() {
                         <Edit2 className="w-3.5 h-3.5 text-amber-400 hover:text-amber-600" />
                         <span>Editar</span>
                       </button>
-                      <button
-                        onClick={() => handleOpenDelete(category)}
-                        className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
-                      >
-                        <Trash2 className="w-3.5 h-3.5 text-red-400 hover:text-red-600" />
-                        <span>Eliminar</span>
-                      </button>
+                      <ActiveToggle
+                        isActive={category.activo}
+                        onToggle={() => handleToggleActive(category)}
+                        disabled={loading}
+                        isLoading={togglingId === category.id}
+                        title={category.activo ? 'Desactivar categoría' : 'Activar categoría'}
+                      />
                     </div>
                   </div>
                 ))
@@ -294,20 +294,13 @@ export default function ClientCategoriesPage() {
                 <div className="w-[80px] text-xs font-semibold text-gray-600">ID</div>
                 <div className="flex-1 text-xs font-semibold text-gray-600">Nombre</div>
                 <div className="flex-1 text-xs font-semibold text-gray-600">Descripción</div>
-                <div className="w-[100px] text-xs font-semibold text-gray-600 text-center">Acciones</div>
+                <div className="w-[50px] text-xs font-semibold text-gray-600 text-center">Estado</div>
+                <div className="w-[60px] text-xs font-semibold text-gray-600 text-center">Editar</div>
               </div>
 
               {/* Table Body - With loading overlay */}
               <div className="relative min-h-[200px]">
-                {/* Loading Overlay */}
-                {loading && (
-                  <div className="absolute inset-0 bg-white/80 backdrop-blur-[1px] z-10 flex items-center justify-center transition-opacity duration-200">
-                    <div className="flex flex-col items-center gap-2">
-                      <Loader2 className="h-8 w-8 animate-spin text-green-600" />
-                      <span className="text-sm text-gray-500">Cargando categorías...</span>
-                    </div>
-                  </div>
-                )}
+                <TableLoadingOverlay loading={loading} message="Cargando categorías..." />
 
                 {/* Empty State */}
                 {!loading && paginatedCategories.length === 0 ? (
@@ -326,7 +319,7 @@ export default function ClientCategoriesPage() {
                     {paginatedCategories.map((category) => (
                       <div
                         key={category.id}
-                        className="min-w-[600px] flex items-center px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                        className={`min-w-[600px] flex items-center px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors ${!category.activo ? 'opacity-50' : ''}`}
                       >
                         <div className="w-[80px] text-[13px] font-mono text-gray-500">
                           {category.id}
@@ -337,7 +330,16 @@ export default function ClientCategoriesPage() {
                         <div className="flex-1 text-[13px] text-gray-500 truncate pr-4">
                           {category.descripcion || '-'}
                         </div>
-                        <div className="w-[100px] flex items-center justify-center gap-1">
+                        <div className="w-[50px] flex items-center justify-center">
+                          <ActiveToggle
+                            isActive={category.activo}
+                            onToggle={() => handleToggleActive(category)}
+                            disabled={loading}
+                            isLoading={togglingId === category.id}
+                            title={category.activo ? 'Desactivar categoría' : 'Activar categoría'}
+                          />
+                        </div>
+                        <div className="w-[60px] flex items-center justify-center">
                           <button
                             onClick={() => handleOpenEdit(category)}
                             disabled={loading}
@@ -345,14 +347,6 @@ export default function ClientCategoriesPage() {
                             title="Editar"
                           >
                             <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleOpenDelete(category)}
-                            disabled={loading}
-                            className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
-                            title="Eliminar"
-                          >
-                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
@@ -362,48 +356,16 @@ export default function ClientCategoriesPage() {
               </div>
             </div>
 
-            {/* Pagination - Always visible when there are items */}
-            {(paginatedCategories.length > 0 || loading) && totalItems > 0 && (
-              <div className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pt-4 transition-opacity duration-200 ${loading ? 'opacity-60' : 'opacity-100'}`}>
-                <span className="text-sm text-gray-500" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                  Mostrando {startItem}-{endItem} de {totalItems} categorías
-                </span>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={currentPage === 1 || loading}
-                    className="px-3 py-2 border border-gray-200 rounded-md text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-
-                  {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map((page) => (
-                    <button
-                      key={page}
-                      onClick={() => !loading && setCurrentPage(page)}
-                      disabled={loading}
-                      className={`min-w-[32px] px-2 py-1 text-sm rounded-md transition-colors ${
-                        page === currentPage
-                          ? 'bg-green-600 text-white'
-                          : 'text-gray-600 hover:bg-gray-100'
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  ))}
-
-                  <button
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages || loading}
-                    className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+            <ListPagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              itemLabel="categorías"
+              loading={loading}
+              className="pt-4"
+            />
 
         {/* Create/Edit Drawer */}
         <Drawer
@@ -459,43 +421,14 @@ export default function ClientCategoriesPage() {
           </div>
         </Drawer>
 
-        {/* Delete Confirmation Modal */}
-        <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>¿Eliminar categoría?</DialogTitle>
-            </DialogHeader>
-
-            <div className="py-4">
-              <p className="text-gray-500">
-                ¿Estás seguro de que deseas eliminar la categoría{' '}
-                <strong>&quot;{selectedCategory?.nombre}&quot;</strong>? Esta
-                acción no se puede deshacer.
-              </p>
-            </div>
-
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setIsDeleteModalOpen(false);
-                  setSelectedCategory(null);
-                }}
-                disabled={actionLoading}
-              >
-                Cancelar
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={handleDelete}
-                disabled={actionLoading}
-              >
-                {actionLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Eliminar
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
+        {/* CSV Import Modal */}
+        <CsvImportModal
+          isOpen={isImportOpen}
+          onClose={() => setIsImportOpen(false)}
+          entity="categorias-clientes"
+          entityLabel="categorías"
+          onSuccess={loadCategories}
+        />
+      </PageHeader>
   );
 }

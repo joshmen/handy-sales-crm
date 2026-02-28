@@ -20,10 +20,11 @@ import {
   Check,
   Minus,
   X,
-  Power,
-  PowerOff,
   Loader2,
 } from 'lucide-react';
+import { useBatchOperations } from '@/hooks/useBatchOperations';
+import { BatchActionBar } from '@/components/shared/BatchActionBar';
+import { BatchConfirmModal } from '@/components/shared/BatchConfirmModal';
 import { useSession } from 'next-auth/react';
 import { usePaginatedUsers, useCreateUser, useUpdateUser } from '@/hooks/useUsers';
 import { roleService, Role } from '@/services/api/roleService';
@@ -59,12 +60,6 @@ export default function UsersPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
-  // Multi-select state
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-  const [batchAction, setBatchAction] = useState<'activate' | 'deactivate'>('deactivate');
-  const [isBatchConfirmOpen, setIsBatchConfirmOpen] = useState(false);
-  const [batchLoading, setBatchLoading] = useState(false);
-
   // B4: Location modal
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [ubicaciones, setUbicaciones] = useState<UsuarioUbicacion[]>([]);
@@ -81,23 +76,6 @@ export default function UsersPage() {
     telefono: '',
     role: 'VENDEDOR',
   });
-
-  // Close modals on ESC key
-  useEffect(() => {
-    const anyOpen = isCreateModalOpen || isEditModalOpen || isBatchConfirmOpen || isLocationModalOpen || isDistanceModalOpen;
-    if (!anyOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setIsCreateModalOpen(false);
-        setIsEditModalOpen(false);
-        setIsBatchConfirmOpen(false);
-        setIsLocationModalOpen(false);
-        setIsDistanceModalOpen(false);
-      }
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isCreateModalOpen, isEditModalOpen, isBatchConfirmOpen, isLocationModalOpen, isDistanceModalOpen]);
 
   // Load roles and zones
   useEffect(() => {
@@ -237,54 +215,20 @@ export default function UsersPage() {
     toast.success('Lista actualizada');
   };
 
-  // Multi-select handlers
-  const handleToggleSelect = (id: number) => {
-    setSelectedIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  };
+  const visibleIds = displayUsers.map(u => parseInt(u.id));
 
-  const handleSelectAllVisible = () => {
-    const visIds = displayUsers.map(u => parseInt(u.id));
-    const allSelected = visIds.every(id => selectedIds.has(id));
-
-    if (allSelected) {
-      setSelectedIds(prev => {
-        const next = new Set(prev);
-        visIds.forEach(id => next.delete(id));
-        return next;
-      });
-    } else {
-      setSelectedIds(prev => {
-        const next = new Set(prev);
-        visIds.forEach(id => next.add(id));
-        return next;
-      });
-    }
-  };
-
-  const handleClearSelection = () => {
-    setSelectedIds(new Set());
-  };
-
-  const handleOpenBatchAction = (action: 'activate' | 'deactivate') => {
-    setBatchAction(action);
-    setIsBatchConfirmOpen(true);
-  };
+  const batch = useBatchOperations({
+    visibleIds,
+    clearDeps: [currentPage, filterZona, filterRole],
+  });
 
   const handleBatchToggle = async () => {
-    if (selectedIds.size === 0) return;
+    if (batch.selectedIds.size === 0) return;
 
     try {
-      setBatchLoading(true);
-      const ids = Array.from(selectedIds);
-      const activo = batchAction === 'activate';
+      batch.setBatchLoading(true);
+      const ids = Array.from(batch.selectedIds);
+      const activo = batch.batchAction === 'activate';
 
       const result = await usersService.batchToggleActive(ids, activo);
 
@@ -292,30 +236,35 @@ export default function UsersPage() {
         toast.success(
           `${ids.length} usuario${ids.length > 1 ? 's' : ''} ${activo ? 'activado' : 'desactivado'}${ids.length > 1 ? 's' : ''} exitosamente`
         );
-        setIsBatchConfirmOpen(false);
-        setSelectedIds(new Set());
         loadUsers();
+        batch.completeBatch();
       } else {
         toast.error(result.error || 'Error al cambiar el estado de los usuarios');
+        batch.setBatchLoading(false);
       }
     } catch (error) {
       console.error('Error en batch toggle:', error);
       toast.error('Error al cambiar el estado de los usuarios');
-    } finally {
-      setBatchLoading(false);
+      batch.setBatchLoading(false);
     }
   };
 
-  // Clear selection when page changes
+  // Close modals on ESC key
   useEffect(() => {
-    setSelectedIds(new Set());
-  }, [currentPage, filterZona, filterRole]);
-
-  // Computed selection state
-  const visibleIds = displayUsers.map(u => parseInt(u.id));
-  const allVisibleSelected = visibleIds.length > 0 && visibleIds.every(id => selectedIds.has(id));
-  const someVisibleSelected = visibleIds.some(id => selectedIds.has(id));
-  const selectedCount = selectedIds.size;
+    const anyOpen = isCreateModalOpen || isEditModalOpen || batch.isBatchConfirmOpen || isLocationModalOpen || isDistanceModalOpen;
+    if (!anyOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsCreateModalOpen(false);
+        setIsEditModalOpen(false);
+        batch.closeBatchConfirm();
+        setIsLocationModalOpen(false);
+        setIsDistanceModalOpen(false);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isCreateModalOpen, isEditModalOpen, batch.isBatchConfirmOpen, isLocationModalOpen, isDistanceModalOpen, batch.closeBatchConfirm]);
 
   // B4: Load user locations and open map modal
   const handleOpenUbicaciones = async () => {
@@ -520,61 +469,16 @@ export default function UsersPage() {
         {/* Body */}
         <div className="flex-1 px-8 py-6 overflow-auto bg-gray-50">
           {/* Selection Action Bar */}
-          {selectedCount > 0 && (
-            <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 mb-4">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={handleSelectAllVisible}
-                  className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                    allVisibleSelected
-                      ? 'bg-green-600 border-green-600 text-white'
-                      : someVisibleSelected
-                      ? 'bg-green-100 border-green-600'
-                      : 'border-gray-300 hover:border-green-500'
-                  }`}
-                >
-                  {allVisibleSelected ? (
-                    <Check className="w-3 h-3" />
-                  ) : someVisibleSelected ? (
-                    <Minus className="w-3 h-3 text-green-600" />
-                  ) : null}
-                </button>
-                <span className="text-sm font-medium text-blue-700">
-                  {selectedCount} seleccionado{selectedCount > 1 ? 's' : ''}
-                </span>
-                {selectedCount < totalCount && (
-                  <span className="text-xs text-blue-500">
-                    de {totalCount} usuarios
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => handleOpenBatchAction('deactivate')}
-                  disabled={batchLoading}
-                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-red-600 bg-white border border-red-200 rounded hover:bg-red-50 transition-colors disabled:opacity-50"
-                >
-                  <PowerOff className="w-3 h-3" />
-                  <span>Desactivar</span>
-                </button>
-                <button
-                  onClick={() => handleOpenBatchAction('activate')}
-                  disabled={batchLoading}
-                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-green-600 bg-white border border-green-200 rounded hover:bg-green-50 transition-colors disabled:opacity-50"
-                >
-                  <Power className="w-3 h-3" />
-                  <span>Activar</span>
-                </button>
-                <button
-                  onClick={handleClearSelection}
-                  className="flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors"
-                >
-                  <X className="w-3 h-3" />
-                  <span>Cancelar</span>
-                </button>
-              </div>
-            </div>
-          )}
+          <BatchActionBar
+            selectedCount={batch.selectedCount}
+            totalItems={totalCount}
+            entityLabel="usuarios"
+            onActivate={() => batch.openBatchAction('activate')}
+            onDeactivate={() => batch.openBatchAction('deactivate')}
+            onClear={batch.handleClearSelection}
+            loading={batch.batchLoading}
+            className="mb-4"
+          />
 
           {/* Container with loading overlay */}
           <div className="relative min-h-[200px]">
@@ -605,7 +509,7 @@ export default function UsersPage() {
                 <div
                   key={user.id}
                   className={`bg-white border rounded-lg overflow-hidden ${
-                    selectedIds.has(parseInt(user.id))
+                    batch.selectedIds.has(parseInt(user.id))
                       ? 'border-green-400 ring-1 ring-green-200'
                       : 'border-gray-200'
                   }`}
@@ -616,15 +520,15 @@ export default function UsersPage() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleToggleSelect(parseInt(user.id));
+                        batch.handleToggleSelect(parseInt(user.id));
                       }}
                       className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                        selectedIds.has(parseInt(user.id))
+                        batch.selectedIds.has(parseInt(user.id))
                           ? 'bg-green-600 border-green-600 text-white'
                           : 'border-gray-300 hover:border-green-500'
                       }`}
                     >
-                      {selectedIds.has(parseInt(user.id)) && <Check className="w-3 h-3" />}
+                      {batch.selectedIds.has(parseInt(user.id)) && <Check className="w-3 h-3" />}
                     </button>
 
                     {/* Avatar Section */}
@@ -835,46 +739,17 @@ export default function UsersPage() {
       )}
 
       {/* Batch Confirm Modal */}
-      {isBatchConfirmOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">
-                {batchAction === 'activate' ? 'Activar' : 'Desactivar'} {selectedCount} usuario{selectedCount > 1 ? 's' : ''}?
-              </h2>
-            </div>
-            <div className="p-6">
-              <p className="text-gray-500">
-                ¿Estás seguro de que deseas {batchAction === 'activate' ? 'activar' : 'desactivar'}{' '}
-                <strong>{selectedCount}</strong> usuario{selectedCount > 1 ? 's' : ''} seleccionado{selectedCount > 1 ? 's' : ''}?
-                {batchAction === 'deactivate' && ' Los usuarios desactivados no podrán iniciar sesión.'}
-                {batchAction === 'activate' && ' Los usuarios activados podrán iniciar sesión nuevamente.'}
-              </p>
-            </div>
-            <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
-              <button
-                onClick={() => setIsBatchConfirmOpen(false)}
-                disabled={batchLoading}
-                className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleBatchToggle}
-                disabled={batchLoading}
-                className={`px-4 py-2 text-sm font-medium text-white rounded-md disabled:opacity-50 flex items-center gap-2 ${
-                  batchAction === 'deactivate'
-                    ? 'bg-red-600 hover:bg-red-700'
-                    : 'bg-green-600 hover:bg-green-700'
-                }`}
-              >
-                {batchLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                {batchAction === 'activate' ? 'Activar' : 'Desactivar'} ({selectedCount})
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <BatchConfirmModal
+        isOpen={batch.isBatchConfirmOpen}
+        onClose={batch.closeBatchConfirm}
+        onConfirm={handleBatchToggle}
+        action={batch.batchAction}
+        selectedCount={batch.selectedCount}
+        entityLabel="usuario"
+        loading={batch.batchLoading}
+        consequenceDeactivate="Los usuarios desactivados no podrán iniciar sesión."
+        consequenceActivate="Los usuarios activados podrán iniciar sesión nuevamente."
+      />
 
       {/* Edit Modal */}
       {isEditModalOpen && selectedUser && (

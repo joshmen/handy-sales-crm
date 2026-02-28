@@ -62,4 +62,15 @@ export const clientCategoryService = {
       throw handleApiError(error);
     }
   },
+
+  /**
+   * Activar/Desactivar una categoría
+   */
+  async toggleActivo(id: number, activo: boolean): Promise<void> {
+    try {
+      await api.patch(`${BASE_URL}/${id}/activo`, { activo });
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
 };

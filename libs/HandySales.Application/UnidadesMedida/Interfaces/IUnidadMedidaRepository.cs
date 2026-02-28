@@ -4,7 +4,7 @@ namespace HandySales.Application.UnidadesMedida.Interfaces;
 
 public interface IUnidadMedidaRepository
 {
-    Task<List<UnidadMedidaDto>> ObtenerPorTenantAsync(int tenantId);
+    Task<List<UnidadMedidaDto>> ObtenerPorTenantAsync(int tenantId, bool incluirInactivos = false);
     Task<UnidadMedidaDto?> ObtenerPorIdAsync(int id, int tenantId);
     Task<int> CrearAsync(UnidadMedidaCreateDto dto, int tenantId);
     Task<bool> ActualizarAsync(int id, UnidadMedidaCreateDto dto, int tenantId);

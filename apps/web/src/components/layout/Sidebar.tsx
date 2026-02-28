@@ -226,13 +226,6 @@ const sidebarItems: SidebarItem[] = [
     permission: 'view_visits',
   },
   {
-    id: 'calendar',
-    label: 'Calendario',
-    icon: CalendarDots,
-    href: '/visits?view=calendar',
-    permission: 'view_dashboard',
-  },
-  {
     id: 'forms',
     label: 'Formularios',
     icon: ClipboardText,
@@ -629,10 +622,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
       visits: {
         active: 'text-pink-600',
         inactive: 'text-pink-500 group-hover:text-pink-600',
-      },
-      calendar: {
-        active: 'text-red-600',
-        inactive: 'text-red-500 group-hover:text-red-600',
       },
       forms: {
         active: 'text-pink-600',

@@ -18,8 +18,8 @@ public class CategoriaProductoService
         _tenant = tenant;
     }
 
-    public Task<List<CategoriaProductoDto>> ObtenerCategoriasAsync()
-        => _repo.ObtenerPorTenantAsync(_tenant.TenantId);
+    public Task<List<CategoriaProductoDto>> ObtenerCategoriasAsync(bool incluirInactivos = false)
+        => _repo.ObtenerPorTenantAsync(_tenant.TenantId, incluirInactivos);
 
     public Task<CategoriaProductoDto?> ObtenerPorIdAsync(int id)
         => _repo.ObtenerPorIdAsync(id, _tenant.TenantId);

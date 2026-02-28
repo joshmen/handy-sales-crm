@@ -225,6 +225,51 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ===== VALUE PROPS — Beneficios clave ===== */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-14">
+            <p className="text-sm font-medium text-emerald-600 mb-2">¿Por qué Handy Suites?</p>
+            <h2 className={`text-3xl lg:text-4xl font-bold text-gray-900 tracking-tight ${spaceGrotesk.className}`}>
+              Resultados reales para tu negocio
+            </h2>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {[
+              {
+                title: 'Control total de tu equipo en campo',
+                desc: 'Monitorea ubicación, visitas y actividad de cada vendedor en tiempo real desde cualquier dispositivo.',
+                icon: '📍',
+              },
+              {
+                title: 'Reduce tu cartera vencida hasta 40%',
+                desc: 'Alertas de cobranza, seguimiento automático y estado de cuenta actualizado para cada cliente.',
+                icon: '📉',
+              },
+              {
+                title: 'Facturación SAT en 3 clics',
+                desc: 'CFDI 4.0 certificado. Genera, timbra y envía facturas sin salir de la plataforma.',
+                icon: '⚡',
+              },
+              {
+                title: 'Funciona sin internet',
+                desc: 'Tu equipo captura pedidos, visitas y cobros offline. Todo se sincroniza al reconectar.',
+                icon: '📶',
+              },
+            ].map((prop) => (
+              <div key={prop.title} className="text-center">
+                <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center mx-auto mb-4 text-2xl">
+                  {prop.icon}
+                </div>
+                <h3 className="font-semibold text-gray-900 text-base">{prop.title}</h3>
+                <p className="text-sm text-gray-500 mt-2 leading-relaxed">{prop.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ===== FEATURE GRID ===== */}
       <section id="caracteristicas" className="py-24 bg-zinc-50">
         <div className="max-w-7xl mx-auto px-6">

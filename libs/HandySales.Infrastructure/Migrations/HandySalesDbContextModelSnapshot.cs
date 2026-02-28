@@ -485,6 +485,26 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnType("int")
                         .HasColumnName("categoria_cliente_id");
 
+                    b.Property<string>("Ciudad")
+                        .HasColumnType("longtext")
+                        .HasColumnName("ciudad");
+
+                    b.Property<string>("CodigoPostal")
+                        .HasColumnType("longtext")
+                        .HasColumnName("codigo_postal");
+
+                    b.Property<string>("CodigoPostalFiscal")
+                        .HasColumnType("longtext")
+                        .HasColumnName("codigo_postal_fiscal");
+
+                    b.Property<string>("Colonia")
+                        .HasColumnType("longtext")
+                        .HasColumnName("colonia");
+
+                    b.Property<string>("Comentarios")
+                        .HasColumnType("longtext")
+                        .HasColumnName("comentarios");
+
                     b.Property<string>("Correo")
                         .IsRequired()
                         .HasColumnType("longtext")
@@ -497,6 +517,14 @@ namespace HandySales.Infrastructure.Migrations
                     b.Property<string>("CreadoPor")
                         .HasColumnType("longtext")
                         .HasColumnName("creado_por");
+
+                    b.Property<decimal>("Descuento")
+                        .HasColumnType("decimal(65,30)")
+                        .HasColumnName("descuento");
+
+                    b.Property<int>("DiasCredito")
+                        .HasColumnType("int")
+                        .HasColumnName("dias_credito");
 
                     b.Property<string>("Direccion")
                         .IsRequired()
@@ -511,6 +539,18 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnType("longtext")
                         .HasColumnName("eliminado_por");
 
+                    b.Property<string>("Encargado")
+                        .HasColumnType("longtext")
+                        .HasColumnName("encargado");
+
+                    b.Property<bool>("EsProspecto")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("es_prospecto");
+
+                    b.Property<bool>("Facturable")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("facturable");
+
                     b.Property<int>("IdZona")
                         .HasColumnType("int")
                         .HasColumnName("id_zona");
@@ -518,6 +558,14 @@ namespace HandySales.Infrastructure.Migrations
                     b.Property<double?>("Latitud")
                         .HasColumnType("double")
                         .HasColumnName("latitud");
+
+                    b.Property<decimal>("LimiteCredito")
+                        .HasColumnType("decimal(65,30)")
+                        .HasColumnName("limite_credito");
+
+                    b.Property<int?>("ListaPreciosId")
+                        .HasColumnType("int")
+                        .HasColumnName("lista_precios_id");
 
                     b.Property<double?>("Longitud")
                         .HasColumnType("double")
@@ -528,10 +576,26 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnType("longtext")
                         .HasColumnName("nombre");
 
+                    b.Property<string>("NumeroExterior")
+                        .HasColumnType("longtext")
+                        .HasColumnName("numero_exterior");
+
                     b.Property<string>("RFC")
                         .IsRequired()
                         .HasColumnType("longtext")
                         .HasColumnName("rfc");
+
+                    b.Property<string>("RazonSocial")
+                        .HasColumnType("longtext")
+                        .HasColumnName("razon_social");
+
+                    b.Property<string>("RegimenFiscal")
+                        .HasColumnType("longtext")
+                        .HasColumnName("regimen_fiscal");
+
+                    b.Property<decimal>("Saldo")
+                        .HasColumnType("decimal(65,30)")
+                        .HasColumnName("saldo");
 
                     b.Property<string>("Telefono")
                         .IsRequired()
@@ -542,9 +606,27 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnType("int")
                         .HasColumnName("tenant_id");
 
+                    b.Property<string>("TipoPagoPredeterminado")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("tipo_pago_predeterminado");
+
+                    b.Property<string>("TiposPagoPermitidos")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("tipos_pago_permitidos");
+
+                    b.Property<string>("UsoCFDIPredeterminado")
+                        .HasColumnType("longtext")
+                        .HasColumnName("uso_cfdi_predeterminado");
+
                     b.Property<int?>("VendedorId")
                         .HasColumnType("int")
                         .HasColumnName("vendedor_id");
+
+                    b.Property<decimal>("VentaMinimaEfectiva")
+                        .HasColumnType("decimal(65,30)")
+                        .HasColumnName("venta_minima_efectiva");
 
                     b.Property<long>("Version")
                         .IsConcurrencyToken()
@@ -554,6 +636,8 @@ namespace HandySales.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CategoriaClienteId");
+
+                    b.HasIndex("ListaPreciosId");
 
                     b.HasIndex("TenantId");
 
@@ -3987,6 +4071,10 @@ namespace HandySales.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("HandySales.Domain.Entities.ListaPrecio", "ListaPrecios")
+                        .WithMany()
+                        .HasForeignKey("ListaPreciosId");
+
                     b.HasOne("HandySales.Domain.Entities.Tenant", "Tenant")
                         .WithMany("Clientes")
                         .HasForeignKey("TenantId")
@@ -3996,6 +4084,8 @@ namespace HandySales.Infrastructure.Migrations
                     b.HasOne("HandySales.Domain.Entities.Usuario", "Vendedor")
                         .WithMany()
                         .HasForeignKey("VendedorId");
+
+                    b.Navigation("ListaPrecios");
 
                     b.Navigation("Tenant");
 

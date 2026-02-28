@@ -15,16 +15,22 @@ public class CategoriaProductoRepository : ICategoriaProductoRepository
         _db = db;
     }
 
-    public async Task<List<CategoriaProductoDto>> ObtenerPorTenantAsync(int tenantId)
+    public async Task<List<CategoriaProductoDto>> ObtenerPorTenantAsync(int tenantId, bool incluirInactivos = false)
     {
-        return await _db.CategoriasProductos
+        var query = _db.CategoriasProductos
             .AsNoTracking()
-            .Where(c => c.TenantId == tenantId)
+            .Where(c => c.TenantId == tenantId);
+
+        if (!incluirInactivos)
+            query = query.Where(c => c.Activo);
+
+        return await query
             .Select(c => new CategoriaProductoDto
             {
                 Id = c.Id,
                 Nombre = c.Nombre,
-                Descripcion = c.Descripcion
+                Descripcion = c.Descripcion,
+                Activo = c.Activo
             })
             .ToListAsync();
     }
@@ -38,7 +44,8 @@ public class CategoriaProductoRepository : ICategoriaProductoRepository
             {
                 Id = c.Id,
                 Nombre = c.Nombre,
-                Descripcion = c.Descripcion
+                Descripcion = c.Descripcion,
+                Activo = c.Activo
             })
             .FirstOrDefaultAsync();
     }

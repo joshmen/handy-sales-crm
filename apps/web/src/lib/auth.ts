@@ -330,10 +330,10 @@ export const authOptions: NextAuthOptions = {
         token.accessTokenExpires = user.accessToken
           ? getTokenExpiry(user.accessToken)
           : 0;
-        // Set session expiry: 30 days if "Recordarme", 24 hours if not
+        // Set session expiry: 30 days if "Recordarme", 7 days if not
         token.sessionExpires = user.rememberMe
           ? Date.now() + 30 * 24 * 60 * 60 * 1000
-          : Date.now() + 24 * 60 * 60 * 1000;
+          : Date.now() + 7 * 24 * 60 * 60 * 1000;
         return token;
       }
 

@@ -10,21 +10,26 @@ import { productService } from '@/services/api/products';
 import { Product } from '@/types';
 import { toast } from '@/hooks/useToast';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
-import { Breadcrumb } from '@/components/ui/Breadcrumb';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
+import { exportToCsv } from '@/services/api/importExport';
+import { CsvImportModal } from '@/components/shared/CsvImportModal';
 import {
   Download,
-  ChevronLeft,
-  ChevronRight,
   Plus,
   Pencil,
-  Search,
   AlertTriangle,
   Upload,
   Trash2,
   Warehouse,
   Package,
+  RefreshCw,
+  ChevronDown,
 } from 'lucide-react';
+import { ListPagination } from '@/components/ui/ListPagination';
+import { SearchBar } from '@/components/common/SearchBar';
+import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
+import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { Package as PackageIcon } from '@phosphor-icons/react';
 import { HelpTooltip } from '@/components/help/HelpTooltip';
 
@@ -51,6 +56,10 @@ export default function InventoryPage() {
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Import/Export
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [showDataMenu, setShowDataMenu] = useState(false);
 
   // Products for create modal
   const [products, setProducts] = useState<Product[]>([]);
@@ -144,6 +153,11 @@ export default function InventoryPage() {
     }
   };
 
+  const handleRefresh = () => {
+    fetchInventory();
+    toast.success('Inventario actualizado');
+  };
+
   // Open create modal
   const handleOpenCreate = () => {
     fetchProducts();
@@ -231,27 +245,6 @@ export default function InventoryPage() {
     }
   });
 
-  // Calcular rango de items mostrados
-  const startItem = (currentPage - 1) * pageSize + 1;
-  const endItem = Math.min(currentPage * pageSize, totalItems);
-
-  // Generar números de página para mostrar
-  const getPageNumbers = () => {
-    const pages: (number | string)[] = [];
-    if (totalPages <= 5) {
-      for (let i = 1; i <= totalPages; i++) pages.push(i);
-    } else {
-      if (currentPage <= 3) {
-        pages.push(1, 2, 3, '...', totalPages);
-      } else if (currentPage >= totalPages - 2) {
-        pages.push(1, '...', totalPages - 2, totalPages - 1, totalPages);
-      } else {
-        pages.push(1, '...', currentPage, '...', totalPages);
-      }
-    }
-    return pages;
-  };
-
   const getProductColor = (index: number) => {
     const colors = [
       { bg: 'bg-red-100', icon: 'text-red-600' },
@@ -268,61 +261,78 @@ export default function InventoryPage() {
   };
 
   return (
-      <div className="flex flex-col h-full">
-        {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-4 py-4 sm:px-8 sm:py-6">
-          <Breadcrumb items={[
-            { label: 'Inicio', href: '/dashboard' },
-            { label: 'Inventario de almacén' },
-          ]} />
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-              Inventario de almacén
-            </h1>
-            <div className="flex items-center gap-2">
+    <PageHeader
+      breadcrumbs={[
+        { label: 'Inicio', href: '/dashboard' },
+        { label: 'Inventario de almacén' },
+      ]}
+      title="Inventario de almacén"
+      actions={
+        <>
+          <div className="relative">
             <button
-              data-tour="inventory-add-btn"
-              onClick={handleOpenCreate}
-              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
+              onClick={() => setShowDataMenu(!showDataMenu)}
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
             >
-              <Plus className="w-4 h-4" />
-              <span>Nuevo producto</span>
-            </button>
-<button className="flex items-center gap-1.5 px-4 py-2 text-[13px] font-medium text-gray-700 border border-gray-200 rounded hover:bg-gray-50 transition-colors">
               <Download className="w-3.5 h-3.5 text-emerald-500" />
-              <span>Descargar</span>
+              <span className="hidden sm:inline">Importar / Exportar</span>
+              <ChevronDown className="w-3 h-3 text-gray-400" />
             </button>
-            </div>
+            {showDataMenu && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setShowDataMenu(false)} />
+                <div className="absolute right-0 mt-1 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1">
+                  <button
+                    onClick={async () => { setShowDataMenu(false); try { await exportToCsv('inventario'); toast.success('Archivo CSV descargado'); } catch { toast.error('Error al exportar datos'); } }}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
+                  >
+                    <Download className="w-3.5 h-3.5 text-emerald-500" />
+                    Exportar CSV
+                  </button>
+                  <button
+                    onClick={() => { setIsImportOpen(true); setShowDataMenu(false); }}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
+                  >
+                    <Upload className="w-3.5 h-3.5 text-blue-500" />
+                    Importar CSV
+                  </button>
+                </div>
+              </>
+            )}
           </div>
+          <button
+            data-tour="inventory-add-btn"
+            onClick={handleOpenCreate}
+            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Nuevo producto</span>
+          </button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        {/* Filter Row */}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <SearchBar
+            value={searchTerm}
+            onChange={(v) => { setSearchTerm(v); setCurrentPage(1); }}
+            placeholder="Buscar producto..."
+            dataTour="inventory-search"
+          />
+
+          <button
+            onClick={handleRefresh}
+            disabled={loading}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Actualizar</span>
+          </button>
         </div>
 
-        {/* Body */}
-        <div className="flex-1 px-4 py-4 sm:px-8 sm:py-5 overflow-auto">
-          {/* Search */}
-          <div data-tour="inventory-search" className="mb-4 relative w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-400" />
-            <input
-              type="text"
-              placeholder="Buscar producto..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            />
-          </div>
-
-          {/* Error */}
-          {error && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-              {error}
-              <button onClick={fetchInventory} className="ml-4 underline hover:no-underline">
-                Reintentar
-              </button>
-            </div>
-          )}
+        {/* Error */}
+        <ErrorBanner error={error} onRetry={fetchInventory} />
 
           {/* Table */}
           <div data-tour="inventory-table" className="bg-white border border-gray-200 rounded overflow-x-auto">
@@ -422,14 +432,7 @@ export default function InventoryPage() {
               </div>
 
               <div className="relative min-h-[200px]">
-                {loading && (
-                  <div className="absolute inset-0 bg-white/80 backdrop-blur-[1px] z-10 flex items-center justify-center">
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
-                      <span className="text-sm text-gray-500">Cargando inventario...</span>
-                    </div>
-                  </div>
-                )}
+                <TableLoadingOverlay loading={loading} message="Cargando inventario..." />
 
                 {!loading && inventoryItems.length === 0 ? (
                   <div className="flex items-center justify-center h-64 text-gray-400">
@@ -521,53 +524,21 @@ export default function InventoryPage() {
           </div>
 
           {/* Pagination */}
-          {(inventoryItems.length > 0 || loading) && totalItems > 0 && (
-            <div className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pt-4 transition-opacity duration-200 ${loading ? 'opacity-60' : 'opacity-100'}`}>
-              <span className="text-sm text-gray-500" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                Mostrando {startItem}-{endItem} de {totalItems} inventarios
-              </span>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  disabled={currentPage === 1 || loading}
-                  className="px-3 py-2 border border-gray-200 rounded-md text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-
-                <div className="flex items-center gap-1">
-                  {getPageNumbers().map((page, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => typeof page === 'number' && !loading && setCurrentPage(page)}
-                      disabled={page === '...' || loading}
-                      className={`min-w-[32px] px-2 py-1 text-sm rounded-md transition-colors ${
-                        page === currentPage
-                          ? 'bg-green-600 text-white'
-                          : page === '...'
-                          ? 'text-gray-400 cursor-default'
-                          : 'text-gray-600 hover:bg-gray-100'
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  ))}
-                </div>
-
-                <button
-                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages || loading}
-                  className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
+          {(inventoryItems.length > 0 || loading) && (
+            <ListPagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              itemLabel="productos"
+              loading={loading}
+            />
           )}
-        </div>
+      </div>
 
-        {/* Create/Edit Drawer */}
-        <Drawer
+      {/* Create/Edit Drawer */}
+      <Drawer
           ref={drawerRef}
           isOpen={modalOpen}
           onClose={() => setModalOpen(false)}
@@ -734,7 +705,16 @@ export default function InventoryPage() {
               </div>
             </div>
           </div>
-        </Drawer>
-      </div>
+      </Drawer>
+
+      <CsvImportModal
+        isOpen={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
+        entity="inventario"
+        entityLabel="inventario"
+        onSuccess={() => fetchInventory()}
+        infoNote="Si un producto ya tiene inventario, sus valores se actualizarán con los del CSV."
+      />
+    </PageHeader>
   );
 }

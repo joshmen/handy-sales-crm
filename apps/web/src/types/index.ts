@@ -33,20 +33,43 @@ export interface Client extends BaseEntity {
   email?: string;
   phone?: string;
   address: string;
-  city?: string;
-  state?: string;
-  zipCode?: string;
+  exteriorNumber?: string;
   latitude?: number;
   longitude?: number;
   type: ClientType;
   isActive: boolean;
-  creditLimit?: number;
-  paymentTerms?: number; // days
-  notes?: string;
+
+  // Campos adicionales
+  esProspecto?: boolean;
+  comentarios?: string;
+  listaPreciosId?: number;
+  descuento?: number;
+  saldo?: number;
+  limiteCredito?: number;
+  ventaMinimaEfectiva?: number;
+  tiposPagoPermitidos?: string;
+  tipoPagoPredeterminado?: string;
+  diasCredito?: number;
+
+  // Dirección desglosada
+  ciudad?: string;
+  colonia?: string;
+  codigoPostal?: string;
+
+  // Contacto
+  encargado?: string;
+
+  // Datos fiscales (CFDI 4.0)
+  facturable?: boolean;
+  razonSocial?: string;
+  codigoPostalFiscal?: string;
+  regimenFiscal?: string;
+  usoCFDIPredeterminado?: string;
 
   // IDs de relación (requeridos para edición)
   zoneId?: number;
   categoryId?: number;
+  vendedorId?: number;
 
   // Nombres de relación (para mostrar en grids)
   zoneName?: string;

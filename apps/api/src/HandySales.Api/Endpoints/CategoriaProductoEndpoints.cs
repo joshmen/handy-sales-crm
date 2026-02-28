@@ -9,9 +9,9 @@ public static class CategoriaProductoEndpoints
 {
     public static void MapCategoriaProductoEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/categorias-productos", async ([FromServices] CategoriaProductoService servicio) =>
+        app.MapGet("/categorias-productos", async ([FromQuery] bool? incluirInactivos, [FromServices] CategoriaProductoService servicio) =>
         {
-            var categorias = await servicio.ObtenerCategoriasAsync();
+            var categorias = await servicio.ObtenerCategoriasAsync(incluirInactivos ?? false);
             return Results.Ok(categorias);
         }).RequireAuthorization();
 

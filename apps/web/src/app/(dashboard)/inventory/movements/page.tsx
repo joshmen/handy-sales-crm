@@ -8,13 +8,10 @@ import { inventoryMovementService, InventoryMovement } from '@/services/api/inve
 import { productService } from '@/services/api/products';
 import { inventoryService } from '@/services/api/inventory';
 import { toast } from '@/hooks/useToast';
-import { Breadcrumb } from '@/components/ui/Breadcrumb';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
+import { exportToCsv } from '@/services/api/importExport';
 import {
-  Search,
-  Bell,
-  ChevronLeft,
-  ChevronRight,
   Plus,
   Download,
   Package,
@@ -22,8 +19,15 @@ import {
   Calendar,
   AlertTriangle,
   ArrowLeftRight,
+  ArrowRightLeft,
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  SlidersHorizontal,
+  ArrowRight,
 } from 'lucide-react';
-import { ArrowsLeftRight } from '@phosphor-icons/react';
+import { ListPagination } from '@/components/ui/ListPagination';
+import { SearchBar } from '@/components/common/SearchBar';
+import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
 import { HelpTooltip } from '@/components/help/HelpTooltip';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
 
@@ -191,25 +195,9 @@ export default function InventoryMovementsPage() {
     }
   });
 
-  // Calculate item range
-  const startItem = (currentPage - 1) * pageSize + 1;
-  const endItem = Math.min(currentPage * pageSize, totalItems);
-
-  // Generate page numbers
-  const getPageNumbers = () => {
-    const pages: (number | string)[] = [];
-    if (totalPages <= 5) {
-      for (let i = 1; i <= totalPages; i++) pages.push(i);
-    } else {
-      if (currentPage <= 3) {
-        pages.push(1, 2, 3, '...', totalPages);
-      } else if (currentPage >= totalPages - 2) {
-        pages.push(1, '...', totalPages - 2, totalPages - 1, totalPages);
-      } else {
-        pages.push(1, '...', currentPage, '...', totalPages);
-      }
-    }
-    return pages;
+  const handleRefresh = () => {
+    fetchMovements();
+    toast.success('Movimientos actualizados');
   };
 
   // Movement type badge colors
@@ -260,33 +248,58 @@ export default function InventoryMovementsPage() {
     'TRANSFERENCIA': 'Transferencia',
   };
 
-  return (
-    <div className="space-y-6">
-      {/* Top Bar with Breadcrumbs */}
-      <div className="flex items-center justify-between">
-        <Breadcrumb items={[
-          { label: 'Inicio', href: '/dashboard' },
-          { label: 'Inventario', href: '/inventory' },
-          { label: 'Movimientos' },
-        ]} />
-        <div className="flex items-center gap-4">
-          <Search className="w-[18px] h-[18px] text-blue-400 cursor-pointer hover:text-gray-700" />
-          <Bell className="w-[18px] h-[18px] text-gray-500 cursor-pointer hover:text-gray-700" />
-        </div>
-      </div>
+  // Movement type config for drawer buttons
+  const movementTypeConfig: Record<MovementType, { label: string; icon: React.ReactNode; activeClass: string }> = {
+    ENTRADA: { label: 'Entrada', icon: <ArrowDownToLine className="w-4 h-4" />, activeClass: 'bg-green-100 border-green-500 text-green-700' },
+    SALIDA: { label: 'Salida', icon: <ArrowUpFromLine className="w-4 h-4" />, activeClass: 'bg-red-100 border-red-500 text-red-700' },
+    AJUSTE: { label: 'Ajuste', icon: <SlidersHorizontal className="w-4 h-4" />, activeClass: 'bg-yellow-100 border-yellow-500 text-yellow-700' },
+  };
 
-      {/* Title Row */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-            Movimientos de inventario
-          </h1>
-          <span className="text-lg text-gray-500" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-            {totalItems}
-          </span>
-        </div>
+  // Context-aware motivos per movement type
+  const motivosPorTipo: Record<MovementType, { value: string; label: string }[]> = {
+    ENTRADA: [
+      { value: 'COMPRA', label: 'Compra' },
+      { value: 'DEVOLUCION', label: 'Devolución de cliente' },
+      { value: 'TRANSFERENCIA', label: 'Transferencia' },
+    ],
+    SALIDA: [
+      { value: 'VENTA', label: 'Venta' },
+      { value: 'MERMA', label: 'Merma' },
+      { value: 'DEVOLUCION', label: 'Devolución a proveedor' },
+      { value: 'TRANSFERENCIA', label: 'Transferencia' },
+    ],
+    AJUSTE: [
+      { value: 'AJUSTE_INVENTARIO', label: 'Ajuste de inventario' },
+      { value: 'MERMA', label: 'Merma' },
+    ],
+  };
+
+  const watchedTipoMovimiento = watch('tipoMovimiento');
+  const watchedCantidad = watch('cantidad');
+
+  // Compute projected stock
+  const projectedStock = currentStock !== null && watchedCantidad > 0
+    ? watchedTipoMovimiento === 'ENTRADA'
+      ? currentStock + watchedCantidad
+      : watchedTipoMovimiento === 'SALIDA'
+        ? currentStock - watchedCantidad
+        : watchedCantidad // AJUSTE sets absolute value
+    : null;
+
+  return (
+    <PageHeader
+      breadcrumbs={[
+        { label: 'Inicio', href: '/dashboard' },
+        { label: 'Inventario', href: '/inventory' },
+        { label: 'Movimientos' },
+      ]}
+      title={`Movimientos de inventario (${totalItems})`}
+      actions={
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-          <button className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors">
+          <button
+            onClick={() => exportToCsv('inventario')}
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+          >
             <Download className="w-3.5 h-3.5 text-emerald-500" />
             <span className="hidden sm:inline">Exportar</span>
           </button>
@@ -302,77 +315,71 @@ export default function InventoryMovementsPage() {
             <span>Nuevo movimiento</span>
           </button>
         </div>
-      </div>
-
-      {/* Filter Row */}
-      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-        {/* Search Input */}
-        <div className="relative w-64">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-400" />
-          <input
-            type="text"
-            placeholder="Buscar producto..."
+      }
+    >
+      <div className="space-y-4">
+        {/* Filter Row */}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <SearchBar
             value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-          />
-        </div>
-
-        {/* Type Filter */}
-        <div data-tour="movements-type-filter" className="min-w-[160px]">
-          <SearchableSelect
-            options={typeOptions}
-            value={typeFilter}
             onChange={(val) => {
-              setTypeFilter(val ? String(val) : 'all');
+              setSearchTerm(val);
               setCurrentPage(1);
             }}
-            placeholder="Todos los tipos"
+            placeholder="Buscar producto..."
+            className="w-64"
           />
-        </div>
 
-        {/* Reason Filter */}
-        <div data-tour="movements-reason-filter" className="min-w-[180px]">
-          <SearchableSelect
-            options={reasonOptions}
-            value={reasonFilter}
-            onChange={(val) => {
-              setReasonFilter(val ? String(val) : 'all');
-              setCurrentPage(1);
-            }}
-            placeholder="Todos los motivos"
-          />
-        </div>
+          {/* Type Filter */}
+          <div data-tour="movements-type-filter" className="min-w-[160px]">
+            <SearchableSelect
+              options={typeOptions}
+              value={typeFilter}
+              onChange={(val) => {
+                setTypeFilter(val ? String(val) : 'all');
+                setCurrentPage(1);
+              }}
+              placeholder="Todos los tipos"
+            />
+          </div>
 
-        <button
-          onClick={fetchMovements}
-          className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
-        >
-          <RefreshCw className="w-3.5 h-3.5 text-blue-500" />
-          <span className="hidden sm:inline">Actualizar</span>
-        </button>
-      </div>
+          {/* Reason Filter */}
+          <div data-tour="movements-reason-filter" className="min-w-[180px]">
+            <SearchableSelect
+              options={reasonOptions}
+              value={reasonFilter}
+              onChange={(val) => {
+                setReasonFilter(val ? String(val) : 'all');
+                setCurrentPage(1);
+              }}
+              placeholder="Todos los motivos"
+            />
+          </div>
 
-      {/* Error message */}
-      {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-          {error}
-          <button onClick={fetchMovements} className="ml-4 underline hover:no-underline">
-            Reintentar
+          <button
+            onClick={handleRefresh}
+            disabled={loading}
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-white ${loading ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Actualizar</span>
           </button>
         </div>
-      )}
 
-      {/* Movements Table */}
-      <div data-tour="movements-table" className="border border-gray-200 rounded-lg overflow-x-auto">
-        {loading ? (
-          <div className="flex items-center justify-center h-64 bg-white">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        {/* Error message */}
+        {error && (
+          <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            {error}
+            <button onClick={fetchMovements} className="ml-4 underline hover:no-underline">
+              Reintentar
+            </button>
           </div>
-        ) : movements.length === 0 ? (
+        )}
+
+        {/* Movements Table */}
+        <div data-tour="movements-table" className="relative border border-gray-200 rounded-lg overflow-x-auto">
+          <TableLoadingOverlay loading={loading} />
+          {!loading && movements.length === 0 ? (
           <div className="flex items-center justify-center h-64 bg-white text-gray-400">
             <div className="text-center">
               <Package className="w-12 h-12 mx-auto mb-4 text-indigo-300" />
@@ -395,7 +402,7 @@ export default function InventoryMovementsPage() {
                   <div key={movement.id} className="bg-white border border-gray-200 rounded-lg p-4">
                     <div className="flex items-start gap-3 mb-2">
                       <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
-                        <ArrowsLeftRight className="w-5 h-5 text-indigo-600" weight="duotone" />
+                        <ArrowRightLeft className="w-5 h-5 text-indigo-600" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-gray-900 truncate">
@@ -526,50 +533,16 @@ export default function InventoryMovementsPage() {
         )}
       </div>
 
-      {/* Pagination */}
-      {!loading && movements.length > 0 && (
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <span className="text-sm text-gray-500 order-2 sm:order-1" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-            Mostrando {startItem}-{endItem} de {totalItems} movimientos
-          </span>
-          <div className="flex items-center gap-2 order-1 sm:order-2">
-            <button
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className="px-3 py-2 border border-gray-200 rounded-md text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-
-            <div className="flex items-center gap-1">
-              {getPageNumbers().map((page, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => typeof page === 'number' && setCurrentPage(page)}
-                  disabled={page === '...'}
-                  className={`min-w-[32px] px-2 py-1 text-sm rounded-md transition-colors ${
-                    page === currentPage
-                      ? 'bg-green-600 text-white'
-                      : page === '...'
-                      ? 'text-gray-400 cursor-default'
-                      : 'text-gray-600 hover:bg-gray-100'
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
-            </div>
-
-            <button
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-              className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
+        {/* Pagination */}
+        <ListPagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          itemLabel="movimientos"
+        />
+      </div>
 
       {/* New Movement Drawer */}
       <Drawer
@@ -608,6 +581,8 @@ export default function InventoryMovementsPage() {
               value={watch('productoId') || null}
               onChange={(val) => {
                 setValue('productoId', val ? Number(val) : 0, { shouldDirty: true });
+                // Reset motivo when product changes (stock context changes)
+                setValue('motivo', '', { shouldDirty: true });
               }}
               placeholder="Seleccionar producto"
               searchPlaceholder="Buscar producto..."
@@ -618,7 +593,7 @@ export default function InventoryMovementsPage() {
           </div>
 
           {/* Stock Info */}
-          {watch('productoId') > 0 && (
+          {watchedProductoId > 0 && (
             <div>
               {stockLoading ? (
                 <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded border border-gray-200">
@@ -638,7 +613,15 @@ export default function InventoryMovementsPage() {
               ) : currentStock !== null ? (
                 <div className="flex items-center gap-2 px-3 py-2 bg-green-50 rounded border border-green-200">
                   <Package className="w-4 h-4 text-green-500 flex-shrink-0" />
-                  <span className="text-xs text-green-700">Existencias actuales: <strong>{currentStock}</strong></span>
+                  <span className="text-xs text-green-700">
+                    Existencias actuales: <strong>{currentStock}</strong>
+                    {projectedStock !== null && (
+                      <span className="ml-2 text-gray-500">
+                        <ArrowRight className="w-3 h-3 inline mx-1" />
+                        <strong className={projectedStock < 0 ? 'text-red-600' : 'text-green-700'}>{projectedStock}</strong>
+                      </span>
+                    )}
+                  </span>
                 </div>
               ) : null}
             </div>
@@ -649,25 +632,32 @@ export default function InventoryMovementsPage() {
             <label className="flex items-center gap-1 text-xs font-medium text-gray-700 mb-1.5">Tipo de movimiento * <HelpTooltip tooltipKey="movement-type" /></label>
             <div className="flex gap-2">
               {(['ENTRADA', 'SALIDA', 'AJUSTE'] as MovementType[]).map(type => {
+                const config = movementTypeConfig[type];
                 const salidaDisabled = type === 'SALIDA' && (hasInventory === false || currentStock === 0);
+                const isSelected = watchedTipoMovimiento === type;
                 return (
                   <button
                     key={type}
                     type="button"
                     disabled={salidaDisabled}
-                    onClick={() => !salidaDisabled && setValue('tipoMovimiento', type, { shouldDirty: true })}
-                    className={`flex-1 px-3 py-2 text-xs font-medium rounded border transition-colors ${
+                    onClick={() => {
+                      if (!salidaDisabled) {
+                        setValue('tipoMovimiento', type, { shouldDirty: true });
+                        // Reset motivo when type changes (available options change)
+                        setValue('motivo', '', { shouldDirty: true });
+                      }
+                    }}
+                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded border transition-colors ${
                       salidaDisabled
                         ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
-                        : watch('tipoMovimiento') === type
-                        ? type === 'ENTRADA' ? 'bg-green-100 border-green-500 text-green-700'
-                        : type === 'SALIDA' ? 'bg-red-100 border-red-500 text-red-700'
-                        : 'bg-yellow-100 border-yellow-500 text-yellow-700'
-                        : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                        : isSelected
+                          ? config.activeClass
+                          : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
                     }`}
                     title={salidaDisabled ? 'No hay existencias para dar salida' : undefined}
                   >
-                    {type}
+                    {config.icon}
+                    {config.label}
                   </button>
                 );
               })}
@@ -690,18 +680,11 @@ export default function InventoryMovementsPage() {
             )}
           </div>
 
-          {/* Reason */}
+          {/* Reason — context-aware per movement type */}
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1.5">Motivo</label>
+            <label className="block text-xs font-medium text-gray-700 mb-1.5">Motivo *</label>
             <SearchableSelect
-              options={[
-                { value: 'COMPRA', label: 'Compra' },
-                { value: 'VENTA', label: 'Venta' },
-                { value: 'DEVOLUCION', label: 'Devolución' },
-                { value: 'AJUSTE_INVENTARIO', label: 'Ajuste de inventario' },
-                { value: 'MERMA', label: 'Merma' },
-                { value: 'TRANSFERENCIA', label: 'Transferencia' },
-              ]}
+              options={motivosPorTipo[watchedTipoMovimiento] || []}
               value={watch('motivo') || null}
               onChange={(val) => {
                 setValue('motivo', val ? String(val) : '', { shouldDirty: true });
@@ -725,6 +708,6 @@ export default function InventoryMovementsPage() {
           </div>
         </div>
       </Drawer>
-    </div>
+    </PageHeader>
   );
 }

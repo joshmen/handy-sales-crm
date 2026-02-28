@@ -9,9 +9,9 @@ public static class UnidadMedidaEndpoints
 {
     public static void MapUnidadMedidaEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/unidades-medida", async ([FromServices] UnidadMedidaService servicio) =>
+        app.MapGet("/unidades-medida", async ([FromQuery] bool? incluirInactivos, [FromServices] UnidadMedidaService servicio) =>
         {
-            var unidades = await servicio.ObtenerUnidadesAsync();
+            var unidades = await servicio.ObtenerUnidadesAsync(incluirInactivos ?? false);
             return Results.Ok(unidades);
         }).RequireAuthorization();
 

@@ -1,3 +1,53 @@
+const withPWA = require("@ducanh2912/next-pwa").default({
+  dest: "public",
+  disable: process.env.NODE_ENV === "development",
+  register: true,
+  skipWaiting: true,
+  cacheOnFrontEndNav: true,
+  reloadOnOnline: true,
+  workboxOptions: {
+    runtimeCaching: [
+      {
+        // App shell (HTML pages)
+        urlPattern: /^https?:\/\/.*\/(dashboard|clients|orders|products|settings|deliveries|visits|routes|subscription|integrations).*/i,
+        handler: "NetworkFirst",
+        options: {
+          cacheName: "app-pages",
+          expiration: { maxEntries: 32, maxAgeSeconds: 24 * 60 * 60 },
+        },
+      },
+      {
+        // API calls — network first with cache fallback
+        urlPattern: /^https?:\/\/.*\/api\/.*/i,
+        handler: "NetworkFirst",
+        options: {
+          cacheName: "api-cache",
+          expiration: { maxEntries: 64, maxAgeSeconds: 60 * 60 },
+          networkTimeoutSeconds: 10,
+        },
+      },
+      {
+        // Static assets (images, fonts, icons)
+        urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|avif|ico|woff2?)$/i,
+        handler: "CacheFirst",
+        options: {
+          cacheName: "static-assets",
+          expiration: { maxEntries: 128, maxAgeSeconds: 7 * 24 * 60 * 60 },
+        },
+      },
+      {
+        // JS/CSS bundles
+        urlPattern: /\/_next\/static\/.*/i,
+        handler: "CacheFirst",
+        options: {
+          cacheName: "next-static",
+          expiration: { maxEntries: 64, maxAgeSeconds: 30 * 24 * 60 * 60 },
+        },
+      },
+    ],
+  },
+});
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Optimizaciones de performance
@@ -124,4 +174,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+module.exports = withPWA(nextConfig);

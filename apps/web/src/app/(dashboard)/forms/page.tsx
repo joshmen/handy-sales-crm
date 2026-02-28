@@ -8,6 +8,7 @@ import {
   FileText,
   ToggleLeft,
   ToggleRight,
+  Construction,
 } from 'lucide-react';
 
 interface Form {
@@ -113,6 +114,17 @@ export default function FormsPage() {
 
   return (
     <div className="flex flex-col h-full">
+      {/* Próximamente Banner */}
+      <div className="mx-8 mt-6 flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+        <Construction className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+        <div>
+          <p className="font-medium text-amber-800">Próximamente</p>
+          <p className="text-sm text-amber-700 mt-1">
+            El módulo de formularios está en desarrollo. Pronto podrás crear formularios personalizados para tus vendedores.
+          </p>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="bg-white px-8 py-6 border-b border-gray-200">
         {/* Breadcrumb */}

@@ -4,7 +4,7 @@ namespace HandySales.Application.CategoriasProductos.Interfaces;
 
 public interface ICategoriaProductoRepository
 {
-    Task<List<CategoriaProductoDto>> ObtenerPorTenantAsync(int tenantId);
+    Task<List<CategoriaProductoDto>> ObtenerPorTenantAsync(int tenantId, bool incluirInactivos = false);
     Task<CategoriaProductoDto?> ObtenerPorIdAsync(int id, int tenantId);
     Task<int> CrearAsync(CategoriaProductoCreateDto dto, int tenantId);
     Task<bool> ActualizarAsync(int id, CategoriaProductoCreateDto dto, int tenantId);

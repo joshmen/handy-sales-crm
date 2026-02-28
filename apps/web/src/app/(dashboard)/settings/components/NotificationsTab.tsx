@@ -220,6 +220,10 @@ export const NotificationsTab: React.FC<NotificationsTabProps> = ({
             {isSaving ? 'Guardando...' : 'Guardar preferencias'}
           </Button>
         </div>
+
+        <p className="text-xs text-muted-foreground mt-4">
+          Estas preferencias controlan qué tipo de notificaciones recibes dentro de la aplicación. La configuración del servidor de correo (SendGrid) se administra desde las variables de entorno del servidor.
+        </p>
       </CardContent>
     </Card>
   );

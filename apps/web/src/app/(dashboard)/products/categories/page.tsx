@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 
 interface ExtendedProductCategory extends ProductCategory {
-  activo?: boolean;
   productosActivos?: number;
   productosInactivos?: number;
   ultimaModificacion?: string;

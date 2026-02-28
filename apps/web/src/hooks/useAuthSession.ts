@@ -16,8 +16,8 @@ export function useAuthSession() {
     } else {
       setLoading('auth', false);
 
-      // Handle refresh token failure
-      if (session?.error === 'RefreshAccessTokenError') {
+      // Handle refresh token failure or session expiration
+      if (session?.error === 'RefreshAccessTokenError' || session?.error === 'SessionExpired') {
         signOut({ callbackUrl: '/login' });
         return;
       }

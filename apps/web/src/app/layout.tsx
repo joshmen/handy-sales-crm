@@ -21,7 +21,15 @@ export const metadata: Metadata = {
     "Gestiona clientes, ventas, rutas, inventario y facturación desde un solo lugar. Diseñado para PYMEs en México. Certificado SAT CFDI 4.0.",
   icons: {
     icon: "/favicon.svg",
-    apple: "/favicon.svg",
+    apple: "/icons/apple-touch-icon.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Handy Suites",
+  },
+  formatDetection: {
+    telephone: false,
   },
   openGraph: {
     type: "website",
@@ -57,6 +65,7 @@ export default function RootLayout({
     <html lang="es" suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="theme-color" content="#16a34a" />
         <script
           dangerouslySetInnerHTML={{
             __html: `

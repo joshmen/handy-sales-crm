@@ -1,16 +1,19 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { useForm, Controller } from 'react-hook-form';
-import type { Control } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useJsApiLoader, Autocomplete } from '@react-google-maps/api';
 import { clientService } from '@/services/api/clients';
 import { api } from '@/lib/api';
 import { toast } from '@/hooks/useToast';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
-import { Check, AlertCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, Loader2 } from 'lucide-react';
+import { ClientLocationMap } from '@/components/maps/ClientLocationMap';
+import type { ZoneGeo } from '@/components/maps/ClientLocationMap';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
+import { Checkbox, FormField, SectionTitle, inputClass } from '@/components/forms/ClientFormComponents';
 import {
   clientSchema,
   ClientFormData,
@@ -18,12 +21,17 @@ import {
   clientDefaultValues,
   mapFormToBackendDto,
   mapBackendErrorsToForm,
+  REGIMEN_FISCAL_OPTIONS,
+  USO_CFDI_OPTIONS,
 } from '@/lib/validations/client';
 
 // Tipos para datos dinámicos
 interface Zona {
   id: number;
   nombre: string;
+  centroLatitud?: number | null;
+  centroLongitud?: number | null;
+  radioKm?: number | null;
 }
 
 interface CategoriaCliente {
@@ -36,6 +44,19 @@ interface ListaPrecios {
   nombre: string;
 }
 
+const MAPS_LIBRARIES: ('places')[] = ['places'];
+
+// Opciones de tipo de pago
+const TIPOS_PAGO_OPTIONS = [
+  { value: 'contado_credito', label: 'Contado y crédito' },
+  { value: 'contado', label: 'Solo contado' },
+  { value: 'credito', label: 'Solo crédito' },
+];
+
+const TIPO_PAGO_PREDETERMINADO_OPTIONS = [
+  { value: 'contado', label: 'Contado' },
+  { value: 'credito', label: 'Crédito' },
+];
 
 export default function EditClientPage() {
   const router = useRouter();
@@ -49,8 +70,14 @@ export default function EditClientPage() {
   const [listasPrecios, setListasPrecios] = useState<ListaPrecios[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [clientNotFound, setClientNotFound] = useState(false);
+  const [isOutOfZone, setIsOutOfZone] = useState(false);
 
-  // React Hook Form con Zod
+  const { isLoaded: mapsLoaded } = useJsApiLoader({
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
+    libraries: MAPS_LIBRARIES,
+  });
+  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+
   const {
     register,
     handleSubmit,
@@ -64,6 +91,35 @@ export default function EditClientPage() {
     resolver: zodResolver(clientSchema),
     defaultValues: clientDefaultValues as ClientFormInput,
   });
+
+  // Handle Google Places autocomplete
+  const handlePlaceSelected = useCallback(() => {
+    if (!autocompleteRef.current) return;
+    const place = autocompleteRef.current.getPlace();
+    if (place.formatted_address) {
+      setValue('direccion', place.formatted_address, { shouldValidate: true });
+    }
+    if (place.geometry?.location) {
+      setValue('latitud', place.geometry.location.lat());
+      setValue('longitud', place.geometry.location.lng());
+    }
+    if (place.address_components) {
+      for (const comp of place.address_components) {
+        if (comp.types.includes('locality')) {
+          setValue('ciudad', comp.long_name);
+        }
+        if (comp.types.includes('sublocality_level_1') || comp.types.includes('sublocality') || comp.types.includes('neighborhood')) {
+          setValue('colonia', comp.long_name);
+        }
+        if (comp.types.includes('postal_code')) {
+          setValue('codigoPostal', comp.long_name);
+        }
+        if (comp.types.includes('street_number')) {
+          setValue('numeroExterior', comp.long_name, { shouldValidate: true });
+        }
+      }
+    }
+  }, [setValue]);
 
   // Warn on unsaved changes
   useEffect(() => {
@@ -83,47 +139,47 @@ export default function EditClientPage() {
         setLoading(true);
         setLoadingData(true);
 
-        // Cargar catálogos y cliente en paralelo
-        const [zonasRes, categoriasRes, clientData] = await Promise.all([
+        const [zonasRes, categoriasRes, listasRes, clientData] = await Promise.all([
           api.get<Zona[]>('/zonas').catch(() => ({ data: [] })),
           api.get<CategoriaCliente[]>('/categorias-clientes').catch(() => ({ data: [] })),
+          api.get<ListaPrecios[]>('/listas-precios').catch(() => ({ data: [] })),
           clientService.getClientById(clientId),
         ]);
 
         setZonas(zonasRes.data);
         setCategorias(categoriasRes.data);
-        setListasPrecios([
-          { id: 1, nombre: 'Lista General' },
-          { id: 2, nombre: 'Lista Mayoreo' },
-        ]);
+        setListasPrecios(listasRes.data);
 
         // Mapear datos del cliente al formulario
         reset({
           habilitado: clientData.isActive,
-          esProspecto: false,
-          esClienteMovil: true,
-          facturable: false,
-          pedidosEnLinea: false,
+          esProspecto: clientData.esProspecto || false,
           descripcion: clientData.name,
           categoriaId: clientData.categoryId?.toString() || '',
-          comentarios: '',
-          listaPreciosId: '',
-          descuento: 0,
-          saldo: 0,
-          limiteCredito: 0,
-          ventaMinimaEfectiva: 0,
-          tiposPagoPermitidos: 'contado_credito',
-          tipoPagoPredeterminado: 'contado',
-          diasCredito: 0,
+          comentarios: clientData.comentarios || '',
+          listaPreciosId: clientData.listaPreciosId?.toString() || '',
+          descuento: clientData.descuento || 0,
+          saldo: clientData.saldo || 0,
+          limiteCredito: clientData.limiteCredito || 0,
+          ventaMinimaEfectiva: clientData.ventaMinimaEfectiva || 0,
+          tiposPagoPermitidos: (clientData.tiposPagoPermitidos || 'contado_credito') as ClientFormData['tiposPagoPermitidos'],
+          tipoPagoPredeterminado: (clientData.tipoPagoPredeterminado || 'contado') as ClientFormData['tipoPagoPredeterminado'],
+          diasCredito: clientData.diasCredito || 0,
+          facturable: clientData.facturable || false,
           rfc: clientData.code || '',
+          razonSocial: clientData.razonSocial || '',
+          codigoPostalFiscal: clientData.codigoPostalFiscal || '',
+          regimenFiscal: clientData.regimenFiscal || '',
+          usoCFDIPredeterminado: clientData.usoCFDIPredeterminado || '',
           direccion: clientData.address || '',
-          ciudad: '',
-          colonia: '',
-          codigoPostal: '',
+          numeroExterior: clientData.exteriorNumber || '',
+          ciudad: clientData.ciudad || '',
+          colonia: clientData.colonia || '',
+          codigoPostal: clientData.codigoPostal || '',
           zonaId: clientData.zoneId || 0,
           latitud: clientData.latitude || 0,
           longitud: clientData.longitude || 0,
-          encargado: '',
+          encargado: clientData.encargado || '',
           telefono: clientData.phone || '',
           email: clientData.email || '',
         });
@@ -142,7 +198,6 @@ export default function EditClientPage() {
     }
   }, [clientId, reset]);
 
-  // Handle cancel with unsaved changes check
   const handleCancel = () => {
     if (isDirty) {
       if (confirm('¿Tienes cambios sin guardar. ¿Deseas salir?')) {
@@ -153,7 +208,6 @@ export default function EditClientPage() {
     }
   };
 
-  // Manejar envío
   const onSubmit = async (formData: ClientFormInput) => {
     const data = formData as ClientFormData;
     try {
@@ -187,436 +241,406 @@ export default function EditClientPage() {
 
   if (loading) {
     return (
-        <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center">
-          <div className="flex items-center gap-3">
-            <Loader2 className="w-6 h-6 animate-spin text-green-600" />
-            <span className="text-gray-600">Cargando cliente...</span>
-          </div>
+      <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center">
+        <div className="flex items-center gap-3">
+          <Loader2 className="w-6 h-6 animate-spin text-green-600" />
+          <span className="text-gray-600">Cargando cliente...</span>
         </div>
+      </div>
     );
   }
 
   if (clientNotFound) {
     return (
-        <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center">
-          <div className="text-center">
-            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Cliente no encontrado</h2>
-            <p className="text-gray-600 mb-4">El cliente que buscas no existe o no tienes acceso.</p>
-            <button
-              onClick={() => router.push('/clients')}
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-            >
-              Volver a clientes
-            </button>
-          </div>
+      <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Cliente no encontrado</h2>
+          <p className="text-gray-600 mb-4">El cliente que buscas no existe o no tienes acceso.</p>
+          <button
+            onClick={() => router.push('/clients')}
+            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+          >
+            Volver a clientes
+          </button>
         </div>
+      </div>
     );
   }
 
   return (
-      <div className="min-h-screen bg-[#F9FAFB]">
-        {/* Header */}
-        <div className="bg-white px-8 py-4 border-b border-gray-200">
-          {/* Breadcrumb */}
-          <Breadcrumb items={[
-            { label: 'Inicio', href: '/dashboard' },
-            { label: 'Clientes', href: '/clients' },
-            { label: 'Editar cliente' },
-          ]} />
+    <div className="min-h-screen bg-[#F9FAFB]">
+      {/* Header */}
+      <div className="bg-white px-4 sm:px-8 py-4 border-b border-gray-200">
+        <Breadcrumb items={[
+          { label: 'Inicio', href: '/dashboard' },
+          { label: 'Clientes', href: '/clients' },
+          { label: 'Editar cliente' },
+        ]} />
 
-          {/* Title Row */}
-          <div className="flex items-center justify-between">
-            <h1 className="text-[22px] font-bold text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-              Editar cliente
-            </h1>
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={handleCancel}
-                className="px-4 py-2 text-[13px] font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleSubmit(onSubmit)}
-                disabled={saving}
-                className="flex items-center gap-2 bg-[#16A34A] hover:bg-green-700 text-white text-[13px] font-semibold px-5 py-2 rounded disabled:opacity-50 transition-colors"
-              >
-                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                {saving ? 'Guardando...' : 'Guardar cambios'}
-              </button>
-            </div>
+        <div className="flex items-center justify-between">
+          <h1 className="text-[22px] font-bold text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+            Editar cliente
+          </h1>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="px-4 py-2 text-[13px] font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleSubmit(onSubmit)}
+              disabled={saving || isOutOfZone}
+              title={isOutOfZone ? 'El cliente está fuera de la zona asignada' : undefined}
+              className="flex items-center gap-2 bg-[#16A34A] hover:bg-green-700 text-white text-[13px] font-semibold px-5 py-2 rounded disabled:opacity-50 transition-colors"
+            >
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+              {saving ? 'Guardando...' : 'Guardar cambios'}
+            </button>
           </div>
         </div>
+      </div>
 
-        {/* Form Body */}
-        <form onSubmit={handleSubmit(onSubmit)} className="p-8">
-          <div className="flex gap-6">
-            {/* Left Column */}
-            <div className="flex-1 flex flex-col gap-6">
-              {/* === Información General === */}
-              <div className="bg-white rounded-lg p-6">
-                <h2 className="text-[15px] font-bold text-gray-900 mb-4" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                  Información general
-                </h2>
+      {/* Form Body */}
+      <form onSubmit={handleSubmit(onSubmit)} className="p-4 sm:p-8">
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Left Column */}
+          <div className="flex-1 flex flex-col gap-6">
+            {/* === Información General === */}
+            <div className="bg-white rounded-lg p-6">
+              <SectionTitle>Información general</SectionTitle>
 
-                {/* Checkboxes Row */}
-                <div className="flex flex-wrap items-center gap-5 mb-4">
-                  <Checkbox name="habilitado" control={control} label="Activo" />
-                  <Checkbox name="esProspecto" control={control} label="Es prospecto" />
-                  <Checkbox name="esClienteMovil" control={control} label="Es cliente móvil" />
-                  <Checkbox name="facturable" control={control} label="Facturable" />
-                  <Checkbox name="pedidosEnLinea" control={control} label="Pedidos en línea" />
-                </div>
-
-                {/* Fields Row 1 */}
-                <div className="grid grid-cols-1 gap-4 mb-4">
-                  <FormField label="Descripción" required error={errors.descripcion?.message}>
-                    <input
-                      type="text"
-                      {...register('descripcion')}
-                      className={inputClass(errors.descripcion)}
-                    />
-                  </FormField>
-                </div>
-
-                {/* Fields Row 2 */}
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField label="Categoría" required error={errors.categoriaId?.message}>
-                    <SearchableSelect
-                      options={categorias.map(cat => ({ value: cat.id, label: cat.nombre }))}
-                      value={watch('categoriaId') || null}
-                      onChange={(val) => setValue('categoriaId', val ? String(val) : '', { shouldValidate: true })}
-                      placeholder="Seleccionar categoría..."
-                      searchPlaceholder="Buscar categoría..."
-                      disabled={loadingData}
-                      error={!!errors.categoriaId}
-                    />
-                  </FormField>
-                  <FormField label="Comentarios">
-                    <input type="text" {...register('comentarios')} className={inputClass()} />
-                  </FormField>
-                </div>
+              <div className="flex flex-wrap items-center gap-5 mb-4">
+                <Checkbox name="habilitado" control={control} label="Activo" tooltip="Si está desactivado, el cliente no aparecerá en rutas, pedidos ni cobranza" />
+                <Checkbox name="esProspecto" control={control} label="Es prospecto" tooltip="Cliente potencial que aún no ha realizado compras. Útil para seguimiento de ventas" />
               </div>
 
-              {/* === Precios y descuento === */}
-              <div className="bg-white rounded-lg p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <h2 className="text-[15px] font-bold text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                    Precios y descuento
-                  </h2>
-                  <span className="text-xs text-gray-400">(Opciones)</span>
-                </div>
+              <div className="grid grid-cols-1 gap-4 mb-4">
+                <FormField label="Nombre" required error={errors.descripcion?.message}>
+                  <input
+                    type="text"
+                    {...register('descripcion')}
+                    placeholder="Nombre del cliente o negocio"
+                    className={inputClass(errors.descripcion)}
+                  />
+                </FormField>
+              </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField label="Lista de precios">
-                    <SearchableSelect
-                      options={listasPrecios.map(lp => ({ value: lp.id, label: lp.nombre }))}
-                      value={watch('listaPreciosId') || null}
-                      onChange={(val) => setValue('listaPreciosId', val ? String(val) : '', { shouldValidate: true })}
-                      placeholder="Sin lista de precios asignada"
-                      searchPlaceholder="Buscar lista..."
-                    />
-                  </FormField>
-                  <FormField label="Descuento">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField label="Categoría" required error={errors.categoriaId?.message}>
+                  <SearchableSelect
+                    options={categorias.map(cat => ({ value: cat.id, label: cat.nombre }))}
+                    value={watch('categoriaId') || null}
+                    onChange={(val) => setValue('categoriaId', val ? String(val) : '', { shouldValidate: true })}
+                    placeholder="Seleccionar categoría..."
+                    searchPlaceholder="Buscar categoría..."
+                    disabled={loadingData}
+                    error={!!errors.categoriaId}
+                  />
+                </FormField>
+                <FormField label="Comentarios">
+                  <input type="text" {...register('comentarios')} className={inputClass()} placeholder="Notas internas sobre el cliente" />
+                </FormField>
+              </div>
+            </div>
+
+            {/* === Precios y descuento === */}
+            <div className="bg-white rounded-lg p-6">
+              <SectionTitle subtitle="Opcional">Precios y descuento</SectionTitle>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField label="Lista de precios">
+                  <SearchableSelect
+                    options={listasPrecios.map(lp => ({ value: lp.id, label: lp.nombre }))}
+                    value={watch('listaPreciosId') || null}
+                    onChange={(val) => setValue('listaPreciosId', val ? String(val) : '', { shouldValidate: true })}
+                    placeholder="Sin lista de precios asignada"
+                    searchPlaceholder="Buscar lista..."
+                  />
+                </FormField>
+                <FormField label="Descuento %" hint="Descuento general para este cliente">
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    {...register('descuento', { valueAsNumber: true })}
+                    className={inputClass()}
+                  />
+                </FormField>
+              </div>
+            </div>
+
+            {/* === Pago, venta y crédito === */}
+            <div className="bg-white rounded-lg p-6">
+              <SectionTitle>Pago, venta y crédito</SectionTitle>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <FormField label="Saldo">
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[13px]">$</span>
                     <input
                       type="number"
-                      step="0.1"
-                      min="0"
-                      max="100"
-                      {...register('descuento', { valueAsNumber: true })}
-                      className={inputClass()}
+                      {...register('saldo', { valueAsNumber: true })}
+                      className={`${inputClass()} pl-7`}
                     />
-                  </FormField>
-                </div>
-              </div>
-
-              {/* === Pago, venta y crédito === */}
-              <div className="bg-white rounded-lg p-6">
-                <h2 className="text-[15px] font-bold text-gray-900 mb-4" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                  Pago, venta y crédito
-                </h2>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <FormField label="Saldo">
-                    <div className="relative">
-                      <input
-                        type="number"
-                        {...register('saldo', { valueAsNumber: true })}
-                        className={`${inputClass()} pr-8`}
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-[13px]">$</span>
-                    </div>
-                  </FormField>
-                  <FormField label="Límite de crédito">
-                    <div className="relative">
-                      <input
-                        type="number"
-                        {...register('limiteCredito', { valueAsNumber: true })}
-                        className={`${inputClass()} pr-8`}
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-[13px]">$</span>
-                    </div>
-                  </FormField>
-                  <FormField label="Venta mínima efectiva" hint="Monto mínimo de venta para considerarse una visita efectiva">
+                  </div>
+                </FormField>
+                <FormField label="Límite de crédito">
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[13px]">$</span>
+                    <input
+                      type="number"
+                      {...register('limiteCredito', { valueAsNumber: true })}
+                      className={`${inputClass()} pl-7`}
+                    />
+                  </div>
+                </FormField>
+                <FormField label="Venta mín. efectiva" hint="Monto mínimo para visita efectiva">
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[13px]">$</span>
                     <input
                       type="number"
                       {...register('ventaMinimaEfectiva', { valueAsNumber: true })}
-                      className={inputClass()}
+                      className={`${inputClass()} pl-7`}
                     />
-                  </FormField>
-                </div>
-              </div>
-
-              {/* === Config entregas === */}
-              <div className="bg-white rounded-lg p-6">
-                <h2 className="text-[15px] font-bold text-gray-900 mb-4" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                  Configuraciones exclusivas para entregas
-                </h2>
-
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <FormField label="Tipos de pago permitidos">
-                    <SearchableSelect
-                      options={[
-                        { value: 'contado_credito', label: 'Contado y crédito' },
-                        { value: 'contado', label: 'Solo contado' },
-                        { value: 'credito', label: 'Solo crédito' },
-                      ]}
-                      value={watch('tiposPagoPermitidos') || null}
-                      onChange={(val) => setValue('tiposPagoPermitidos', (val ? String(val) : 'contado_credito') as 'contado_credito' | 'contado' | 'credito', { shouldValidate: true })}
-                      placeholder="Seleccionar tipo de pago"
-                    />
-                  </FormField>
-                  <FormField label="Tipo de pago predeterminado">
-                    <SearchableSelect
-                      options={[
-                        { value: 'contado', label: 'Contado' },
-                        { value: 'credito', label: 'Crédito' },
-                      ]}
-                      value={watch('tipoPagoPredeterminado') || null}
-                      onChange={(val) => setValue('tipoPagoPredeterminado', (val ? String(val) : 'contado') as 'contado' | 'credito', { shouldValidate: true })}
-                      placeholder="Seleccionar tipo predeterminado"
-                    />
-                  </FormField>
-                </div>
-
-                <div className="w-[200px]">
-                  <FormField label="Días de crédito">
-                    <input
-                      type="number"
-                      min="0"
-                      {...register('diasCredito', { valueAsNumber: true })}
-                      className={inputClass()}
-                    />
-                  </FormField>
-                </div>
-              </div>
-
-              {/* === Datos fiscales === */}
-              <div className="bg-white rounded-lg p-6">
-                <h2 className="text-[15px] font-bold text-gray-900 mb-4" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                  Datos fiscales
-                </h2>
-
-                <div className="max-w-md">
-                  <FormField
-                    label="RFC (RUC, RUT o ID)"
-                    error={errors.rfc?.message}
-                    hint="Opcional, 12-13 caracteres"
-                  >
-                    <input
-                      type="text"
-                      {...register('rfc')}
-                      maxLength={13}
-                      className={`${inputClass(errors.rfc)} uppercase`}
-                    />
-                  </FormField>
-                </div>
+                  </div>
+                </FormField>
               </div>
             </div>
 
-            {/* Right Column */}
-            <div className="w-[480px] flex flex-col gap-6">
-              {/* === Dirección y geolocalización === */}
-              <div className="bg-white rounded-lg p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-[15px] font-bold text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                    Dirección y geolocalización
-                  </h2>
-                  <button type="button" className="text-[#16A34A] text-xs font-medium hover:underline">
-                    Calcular longitud y latitud
-                  </button>
-                </div>
+            {/* === Config entregas === */}
+            <div className="bg-white rounded-lg p-6">
+              <SectionTitle>Configuración de entregas</SectionTitle>
 
-                <div className="flex flex-col gap-4">
-                  <FormField label="Dirección" required error={errors.direccion?.message}>
-                    <input type="text" {...register('direccion')} className={inputClass(errors.direccion)} />
-                  </FormField>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                <FormField label="Tipos de pago permitidos">
+                  <SearchableSelect
+                    options={TIPOS_PAGO_OPTIONS}
+                    value={watch('tiposPagoPermitidos') || null}
+                    onChange={(val) => setValue('tiposPagoPermitidos', (val ? String(val) : 'contado_credito') as ClientFormData['tiposPagoPermitidos'], { shouldValidate: true })}
+                    placeholder="Seleccionar tipo de pago"
+                  />
+                </FormField>
+                <FormField label="Tipo de pago predeterminado">
+                  <SearchableSelect
+                    options={TIPO_PAGO_PREDETERMINADO_OPTIONS}
+                    value={watch('tipoPagoPredeterminado') || null}
+                    onChange={(val) => setValue('tipoPagoPredeterminado', (val ? String(val) : 'contado') as ClientFormData['tipoPagoPredeterminado'], { shouldValidate: true })}
+                    placeholder="Seleccionar tipo predeterminado"
+                  />
+                </FormField>
+              </div>
 
-                  <div className="grid grid-cols-[1fr_1fr_100px] gap-3">
-                    <FormField label="Ciudad">
-                      <input type="text" {...register('ciudad')} className={inputClass()} />
-                    </FormField>
-                    <FormField label="Colonia">
-                      <input type="text" {...register('colonia')} className={inputClass()} />
-                    </FormField>
-                    <FormField label="C. Postal">
-                      <input type="text" {...register('codigoPostal')} className={inputClass()} />
-                    </FormField>
-                  </div>
+              <div className="w-[200px]">
+                <FormField label="Días de crédito">
+                  <input
+                    type="number"
+                    min="0"
+                    {...register('diasCredito', { valueAsNumber: true })}
+                    className={inputClass()}
+                  />
+                </FormField>
+              </div>
+            </div>
 
-                  <div className="grid grid-cols-[1fr_100px_100px] gap-3">
-                    <FormField label="Zona" required error={errors.zonaId?.message}>
-                      <SearchableSelect
-                        options={zonas.map(z => ({ value: z.id, label: z.nombre }))}
-                        value={watch('zonaId') || null}
-                        onChange={(val) => setValue('zonaId', val ? Number(val) : 0, { shouldValidate: true })}
-                        placeholder="No hay selección"
-                        searchPlaceholder="Buscar zona..."
-                        disabled={loadingData}
-                        error={!!errors.zonaId}
-                      />
-                    </FormField>
-                    <FormField label="Latitud">
-                      <input
-                        type="number"
-                        step="0.000001"
-                        {...register('latitud', { valueAsNumber: true })}
-                        className={inputClass()}
-                      />
-                    </FormField>
-                    <FormField label="Longitud">
-                      <input
-                        type="number"
-                        step="0.000001"
-                        {...register('longitud', { valueAsNumber: true })}
-                        className={inputClass()}
-                      />
-                    </FormField>
-                  </div>
+            {/* === Datos fiscales === */}
+            <div className="bg-white rounded-lg p-6">
+              <SectionTitle>Datos fiscales</SectionTitle>
 
-                  {/* Map Placeholder */}
-                  <div className="h-[260px] bg-gray-200 rounded overflow-hidden relative">
-                    <div className="absolute top-3 left-3 right-3">
+              <div className="mb-4">
+                <Checkbox name="facturable" control={control} label="Facturable" tooltip="Requiere factura fiscal CFDI 4.0. Al activar se solicitan los datos fiscales obligatorios del SAT" />
+              </div>
+
+              {watch('facturable') ? (
+                <div className="flex flex-col gap-4 border-t border-gray-100 pt-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <FormField label="Razón social" required error={errors.razonSocial?.message} hint="Nombre legal registrado ante el SAT">
                       <input
                         type="text"
-                        placeholder="Escribir la dirección..."
-                        className="w-full h-8 px-3 text-xs bg-white border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-600"
+                        {...register('razonSocial')}
+                        maxLength={300}
+                        className={inputClass(errors.razonSocial)}
                       />
-                    </div>
-                    <div className="flex items-center justify-center h-full">
-                      <span className="text-gray-500 text-sm">Mapa de ubicación</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* === Datos de contacto === */}
-              <div className="bg-white rounded-lg p-6">
-                <h2 className="text-[15px] font-bold text-gray-900 mb-4" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                  Datos de contacto
-                </h2>
-
-                <div className="flex flex-col gap-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <FormField label="Encargado">
-                      <input type="text" {...register('encargado')} className={inputClass()} />
                     </FormField>
-                    <FormField label="Teléfono" required error={errors.telefono?.message} hint="10 dígitos">
+                    <FormField label="RFC" required error={errors.rfc?.message} hint="12-13 caracteres">
                       <input
-                        type="tel"
-                        {...register('telefono')}
-                        maxLength={10}
-                        className={inputClass(errors.telefono)}
+                        type="text"
+                        {...register('rfc')}
+                        maxLength={13}
+                        className={`${inputClass(errors.rfc)} uppercase`}
                       />
                     </FormField>
                   </div>
 
-                  <FormField label="Email" required error={errors.email?.message}>
-                    <input type="email" {...register('email')} className={inputClass(errors.email)} />
-                  </FormField>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <FormField label="C.P. Fiscal" required error={errors.codigoPostalFiscal?.message} hint="Domicilio fiscal (5 dígitos)">
+                      <input
+                        type="text"
+                        {...register('codigoPostalFiscal')}
+                        maxLength={5}
+                        placeholder="00000"
+                        className={inputClass(errors.codigoPostalFiscal)}
+                      />
+                    </FormField>
+                    <FormField label="Régimen fiscal" required error={errors.regimenFiscal?.message}>
+                      <SearchableSelect
+                        options={REGIMEN_FISCAL_OPTIONS.map(r => ({ value: r.value, label: r.label }))}
+                        value={watch('regimenFiscal') || null}
+                        onChange={(val) => setValue('regimenFiscal', val ? String(val) : '', { shouldValidate: true })}
+                        placeholder="Seleccionar régimen..."
+                        searchPlaceholder="Buscar régimen..."
+                        error={!!errors.regimenFiscal}
+                      />
+                    </FormField>
+                  </div>
 
-                  <p className="text-[11px] text-gray-400">
-                    Podrás agregar uno o varios correos electrónicos después de guardar este cliente
-                  </p>
+                  <FormField label="Uso CFDI predeterminado" hint="Se usará como valor por defecto al facturar a este cliente">
+                    <SearchableSelect
+                      options={USO_CFDI_OPTIONS.map(u => ({ value: u.value, label: u.label }))}
+                      value={watch('usoCFDIPredeterminado') || null}
+                      onChange={(val) => setValue('usoCFDIPredeterminado', val ? String(val) : '', { shouldValidate: true })}
+                      placeholder="Seleccionar uso CFDI..."
+                      searchPlaceholder="Buscar uso..."
+                    />
+                  </FormField>
                 </div>
+              ) : (
+                <p className="text-[12px] text-gray-400">
+                  Activa la opción para capturar los datos fiscales del cliente (RFC, razón social, régimen fiscal)
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Right Column */}
+          <div className="w-full lg:w-[480px] flex flex-col gap-6">
+            {/* === Dirección y geolocalización === */}
+            <div className="bg-white rounded-lg p-6">
+              <SectionTitle>Dirección y geolocalización</SectionTitle>
+
+              <div className="flex flex-col gap-4">
+                <div className="grid grid-cols-[1fr_100px] gap-3">
+                  <FormField label="Dirección" required error={errors.direccion?.message}>
+                    {mapsLoaded ? (
+                      <Autocomplete
+                        onLoad={(ac) => { autocompleteRef.current = ac; }}
+                        onPlaceChanged={handlePlaceSelected}
+                        restrictions={{ country: 'mx' }}
+                        fields={['formatted_address', 'geometry', 'address_components']}
+                      >
+                        <input
+                          type="text"
+                          {...register('direccion')}
+                          placeholder="Escribe una dirección..."
+                          className={inputClass(errors.direccion)}
+                        />
+                      </Autocomplete>
+                    ) : (
+                      <input type="text" {...register('direccion')} className={inputClass(errors.direccion)} />
+                    )}
+                  </FormField>
+                  <FormField label="Num. Ext." required error={errors.numeroExterior?.message}>
+                    <input
+                      type="text"
+                      {...register('numeroExterior')}
+                      placeholder="123"
+                      maxLength={20}
+                      className={inputClass(errors.numeroExterior)}
+                    />
+                  </FormField>
+                </div>
+
+                <div className="grid grid-cols-[1fr_1fr_100px] gap-3">
+                  <FormField label="Ciudad">
+                    <input type="text" {...register('ciudad')} className={inputClass()} />
+                  </FormField>
+                  <FormField label="Colonia">
+                    <input type="text" {...register('colonia')} className={inputClass()} />
+                  </FormField>
+                  <FormField label="C. Postal">
+                    <input type="text" {...register('codigoPostal')} className={inputClass()} />
+                  </FormField>
+                </div>
+
+                <div className="grid grid-cols-[1fr_100px_100px] gap-3">
+                  <FormField label="Zona" required error={errors.zonaId?.message}>
+                    <SearchableSelect
+                      options={zonas.map(z => ({ value: z.id, label: z.nombre }))}
+                      value={watch('zonaId') || null}
+                      onChange={(val) => setValue('zonaId', val ? Number(val) : 0, { shouldValidate: true })}
+                      placeholder="No hay selección"
+                      searchPlaceholder="Buscar zona..."
+                      disabled={loadingData}
+                      error={!!errors.zonaId}
+                    />
+                  </FormField>
+                  <FormField label="Latitud">
+                    <input
+                      type="number"
+                      step="0.000001"
+                      {...register('latitud', { valueAsNumber: true })}
+                      readOnly
+                      className={`${inputClass()} bg-gray-50 text-gray-500 cursor-default`}
+                    />
+                  </FormField>
+                  <FormField label="Longitud">
+                    <input
+                      type="number"
+                      step="0.000001"
+                      {...register('longitud', { valueAsNumber: true })}
+                      readOnly
+                      className={`${inputClass()} bg-gray-50 text-gray-500 cursor-default`}
+                    />
+                  </FormField>
+                </div>
+
+                <ClientLocationMap
+                  lat={watch('latitud') || 0}
+                  lng={watch('longitud') || 0}
+                  onLocationChange={(lat, lng) => {
+                    setValue('latitud', lat);
+                    setValue('longitud', lng);
+                  }}
+                  selectedZone={zonas.find(z => z.id === watch('zonaId')) as ZoneGeo | undefined}
+                  onOutOfZone={setIsOutOfZone}
+                />
+              </div>
+            </div>
+
+            {/* === Datos de contacto === */}
+            <div className="bg-white rounded-lg p-6">
+              <SectionTitle>Datos de contacto</SectionTitle>
+
+              <div className="flex flex-col gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <FormField label="Encargado" hint="Persona de contacto en el negocio">
+                    <input type="text" {...register('encargado')} className={inputClass()} />
+                  </FormField>
+                  <FormField label="Teléfono" required error={errors.telefono?.message} hint="10 dígitos">
+                    <input
+                      type="tel"
+                      {...register('telefono')}
+                      maxLength={10}
+                      className={inputClass(errors.telefono)}
+                    />
+                  </FormField>
+                </div>
+
+                <FormField label="Email" required error={errors.email?.message}>
+                  <input type="email" {...register('email')} className={inputClass(errors.email)} />
+                </FormField>
+
+                <p className="text-[11px] text-gray-400">
+                  Podrás agregar uno o varios correos electrónicos después de guardar este cliente
+                </p>
               </div>
             </div>
           </div>
-        </form>
-      </div>
-  );
-}
-
-// === Helper Components ===
-
-function Checkbox({
-  name,
-  control,
-  label,
-}: {
-  name: keyof ClientFormData;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  control: Control<any>;
-  label: string;
-}) {
-  return (
-    <Controller
-      name={name}
-      control={control}
-      render={({ field }) => (
-        <label className="flex items-center gap-1.5 cursor-pointer">
-          <div
-            onClick={() => field.onChange(!field.value)}
-            className={`w-4 h-4 rounded flex items-center justify-center ${
-              field.value ? 'bg-[#16A34A]' : 'border border-gray-300 bg-white'
-            }`}
-          >
-            {field.value && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
-          </div>
-          <span className="text-[13px] text-gray-700">{label}</span>
-        </label>
-      )}
-    />
-  );
-}
-
-function FormField({
-  label,
-  required,
-  hint,
-  error,
-  children,
-}: {
-  label: string;
-  required?: boolean;
-  hint?: string;
-  error?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-medium text-gray-700">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      {children}
-      {hint && !error && <p className="text-[11px] text-gray-400">{hint}</p>}
-      {error && (
-        <p className="text-[11px] text-red-500 flex items-center gap-1">
-          <AlertCircle className="w-3 h-3" />
-          {error}
-        </p>
-      )}
+        </div>
+      </form>
     </div>
   );
 }
-
-// === Style Helpers ===
-
-function inputClass(error?: { message?: string }) {
-  return `w-full h-9 px-3 text-[13px] border rounded focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent ${
-    error ? 'border-red-500' : 'border-gray-300'
-  }`;
-}
-

@@ -15,16 +15,22 @@ public class UnidadMedidaRepository : IUnidadMedidaRepository
         _db = db;
     }
 
-    public async Task<List<UnidadMedidaDto>> ObtenerPorTenantAsync(int tenantId)
+    public async Task<List<UnidadMedidaDto>> ObtenerPorTenantAsync(int tenantId, bool incluirInactivos = false)
     {
-        return await _db.UnidadesMedida
+        var query = _db.UnidadesMedida
             .AsNoTracking()
-            .Where(u => u.TenantId == tenantId)
+            .Where(u => u.TenantId == tenantId);
+
+        if (!incluirInactivos)
+            query = query.Where(u => u.Activo);
+
+        return await query
             .Select(u => new UnidadMedidaDto
             {
                 Id = u.Id,
                 Nombre = u.Nombre,
-                Abreviatura = u.Abreviatura
+                Abreviatura = u.Abreviatura,
+                Activo = u.Activo
             })
             .ToListAsync();
     }
@@ -38,7 +44,8 @@ public class UnidadMedidaRepository : IUnidadMedidaRepository
             {
                 Id = u.Id,
                 Nombre = u.Nombre,
-                Abreviatura = u.Abreviatura
+                Abreviatura = u.Abreviatura,
+                Activo = u.Activo
             })
             .FirstOrDefaultAsync();
     }

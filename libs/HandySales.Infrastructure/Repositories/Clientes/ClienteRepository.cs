@@ -25,8 +25,35 @@ public class ClienteRepository : IClienteRepository
             Correo = dto.Correo,
             Telefono = dto.Telefono,
             Direccion = dto.Direccion,
+            NumeroExterior = dto.NumeroExterior,
             IdZona = dto.IdZona,
             CategoriaClienteId = dto.CategoriaClienteId,
+            // Campos adicionales
+            EsProspecto = dto.EsProspecto,
+            Comentarios = dto.Comentarios,
+            ListaPreciosId = dto.ListaPreciosId,
+            Descuento = dto.Descuento,
+            Saldo = dto.Saldo,
+            LimiteCredito = dto.LimiteCredito,
+            VentaMinimaEfectiva = dto.VentaMinimaEfectiva,
+            TiposPagoPermitidos = dto.TiposPagoPermitidos,
+            TipoPagoPredeterminado = dto.TipoPagoPredeterminado,
+            DiasCredito = dto.DiasCredito,
+            // Dirección desglosada
+            Ciudad = dto.Ciudad,
+            Colonia = dto.Colonia,
+            CodigoPostal = dto.CodigoPostal,
+            // Contacto
+            Encargado = dto.Encargado,
+            // Geolocalización
+            Latitud = dto.Latitud,
+            Longitud = dto.Longitud,
+            // Datos fiscales
+            Facturable = dto.Facturable,
+            RazonSocial = dto.RazonSocial,
+            CodigoPostalFiscal = dto.CodigoPostalFiscal,
+            RegimenFiscal = dto.RegimenFiscal,
+            UsoCFDIPredeterminado = dto.UsoCFDIPredeterminado,
             Activo = true,
             CreadoEn = DateTime.UtcNow
         };
@@ -65,12 +92,36 @@ public class ClienteRepository : IClienteRepository
                 Correo = c.Correo,
                 Telefono = c.Telefono,
                 Direccion = c.Direccion,
+                NumeroExterior = c.NumeroExterior,
                 IdZona = c.IdZona,
                 CategoriaClienteId = c.CategoriaClienteId,
                 Latitud = c.Latitud,
                 Longitud = c.Longitud,
                 VendedorId = c.VendedorId,
-                Activo = c.Activo
+                Activo = c.Activo,
+                // Campos adicionales
+                EsProspecto = c.EsProspecto,
+                Comentarios = c.Comentarios,
+                ListaPreciosId = c.ListaPreciosId,
+                Descuento = c.Descuento,
+                Saldo = c.Saldo,
+                LimiteCredito = c.LimiteCredito,
+                VentaMinimaEfectiva = c.VentaMinimaEfectiva,
+                TiposPagoPermitidos = c.TiposPagoPermitidos,
+                TipoPagoPredeterminado = c.TipoPagoPredeterminado,
+                DiasCredito = c.DiasCredito,
+                // Dirección desglosada
+                Ciudad = c.Ciudad,
+                Colonia = c.Colonia,
+                CodigoPostal = c.CodigoPostal,
+                // Contacto
+                Encargado = c.Encargado,
+                // Datos fiscales
+                Facturable = c.Facturable,
+                RazonSocial = c.RazonSocial,
+                CodigoPostalFiscal = c.CodigoPostalFiscal,
+                RegimenFiscal = c.RegimenFiscal,
+                UsoCFDIPredeterminado = c.UsoCFDIPredeterminado
             })
             .FirstOrDefaultAsync();
     }
@@ -85,8 +136,35 @@ public class ClienteRepository : IClienteRepository
         cliente.Correo = dto.Correo;
         cliente.Telefono = dto.Telefono;
         cliente.Direccion = dto.Direccion;
+        cliente.NumeroExterior = dto.NumeroExterior;
         cliente.IdZona = dto.IdZona;
         cliente.CategoriaClienteId = dto.CategoriaClienteId;
+        // Campos adicionales
+        cliente.EsProspecto = dto.EsProspecto;
+        cliente.Comentarios = dto.Comentarios;
+        cliente.ListaPreciosId = dto.ListaPreciosId;
+        cliente.Descuento = dto.Descuento;
+        cliente.Saldo = dto.Saldo;
+        cliente.LimiteCredito = dto.LimiteCredito;
+        cliente.VentaMinimaEfectiva = dto.VentaMinimaEfectiva;
+        cliente.TiposPagoPermitidos = dto.TiposPagoPermitidos;
+        cliente.TipoPagoPredeterminado = dto.TipoPagoPredeterminado;
+        cliente.DiasCredito = dto.DiasCredito;
+        // Dirección desglosada
+        cliente.Ciudad = dto.Ciudad;
+        cliente.Colonia = dto.Colonia;
+        cliente.CodigoPostal = dto.CodigoPostal;
+        // Contacto
+        cliente.Encargado = dto.Encargado;
+        // Geolocalización
+        cliente.Latitud = dto.Latitud;
+        cliente.Longitud = dto.Longitud;
+        // Datos fiscales
+        cliente.Facturable = dto.Facturable;
+        cliente.RazonSocial = dto.RazonSocial;
+        cliente.CodigoPostalFiscal = dto.CodigoPostalFiscal;
+        cliente.RegimenFiscal = dto.RegimenFiscal;
+        cliente.UsoCFDIPredeterminado = dto.UsoCFDIPredeterminado;
         cliente.ActualizadoEn = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();

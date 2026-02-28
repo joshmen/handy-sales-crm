@@ -8,6 +8,7 @@ export interface ClientCategory {
   id: number;
   nombre: string;
   descripcion?: string;
+  activo: boolean;
 }
 
 export interface ClientCategoryForm {
@@ -23,6 +24,7 @@ export interface ProductCategory {
   id: number;
   nombre: string;
   descripcion?: string;
+  activo: boolean;
 }
 
 export interface ProductCategoryForm {
@@ -38,6 +40,7 @@ export interface Unit {
   id: number;
   nombre: string;
   abreviatura?: string;
+  activo: boolean;
 }
 
 export interface UnitForm {

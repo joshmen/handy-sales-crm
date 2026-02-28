@@ -16,8 +16,8 @@ export interface ImportErrorDetail {
   errores: string[];
 }
 
-export type ExportEntity = 'clientes' | 'productos' | 'inventario' | 'pedidos';
-export type ImportEntity = 'clientes' | 'productos';
+export type ExportEntity = 'clientes' | 'productos' | 'inventario' | 'pedidos' | 'rutas' | 'zonas' | 'categorias-clientes' | 'categorias-productos' | 'familias-productos' | 'unidades-medida' | 'listas-precios' | 'descuentos' | 'promociones';
+export type ImportEntity = 'clientes' | 'productos' | 'inventario' | 'zonas' | 'categorias-clientes' | 'categorias-productos' | 'familias-productos' | 'unidades-medida' | 'listas-precios' | 'descuentos' | 'promociones';
 
 // ═══════════════════════════════════════════════════════
 // EXPORT FUNCTIONS
@@ -72,6 +72,38 @@ export async function importFromCsv(
   entity: ImportEntity,
   file: File
 ): Promise<ImportResult> {
+  const formData = new FormData();
+  formData.append('archivo', file);
+
+  const response = await api.post<ImportResult>(`/api/import/${entity}`, formData);
+  return response.data;
+}
+
+/**
+ * Import only selected rows from a CSV. Reconstructs a CSV with headers + selected rows,
+ * then sends it as a file to the backend.
+ */
+export async function importFilteredCsv(
+  entity: ImportEntity,
+  headers: string[],
+  selectedRows: string[][]
+): Promise<ImportResult> {
+  const csvContent = [
+    headers.join(','),
+    ...selectedRows.map(row =>
+      row.map(cell => {
+        // Escape cells that contain commas, quotes, or newlines
+        if (cell.includes(',') || cell.includes('"') || cell.includes('\n')) {
+          return `"${cell.replace(/"/g, '""')}"`;
+        }
+        return cell;
+      }).join(',')
+    ),
+  ].join('\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const file = new File([blob], `import_${entity}.csv`, { type: 'text/csv' });
+
   const formData = new FormData();
   formData.append('archivo', file);
 

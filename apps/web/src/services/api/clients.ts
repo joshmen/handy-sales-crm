@@ -20,11 +20,36 @@ interface ClienteDto {
   correo: string;
   telefono: string;
   direccion: string;
+  numeroExterior?: string;
   idZona: number;
   categoriaClienteId: number;
   latitud?: number;
   longitud?: number;
+  vendedorId?: number;
   activo: boolean;
+  // Campos adicionales
+  esProspecto: boolean;
+  comentarios?: string;
+  listaPreciosId?: number;
+  descuento: number;
+  saldo: number;
+  limiteCredito: number;
+  ventaMinimaEfectiva: number;
+  tiposPagoPermitidos: string;
+  tipoPagoPredeterminado: string;
+  diasCredito: number;
+  // Dirección desglosada
+  ciudad?: string;
+  colonia?: string;
+  codigoPostal?: string;
+  // Contacto
+  encargado?: string;
+  // Datos fiscales
+  facturable: boolean;
+  razonSocial?: string;
+  codigoPostalFiscal?: string;
+  regimenFiscal?: string;
+  usoCFDIPredeterminado?: string;
 }
 
 interface ClientePaginatedResult {
@@ -59,8 +84,35 @@ export interface CreateClientRequest {
   correo: string;
   telefono: string;
   direccion: string;
+  numeroExterior: string;
   idZona: number;
   categoriaClienteId: number;
+  // Campos adicionales
+  esProspecto: boolean;
+  comentarios?: string | null;
+  listaPreciosId?: number | null;
+  descuento: number;
+  saldo: number;
+  limiteCredito: number;
+  ventaMinimaEfectiva: number;
+  tiposPagoPermitidos: string;
+  tipoPagoPredeterminado: string;
+  diasCredito: number;
+  // Dirección desglosada
+  ciudad?: string | null;
+  colonia?: string | null;
+  codigoPostal?: string | null;
+  // Contacto
+  encargado?: string | null;
+  // Geolocalización
+  latitud?: number | null;
+  longitud?: number | null;
+  // Datos fiscales
+  facturable: boolean;
+  razonSocial?: string | null;
+  codigoPostalFiscal?: string | null;
+  regimenFiscal?: string | null;
+  usoCFDIPredeterminado?: string | null;
 }
 
 export interface UpdateClientRequest extends Partial<CreateClientRequest> {
@@ -93,12 +145,37 @@ function mapClienteDtoToClient(dto: ClienteDto): Client {
     email: dto.correo,
     phone: dto.telefono,
     address: dto.direccion,
+    exteriorNumber: dto.numeroExterior,
     latitude: dto.latitud,
     longitude: dto.longitud,
     zoneId: dto.idZona,
     categoryId: dto.categoriaClienteId,
+    vendedorId: dto.vendedorId,
     type: ClientType.MINORISTA,
     isActive: dto.activo,
+    // Campos adicionales
+    esProspecto: dto.esProspecto,
+    comentarios: dto.comentarios,
+    listaPreciosId: dto.listaPreciosId,
+    descuento: dto.descuento,
+    saldo: dto.saldo,
+    limiteCredito: dto.limiteCredito,
+    ventaMinimaEfectiva: dto.ventaMinimaEfectiva,
+    tiposPagoPermitidos: dto.tiposPagoPermitidos,
+    tipoPagoPredeterminado: dto.tipoPagoPredeterminado,
+    diasCredito: dto.diasCredito,
+    // Dirección desglosada
+    ciudad: dto.ciudad,
+    colonia: dto.colonia,
+    codigoPostal: dto.codigoPostal,
+    // Contacto
+    encargado: dto.encargado,
+    // Datos fiscales
+    facturable: dto.facturable,
+    razonSocial: dto.razonSocial,
+    codigoPostalFiscal: dto.codigoPostalFiscal,
+    regimenFiscal: dto.regimenFiscal,
+    usoCFDIPredeterminado: dto.usoCFDIPredeterminado,
     createdAt: new Date(),
     updatedAt: new Date(),
   };

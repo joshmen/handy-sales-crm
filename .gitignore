@@ -85,6 +85,13 @@ apps/web/test-results/
 apps/web/playwright-report/
 apps/web/e2e/.auth/
 
+# ── PWA generated files ─────────────────
+apps/web/public/sw.js
+apps/web/public/sw.js.map
+apps/web/public/workbox-*.js
+apps/web/public/workbox-*.js.map
+apps/web/public/swe-worker-*.js
+
 # ── Pencil generated images ──────────────
 docs/design/pencil/images/
 

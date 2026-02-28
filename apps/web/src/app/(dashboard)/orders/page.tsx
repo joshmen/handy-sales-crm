@@ -14,14 +14,8 @@ import { api } from '@/lib/api';
 import { toast } from '@/hooks/useToast';
 import {
   Plus,
-  Tag,
-  Download,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   RefreshCw,
-  Filter,
-  Search,
   FileText,
   Edit,
   Trash2,
@@ -30,7 +24,12 @@ import {
   Check,
   Loader2,
 } from 'lucide-react';
+import { ListPagination } from '@/components/ui/ListPagination';
+import { ExportButton } from '@/components/shared/ExportButton';
 import { ShoppingCart as ShoppingCartIcon } from '@phosphor-icons/react';
+import { SearchBar } from '@/components/common/SearchBar';
+import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
+import { ErrorBanner } from '@/components/ui/ErrorBanner';
 
 // Mapeo de estados de API a estados del componente
 const estadoToStatus: Record<string, Order['status']> = {
@@ -151,7 +150,6 @@ export default function OrdersPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterUser, setFilterUser] = useState('all');
   const [tipoVentaFilter, setTipoVentaFilter] = useState<'' | '0' | '1'>('');
-  const [activeTab, setActiveTab] = useState<'lista' | 'mapa'>('lista');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
@@ -288,26 +286,6 @@ export default function OrdersPage() {
     toast.success('Lista actualizada');
   };
 
-  // Pagination
-  const startItem = (currentPage - 1) * pageSize + 1;
-  const endItem = Math.min(currentPage * pageSize, totalItems);
-
-  const getPageNumbers = () => {
-    const pages: (number | string)[] = [];
-    if (totalPages <= 5) {
-      for (let i = 1; i <= totalPages; i++) pages.push(i);
-    } else {
-      if (currentPage <= 3) {
-        pages.push(1, 2, 3, '...', totalPages);
-      } else if (currentPage >= totalPages - 2) {
-        pages.push(1, '...', totalPages - 2, totalPages - 1, totalPages);
-      } else {
-        pages.push(1, '...', currentPage, '...', totalPages);
-      }
-    }
-    return pages;
-  };
-
   // Filter orders
   const filteredOrders = orders.filter(order => {
     const matchesSearch = searchTerm === '' ||
@@ -346,17 +324,8 @@ export default function OrdersPage() {
               >
                 <Plus className="w-4 h-4" />
                 <span>Nuevo pedido</span>
-                <ChevronDown className="w-3.5 h-3.5" />
               </button>
-              <button className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 transition-colors">
-                <Tag className="w-4 h-4 text-amber-500" />
-                <span>Promociones</span>
-              </button>
-              <button className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 transition-colors">
-                <Download className="w-4 h-4 text-emerald-500" />
-                <span>Descargar</span>
-                <ChevronDown className="w-3.5 h-3.5" />
-              </button>
+              <ExportButton entity="pedidos" label="Exportar" />
             </div>
           </div>
 
@@ -394,12 +363,6 @@ export default function OrdersPage() {
               <option value="1">Venta Directa</option>
             </select>
 
-            {/* More Filters Button */}
-            <button className="flex items-center gap-2 px-4 py-2 h-10 text-[13px] font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 transition-colors">
-              <Filter className="w-4 h-4 text-violet-500" />
-              <span>Más filtros</span>
-            </button>
-
             {/* Refresh Button */}
             <button
               onClick={handleRefresh}
@@ -410,51 +373,22 @@ export default function OrdersPage() {
             </button>
           </div>
 
-          {/* Tabs Row */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <button
-                onClick={() => setActiveTab('lista')}
-                className={`px-4 py-2.5 text-[13px] font-medium border-b-2 transition-colors ${
-                  activeTab === 'lista'
-                    ? 'text-green-600 border-green-600'
-                    : 'text-gray-500 border-transparent hover:text-gray-700'
-                }`}
-              >
-                Lista
-              </button>
-              <button
-                onClick={() => setActiveTab('mapa')}
-                className={`px-4 py-2.5 text-[13px] font-medium border-b-2 transition-colors ${
-                  activeTab === 'mapa'
-                    ? 'text-green-600 border-green-600'
-                    : 'text-gray-500 border-transparent hover:text-gray-700'
-                }`}
-              >
-                Mapa
-              </button>
-            </div>
-            <div className="relative w-64" data-tour="orders-search">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-400" />
-              <input
-                type="text"
-                placeholder="Buscar pedido por ID"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
-            </div>
+          {/* Search Row */}
+          <div className="flex items-center justify-end">
+            <SearchBar
+              value={searchTerm}
+              onChange={(v) => { setSearchTerm(v); setCurrentPage(1); }}
+              placeholder="Buscar pedido por ID"
+              dataTour="orders-search"
+            />
           </div>
         </div>
 
         {/* Body */}
         <div className="flex-1 overflow-auto bg-gray-50">
           {error && (
-            <div className="mx-8 mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-              {error}
-              <button onClick={fetchOrders} className="ml-4 underline hover:no-underline">
-                Reintentar
-              </button>
+            <div className="mx-8 mt-4">
+              <ErrorBanner error={error} onRetry={fetchOrders} />
             </div>
           )}
 
@@ -559,15 +493,7 @@ export default function OrdersPage() {
 
               {/* Table Body - With loading overlay */}
               <div className="relative min-h-[200px]">
-                {/* Loading Overlay */}
-                {loading && (
-                  <div className="absolute inset-0 bg-white/80 backdrop-blur-[1px] z-10 flex items-center justify-center transition-opacity duration-200">
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
-                      <span className="text-sm text-gray-500">Cargando pedidos...</span>
-                    </div>
-                  </div>
-                )}
+                <TableLoadingOverlay loading={loading} message="Cargando pedidos..." />
 
                 {/* Empty State */}
                 {!loading && filteredOrders.length === 0 ? (
@@ -650,47 +576,16 @@ export default function OrdersPage() {
 
             {/* Pagination - Always visible when there are orders */}
             {(filteredOrders.length > 0 || loading) && totalItems > 0 && (
-              <div className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pt-4 transition-opacity duration-200 ${loading ? 'opacity-60' : 'opacity-100'}`}>
-                <span className="text-sm text-gray-500" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                  Mostrando {startItem}-{endItem} de {totalItems} pedidos
-                </span>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={currentPage === 1 || loading}
-                    className="px-3 py-2 border border-gray-200 rounded-md text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-
-                  <div className="flex items-center gap-1">
-                    {getPageNumbers().map((page, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => typeof page === 'number' && !loading && setCurrentPage(page)}
-                        disabled={page === '...' || loading}
-                        className={`min-w-[32px] px-2 py-1 text-sm rounded-md transition-colors ${
-                          page === currentPage
-                            ? 'bg-green-600 text-white'
-                            : page === '...'
-                            ? 'text-gray-400 cursor-default'
-                            : 'text-gray-600 hover:bg-gray-100'
-                        }`}
-                      >
-                        {page}
-                      </button>
-                    ))}
-                  </div>
-
-                  <button
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages || loading}
-                    className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
+              <ListPagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                itemLabel="pedidos"
+                loading={loading}
+                className="pt-4"
+              />
             )}
           </div>
         </div>

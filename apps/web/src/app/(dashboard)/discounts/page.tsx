@@ -4,30 +4,35 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Modal } from '@/components/ui/Modal';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
+import { useBatchOperations } from '@/hooks/useBatchOperations';
+import { BatchActionBar } from '@/components/shared/BatchActionBar';
+import { BatchConfirmModal } from '@/components/shared/BatchConfirmModal';
 import { SearchableSelect, SearchableSelectOption } from '@/components/ui/SearchableSelect';
 import { DescuentoPorCantidadDto, DescuentoPorCantidadCreateDto } from '@/types/discounts';
 import { toast } from '@/hooks/useToast';
 import { api } from '@/lib/api';
-import { Breadcrumb } from '@/components/ui/Breadcrumb';
+import { exportToCsv } from '@/services/api/importExport';
+import { CsvImportModal } from '@/components/shared/CsvImportModal';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { ListPagination } from '@/components/ui/ListPagination';
 import {
   Plus,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   RefreshCw,
   Percent,
   Pencil,
   Loader2,
   Check,
   Minus,
-  X,
-  Power,
-  PowerOff,
-  Search,
+  Download,
+  Upload,
 } from 'lucide-react';
 import { Percent as PercentIcon } from '@phosphor-icons/react';
+import { SearchBar } from '@/components/common/SearchBar';
+import { InactiveToggle } from '@/components/ui/InactiveToggle';
+import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
+import { ActiveToggle } from '@/components/ui/ActiveToggle';
 
 type TipoAplicacion = 'Global' | 'Producto';
 
@@ -61,12 +66,9 @@ export default function DiscountsPage() {
 
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isBatchConfirmModalOpen, setIsBatchConfirmModalOpen] = useState(false);
   const [editingDiscount, setEditingDiscount] = useState<DescuentoPorCantidadDto | null>(null);
-
-  // Selection state
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-  const [batchAction, setBatchAction] = useState<'enable' | 'disable'>('disable');
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [showDataMenu, setShowDataMenu] = useState(false);
 
   // Form state with react-hook-form
   const { register, handleSubmit: rhfSubmit, reset: resetForm, watch, setValue, formState: { errors, isDirty } } = useForm<DiscountFormData>({
@@ -190,84 +192,6 @@ export default function DiscountsPage() {
     }
   });
 
-  // Selection handlers
-  const handleToggleSelect = (id: number) => {
-    setSelectedIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  };
-
-  const handleSelectAllVisible = () => {
-    const visibleIds = paginatedDiscounts.map(d => d.id);
-    const allSelected = visibleIds.every(id => selectedIds.has(id));
-
-    if (allSelected) {
-      // Deseleccionar todos los visibles
-      setSelectedIds(prev => {
-        const next = new Set(prev);
-        visibleIds.forEach(id => next.delete(id));
-        return next;
-      });
-    } else {
-      // Seleccionar todos los visibles
-      setSelectedIds(prev => {
-        const next = new Set(prev);
-        visibleIds.forEach(id => next.add(id));
-        return next;
-      });
-    }
-  };
-
-  const handleSelectAllFiltered = () => {
-    const filteredIds = filteredDiscounts.map(d => d.id);
-    setSelectedIds(new Set(filteredIds));
-  };
-
-  const handleClearSelection = () => {
-    setSelectedIds(new Set());
-  };
-
-  const handleOpenBatchAction = (action: 'enable' | 'disable') => {
-    setBatchAction(action);
-    setIsBatchConfirmModalOpen(true);
-  };
-
-  const handleBatchToggle = async () => {
-    if (selectedIds.size === 0) return;
-
-    try {
-      setActionLoading(true);
-      const ids = Array.from(selectedIds);
-      const activo = batchAction === 'enable';
-
-      await api.patch('/descuentos/batch-toggle', { ids, activo });
-
-      toast.success(
-        `${ids.length} descuento${ids.length > 1 ? 's' : ''} ${activo ? 'activado' : 'desactivado'}${ids.length > 1 ? 's' : ''} exitosamente`
-      );
-
-      setIsBatchConfirmModalOpen(false);
-      setSelectedIds(new Set());
-      setDiscounts(prev => prev.map(d =>
-        ids.includes(d.id) ? { ...d, activo } : d
-      ));
-    } catch (_error) {
-      toast.error('Error al cambiar el estado de los descuentos');
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  // Clear selection when changing tabs or filters
-  useEffect(() => {
-    setSelectedIds(new Set());
-  }, [activeTab, showInactiveGlobal, showInactiveProduct, searchGlobal, searchProduct]);
 
   const showInactive = activeTab === 'global' ? showInactiveGlobal : showInactiveProduct;
   const searchTerm = activeTab === 'global' ? searchGlobal : searchProduct;
@@ -297,18 +221,41 @@ export default function DiscountsPage() {
 
   const totalItems = filteredDiscounts.length;
   const totalPages = Math.ceil(totalItems / pageSize);
-  const startItem = totalItems > 0 ? (currentPage - 1) * pageSize + 1 : 0;
-  const endItem = Math.min(currentPage * pageSize, totalItems);
   const paginatedDiscounts = filteredDiscounts.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   );
 
-  // Selection computed values
   const visibleIds = paginatedDiscounts.map(d => d.id);
-  const allVisibleSelected = visibleIds.length > 0 && visibleIds.every(id => selectedIds.has(id));
-  const someVisibleSelected = visibleIds.some(id => selectedIds.has(id));
-  const selectedCount = selectedIds.size;
+  const batch = useBatchOperations({
+    visibleIds,
+    clearDeps: [activeTab, showInactiveGlobal, showInactiveProduct, searchGlobal, searchProduct],
+  });
+
+  const handleBatchToggle = async () => {
+    if (batch.selectedCount === 0) return;
+
+    try {
+      setActionLoading(true);
+      const ids = Array.from(batch.selectedIds);
+      const activo = batch.batchAction === 'activate';
+
+      await api.patch('/descuentos/batch-toggle', { ids, activo });
+
+      toast.success(
+        `${ids.length} descuento${ids.length > 1 ? 's' : ''} ${activo ? 'activado' : 'desactivado'}${ids.length > 1 ? 's' : ''} exitosamente`
+      );
+
+      batch.completeBatch();
+      setDiscounts(prev => prev.map(d =>
+        ids.includes(d.id) ? { ...d, activo } : d
+      ));
+    } catch (_error) {
+      toast.error('Error al cambiar el estado de los descuentos');
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   const formatRelativeTime = (dateStr: string | undefined) => {
     if (!dateStr) return '-';
@@ -324,50 +271,69 @@ export default function DiscountsPage() {
   };
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="bg-white px-4 py-4 sm:px-8 sm:py-6 border-b border-gray-200">
-        {/* Breadcrumb */}
-        <Breadcrumb items={[
-          { label: 'Inicio', href: '/dashboard' },
-          { label: 'Descuentos por cantidad' },
-        ]} />
-
-        {/* Title Row */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-            Descuentos por cantidad
-          </h1>
-          <div className="flex items-center gap-2">
-            <div className="relative group" data-tour="discounts-create-btn">
-              <button className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors">
-                <Plus className="w-4 h-4" />
-                <span>Nuevo descuento</span>
-                <ChevronDown className="w-3.5 h-3.5" />
+    <PageHeader
+      breadcrumbs={[
+        { label: 'Inicio', href: '/dashboard' },
+        { label: 'Descuentos por cantidad' },
+      ]}
+      title="Descuentos por cantidad"
+      actions={
+        <>
+          <div className="relative">
+            <button
+              onClick={() => setShowDataMenu(!showDataMenu)}
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+            >
+              <Download className="w-3.5 h-3.5 text-emerald-500" />
+              <span className="hidden sm:inline">Importar / Exportar</span>
+              <ChevronDown className="w-3 h-3 text-gray-400" />
+            </button>
+            {showDataMenu && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setShowDataMenu(false)} />
+                <div className="absolute right-0 mt-1 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1">
+                  <button
+                    onClick={async () => { setShowDataMenu(false); try { await exportToCsv('descuentos'); toast.success('Archivo CSV descargado'); } catch { toast.error('Error al exportar datos'); } }}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
+                  >
+                    <Download className="w-3.5 h-3.5 text-emerald-500" />
+                    Exportar CSV
+                  </button>
+                  <button
+                    onClick={() => { setIsImportOpen(true); setShowDataMenu(false); }}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
+                  >
+                    <Upload className="w-3.5 h-3.5 text-blue-500" />
+                    Importar CSV
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+          <div className="relative group" data-tour="discounts-create-btn">
+            <button className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors">
+              <Plus className="w-4 h-4" />
+              <span>Nuevo descuento</span>
+              <ChevronDown className="w-3.5 h-3.5" />
+            </button>
+            <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20">
+              <button
+                onClick={() => handleOpenCreate('Global')}
+                className="w-full px-4 py-2.5 text-left text-[13px] text-gray-700 hover:bg-gray-50 first:rounded-t-lg"
+              >
+                Descuento global
               </button>
-              {/* Dropdown */}
-              <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20">
-                <button
-                  onClick={() => handleOpenCreate('Global')}
-                  className="w-full px-4 py-2.5 text-left text-[13px] text-gray-700 hover:bg-gray-50 first:rounded-t-lg"
-                >
-                  Descuento global
-                </button>
-                <button
-                  onClick={() => handleOpenCreate('Producto')}
-                  className="w-full px-4 py-2.5 text-left text-[13px] text-gray-700 hover:bg-gray-50 last:rounded-b-lg border-t border-gray-100"
-                >
-                  Descuento por producto
-                </button>
-              </div>
+              <button
+                onClick={() => handleOpenCreate('Producto')}
+                className="w-full px-4 py-2.5 text-left text-[13px] text-gray-700 hover:bg-gray-50 last:rounded-b-lg border-t border-gray-100"
+              >
+                Descuento por producto
+              </button>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Body */}
-      <div className="flex-1 overflow-auto">
-        <div className="px-4 py-4 sm:px-8 sm:py-6">
+        </>
+      }
+    >
           {/* Tabs */}
           <div className="flex items-center border-b border-gray-200 mb-4" data-tour="discounts-tabs">
             <button
@@ -394,22 +360,16 @@ export default function DiscountsPage() {
 
           {/* Filter Row */}
           <div className="flex items-center gap-3 mb-4">
-            {/* Search Input */}
-            <div className="relative w-64" data-tour="discounts-search">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-400" />
-              <input
-                type="text"
-                placeholder={activeTab === 'product' ? 'Buscar por producto o código...' : 'Buscar descuento...'}
-                value={searchTerm}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (activeTab === 'global') setSearchGlobal(val);
-                  else setSearchProduct(val);
-                  setCurrentPage(1);
-                }}
-                className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
-            </div>
+            <SearchBar
+              value={searchTerm}
+              onChange={(v) => {
+                if (activeTab === 'global') setSearchGlobal(v);
+                else setSearchProduct(v);
+                setCurrentPage(1);
+              }}
+              placeholder={activeTab === 'product' ? 'Buscar por producto o código...' : 'Buscar descuento...'}
+              dataTour="discounts-search"
+            />
 
             <button
               onClick={handleRefresh}
@@ -420,81 +380,32 @@ export default function DiscountsPage() {
               <span>Actualizar</span>
             </button>
 
-            <div className="flex items-center gap-2 ml-auto" data-tour="discounts-toggle-inactive">
-              <span className="text-xs text-gray-600">Mostrar inactivos</span>
-              <button
-                onClick={() => {
-                  if (activeTab === 'global') setShowInactiveGlobal(!showInactiveGlobal);
-                  else setShowInactiveProduct(!showInactiveProduct);
-                  setCurrentPage(1);
-                }}
-                className={`relative w-9 h-5 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1 ${
-                  showInactive ? 'bg-green-500' : 'bg-gray-300'
-                }`}
-                title={showInactive ? 'Mostrando todos los descuentos' : 'Solo descuentos activos'}
-              >
-                <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transform transition-transform duration-200 ${
-                  showInactive ? 'translate-x-4' : 'translate-x-0'
-                }`} />
-              </button>
-            </div>
+            <InactiveToggle
+              value={showInactive}
+              onChange={(v) => {
+                if (activeTab === 'global') setShowInactiveGlobal(v);
+                else setShowInactiveProduct(v);
+                setCurrentPage(1);
+              }}
+              className="ml-auto"
+            />
           </div>
 
           {/* Selection Action Bar */}
-          {selectedCount > 0 && (
-            <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 mb-4">
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-medium text-blue-700">
-                  {selectedCount} seleccionado{selectedCount > 1 ? 's' : ''}
-                </span>
-                {selectedCount < filteredDiscounts.length && (
-                  <button
-                    onClick={handleSelectAllFiltered}
-                    className="text-sm text-blue-600 hover:text-blue-800 underline"
-                  >
-                    Seleccionar todos ({filteredDiscounts.length})
-                  </button>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => handleOpenBatchAction('disable')}
-                  disabled={actionLoading}
-                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-red-600 bg-white border border-red-200 rounded hover:bg-red-50 transition-colors disabled:opacity-50"
-                >
-                  <PowerOff className="w-3 h-3" />
-                  <span>Desactivar</span>
-                </button>
-                <button
-                  onClick={() => handleOpenBatchAction('enable')}
-                  disabled={actionLoading}
-                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-green-600 bg-white border border-green-200 rounded hover:bg-green-50 transition-colors disabled:opacity-50"
-                >
-                  <Power className="w-3 h-3" />
-                  <span>Activar</span>
-                </button>
-                <button
-                  onClick={handleClearSelection}
-                  className="flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors"
-                >
-                  <X className="w-3 h-3" />
-                  <span>Cancelar</span>
-                </button>
-              </div>
-            </div>
-          )}
+          <BatchActionBar
+            selectedCount={batch.selectedCount}
+            totalItems={filteredDiscounts.length}
+            entityLabel="descuentos"
+            onActivate={() => batch.openBatchAction('activate')}
+            onDeactivate={() => batch.openBatchAction('deactivate')}
+            onClear={batch.handleClearSelection}
+            loading={actionLoading}
+            className="mb-4"
+          />
 
           {/* Content - Container with loading overlay */}
           <div className="relative min-h-[200px]" data-tour="discounts-cards">
-            {/* Loading Overlay */}
-            {loading && (
-              <div className="absolute inset-0 bg-white/80 backdrop-blur-[1px] z-10 flex items-center justify-center transition-opacity duration-200">
-                <div className="flex flex-col items-center gap-2">
-                  <Loader2 className="h-8 w-8 animate-spin text-green-600" />
-                  <span className="text-sm text-gray-500">Cargando descuentos...</span>
-                </div>
-              </div>
-            )}
+            <TableLoadingOverlay loading={loading} message="Cargando descuentos..." />
 
             {/* Empty State */}
             {!loading && paginatedDiscounts.length === 0 ? (
@@ -513,7 +424,7 @@ export default function DiscountsPage() {
                     <div
                       key={discount.id}
                       className={`bg-white border rounded-lg p-4 ${
-                        selectedIds.has(discount.id)
+                        batch.selectedIds.has(discount.id)
                           ? 'border-green-400 bg-green-50/50'
                           : 'border-gray-200'
                       }`}
@@ -521,14 +432,14 @@ export default function DiscountsPage() {
                       <div className="flex items-start justify-between gap-2 mb-3">
                         <div className="flex items-start gap-2 min-w-0 flex-1">
                           <button
-                            onClick={() => handleToggleSelect(discount.id)}
+                            onClick={() => batch.handleToggleSelect(discount.id)}
                             className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                              selectedIds.has(discount.id)
+                              batch.selectedIds.has(discount.id)
                                 ? 'bg-green-600 border-green-600 text-white'
                                 : 'border-gray-300 hover:border-green-500'
                             }`}
                           >
-                            {selectedIds.has(discount.id) && <Check className="w-3 h-3" />}
+                            {batch.selectedIds.has(discount.id) && <Check className="w-3 h-3" />}
                           </button>
                           <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
                             <PercentIcon className="w-5 h-5 text-orange-600" weight="duotone" />
@@ -542,19 +453,12 @@ export default function DiscountsPage() {
                             )}
                           </div>
                         </div>
-                        <button
-                          onClick={() => handleToggleActive(discount)}
-                          disabled={togglingId === discount.id || loading}
-                          className={`relative w-9 h-5 rounded-full transition-colors duration-200 flex-shrink-0 ${
-                            discount.activo ? 'bg-green-500' : 'bg-gray-300'
-                          } ${togglingId === discount.id ? 'opacity-50' : ''}`}
-                        >
-                          <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transform transition-transform duration-200 flex items-center justify-center ${
-                            discount.activo ? 'translate-x-4' : 'translate-x-0'
-                          }`}>
-                            {discount.activo ? <Check className="w-2.5 h-2.5 text-green-600" /> : <X className="w-2.5 h-2.5 text-gray-400" />}
-                          </span>
-                        </button>
+                        <ActiveToggle
+                          isActive={discount.activo}
+                          onToggle={() => handleToggleActive(discount)}
+                          disabled={loading}
+                          isLoading={togglingId === discount.id}
+                        />
                       </div>
                       <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
                         <span className={`inline-flex px-2 py-0.5 rounded-full ${
@@ -588,18 +492,18 @@ export default function DiscountsPage() {
                   {/* Select All Header */}
                   <div className="flex items-center gap-3 px-2">
                     <button
-                      onClick={handleSelectAllVisible}
+                      onClick={batch.handleSelectAllVisible}
                       className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                        allVisibleSelected
+                        batch.allVisibleSelected
                           ? 'bg-green-600 border-green-600 text-white'
-                          : someVisibleSelected
+                          : batch.someVisibleSelected
                           ? 'bg-green-100 border-green-600'
                           : 'border-gray-300 hover:border-green-500'
                       }`}
                     >
-                      {allVisibleSelected ? (
+                      {batch.allVisibleSelected ? (
                         <Check className="w-3 h-3" />
-                      ) : someVisibleSelected ? (
+                      ) : batch.someVisibleSelected ? (
                         <Minus className="w-3 h-3 text-green-600" />
                       ) : null}
                     </button>
@@ -612,21 +516,21 @@ export default function DiscountsPage() {
                     <div
                       key={discount.id}
                       className={`flex items-center gap-5 bg-white border rounded-lg p-5 transition-colors ${
-                        selectedIds.has(discount.id)
+                        batch.selectedIds.has(discount.id)
                           ? 'border-green-400 bg-green-50/50'
                           : 'border-gray-200'
                       }`}
                     >
                       {/* Checkbox */}
                       <button
-                        onClick={() => handleToggleSelect(discount.id)}
+                        onClick={() => batch.handleToggleSelect(discount.id)}
                         className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                          selectedIds.has(discount.id)
+                          batch.selectedIds.has(discount.id)
                             ? 'bg-green-600 border-green-600 text-white'
                             : 'border-gray-300 hover:border-green-500'
                         }`}
                       >
-                        {selectedIds.has(discount.id) && <Check className="w-3 h-3" />}
+                        {batch.selectedIds.has(discount.id) && <Check className="w-3 h-3" />}
                       </button>
 
                       {/* Percentage */}
@@ -671,20 +575,12 @@ export default function DiscountsPage() {
                       {/* Activo Toggle */}
                       <div className="w-[60px] flex flex-col items-center gap-1">
                         <div className="text-xs text-gray-400">Activo</div>
-                        <button
-                          onClick={() => handleToggleActive(discount)}
-                          disabled={togglingId === discount.id || loading}
-                          className={`relative w-9 h-5 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1 ${
-                            discount.activo ? 'bg-green-500' : 'bg-gray-300'
-                          } ${togglingId === discount.id ? 'opacity-50' : ''}`}
-                          title={discount.activo ? 'Desactivar descuento' : 'Activar descuento'}
-                        >
-                          <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transform transition-transform duration-200 flex items-center justify-center ${
-                            discount.activo ? 'translate-x-4' : 'translate-x-0'
-                          }`}>
-                            {discount.activo ? <Check className="w-2.5 h-2.5 text-green-600" /> : <X className="w-2.5 h-2.5 text-gray-400" />}
-                          </span>
-                        </button>
+                        <ActiveToggle
+                          isActive={discount.activo}
+                          onToggle={() => handleToggleActive(discount)}
+                          disabled={loading}
+                          isLoading={togglingId === discount.id}
+                        />
                       </div>
 
                       {/* Actions */}
@@ -706,47 +602,15 @@ export default function DiscountsPage() {
           </div>
 
           {/* Pagination - Always visible when there are items */}
-          {(paginatedDiscounts.length > 0 || loading) && totalItems > 0 && (
-            <div className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pt-4 transition-opacity duration-200 ${loading ? 'opacity-60' : 'opacity-100'}`}>
-              <span className="text-sm text-gray-500" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                Mostrando {startItem}-{endItem} de {totalItems} descuentos
-              </span>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  disabled={currentPage === 1 || loading}
-                  className="px-3 py-2 border border-gray-200 rounded-md text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-
-                {Array.from({ length: Math.min(totalPages, 4) }, (_, i) => i + 1).map((page) => (
-                  <button
-                    key={page}
-                    onClick={() => !loading && setCurrentPage(page)}
-                    disabled={loading}
-                    className={`min-w-[32px] px-2 py-1 text-sm rounded-md transition-colors ${
-                      page === currentPage
-                        ? 'bg-green-600 text-white'
-                        : 'text-gray-600 hover:bg-gray-100'
-                    }`}
-                  >
-                    {page}
-                  </button>
-                ))}
-
-                <button
-                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages || loading}
-                  className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+          <ListPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            itemLabel="descuentos"
+            loading={loading}
+          />
 
       {/* Create/Edit Drawer */}
       <Drawer
@@ -834,43 +698,25 @@ export default function DiscountsPage() {
       </Drawer>
 
       {/* Batch Confirm Modal */}
-      {isBatchConfirmModalOpen && (
-        <Modal
-          isOpen={isBatchConfirmModalOpen}
-          onClose={() => setIsBatchConfirmModalOpen(false)}
-          title={`¿${batchAction === 'enable' ? 'Activar' : 'Desactivar'} ${selectedCount} descuento${selectedCount > 1 ? 's' : ''}?`}
-        >
-          <div className="py-4">
-            <p className="text-gray-500">
-              ¿Estás seguro de que deseas {batchAction === 'enable' ? 'activar' : 'desactivar'}{' '}
-              <strong>{selectedCount}</strong> descuento{selectedCount > 1 ? 's' : ''} seleccionado{selectedCount > 1 ? 's' : ''}?
-              {batchAction === 'disable' && ' Los clientes ya no podrán obtener estos descuentos.'}
-              {batchAction === 'enable' && ' Los clientes podrán obtener estos descuentos nuevamente.'}
-            </p>
-          </div>
-          <div className="flex justify-end gap-3 pt-4 border-t">
-            <button
-              onClick={() => setIsBatchConfirmModalOpen(false)}
-              disabled={actionLoading}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={handleBatchToggle}
-              disabled={actionLoading}
-              className={`px-4 py-2 text-sm font-medium text-white rounded-lg disabled:opacity-50 flex items-center gap-2 ${
-                batchAction === 'disable'
-                  ? 'bg-red-600 hover:bg-red-700'
-                  : 'bg-green-600 hover:bg-green-700'
-              }`}
-            >
-              {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-              {batchAction === 'enable' ? 'Activar' : 'Desactivar'} ({selectedCount})
-            </button>
-          </div>
-        </Modal>
-      )}
-    </div>
+      <BatchConfirmModal
+        isOpen={batch.isBatchConfirmOpen}
+        onClose={batch.closeBatchConfirm}
+        onConfirm={handleBatchToggle}
+        action={batch.batchAction}
+        selectedCount={batch.selectedCount}
+        entityLabel="descuentos"
+        loading={actionLoading}
+        consequenceDeactivate="Los clientes ya no podrán obtener estos descuentos."
+        consequenceActivate="Los clientes podrán obtener estos descuentos nuevamente."
+      />
+
+      <CsvImportModal
+        isOpen={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
+        entity="descuentos"
+        entityLabel="descuentos"
+        onSuccess={() => fetchDiscounts()}
+      />
+    </PageHeader>
   );
 }

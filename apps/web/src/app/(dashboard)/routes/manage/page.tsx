@@ -5,16 +5,19 @@ import { useRouter } from 'next/navigation';
 import { routeService, RouteListItem, ESTADO_RUTA, ESTADO_RUTA_LABELS, ESTADO_RUTA_COLORS } from '@/services/api/routes';
 import { api } from '@/lib/api';
 import { toast } from '@/hooks/useToast';
-import { Breadcrumb } from '@/components/ui/Breadcrumb';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
+import { ListPagination } from '@/components/ui/ListPagination';
+import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
+import { ErrorBanner } from '@/components/ui/ErrorBanner';
+import { exportToCsv } from '@/services/api/importExport';
 import {
-  ChevronLeft,
-  ChevronRight,
   RefreshCw,
   ClipboardList,
   Loader2,
   Calendar,
   Filter,
+  Download,
 } from 'lucide-react';
 import { Path, CaretRight } from '@phosphor-icons/react';
 
@@ -140,29 +143,26 @@ export default function ManageRoutesPage() {
     ...usuarios.map(u => ({ value: u.id.toString(), label: u.nombre })),
   ];
 
-  // Pagination
-  const startItem = totalItems > 0 ? (currentPage - 1) * pageSize + 1 : 0;
-  const endItem = Math.min(currentPage * pageSize, totalItems);
-
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="bg-white px-4 py-4 sm:px-8 sm:py-6 border-b border-gray-200">
-        <Breadcrumb items={[
-          { label: 'Inicio', href: '/dashboard' },
-          { label: 'Administrar rutas' },
-        ]} />
-
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-          Administrar rutas de venta y entrega
-        </h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Selecciona una ruta para cargar inventario o cerrarla
-        </p>
-      </div>
-
-      {/* Body */}
-      <div className="flex-1 px-4 py-4 sm:px-8 sm:py-6 space-y-4 overflow-auto">
+    <PageHeader
+      breadcrumbs={[
+        { label: 'Inicio', href: '/dashboard' },
+        { label: 'Rutas', href: '/routes' },
+        { label: 'Administrar' },
+      ]}
+      title="Administrar rutas"
+      subtitle="Selecciona una ruta para cargar inventario o cerrarla"
+      actions={
+        <button
+          onClick={() => exportToCsv('rutas')}
+          className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+        >
+          <Download className="w-3.5 h-3.5 text-emerald-500" />
+          <span className="hidden sm:inline">Exportar</span>
+        </button>
+      }
+    >
+      <div className="space-y-4">
         {/* Filter Row */}
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           {/* Date range */}
@@ -228,12 +228,7 @@ export default function ManageRoutesPage() {
         </div>
 
         {/* Error */}
-        {error && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-            {error}
-            <button onClick={fetchRoutes} className="ml-4 underline hover:no-underline">Reintentar</button>
-          </div>
-        )}
+        <ErrorBanner error={error} onRetry={fetchRoutes} />
 
         {/* Mobile Cards */}
         <div className="sm:hidden space-y-3">
@@ -321,14 +316,7 @@ export default function ManageRoutesPage() {
 
           {/* Table Body */}
           <div className="relative min-h-[200px]">
-            {loading && (
-              <div className="absolute inset-0 bg-white/80 backdrop-blur-[1px] z-10 flex items-center justify-center">
-                <div className="flex flex-col items-center gap-2">
-                  <Loader2 className="h-8 w-8 animate-spin text-green-600" />
-                  <span className="text-sm text-gray-500">Cargando rutas...</span>
-                </div>
-              </div>
-            )}
+            <TableLoadingOverlay loading={loading} message="Cargando rutas..." />
 
             {!loading && routes.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-64 py-20">
@@ -425,33 +413,18 @@ export default function ManageRoutesPage() {
         </div>
 
         {/* Pagination */}
-        {totalItems > 0 && (
-          <div className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pt-4 transition-opacity duration-200 ${loading ? 'opacity-60' : 'opacity-100'}`}>
-            <span className="text-sm text-gray-500" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-              Mostrando {startItem}-{endItem} de {totalItems} rutas
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1 || loading}
-                className="px-3 py-2 border border-gray-200 rounded-md text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <span className="text-sm text-gray-600 px-2" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                {currentPage} / {totalPages}
-              </span>
-              <button
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages || loading}
-                className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
+        {(routes.length > 0 || loading) && (
+          <ListPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            itemLabel="rutas"
+            loading={loading}
+          />
         )}
       </div>
-    </div>
+    </PageHeader>
   );
 }

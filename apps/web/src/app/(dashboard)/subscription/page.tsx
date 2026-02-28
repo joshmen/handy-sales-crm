@@ -267,25 +267,21 @@ export default function SubscriptionPage() {
               return (
                 <Card
                   key={plan.id}
-                  className={`relative ${isPopular ? "border-2 border-green-500 shadow-lg" : planColors[plan.codigo] || ""} ${isCurrent ? "bg-green-50" : ""}`}
+                  className={`relative min-h-[420px] flex flex-col ${isPopular ? "border-2 border-green-500 shadow-lg" : planColors[plan.codigo] || ""} ${isCurrent ? "bg-green-50" : ""}`}
                 >
-                  {isPopular && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <Badge className="bg-green-500 text-white">
-                        <Sparkles className="h-3 w-3 mr-1" />
-                        Más popular
-                      </Badge>
-                    </div>
-                  )}
-
-                  {isCurrent && (
-                    <div className="absolute -top-3 right-4">
-                      <Badge className="bg-green-600 text-white">Plan actual</Badge>
-                    </div>
-                  )}
-
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-lg">{plan.nombre}</CardTitle>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <CardTitle className="text-lg">{plan.nombre}</CardTitle>
+                      {isPopular && (
+                        <Badge className="bg-green-500 text-white">
+                          <Sparkles className="h-3 w-3 mr-1" />
+                          Más popular
+                        </Badge>
+                      )}
+                      {isCurrent && (
+                        <Badge className="bg-green-600 text-white">Plan actual</Badge>
+                      )}
+                    </div>
                     <div className="mt-3">
                       {price === 0 ? (
                         <span className="text-3xl font-bold">Gratis</span>
@@ -301,8 +297,8 @@ export default function SubscriptionPage() {
                     </div>
                   </CardHeader>
 
-                  <CardContent>
-                    <ul className="space-y-2 mb-4">
+                  <CardContent className="flex-1 flex flex-col">
+                    <ul className="space-y-2 flex-1">
                       <li className="flex items-center gap-2">
                         <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
                         <span className="text-sm">{plan.maxUsuarios} usuarios</span>
@@ -334,7 +330,7 @@ export default function SubscriptionPage() {
                     </ul>
 
                     <Button
-                      className="w-full"
+                      className="w-full mt-4"
                       variant={isCurrent ? "outline" : isPopular ? "default" : "outline"}
                       disabled={isCurrent || processing || plan.codigo === "FREE"}
                       onClick={() => handleUpgrade(plan.codigo)}

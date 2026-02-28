@@ -18,8 +18,8 @@ public class UnidadMedidaService
         _tenant = tenant;
     }
 
-    public Task<List<UnidadMedidaDto>> ObtenerUnidadesAsync()
-        => _repo.ObtenerPorTenantAsync(_tenant.TenantId);
+    public Task<List<UnidadMedidaDto>> ObtenerUnidadesAsync(bool incluirInactivos = false)
+        => _repo.ObtenerPorTenantAsync(_tenant.TenantId, incluirInactivos);
 
     public Task<UnidadMedidaDto?> ObtenerPorIdAsync(int id)
         => _repo.ObtenerPorIdAsync(id, _tenant.TenantId);

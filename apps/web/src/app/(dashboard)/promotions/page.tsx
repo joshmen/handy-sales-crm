@@ -4,31 +4,38 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Modal } from '@/components/ui/Modal';
+import { useBatchOperations } from '@/hooks/useBatchOperations';
+import { BatchActionBar } from '@/components/shared/BatchActionBar';
+import { BatchConfirmModal } from '@/components/shared/BatchConfirmModal';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
-import { Breadcrumb } from '@/components/ui/Breadcrumb';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { PromocionDto, PromocionCreateRequest, promotionService } from '@/services/api/promotions';
 import { toast } from '@/hooks/useToast';
 import { api } from '@/lib/api';
+import { exportToCsv } from '@/services/api/importExport';
+import { CsvImportModal } from '@/components/shared/CsvImportModal';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import {
   Plus,
-  ChevronLeft,
-  ChevronRight,
   Gift,
   Pencil,
-  Trash2,
   RefreshCw,
   Calendar,
   Package,
-  Power,
-  PowerOff,
   Check,
   Minus,
   X,
   Loader2,
   Tag,
+  Download,
+  Upload,
+  ChevronDown,
 } from 'lucide-react';
+import { ListPagination } from '@/components/ui/ListPagination';
+import { SearchBar } from '@/components/common/SearchBar';
+import { InactiveToggle } from '@/components/ui/InactiveToggle';
+import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
+import { ActiveToggle } from '@/components/ui/ActiveToggle';
 import { Megaphone } from '@phosphor-icons/react';
 import { HelpTooltip } from '@/components/help/HelpTooltip';
 
@@ -62,17 +69,12 @@ export default function PromotionsPage() {
   const pageSize = 10;
   const [togglingId, setTogglingId] = useState<number | null>(null);
 
-  // Multi-select state
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-  const [batchAction, setBatchAction] = useState<'activate' | 'deactivate'>('deactivate');
-  const [isBatchConfirmOpen, setIsBatchConfirmOpen] = useState(false);
-  const [batchLoading, setBatchLoading] = useState(false);
-
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPromotion, setEditingPromotion] = useState<PromocionDto | null>(null);
-  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-  const [deletingPromotion, setDeletingPromotion] = useState<PromocionDto | null>(null);
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [showDataMenu, setShowDataMenu] = useState(false);
+  const [search, setSearch] = useState('');
 
   // Form state with react-hook-form
   const { register, handleSubmit: rhfSubmit, reset: resetForm, watch, setValue, formState: { errors, isDirty } } = useForm<PromotionFormData>({
@@ -110,67 +112,35 @@ export default function PromotionsPage() {
   // Filter
   const filteredPromotions = promotions.filter(p => {
     if (!showInactive && !p.activo) return false;
+    if (search) {
+      const s = search.toLowerCase();
+      if (!p.nombre.toLowerCase().includes(s) && !(p.descripcion || '').toLowerCase().includes(s)) return false;
+    }
     return true;
   });
 
   // Pagination
   const totalItems = filteredPromotions.length;
   const totalPages = Math.ceil(totalItems / pageSize);
-  const startItem = totalItems > 0 ? (currentPage - 1) * pageSize + 1 : 0;
-  const endItem = Math.min(currentPage * pageSize, totalItems);
   const paginatedPromotions = filteredPromotions.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   );
 
-  // Multi-select handlers
-  const handleToggleSelect = (id: number) => {
-    setSelectedIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  };
-
-  const handleSelectAllVisible = () => {
-    const visibleIds = paginatedPromotions.map(p => p.id);
-    const allSelected = visibleIds.every(id => selectedIds.has(id));
-
-    if (allSelected) {
-      setSelectedIds(prev => {
-        const next = new Set(prev);
-        visibleIds.forEach(id => next.delete(id));
-        return next;
-      });
-    } else {
-      setSelectedIds(prev => {
-        const next = new Set(prev);
-        visibleIds.forEach(id => next.add(id));
-        return next;
-      });
-    }
-  };
-
-  const handleClearSelection = () => {
-    setSelectedIds(new Set());
-  };
-
-  const handleOpenBatchAction = (action: 'activate' | 'deactivate') => {
-    setBatchAction(action);
-    setIsBatchConfirmOpen(true);
-  };
+  // Batch operations
+  const visibleIds = paginatedPromotions.map(p => p.id);
+  const batch = useBatchOperations({
+    visibleIds,
+    clearDeps: [currentPage, showInactive],
+  });
 
   const handleBatchToggle = async () => {
-    if (selectedIds.size === 0) return;
+    if (batch.selectedIds.size === 0) return;
 
     try {
-      setBatchLoading(true);
-      const ids = Array.from(selectedIds);
-      const activo = batchAction === 'activate';
+      batch.setBatchLoading(true);
+      const ids = Array.from(batch.selectedIds);
+      const activo = batch.batchAction === 'activate';
 
       await promotionService.batchToggleActive(ids, activo);
 
@@ -187,27 +157,14 @@ export default function PromotionsPage() {
         ));
       }
 
-      setIsBatchConfirmOpen(false);
-      setSelectedIds(new Set());
+      batch.completeBatch();
     } catch (error) {
       console.error('Error en batch toggle:', error);
       toast.error('Error al cambiar el estado de las promociones');
+      batch.setBatchLoading(false);
       await fetchPromotions();
-    } finally {
-      setBatchLoading(false);
     }
   };
-
-  // Clear selection when filters change
-  useEffect(() => {
-    setSelectedIds(new Set());
-  }, [currentPage, showInactive]);
-
-  // Computed selection state
-  const visibleIds = paginatedPromotions.map(p => p.id);
-  const allVisibleSelected = visibleIds.length > 0 && visibleIds.every(id => selectedIds.has(id));
-  const someVisibleSelected = visibleIds.some(id => selectedIds.has(id));
-  const selectedCount = selectedIds.size;
 
   const handleRefresh = () => {
     fetchPromotions();
@@ -265,23 +222,6 @@ export default function PromotionsPage() {
     }
   });
 
-  const handleDelete = async () => {
-    if (!deletingPromotion) return;
-    try {
-      setActionLoading(true);
-      await api.delete(`/promociones/${deletingPromotion.id}`);
-      toast.success('Promocion eliminada');
-      setIsDeleteConfirmOpen(false);
-      setDeletingPromotion(null);
-      await fetchPromotions();
-    } catch (error: unknown) {
-      const msg = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Error al eliminar';
-      toast.error(msg);
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
   const handleToggleActive = async (promo: PromocionDto) => {
     try {
       setTogglingId(promo.id);
@@ -316,35 +256,66 @@ export default function PromotionsPage() {
   };
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="bg-white px-4 py-4 sm:px-8 sm:py-6 border-b border-gray-200">
-        <Breadcrumb items={[
-          { label: 'Inicio', href: '/dashboard' },
-          { label: 'Promociones' },
-        ]} />
-
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-            Promociones
-          </h1>
-          <div className="flex items-center gap-2">
+    <PageHeader
+      breadcrumbs={[
+        { label: 'Inicio', href: '/dashboard' },
+        { label: 'Promociones' },
+      ]}
+      title="Promociones"
+      actions={
+        <>
+          <div className="relative">
             <button
-              data-tour="promotions-create-btn"
-              onClick={handleOpenCreate}
-              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
+              onClick={() => setShowDataMenu(!showDataMenu)}
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
             >
-              <Plus className="w-4 h-4" />
-              <span>Nueva promoción</span>
+              <Download className="w-3.5 h-3.5 text-emerald-500" />
+              <span className="hidden sm:inline">Importar / Exportar</span>
+              <ChevronDown className="w-3 h-3 text-gray-400" />
             </button>
+            {showDataMenu && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setShowDataMenu(false)} />
+                <div className="absolute right-0 mt-1 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1">
+                  <button
+                    onClick={async () => { setShowDataMenu(false); try { await exportToCsv('promociones'); toast.success('Archivo CSV descargado'); } catch { toast.error('Error al exportar datos'); } }}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
+                  >
+                    <Download className="w-3.5 h-3.5 text-emerald-500" />
+                    Exportar CSV
+                  </button>
+                  <button
+                    onClick={() => { setIsImportOpen(true); setShowDataMenu(false); }}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
+                  >
+                    <Upload className="w-3.5 h-3.5 text-blue-500" />
+                    Importar CSV
+                  </button>
+                </div>
+              </>
+            )}
           </div>
-        </div>
-      </div>
-
-      {/* Body */}
-      <div className="flex-1 px-4 py-4 sm:px-8 sm:py-6 space-y-4 overflow-auto">
+          <button
+            data-tour="promotions-create-btn"
+            onClick={handleOpenCreate}
+            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Nueva promoción</span>
+          </button>
+        </>
+      }
+    >
+      <div className="space-y-4">
         {/* Filter Row */}
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <SearchBar
+            value={search}
+            onChange={(v) => { setSearch(v); setCurrentPage(1); }}
+            placeholder="Buscar promoción..."
+            dataTour="promotions-search"
+          />
+
           <button
             onClick={handleRefresh}
             disabled={loading}
@@ -354,63 +325,23 @@ export default function PromotionsPage() {
             <span className="hidden sm:inline">Actualizar</span>
           </button>
 
-          {/* Toggle para mostrar inactivos */}
-          <div data-tour="promotions-toggle-inactive" className="flex items-center gap-2 ml-auto">
-            <span className="text-xs text-gray-600">Mostrar inactivos</span>
-            <button
-              onClick={() => { setShowInactive(!showInactive); setCurrentPage(1); }}
-              className={`relative w-9 h-5 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1 ${
-                showInactive ? 'bg-green-500' : 'bg-gray-300'
-              }`}
-              title={showInactive ? 'Mostrando todas las promociones' : 'Solo promociones activas'}
-            >
-              <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transform transition-transform duration-200 ${
-                showInactive ? 'translate-x-4' : 'translate-x-0'
-              }`} />
-            </button>
-          </div>
+          <InactiveToggle
+            value={showInactive}
+            onChange={(v) => { setShowInactive(v); setCurrentPage(1); }}
+            className="ml-auto"
+          />
         </div>
 
         {/* Selection Action Bar */}
-        {selectedCount > 0 && (
-          <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-medium text-blue-700">
-                {selectedCount} seleccionada{selectedCount > 1 ? 's' : ''}
-              </span>
-              {selectedCount < totalItems && (
-                <span className="text-xs text-blue-500">
-                  de {totalItems} promociones
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => handleOpenBatchAction('deactivate')}
-                disabled={batchLoading}
-                className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-red-600 bg-white border border-red-200 rounded hover:bg-red-50 transition-colors disabled:opacity-50"
-              >
-                <PowerOff className="w-3 h-3" />
-                <span>Desactivar</span>
-              </button>
-              <button
-                onClick={() => handleOpenBatchAction('activate')}
-                disabled={batchLoading}
-                className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-green-600 bg-white border border-green-200 rounded hover:bg-green-50 transition-colors disabled:opacity-50"
-              >
-                <Power className="w-3 h-3" />
-                <span>Activar</span>
-              </button>
-              <button
-                onClick={handleClearSelection}
-                className="flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors"
-              >
-                <X className="w-3 h-3" />
-                <span>Cancelar</span>
-              </button>
-            </div>
-          </div>
-        )}
+        <BatchActionBar
+          selectedCount={batch.selectedCount}
+          totalItems={totalItems}
+          entityLabel="promociones"
+          onActivate={() => batch.openBatchAction('activate')}
+          onDeactivate={() => batch.openBatchAction('deactivate')}
+          onClear={batch.handleClearSelection}
+          loading={batch.batchLoading}
+        />
 
         {/* Mobile Cards */}
         <div className="sm:hidden space-y-3">
@@ -433,12 +364,12 @@ export default function PromotionsPage() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2.5 min-w-0">
                     <button
-                      onClick={() => handleToggleSelect(promo.id)}
+                      onClick={() => batch.handleToggleSelect(promo.id)}
                       className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                        selectedIds.has(promo.id) ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300'
+                        batch.selectedIds.has(promo.id) ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300'
                       }`}
                     >
-                      {selectedIds.has(promo.id) && <Check className="w-3 h-3" />}
+                      {batch.selectedIds.has(promo.id) && <Check className="w-3 h-3" />}
                     </button>
                     <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
                       <Megaphone className="w-5 h-5 text-purple-600" weight="duotone" />
@@ -448,13 +379,12 @@ export default function PromotionsPage() {
                       {promo.descripcion && <p className="text-xs text-gray-500 truncate">{promo.descripcion}</p>}
                     </div>
                   </div>
-                  <button
-                    onClick={() => handleToggleActive(promo)}
-                    disabled={togglingId === promo.id}
-                    className={`relative w-9 h-5 rounded-full transition-colors flex-shrink-0 ${promo.activo ? 'bg-green-500' : 'bg-gray-300'}`}
-                  >
-                    <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${promo.activo ? 'translate-x-4' : 'translate-x-0'}`} />
-                  </button>
+                  <ActiveToggle
+                    isActive={promo.activo}
+                    onToggle={() => handleToggleActive(promo)}
+                    disabled={loading}
+                    isLoading={togglingId === promo.id}
+                  />
                 </div>
                 <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-500">
                   <span className="inline-flex items-center gap-1"><Package className="w-3 h-3 text-blue-400" /> {promo.productos?.length || 0} productos</span>
@@ -469,9 +399,6 @@ export default function PromotionsPage() {
                   <button onClick={() => handleOpenEdit(promo)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-green-600 hover:bg-green-50 rounded transition-colors">
                     <Pencil className="w-3.5 h-3.5 text-amber-400" /> Editar
                   </button>
-                  <button onClick={() => { setDeletingPromotion(promo); setIsDeleteConfirmOpen(true); }} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-red-600 hover:bg-red-50 rounded transition-colors">
-                    <Trash2 className="w-3.5 h-3.5 text-red-400" /> Eliminar
-                  </button>
                 </div>
               </div>
             ))
@@ -484,18 +411,18 @@ export default function PromotionsPage() {
           <div className="flex items-center gap-3 bg-gray-50 px-4 h-10 border-b border-gray-200 min-w-[800px]">
             <div className="w-[28px] flex items-center justify-center">
               <button
-                onClick={handleSelectAllVisible}
+                onClick={batch.handleSelectAllVisible}
                 className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                  allVisibleSelected
+                  batch.allVisibleSelected
                     ? 'bg-green-600 border-green-600 text-white'
-                    : someVisibleSelected
+                    : batch.someVisibleSelected
                     ? 'bg-green-100 border-green-600'
                     : 'border-gray-300 hover:border-green-500'
                 }`}
               >
-                {allVisibleSelected ? (
+                {batch.allVisibleSelected ? (
                   <Check className="w-3 h-3" />
-                ) : someVisibleSelected ? (
+                ) : batch.someVisibleSelected ? (
                   <Minus className="w-3 h-3 text-green-600" />
                 ) : null}
               </button>
@@ -510,14 +437,7 @@ export default function PromotionsPage() {
 
           {/* Table Body */}
           <div className="relative min-h-[200px]">
-            {loading && (
-              <div className="absolute inset-0 bg-white/80 backdrop-blur-[1px] z-10 flex items-center justify-center transition-opacity duration-200">
-                <div className="flex flex-col items-center gap-2">
-                  <Loader2 className="h-8 w-8 animate-spin text-green-600" />
-                  <span className="text-sm text-gray-500">Cargando promociones...</span>
-                </div>
-              </div>
-            )}
+            <TableLoadingOverlay loading={loading} message="Cargando promociones..." />
 
             {!loading && paginatedPromotions.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-64 py-20">
@@ -546,14 +466,14 @@ export default function PromotionsPage() {
                     {/* Checkbox */}
                     <div className="w-[28px] flex items-center justify-center">
                       <button
-                        onClick={() => handleToggleSelect(promo.id)}
+                        onClick={() => batch.handleToggleSelect(promo.id)}
                         className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                          selectedIds.has(promo.id)
+                          batch.selectedIds.has(promo.id)
                             ? 'bg-green-600 border-green-600 text-white'
                             : 'border-gray-300 hover:border-green-500'
                         }`}
                       >
-                        {selectedIds.has(promo.id) && <Check className="w-3 h-3" />}
+                        {batch.selectedIds.has(promo.id) && <Check className="w-3 h-3" />}
                       </button>
                     </div>
 
@@ -613,20 +533,12 @@ export default function PromotionsPage() {
 
                     {/* Toggle Activo */}
                     <div className="w-[50px] flex items-center justify-center">
-                      <button
-                        onClick={() => handleToggleActive(promo)}
-                        disabled={togglingId === promo.id || loading}
-                        className={`relative w-9 h-5 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1 ${
-                          promo.activo ? 'bg-green-500' : 'bg-gray-300'
-                        } ${togglingId === promo.id ? 'opacity-50' : ''}`}
-                        title={promo.activo ? 'Desactivar' : 'Activar'}
-                      >
-                        <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transform transition-transform duration-200 flex items-center justify-center ${
-                          promo.activo ? 'translate-x-4' : 'translate-x-0'
-                        }`}>
-                          {promo.activo ? <Check className="w-2.5 h-2.5 text-green-600" /> : <X className="w-2.5 h-2.5 text-gray-400" />}
-                        </span>
-                      </button>
+                      <ActiveToggle
+                        isActive={promo.activo}
+                        onToggle={() => handleToggleActive(promo)}
+                        disabled={loading}
+                        isLoading={togglingId === promo.id}
+                      />
                     </div>
 
                     {/* Acciones */}
@@ -639,14 +551,6 @@ export default function PromotionsPage() {
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
-                      <button
-                        onClick={() => { setDeletingPromotion(promo); setIsDeleteConfirmOpen(true); }}
-                        disabled={loading}
-                        className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
-                        title="Eliminar"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
                     </div>
                   </div>
                 ))}
@@ -656,81 +560,29 @@ export default function PromotionsPage() {
         </div>
 
         {/* Pagination */}
-        {totalItems > pageSize && (
-          <div className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pt-4 transition-opacity duration-200 ${loading ? 'opacity-60' : 'opacity-100'}`}>
-            <span className="text-sm text-gray-500" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-              Mostrando {startItem}-{endItem} de {totalItems} promociones
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1 || loading}
-                className="px-3 py-2 border border-gray-200 rounded-md text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map((page) => (
-                <button
-                  key={page}
-                  onClick={() => setCurrentPage(page)}
-                  disabled={loading}
-                  className={`min-w-[32px] px-2 py-1 text-sm rounded-md transition-colors ${
-                    page === currentPage ? 'bg-green-600 text-white' : 'text-gray-600 hover:bg-gray-100'
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
-              <button
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages || loading}
-                className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        )}
+        <ListPagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          itemLabel="promociones"
+          loading={loading}
+        />
       </div>
 
       {/* Batch Confirm Modal */}
-      {isBatchConfirmOpen && (
-        <Modal
-          isOpen={isBatchConfirmOpen}
-          onClose={() => setIsBatchConfirmOpen(false)}
-          title={`${batchAction === 'activate' ? 'Activar' : 'Desactivar'} ${selectedCount} promocion${selectedCount > 1 ? 'es' : ''}?`}
-        >
-          <div className="py-4">
-            <p className="text-gray-500">
-              Estas seguro de que deseas {batchAction === 'activate' ? 'activar' : 'desactivar'}{' '}
-              <strong>{selectedCount}</strong> promocion{selectedCount > 1 ? 'es' : ''} seleccionada{selectedCount > 1 ? 's' : ''}?
-              {batchAction === 'deactivate' && ' Las promociones desactivadas no estaran disponibles.'}
-              {batchAction === 'activate' && ' Las promociones activadas volveran a estar disponibles.'}
-            </p>
-          </div>
-          <div className="flex justify-end gap-3 pt-4 border-t">
-            <button
-              onClick={() => setIsBatchConfirmOpen(false)}
-              disabled={batchLoading}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={handleBatchToggle}
-              disabled={batchLoading}
-              className={`px-4 py-2 text-sm font-medium text-white rounded-lg disabled:opacity-50 flex items-center gap-2 ${
-                batchAction === 'deactivate'
-                  ? 'bg-red-600 hover:bg-red-700'
-                  : 'bg-green-600 hover:bg-green-700'
-              }`}
-            >
-              {batchLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-              {batchAction === 'activate' ? 'Activar' : 'Desactivar'} ({selectedCount})
-            </button>
-          </div>
-        </Modal>
-      )}
+      <BatchConfirmModal
+        isOpen={batch.isBatchConfirmOpen}
+        onClose={batch.closeBatchConfirm}
+        onConfirm={handleBatchToggle}
+        action={batch.batchAction}
+        selectedCount={batch.selectedCount}
+        entityLabel="promocion"
+        loading={batch.batchLoading}
+        consequenceActivate="Las promociones activadas volverán a estar disponibles."
+        consequenceDeactivate="Las promociones desactivadas no estarán disponibles."
+      />
 
       {/* Create/Edit Drawer */}
       <Drawer
@@ -872,36 +724,13 @@ export default function PromotionsPage() {
         </div>
       </Drawer>
 
-      {/* Delete Confirmation Modal */}
-      <Modal
-        isOpen={isDeleteConfirmOpen}
-        onClose={() => !actionLoading && setIsDeleteConfirmOpen(false)}
-        title="Eliminar promocion"
-        size="sm"
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-gray-600">
-            Estas seguro que deseas eliminar la promocion <strong>{deletingPromotion?.nombre}</strong>? Esta accion no se puede deshacer.
-          </p>
-          <div className="flex justify-end gap-3">
-            <button
-              onClick={() => setIsDeleteConfirmOpen(false)}
-              disabled={actionLoading}
-              className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={handleDelete}
-              disabled={actionLoading}
-              className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50 flex items-center gap-2"
-            >
-              {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-              Eliminar
-            </button>
-          </div>
-        </div>
-      </Modal>
-    </div>
+      <CsvImportModal
+        isOpen={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
+        entity="promociones"
+        entityLabel="promociones"
+        onSuccess={() => fetchPromotions()}
+      />
+    </PageHeader>
   );
 }

@@ -23,7 +23,8 @@ public class CategoriaClienteRepository : ICategoriaClienteRepository
             {
                 Id = c.Id,
                 Nombre = c.Nombre,
-                Descripcion = c.Descripcion
+                Descripcion = c.Descripcion,
+                Activo = c.Activo
             })
             .ToListAsync();
     }
@@ -37,7 +38,8 @@ public class CategoriaClienteRepository : ICategoriaClienteRepository
             {
                 Id = c.Id,
                 Nombre = c.Nombre,
-                Descripcion = c.Descripcion
+                Descripcion = c.Descripcion,
+                Activo = c.Activo
             })
             .FirstOrDefaultAsync();
     }

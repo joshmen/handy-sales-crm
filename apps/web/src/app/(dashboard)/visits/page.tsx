@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { VisitList, VisitForm } from '@/components/visits';
 import { VisitCalendarView } from '@/components/visits/VisitCalendarView';
 import { Modal } from '@/components/ui/Modal';
+import { Drawer } from '@/components/ui/Drawer';
 import { Client } from '@/types';
 import {
   ClienteVisitaListaDto,
@@ -297,23 +298,21 @@ function VisitsPageContent() {
           </div>
         )}
 
-        {/* Modal para programar visita */}
-        {showVisitForm && (
-          <Modal
-            isOpen={showVisitForm}
-            onClose={() => setShowVisitForm(false)}
-            title="Programar Nueva Visita"
-            size="md"
-            data-tour="visits-create"
-          >
-            <VisitForm
-              clients={clients}
-              onSave={handleSaveVisit}
-              onCancel={() => setShowVisitForm(false)}
-              defaultDate={prefilledDate}
-            />
-          </Modal>
-        )}
+        {/* Drawer para programar visita */}
+        <Drawer
+          isOpen={showVisitForm}
+          onClose={() => setShowVisitForm(false)}
+          title="Programar Nueva Visita"
+          icon={<CalendarDays className="w-5 h-5 text-green-600" />}
+          width="md"
+        >
+          <VisitForm
+            clients={clients}
+            onSave={handleSaveVisit}
+            onCancel={() => setShowVisitForm(false)}
+            defaultDate={prefilledDate}
+          />
+        </Drawer>
 
         {/* Modal de Check-In */}
         {showCheckInModal && (

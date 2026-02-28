@@ -7,7 +7,6 @@ import {
   Building2,
   Plus,
   Pencil,
-  Search,
   Users,
   ChevronRight,
   X,
@@ -19,10 +18,14 @@ import {
   Eye,
   Check,
   Minus,
-  Power,
-  PowerOff,
 } from 'lucide-react';
-import { Modal } from '@/components/ui/Modal';
+import { useBatchOperations } from '@/hooks/useBatchOperations';
+import { BatchActionBar } from '@/components/shared/BatchActionBar';
+import { BatchConfirmModal } from '@/components/shared/BatchConfirmModal';
+import { SearchBar } from '@/components/common/SearchBar';
+import { InactiveToggle } from '@/components/ui/InactiveToggle';
+import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
+import { ActiveToggle } from '@/components/ui/ActiveToggle';
 import {
   Tenant,
   TenantDetail,
@@ -66,11 +69,6 @@ export default function TenantsPage() {
   const [showInactive, setShowInactive] = useState(false);
   const [planFilter, setPlanFilter] = useState<'todos' | 'free' | 'basic' | 'pro'>('todos');
 
-  // Multi-select state
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-  const [batchAction, setBatchAction] = useState<'activate' | 'deactivate'>('deactivate');
-  const [isBatchConfirmOpen, setIsBatchConfirmOpen] = useState(false);
-  const [batchLoading, setBatchLoading] = useState(false);
   const [togglingId, setTogglingId] = useState<number | null>(null);
 
   // Forms
@@ -106,11 +104,6 @@ export default function TenantsPage() {
     }
     setFilteredTenants(filtered);
   }, [tenants, searchTerm, showInactive, planFilter]);
-
-  // Clear selection when filters change
-  useEffect(() => {
-    setSelectedIds(new Set());
-  }, [searchTerm, showInactive, planFilter]);
 
   const loadTenants = async () => {
     try {
@@ -276,62 +269,28 @@ export default function TenantsPage() {
     }
   };
 
-  // Multi-select handlers
-  const handleToggleSelect = (id: number) => {
-    setSelectedIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  };
+  const visibleIds = filteredTenants.map(t => t.id);
 
-  const handleSelectAllVisible = () => {
-    const visIds = filteredTenants.map(t => t.id);
-    const allSelected = visIds.every(id => selectedIds.has(id));
-    if (allSelected) {
-      setSelectedIds(prev => {
-        const next = new Set(prev);
-        visIds.forEach(id => next.delete(id));
-        return next;
-      });
-    } else {
-      setSelectedIds(prev => {
-        const next = new Set(prev);
-        visIds.forEach(id => next.add(id));
-        return next;
-      });
-    }
-  };
-
-  const handleClearSelection = () => {
-    setSelectedIds(new Set());
-  };
-
-  const handleOpenBatchAction = (action: 'activate' | 'deactivate') => {
-    setBatchAction(action);
-    setIsBatchConfirmOpen(true);
-  };
+  const batch = useBatchOperations({
+    visibleIds,
+    clearDeps: [searchTerm, showInactive, planFilter],
+  });
 
   const handleBatchToggle = async () => {
-    if (selectedIds.size === 0) return;
+    if (batch.selectedIds.size === 0) return;
     try {
-      setBatchLoading(true);
-      const ids = Array.from(selectedIds);
-      const activo = batchAction === 'activate';
+      batch.setBatchLoading(true);
+      const ids = Array.from(batch.selectedIds);
+      const activo = batch.batchAction === 'activate';
       await tenantService.batchToggle(ids, activo);
       toast({
         title: `${ids.length} empresa${ids.length > 1 ? 's' : ''} ${activo ? 'activada' : 'desactivada'}${ids.length > 1 ? 's' : ''}`,
         description: 'Los cambios se aplicaron correctamente',
       });
-      setIsBatchConfirmOpen(false);
-      setSelectedIds(new Set());
       setTenants(prev => prev.map(t =>
         ids.includes(t.id) ? { ...t, activo } : t
       ));
+      batch.completeBatch();
     } catch (error) {
       console.error('Error en batch toggle:', error);
       toast({
@@ -339,16 +298,9 @@ export default function TenantsPage() {
         description: 'No se pudo cambiar el estado de las empresas',
         variant: 'destructive',
       });
-    } finally {
-      setBatchLoading(false);
+      batch.setBatchLoading(false);
     }
   };
-
-  // Computed selection state
-  const visibleIds = filteredTenants.map(t => t.id);
-  const allVisibleSelected = visibleIds.length > 0 && visibleIds.every(id => selectedIds.has(id));
-  const someVisibleSelected = visibleIds.some(id => selectedIds.has(id));
-  const selectedCount = selectedIds.size;
 
   // --- Utility functions ---
 
@@ -715,16 +667,11 @@ export default function TenantsPage() {
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-        <div className="relative w-64">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-400" />
-          <input
-            type="text"
-            placeholder="Buscar por nombre o RFC..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
+        <SearchBar
+          value={searchTerm}
+          onChange={(v) => { setSearchTerm(v); }}
+          placeholder="Buscar tenant..."
+        />
         <select
           value={planFilter}
           onChange={(e) => setPlanFilter(e.target.value as 'todos' | 'free' | 'basic' | 'pro')}
@@ -736,61 +683,23 @@ export default function TenantsPage() {
           <option value="pro">Pro</option>
         </select>
 
-        {/* Toggle para mostrar inactivos */}
-        <div className="flex items-center gap-2 ml-auto">
-          <span className="text-xs text-gray-600">Mostrar inactivos</span>
-          <button
-            onClick={() => setShowInactive(!showInactive)}
-            className={`relative w-9 h-5 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${
-              showInactive ? 'bg-blue-500' : 'bg-gray-300'
-            }`}
-            title={showInactive ? 'Mostrando todas las empresas' : 'Solo empresas activas'}
-          >
-            <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transform transition-transform duration-200 ${
-              showInactive ? 'translate-x-4' : 'translate-x-0'
-            }`} />
-          </button>
-        </div>
+        <InactiveToggle
+          value={showInactive}
+          onChange={(v) => { setShowInactive(v); }}
+          className="ml-auto"
+        />
       </div>
 
       {/* Selection Action Bar */}
-      {selectedCount > 0 && (
-        <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-blue-700">
-              {selectedCount} seleccionada{selectedCount > 1 ? 's' : ''}
-            </span>
-            <span className="text-xs text-blue-500">
-              de {tenants.length} empresas
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => handleOpenBatchAction('deactivate')}
-              disabled={batchLoading}
-              className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-red-600 bg-white border border-red-200 rounded hover:bg-red-50 transition-colors disabled:opacity-50"
-            >
-              <PowerOff className="w-3 h-3" />
-              <span>Desactivar</span>
-            </button>
-            <button
-              onClick={() => handleOpenBatchAction('activate')}
-              disabled={batchLoading}
-              className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-green-600 bg-white border border-green-200 rounded hover:bg-green-50 transition-colors disabled:opacity-50"
-            >
-              <Power className="w-3 h-3" />
-              <span>Activar</span>
-            </button>
-            <button
-              onClick={handleClearSelection}
-              className="flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors"
-            >
-              <X className="w-3 h-3" />
-              <span>Cancelar</span>
-            </button>
-          </div>
-        </div>
-      )}
+      <BatchActionBar
+        selectedCount={batch.selectedCount}
+        totalItems={tenants.length}
+        entityLabel="empresas"
+        onActivate={() => batch.openBatchAction('activate')}
+        onDeactivate={() => batch.openBatchAction('deactivate')}
+        onClear={batch.handleClearSelection}
+        loading={batch.batchLoading}
+      />
 
       {/* Desktop Table */}
       <div className="hidden md:block border border-gray-200 rounded-lg overflow-hidden overflow-x-auto">
@@ -798,18 +707,18 @@ export default function TenantsPage() {
         <div className="flex items-center gap-3 bg-gray-50 px-5 h-10 border-b border-gray-200">
           <div className="w-[28px] flex items-center justify-center">
             <button
-              onClick={handleSelectAllVisible}
+              onClick={batch.handleSelectAllVisible}
               className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                allVisibleSelected
+                batch.allVisibleSelected
                   ? 'bg-blue-600 border-blue-600 text-white'
-                  : someVisibleSelected
+                  : batch.someVisibleSelected
                   ? 'bg-blue-100 border-blue-600'
                   : 'border-gray-300 hover:border-blue-500'
               }`}
             >
-              {allVisibleSelected ? (
+              {batch.allVisibleSelected ? (
                 <Check className="w-3 h-3" />
-              ) : someVisibleSelected ? (
+              ) : batch.someVisibleSelected ? (
                 <Minus className="w-3 h-3 text-blue-600" />
               ) : null}
             </button>
@@ -824,15 +733,7 @@ export default function TenantsPage() {
 
         {/* Table Body with loading overlay */}
         <div className="relative min-h-[200px]">
-          {/* Loading Overlay */}
-          {loading && (
-            <div className="absolute inset-0 bg-white/80 backdrop-blur-[1px] z-10 flex items-center justify-center transition-opacity duration-200">
-              <div className="flex flex-col items-center gap-2">
-                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-                <span className="text-sm text-gray-500">Cargando...</span>
-              </div>
-            </div>
-          )}
+          <TableLoadingOverlay loading={loading} message="Cargando tenants..." />
 
           {/* Empty State */}
           {!loading && filteredTenants.length === 0 ? (
@@ -869,14 +770,14 @@ export default function TenantsPage() {
                   {/* Checkbox */}
                   <div className="w-[28px] flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
                     <button
-                      onClick={() => handleToggleSelect(tenant.id)}
+                      onClick={() => batch.handleToggleSelect(tenant.id)}
                       className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                        selectedIds.has(tenant.id)
+                        batch.selectedIds.has(tenant.id)
                           ? 'bg-blue-600 border-blue-600 text-white'
                           : 'border-gray-300 hover:border-blue-500'
                       }`}
                     >
-                      {selectedIds.has(tenant.id) && <Check className="w-3 h-3" />}
+                      {batch.selectedIds.has(tenant.id) && <Check className="w-3 h-3" />}
                     </button>
                   </div>
 
@@ -916,20 +817,12 @@ export default function TenantsPage() {
 
                   {/* Toggle Activo */}
                   <div className="w-[50px] flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      onClick={() => handleToggleActivo(tenant)}
-                      disabled={togglingId === tenant.id || loading}
-                      className={`relative w-9 h-5 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${
-                        tenant.activo ? 'bg-green-500' : 'bg-gray-300'
-                      } ${togglingId === tenant.id ? 'opacity-50' : ''}`}
-                      title={tenant.activo ? 'Desactivar empresa' : 'Activar empresa'}
-                    >
-                      <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transform transition-transform duration-200 flex items-center justify-center ${
-                        tenant.activo ? 'translate-x-4' : 'translate-x-0'
-                      }`}>
-                        {tenant.activo ? <Check className="w-2.5 h-2.5 text-green-600" /> : <X className="w-2.5 h-2.5 text-gray-400" />}
-                      </span>
-                    </button>
+                    <ActiveToggle
+                      isActive={tenant.activo}
+                      onToggle={() => handleToggleActivo(tenant)}
+                      disabled={loading}
+                      isLoading={togglingId === tenant.id}
+                    />
                   </div>
 
                   {/* Expiración */}
@@ -1014,14 +907,14 @@ export default function TenantsPage() {
             <div className="flex items-center gap-3 mb-2">
               {/* Checkbox */}
               <button
-                onClick={() => handleToggleSelect(tenant.id)}
+                onClick={() => batch.handleToggleSelect(tenant.id)}
                 className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                  selectedIds.has(tenant.id)
+                  batch.selectedIds.has(tenant.id)
                     ? 'bg-blue-600 border-blue-600 text-white'
                     : 'border-gray-300 hover:border-blue-500'
                 }`}
               >
-                {selectedIds.has(tenant.id) && <Check className="w-3 h-3" />}
+                {batch.selectedIds.has(tenant.id) && <Check className="w-3 h-3" />}
               </button>
 
               {/* Avatar */}
@@ -1040,20 +933,12 @@ export default function TenantsPage() {
               </div>
 
               {/* Toggle Active */}
-              <button
-                onClick={() => handleToggleActivo(tenant)}
-                disabled={togglingId === tenant.id || loading}
-                className={`relative w-9 h-5 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 flex-shrink-0 ${
-                  tenant.activo ? 'bg-green-500' : 'bg-gray-300'
-                } ${togglingId === tenant.id ? 'opacity-50' : ''}`}
-                title={tenant.activo ? 'Desactivar empresa' : 'Activar empresa'}
-              >
-                <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transform transition-transform duration-200 flex items-center justify-center ${
-                  tenant.activo ? 'translate-x-4' : 'translate-x-0'
-                }`}>
-                  {tenant.activo ? <Check className="w-2.5 h-2.5 text-green-600" /> : <X className="w-2.5 h-2.5 text-gray-400" />}
-                </span>
-              </button>
+              <ActiveToggle
+                isActive={tenant.activo}
+                onToggle={() => handleToggleActivo(tenant)}
+                disabled={loading}
+                isLoading={togglingId === tenant.id}
+              />
             </div>
 
             {/* Row 2: Badges */}
@@ -1099,43 +984,17 @@ export default function TenantsPage() {
       {(drawerMode === 'create' || drawerMode === 'edit') && renderFormDrawer()}
 
       {/* Batch Confirm Modal */}
-      {isBatchConfirmOpen && (
-        <Modal
-          isOpen={isBatchConfirmOpen}
-          onClose={() => setIsBatchConfirmOpen(false)}
-          title={`${batchAction === 'activate' ? 'Activar' : 'Desactivar'} ${selectedCount} empresa${selectedCount > 1 ? 's' : ''}?`}
-        >
-          <div className="py-4">
-            <p className="text-gray-500">
-              ¿Estás seguro de que deseas {batchAction === 'activate' ? 'activar' : 'desactivar'}{' '}
-              <strong>{selectedCount}</strong> empresa{selectedCount > 1 ? 's' : ''} seleccionada{selectedCount > 1 ? 's' : ''}?
-              {batchAction === 'deactivate' && ' Los usuarios de las empresas desactivadas no podrán acceder al sistema.'}
-              {batchAction === 'activate' && ' Los usuarios de las empresas activadas podrán acceder nuevamente.'}
-            </p>
-          </div>
-          <div className="flex justify-end gap-3 pt-4 border-t">
-            <button
-              onClick={() => setIsBatchConfirmOpen(false)}
-              disabled={batchLoading}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={handleBatchToggle}
-              disabled={batchLoading}
-              className={`px-4 py-2 text-sm font-medium text-white rounded-lg disabled:opacity-50 flex items-center gap-2 ${
-                batchAction === 'deactivate'
-                  ? 'bg-red-600 hover:bg-red-700'
-                  : 'bg-green-600 hover:bg-green-700'
-              }`}
-            >
-              {batchLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-              {batchAction === 'activate' ? 'Activar' : 'Desactivar'} ({selectedCount})
-            </button>
-          </div>
-        </Modal>
-      )}
+      <BatchConfirmModal
+        isOpen={batch.isBatchConfirmOpen}
+        onClose={batch.closeBatchConfirm}
+        onConfirm={handleBatchToggle}
+        action={batch.batchAction}
+        selectedCount={batch.selectedCount}
+        entityLabel="empresa"
+        loading={batch.batchLoading}
+        consequenceDeactivate="Los usuarios de las empresas desactivadas no podrán acceder al sistema."
+        consequenceActivate="Los usuarios de las empresas activadas podrán acceder nuevamente."
+      />
     </div>
   );
 }
