@@ -57,12 +57,12 @@ export default function SystemDashboardPage() {
     return (
       <div className="space-y-6">
         {/* Breadcrumb Skeleton */}
-        <div className="h-6 w-64 bg-gray-200 rounded animate-pulse" />
+        <div className="h-6 w-64 bg-gray-200 rounded-md animate-pulse" />
 
         {/* Header Skeleton */}
         <div>
-          <div className="h-8 w-48 bg-gray-200 rounded animate-pulse mb-2" />
-          <div className="h-5 w-96 bg-gray-200 rounded animate-pulse" />
+          <div className="h-8 w-48 bg-gray-200 rounded-md animate-pulse mb-2" />
+          <div className="h-5 w-96 bg-gray-200 rounded-md animate-pulse" />
         </div>
 
         {/* KPI Cards Skeleton */}
@@ -71,8 +71,8 @@ export default function SystemDashboardPage() {
             <div key={i} className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
               <div className="flex items-center justify-between">
                 <div className="flex-1">
-                  <div className="h-4 w-24 bg-gray-200 rounded animate-pulse mb-3" />
-                  <div className="h-8 w-20 bg-gray-200 rounded animate-pulse" />
+                  <div className="h-4 w-24 bg-gray-200 rounded-md animate-pulse mb-3" />
+                  <div className="h-8 w-20 bg-gray-200 rounded-md animate-pulse" />
                 </div>
                 <div className="h-12 w-12 rounded-lg bg-gray-100 animate-pulse" />
               </div>
@@ -83,18 +83,18 @@ export default function SystemDashboardPage() {
         {/* Sections Skeleton */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <div className="h-6 w-32 bg-gray-200 rounded animate-pulse mb-4" />
+            <div className="h-6 w-32 bg-gray-200 rounded-md animate-pulse mb-4" />
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-16 bg-gray-100 rounded animate-pulse" />
+                <div key={i} className="h-16 bg-gray-100 rounded-md animate-pulse" />
               ))}
             </div>
           </div>
           <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <div className="h-6 w-40 bg-gray-200 rounded animate-pulse mb-4" />
+            <div className="h-6 w-40 bg-gray-200 rounded-md animate-pulse mb-4" />
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-16 bg-gray-100 rounded animate-pulse" />
+                <div key={i} className="h-16 bg-gray-100 rounded-md animate-pulse" />
               ))}
             </div>
           </div>
@@ -284,11 +284,11 @@ export default function SystemDashboardPage() {
                     <div className="flex items-center gap-2 mb-1">
                       <p className="font-medium text-gray-900">{tenant.nombreEmpresa}</p>
                       {tenant.activo ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-green-100 text-green-800">
                           Activa
                         </span>
                       ) : (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-800">
                           Inactiva
                         </span>
                       )}

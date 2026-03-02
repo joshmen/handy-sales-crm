@@ -380,7 +380,7 @@ export default function ZonesPage() {
           <button
             data-tour="zones-add-btn"
             onClick={handleCreateZone}
-            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>Nueva zona</span>
@@ -396,7 +396,7 @@ export default function ZonesPage() {
           <button
             onClick={handleRefresh}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 text-white ${loading ? 'animate-spin' : ''}`} />
             <span className="hidden sm:inline">Actualizar</span>
@@ -440,7 +440,7 @@ export default function ZonesPage() {
                 {!searchTerm && (
                   <button
                     onClick={handleCreateZone}
-                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded hover:bg-green-700"
+                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
                   >
                     <Plus className="w-4 h-4" />
                     Agregar Zona
@@ -478,7 +478,7 @@ export default function ZonesPage() {
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-gray-900 truncate" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                    <div className="text-sm font-medium text-gray-900 truncate">
                       {zone.name}
                     </div>
                     <div className="text-xs text-gray-500 truncate">
@@ -557,7 +557,7 @@ export default function ZonesPage() {
                     {!searchTerm && (
                       <button
                         onClick={handleCreateZone}
-                        className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded hover:bg-green-700"
+                        className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
                       >
                         <Plus className="w-4 h-4" />
                         Agregar Zona

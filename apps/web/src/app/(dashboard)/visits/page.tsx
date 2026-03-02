@@ -486,9 +486,9 @@ function VisitsPageContent() {
             </div>
             <button
               onClick={() => fetchVisits()}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
             >
-              <RefreshCw className="w-3.5 h-3.5 text-blue-500" />
+              <RefreshCw className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Actualizar</span>
             </button>
             {hasFilters && (
@@ -572,7 +572,7 @@ function VisitsPageContent() {
                       {isPending && (
                         <button
                           onClick={() => handleCheckIn(visit.id)}
-                          className="flex items-center gap-1 px-3 py-1.5 text-xs text-white bg-green-600 rounded hover:bg-green-700"
+                          className="flex items-center gap-1 px-3 py-1.5 text-xs text-white bg-green-600 rounded-lg hover:bg-green-700"
                         >
                           <Play className="w-3.5 h-3.5" /> Iniciar
                         </button>
@@ -614,7 +614,7 @@ function VisitsPageContent() {
                     <p className="text-sm mt-1">Programa una nueva visita para comenzar</p>
                     <button
                       onClick={handleCreateVisit}
-                      className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded hover:bg-green-700"
+                      className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
                     >
                       <Plus className="w-4 h-4" /> Programar Visita
                     </button>
@@ -668,7 +668,7 @@ function VisitsPageContent() {
                         {isPending && (
                           <button
                             onClick={() => handleCheckIn(visit.id)}
-                            className="flex items-center gap-1 px-2.5 py-1 text-xs text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
+                            className="flex items-center gap-1 px-2.5 py-1 text-xs text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
                           >
                             <Play className="w-3 h-3" /> Iniciar
                           </button>

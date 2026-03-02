@@ -71,6 +71,11 @@ public class HandySalesDbContext : DbContext
     public DbSet<Announcement> Announcements => Set<Announcement>();
     public DbSet<AnnouncementDismissal> AnnouncementDismissals => Set<AnnouncementDismissal>();
 
+    // Automations module
+    public DbSet<AutomationTemplate> AutomationTemplates => Set<AutomationTemplate>();
+    public DbSet<TenantAutomation> TenantAutomations => Set<TenantAutomation>();
+    public DbSet<AutomationExecution> AutomationExecutions => Set<AutomationExecution>();
+
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         var currentUser = _tenantContext?.CurrentUserEmail;
@@ -649,6 +654,47 @@ public class HandySalesDbContext : DbContext
             entity.HasIndex(d => new { d.AnnouncementId, d.UsuarioId }).IsUnique();
         });
 
+        // Configure AutomationTemplate entity (platform-level, no tenant filter)
+        modelBuilder.Entity<AutomationTemplate>(entity =>
+        {
+            entity.HasIndex(a => a.Slug).IsUnique();
+            entity.Property(a => a.DefaultParamsJson).HasColumnType("json");
+        });
+
+        // Configure TenantAutomation entity
+        modelBuilder.Entity<TenantAutomation>(entity =>
+        {
+            entity.HasOne(a => a.Tenant)
+                  .WithMany()
+                  .HasForeignKey(a => a.TenantId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(a => a.Template)
+                  .WithMany(t => t.TenantAutomations)
+                  .HasForeignKey(a => a.TemplateId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(a => a.ActivatedByUser)
+                  .WithMany()
+                  .HasForeignKey(a => a.ActivatedBy)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(a => new { a.TenantId, a.TemplateId }).IsUnique();
+            entity.Property(a => a.ParamsJson).HasColumnType("json");
+        });
+
+        // Configure AutomationExecution entity
+        modelBuilder.Entity<AutomationExecution>(entity =>
+        {
+            entity.HasOne(e => e.Automation)
+                  .WithMany()
+                  .HasForeignKey(e => e.AutomationId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => new { e.TenantId, e.EjecutadoEn });
+            entity.HasIndex(e => new { e.TenantId, e.TemplateSlug });
+        });
+
         // NOTA: ImpersonationSessions NO tiene Global Query Filter porque es platform-level
         // NOTA: Announcements NO tiene Global Query Filter porque es platform-level
 
@@ -762,5 +808,13 @@ public class HandySalesDbContext : DbContext
         // Announcement: platform-level (sin tenant), pero hereda AuditableEntity — solo soft delete
         modelBuilder.Entity<Announcement>()
             .HasQueryFilter(e => e.EliminadoEn == null);
+
+        // TenantAutomation: tenant-scoped + soft delete (hereda AuditableEntity)
+        modelBuilder.Entity<TenantAutomation>()
+            .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
+
+        // AutomationExecution: tenant filter only (no AuditableEntity, no soft delete)
+        modelBuilder.Entity<AutomationExecution>()
+            .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
     }
 }

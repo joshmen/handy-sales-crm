@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { signIn } from 'next-auth/react';
-import { Space_Grotesk } from 'next/font/google';
 import { z } from 'zod';
 import { toast } from '@/hooks/useToast';
 import { Eye, EyeOff } from 'lucide-react';
@@ -14,12 +13,6 @@ import { API_CONFIG } from '@/lib/constants';
 import axios from 'axios';
 import { Suspense } from 'react';
 import { BrandedLoadingScreen } from '@/components/ui/BrandedLoadingScreen';
-
-const spaceGrotesk = Space_Grotesk({
-  subsets: ['latin'],
-  weight: ['700'],
-  display: 'swap',
-});
 
 // Schema for manual registration
 const registerSchema = z.object({
@@ -187,7 +180,7 @@ function RegisterContent() {
     <AuthLayout>
       <div className="space-y-6">
         <div className="space-y-2 text-center">
-          <h1 className={`text-[28px] font-bold text-[#0F172A] tracking-tight ${spaceGrotesk.className}`}>
+          <h1 className="text-[28px] font-bold text-[#0F172A] tracking-tight">
             {isGoogleMode ? 'Completa tu registro' : 'Crea tu cuenta'}
           </h1>
           <p className="text-[15px] text-[#64748B]">

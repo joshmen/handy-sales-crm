@@ -234,6 +234,120 @@ body {
   animation: spin 1s linear infinite;
 }
 
+/* ============================================
+   Login / Auth — Entrance animations
+   ============================================ */
+@keyframes auth-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes auth-slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes auth-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.auth-animate {
+  opacity: 0;
+  animation: auth-fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.auth-animate-delay-1 { animation-delay: 0.06s; }
+.auth-animate-delay-2 { animation-delay: 0.12s; }
+.auth-animate-delay-3 { animation-delay: 0.18s; }
+.auth-animate-delay-4 { animation-delay: 0.24s; }
+.auth-animate-delay-5 { animation-delay: 0.30s; }
+.auth-animate-delay-6 { animation-delay: 0.36s; }
+.auth-animate-delay-7 { animation-delay: 0.42s; }
+
+.auth-panel-animate {
+  opacity: 0;
+  animation: auth-slide-in-left 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.15s forwards;
+}
+
+/* Auth input focus ring transition */
+.auth-input {
+  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+}
+
+.auth-input:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+  background-color: #fff;
+}
+
+.auth-input:hover:not(:focus):not(:disabled) {
+  border-color: #a5b4fc;
+}
+
+/* Auth separator line with fade */
+.auth-separator {
+  background: linear-gradient(to right, transparent, #e5e7eb 20%, #e5e7eb 80%, transparent);
+  height: 1px;
+}
+
+/* ============================================
+   Dashboard & Page — Entrance animations
+   ============================================ */
+@keyframes page-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-animate {
+  opacity: 0;
+  animation: page-fade-up 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.page-animate-delay-1 { animation-delay: 0.05s; }
+.page-animate-delay-2 { animation-delay: 0.10s; }
+.page-animate-delay-3 { animation-delay: 0.15s; }
+.page-animate-delay-4 { animation-delay: 0.20s; }
+.page-animate-delay-5 { animation-delay: 0.25s; }
+.page-animate-delay-6 { animation-delay: 0.30s; }
+.page-animate-delay-7 { animation-delay: 0.35s; }
+.page-animate-delay-8 { animation-delay: 0.40s; }
+
+/* Onboarding floating button — single bounce on mount */
+@keyframes bounce-once {
+  0%, 100% { transform: translateY(0); }
+  25% { transform: translateY(-8px); }
+  50% { transform: translateY(0); }
+  75% { transform: translateY(-4px); }
+}
+.animate-bounce-once {
+  animation: bounce-once 0.8s ease-out 0.5s 1;
+}
+
 /* Custom utility classes */
 .text-balance {
   text-wrap: balance;
@@ -324,7 +438,7 @@ body {
 }
 
 .driver-popover.handy-tour-popover .driver-popover-title {
-  font-family: 'Space Grotesk', Inter, system-ui, sans-serif;
+  font-family: Inter, system-ui, sans-serif;
   font-size: 15px;
   font-weight: 600;
   color: white;
@@ -469,12 +583,39 @@ body {
   font-style: italic;
 }
 
-/* Tour inside Drawer - between driver overlay (999) and popover (1001) */
+/* === Tour inside Drawer ===
+   Drawer lives in a portal with z-index:60. driver.js SVG overlay sits at z-index:10000.
+   We boost the drawer above driver.js overlay so it stays visible, then inject
+   our OWN SVG overlay (with cutout) into the panel to recreate the spotlight.
+   The SVG cutout approach is identical to driver.js: dark fill + evenodd hole. */
+
+/* Boost entire drawer above driver.js SVG overlay */
 [data-drawer-root].tour-drawer-active {
-  z-index: 1000 !important;
+  z-index: 10001 !important;
 }
 
-/* Keep drawer overlay visible during tour for dimming effect, but non-interactive */
+/* Dim the backdrop area (left side behind the panel) */
+[data-drawer-root].tour-drawer-active::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Lift panel above the backdrop ::after */
+[data-drawer-root].tour-drawer-active [data-drawer-panel] {
+  z-index: 2 !important;
+}
+
+/* Keep drawer backdrop non-interactive during tour */
 [data-drawer-root].tour-drawer-active > .absolute.inset-0 {
   pointer-events: none;
+}
+
+/* Lift popover above boosted drawer (10001) during drawer tour */
+.tour-drawer-active ~ .driver-popover,
+body:has(.tour-drawer-active) .driver-popover {
+  z-index: 10002 !important;
 }

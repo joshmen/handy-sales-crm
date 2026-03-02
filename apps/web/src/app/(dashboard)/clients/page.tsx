@@ -23,6 +23,7 @@ import {
   Check,
   Minus,
   Loader2,
+  Users,
 } from 'lucide-react';
 import { ListPagination } from '@/components/ui/ListPagination';
 import { SearchBar } from '@/components/common/SearchBar';
@@ -174,9 +175,10 @@ export default function ClientsPage() {
           { label: 'Clientes' },
         ]}
         title="Clientes"
+        subtitle={totalClients > 0 ? `${totalClients} cliente${totalClients !== 1 ? 's' : ''}` : undefined}
         actions={
           <>
-            <div className="relative">
+            <div className="relative" data-tour="clients-import-export">
               <button
                 onClick={() => setShowDataMenu(!showDataMenu)}
                 className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
@@ -210,7 +212,7 @@ export default function ClientsPage() {
             <button
               data-tour="clients-add-btn"
               onClick={handleCreateClient}
-              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
             >
               <Plus className="w-4 h-4" />
               <span>Nuevo cliente</span>
@@ -227,7 +229,7 @@ export default function ClientsPage() {
             placeholder="Buscar cliente..."
             dataTour="clients-search"
           />
-          <div className="w-[180px]" data-tour="clients-zone-filter">
+          <div className="min-w-[150px] max-w-[250px]" data-tour="clients-zone-filter">
             <SearchableSelect
               options={zonas.map(z => ({ value: z.id, label: z.nombre }))}
               value={selectedZona}
@@ -236,7 +238,7 @@ export default function ClientsPage() {
               searchPlaceholder="Buscar zona..."
             />
           </div>
-          <div className="w-[200px]" data-tour="clients-category-filter">
+          <div className="min-w-[150px] max-w-[260px]" data-tour="clients-category-filter">
             <SearchableSelect
               options={categorias.map(c => ({ value: c.id, label: c.nombre }))}
               value={selectedCategoria}
@@ -247,17 +249,18 @@ export default function ClientsPage() {
           </div>
           <button
             onClick={fetchClients}
-            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
           >
-            <RefreshCw className="w-3.5 h-3.5 text-blue-500" />
+            <RefreshCw className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Actualizar</span>
           </button>
 
-          <InactiveToggle
-            value={showInactive}
-            onChange={(v) => { setShowInactive(v); setCurrentPage(1); }}
-            className="ml-auto"
-          />
+          <div data-tour="clients-toggle-inactive" className="ml-auto">
+            <InactiveToggle
+              value={showInactive}
+              onChange={(v) => { setShowInactive(v); setCurrentPage(1); }}
+            />
+          </div>
         </div>
 
         {/* Error message */}
@@ -287,6 +290,7 @@ export default function ClientsPage() {
           {/* Empty State */}
           {!loading && clients.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+              <Users className="w-12 h-12 text-gray-300 mb-3" />
               <div className="text-center">
                 <p className="text-lg font-medium">No hay clientes</p>
                 <p className="text-sm mt-1">
@@ -295,7 +299,7 @@ export default function ClientsPage() {
                 {!searchTerm && (
                   <button
                     onClick={handleCreateClient}
-                    className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded hover:bg-green-700"
+                    className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
                   >
                     <Plus className="w-4 h-4" />
                     Agregar Cliente
@@ -328,13 +332,13 @@ export default function ClientsPage() {
                 </button>
 
                 {/* Avatar */}
-                <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-medium flex-shrink-0">
+                <div className="w-10 h-10 rounded bg-gray-900 text-white flex items-center justify-center text-sm font-medium flex-shrink-0">
                   {getInitials(client.name)}
                 </div>
 
                 {/* Name and Code */}
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-gray-900 truncate" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                  <div className="text-sm font-medium text-gray-900 truncate">
                     {client.name}
                   </div>
                   <div className="text-xs text-gray-500">{client.code}</div>
@@ -361,11 +365,6 @@ export default function ClientsPage() {
                 <span className="inline-flex items-center px-2 py-1 rounded-md bg-purple-50 text-purple-700 text-xs font-medium">
                   {client.categoryName || 'Sin categoría'}
                 </span>
-
-                {/* Saldo Badge */}
-                <span className="inline-flex items-center px-2 py-1 rounded-md bg-green-50 text-green-700 text-xs font-medium">
-                  Saldo: $0.00
-                </span>
               </div>
 
               {/* Row 3: Actions */}
@@ -373,7 +372,7 @@ export default function ClientsPage() {
                 <button
                   onClick={() => handleEditClient(client)}
                   disabled={loading}
-                  className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded disabled:opacity-50 transition-colors"
+                  className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-amber-600 hover:bg-amber-50 rounded disabled:opacity-50 transition-colors"
                 >
                   <Pencil className="w-3.5 h-3.5 text-amber-400 hover:text-amber-600" />
                   <span>Editar</span>
@@ -407,9 +406,9 @@ export default function ClientsPage() {
             </div>
             <div className="flex-1 min-w-[250px] text-[11px] font-medium text-gray-500 uppercase">Cliente</div>
             <div className="w-[100px] text-[11px] font-medium text-gray-500 uppercase">Zona</div>
-            <div className="w-[130px] text-[11px] font-medium text-gray-500 uppercase">Categoria</div>
+            <div className="w-[130px] text-[11px] font-medium text-gray-500 uppercase">Categoría</div>
             <div className="w-[90px] text-[11px] font-medium text-gray-500 uppercase hidden md:block">Saldo</div>
-            <div className="w-[110px] text-[11px] font-medium text-gray-500 uppercase hidden lg:block">Lim. credito</div>
+            <div className="w-[110px] text-[11px] font-medium text-gray-500 uppercase hidden lg:block">Lim. crédito</div>
             <div className="w-[50px] text-[11px] font-medium text-gray-500 uppercase text-center">Activo</div>
             <div className="w-8"></div>
           </div>
@@ -420,7 +419,8 @@ export default function ClientsPage() {
 
             {/* Empty State */}
             {!loading && clients.length === 0 ? (
-              <div className="flex items-center justify-center h-64 bg-white text-gray-400">
+              <div className="flex flex-col items-center justify-center py-20 bg-white text-gray-400">
+                <Users className="w-16 h-16 text-gray-300 mb-4" />
                 <div className="text-center">
                   <p className="text-lg font-medium">No hay clientes</p>
                   <p className="text-sm">
@@ -429,7 +429,7 @@ export default function ClientsPage() {
                   {!searchTerm && (
                     <button
                       onClick={handleCreateClient}
-                      className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded hover:bg-green-700"
+                      className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
                     >
                       <Plus className="w-4 h-4" />
                       Agregar Cliente
@@ -464,45 +464,45 @@ export default function ClientsPage() {
                   {/* Cliente column */}
                   <div className="flex-1 min-w-[250px] flex items-center gap-3">
                     <div className="w-9 h-9 rounded bg-gray-900 flex items-center justify-center flex-shrink-0">
-                      <span className="text-white text-[11px] font-medium" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                      <span className="text-white text-[11px] font-medium">
                         {getInitials(client.name)}
                       </span>
                     </div>
                     <div className="min-w-0">
-                      <div className="text-[13px] font-medium text-gray-900 truncate" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                      <div className="text-[13px] font-medium text-gray-900 truncate">
                         {client.name} ({client.code})
                       </div>
-                      <div className="text-[11px] text-gray-500">
-                        Creado por Admin
+                      <div className="text-[11px] text-gray-500 truncate">
+                        {client.email || client.phone || '—'}
                       </div>
                     </div>
                   </div>
 
                   {/* Zona column */}
                   <div className="w-[100px]">
-                    <span className="text-[13px] text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                    <span className="text-[13px] text-gray-900">
                       {client.zoneName || 'Sin zona'}
                     </span>
                   </div>
 
                   {/* Categoria column */}
                   <div className="w-[130px]">
-                    <span className="text-[13px] text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                      {client.categoryName || 'Sin categoria'}
+                    <span className="text-[13px] text-gray-900">
+                      {client.categoryName || 'Sin categoría'}
                     </span>
                   </div>
 
                   {/* Saldo column */}
                   <div className="w-[90px] hidden md:block">
-                    <span className="text-[13px] text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                      $0.00
+                    <span className="text-[13px] text-gray-400">
+                      —
                     </span>
                   </div>
 
-                  {/* Limite credito column */}
+                  {/* Limite crédito column */}
                   <div className="w-[110px] hidden lg:block">
-                    <span className="text-[13px] text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                      $0.00
+                    <span className="text-[13px] text-gray-400">
+                      —
                     </span>
                   </div>
 
@@ -522,7 +522,7 @@ export default function ClientsPage() {
                     <button
                       onClick={() => handleEditClient(client)}
                       disabled={loading}
-                      className="p-1 hover:bg-green-50 rounded transition-colors disabled:opacity-50"
+                      className="p-1 hover:bg-amber-50 rounded transition-colors disabled:opacity-50"
                       title="Editar"
                     >
                       <Pencil className="w-4 h-4 text-amber-400 hover:text-amber-600" />

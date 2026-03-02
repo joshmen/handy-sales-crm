@@ -302,12 +302,12 @@ export default function CrashReportsPage() {
     return (
       <div className="space-y-6">
         {/* Breadcrumb Skeleton */}
-        <div className="h-6 w-64 bg-gray-200 rounded animate-pulse" />
+        <div className="h-6 w-64 bg-gray-200 rounded-md animate-pulse" />
 
         {/* Header Skeleton */}
         <div>
-          <div className="h-8 w-48 bg-gray-200 rounded animate-pulse mb-2" />
-          <div className="h-5 w-96 bg-gray-200 rounded animate-pulse" />
+          <div className="h-8 w-48 bg-gray-200 rounded-md animate-pulse mb-2" />
+          <div className="h-5 w-96 bg-gray-200 rounded-md animate-pulse" />
         </div>
 
         {/* KPI Cards Skeleton */}
@@ -316,8 +316,8 @@ export default function CrashReportsPage() {
             <div key={i} className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
               <div className="flex items-center justify-between">
                 <div className="flex-1">
-                  <div className="h-4 w-24 bg-gray-200 rounded animate-pulse mb-3" />
-                  <div className="h-8 w-20 bg-gray-200 rounded animate-pulse" />
+                  <div className="h-4 w-24 bg-gray-200 rounded-md animate-pulse mb-3" />
+                  <div className="h-8 w-20 bg-gray-200 rounded-md animate-pulse" />
                 </div>
                 <div className="h-12 w-12 rounded-lg bg-gray-100 animate-pulse" />
               </div>
@@ -328,12 +328,12 @@ export default function CrashReportsPage() {
         {/* Table Skeleton */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
           <div className="p-4 border-b border-gray-100">
-            <div className="h-10 w-full bg-gray-100 rounded animate-pulse" />
+            <div className="h-10 w-full bg-gray-100 rounded-md animate-pulse" />
           </div>
           <div className="divide-y divide-gray-100">
             {[1, 2, 3, 4, 5].map(i => (
               <div key={i} className="p-4">
-                <div className="h-5 w-full bg-gray-100 rounded animate-pulse" />
+                <div className="h-5 w-full bg-gray-100 rounded-md animate-pulse" />
               </div>
             ))}
           </div>
@@ -383,7 +383,7 @@ export default function CrashReportsPage() {
               <p className="text-sm font-medium text-gray-500">Hoy</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
                 {statsLoading ? (
-                  <span className="inline-block h-8 w-12 bg-gray-200 rounded animate-pulse" />
+                  <span className="inline-block h-8 w-12 bg-gray-200 rounded-md animate-pulse" />
                 ) : (
                   estadisticas?.totalHoy ?? 0
                 )}
@@ -402,7 +402,7 @@ export default function CrashReportsPage() {
               <p className="text-sm font-medium text-gray-500">Sin resolver</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
                 {statsLoading ? (
-                  <span className="inline-block h-8 w-12 bg-gray-200 rounded animate-pulse" />
+                  <span className="inline-block h-8 w-12 bg-gray-200 rounded-md animate-pulse" />
                 ) : (
                   estadisticas?.sinResolver ?? 0
                 )}
@@ -421,7 +421,7 @@ export default function CrashReportsPage() {
               <p className="text-sm font-medium text-gray-500">Crashes</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
                 {statsLoading ? (
-                  <span className="inline-block h-8 w-12 bg-gray-200 rounded animate-pulse" />
+                  <span className="inline-block h-8 w-12 bg-gray-200 rounded-md animate-pulse" />
                 ) : (
                   estadisticas?.totalCrashes ?? 0
                 )}
@@ -440,7 +440,7 @@ export default function CrashReportsPage() {
               <p className="text-sm font-medium text-gray-500">Errors</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
                 {statsLoading ? (
-                  <span className="inline-block h-8 w-12 bg-gray-200 rounded animate-pulse" />
+                  <span className="inline-block h-8 w-12 bg-gray-200 rounded-md animate-pulse" />
                 ) : (
                   estadisticas?.totalErrors ?? 0
                 )}
@@ -506,7 +506,7 @@ export default function CrashReportsPage() {
                 <button
                   type="button"
                   onClick={handleClearSearch}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-gray-100"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md hover:bg-gray-100"
                 >
                   <X className="h-3 w-3 text-gray-400" />
                 </button>
@@ -550,19 +550,19 @@ export default function CrashReportsPage() {
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i}>
                     <td className="px-6 py-4">
-                      <div className="h-4 w-32 bg-gray-100 rounded animate-pulse" />
+                      <div className="h-4 w-32 bg-gray-100 rounded-md animate-pulse" />
                     </td>
                     <td className="px-6 py-4">
                       <div className="h-5 w-16 bg-gray-100 rounded-full animate-pulse" />
                     </td>
                     <td className="px-6 py-4">
-                      <div className="h-4 w-48 bg-gray-100 rounded animate-pulse" />
+                      <div className="h-4 w-48 bg-gray-100 rounded-md animate-pulse" />
                     </td>
                     <td className="px-6 py-4">
-                      <div className="h-4 w-28 bg-gray-100 rounded animate-pulse" />
+                      <div className="h-4 w-28 bg-gray-100 rounded-md animate-pulse" />
                     </td>
                     <td className="px-6 py-4">
-                      <div className="h-4 w-16 bg-gray-100 rounded animate-pulse" />
+                      <div className="h-4 w-16 bg-gray-100 rounded-md animate-pulse" />
                     </td>
                     <td className="px-6 py-4">
                       <div className="h-5 w-20 bg-gray-100 rounded-full animate-pulse" />
@@ -643,8 +643,8 @@ export default function CrashReportsPage() {
                 <div className="h-5 w-16 bg-gray-100 rounded-full" />
                 <div className="h-5 w-20 bg-gray-100 rounded-full" />
               </div>
-              <div className="h-4 w-full bg-gray-100 rounded mb-2" />
-              <div className="h-4 w-2/3 bg-gray-100 rounded" />
+              <div className="h-4 w-full bg-gray-100 rounded-md mb-2" />
+              <div className="h-4 w-2/3 bg-gray-100 rounded-md" />
             </div>
           ))
         ) : reports.length === 0 ? (
@@ -779,8 +779,8 @@ export default function CrashReportsPage() {
           <div className="p-6 space-y-4">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i}>
-                <div className="h-3 w-20 bg-gray-200 rounded animate-pulse mb-2" />
-                <div className="h-5 w-full bg-gray-100 rounded animate-pulse" />
+                <div className="h-3 w-20 bg-gray-200 rounded-md animate-pulse mb-2" />
+                <div className="h-5 w-full bg-gray-100 rounded-md animate-pulse" />
               </div>
             ))}
           </div>

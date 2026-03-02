@@ -576,7 +576,7 @@ export default function SubscriptionPlansAdminPage() {
                       {plan.nombre}
                     </td>
                     <td className="px-4 py-3">
-                      <span className="inline-flex px-2 py-0.5 text-xs font-mono font-medium rounded border border-gray-200 text-gray-600">
+                      <span className="inline-flex px-2 py-0.5 text-xs font-mono font-medium rounded-md border border-gray-200 text-gray-600">
                         {plan.codigo}
                       </span>
                     </td>
@@ -655,7 +655,7 @@ export default function SubscriptionPlansAdminPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <h3 className="font-medium text-gray-900">{plan.nombre}</h3>
-                    <span className="inline-flex mt-1 px-2 py-0.5 text-xs font-mono font-medium rounded border border-gray-200 text-gray-600">
+                    <span className="inline-flex mt-1 px-2 py-0.5 text-xs font-mono font-medium rounded-md border border-gray-200 text-gray-600">
                       {plan.codigo}
                     </span>
                   </div>

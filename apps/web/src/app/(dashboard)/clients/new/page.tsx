@@ -201,10 +201,10 @@ export default function NewClientPage() {
         ]} />
 
         <div className="flex items-center justify-between">
-          <h1 className="text-[22px] font-bold text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <h1 className="text-[22px] font-bold text-gray-900">
             Crear cliente
           </h1>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3" data-tour="new-client-actions">
             <button
               type="button"
               onClick={handleCancel}
@@ -231,7 +231,7 @@ export default function NewClientPage() {
           {/* Left Column */}
           <div className="flex-1 flex flex-col gap-6">
             {/* === Información General === */}
-            <div className="bg-white rounded-lg p-6">
+            <div className="bg-white rounded-lg p-6" data-tour="new-client-general">
               <SectionTitle>Información general</SectionTitle>
 
               <div className="flex flex-wrap items-center gap-5 mb-4">
@@ -250,35 +250,35 @@ export default function NewClientPage() {
                 </FormField>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField label="Categoría" required error={errors.categoriaId?.message}>
                   <SearchableSelect
                     options={categorias.map(cat => ({ value: cat.id, label: cat.nombre }))}
                     value={watch('categoriaId') || null}
                     onChange={(val) => setValue('categoriaId', val ? String(val) : '', { shouldValidate: true })}
-                    placeholder="Seleccionar categoría..."
+                    placeholder="Seleccionar..."
                     searchPlaceholder="Buscar categoría..."
                     disabled={loadingData}
                     error={!!errors.categoriaId}
                   />
                 </FormField>
                 <FormField label="Comentarios">
-                  <input type="text" {...register('comentarios')} className={inputClass()} placeholder="Notas internas sobre el cliente" />
+                  <input type="text" {...register('comentarios')} className={inputClass()} placeholder="Notas internas" />
                 </FormField>
               </div>
             </div>
 
             {/* === Precios y descuento === */}
-            <div className="bg-white rounded-lg p-6">
+            <div className="bg-white rounded-lg p-6" data-tour="new-client-pricing">
               <SectionTitle subtitle="Opcional">Precios y descuento</SectionTitle>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField label="Lista de precios">
                   <SearchableSelect
                     options={listasPrecios.map(lp => ({ value: lp.id, label: lp.nombre }))}
                     value={watch('listaPreciosId') || null}
                     onChange={(val) => setValue('listaPreciosId', val ? String(val) : '', { shouldValidate: true })}
-                    placeholder="Sin lista de precios asignada"
+                    placeholder="Sin asignar"
                     searchPlaceholder="Buscar lista..."
                   />
                 </FormField>
@@ -296,7 +296,7 @@ export default function NewClientPage() {
             </div>
 
             {/* === Pago, venta y crédito === */}
-            <div className="bg-white rounded-lg p-6">
+            <div className="bg-white rounded-lg p-6" data-tour="new-client-credit">
               <SectionTitle>Pago, venta y crédito</SectionTitle>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -334,24 +334,24 @@ export default function NewClientPage() {
             </div>
 
             {/* === Config entregas === */}
-            <div className="bg-white rounded-lg p-6">
+            <div className="bg-white rounded-lg p-6" data-tour="new-client-delivery">
               <SectionTitle>Configuración de entregas</SectionTitle>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <FormField label="Tipos de pago permitidos">
                   <SearchableSelect
                     options={TIPOS_PAGO_OPTIONS}
                     value={watch('tiposPagoPermitidos') || null}
                     onChange={(val) => setValue('tiposPagoPermitidos', (val ? String(val) : 'contado_credito') as ClientFormData['tiposPagoPermitidos'], { shouldValidate: true })}
-                    placeholder="Seleccionar tipo de pago"
+                    placeholder="Seleccionar..."
                   />
                 </FormField>
-                <FormField label="Tipo de pago predeterminado">
+                <FormField label="Pago predeterminado">
                   <SearchableSelect
                     options={TIPO_PAGO_PREDETERMINADO_OPTIONS}
                     value={watch('tipoPagoPredeterminado') || null}
                     onChange={(val) => setValue('tipoPagoPredeterminado', (val ? String(val) : 'contado') as ClientFormData['tipoPagoPredeterminado'], { shouldValidate: true })}
-                    placeholder="Seleccionar tipo predeterminado"
+                    placeholder="Seleccionar..."
                   />
                 </FormField>
               </div>
@@ -369,7 +369,7 @@ export default function NewClientPage() {
             </div>
 
             {/* === Datos fiscales === */}
-            <div className="bg-white rounded-lg p-6">
+            <div className="bg-white rounded-lg p-6" data-tour="new-client-fiscal">
               <SectionTitle>Datos fiscales</SectionTitle>
 
               <div className="mb-4">
@@ -378,7 +378,7 @@ export default function NewClientPage() {
 
               {watch('facturable') ? (
                 <div className="flex flex-col gap-4 border-t border-gray-100 pt-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField label="Razón social" required error={errors.razonSocial?.message} hint="Nombre legal registrado ante el SAT">
                       <input
                         type="text"
@@ -397,7 +397,7 @@ export default function NewClientPage() {
                     </FormField>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField label="C.P. Fiscal" required error={errors.codigoPostalFiscal?.message} hint="Domicilio fiscal (5 dígitos)">
                       <input
                         type="text"
@@ -440,7 +440,7 @@ export default function NewClientPage() {
           {/* Right Column */}
           <div className="w-full lg:w-[480px] flex flex-col gap-6">
             {/* === Dirección y geolocalización === */}
-            <div className="bg-white rounded-lg p-6">
+            <div className="bg-white rounded-lg p-6" data-tour="new-client-address">
               <SectionTitle>Dirección y geolocalización</SectionTitle>
 
               <div className="flex flex-col gap-4">
@@ -534,11 +534,11 @@ export default function NewClientPage() {
             </div>
 
             {/* === Datos de contacto === */}
-            <div className="bg-white rounded-lg p-6">
+            <div className="bg-white rounded-lg p-6" data-tour="new-client-contact">
               <SectionTitle>Datos de contacto</SectionTitle>
 
               <div className="flex flex-col gap-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <FormField label="Encargado" hint="Persona de contacto en el negocio">
                     <input type="text" {...register('encargado')} className={inputClass()} />
                   </FormField>

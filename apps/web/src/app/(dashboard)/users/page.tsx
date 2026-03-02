@@ -385,14 +385,14 @@ export default function UsersPage() {
 
           {/* Title Row */}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
               Usuarios
             </h1>
             <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               <button
                 data-tour="users-create-btn"
                 onClick={() => setIsCreateModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
               >
                 <Plus className="w-4 h-4" />
                 <span>Nuevo usuario</span>
@@ -458,7 +458,7 @@ export default function UsersPage() {
             {/* Refresh Button */}
             <button
               onClick={handleRefresh}
-              className="flex items-center gap-2 px-4 py-2 h-10 text-[13px] font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 h-10 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
             >
               <RefreshCw className="w-4 h-4" />
               <span>Actualizar</span>
@@ -616,7 +616,7 @@ export default function UsersPage() {
           {/* Pagination - Always visible when there are users */}
           {(displayUsers.length > 0 || isLoading) && totalCount > 0 && (
             <div className={`flex items-center justify-between pt-4 transition-opacity duration-200 ${isLoading ? 'opacity-60' : 'opacity-100'}`}>
-              <span className="text-sm text-gray-500" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+              <span className="text-sm text-gray-500">
                 Mostrando {startItem}-{endItem} de {totalCount} usuarios
               </span>
               <div className="flex items-center gap-2">

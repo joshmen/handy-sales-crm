@@ -9,11 +9,71 @@ export const operationTours: Record<string, TourConfig> = {
     description: 'Aprende a crear pedidos, darles seguimiento y gestionar su estado.',
     steps: [
       {
+        element: '[data-tour="orders-search"]',
+        popover: {
+          title: 'Buscar pedidos',
+          description:
+            'Escribe el número de pedido o nombre del cliente para encontrarlo rápidamente. La búsqueda filtra en tiempo real.',
+          side: 'bottom',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="orders-date-filter"]',
+        popover: {
+          title: 'Filtro de fechas',
+          description:
+            'Selecciona un rango de fechas para ver solo los pedidos de ese período. Por defecto muestra los últimos 30 días.',
+          side: 'bottom',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="orders-estado-filter"]',
+        popover: {
+          title: 'Filtro por estado',
+          description:
+            'Filtra pedidos por su estado: Borrador, Pendiente, Confirmado, En proceso, Entregado o Cancelado.',
+          side: 'bottom',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="orders-user-filter"]',
+        popover: {
+          title: 'Filtro por vendedor',
+          description:
+            'Filtra los pedidos por vendedor para ver el desempeño individual de tu equipo. Solo visible para administradores.',
+          side: 'bottom',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="orders-tipo-filter"]',
+        popover: {
+          title: 'Tipo de venta',
+          description:
+            'Filtra entre Preventa (pedido que se entrega después) y Venta Directa (se entrega en el momento).',
+          side: 'bottom',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="orders-table"]',
+        popover: {
+          title: 'Lista de pedidos',
+          description:
+            'Cada pedido muestra su número, cliente, vendedor, fecha, estado, tipo y total. Haz clic en los iconos de acción para ver detalles, editar o eliminar.',
+          side: 'top',
+          align: 'center',
+        },
+      },
+      {
         element: '[data-tour="orders-create-btn"]',
         popover: {
           title: 'Crear nuevo pedido',
           description:
-            'Haz clic aquí para crear un pedido. Selecciona un cliente, agrega productos con cantidades y precios, y el sistema calculará totales automáticamente.',
+            'Haz clic aquí para crear un pedido. Se abrirá un formulario donde seleccionas cliente, agregas productos y el sistema calcula totales automáticamente.',
           side: 'bottom',
           align: 'end',
           onNextClick: (driverObj: Driver) => {
@@ -26,69 +86,51 @@ export const operationTours: Record<string, TourConfig> = {
         },
       },
       {
+        element: '[data-tour="order-client-selector"]',
         popover: {
-          title: 'Formulario de nuevo pedido',
+          title: 'Seleccionar cliente',
           description:
-            'Selecciona el cliente, agrega productos con cantidades, define prioridad y método de pago. El sistema calcula subtotales, IVA y total automáticamente.',
-          side: 'over',
+            'Primero selecciona el cliente que hace el pedido. Puedes buscar por nombre para encontrarlo rápidamente.',
+          side: 'bottom',
+          align: 'start',
           onPrevClick: (driverObj: Driver) => {
             closeDrawerForTour();
             setTimeout(() => driverObj.movePrevious(), 400);
           },
-          onNextClick: (driverObj: Driver) => {
-            closeDrawerForTour();
-            setTimeout(() => driverObj.moveNext(), 400);
-          },
         },
       },
       {
-        element: '[data-tour="orders-date-filter"]',
+        element: '[data-tour="order-add-product"]',
         popover: {
-          title: 'Filtro de fechas',
+          title: 'Agregar productos',
           description:
-            'Selecciona un rango de fechas para ver solo los pedidos de ese período. Por defecto muestra los del día actual.',
-          side: 'bottom',
+            'Busca un producto, define la cantidad y haz clic en "Agregar". Puedes agregar varios productos al mismo pedido.',
+          side: 'top',
           align: 'start',
         },
       },
       {
-        element: '[data-tour="orders-user-filter"]',
+        element: '[data-tour="order-products-list"]',
         popover: {
-          title: 'Filtro por vendedor',
+          title: 'Lista de productos',
           description:
-            'Filtra los pedidos por vendedor para ver el desempeño individual de tu equipo.',
-          side: 'bottom',
-          align: 'start',
-        },
-      },
-      {
-        element: '[data-tour="orders-search"]',
-        popover: {
-          title: 'Buscar por número de pedido',
-          description:
-            'Escribe el número de pedido para encontrarlo rápidamente.',
-          side: 'bottom',
-          align: 'end',
-        },
-      },
-      {
-        element: '[data-tour="orders-table"]',
-        popover: {
-          title: 'Lista de pedidos',
-          description:
-            'Cada pedido muestra su número, cliente, vendedor, fecha, estado y total. Los estados pueden ser: Borrador, Pendiente, Confirmado, En proceso, Entregado o Cancelado.',
+            'Aquí aparecen los productos agregados con su cantidad, precio unitario y total. Puedes modificar cantidades o eliminar productos. El sistema calcula subtotal, IVA y total automáticamente.',
           side: 'top',
           align: 'center',
         },
       },
       {
-        element: '[data-tour="orders-total"]',
+        element: '[data-tour="order-notes"]',
         popover: {
-          title: 'Total de pedidos',
+          title: 'Notas del pedido',
           description:
-            'Aquí ves la cantidad total de pedidos y el monto acumulado del período seleccionado.',
-          side: 'bottom',
+            'Agrega comentarios o instrucciones especiales para este pedido (dirección de entrega, horario preferido, etc.).',
+          side: 'top',
           align: 'start',
+          onNextClick: (driverObj: Driver) => {
+            closeDrawerForTour();
+            setTimeout(() => driverObj.moveNext(), 400);
+          },
         },
       },
     ],
@@ -624,6 +666,187 @@ export const operationTours: Record<string, TourConfig> = {
             'Programa una nueva visita seleccionando vendedor, cliente, fecha y hora.',
           side: 'bottom',
           align: 'end',
+        },
+      },
+    ],
+  },
+
+  '/automations': {
+    id: 'automations-tour',
+    title: 'Tour de Automatizaciones',
+    description: 'Aprende a activar recetas automáticas para que el sistema trabaje por ti.',
+    steps: [
+      {
+        element: '[data-tour="automations-kpis"]',
+        popover: {
+          title: 'Resumen de automatizaciones',
+          description:
+            'Estas tarjetas muestran cuántas automatizaciones tienes activas, cuántas veces se han ejecutado y cuándo fue la última ejecución.',
+          side: 'bottom',
+          align: 'center',
+        },
+      },
+      {
+        element: '[data-tour="automations-categories"]',
+        popover: {
+          title: 'Categorías',
+          description:
+            'Filtra las automatizaciones por tipo: Cobranza (recordatorios de pago), Ventas (clientes nuevos), Inventario (stock bajo) y Operación (resúmenes diarios).',
+          side: 'bottom',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="automations-grid"]',
+        popover: {
+          title: 'Recetas disponibles',
+          description:
+            'Cada tarjeta es una automatización que el sistema puede ejecutar por ti. Lee la descripción para entender qué hace cada una.',
+          side: 'top',
+          align: 'center',
+        },
+      },
+      {
+        element: '[data-tour="automations-toggle"]',
+        popover: {
+          title: 'Activar / Desactivar',
+          description:
+            'Usa el interruptor para activar o desactivar una automatización. Al activarla, el sistema empezará a ejecutarla automáticamente según su programación.',
+          side: 'left',
+          align: 'center',
+        },
+      },
+      {
+        element: '[data-tour="automations-historial"]',
+        popover: {
+          title: 'Historial de ejecuciones',
+          description:
+            'Aquí puedes ver cuándo se ejecutó cada automatización y si fue exitosa. Útil para verificar que todo funciona correctamente.',
+          side: 'top',
+          align: 'center',
+        },
+      },
+    ],
+  },
+
+  '/cobranza': {
+    id: 'cobranza-tour',
+    title: 'Tour de Cobranza',
+    description: 'Aprende a registrar cobros, revisar quién te debe y exportar tu cartera.',
+    steps: [
+      {
+        element: '[data-tour="cobranza-kpis"]',
+        popover: {
+          title: 'Resumen de tu cartera',
+          description:
+            'Estas tarjetas muestran el resumen de tu cartera: cuánto se ha vendido, cuánto ya cobraste, cuánto falta por cobrar, y cuántos clientes tienen deuda.',
+          side: 'bottom',
+          align: 'center',
+        },
+      },
+      {
+        element: '[data-tour="cobranza-date-filter"]',
+        popover: {
+          title: 'Filtro por período',
+          description:
+            'Selecciona un rango de fechas para consultar los cobros y saldos de ese período. Presiona Actualizar para aplicar.',
+          side: 'bottom',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="cobranza-new-btn"]',
+        popover: {
+          title: 'Registrar un cobro',
+          description:
+            'Haz clic aquí para registrar un pago de un cliente. Selecciona el cliente, su pedido pendiente, monto y método de pago.',
+          side: 'bottom',
+          align: 'end',
+          onNextClick: (driverObj: Driver) => {
+            (document.querySelector('[data-tour="cobranza-new-btn"]') as HTMLElement)?.click();
+            setTimeout(() => {
+              boostDrawerForTour();
+              driverObj.moveNext();
+            }, 400);
+          },
+        },
+      },
+      {
+        element: '[data-tour="cobro-client-selector"]',
+        popover: {
+          title: 'Seleccionar cliente',
+          description:
+            'Selecciona el cliente que hizo el pago. Se cargan automáticamente sus pedidos con saldo pendiente.',
+          side: 'bottom',
+          align: 'start',
+          onPrevClick: (driverObj: Driver) => {
+            closeDrawerForTour();
+            setTimeout(() => driverObj.movePrevious(), 400);
+          },
+        },
+      },
+      {
+        element: '[data-tour="cobro-pedido-selector"]',
+        popover: {
+          title: 'Pedido pendiente',
+          description:
+            'Al seleccionar un pedido, el monto se llena automáticamente con el saldo pendiente. Si el cliente tiene varios pedidos, puedes buscar por número.',
+          side: 'bottom',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="cobro-amount-method"]',
+        popover: {
+          title: 'Monto y método de pago',
+          description:
+            'Confirma el monto a cobrar y selecciona el método de pago (Efectivo, Transferencia, Cheque, Tarjeta). También puedes agregar fecha, referencia y notas.',
+          side: 'top',
+          align: 'start',
+          onNextClick: (driverObj: Driver) => {
+            closeDrawerForTour();
+            setTimeout(() => driverObj.moveNext(), 400);
+          },
+        },
+      },
+      {
+        element: '[data-tour="cobranza-tabs"]',
+        popover: {
+          title: 'Vistas disponibles',
+          description:
+            'Usa estas pestañas para cambiar entre el historial de cobros recibidos y la lista de clientes que te deben dinero.',
+          side: 'bottom',
+          align: 'end',
+          onNextClick: (driverObj: Driver) => {
+            // Switch to cobros tab before showing cobros table
+            (document.querySelector('[data-tour="cobranza-tabs"] button:first-child') as HTMLElement)?.click();
+            setTimeout(() => driverObj.moveNext(), 200);
+          },
+        },
+      },
+      {
+        element: '[data-tour="cobranza-cobros-table"]',
+        popover: {
+          title: 'Historial de cobros',
+          description:
+            'Historial completo de pagos recibidos. Puedes ordenar por fecha, cliente o monto. Haz clic en el ojo para ver el estado de cuenta del cliente.',
+          side: 'top',
+          align: 'center',
+          onNextClick: (driverObj: Driver) => {
+            // Switch to saldos tab before showing saldos table
+            (document.querySelector('[data-tour="cobranza-tabs"] button:last-child') as HTMLElement)?.click();
+            setTimeout(() => driverObj.moveNext(), 200);
+          },
+        },
+      },
+      {
+        element: '[data-tour="cobranza-saldos-table"]',
+        popover: {
+          title: '¿Quién te debe?',
+          description:
+            'Muestra cada cliente con su deuda pendiente y una barra de avance hacia el pago completo. Haz clic en un cliente para ver su estado de cuenta detallado por pedido.',
+          side: 'top',
+          align: 'center',
         },
       },
     ],

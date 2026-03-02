@@ -6,6 +6,7 @@ import { useBatchOperations } from '@/hooks/useBatchOperations';
 import { BatchActionBar } from '@/components/shared/BatchActionBar';
 import { BatchConfirmModal } from '@/components/shared/BatchConfirmModal';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { Input } from '@/components/ui/Input';
 import { toast } from '@/hooks/useToast';
 import { api } from '@/lib/api';
 import { exportToCsv } from '@/services/api/importExport';
@@ -282,7 +283,7 @@ export default function PriceListsPage() {
           <button
             data-tour="pricelists-new-btn"
             onClick={handleOpenCreate}
-            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>Nueva lista</span>
@@ -301,9 +302,9 @@ export default function PriceListsPage() {
           />
           <button
             onClick={loadPriceLists}
-            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
           >
-            <RefreshCw className="w-3.5 h-3.5 text-blue-500" />
+            <RefreshCw className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Actualizar</span>
           </button>
 
@@ -364,7 +365,7 @@ export default function PriceListsPage() {
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-gray-900 truncate" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                    <div className="text-sm font-medium text-gray-900 truncate">
                       {list.nombre}
                     </div>
                     <div className="text-xs text-gray-500 truncate">{list.descripcion || 'Sin descripción'}</div>
@@ -448,7 +449,7 @@ export default function PriceListsPage() {
                 {!searchTerm && (
                   <button
                     onClick={handleOpenCreate}
-                    className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded hover:bg-green-700"
+                    className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
                   >
                     <Plus className="w-4 h-4" />
                     Nueva lista de precios
@@ -575,30 +576,21 @@ export default function PriceListsPage() {
         }
       >
         <form onSubmit={handleSaveList} data-tour="pricelist-form" className="p-6 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nombre <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              {...register('nombre')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
-              placeholder="Ej: Lista mayoreo, Lista minorista..."
-            />
-            {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre.message}</p>}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Descripción
-            </label>
-            <input
-              type="text"
-              {...register('descripcion')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
-              placeholder="Descripción opcional de la lista"
-            />
-          </div>
+          <Input
+            id="nombre"
+            label={<>Nombre <span className="text-red-500">*</span></>}
+            type="text"
+            {...register('nombre')}
+            placeholder="Ej: Lista mayoreo, Lista minorista..."
+            error={errors.nombre?.message}
+          />
+          <Input
+            id="descripcion"
+            label="Descripción"
+            type="text"
+            {...register('descripcion')}
+            placeholder="Descripción opcional de la lista"
+          />
         </form>
       </Drawer>
 

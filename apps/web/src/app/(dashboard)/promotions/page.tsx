@@ -298,7 +298,7 @@ export default function PromotionsPage() {
           <button
             data-tour="promotions-create-btn"
             onClick={handleOpenCreate}
-            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>Nueva promoción</span>
@@ -319,7 +319,7 @@ export default function PromotionsPage() {
           <button
             onClick={handleRefresh}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             <span className="hidden sm:inline">Actualizar</span>
@@ -354,7 +354,7 @@ export default function PromotionsPage() {
             <div className="flex flex-col items-center justify-center py-12">
               <Gift className="w-12 h-12 text-yellow-300 mb-3" />
               <p className="text-sm text-gray-500 mb-3">No hay promociones</p>
-              <button onClick={handleOpenCreate} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded hover:bg-green-700">
+              <button onClick={handleOpenCreate} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700">
                 <Plus className="w-4 h-4" /> Nueva promocion
               </button>
             </div>
@@ -448,7 +448,7 @@ export default function PromotionsPage() {
                 </p>
                 <button
                   onClick={handleOpenCreate}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded hover:bg-green-700"
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
                 >
                   <Plus className="w-4 h-4" />
                   Nueva promocion

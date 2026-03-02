@@ -311,7 +311,7 @@ export default function DiscountsPage() {
             )}
           </div>
           <div className="relative group" data-tour="discounts-create-btn">
-            <button className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors">
+            <button className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors">
               <Plus className="w-4 h-4" />
               <span>Nuevo descuento</span>
               <ChevronDown className="w-3.5 h-3.5" />
@@ -374,7 +374,7 @@ export default function DiscountsPage() {
             <button
               onClick={handleRefresh}
               disabled={loading}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
               <span>Actualizar</span>
@@ -536,7 +536,7 @@ export default function DiscountsPage() {
                       {/* Percentage */}
                       <div className="flex-1">
                         <div className="text-xs text-gray-400 mb-1">Porcentaje de descuento</div>
-                        <div className="text-2xl font-semibold text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                        <div className="text-2xl font-semibold text-gray-900">
                           {discount.descuentoPorcentaje}%
                         </div>
                       </div>
@@ -544,7 +544,7 @@ export default function DiscountsPage() {
                       {/* Min Quantity */}
                       <div className="flex-1">
                         <div className="text-xs text-gray-400 mb-1">A partir de</div>
-                        <div className="text-2xl font-semibold text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                        <div className="text-2xl font-semibold text-gray-900">
                           {discount.cantidadMinima} unidades
                         </div>
                       </div>

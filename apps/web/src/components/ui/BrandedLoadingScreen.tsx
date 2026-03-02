@@ -1,13 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Space_Grotesk } from 'next/font/google';
-
-const spaceGrotesk = Space_Grotesk({
-  subsets: ['latin'],
-  weight: ['700'],
-  display: 'swap',
-});
 
 interface BrandedLoadingScreenProps {
   message?: string;
@@ -37,9 +30,9 @@ export function BrandedLoadingScreen({ message = 'Cargando...' }: BrandedLoading
       <div className="flex flex-col items-center gap-6">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center">
-            <span className={`text-[#16A34A] font-bold text-xl ${spaceGrotesk.className}`}>H</span>
+            <span className="text-[#16A34A] font-bold text-xl">H</span>
           </div>
-          <span className={`text-white text-4xl font-bold ${spaceGrotesk.className}`}>
+          <span className="text-white text-4xl font-bold">
             Handy Suites
           </span>
         </div>

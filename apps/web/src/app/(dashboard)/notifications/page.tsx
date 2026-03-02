@@ -199,10 +199,10 @@ export default function NotificationsPage() {
 
           {/* Title Row */}
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+            <h1 className="text-2xl font-bold text-gray-900">
               Historial de Notificaciones
             </h1>
-            <button data-tour="notifications-create-btn" className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors">
+            <button data-tour="notifications-create-btn" className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors">
               <Plus className="w-4 h-4" />
               <span>Nueva notificación</span>
             </button>
@@ -220,7 +220,7 @@ export default function NotificationsPage() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-[280px] pl-10 pr-3 py-2.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                style={{ fontFamily: 'Space Grotesk, sans-serif' }}
+               
               />
             </div>
 
@@ -293,7 +293,7 @@ export default function NotificationsPage() {
                         <div className="flex-1 min-w-0">
                           {/* Header */}
                           <div className="flex items-start justify-between gap-4 mb-2">
-                            <h3 className="text-[15px] font-semibold text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                            <h3 className="text-[15px] font-semibold text-gray-900">
                               {notification.title}
                             </h3>
                             <span className="text-xs text-gray-400 flex-shrink-0">
@@ -336,7 +336,7 @@ export default function NotificationsPage() {
             {/* Pagination */}
             {!loading && totalItems > 0 && (
               <div className="flex items-center justify-between pt-4">
-                <span className="text-sm text-gray-500" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                <span className="text-sm text-gray-500">
                   Mostrando {startItem}-{endItem} de {totalItems} notificaciones
                 </span>
                 <div className="flex items-center gap-2">

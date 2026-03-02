@@ -18,13 +18,12 @@ export function PageHeader({ breadcrumbs, title, subtitle, actions, children }: 
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="bg-white px-4 py-4 sm:px-8 sm:py-6 border-b border-gray-200">
-        <Breadcrumb items={breadcrumbs} />
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="page-animate">
+          <Breadcrumb items={breadcrumbs} />
+        </div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between page-animate page-animate-delay-1">
           <div>
-            <h1
-              className="text-xl sm:text-2xl font-bold text-gray-900"
-              style={{ fontFamily: 'Space Grotesk, sans-serif' }}
-            >
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
               {title}
             </h1>
             {subtitle && (
@@ -41,7 +40,7 @@ export function PageHeader({ breadcrumbs, title, subtitle, actions, children }: 
 
       {/* Body */}
       <div className="flex-1 overflow-auto">
-        <div className="px-4 py-4 sm:px-8 sm:py-6">
+        <div className="px-4 py-4 sm:px-8 sm:py-6 page-animate page-animate-delay-2">
           {children}
         </div>
       </div>

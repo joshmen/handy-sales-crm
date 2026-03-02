@@ -1,18 +1,21 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Modal } from '@/components/ui/Modal';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
-import { Breadcrumb } from '@/components/ui/Breadcrumb';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { ExportButton } from '@/components/shared/ExportButton';
+import { HelpTooltip } from '@/components/help/HelpTooltip';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
+import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
+import { SearchBar } from '@/components/common/SearchBar';
 import {
   AlertCircle,
   Users,
   Plus,
-  Search,
   RefreshCw,
   ChevronDown,
   ChevronUp,
@@ -23,7 +26,7 @@ import {
   FileText,
   DollarSign,
 } from 'lucide-react';
-import { CurrencyDollar, CreditCard, Wallet } from '@phosphor-icons/react';
+import { CurrencyDollar, CreditCard, Wallet, CheckCircle, Clock, Receipt } from '@phosphor-icons/react';
 import {
   getCobros,
   getResumenCartera,
@@ -79,6 +82,29 @@ const metodoPagoColors: Record<number, string> = {
   5: 'bg-gray-100 text-gray-700',
 };
 
+const iso = (d: Date) => d.toISOString().slice(0, 10);
+
+const DATE_PRESETS: { label: string; calc: () => { desde: string; hasta: string } }[] = [
+  { label: 'Hoy', calc: () => { const t = iso(new Date()); return { desde: t, hasta: t }; } },
+  { label: 'Esta semana', calc: () => {
+    const now = new Date();
+    const day = now.getDay();
+    const mon = new Date(now);
+    mon.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
+    return { desde: iso(mon), hasta: iso(now) };
+  }},
+  { label: 'Este mes', calc: () => {
+    const now = new Date();
+    return { desde: iso(new Date(now.getFullYear(), now.getMonth(), 1)), hasta: iso(now) };
+  }},
+  { label: 'Últimos 90d', calc: () => {
+    const now = new Date();
+    const past = new Date(now);
+    past.setDate(past.getDate() - 90);
+    return { desde: iso(past), hasta: iso(now) };
+  }},
+];
+
 type Tab = 'cobros' | 'saldos';
 
 // ─── Page ─────────────────────────────────────────────
@@ -87,7 +113,7 @@ export default function CobranzaPage() {
   const drawerEstadoCuentaRef = useRef<DrawerHandle>(null);
   const drawerNewCobroRef = useRef<DrawerHandle>(null);
 
-  const [tab, setTab] = useState<Tab>('cobros');
+  const [tab, setTab] = useState<Tab>('saldos');
   const [dates, setDates] = useState(defaultDates);
   const [resumen, setResumen] = useState<ResumenCartera | null>(null);
 
@@ -105,6 +131,7 @@ export default function CobranzaPage() {
   const [detailClienteId, setDetailClienteId] = useState<number | null>(null);
   const [estadoCuenta, setEstadoCuenta] = useState<EstadoCuenta | null>(null);
   const [estadoCuentaLoading, setEstadoCuentaLoading] = useState(false);
+  const [estadoCuentaHistorico, setEstadoCuentaHistorico] = useState(false);
 
   // New cobro modal
   const [showNewCobro, setShowNewCobro] = useState(false);
@@ -134,10 +161,19 @@ export default function CobranzaPage() {
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // Date presets & search
+  const [activePreset, setActivePreset] = useState<string | null>(null);
+  const [searchCobros, setSearchCobros] = useState('');
+
+  // Inline cobro (inside estado de cuenta drawer)
+  const [inlineCobroPedidoId, setInlineCobroPedidoId] = useState<number | null>(null);
+  const [inlineCobroData, setInlineCobroData] = useState({ monto: 0, metodoPago: 0, referencia: '' });
+  const [inlineCobroSaving, setInlineCobroSaving] = useState(false);
+
   // ─── Data fetching ──────────────────────────────────
 
   const fetchResumen = useCallback(async () => {
-    try { setResumen(await getResumenCartera()); } catch { /* */ }
+    try { setResumen(await getResumenCartera()); } catch { toast.error('Error al cargar resumen'); }
   }, []);
 
   const fetchCobros = useCallback(async () => {
@@ -160,6 +196,17 @@ export default function CobranzaPage() {
   useEffect(() => {
     if (tab === 'cobros') fetchCobros(); else fetchSaldos();
   }, [tab, fetchCobros, fetchSaldos]);
+
+  // Auto-refresh on date change (debounced)
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      fetchCobros();
+      fetchSaldos();
+      fetchResumen();
+    }, 500);
+    return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dates.desde, dates.hasta]);
 
   // Load clients for the new cobro dropdown
   useEffect(() => {
@@ -189,18 +236,31 @@ export default function CobranzaPage() {
 
   // ─── Detail modal ───────────────────────────────────
 
-  const openDetail = async (clienteId: number) => {
+  const openDetail = async (clienteId: number, historico = false) => {
     setDetailClienteId(clienteId);
+    setEstadoCuentaHistorico(historico);
     setEstadoCuentaLoading(true);
-    try { setEstadoCuenta(await getEstadoCuenta(clienteId)); }
+    try { setEstadoCuenta(await getEstadoCuenta(clienteId, historico)); }
     catch { toast.error('Error al cargar estado de cuenta'); }
     finally { setEstadoCuentaLoading(false); }
   };
 
-  const closeDetail = () => {
+  const toggleEstadoCuentaPeriodo = async () => {
+    if (!detailClienteId) return;
+    const nuevoHistorico = !estadoCuentaHistorico;
+    setEstadoCuentaHistorico(nuevoHistorico);
+    setEstadoCuentaLoading(true);
+    try { setEstadoCuenta(await getEstadoCuenta(detailClienteId, nuevoHistorico)); }
+    catch { toast.error('Error al cargar estado de cuenta'); }
+    finally { setEstadoCuentaLoading(false); }
+  };
+
+  const closeDetail = useCallback(() => {
     setDetailClienteId(null);
     setEstadoCuenta(null);
-  };
+    setInlineCobroPedidoId(null);
+    setEstadoCuentaHistorico(false);
+  }, []);
 
   // ─── Create cobro ──────────────────────────────────
 
@@ -240,9 +300,55 @@ export default function CobranzaPage() {
     finally { setDeleting(false); }
   };
 
+  // ─── Inline cobro (inside estado de cuenta drawer) ──
+
+  const handleInlineCobro = async (pedidoId: number, clienteId: number, saldoPedido: number) => {
+    if (inlineCobroData.monto <= 0) { toast.error('El monto debe ser mayor a 0'); return; }
+    if (inlineCobroData.monto > saldoPedido) { toast.error(`El monto excede el saldo pendiente (${fmtMoney(saldoPedido)})`); return; }
+    setInlineCobroSaving(true);
+    try {
+      await createCobro({
+        pedidoId,
+        clienteId,
+        monto: inlineCobroData.monto,
+        metodoPago: inlineCobroData.metodoPago,
+        referencia: inlineCobroData.referencia || undefined,
+      });
+      toast.success('Cobro registrado');
+      setInlineCobroPedidoId(null);
+      setInlineCobroData({ monto: 0, metodoPago: 0, referencia: '' });
+      // Re-fetch estado de cuenta IN PLACE → user sees progress bar animate
+      const updated = await getEstadoCuenta(clienteId, estadoCuentaHistorico);
+      setEstadoCuenta(updated);
+      // Background refresh for other views
+      fetchSaldos();
+      fetchResumen();
+      fetchCobros();
+    } catch { toast.error('Error al registrar cobro'); }
+    finally { setInlineCobroSaving(false); }
+  };
+
+  // ─── Quick cobro (pre-fill from saldos grid) ──
+
+  const openQuickCobro = useCallback((clienteId: number, pedidoId?: number, monto?: number) => {
+    // Close estado de cuenta drawer if open
+    if (detailClienteId !== null) closeDetail();
+    resetForm({
+      clienteId,
+      pedidoId: pedidoId || 0,
+      monto: monto || 0,
+      metodoPago: 0,
+      fechaCobro: '',
+      referencia: '',
+      notas: '',
+    });
+    // Small delay to let drawer close animation finish
+    setTimeout(() => setShowNewCobro(true), detailClienteId !== null ? 300 : 0);
+  }, [detailClienteId, closeDetail, resetForm]);
+
   // ─── Sorting ───────────────────────────────────────
 
-  const sortedCobros = [...cobros].sort((a, b) => {
+  const sortedCobros = useMemo(() => [...cobros].sort((a, b) => {
     const aVal = a[sortKey as keyof Cobro];
     const bVal = b[sortKey as keyof Cobro];
     if (aVal == null) return 1;
@@ -252,7 +358,7 @@ export default function CobranzaPage() {
     return sortDir === 'asc'
       ? String(aVal).localeCompare(String(bVal))
       : String(bVal).localeCompare(String(aVal));
-  });
+  }), [cobros, sortKey, sortDir]);
 
   const handleSort = (key: string) => {
     if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -264,108 +370,129 @@ export default function CobranzaPage() {
       sortDir === 'asc' ? <ChevronUp className="w-3 h-3 inline ml-0.5" /> : <ChevronDown className="w-3 h-3 inline ml-0.5" />
     ) : null;
 
+  // Search + filtered cobros
+  const filteredCobros = useMemo(() => sortedCobros.filter(c => {
+    if (!searchCobros) return true;
+    const q = searchCobros.toLowerCase();
+    return c.clienteNombre.toLowerCase().includes(q)
+      || c.numeroPedido?.toLowerCase().includes(q)
+      || c.referencia?.toLowerCase().includes(q);
+  }), [sortedCobros, searchCobros]);
+
   // Totals
-  const totalCobros = cobros.reduce((s, c) => s + c.monto, 0);
+  const totalCobros = useMemo(() => cobros.reduce((s, c) => s + c.monto, 0), [cobros]);
 
   // ─── Render ────────────────────────────────────────
 
   return (
     <>
-      <div className="flex flex-col h-full">
-        {/* Header */}
-        <div className="bg-white px-4 py-4 sm:px-8 sm:py-6 border-b border-gray-200">
-          {/* Breadcrumb */}
-          <Breadcrumb items={[
-            { label: 'Inicio', href: '/dashboard' },
-            { label: 'Cobranza' },
-          ]} />
-
-          {/* Title Row */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3">
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                Cobranza
-              </h1>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowNewCobro(true)}
-                className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Nuevo cobro</span>
-              </button>
-              <button
-                onClick={() => { fetchCobros(); fetchSaldos(); fetchResumen(); }}
-                className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
-              >
-                <RefreshCw className="w-4 h-4 text-blue-500" />
-                <span>Actualizar</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Body */}
-        <div className="flex-1 px-4 py-4 sm:px-8 sm:py-6 space-y-4 overflow-auto">
+      <PageHeader
+        breadcrumbs={[
+          { label: 'Inicio', href: '/dashboard' },
+          { label: 'Cobranza' },
+        ]}
+        title="Cobranza"
+        actions={
+          <>
+            <ExportButton entity="cobros" label="Exportar" params={{ desde: dates.desde, hasta: dates.hasta }} />
+            <button
+              data-tour="cobranza-new-btn"
+              onClick={() => setShowNewCobro(true)}
+              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Nuevo cobro</span>
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-4">
           {/* KPI Row */}
-          {resumen && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-              <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-white">
-                <div className="p-2 rounded-lg bg-blue-50">
-                  <DollarSign className="w-4 h-4 text-blue-600" />
+          <div data-tour="cobranza-kpis" className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+            {resumen ? (
+              <>
+                <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-white">
+                  <div className="p-2 rounded-lg bg-blue-50">
+                    <DollarSign className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] text-gray-500 flex items-center gap-1">Total vendido <HelpTooltip tooltipKey="cobranza-total-vendido" /></p>
+                    <p className="text-sm font-bold text-gray-900">
+                      {fmtMoney(resumen.totalFacturado)}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[11px] text-gray-500">Facturado</p>
-                  <p className="text-sm font-bold text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                    {fmtMoney(resumen.totalFacturado)}
-                  </p>
+                <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-white">
+                  <div className="p-2 rounded-lg bg-green-50">
+                    <CreditCard className="w-4 h-4 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] text-gray-500 flex items-center gap-1">Cobrado <HelpTooltip tooltipKey="cobranza-cobrado" /></p>
+                    <p className="text-sm font-bold text-gray-900">
+                      {fmtMoney(resumen.totalCobrado)}
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-white">
-                <div className="p-2 rounded-lg bg-green-50">
-                  <CreditCard className="w-4 h-4 text-green-600" />
+                <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-white">
+                  <div className="p-2 rounded-lg bg-amber-50">
+                    <AlertCircle className="w-4 h-4 text-amber-600" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] text-gray-500 flex items-center gap-1">Por cobrar <HelpTooltip tooltipKey="cobranza-por-cobrar" /></p>
+                    <p className="text-sm font-bold text-amber-600">
+                      {fmtMoney(resumen.totalPendiente)}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[11px] text-gray-500">Cobrado</p>
-                  <p className="text-sm font-bold text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                    {fmtMoney(resumen.totalCobrado)}
-                  </p>
+                <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-white">
+                  <div className="p-2 rounded-lg bg-red-50">
+                    <Users className="w-4 h-4 text-red-600" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] text-gray-500 flex items-center gap-1">Clientes que deben <HelpTooltip tooltipKey="cobranza-clientes-deben" /></p>
+                    <p className="text-sm font-bold text-gray-900">
+                      {resumen.clientesConSaldo}
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-white">
-                <div className="p-2 rounded-lg bg-amber-50">
-                  <AlertCircle className="w-4 h-4 text-amber-600" />
-                </div>
-                <div>
-                  <p className="text-[11px] text-gray-500">Pendiente</p>
-                  <p className="text-sm font-bold text-amber-600" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                    {fmtMoney(resumen.totalPendiente)}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-white">
-                <div className="p-2 rounded-lg bg-red-50">
-                  <Users className="w-4 h-4 text-red-600" />
-                </div>
-                <div>
-                  <p className="text-[11px] text-gray-500">Clientes con saldo</p>
-                  <p className="text-sm font-bold text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                    {resumen.clientesConSaldo}
-                  </p>
-                </div>
-              </div>
+              </>
+            ) : (
+              <>
+                {[0, 1, 2, 3].map((i) => (
+                  <div key={i} className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-white animate-pulse">
+                    <div className="p-2 rounded-lg bg-gray-100">
+                      <div className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="h-3 w-20 bg-gray-100 rounded mb-1.5" />
+                      <div className="h-4 w-24 bg-gray-200 rounded" />
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+
+          {/* Search */}
+          {tab === 'cobros' && (
+            <div className="w-full sm:w-1/2 lg:w-1/3" data-tour="cobranza-search">
+              <SearchBar
+                value={searchCobros}
+                onChange={setSearchCobros}
+                placeholder="Buscar cobro por cliente, pedido o referencia..."
+                className="w-full"
+              />
             </div>
           )}
 
           {/* Filter Row */}
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <div className="relative">
+            <div data-tour="cobranza-date-filter" className="relative">
               <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-violet-500" />
               <input
                 type="date"
                 value={dates.desde}
-                onChange={(e) => setDates(d => ({ ...d, desde: e.target.value }))}
+                onChange={(e) => { setDates(d => ({ ...d, desde: e.target.value })); setActivePreset(null); }}
                 className="pl-9 pr-3 py-2 text-xs border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
@@ -375,30 +502,47 @@ export default function CobranzaPage() {
               <input
                 type="date"
                 value={dates.hasta}
-                onChange={(e) => setDates(d => ({ ...d, hasta: e.target.value }))}
+                onChange={(e) => { setDates(d => ({ ...d, hasta: e.target.value })); setActivePreset(null); }}
                 className="pl-9 pr-3 py-2 text-xs border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
             <button
-              onClick={fetchCobros}
-              disabled={cobrosLoading}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors disabled:opacity-50"
+              data-tour="cobranza-refresh"
+              onClick={() => { fetchCobros(); fetchSaldos(); fetchResumen(); }}
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
             >
-              <Search className="w-3.5 h-3.5" />
-              <span>Consultar</span>
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Actualizar</span>
             </button>
 
-            {/* Tabs inline */}
-            <div className="flex items-center ml-auto">
+            {/* Date presets */}
+            <div className="hidden sm:flex items-center gap-1">
+              {DATE_PRESETS.map((p) => (
+                <button
+                  key={p.label}
+                  onClick={() => { setDates(p.calc()); setActivePreset(p.label); }}
+                  className={`px-2.5 py-1 text-[11px] font-medium rounded-full transition-colors ${
+                    activePreset === p.label
+                      ? 'bg-green-100 text-green-700 ring-1 ring-green-300'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Tabs inline — always right-aligned */}
+            <div data-tour="cobranza-tabs" className="flex items-center gap-2 ml-auto">
               <button
-                onClick={() => setTab('cobros')}
+                onClick={() => { setTab('cobros'); setSearchCobros(''); }}
                 className={`px-4 py-2.5 text-[13px] font-medium border-b-2 transition-colors ${
                   tab === 'cobros'
                     ? 'text-green-600 border-green-600'
                     : 'text-gray-500 border-transparent hover:text-gray-700'
                 }`}
               >
-                Cobros Registrados
+                Historial de cobros
               </button>
               <button
                 onClick={() => setTab('saldos')}
@@ -408,7 +552,7 @@ export default function CobranzaPage() {
                     : 'text-gray-500 border-transparent hover:text-gray-700'
                 }`}
               >
-                Saldos Pendientes
+                ¿Quién debe?
               </button>
             </div>
           </div>
@@ -423,13 +567,13 @@ export default function CobranzaPage() {
                       <Loader2 className="h-8 w-8 animate-spin text-green-600" />
                     </div>
                   )}
-                  {!cobrosLoading && cobros.length === 0 ? (
+                  {!cobrosLoading && filteredCobros.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-12">
                       <CreditCard className="w-12 h-12 text-emerald-300 mb-3" />
-                      <p className="text-sm text-gray-500">No hay cobros</p>
+                      <p className="text-sm text-gray-500">{searchCobros ? 'Sin resultados' : 'No hay cobros'}</p>
                     </div>
                   ) : (
-                    sortedCobros.map((c) => (
+                    filteredCobros.map((c) => (
                       <div key={c.id} className="border border-gray-200 rounded-lg p-3 bg-white" onClick={() => openDetail(c.clienteId)}>
                         {/* Row 1: Icon + Name/Subtitle + Amount */}
                         <div className="flex items-center gap-3 mb-2">
@@ -437,7 +581,7 @@ export default function CobranzaPage() {
                             <CurrencyDollar className="w-5 h-5 text-green-600" weight="duotone" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium text-gray-900 truncate" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                            <div className="text-sm font-medium text-gray-900 truncate">
                               {c.clienteNombre}
                             </div>
                             <div className="text-xs text-gray-500 truncate">
@@ -445,7 +589,7 @@ export default function CobranzaPage() {
                             </div>
                           </div>
                           <div className="text-right flex-shrink-0">
-                            <div className="text-sm font-medium text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                            <div className="text-sm font-medium text-gray-900">
                               {fmtMoney(c.monto)}
                             </div>
                           </div>
@@ -487,7 +631,7 @@ export default function CobranzaPage() {
                 </div>
 
                 {/* Table - Cobros */}
-                <div className="hidden sm:block bg-white border border-gray-200 rounded-lg overflow-x-auto">
+                <div data-tour="cobranza-cobros-table" className="hidden sm:block bg-white border border-gray-200 rounded-lg overflow-x-auto">
                 {/* Table Header */}
                 <div className="flex items-center bg-gray-50 px-4 h-10 border-b border-gray-200 min-w-[800px]">
                   <div
@@ -512,31 +656,29 @@ export default function CobranzaPage() {
 
                 {/* Table Body */}
                 <div className="relative min-h-[200px]">
-                  {/* Loading Overlay */}
-                  {cobrosLoading && (
-                    <div className="absolute inset-0 bg-white/80 backdrop-blur-[1px] z-10 flex items-center justify-center transition-opacity duration-200">
-                      <div className="flex flex-col items-center gap-2">
-                        <Loader2 className="h-8 w-8 animate-spin text-green-600" />
-                        <span className="text-sm text-gray-500">Cargando cobros...</span>
-                      </div>
-                    </div>
-                  )}
+                  <TableLoadingOverlay loading={cobrosLoading} message="Cargando cobros..." />
 
                   {/* Empty State */}
-                  {!cobrosLoading && cobros.length === 0 ? (
+                  {!cobrosLoading && filteredCobros.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-20">
                       <CreditCard className="w-16 h-16 text-emerald-300 mb-4" />
-                      <h3 className="text-lg font-semibold text-gray-700 mb-2">No hay cobros en este período</h3>
+                      <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                        {searchCobros ? 'Sin resultados' : 'No hay cobros en este período'}
+                      </h3>
                       <p className="text-sm text-gray-500 text-center">
-                        Registra un{' '}
-                        <span className="text-green-600 cursor-pointer" onClick={() => setShowNewCobro(true)}>nuevo cobro</span>
-                        {' '}para empezar
+                        {searchCobros ? (
+                          <span>No se encontraron cobros para &quot;{searchCobros}&quot;</span>
+                        ) : (
+                          <>Registra un{' '}
+                          <span className="text-green-600 cursor-pointer" onClick={() => setShowNewCobro(true)}>nuevo cobro</span>
+                          {' '}para empezar</>
+                        )}
                       </p>
                     </div>
                   ) : (
                     /* Table Rows */
                     <div className={`transition-opacity duration-200 ${cobrosLoading ? 'opacity-50' : 'opacity-100'}`}>
-                      {sortedCobros.map((c) => (
+                      {filteredCobros.map((c) => (
                         <div
                           key={c.id}
                           className="flex items-center px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer min-w-[800px]"
@@ -546,7 +688,7 @@ export default function CobranzaPage() {
                             {fmtDate(c.fechaCobro)}
                           </div>
                           <div className="flex-1">
-                            <div className="text-[13px] font-medium text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                            <div className="text-[13px] font-medium text-gray-900">
                               {c.clienteNombre}
                             </div>
                           </div>
@@ -555,7 +697,7 @@ export default function CobranzaPage() {
                               {c.numeroPedido}
                             </span>
                           </div>
-                          <div className="w-[110px] text-[13px] font-medium text-gray-900 text-right" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                          <div className="w-[110px] text-[13px] font-medium text-gray-900 text-right">
                             {fmtMoney(c.monto)}
                           </div>
                           <div className="w-[120px] pl-4">
@@ -598,7 +740,7 @@ export default function CobranzaPage() {
                             {cobros.length} cobro{cobros.length !== 1 ? 's' : ''}
                           </div>
                           <div className="w-[100px]" />
-                          <div className="w-[110px] text-[13px] font-bold text-gray-900 text-right" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                          <div className="w-[110px] text-[13px] font-bold text-gray-900 text-right">
                             {fmtMoney(totalCobros)}
                           </div>
                           <div className="w-[120px]" />
@@ -640,7 +782,7 @@ export default function CobranzaPage() {
                               <Wallet className="w-5 h-5 text-blue-600" weight="duotone" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="text-sm font-medium text-gray-900 truncate" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                              <div className="text-sm font-medium text-gray-900 truncate">
                                 {s.clienteNombre}
                               </div>
                               <div className="text-xs text-gray-500 truncate">
@@ -648,7 +790,7 @@ export default function CobranzaPage() {
                               </div>
                             </div>
                             <div className="text-right flex-shrink-0">
-                              <div className="text-sm font-bold text-amber-600" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                              <div className="text-sm font-bold text-amber-600">
                                 {fmtMoney(s.saldoPendiente)}
                               </div>
                             </div>
@@ -673,7 +815,13 @@ export default function CobranzaPage() {
                             <p className="text-[10px] text-gray-400 text-center mt-0.5">{pct}%</p>
                           </div>
                           {/* Row 3: Actions */}
-                          <div className="flex justify-end">
+                          <div className="flex justify-end gap-2">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); openQuickCobro(s.clienteId); }}
+                              className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
+                            >
+                              Cobrar
+                            </button>
                             <button
                               onClick={(e) => { e.stopPropagation(); openDetail(s.clienteId); }}
                               className="px-3 py-1.5 text-xs font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
@@ -689,28 +837,21 @@ export default function CobranzaPage() {
                 </div>
 
                 {/* Table - Saldos */}
-                <div className="hidden sm:block bg-white border border-gray-200 rounded-lg overflow-x-auto">
+                <div data-tour="cobranza-saldos-table" className="hidden sm:block bg-white border border-gray-200 rounded-lg overflow-x-auto">
                 {/* Table Header */}
-                <div className="flex items-center bg-gray-50 px-4 h-10 border-b border-gray-200 min-w-[700px]">
+                <div className="flex items-center bg-gray-50 px-4 h-10 border-b border-gray-200 min-w-[740px]">
                   <div className="flex-1 text-xs font-semibold text-gray-700">Cliente</div>
                   <div className="w-[100px] text-xs font-semibold text-gray-700 text-center">Pedidos</div>
-                  <div className="w-[130px] text-xs font-semibold text-gray-700 text-right">Facturado</div>
+                  <div className="w-[130px] text-xs font-semibold text-gray-700 text-right">Vendido</div>
                   <div className="w-[130px] text-xs font-semibold text-gray-700 text-right">Cobrado</div>
-                  <div className="w-[130px] text-xs font-semibold text-gray-700 text-right">Pendiente</div>
+                  <div className="w-[130px] text-xs font-semibold text-gray-700 text-right">Debe</div>
                   <div className="w-[100px] text-xs font-semibold text-gray-700 text-center">Avance</div>
-                  <div className="w-[60px] text-xs font-semibold text-gray-700 text-center">Ver</div>
+                  <div className="w-[100px] text-xs font-semibold text-gray-700 text-center">Acciones</div>
                 </div>
 
                 {/* Table Body */}
                 <div className="relative min-h-[200px]">
-                  {saldosLoading && (
-                    <div className="absolute inset-0 bg-white/80 backdrop-blur-[1px] z-10 flex items-center justify-center transition-opacity duration-200">
-                      <div className="flex flex-col items-center gap-2">
-                        <Loader2 className="h-8 w-8 animate-spin text-green-600" />
-                        <span className="text-sm text-gray-500">Cargando saldos...</span>
-                      </div>
-                    </div>
-                  )}
+                  <TableLoadingOverlay loading={saldosLoading} message="Cargando saldos..." />
 
                   {!saldosLoading && saldos.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-20">
@@ -725,24 +866,24 @@ export default function CobranzaPage() {
                         return (
                           <div
                             key={s.clienteId}
-                            className="flex items-center px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer min-w-[700px]"
+                            className="flex items-center px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer min-w-[740px]"
                             onClick={() => openDetail(s.clienteId)}
                           >
                             <div className="flex-1">
-                              <div className="text-[13px] font-medium text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                              <div className="text-[13px] font-medium text-gray-900">
                                 {s.clienteNombre}
                               </div>
                             </div>
                             <div className="w-[100px] text-[13px] text-gray-600 text-center">
                               {s.pedidosPendientes}
                             </div>
-                            <div className="w-[130px] text-[13px] text-gray-900 text-right" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                            <div className="w-[130px] text-[13px] text-gray-900 text-right">
                               {fmtMoney(s.totalFacturado)}
                             </div>
-                            <div className="w-[130px] text-[13px] text-green-600 text-right" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                            <div className="w-[130px] text-[13px] text-green-600 text-right">
                               {fmtMoney(s.totalCobrado)}
                             </div>
-                            <div className="w-[130px] text-[13px] font-bold text-amber-600 text-right" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                            <div className="w-[130px] text-[13px] font-bold text-amber-600 text-right">
                               {fmtMoney(s.saldoPendiente)}
                             </div>
                             <div className="w-[100px] px-3">
@@ -754,7 +895,14 @@ export default function CobranzaPage() {
                               </div>
                               <p className="text-[10px] text-gray-400 text-center mt-0.5">{pct}%</p>
                             </div>
-                            <div className="w-[60px] flex justify-center">
+                            <div className="w-[100px] flex items-center justify-center gap-1">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); openQuickCobro(s.clienteId); }}
+                                className="p-1.5 text-green-500 hover:text-green-700 hover:bg-green-50 rounded transition-colors"
+                                title="Cobrar"
+                              >
+                                <CurrencyDollar className="w-4 h-4" weight="bold" />
+                              </button>
                               <button
                                 onClick={(e) => { e.stopPropagation(); openDetail(s.clienteId); }}
                                 className="p-1.5 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
@@ -769,22 +917,22 @@ export default function CobranzaPage() {
 
                       {/* Footer total */}
                       {saldos.length > 0 && (
-                        <div className="flex items-center px-4 py-3 bg-gray-50 border-t border-gray-300 min-w-[700px]">
+                        <div className="flex items-center px-4 py-3 bg-gray-50 border-t border-gray-300 min-w-[740px]">
                           <div className="flex-1 text-xs font-semibold text-gray-700">
                             Total ({saldos.length} cliente{saldos.length !== 1 ? 's' : ''})
                           </div>
                           <div className="w-[100px]" />
-                          <div className="w-[130px] text-[13px] font-bold text-gray-900 text-right" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                          <div className="w-[130px] text-[13px] font-bold text-gray-900 text-right">
                             {fmtMoney(saldos.reduce((s, x) => s + x.totalFacturado, 0))}
                           </div>
-                          <div className="w-[130px] text-[13px] font-bold text-green-600 text-right" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                          <div className="w-[130px] text-[13px] font-bold text-green-600 text-right">
                             {fmtMoney(saldos.reduce((s, x) => s + x.totalCobrado, 0))}
                           </div>
-                          <div className="w-[130px] text-[13px] font-bold text-amber-600 text-right" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                          <div className="w-[130px] text-[13px] font-bold text-amber-600 text-right">
                             {fmtMoney(saldos.reduce((s, x) => s + x.saldoPendiente, 0))}
                           </div>
                           <div className="w-[100px]" />
-                          <div className="w-[60px]" />
+                          <div className="w-[100px]" />
                         </div>
                       )}
                     </div>
@@ -795,18 +943,21 @@ export default function CobranzaPage() {
             )}
 
         </div>
-      </div>
+      </PageHeader>
 
       {/* ═══ ESTADO DE CUENTA DRAWER ═══ */}
       <Drawer
         ref={drawerEstadoCuentaRef}
         isOpen={detailClienteId !== null}
         onClose={closeDetail}
-        title={estadoCuenta ? `Estado de Cuenta - ${estadoCuenta.clienteNombre}` : 'Estado de Cuenta'}
+        title={estadoCuenta ? estadoCuenta.clienteNombre : 'Estado de Cuenta'}
         icon={<FileText className="w-5 h-5 text-violet-500" />}
         width="lg"
         footer={
-          <div className="flex justify-end">
+          <div className="flex items-center justify-between">
+            <div className="text-xs text-gray-400">
+              {estadoCuenta ? `${estadoCuenta.pedidos.length} pedido${estadoCuenta.pedidos.length !== 1 ? 's' : ''}` : ''}
+            </div>
             <button
               onClick={() => drawerEstadoCuentaRef.current?.requestClose()}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
@@ -816,66 +967,296 @@ export default function CobranzaPage() {
           </div>
         }
       >
-        <div className="p-6">
+        <div className="p-0">
           {estadoCuentaLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+            <div className="flex flex-col items-center justify-center py-20 gap-3">
+              <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center">
+                <Loader2 className="h-5 w-5 animate-spin text-green-600" />
+              </div>
+              <p className="text-sm text-gray-400">Cargando estado de cuenta...</p>
             </div>
           ) : estadoCuenta ? (
-            <div className="space-y-4">
-              {/* Summary row */}
-              <div className="grid grid-cols-3 gap-3">
-                <div className="p-3 bg-blue-50 rounded-lg text-center">
-                  <p className="text-[11px] text-gray-500">Facturado</p>
-                  <p className="text-sm font-bold text-gray-900">{fmtMoney(estadoCuenta.totalFacturado)}</p>
-                </div>
-                <div className="p-3 bg-green-50 rounded-lg text-center">
-                  <p className="text-[11px] text-gray-500">Cobrado</p>
-                  <p className="text-sm font-bold text-green-600">{fmtMoney(estadoCuenta.totalCobrado)}</p>
-                </div>
-                <div className="p-3 bg-amber-50 rounded-lg text-center">
-                  <p className="text-[11px] text-gray-500">Pendiente</p>
-                  <p className="text-sm font-bold text-amber-600">{fmtMoney(estadoCuenta.saldoPendiente)}</p>
+            <>
+              {/* ── Hero summary card ── */}
+              <div className="mx-6 mt-6 rounded-xl bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 p-5 text-white relative overflow-hidden">
+                {/* Subtle pattern */}
+                <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '20px 20px' }} />
+                <div className="relative">
+                  {/* Progress bar */}
+                  {(() => {
+                    const pct = estadoCuenta.totalFacturado > 0
+                      ? Math.round((estadoCuenta.totalCobrado / estadoCuenta.totalFacturado) * 100)
+                      : 0;
+                    return (
+                      <>
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Avance de cobro</span>
+                          </div>
+                          <span className={`text-2xl font-bold tabular-nums ${pct === 100 ? 'text-emerald-400' : 'text-white'}`}>{pct}%</span>
+                        </div>
+                        <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden mb-5">
+                          <div
+                            className={`h-full rounded-full transition-all duration-700 ease-out ${
+                              pct === 100 ? 'bg-emerald-400' : pct >= 50 ? 'bg-green-400' : 'bg-amber-400'
+                            }`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </>
+                    );
+                  })()}
+                  {/* KPIs */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-[11px] text-slate-400 mb-0.5">Total facturado</p>
+                      <p className="text-lg font-bold tabular-nums">{fmtMoney(estadoCuenta.totalFacturado)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-slate-400 mb-0.5">Cobrado</p>
+                      <p className="text-lg font-bold tabular-nums text-emerald-400">{fmtMoney(estadoCuenta.totalCobrado)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-slate-400 mb-0.5">Pendiente</p>
+                      <p className={`text-lg font-bold tabular-nums ${estadoCuenta.saldoPendiente > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                        {fmtMoney(estadoCuenta.saldoPendiente)}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Pedidos list */}
-              <div className="space-y-3">
-                {estadoCuenta.pedidos.map((p) => (
-                  <div key={p.pedidoId} className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
-                          {p.numeroPedido}
-                        </span>
-                        <span className="text-xs text-gray-400">{fmtDate(p.fechaPedido)}</span>
-                      </div>
-                      <div className="flex items-center gap-3 text-xs">
-                        <span className="text-gray-500">Total: <strong>{fmtMoney(p.total)}</strong></span>
-                        <span className={`font-bold ${p.saldo > 0 ? 'text-amber-600' : 'text-green-600'}`}>
-                          Saldo: {fmtMoney(p.saldo)}
-                        </span>
-                      </div>
-                    </div>
-                    {p.cobros.length > 0 ? (
-                      <div className="mt-2 space-y-1">
-                        {p.cobros.map((c) => (
-                          <div key={c.id} className="flex items-center justify-between text-xs text-gray-500 pl-3 border-l-2 border-green-300 py-0.5">
-                            <span>
-                              {fmtDate(c.fechaCobro)} · {c.metodoPagoNombre}
-                              {c.referencia ? ` · Ref: ${c.referencia}` : ''}
-                            </span>
-                            <span className="font-medium text-green-600">{fmtMoney(c.monto)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-gray-400 mt-1">Sin cobros registrados</p>
-                    )}
-                  </div>
-                ))}
+              {/* ── Period toggle ── */}
+              <div className="mx-6 mt-4 flex items-center justify-between">
+                <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
+                  <button
+                    onClick={!estadoCuentaHistorico ? undefined : toggleEstadoCuentaPeriodo}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                      !estadoCuentaHistorico
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    Último año
+                  </button>
+                  <button
+                    onClick={estadoCuentaHistorico ? undefined : toggleEstadoCuentaPeriodo}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                      estadoCuentaHistorico
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    Todo el historial
+                  </button>
+                </div>
+                <span className="text-[11px] text-gray-400">
+                  {estadoCuentaHistorico ? 'Historial completo' : 'Últimos 12 meses'}
+                </span>
               </div>
-            </div>
+
+              {/* ── Pedidos list ── */}
+              <div className="px-6 pt-4 pb-6">
+                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Pedidos</h3>
+                {estadoCuenta.pedidos.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <Receipt className="w-10 h-10 text-gray-300 mb-3" />
+                    <p className="text-sm text-gray-500 font-medium">No hay pedidos en este período</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      {estadoCuentaHistorico
+                        ? 'Este cliente no tiene pedidos registrados'
+                        : 'Prueba con "Todo el historial" para ver pedidos más antiguos'}
+                    </p>
+                  </div>
+                ) : (
+                <div className="space-y-3">
+                  {estadoCuenta.pedidos.map((p) => {
+                    const paidPct = p.total > 0 ? Math.round((p.cobrado / p.total) * 100) : 0;
+                    const isPaid = p.saldo <= 0;
+                    return (
+                      <div
+                        key={p.pedidoId}
+                        className={`rounded-xl border transition-all duration-200 ${
+                          isPaid
+                            ? 'border-green-200 bg-green-50/40'
+                            : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
+                        }`}
+                      >
+                        {/* Card header */}
+                        <div className="p-4 pb-3">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                                isPaid ? 'bg-green-100' : 'bg-amber-100'
+                              }`}>
+                                {isPaid
+                                  ? <CheckCircle className="w-4 h-4 text-green-600" weight="fill" />
+                                  : <Clock className="w-4 h-4 text-amber-600" weight="fill" />
+                                }
+                              </div>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-semibold text-gray-900">{p.numeroPedido}</span>
+                                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+                                    isPaid ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                                  }`}>
+                                    {isPaid ? 'Pagado' : 'Pendiente'}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-gray-400 mt-0.5">{fmtDate(p.fechaPedido)}</p>
+                              </div>
+                            </div>
+                            <div className="text-right flex-shrink-0">
+                              <p className="text-sm font-bold text-gray-900 tabular-nums">{fmtMoney(p.total)}</p>
+                              {!isPaid && (
+                                <p className="text-xs text-amber-600 font-medium tabular-nums mt-0.5">
+                                  Debe {fmtMoney(p.saldo)}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Mini progress bar */}
+                          {!isPaid && (
+                            <div className="mt-3 flex items-center gap-2">
+                              <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-green-500 rounded-full transition-all duration-500"
+                                  style={{ width: `${paidPct}%` }}
+                                />
+                              </div>
+                              <span className="text-[10px] font-medium text-gray-400 tabular-nums w-8 text-right">{paidPct}%</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Cobros timeline */}
+                        {p.cobros.length > 0 && (
+                          <div className="border-t border-gray-100 px-4 py-2.5 bg-gray-50/50 rounded-b-xl">
+                            <div className="space-y-1.5">
+                              {p.cobros.map((c) => (
+                                <div key={c.id} className="flex items-center gap-2 text-xs group">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-green-400 flex-shrink-0" />
+                                  <span className="text-gray-500 flex-1 min-w-0 truncate">
+                                    {fmtDate(c.fechaCobro)}
+                                    <span className="mx-1.5 text-gray-300">&middot;</span>
+                                    {c.metodoPagoNombre}
+                                    {c.referencia && (
+                                      <span className="text-gray-300 ml-1.5">Ref: {c.referencia}</span>
+                                    )}
+                                  </span>
+                                  <span className="font-semibold text-green-600 tabular-nums flex-shrink-0">{fmtMoney(c.monto)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* No cobros */}
+                        {p.cobros.length === 0 && !isPaid && (
+                          <div className="border-t border-gray-100 px-4 py-2.5 bg-gray-50/30 rounded-b-xl">
+                            <p className="text-xs text-gray-400 italic">Sin cobros registrados</p>
+                          </div>
+                        )}
+
+                        {/* Inline cobro */}
+                        {p.saldo > 0 && detailClienteId && (
+                          <div className="px-4 pb-3 pt-1">
+                            {inlineCobroPedidoId === p.pedidoId ? (
+                              /* ── Expanded inline form ── */
+                              <div className="rounded-lg border border-green-200 bg-green-50/50 p-3 space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
+                                    <CurrencyDollar className="w-3 h-3 text-green-600" weight="bold" />
+                                  </div>
+                                  <span className="text-xs font-semibold text-green-800">Registrar cobro</span>
+                                </div>
+                                {/* Row 1: Monto + Método */}
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div>
+                                    <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Monto *</label>
+                                    <div className="relative">
+                                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-gray-400">$</span>
+                                      <input
+                                        type="number"
+                                        step="0.01"
+                                        min="0.01"
+                                        max={p.saldo}
+                                        value={inlineCobroData.monto || ''}
+                                        onChange={(e) => setInlineCobroData(prev => ({ ...prev, monto: parseFloat(e.target.value) || 0 }))}
+                                        className="w-full pl-6 pr-2 py-1.5 text-xs border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white tabular-nums"
+                                      />
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Método *</label>
+                                    <select
+                                      value={inlineCobroData.metodoPago}
+                                      onChange={(e) => setInlineCobroData(prev => ({ ...prev, metodoPago: Number(e.target.value) }))}
+                                      className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white"
+                                    >
+                                      {METODO_PAGO_OPTIONS.map((opt) => (
+                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                </div>
+                                {/* Row 2: Referencia */}
+                                <div>
+                                  <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Referencia <span className="text-gray-300">(opcional)</span></label>
+                                  <input
+                                    type="text"
+                                    value={inlineCobroData.referencia}
+                                    onChange={(e) => setInlineCobroData(prev => ({ ...prev, referencia: e.target.value }))}
+                                    placeholder="Ej: Transferencia #456"
+                                    className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white"
+                                  />
+                                </div>
+                                {/* Row 3: Actions */}
+                                <div className="flex items-center gap-2 pt-0.5">
+                                  <button
+                                    onClick={() => handleInlineCobro(p.pedidoId, detailClienteId, p.saldo)}
+                                    disabled={inlineCobroSaving || inlineCobroData.monto <= 0}
+                                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-green-600 rounded-md hover:bg-green-700 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    {inlineCobroSaving ? (
+                                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    ) : (
+                                      <CheckCircle className="w-3.5 h-3.5" weight="bold" />
+                                    )}
+                                    {inlineCobroSaving ? 'Guardando...' : 'Registrar'}
+                                  </button>
+                                  <button
+                                    onClick={() => setInlineCobroPedidoId(null)}
+                                    disabled={inlineCobroSaving}
+                                    className="px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors disabled:opacity-50"
+                                  >
+                                    Cancelar
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              /* ── Collapsed: show cobrar button ── */
+                              <button
+                                onClick={() => {
+                                  setInlineCobroPedidoId(p.pedidoId);
+                                  setInlineCobroData({ monto: p.saldo, metodoPago: 0, referencia: '' });
+                                }}
+                                className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold text-white bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg hover:from-green-700 hover:to-emerald-700 active:scale-[0.98] transition-all duration-150 shadow-sm shadow-green-200"
+                              >
+                                <CurrencyDollar className="w-4 h-4" weight="bold" />
+                                Cobrar {fmtMoney(p.saldo)}
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                )}
+              </div>
+            </>
           ) : null}
         </div>
       </Drawer>
@@ -915,7 +1296,7 @@ export default function CobranzaPage() {
         }
       >
         <div className="p-6 space-y-4">
-          <div>
+          <div data-tour="cobro-client-selector">
             <label className="block text-xs font-medium text-gray-600 mb-1">Cliente *</label>
             <SearchableSelect
               options={clientOptions}
@@ -930,7 +1311,7 @@ export default function CobranzaPage() {
             />
             {errors.clienteId && <p className="text-xs text-red-500 mt-1">{errors.clienteId.message}</p>}
           </div>
-          <div>
+          <div data-tour="cobro-pedido-selector">
             <label className="block text-xs font-medium text-gray-600 mb-1">Pedido *</label>
             {formPedidosLoading ? (
               <div className="flex items-center gap-2 py-2 text-sm text-gray-400">
@@ -974,27 +1355,29 @@ export default function CobranzaPage() {
             )}
             {errors.pedidoId && <p className="text-xs text-red-500 mt-1">{errors.pedidoId.message}</p>}
           </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Monto *</label>
-            <input
-              type="number"
-              step="0.01"
-              {...register('monto', { valueAsNumber: true })}
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
-              placeholder="0.00"
-            />
-            {errors.monto && <p className="text-xs text-red-500 mt-1">{errors.monto.message}</p>}
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Metodo de Pago</label>
-            <select
-              {...register('metodoPago', { valueAsNumber: true })}
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
-            >
-              {METODO_PAGO_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
+          <div data-tour="cobro-amount-method" className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Monto *</label>
+              <input
+                type="number"
+                step="0.01"
+                {...register('monto', { valueAsNumber: true })}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
+                placeholder="0.00"
+              />
+              {errors.monto && <p className="text-xs text-red-500 mt-1">{errors.monto.message}</p>}
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Metodo de Pago</label>
+              <select
+                {...register('metodoPago', { valueAsNumber: true })}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
+              >
+                {METODO_PAGO_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+            </div>
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Fecha del Cobro</label>
@@ -1032,9 +1415,12 @@ export default function CobranzaPage() {
         title="Anular cobro"
         size="sm"
       >
-        <div className="py-2">
+        <div className="py-2 space-y-2">
           <p className="text-sm text-gray-600">
-            ¿Estás seguro de anular este cobro? El saldo del cliente se actualizará.
+            ¿Estás seguro de anular este cobro?
+          </p>
+          <p className="text-xs text-gray-500">
+            El cobro se marcará como anulado y la deuda del cliente aumentará de nuevo por ese monto. Esta acción no se puede deshacer.
           </p>
         </div>
         <div className="flex justify-end gap-3 pt-4 border-t">

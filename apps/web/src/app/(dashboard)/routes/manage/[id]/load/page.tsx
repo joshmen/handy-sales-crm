@@ -244,7 +244,7 @@ export default function LoadInventoryPage() {
 
         <div className="flex items-center justify-between mt-2">
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+            <h1 className="text-2xl font-bold text-gray-900">
               Cargar inventario de ruta
             </h1>
             <span className={`inline-flex px-2.5 py-0.5 text-[10px] font-medium rounded-full ${estadoColor}`}>
@@ -255,7 +255,7 @@ export default function LoadInventoryPage() {
             <button
               onClick={handleSaveEfectivo}
               disabled={saving}
-              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               Guardar
@@ -408,7 +408,7 @@ export default function LoadInventoryPage() {
             </div>
             <button
               onClick={handleAddProducto}
-              className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
               Agregar
@@ -446,24 +446,24 @@ export default function LoadInventoryPage() {
                           <span className="text-[10px] text-gray-400 ml-2">{item.productoSku}</span>
                         )}
                       </td>
-                      <td className="py-2 px-3 text-center text-[13px] text-gray-600" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                      <td className="py-2 px-3 text-center text-[13px] text-gray-600">
                         {item.cantidadEntrega}
                       </td>
-                      <td className="py-2 px-3 text-center text-[13px] text-gray-600" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                      <td className="py-2 px-3 text-center text-[13px] text-gray-600">
                         {item.cantidadVenta}
                       </td>
-                      <td className="py-2 px-3 text-center text-[13px] font-medium text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                      <td className="py-2 px-3 text-center text-[13px] font-medium text-gray-900">
                         {item.cantidadTotal}
                       </td>
                       <td className="py-2 px-3 text-center">
-                        <span className={`text-[13px] ${(item.disponible ?? 0) < item.cantidadTotal ? 'text-red-600 font-medium' : 'text-gray-600'}`} style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                        <span className={`text-[13px] ${(item.disponible ?? 0) < item.cantidadTotal ? 'text-red-600 font-medium' : 'text-gray-600'}`}>
                           {item.disponible ?? '-'}
                         </span>
                       </td>
-                      <td className="py-2 px-3 text-right text-[13px] text-gray-600" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                      <td className="py-2 px-3 text-right text-[13px] text-gray-600">
                         ${item.precioUnitario.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                       </td>
-                      <td className="py-2 px-3 text-right text-[13px] font-medium text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                      <td className="py-2 px-3 text-right text-[13px] font-medium text-gray-900">
                         ${(item.cantidadTotal * item.precioUnitario).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                       </td>
                       <td className="py-2 px-3 text-center">
@@ -480,12 +480,12 @@ export default function LoadInventoryPage() {
                 <tfoot>
                   <tr className="border-t-2 border-gray-200">
                     <td colSpan={3} className="py-2 px-3 text-right text-xs font-semibold text-gray-600">Totales:</td>
-                    <td className="py-2 px-3 text-center text-[13px] font-bold text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                    <td className="py-2 px-3 text-center text-[13px] font-bold text-gray-900">
                       {carga.reduce((s, c) => s + c.cantidadTotal, 0)}
                     </td>
                     <td></td>
                     <td></td>
-                    <td className="py-2 px-3 text-right text-[13px] font-bold text-green-600" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                    <td className="py-2 px-3 text-right text-[13px] font-bold text-green-600">
                       ${totalAsignado.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                     </td>
                     <td></td>

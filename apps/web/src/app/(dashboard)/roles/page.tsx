@@ -387,7 +387,7 @@ export default function RolesPage() {
         {/* Header */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>Roles</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Roles</h1>
           </div>
 
           <div className="flex items-center gap-2">
@@ -397,7 +397,7 @@ export default function RolesPage() {
                 resetCreateForm({ nombre: '', descripcion: '', activo: true });
                 setIsCreateOpen(true);
               }}
-              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
             >
               <Plus className="w-4 h-4" />
               <span>Nuevo rol</span>

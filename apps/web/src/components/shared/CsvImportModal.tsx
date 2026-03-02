@@ -709,19 +709,19 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
             {/* Summary cards */}
             <div className="grid grid-cols-3 gap-3">
               <div className="p-3 bg-gray-50 rounded-lg text-center">
-                <p className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                <p className="text-2xl font-bold text-gray-900">
                   {result.totalFilas}
                 </p>
                 <p className="text-xs text-gray-500">Total filas</p>
               </div>
               <div className="p-3 bg-green-50 rounded-lg text-center">
-                <p className="text-2xl font-bold text-green-700" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                <p className="text-2xl font-bold text-green-700">
                   {result.importados}
                 </p>
                 <p className="text-xs text-green-600">Importados</p>
               </div>
               <div className={`p-3 rounded-lg text-center ${result.errores > 0 ? 'bg-red-50' : 'bg-gray-50'}`}>
-                <p className={`text-2xl font-bold ${result.errores > 0 ? 'text-red-700' : 'text-gray-400'}`} style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                <p className={`text-2xl font-bold ${result.errores > 0 ? 'text-red-700' : 'text-gray-400'}`}>
                   {result.errores}
                 </p>
                 <p className={`text-xs ${result.errores > 0 ? 'text-red-600' : 'text-gray-500'}`}>Con errores</p>

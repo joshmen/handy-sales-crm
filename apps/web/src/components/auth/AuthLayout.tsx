@@ -3,13 +3,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { CheckCircle, Monitor, Tablet, Smartphone } from 'lucide-react';
-import { Space_Grotesk } from 'next/font/google';
-
-const spaceGrotesk = Space_Grotesk({
-  subsets: ['latin'],
-  weight: ['700'],
-  display: 'swap',
-});
 
 /* Apple logo SVG — azul App Store oficial */
 function AppleIcon({ className }: { className?: string }) {
@@ -37,6 +30,11 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen flex">
       {/* ===== Panel izquierdo — Vendedor de ruta (hidden en mobile) ===== */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
+        {/* Gradient fallback — visible si la imagen no carga */}
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900" />
+        {/* Noise texture overlay for depth */}
+        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'1\'/%3E%3C/svg%3E")', backgroundRepeat: 'repeat' }} />
+
         {/* Imagen de fondo — vendedor de ruta */}
         <Image
           src="/images/login-salesperson.png"
@@ -47,12 +45,12 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
           sizes="50vw"
         />
         {/* Overlay gradiente — claro arriba (cara), oscuro abajo (texto) */}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/40 to-slate-900/30" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/85 via-slate-900/40 to-slate-900/25" />
 
         {/* Contenido sobre la imagen */}
         <div className="relative z-10 flex flex-col justify-between p-12 text-white w-full">
-          {/* Logo (arriba) */}
-          <div className="flex items-center gap-3">
+          {/* Logo (arriba) — con entrada animada */}
+          <div className="auth-panel-animate flex items-center gap-3">
             <Image src="/logo-icon.svg" alt="" width={56} height={56} />
             <div className="flex items-baseline gap-1.5">
               <span className="text-3xl font-black tracking-tight">Handy</span>
@@ -63,9 +61,9 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
           </div>
 
           {/* Bloque inferior: headline + checks + stores */}
-          <div className="space-y-7">
+          <div className="space-y-7 auth-panel-animate" style={{ animationDelay: '0.25s' }}>
             <h2
-              className={`text-6xl font-bold leading-[1.1] drop-shadow-lg ${spaceGrotesk.className}`}
+              className="text-6xl font-bold leading-[1.1] drop-shadow-lg"
             >
               Gestiona tu negocio
               <br />
@@ -78,55 +76,42 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
 
             {/* Value props con checks verdes */}
             <ul className="space-y-3">
-              <li className="flex items-center gap-3">
-                <CheckCircle className="w-6 h-6 text-emerald-400 shrink-0 drop-shadow" />
-                <span className="text-lg text-white/90 drop-shadow">
-                  Control total de tu equipo en campo
-                </span>
-              </li>
-              <li className="flex items-center gap-3">
-                <CheckCircle className="w-6 h-6 text-emerald-400 shrink-0 drop-shadow" />
-                <span className="text-lg text-white/90 drop-shadow">
-                  Reduce tu cartera vencida hasta 40%
-                </span>
-              </li>
-              <li className="flex items-center gap-3">
-                <CheckCircle className="w-6 h-6 text-emerald-400 shrink-0 drop-shadow" />
-                <span className="text-lg text-white/90 drop-shadow">
-                  Facturación SAT en 3 clics
-                </span>
-              </li>
-              <li className="flex items-center gap-3">
-                <CheckCircle className="w-6 h-6 text-emerald-400 shrink-0 drop-shadow" />
-                <span className="text-lg text-white/90 drop-shadow">
-                  Funciona sin internet
-                </span>
-              </li>
+              {[
+                'Control total de tu equipo en campo',
+                'Reduce tu cartera vencida hasta 40%',
+                'Facturación SAT en 3 clics',
+                'Funciona sin internet',
+              ].map((text, i) => (
+                <li key={text} className="flex items-center gap-3 auth-panel-animate" style={{ animationDelay: `${0.35 + i * 0.08}s` }}>
+                  <CheckCircle className="w-6 h-6 text-emerald-400 shrink-0 drop-shadow" />
+                  <span className="text-lg text-white/90 drop-shadow">{text}</span>
+                </li>
+              ))}
             </ul>
 
             {/* Dispositivos + tiendas */}
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3 auth-panel-animate" style={{ animationDelay: '0.7s' }}>
               {/* Web/tablet/móvil */}
-              <div className="flex items-center gap-2.5 bg-white/10 backdrop-blur-sm rounded-full px-5 py-2.5">
+              <div className="flex items-center gap-2.5 bg-white/10 backdrop-blur-sm rounded-full px-5 py-2.5 border border-white/5">
                 <Monitor className="w-5 h-5 text-white/80" />
                 <Tablet className="w-5 h-5 text-white/80" />
                 <Smartphone className="w-5 h-5 text-white/80" />
                 <span className="text-sm text-white/60 ml-0.5">Web, tablet y móvil</span>
               </div>
               {/* App Store */}
-              <div className="flex items-center gap-2.5 bg-white/10 backdrop-blur-sm rounded-full px-5 py-2.5">
+              <div className="flex items-center gap-2.5 bg-white/10 backdrop-blur-sm rounded-full px-5 py-2.5 border border-white/5">
                 <AppleIcon className="w-5 h-5" />
                 <span className="text-sm text-white/60">App Store</span>
               </div>
               {/* Google Play */}
-              <div className="flex items-center gap-2.5 bg-white/10 backdrop-blur-sm rounded-full px-5 py-2.5">
+              <div className="flex items-center gap-2.5 bg-white/10 backdrop-blur-sm rounded-full px-5 py-2.5 border border-white/5">
                 <PlayStoreIcon className="w-5 h-5" />
                 <span className="text-sm text-white/60">Google Play</span>
               </div>
             </div>
 
             {/* Social proof */}
-            <p className="text-base text-white/40 drop-shadow">
+            <p className="text-base text-white/40 drop-shadow auth-panel-animate" style={{ animationDelay: '0.8s' }}>
               Más de 500 empresas confían en Handy Suites&reg;
             </p>
           </div>
@@ -136,7 +121,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
       {/* ===== Panel derecho — Form ===== */}
       <div className="flex-1 flex flex-col bg-white">
         {/* Top bar */}
-        <div className="px-6 py-4 flex items-center justify-between">
+        <div className="px-6 py-4 flex items-center justify-between auth-animate auth-animate-delay-1">
           <Link href="/" className="flex items-center gap-2 lg:hidden">
             <Image src="/logo-icon.svg" alt="" width={32} height={32} />
             <div className="flex items-baseline gap-1">

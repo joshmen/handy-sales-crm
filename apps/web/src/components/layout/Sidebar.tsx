@@ -18,7 +18,6 @@ import {
   CalendarDots,
   ClipboardText,
   Bag,
-  Truck,
   GearSix,
   CreditCard,
   Percent,
@@ -34,6 +33,7 @@ import {
   ChartBar,
   Megaphone,
   DeviceMobile,
+  Robot,
   Bug,
   ClockCounterClockwise,
   IconContext,
@@ -54,21 +54,44 @@ interface SidebarItem {
   submenu?: SidebarItem[];
   permission?: string | string[];
   badge?: string | number;
+  section?: string;
 }
 
 const sidebarItems: SidebarItem[] = [
+  // — Sin header —
   {
     id: 'dashboard',
-    label: 'Dashboard',
+    label: 'Tablero',
     icon: SquaresFour,
     href: '/dashboard',
     permission: 'view_dashboard',
   },
+
+  // — VENTAS —
+  {
+    id: 'orders',
+    label: 'Pedidos',
+    icon: Bag,
+    href: '/orders',
+    permission: 'view_orders',
+    badge: '3',
+    section: 'Ventas',
+  },
+  {
+    id: 'cobranza',
+    label: 'Cobranza',
+    icon: CreditCard,
+    href: '/cobranza',
+    permission: 'view_orders',
+  },
+
+  // — CATÁLOGO —
   {
     id: 'clients',
     label: 'Clientes',
     icon: Buildings,
     permission: 'view_clients',
+    section: 'Catálogo',
     submenu: [
       {
         id: 'clients-list',
@@ -126,44 +149,45 @@ const sidebarItems: SidebarItem[] = [
     id: 'price-lists',
     label: 'Listas de precios',
     icon: TrendUp,
+    href: '/price-lists',
     permission: 'view_products',
-    submenu: [
-      {
-        id: 'price-lists-list',
-        label: 'Gestión de precios',
-        icon: TrendUp,
-        href: '/price-lists',
-        permission: 'view_products',
-      },
-    ],
   },
   {
     id: 'discounts',
     label: 'Descuentos',
     icon: Percent,
+    href: '/discounts',
     permission: 'view_discounts',
-    submenu: [
-      {
-        id: 'discounts-list',
-        label: 'Descuentos por cantidad',
-        icon: Percent,
-        href: '/discounts',
-        permission: 'view_discounts',
-      },
-    ],
   },
   {
     id: 'promotions',
     label: 'Promociones',
     icon: Lightning,
+    href: '/promotions',
     permission: 'view_promotions',
+  },
+
+  // — OPERACIÓN —
+  {
+    id: 'routes',
+    label: 'Rutas',
+    icon: NavigationArrow,
+    permission: 'view_routes',
+    section: 'Operación',
     submenu: [
       {
-        id: 'promotions-list',
-        label: 'Promociones especiales',
-        icon: Lightning,
-        href: '/promotions',
-        permission: 'view_promotions',
+        id: 'routes-list',
+        label: 'Listado de rutas',
+        icon: NavigationArrow,
+        href: '/routes',
+        permission: 'view_routes',
+      },
+      {
+        id: 'routes-manage',
+        label: 'Administrar rutas',
+        icon: ClipboardText,
+        href: '/routes/manage',
+        permission: 'view_routes',
       },
     ],
   },
@@ -190,28 +214,6 @@ const sidebarItems: SidebarItem[] = [
     ],
   },
   {
-    id: 'routes',
-    label: 'Rutas',
-    icon: NavigationArrow,
-    permission: 'view_routes',
-    submenu: [
-      {
-        id: 'routes-list',
-        label: 'Listado de rutas',
-        icon: NavigationArrow,
-        href: '/routes',
-        permission: 'view_routes',
-      },
-      {
-        id: 'routes-manage',
-        label: 'Administrar rutas',
-        icon: ClipboardText,
-        href: '/routes/manage',
-        permission: 'view_routes',
-      },
-    ],
-  },
-  {
     id: 'zones',
     label: 'Zonas',
     icon: MapPin,
@@ -225,11 +227,14 @@ const sidebarItems: SidebarItem[] = [
     href: '/visits',
     permission: 'view_visits',
   },
+
+  // — HERRAMIENTAS —
   {
     id: 'forms',
     label: 'Formularios',
     icon: ClipboardText,
     permission: 'view_dashboard',
+    section: 'Herramientas',
     submenu: [
       {
         id: 'form-builder',
@@ -255,29 +260,6 @@ const sidebarItems: SidebarItem[] = [
     permission: 'view_dashboard',
   },
   {
-    id: 'orders',
-    label: 'Pedidos',
-    icon: Bag,
-    href: '/orders',
-    permission: 'view_orders',
-    badge: '3',
-  },
-  {
-    id: 'cobranza',
-    label: 'Cobranza',
-    icon: CreditCard,
-    href: '/cobranza',
-    permission: 'view_orders',
-  },
-  {
-    id: 'deliveries',
-    label: 'Entregas',
-    icon: Truck,
-    href: '/deliveries',
-    permission: 'view_deliveries',
-    badge: '2',
-  },
-  {
     id: 'team',
     label: 'Mi Equipo',
     icon: Users,
@@ -292,10 +274,20 @@ const sidebarItems: SidebarItem[] = [
     permission: 'manage_devices',
   },
   {
+    id: 'automations',
+    label: 'Automatizaciones',
+    icon: Robot,
+    href: '/automations',
+    permission: 'view_automations',
+  },
+
+  // — ADMINISTRACIÓN —
+  {
     id: 'administration',
     label: 'Administración',
     icon: ShieldCheck,
     permission: ['view_users', 'manage_roles', 'manage_global_settings'],
+    section: 'Administración',
     submenu: [
       {
         id: 'tenants',
@@ -426,6 +418,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'manage_catalogs', // Gestión de categorías y unidades
     'manage_devices', // Gestión de dispositivos móviles
     'view_activity_logs', // Registro de actividad
+    'view_automations', // Automatizaciones
   ],
   ADMIN: [
     'view_dashboard',
@@ -445,6 +438,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'manage_catalogs', // Gestión de categorías y unidades
     'manage_devices', // Gestión de dispositivos móviles
     'view_activity_logs', // Registro de actividad
+    'view_automations', // Automatizaciones
   ],
   SUPERVISOR: [
     'view_dashboard',
@@ -581,125 +575,51 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
       .toUpperCase();
   };
 
+  // Group-based icon color palette — 6 families by section
+  const itemGroupMap: Record<string, string> = {
+    // Dashboard
+    dashboard: 'dashboard',
+    // Ventas
+    orders: 'ventas', cobranza: 'ventas',
+    // Catálogo
+    clients: 'catalogo', 'clients-list': 'catalogo', 'client-categories': 'catalogo',
+    products: 'catalogo', 'products-list': 'catalogo', 'product-families': 'catalogo',
+    'product-categories': 'catalogo', units: 'catalogo',
+    'price-lists': 'catalogo', discounts: 'catalogo', promotions: 'catalogo',
+    // Operación
+    routes: 'operacion', 'routes-list': 'operacion', 'routes-manage': 'operacion',
+    inventory: 'operacion', 'inventory-warehouse': 'operacion', 'inventory-movements': 'operacion',
+    zones: 'operacion', visits: 'operacion',
+    // Herramientas
+    forms: 'herramientas', 'form-builder': 'herramientas', 'form-list': 'herramientas',
+    reports: 'herramientas', team: 'herramientas', devices: 'herramientas', automations: 'herramientas',
+    // Administración
+    administration: 'admin', tenants: 'admin', 'system-dashboard': 'admin',
+    users: 'admin', roles: 'admin', 'global-settings': 'admin',
+    'activity-logs': 'admin', 'company-settings': 'admin', settings: 'admin',
+    subscription: 'admin',
+    // SuperAdmin items
+    'sa-dashboard': 'admin', 'sa-tenants': 'admin', 'sa-announcements': 'admin',
+    'sa-plans': 'admin', 'sa-activity-logs': 'admin', 'sa-crash-reports': 'admin',
+    'sa-settings': 'admin',
+  };
+
+  const groupColors: Record<string, { active: string; inactive: string }> = {
+    dashboard:    { active: 'text-blue-600',    inactive: 'text-blue-500 group-hover:text-blue-600' },
+    ventas:       { active: 'text-indigo-600',  inactive: 'text-indigo-500 group-hover:text-indigo-600' },
+    catalogo:     { active: 'text-emerald-600', inactive: 'text-emerald-500 group-hover:text-emerald-600' },
+    operacion:    { active: 'text-cyan-600',    inactive: 'text-cyan-500 group-hover:text-cyan-600' },
+    herramientas: { active: 'text-amber-600',   inactive: 'text-amber-500 group-hover:text-amber-600' },
+    admin:        { active: 'text-slate-600',   inactive: 'text-slate-500 group-hover:text-slate-600' },
+  };
+
   const getIconColor = (itemId: string, isActive: boolean) => {
-    const colorMap: Record<string, { active: string; inactive: string }> = {
-      dashboard: {
-        active: 'text-blue-600',
-        inactive: 'text-blue-500 group-hover:text-blue-600',
-      },
-      clients: {
-        active: 'text-emerald-600',
-        inactive: 'text-emerald-500 group-hover:text-emerald-600',
-      },
-      products: {
-        active: 'text-purple-600',
-        inactive: 'text-purple-500 group-hover:text-purple-600',
-      },
-      'price-lists': {
-        active: 'text-green-600',
-        inactive: 'text-green-500 group-hover:text-green-600',
-      },
-      discounts: {
-        active: 'text-orange-600',
-        inactive: 'text-orange-500 group-hover:text-orange-600',
-      },
-      promotions: {
-        active: 'text-yellow-600',
-        inactive: 'text-yellow-500 group-hover:text-yellow-600',
-      },
-      inventory: {
-        active: 'text-indigo-600',
-        inactive: 'text-indigo-500 group-hover:text-indigo-600',
-      },
-      routes: {
-        active: 'text-cyan-600',
-        inactive: 'text-cyan-500 group-hover:text-cyan-600',
-      },
-      zones: {
-        active: 'text-teal-600',
-        inactive: 'text-teal-500 group-hover:text-teal-600',
-      },
-      visits: {
-        active: 'text-pink-600',
-        inactive: 'text-pink-500 group-hover:text-pink-600',
-      },
-      forms: {
-        active: 'text-pink-600',
-        inactive: 'text-pink-500 group-hover:text-pink-600',
-      },
-      orders: {
-        active: 'text-violet-600',
-        inactive: 'text-violet-500 group-hover:text-violet-600',
-      },
-      cobranza: {
-        active: 'text-emerald-600',
-        inactive: 'text-emerald-500 group-hover:text-emerald-600',
-      },
-      deliveries: {
-        active: 'text-amber-600',
-        inactive: 'text-amber-500 group-hover:text-amber-600',
-      },
-      administration: {
-        active: 'text-slate-600',
-        inactive: 'text-slate-500 group-hover:text-slate-600',
-      },
-      users: {
-        active: 'text-rose-600',
-        inactive: 'text-rose-500 group-hover:text-rose-600',
-      },
-      roles: {
-        active: 'text-indigo-600',
-        inactive: 'text-indigo-500 group-hover:text-indigo-600',
-      },
-      reports: {
-        active: 'text-green-600',
-        inactive: 'text-green-500 group-hover:text-green-600',
-      },
-      subscription: {
-        active: 'text-lime-600',
-        inactive: 'text-lime-500 group-hover:text-lime-600',
-      },
-      'client-categories': {
-        active: 'text-emerald-600',
-        inactive: 'text-emerald-500 group-hover:text-emerald-600',
-      },
-      'product-categories': {
-        active: 'text-purple-600',
-        inactive: 'text-purple-500 group-hover:text-purple-600',
-      },
-      units: {
-        active: 'text-blue-600',
-        inactive: 'text-blue-500 group-hover:text-blue-600',
-      },
-      tenants: {
-        active: 'text-emerald-600',
-        inactive: 'text-emerald-500 group-hover:text-emerald-600',
-      },
-      'system-dashboard': {
-        active: 'text-blue-600',
-        inactive: 'text-blue-500 group-hover:text-blue-600',
-      },
-      'sa-plans': {
-        active: 'text-lime-600',
-        inactive: 'text-lime-500 group-hover:text-lime-600',
-      },
-      'sa-crash-reports': {
-        active: 'text-red-600',
-        inactive: 'text-red-500 group-hover:text-red-600',
-      },
-      settings: {
-        active: 'text-slate-600',
-        inactive: 'text-slate-500 group-hover:text-slate-600',
-      },
-    };
-
-    const colors = colorMap[itemId] || {
-      active: 'text-blue-600',
-      inactive: 'text-gray-500 group-hover:text-gray-700',
-    };
-
+    const group = itemGroupMap[itemId] || 'dashboard';
+    const colors = groupColors[group];
     return isActive ? colors.active : colors.inactive;
   };
+
+  const showLabels = (sidebarOpen && !sidebarCollapsed) || !isDesktop;
 
   const renderSidebarItem = (item: SidebarItem, level = 0) => {
     if (!hasPermission(item.permission)) return null;
@@ -707,119 +627,82 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
     const hasSubmenu = item.submenu && item.submenu.length > 0;
     const isExpanded = expandedItems.includes(item.id);
     const isItemActive = isActive(item.href);
-    const showLabels = (sidebarOpen && !sidebarCollapsed) || !isDesktop;
 
     // Verificar si algún hijo está activo
     const hasActiveChild =
       hasSubmenu && item.submenu?.some(subItem => subItem.href && pathname === subItem.href);
 
+    const activeState = item.href ? isItemActive : (hasActiveChild || isExpanded);
+
+    const itemContent = (
+      <>
+        <div
+          className={cn(
+            'flex items-center justify-center rounded-lg transition-colors',
+            getIconColor(item.id, activeState),
+            showLabels ? 'w-6 h-6' : 'w-8 h-8'
+          )}
+        >
+          <item.icon size={showLabels ? 18 : 20} />
+        </div>
+
+        {showLabels && (
+          <>
+            <span className={cn('flex-1 truncate', hasSubmenu && 'text-left')}>{item.label}</span>
+            <div className="flex items-center gap-2">
+              {item.badge && (
+                <div className="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-xs font-semibold rounded-full">
+                  {item.badge}
+                </div>
+              )}
+              {hasSubmenu && (
+                <div
+                  className={cn(
+                    'w-5 h-5 flex items-center justify-center rounded transition-transform duration-200',
+                    isExpanded && 'rotate-180'
+                  )}
+                >
+                  <ChevronDown size={14} className="text-gray-400" />
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {!showLabels && item.badge && (
+          <div className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center">
+            <span className="text-[10px] text-white font-semibold">{item.badge}</span>
+          </div>
+        )}
+
+        {!showLabels && (
+          <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-50 whitespace-nowrap">
+            {item.label}
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
+          </div>
+        )}
+      </>
+    );
+
+    const wrapperClasses = cn(
+      'group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all duration-200',
+      !item.href && 'w-full',
+      level > 0 && 'ml-6 py-2',
+      activeState
+        ? item.href ? 'bg-blue-100 text-blue-900 shadow-sm' : 'bg-blue-50 text-blue-900'
+        : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900',
+      !showLabels && 'justify-center px-2'
+    );
+
     return (
       <div key={item.id}>
         {item.href ? (
-          <Link
-            href={item.href}
-            className={cn(
-              'group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all duration-200',
-              level > 0 && 'ml-6 py-2',
-              isItemActive
-                ? 'bg-blue-100 text-blue-900 shadow-sm'
-                : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900',
-              !showLabels && 'justify-center px-2'
-            )}
-          >
-            <div
-              className={cn(
-                'flex items-center justify-center rounded-lg transition-colors',
-                getIconColor(item.id, isItemActive),
-                showLabels ? 'w-6 h-6' : 'w-8 h-8'
-              )}
-            >
-              <item.icon size={showLabels ? 18 : 20} />
-            </div>
-
-            {showLabels && (
-              <>
-                <span className="flex-1 truncate">{item.label}</span>
-                {item.badge && (
-                  <div className="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-xs font-semibold rounded-full">
-                    {item.badge}
-                  </div>
-                )}
-              </>
-            )}
-
-            {!showLabels && item.badge && (
-              <div className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center">
-                <span className="text-[10px] text-white font-semibold">{item.badge}</span>
-              </div>
-            )}
-
-            {/* Tooltip for collapsed state */}
-            {!showLabels && (
-              <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-50 whitespace-nowrap">
-                {item.label}
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
-              </div>
-            )}
+          <Link href={item.href} className={wrapperClasses}>
+            {itemContent}
           </Link>
         ) : (
-          <button
-            onClick={() => hasSubmenu && toggleExpanded(item.id)}
-            className={cn(
-              'group w-full flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all duration-200',
-              level > 0 && 'ml-6 py-2',
-              hasActiveChild || isExpanded
-                ? 'bg-blue-50 text-blue-900'
-                : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900',
-              !showLabels && 'justify-center px-2'
-            )}
-          >
-            <div
-              className={cn(
-                'flex items-center justify-center rounded-lg transition-colors',
-                getIconColor(item.id, hasActiveChild || isExpanded),
-                showLabels ? 'w-6 h-6' : 'w-8 h-8'
-              )}
-            >
-              <item.icon size={showLabels ? 18 : 20} />
-            </div>
-
-            {showLabels && (
-              <>
-                <span className="flex-1 truncate text-left">{item.label}</span>
-                <div className="flex items-center gap-2">
-                  {item.badge && (
-                    <div className="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-xs font-semibold rounded-full">
-                      {item.badge}
-                    </div>
-                  )}
-                  {hasSubmenu && (
-                    <div
-                      className={cn(
-                        'w-5 h-5 flex items-center justify-center rounded transition-transform duration-200',
-                        isExpanded && 'rotate-180'
-                      )}
-                    >
-                      <ChevronDown size={14} className="text-gray-400" />
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-
-            {!showLabels && item.badge && (
-              <div className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center">
-                <span className="text-[10px] text-white font-semibold">{item.badge}</span>
-              </div>
-            )}
-
-            {/* Tooltip for collapsed state */}
-            {!showLabels && (
-              <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-50 whitespace-nowrap">
-                {item.label}
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
-              </div>
-            )}
+          <button onClick={() => hasSubmenu && toggleExpanded(item.id)} className={wrapperClasses}>
+            {itemContent}
           </button>
         )}
 
@@ -905,7 +788,24 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
           {/* Navigation Items */}
           <IconContext.Provider value={{ weight: 'duotone' }}>
             <nav data-tour="sidebar-nav" className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
-              {activeItems.map(item => renderSidebarItem(item))}
+              {activeItems.map(item => {
+                if (!hasPermission(item.permission)) return null;
+                return (
+                  <React.Fragment key={item.id}>
+                    {item.section && showLabels && (
+                      <div className="pt-4 pb-1 px-3 first:pt-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                            {item.section}
+                          </span>
+                          <div className="flex-1 h-px bg-gray-100" />
+                        </div>
+                      </div>
+                    )}
+                    {renderSidebarItem(item)}
+                  </React.Fragment>
+                );
+              })}
             </nav>
           </IconContext.Provider>
 

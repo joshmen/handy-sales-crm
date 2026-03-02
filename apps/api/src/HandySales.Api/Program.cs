@@ -59,6 +59,7 @@ builder.Services.Configure<GzipCompressionProviderOptions>(options =>
 // Background workers
 builder.Services.AddHostedService<ScheduledActionProcessor>();
 builder.Services.AddHostedService<SubscriptionMonitor>();
+builder.Services.AddHostedService<AutomationEngine>();
 
 var app = builder.Build();
 
@@ -142,6 +143,7 @@ app.MapInternalEndpoints();
 app.MapCrashReportEndpoints();
 app.MapActivityLogEndpoints();
 app.MapSupervisorEndpoints();
+app.MapAutomationEndpoints();
 
 // SignalR hub
 app.MapHub<NotificationHub>("/hubs/notifications");

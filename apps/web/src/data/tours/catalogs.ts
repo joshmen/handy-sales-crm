@@ -1,5 +1,5 @@
 import type { Driver } from 'driver.js';
-import { TourConfig, imageStep, boostDrawerForTour, closeDrawerForTour } from './types';
+import { TourConfig, imageStep, boostDrawerForTour, closeDrawerForTour, scheduleTourContinuation } from './types';
 
 /** Clients, Products, Zones, Client Categories, Product Categories, Product Families, Units */
 export const catalogTours: Record<string, TourConfig> = {
@@ -7,22 +7,18 @@ export const catalogTours: Record<string, TourConfig> = {
     id: 'clients-tour',
     title: 'Tour de Clientes',
     description: 'Aprende a gestionar tu cartera de clientes: agregar, filtrar, editar y organizar.',
+    doneBtnText: 'Siguiente',
     steps: [
       {
-        element: '[data-tour="clients-add-btn"]',
+        element: '[data-tour="clients-import-export"]',
         popover: {
-          title: 'Agregar nuevo cliente',
+          title: 'Importar y exportar',
           description:
-            'Haz clic aquí para registrar un nuevo cliente. Podrás capturar su nombre, dirección, zona, categoría y datos de contacto.',
+            'Descarga tu lista de clientes en CSV o importa clientes desde un archivo CSV para cargas masivas.',
           side: 'bottom',
           align: 'end',
         },
       },
-      imageStep(
-        'Formulario de nuevo cliente',
-        '/images/tour/clientes-crear.jpg',
-        'Formulario de alta de cliente con datos generales, dirección, precios y datos fiscales',
-      ),
       {
         element: '[data-tour="clients-search"]',
         popover: {
@@ -71,6 +67,109 @@ export const catalogTours: Record<string, TourConfig> = {
             'Aquí ves todos tus clientes con su zona, categoría, saldo y estado. Puedes seleccionar varios con los checkboxes para activar/desactivar en lote.',
           side: 'top',
           align: 'center',
+        },
+      },
+      {
+        element: '[data-tour="clients-add-btn"]',
+        popover: {
+          title: 'Crear nuevo cliente',
+          description:
+            'Haz clic en "Siguiente" para ir al formulario de nuevo cliente y conocer cada sección.',
+          side: 'bottom',
+          align: 'end',
+          onNextClick: (driverObj: Driver) => {
+            scheduleTourContinuation('new-client-tour');
+            driverObj.destroy();
+            (document.querySelector('[data-tour="clients-add-btn"]') as HTMLElement)?.click();
+          },
+        },
+      },
+    ],
+  },
+
+  '/clients/new': {
+    id: 'new-client-tour',
+    title: 'Tour de Crear Cliente',
+    description: 'Aprende a completar el formulario para registrar un nuevo cliente.',
+    steps: [
+      {
+        element: '[data-tour="new-client-actions"]',
+        popover: {
+          title: 'Guardar o cancelar',
+          description:
+            'Cuando termines de llenar el formulario, haz clic en "Guardar" para registrar el cliente. Si deseas descartar los cambios, usa "Cancelar".',
+          side: 'bottom',
+          align: 'end',
+        },
+      },
+      {
+        element: '[data-tour="new-client-general"]',
+        popover: {
+          title: 'Información general',
+          description:
+            'Captura el nombre del cliente, selecciona su categoría (mayorista, minorista, etc.) y marca si es prospecto. El nombre y la categoría son obligatorios.',
+          side: 'right',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="new-client-pricing"]',
+        popover: {
+          title: 'Precios y descuento',
+          description:
+            'Asigna una lista de precios especial para este cliente y un porcentaje de descuento general. Esta sección es opcional.',
+          side: 'right',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="new-client-credit"]',
+        popover: {
+          title: 'Pago, venta y crédito',
+          description:
+            'Define el saldo inicial, límite de crédito y el monto mínimo para que una visita se considere efectiva.',
+          side: 'right',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="new-client-delivery"]',
+        popover: {
+          title: 'Configuración de entregas',
+          description:
+            'Elige si el cliente paga de contado, a crédito o ambos. Configura el tipo de pago predeterminado y los días de crédito.',
+          side: 'right',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="new-client-fiscal"]',
+        popover: {
+          title: 'Datos fiscales',
+          description:
+            'Si el cliente requiere factura, activa "Facturable" para capturar RFC, razón social, régimen fiscal y uso CFDI conforme a los requisitos del SAT.',
+          side: 'right',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="new-client-address"]',
+        popover: {
+          title: 'Dirección y mapa',
+          description:
+            'Escribe la dirección y el autocompletado de Google Maps llenará los campos automáticamente. Selecciona la zona geográfica del cliente. El mapa muestra la ubicación y valida que esté dentro de la zona.',
+          side: 'left',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="new-client-contact"]',
+        popover: {
+          title: 'Datos de contacto',
+          description:
+            'Registra el nombre del encargado, teléfono (10 dígitos) y correo electrónico del cliente. El teléfono y email son obligatorios.',
+          side: 'left',
+          align: 'start',
         },
       },
     ],
@@ -226,6 +325,16 @@ export const catalogTours: Record<string, TourConfig> = {
     description: 'Aprende a organizar tus clientes por categoría (mayorista, minorista, etc.).',
     steps: [
       {
+        element: '[data-tour="client-categories-import-export"]',
+        popover: {
+          title: 'Importar y exportar',
+          description:
+            'Descarga tus categorías en CSV o importa categorías desde un archivo para cargas masivas.',
+          side: 'bottom',
+          align: 'end',
+        },
+      },
+      {
         element: '[data-tour="client-categories-create-btn"]',
         popover: {
           title: 'Nueva categoría',
@@ -233,6 +342,31 @@ export const catalogTours: Record<string, TourConfig> = {
             'Crea una nueva categoría de cliente con nombre y descripción. Las categorías te permiten segmentar tu cartera.',
           side: 'bottom',
           align: 'end',
+          onNextClick: (driverObj: Driver) => {
+            (document.querySelector('[data-tour="client-categories-create-btn"]') as HTMLElement)?.click();
+            setTimeout(() => {
+              boostDrawerForTour();
+              driverObj.moveNext();
+            }, 400);
+          },
+        },
+      },
+      {
+        element: '[data-tour="client-categories-form"]',
+        popover: {
+          title: 'Formulario de categoría',
+          description:
+            'Captura el nombre y una descripción opcional para la categoría. Las categorías te ayudan a segmentar clientes (mayorista, minorista, VIP, etc.).',
+          side: 'left',
+          align: 'start',
+          onPrevClick: (driverObj: Driver) => {
+            closeDrawerForTour();
+            setTimeout(() => driverObj.movePrevious(), 400);
+          },
+          onNextClick: (driverObj: Driver) => {
+            closeDrawerForTour();
+            setTimeout(() => driverObj.moveNext(), 400);
+          },
         },
       },
       {
@@ -246,11 +380,21 @@ export const catalogTours: Record<string, TourConfig> = {
         },
       },
       {
+        element: '[data-tour="client-categories-toggle-inactive"]',
+        popover: {
+          title: 'Mostrar inactivas',
+          description:
+            'Activa este switch para ver también las categorías desactivadas. Por defecto solo se muestran las activas.',
+          side: 'bottom',
+          align: 'end',
+        },
+      },
+      {
         element: '[data-tour="client-categories-table"]',
         popover: {
           title: 'Tabla de categorías',
           description:
-            'Lista de todas las categorías con nombre, descripción y acciones. Puedes editar o eliminar cada una.',
+            'Lista de todas las categorías con nombre, descripción y estado. Puedes editar o activar/desactivar cada una.',
           side: 'top',
           align: 'center',
         },

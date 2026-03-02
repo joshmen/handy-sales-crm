@@ -309,7 +309,7 @@ export default function InventoryMovementsPage() {
               resetForm({ productoId: 0, tipoMovimiento: 'ENTRADA', cantidad: 0, motivo: '', comentario: '' });
               setShowModal(true);
             }}
-            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>Nuevo movimiento</span>
@@ -359,7 +359,7 @@ export default function InventoryMovementsPage() {
           <button
             onClick={handleRefresh}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
           >
             <RefreshCw className={`w-3.5 h-3.5 text-white ${loading ? 'animate-spin' : ''}`} />
             <span className="hidden sm:inline">Actualizar</span>
@@ -466,7 +466,7 @@ export default function InventoryMovementsPage() {
                   >
                     {/* Fecha */}
                     <div className="w-[130px]">
-                      <span className="text-[13px] text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                      <span className="text-[13px] text-gray-900">
                         {movement.createdAt.toLocaleDateString('es-MX')}
                       </span>
                       <div className="text-[11px] text-gray-500">
@@ -476,7 +476,7 @@ export default function InventoryMovementsPage() {
 
                     {/* Producto */}
                     <div className="flex-1 min-w-[180px]">
-                      <div className="text-[13px] font-medium text-gray-900 truncate" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                      <div className="text-[13px] font-medium text-gray-900 truncate">
                         {movement.productName}
                       </div>
                       <div className="text-[11px] text-gray-500">
@@ -493,35 +493,35 @@ export default function InventoryMovementsPage() {
 
                     {/* Cantidad */}
                     <div className="w-[80px] text-right">
-                      <span className={`text-[13px] font-semibold ${qty.color}`} style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                      <span className={`text-[13px] font-semibold ${qty.color}`}>
                         {qty.sign}{Math.abs(movement.quantity)}
                       </span>
                     </div>
 
                     {/* Stock Anterior */}
                     <div className="w-[80px] text-right hidden md:block">
-                      <span className="text-[13px] text-gray-500" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                      <span className="text-[13px] text-gray-500">
                         {movement.previousStock ?? '-'}
                       </span>
                     </div>
 
                     {/* Stock Nuevo */}
                     <div className="w-[80px] text-right hidden md:block">
-                      <span className="text-[13px] text-gray-900 font-medium" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                      <span className="text-[13px] text-gray-900 font-medium">
                         {movement.newStock ?? '-'}
                       </span>
                     </div>
 
                     {/* Motivo */}
                     <div className="w-[140px] pl-4">
-                      <span className="text-[13px] text-gray-900 truncate block" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                      <span className="text-[13px] text-gray-900 truncate block">
                         {movement.reason ? (reasonLabels[movement.reason] || movement.reason) : '-'}
                       </span>
                     </div>
 
                     {/* Usuario */}
                     <div className="w-[150px] hidden lg:block">
-                      <span className="text-[13px] text-gray-500 truncate block" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                      <span className="text-[13px] text-gray-500 truncate block">
                         {movement.userName || '-'}
                       </span>
                     </div>
@@ -565,7 +565,7 @@ export default function InventoryMovementsPage() {
             <button
               onClick={handleCreateMovement}
               disabled={submitting || !watch('productoId') || watch('cantidad') <= 0}
-              className="px-4 py-2 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-4 py-2 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {submitting ? 'Guardando...' : 'Guardar'}
             </button>

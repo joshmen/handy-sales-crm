@@ -298,19 +298,19 @@ export default function AnnouncementsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-medium text-gray-900 text-sm">{ann.titulo}</span>
-                        <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${tipo.color}`}>
+                        <span className={`px-1.5 py-0.5 rounded-md text-xs font-medium ${tipo.color}`}>
                           {tipo.label}
                         </span>
-                        <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${prioridad.color}`}>
+                        <span className={`px-1.5 py-0.5 rounded-md text-xs font-medium ${prioridad.color}`}>
                           {prioridad.label}
                         </span>
                         {ann.displayMode && displayModeLabels[ann.displayMode] && (
-                          <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${displayModeLabels[ann.displayMode].color}`}>
+                          <span className={`px-1.5 py-0.5 rounded-md text-xs font-medium ${displayModeLabels[ann.displayMode].color}`}>
                             {displayModeLabels[ann.displayMode].label}
                           </span>
                         )}
                         {!ann.activo && (
-                          <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-500">
+                          <span className="px-1.5 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-500">
                             Expirado
                           </span>
                         )}
@@ -507,7 +507,7 @@ export default function AnnouncementsPage() {
                     const allFilteredSelected = filtered.every(t => selectedTenantIds.includes(t.id));
                     return (
                       <>
-                        <label className="flex items-center gap-2 p-1.5 rounded hover:bg-purple-50 cursor-pointer border-b border-gray-100 mb-1 pb-1.5">
+                        <label className="flex items-center gap-2 p-1.5 rounded-md hover:bg-purple-50 cursor-pointer border-b border-gray-100 mb-1 pb-1.5">
                           <input
                             type="checkbox"
                             checked={allFilteredSelected && filtered.length > 0}
@@ -526,7 +526,7 @@ export default function AnnouncementsPage() {
                           <span className="text-xs text-gray-400 ml-auto">{filtered.length}</span>
                         </label>
                         {filtered.map(t => (
-                          <label key={t.id} className="flex items-center gap-2 p-1.5 rounded hover:bg-gray-50 cursor-pointer">
+                          <label key={t.id} className="flex items-center gap-2 p-1.5 rounded-md hover:bg-gray-50 cursor-pointer">
                             <input
                               type="checkbox"
                               checked={selectedTenantIds.includes(t.id)}
@@ -564,7 +564,7 @@ export default function AnnouncementsPage() {
             {targetMode === 'roles' && (
               <div className="mt-2 space-y-1 border border-gray-200 rounded-lg p-2">
                 {['Admin', 'Vendedor'].map(role => (
-                  <label key={role} className="flex items-center gap-2 p-1.5 rounded hover:bg-gray-50 cursor-pointer">
+                  <label key={role} className="flex items-center gap-2 p-1.5 rounded-md hover:bg-gray-50 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={selectedRoles.includes(role)}

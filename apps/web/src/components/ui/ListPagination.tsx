@@ -47,7 +47,7 @@ export const ListPagination: React.FC<ListPaginationProps> = ({
 
   return (
     <div className={`flex flex-col sm:flex-row items-center justify-between gap-4 transition-opacity duration-200 ${loading ? 'opacity-60' : 'opacity-100'} ${className ?? ''}`}>
-      <span className="text-sm text-gray-500" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+      <span className="text-sm text-gray-500">
         Mostrando {startItem}-{endItem} de {totalItems} {itemLabel}
       </span>
       <div className="flex items-center gap-2">

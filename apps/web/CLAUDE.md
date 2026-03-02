@@ -1,85 +1,95 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code when working with the web frontend.
 
 ## Project Overview
 
-HandyCRM - A modern Customer Relationship Management system built with Next.js 15, React 19, and TypeScript for sales and route management.
+Handy Suites Web Frontend — Next.js 15 + React 19 + TypeScript CRM/ERP dashboard. Part of the Handy Suites monorepo.
 
 ## Development Commands
 
 ```bash
-# Development
-npm run dev              # Start development server with Turbopack
-npm run build            # Build for production
-npm run start            # Start production server
-npm run preview          # Build and start production server
+# Development (runs on port 1083)
+npm run dev
 
-# Code Quality
-npm run lint             # Run ESLint
-npm run lint:fix         # Fix ESLint issues automatically
-npm run type-check       # TypeScript type checking
+# Build & type check
+npm run build
+npm run type-check
 
-# Testing
-npm run test             # Run tests
-npm run test:watch       # Run tests in watch mode
-npm run test:coverage    # Generate coverage report
+# E2E tests (Playwright)
+npx playwright test                    # Full suite
+npx playwright test auth.spec.ts       # Single file
+npx playwright test --headed           # With browser UI
 
-# Maintenance
-npm run clean            # Clean build cache
-npm run clean:all        # Clean everything including node_modules
-npm run fresh            # Clean install from scratch
-npm run setup            # Install dependencies
-
-# Pre-deployment
-npm run pre-commit       # Run lint and type-check
-npm run pre-deploy       # Full validation (lint, type-check, test)
-npm run verify           # Verify deployment configuration
-
-# Deployment
-npm run deploy:preview   # Deploy to Vercel preview
-npm run deploy:prod      # Deploy to Vercel production
+# Lint
+npm run lint
+npm run lint:fix
 ```
 
 ## Architecture
 
 ### Tech Stack
-- **Framework**: Next.js 15.4.6 with App Router
-- **UI Library**: React 19.1.0
-- **Language**: TypeScript with strict mode
-- **Styling**: Tailwind CSS 3.4 with Tailwind Animate
-- **UI Components**: Radix UI primitives
-- **Forms**: React Hook Form with Zod validation
-- **State Management**: Zustand
-- **Authentication**: NextAuth.js
-- **HTTP Client**: Axios
+- **Framework**: Next.js 15.4.6 (App Router, Turbopack dev)
+- **UI**: React 19.1.0, TypeScript 5 (strict), Tailwind CSS 3.4
+- **Components**: Radix UI primitives + custom components
+- **Icons**: Phosphor Icons (primary), Lucide React (secondary/legacy)
+- **Forms**: React Hook Form + Zod validation
+- **State**: Zustand stores
+- **Auth**: NextAuth.js (JWT strategy, credentials + Google OAuth)
+- **HTTP**: Axios with interceptors
 - **Charts**: Recharts
-- **Media**: Cloudinary integration
-- **Icons**: Lucide React
-- **Build**: Turbopack (development)
+- **Real-time**: SignalR client (auto-reconnect)
+- **Testing**: Playwright E2E (setup project pattern, per-project test users)
 
 ### Project Structure
-- `/src/app/` - Next.js App Router pages and layouts
-  - `layout.tsx` - Root layout with theme support
-  - `page.tsx` - Application pages
-- `/src/components/` - React components
-  - `providers/` - Context providers (ClientProviders)
-  - UI components (Sidebar, Topbar, etc.)
-- `/public/` - Static assets
-- `/.github/workflows/` - CI/CD pipelines (planned)
+```
+src/
+├── app/                    # App Router pages
+│   ├── (dashboard)/        # Authenticated pages (47 screens)
+│   ├── login/              # Login with 2FA + session conflict
+│   ├── register/           # Manual + Google OAuth registration
+│   ├── forgot-password/    # Password reset request
+│   ├── reset-password/     # Password reset with token
+│   ├── verify-email/       # Email verification (6-digit OTP)
+│   └── tenant-suspended/   # Suspended tenant page
+├── components/
+│   ├── auth/               # AuthLayout (split-panel login)
+│   ├── layout/             # Sidebar, Topbar, PageHeader
+│   ├── ui/                 # Radix-based primitives, BrandedLoadingScreen
+│   └── dashboard/          # Dashboard widgets
+├── contexts/               # React contexts (SignalR, Company, Profile, Impersonation)
+├── hooks/                  # Custom hooks (useToast, usePaginated*, useDebounce)
+├── lib/                    # Auth config, constants, validations, utils
+├── services/
+│   └── api/                # Typed API clients (one per domain: clients, products, orders, etc.)
+├── stores/                 # Zustand stores (auth, sidebar, theme, notifications)
+└── types/                  # TypeScript interfaces (one per domain)
+```
 
 ### Key Patterns
-- Dark/light theme support with localStorage persistence
-- Client-side providers wrapped in ClientProviders component
-- Spanish language interface (lang="es")
-- Component library based on Radix UI with class-variance-authority
-- Form validation using React Hook Form + Zod schemas
-- Responsive design with Tailwind CSS
-- Deployment-ready with Vercel configuration
+- Spanish language UI (`lang="es"`)
+- Dark/light theme with localStorage persistence
+- Responsive: table on desktop, cards on mobile
+- PageHeader component for consistent page headers
+- Drawer pattern for create/edit forms (not modals)
+- Phosphor Icons with semantic colors (blue=search, red=delete, amber=edit, etc.)
+- Buttons: `rounded-lg` (8px) standard, company green `#16A34A` for primary CTAs
+- RBAC: middleware.ts + Sidebar filter by role (SuperAdmin, Admin, Supervisor, Vendedor, Viewer)
+- Impersonation: SuperAdmin can impersonate tenant Admin with visual banner
+
+### Port
+- **1083** — Dev server at `http://localhost:1083`
+
+### E2E Testing (Playwright)
+- Config: `playwright.config.ts` with 4 projects (setup-desktop, setup-mobile, Desktop Chrome, Mobile Chrome)
+- Auth setup: `e2e/auth.setup.ts` saves storageState to `e2e/.auth/`
+- Helpers: `e2e/helpers/auth.ts` (loginAsAdmin fast-path, clearCookies for role switches)
+- Dedicated test users per project to avoid session conflicts
+- Run: `npx playwright test` from `apps/web/`
 
 ### Environment Variables
-Required environment variables (see .env.example):
-- NextAuth configuration
-- API endpoints
-- Cloudinary configuration
-- Other service integrations
+- `NEXTAUTH_URL`, `NEXTAUTH_SECRET` — NextAuth config
+- `NEXT_PUBLIC_API_URL` — Main API base URL (default: `http://localhost:1050`)
+- `NEXT_PUBLIC_BILLING_API_URL` — Billing API (default: `http://localhost:1051`)
+- `SOCIAL_LOGIN_SECRET` — Must match JWT__SecretKey on backend
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` — Optional Google OAuth

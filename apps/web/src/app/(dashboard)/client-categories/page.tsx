@@ -166,9 +166,10 @@ export default function ClientCategoriesPage() {
           { label: 'Categorías de clientes' },
         ]}
         title="Categorías de clientes"
+        subtitle={totalItems > 0 ? `${totalItems} categoría${totalItems !== 1 ? 's' : ''}` : undefined}
         actions={
           <>
-            <div className="relative">
+            <div className="relative" data-tour="client-categories-import-export">
               <button
                 onClick={() => setShowDataMenu(!showDataMenu)}
                 className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
@@ -202,7 +203,7 @@ export default function ClientCategoriesPage() {
             <button
               onClick={handleOpenCreate}
               data-tour="client-categories-create-btn"
-              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
             >
               <Plus className="w-4 h-4" />
               <span>Nueva categoría</span>
@@ -220,17 +221,18 @@ export default function ClientCategoriesPage() {
               />
               <button
                 onClick={loadCategories}
-                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
+                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Actualizar</span>
               </button>
 
-              <InactiveToggle
-                value={showInactive}
-                onChange={(v) => { setShowInactive(v); setCurrentPage(1); }}
-                className="ml-auto"
-              />
+              <div data-tour="client-categories-toggle-inactive" className="ml-auto">
+                <InactiveToggle
+                  value={showInactive}
+                  onChange={(v) => { setShowInactive(v); setCurrentPage(1); }}
+                />
+              </div>
             </div>
 
             {/* Mobile Cards */}
@@ -242,24 +244,33 @@ export default function ClientCategoriesPage() {
               )}
               {!loading && paginatedCategories.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12">
-                  <UsersThree className="w-12 h-12 text-purple-300 mb-3" weight="duotone" />
+                  <UsersThree className="w-12 h-12 text-gray-300 mb-3" weight="duotone" />
                   <p className="text-sm text-gray-500">
                     {searchTerm ? 'No se encontraron categorías' : 'No hay categorías'}
                   </p>
+                  {!searchTerm && (
+                    <button
+                      onClick={handleOpenCreate}
+                      className="mt-3 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Crear categoría
+                    </button>
+                  )}
                 </div>
               ) : (
                 paginatedCategories.map((category) => (
                   <div
                     key={category.id}
-                    className="border border-gray-200 rounded-lg p-3 bg-white"
+                    className={`border border-gray-200 rounded-lg p-3 bg-white ${!category.activo ? 'opacity-60' : ''}`}
                   >
                     {/* Row 1: Icon + Name/Description */}
                     <div className="flex items-center gap-3 mb-2">
-                      <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
-                        <UsersThree className="w-5 h-5 text-indigo-600" weight="duotone" />
+                      <div className="w-10 h-10 rounded bg-gray-900 flex items-center justify-center flex-shrink-0">
+                        <UsersThree className="w-5 h-5 text-white" weight="duotone" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-gray-900 truncate" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                        <div className="text-sm font-medium text-gray-900 truncate">
                           {category.nombre}
                         </div>
                         <div className="text-xs text-gray-500 truncate">{category.descripcion || 'Sin descripción'}</div>
@@ -269,7 +280,7 @@ export default function ClientCategoriesPage() {
                     <div className="flex items-center justify-end gap-3">
                       <button
                         onClick={() => handleOpenEdit(category)}
-                        className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors disabled:opacity-50"
+                        className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors disabled:opacity-50"
                       >
                         <Edit2 className="w-3.5 h-3.5 text-amber-400 hover:text-amber-600" />
                         <span>Editar</span>
@@ -291,11 +302,11 @@ export default function ClientCategoriesPage() {
             <div data-tour="client-categories-table" className="hidden sm:block bg-white border border-gray-200 rounded-lg overflow-x-auto">
               {/* Table Header - Always visible */}
               <div className="min-w-[600px] flex items-center bg-gray-50 px-4 h-10 border-b border-gray-200">
-                <div className="w-[80px] text-xs font-semibold text-gray-600">ID</div>
-                <div className="flex-1 text-xs font-semibold text-gray-600">Nombre</div>
-                <div className="flex-1 text-xs font-semibold text-gray-600">Descripción</div>
-                <div className="w-[50px] text-xs font-semibold text-gray-600 text-center">Estado</div>
-                <div className="w-[60px] text-xs font-semibold text-gray-600 text-center">Editar</div>
+                <div className="w-[80px] text-[11px] font-medium text-gray-500 uppercase">ID</div>
+                <div className="flex-1 text-[11px] font-medium text-gray-500 uppercase">Nombre</div>
+                <div className="flex-1 text-[11px] font-medium text-gray-500 uppercase">Descripción</div>
+                <div className="w-[50px] text-[11px] font-medium text-gray-500 uppercase text-center">Estado</div>
+                <div className="w-[60px] text-[11px] font-medium text-gray-500 uppercase text-center">Editar</div>
               </div>
 
               {/* Table Body - With loading overlay */}
@@ -305,13 +316,22 @@ export default function ClientCategoriesPage() {
                 {/* Empty State */}
                 {!loading && paginatedCategories.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-64 py-20">
-                    <UsersThree className="w-16 h-16 text-purple-300 mb-4" weight="duotone" />
+                    <UsersThree className="w-16 h-16 text-gray-300 mb-4" weight="duotone" />
                     <h3 className="text-lg font-semibold text-gray-700 mb-2">No hay categorías</h3>
                     <p className="text-sm text-gray-500 text-center">
                       {searchTerm
                         ? 'No se encontraron categorías con ese término'
                         : 'Crea tu primera categoría de clientes para comenzar'}
                     </p>
+                    {!searchTerm && (
+                      <button
+                        onClick={handleOpenCreate}
+                        className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Crear categoría
+                      </button>
+                    )}
                   </div>
                 ) : (
                   /* Table Rows - With opacity transition */
@@ -343,7 +363,7 @@ export default function ClientCategoriesPage() {
                           <button
                             onClick={() => handleOpenEdit(category)}
                             disabled={loading}
-                            className="p-1.5 text-amber-400 hover:text-amber-600 hover:bg-green-50 rounded transition-colors disabled:opacity-50"
+                            className="p-1.5 text-amber-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors disabled:opacity-50"
                             title="Editar"
                           >
                             <Edit2 className="w-4 h-4" />
@@ -399,7 +419,7 @@ export default function ClientCategoriesPage() {
             </div>
           }
         >
-          <div className="p-6 space-y-4">
+          <div className="p-6 space-y-4" data-tour="client-categories-form">
             <div className="space-y-2">
               <label className="text-sm font-medium">
                 Nombre <span className="text-red-500">*</span>

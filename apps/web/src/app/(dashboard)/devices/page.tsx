@@ -304,7 +304,7 @@ export default function DevicesPage() {
           <div>
             <h1
               className="text-xl sm:text-2xl font-bold text-gray-900"
-              style={{ fontFamily: 'Space Grotesk, sans-serif' }}
+
             >
               Dispositivos
             </h1>
@@ -317,7 +317,7 @@ export default function DevicesPage() {
               onClick={handleCleanExpired}
               disabled={cleaningExpired || loading}
               className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-700 border border-gray-200 rounded hover:bg-gray-50 transition-colors disabled:opacity-50"
-              style={{ fontFamily: 'Space Grotesk, sans-serif' }}
+
             >
               {cleaningExpired ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -329,8 +329,8 @@ export default function DevicesPage() {
             <button
               onClick={handleRefresh}
               disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors disabled:opacity-50"
-              style={{ fontFamily: 'Space Grotesk, sans-serif' }}
+              className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+
             >
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -355,14 +355,14 @@ export default function DevicesPage() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              style={{ fontFamily: 'Space Grotesk, sans-serif' }}
+
             />
           </div>
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
             className="w-full sm:w-48 px-3 py-2 text-xs border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white"
-            style={{ fontFamily: 'Space Grotesk, sans-serif' }}
+
           >
             <option value="all">Todos los estados</option>
             <option value="0">Activo</option>
@@ -435,9 +435,6 @@ export default function DevicesPage() {
                           <div className="flex items-center gap-2">
                             <span
                               className="text-sm font-medium text-gray-900 truncate"
-                              style={{
-                                fontFamily: 'Space Grotesk, sans-serif',
-                              }}
                             >
                               {session.usuarioNombre}
                             </span>
@@ -477,9 +474,6 @@ export default function DevicesPage() {
                             onClick={() => handleRevokeSession(session)}
                             disabled={revokingId === session.id}
                             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded-md hover:bg-red-100 transition-colors disabled:opacity-50"
-                            style={{
-                              fontFamily: 'Space Grotesk, sans-serif',
-                            }}
                           >
                             {revokingId === session.id ? (
                               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -542,9 +536,6 @@ export default function DevicesPage() {
                                 <div>
                                   <div
                                     className="text-sm font-medium text-gray-900"
-                                    style={{
-                                      fontFamily: 'Space Grotesk, sans-serif',
-                                    }}
                                   >
                                     {session.usuarioNombre}
                                   </div>
@@ -569,9 +560,6 @@ export default function DevicesPage() {
                                 <div>
                                   <div
                                     className="text-sm text-gray-900"
-                                    style={{
-                                      fontFamily: 'Space Grotesk, sans-serif',
-                                    }}
                                   >
                                     {session.deviceName ||
                                       session.deviceTypeNombre}
@@ -595,9 +583,6 @@ export default function DevicesPage() {
                             <td className="px-4 py-3">
                               <div
                                 className="text-sm text-gray-700"
-                                style={{
-                                  fontFamily: 'Space Grotesk, sans-serif',
-                                }}
                                 title={new Date(
                                   session.lastActivity
                                 ).toLocaleString('es-MX')}
@@ -623,9 +608,6 @@ export default function DevicesPage() {
                                   onClick={() => handleRevokeSession(session)}
                                   disabled={revokingId === session.id}
                                   className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded-md hover:bg-red-100 transition-colors disabled:opacity-50"
-                                  style={{
-                                    fontFamily: 'Space Grotesk, sans-serif',
-                                  }}
                                 >
                                   {revokingId === session.id ? (
                                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -654,7 +636,7 @@ export default function DevicesPage() {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <span
                   className="text-sm text-gray-500"
-                  style={{ fontFamily: 'Space Grotesk, sans-serif' }}
+
                 >
                   Mostrando {startItem}-{endItem} de {totalItems} sesiones
                 </span>

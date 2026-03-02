@@ -1,119 +1,88 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code when working with the Main API.
 
 ## Project Overview
 
-HandySales ERP Backend - A .NET 8 Web API for sales routing system using Clean Architecture with Domain-Driven Design principles.
+Handy Suites Main API — .NET 8 Web API for CRM/ERP system. Clean Architecture with Minimal APIs. Part of the Handy Suites monorepo.
 
 ## Development Commands
 
 ```bash
-# Build the solution from root directory
-dotnet build src/HandySales.sln
+# Build from monorepo root
+dotnet build apps/api/src/HandySales.Api/HandySales.Api.csproj
 
-# Run the API project
-cd src/HandySales.Api
-dotnet run
+# Run via Docker (preferred — see root CLAUDE.md)
+docker-compose -f docker-compose.dev.yml up -d --build api_main
 
 # Run tests
-cd tests/HandySales.Tests
 dotnet test
 
-# Run with specific environment
-$env:ASPNETCORE_ENVIRONMENT = "Testing"  # PowerShell
-export ASPNETCORE_ENVIRONMENT=Testing     # Bash/Linux
+# EF Core migrations (PATH fix required in bash)
+export PATH="$PATH:/c/Users/AW AREA 51M R2/.dotnet/tools"
+dotnet-ef migrations add <MigrationName> \
+  --project libs/HandySales.Infrastructure \
+  --startup-project apps/api/src/HandySales.Api \
+  --output-dir Migrations
 
-# Entity Framework migrations (if needed)
-dotnet ef migrations add <MigrationName> -p src/HandySales.Infrastructure -s src/HandySales.Api
-dotnet ef database update -p src/HandySales.Infrastructure -s src/HandySales.Api
+# Migrations auto-apply on API startup in dev — no manual `database update` needed
+
+# Health check
+curl -s http://localhost:1050/health
 ```
 
 ## Architecture
 
 ### Tech Stack
 - **Framework**: .NET 8 Web API with Minimal APIs
-- **Database**: MySQL with Pomelo.EntityFrameworkCore (v8.0.3)
-- **Authentication**: JWT Bearer with System.IdentityModel.Tokens.Jwt
-- **Validation**: FluentValidation (v11.7.0)
-- **Mapping**: AutoMapper (v14.0.0)
-- **Documentation**: Swagger/OpenAPI (Swashbuckle.AspNetCore)
-- **Logging**: Serilog.AspNetCore with file and console sinks
-- **Password Hashing**: BCrypt.Net-Next
-- **CORS**: Configured for frontend integration
-- **Error Handling**: Global exception middleware
-- **Testing**: xUnit with FluentAssertions, Moq, and AspNetCore.Mvc.Testing
+- **Database**: MySQL 8.0 with Pomelo.EntityFrameworkCore
+- **Authentication**: JWT Bearer + 2FA/TOTP + session management
+- **Real-time**: SignalR (self-hosted hub at `/hubs/notifications`)
+- **Validation**: FluentValidation
+- **Mapping**: AutoMapper
+- **Logging**: Serilog with Seq sink (port 1082)
+- **Testing**: xUnit + FluentAssertions + Moq + WebApplicationFactory
 
 ### Clean Architecture Layers
 
-1. **HandySales.Api** - Presentation Layer
-   - Minimal API endpoints organized by feature (`/Endpoints` folder)
-   - Configuration extensions (`/Configuration` folder):
-     - `CorsExtensions.cs` - CORS policy setup
-     - `JwtExtensions.cs` - JWT authentication configuration
-     - `LoggingExtensions.cs` - Serilog setup
-     - `ServiceRegistrationExtensions.cs` - DI container setup
-   - Custom middleware (`/Middleware` folder):
-     - `GlobalExceptionMiddleware.cs` - Centralized error handling
-     - `RequestLoggingMiddleware.cs` - Request/response logging
-   - Entry point: `Program.cs` with middleware pipeline configuration
+1. **HandySales.Api** (`apps/api/src/HandySales.Api/`) — Presentation
+   - 47 endpoint files in `/Endpoints/`
+   - Configuration: CORS, JWT, Logging, DI in `/Configuration/`
+   - Middleware: GlobalException, RequestLogging, Maintenance, SessionValidation, TenantFilter
+   - Entry point: `Program.cs`
 
-2. **HandySales.Application** - Business Logic Layer
-   - Feature-based organization with folders for each domain area:
-     - Auth, Clientes, Productos, Inventario, ListasPrecios
-     - Precios, Descuentos, Promociones, Zonas
-     - FamiliasProductos, CategoriasClientes, CategoriasProductos
-     - UnidadesMedida, Usuarios
-   - Contains DTOs, validators, and business logic services
-   - References: HandySales.Domain, HandySales.Shared
+2. **HandySales.Application** (`libs/HandySales.Application/`) — Business Logic
+   - Feature-based folders: Auth, Clientes, Productos, Pedidos, Cobros, Rutas, Inventario, etc.
+   - DTOs, validators, services, interfaces
 
-3. **HandySales.Domain** - Core Domain Layer
-   - Entity models in `/Entities` folder (14 main entities):
-     - Core: Tenant, Usuario, Cliente, Producto
-     - Pricing: ListaPrecio, PrecioPorProducto, DescuentoPorCantidad, Promocion
-     - Classification: CategoriaCliente, CategoriaProducto, FamiliaProducto, UnidadMedida
-     - Location/Stock: Zona, Inventario
-   - Domain common patterns in `/Common` folder
-   - No external dependencies (pure domain logic)
+3. **HandySales.Domain** (`libs/HandySales.Domain/`) — Core Domain
+   - 43 entity models in `/Entities/`
+   - Common: `AuditableEntity` base class (soft deletes, audit fields)
+   - No external dependencies
 
-4. **HandySales.Infrastructure** - Data Access Layer
-   - Entity Framework Core implementation with MySQL
-   - `HandySalesDbContext` in `/Persistence` folder with all entity DbSets
-   - Repository implementations in `/Repositories` folder
-   - References: HandySales.Application, HandySales.Domain, HandySales.Shared
+4. **HandySales.Infrastructure** (`libs/HandySales.Infrastructure/`) — Data Access
+   - `HandySalesDbContext` with multi-tenant global query filters
+   - Repository implementations with `AsNoTracking` for reads
+   - `DatabaseMigrator` with MySQL advisory lock for safe auto-migration
 
-5. **HandySales.Shared** - Cross-cutting Concerns
-   - Shared utilities and constants across all layers
+5. **HandySales.Shared** (`libs/HandySales.Shared/`) — Cross-cutting utilities
 
-### Key Patterns
-- Clean Architecture with strict dependency inversion
-- Minimal APIs organized by feature endpoints (14 endpoint files)
-- JWT Bearer authentication with custom configuration
-- FluentValidation for request validation
-- Repository pattern for data access abstraction
-- Global exception handling with structured error responses
-- Structured logging with Serilog (file + console outputs)
-- CORS configuration for multiple frontend ports (3000, 3001, 5173)
-- Request/response logging middleware for monitoring
-- Spanish language domain modeling (business requirements)
-- Central package version management via Directory.Packages.props
+### Key Features (2026)
+- Multi-tenant with `tenant_id` global query filters + soft deletes (`EliminadoEn`)
+- RBAC: SuperAdmin, Admin, Supervisor, Vendedor, Viewer roles
+- Impersonation (SuperAdmin → tenant Admin) with audit trail
+- SignalR real-time notifications + announcement system
+- Maintenance mode middleware with auto-banner
+- 2FA/TOTP with encrypted secrets + recovery codes
+- Device session management with remote revocation
+- Subscription plan enforcement
+- Auto-seeding for new tenants (`TenantSeedService`)
+- Crash report collection endpoint (mobile app)
 
-### Database Architecture
-- MySQL database with Pomelo provider
-- Multi-tenant support via Tenant entity
-- Domain entities organized around sales/ERP concepts:
-  - Customer management (Cliente, CategoriaCliente)
-  - Product catalog (Producto, CategoriaProducto, FamiliaProducto, UnidadMedida)
-  - Pricing system (ListaPrecio, PrecioPorProducto, DescuentoPorCantidad, Promocion)
-  - Inventory tracking (Inventario)
-  - Geographic organization (Zona)
-  - User management (Usuario)
+### Database
+- MySQL 8.0 (Pomelo provider), dual schemas: `handy_erp` + `handy_billing`
+- Multi-tenant: all business tables have `tenant_id`
+- Soft deletes via `SaveChangesAsync` override (converts `.Remove()` to `EliminadoEn` timestamp)
 
-## Recent Improvements
-
-### Security & Reliability (2024)
-- **Global Exception Handling**: `GlobalExceptionMiddleware` for consistent error responses across all endpoints
-- **Request Logging**: `RequestLoggingMiddleware` for comprehensive request/response monitoring
-- **CORS Configuration**: Support for frontend applications on development ports (3000, 3001, 5173)
-- **Structured Logging**: Serilog implementation with file rotation and console output for production monitoring
-- **JWT Security**: Centralized JWT configuration with proper token validation
+### Port
+- **1050** — API + Swagger UI at `http://localhost:1050/swagger`

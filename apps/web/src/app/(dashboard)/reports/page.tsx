@@ -160,7 +160,7 @@ export default function ReportsPage() {
               <ArrowLeft className="w-5 h-5 text-gray-600" />
             </button>
           )}
-          <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <h1 className="text-2xl font-bold text-gray-900">
             {activeCard ? activeCard.label : 'Reportes y Análisis'}
           </h1>
         </div>

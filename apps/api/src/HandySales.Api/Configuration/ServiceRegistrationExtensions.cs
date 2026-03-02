@@ -110,6 +110,11 @@ using HandySales.Infrastructure.Tenants.Services;
 using HandySales.Application.Auth.Validators;
 using HandySales.Application.SubscriptionPlans.Interfaces;
 using HandySales.Infrastructure.Repositories.SubscriptionPlans;
+using HandySales.Application.Automations.Interfaces;
+using HandySales.Application.Automations.Services;
+using HandySales.Infrastructure.Repositories.Automations;
+using HandySales.Api.Automations;
+using HandySales.Api.Automations.Handlers;
 
 namespace HandySales.Api.Configuration;
 
@@ -300,6 +305,14 @@ public static class ServiceRegistrationExtensions
         // Subscription Plans (SuperAdmin CRUD + Enforcement)
         services.AddScoped<ISubscriptionPlanRepository, SubscriptionPlanRepository>();
         services.AddScoped<ISubscriptionEnforcementService, SubscriptionEnforcementService>();
+
+        // Automations
+        services.AddScoped<IAutomationRepository, AutomationRepository>();
+        services.AddScoped<AutomationAppService>();
+        services.AddScoped<IAutomationHandler, StockBajoAlertaHandler>();
+        services.AddScoped<IAutomationHandler, ResumenDiarioHandler>();
+        services.AddScoped<IAutomationHandler, CobroVencidoRecordatorioHandler>();
+        services.AddScoped<IAutomationHandler, BienvenidaClienteHandler>();
 
         return services;
     }

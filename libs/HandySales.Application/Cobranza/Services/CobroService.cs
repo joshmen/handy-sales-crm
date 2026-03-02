@@ -45,6 +45,6 @@ public class CobroService
     public Task<ResumenCarteraDto> ObtenerResumenCarteraAsync()
         => _repo.ObtenerResumenCarteraAsync(_tenant.TenantId);
 
-    public Task<EstadoCuentaDto?> ObtenerEstadoCuentaAsync(int clienteId)
-        => _repo.ObtenerEstadoCuentaAsync(clienteId, _tenant.TenantId);
+    public Task<EstadoCuentaDto?> ObtenerEstadoCuentaAsync(int clienteId, bool historico = false)
+        => _repo.ObtenerEstadoCuentaAsync(clienteId, _tenant.TenantId, historico);
 }

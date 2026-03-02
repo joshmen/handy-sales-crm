@@ -1,14 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Space_Grotesk } from 'next/font/google';
 import { ShieldOff } from 'lucide-react';
-
-const spaceGrotesk = Space_Grotesk({
-  subsets: ['latin'],
-  weight: ['700'],
-  display: 'swap',
-});
 
 export default function TenantSuspendedPage() {
   const router = useRouter();
@@ -19,9 +12,9 @@ export default function TenantSuspendedPage() {
         {/* Brand */}
         <div className="flex items-center justify-center gap-3 mb-8">
           <div className="w-10 h-10 bg-[#16A34A] rounded-xl flex items-center justify-center">
-            <span className={`text-white font-bold text-lg ${spaceGrotesk.className}`}>H</span>
+            <span className="text-white font-bold text-lg">H</span>
           </div>
-          <span className={`text-[#111827] text-2xl font-bold ${spaceGrotesk.className}`}>
+          <span className="text-[#111827] text-2xl font-bold">
             Handy Suites
           </span>
         </div>
@@ -35,7 +28,7 @@ export default function TenantSuspendedPage() {
 
         {/* Message */}
         <div className="space-y-3">
-          <h1 className={`text-2xl font-bold text-[#111827] ${spaceGrotesk.className}`}>
+          <h1 className="text-2xl font-bold text-[#111827]">
             Cuenta Desactivada
           </h1>
           <p className="text-gray-600 text-sm leading-relaxed">

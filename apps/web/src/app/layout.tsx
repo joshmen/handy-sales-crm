@@ -85,17 +85,13 @@ export default function RootLayout({
                   if (companySettings) {
                     var settings = JSON.parse(companySettings);
                     if (settings.primaryColor) {
-                      document.documentElement.style.setProperty('--primary-color', settings.primaryColor);
-                    }
-                    if (settings.secondaryColor) {
-                      document.documentElement.style.setProperty('--secondary-color', settings.secondaryColor);
+                      document.documentElement.style.setProperty('--company-primary-color', settings.primaryColor);
                     }
                   }
                 } catch (e) {
                   // Si localStorage no está disponible, usar valores por defecto
                   document.documentElement.classList.add('light');
-                  document.documentElement.style.setProperty('--primary-color', '#3B82F6');
-                  document.documentElement.style.setProperty('--secondary-color', '#8B5CF6');
+                  document.documentElement.style.setProperty('--company-primary-color', '#16a34a');
                 }
               })();
             `,

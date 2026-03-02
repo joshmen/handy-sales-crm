@@ -57,6 +57,13 @@
 - **Consecuencia**: Un test flaky al inicio consume retries, dejando 0 intentos para tests posteriores.
 - **Fix**: Hacer tests tempranos en el bloque serial lo más robustos posible (retry loops internos). Tests API-only que no dependen de UI serial deberían idealmente estar en describes separados.
 
+## JWT Claim Names — Auto-mapping (Mar 2026)
+- **Problem**: JWT `"sub"` claim gets auto-mapped by ASP.NET Core to `ClaimTypes.NameIdentifier` (long-form URI). `FindFirst("sub")` may not find it.
+- **Pattern**: Always use `ClaimTypes.NameIdentifier` first with `"sub"` fallback: `context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? context.User.FindFirst("sub")?.Value`
+- **Tenant claim**: Custom claims like `"tenant_id"` are NOT mapped, so `FindFirst("tenant_id")` works directly.
+- **Consequence**: Using only `FindFirst("sub")` returns null → userId defaults to 0 → FK constraint failure on insert.
+- **Rule**: When writing new endpoints that need user ID, copy the established pattern from `ProfileEndpoints.cs` or `CompanyEndpoints.cs`.
+
 ## E2E — Mobile botones icon-only
 - **Problema**: En viewport mobile (Pixel 5), botones de acción muestran solo `<img>` sin texto. `getByRole('button', { name: /texto/i })` no encuentra nada.
 - **Fix**: Skip con `if (testInfo.project.name === 'Mobile Chrome') { test.skip(); return; }` para tests que verifican texto de botones.

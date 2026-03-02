@@ -16,7 +16,7 @@ export interface ImportErrorDetail {
   errores: string[];
 }
 
-export type ExportEntity = 'clientes' | 'productos' | 'inventario' | 'pedidos' | 'rutas' | 'zonas' | 'categorias-clientes' | 'categorias-productos' | 'familias-productos' | 'unidades-medida' | 'listas-precios' | 'descuentos' | 'promociones';
+export type ExportEntity = 'clientes' | 'productos' | 'inventario' | 'pedidos' | 'cobros' | 'rutas' | 'zonas' | 'categorias-clientes' | 'categorias-productos' | 'familias-productos' | 'unidades-medida' | 'listas-precios' | 'descuentos' | 'promociones';
 export type ImportEntity = 'clientes' | 'productos' | 'inventario' | 'zonas' | 'categorias-clientes' | 'categorias-productos' | 'familias-productos' | 'unidades-medida' | 'listas-precios' | 'descuentos' | 'promociones';
 
 // ═══════════════════════════════════════════════════════

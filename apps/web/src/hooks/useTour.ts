@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import type { Driver } from 'driver.js';
 import { getTourForPathname } from '@/data/tours';
-import { restoreDrawerFromTour, closeDrawerForTour } from '@/data/tours/types';
+import { restoreDrawerFromTour, closeDrawerForTour, consumeTourContinuation } from '@/data/tours/types';
 
 const STORAGE_KEY = 'handy-tours-completed';
 
@@ -75,14 +75,14 @@ export function useTour() {
       showProgress: true,
       animate: true,
       smoothScroll: true,
-      allowClose: true,
+      allowClose: false,
       overlayOpacity: 0.55,
       stagePadding: 10,
       stageRadius: 8,
       popoverClass: 'handy-tour-popover',
       nextBtnText: 'Siguiente',
       prevBtnText: 'Anterior',
-      doneBtnText: 'Terminar',
+      doneBtnText: tourConfig.doneBtnText || 'Terminar',
       progressText: '{{current}} de {{total}}',
       onDestroyed: () => {
         if (driverRef.current?.isLastStep()) {
@@ -120,6 +120,16 @@ export function useTour() {
       instance.drive();
     });
   }, [tourConfig]);
+
+  // Auto-start tour if navigated from another tour (cross-page continuation)
+  useEffect(() => {
+    const continueId = consumeTourContinuation();
+    if (continueId && tourConfig?.id === continueId) {
+      // Delay to ensure DOM is rendered with data-tour attributes
+      const timer = setTimeout(() => startTour(), 600);
+      return () => clearTimeout(timer);
+    }
+  }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const stopTour = useCallback(() => {
     if (driverRef.current) {

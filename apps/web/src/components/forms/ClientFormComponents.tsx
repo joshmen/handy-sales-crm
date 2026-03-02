@@ -95,7 +95,7 @@ export function inputClass(error?: { message?: string }) {
 export function SectionTitle({ children, subtitle }: { children: React.ReactNode; subtitle?: string }) {
   return (
     <div className="flex items-center gap-2 mb-4">
-      <h2 className="text-[15px] font-bold text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+      <h2 className="text-[15px] font-bold text-gray-900">
         {children}
       </h2>
       {subtitle && <span className="text-xs text-gray-400">({subtitle})</span>}

@@ -15,7 +15,7 @@ public class CobroCreateDtoValidator : AbstractValidator<CobroCreateDto>
             .LessThanOrEqualTo(99_999_999.99m).WithMessage("El monto excede el máximo permitido");
 
         RuleFor(x => x.MetodoPago)
-            .InclusiveBetween(1, 10).WithMessage("Método de pago inválido");
+            .InclusiveBetween(0, 5).WithMessage("Método de pago inválido");
 
         RuleFor(x => x.Referencia)
             .MaximumLength(200).WithMessage("La referencia no debe exceder 200 caracteres")
@@ -36,7 +36,7 @@ public class CobroUpdateDtoValidator : AbstractValidator<CobroUpdateDto>
             .LessThanOrEqualTo(99_999_999.99m).WithMessage("El monto excede el máximo permitido");
 
         RuleFor(x => x.MetodoPago)
-            .InclusiveBetween(1, 10).WithMessage("Método de pago inválido");
+            .InclusiveBetween(0, 5).WithMessage("Método de pago inválido");
 
         RuleFor(x => x.Referencia)
             .MaximumLength(200).WithMessage("La referencia no debe exceder 200 caracteres")

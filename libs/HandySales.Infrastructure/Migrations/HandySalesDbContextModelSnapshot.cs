@@ -460,6 +460,157 @@ namespace HandySales.Infrastructure.Migrations
                     b.ToTable("AnnouncementDismissals", (string)null);
                 });
 
+            modelBuilder.Entity("HandySales.Domain.Entities.AutomationExecution", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("ActionTaken")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)")
+                        .HasColumnName("action_taken");
+
+                    b.Property<int>("AutomationId")
+                        .HasColumnType("int")
+                        .HasColumnName("automation_id");
+
+                    b.Property<DateTime>("EjecutadoEn")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("ejecutado_en");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(1000)
+                        .HasColumnType("varchar(1000)")
+                        .HasColumnName("error_message");
+
+                    b.Property<string>("ResultadoJson")
+                        .HasColumnType("longtext")
+                        .HasColumnName("resultado_json");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int")
+                        .HasColumnName("status");
+
+                    b.Property<string>("TemplateSlug")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("template_slug");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("TriggerEntity")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("trigger_entity");
+
+                    b.Property<int?>("TriggerEntityId")
+                        .HasColumnType("int")
+                        .HasColumnName("trigger_entity_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AutomationId");
+
+                    b.HasIndex("TenantId", "EjecutadoEn");
+
+                    b.HasIndex("TenantId", "TemplateSlug");
+
+                    b.ToTable("AutomationExecutions");
+                });
+
+            modelBuilder.Entity("HandySales.Domain.Entities.AutomationTemplate", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ActionType")
+                        .HasColumnType("int")
+                        .HasColumnName("action_type");
+
+                    b.Property<int>("Categoria")
+                        .HasColumnType("int")
+                        .HasColumnName("categoria");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("DefaultParamsJson")
+                        .HasColumnType("json")
+                        .HasColumnName("default_params_json");
+
+                    b.Property<string>("Descripcion")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)")
+                        .HasColumnName("descripcion");
+
+                    b.Property<string>("DescripcionCorta")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)")
+                        .HasColumnName("descripcion_corta");
+
+                    b.Property<string>("Icono")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("icono");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("nombre");
+
+                    b.Property<int>("Orden")
+                        .HasColumnType("int")
+                        .HasColumnName("orden");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("slug");
+
+                    b.Property<int>("Tier")
+                        .HasColumnType("int")
+                        .HasColumnName("tier");
+
+                    b.Property<string>("TriggerCron")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("trigger_cron");
+
+                    b.Property<string>("TriggerEvent")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("trigger_event");
+
+                    b.Property<int>("TriggerType")
+                        .HasColumnType("int")
+                        .HasColumnName("trigger_type");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Slug")
+                        .IsUnique();
+
+                    b.ToTable("AutomationTemplates");
+                });
+
             modelBuilder.Entity("HandySales.Domain.Entities.Cliente", b =>
                 {
                     b.Property<int>("Id")
@@ -3685,6 +3836,84 @@ namespace HandySales.Infrastructure.Migrations
                     b.ToTable("Tenants");
                 });
 
+            modelBuilder.Entity("HandySales.Domain.Entities.TenantAutomation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ActivatedBy")
+                        .HasColumnType("int")
+                        .HasColumnName("activated_by");
+
+                    b.Property<bool>("Activo")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("activo");
+
+                    b.Property<DateTime?>("ActualizadoEn")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("actualizado_en");
+
+                    b.Property<string>("ActualizadoPor")
+                        .HasColumnType("longtext")
+                        .HasColumnName("actualizado_por");
+
+                    b.Property<DateTime>("CreadoEn")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("creado_en");
+
+                    b.Property<string>("CreadoPor")
+                        .HasColumnType("longtext")
+                        .HasColumnName("creado_por");
+
+                    b.Property<DateTime?>("EliminadoEn")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("eliminado_en");
+
+                    b.Property<string>("EliminadoPor")
+                        .HasColumnType("longtext")
+                        .HasColumnName("eliminado_por");
+
+                    b.Property<int>("ExecutionCount")
+                        .HasColumnType("int")
+                        .HasColumnName("execution_count");
+
+                    b.Property<DateTime?>("LastExecutedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("last_executed_at");
+
+                    b.Property<string>("ParamsJson")
+                        .HasColumnType("json")
+                        .HasColumnName("params_json");
+
+                    b.Property<int>("TemplateId")
+                        .HasColumnType("int")
+                        .HasColumnName("template_id");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActivatedBy");
+
+                    b.HasIndex("TemplateId");
+
+                    b.HasIndex("TenantId", "TemplateId")
+                        .IsUnique();
+
+                    b.ToTable("TenantAutomations");
+                });
+
             modelBuilder.Entity("HandySales.Domain.Entities.TwoFactorRecoveryCode", b =>
                 {
                     b.Property<int>("Id")
@@ -4061,6 +4290,17 @@ namespace HandySales.Infrastructure.Migrations
                     b.Navigation("Announcement");
 
                     b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("HandySales.Domain.Entities.AutomationExecution", b =>
+                {
+                    b.HasOne("HandySales.Domain.Entities.TenantAutomation", "Automation")
+                        .WithMany()
+                        .HasForeignKey("AutomationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Automation");
                 });
 
             modelBuilder.Entity("HandySales.Domain.Entities.Cliente", b =>
@@ -4690,6 +4930,33 @@ namespace HandySales.Infrastructure.Migrations
                     b.Navigation("Zona");
                 });
 
+            modelBuilder.Entity("HandySales.Domain.Entities.TenantAutomation", b =>
+                {
+                    b.HasOne("HandySales.Domain.Entities.Usuario", "ActivatedByUser")
+                        .WithMany()
+                        .HasForeignKey("ActivatedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("HandySales.Domain.Entities.AutomationTemplate", "Template")
+                        .WithMany("TenantAutomations")
+                        .HasForeignKey("TemplateId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("HandySales.Domain.Entities.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ActivatedByUser");
+
+                    b.Navigation("Template");
+
+                    b.Navigation("Tenant");
+                });
+
             modelBuilder.Entity("HandySales.Domain.Entities.TwoFactorRecoveryCode", b =>
                 {
                     b.HasOne("HandySales.Domain.Entities.Usuario", "Usuario")
@@ -4765,6 +5032,11 @@ namespace HandySales.Infrastructure.Migrations
             modelBuilder.Entity("HandySales.Domain.Entities.Announcement", b =>
                 {
                     b.Navigation("Dismissals");
+                });
+
+            modelBuilder.Entity("HandySales.Domain.Entities.AutomationTemplate", b =>
+                {
+                    b.Navigation("TenantAutomations");
                 });
 
             modelBuilder.Entity("HandySales.Domain.Entities.Company", b =>

@@ -303,7 +303,7 @@ export default function InventoryPage() {
           <button
             data-tour="inventory-add-btn"
             onClick={handleOpenCreate}
-            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>Nuevo producto</span>
@@ -324,7 +324,7 @@ export default function InventoryPage() {
           <button
             onClick={handleRefresh}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             <span className="hidden sm:inline">Actualizar</span>
@@ -358,7 +358,7 @@ export default function InventoryPage() {
                     {!searchTerm && (
                       <button
                         onClick={handleOpenCreate}
-                        className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded hover:bg-green-700"
+                        className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
                       >
                         Agregar producto al inventario
                       </button>
@@ -445,7 +445,7 @@ export default function InventoryPage() {
                       {!searchTerm && (
                         <button
                           onClick={handleOpenCreate}
-                          className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded hover:bg-green-700"
+                          className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
                         >
                           Agregar producto al inventario
                         </button>
@@ -559,7 +559,7 @@ export default function InventoryPage() {
               <button
                 onClick={handleSubmit}
                 disabled={submitting || (modalMode === 'create' && !watch('productoId'))}
-                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center gap-2"
               >
                 {submitting && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />}
                 {submitting ? 'Guardando...' : modalMode === 'create' ? 'Agregar' : 'Guardar cambios'}

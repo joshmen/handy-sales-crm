@@ -210,7 +210,7 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
     <form ref={formRef} onSubmit={handleSubmit(onFormSubmit)} className="flex flex-col gap-5 p-6" data-tour="order-form">
       {/* Información del pedido */}
       <div className="space-y-4">
-        <div>
+        <div data-tour="order-client-selector">
           <label className="block text-[13px] font-medium text-gray-700 mb-1">
             Cliente <span className="text-red-500">*</span>
           </label>
@@ -288,7 +288,7 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
       <div className="h-px bg-gray-200" />
 
       {/* Agregar productos */}
-      <div className="space-y-3">
+      <div className="space-y-3" data-tour="order-add-product">
         <h3 className="text-sm font-semibold text-gray-800">Agregar Producto</h3>
         <div className="flex gap-2">
           <div className="flex-1">
@@ -316,7 +316,7 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
 
       {/* Products table */}
       {orderItems.length > 0 ? (
-        <div className="border border-gray-200 rounded-lg overflow-hidden">
+        <div className="border border-gray-200 rounded-lg overflow-hidden" data-tour="order-products-list">
           {/* Table header */}
           <div className="flex items-center bg-gray-50 px-3 h-9 border-b border-gray-200">
             <div className="flex-1 text-xs font-semibold text-gray-600">Producto</div>
@@ -389,7 +389,7 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
           </div>
         </div>
       ) : (
-        <div className="text-center py-10 border border-dashed border-gray-200 rounded-lg">
+        <div className="text-center py-10 border border-dashed border-gray-200 rounded-lg" data-tour="order-products-list">
           <ShoppingCart className="w-10 h-10 text-gray-300 mx-auto mb-2" />
           <p className="text-sm text-gray-500">No hay productos agregados</p>
           <p className="text-xs text-gray-400">Selecciona productos para agregar al pedido</p>
@@ -400,7 +400,7 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
       )}
 
       {/* Notas */}
-      <div>
+      <div data-tour="order-notes">
         <label className="block text-[13px] font-medium text-gray-700 mb-1">Notas del pedido</label>
         <textarea
           {...register('notes')}

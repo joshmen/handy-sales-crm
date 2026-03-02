@@ -189,7 +189,7 @@ export default function CloseRoutePage() {
 
         <div className="flex items-center justify-between mt-2">
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+            <h1 className="text-2xl font-bold text-gray-900">
               Cierre de ruta
             </h1>
             <span className={`inline-flex px-2.5 py-0.5 text-[10px] font-medium rounded-full ${estadoColor}`}>
@@ -202,7 +202,7 @@ export default function CloseRoutePage() {
                 data-tour="routes-close-btn"
                 onClick={handleCerrarRuta}
                 disabled={closing}
-                className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
               >
                 {closing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
                 Cerrar ruta
@@ -276,15 +276,15 @@ export default function CloseRoutePage() {
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
                 <span className="text-gray-500">Ventas contado ({resumen.ventasContadoCount})</span>
-                <span className="font-medium" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>${resumen.ventasContado.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                <span className="font-medium">${resumen.ventasContado.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-gray-500">Entregas cobradas ({resumen.entregasCobradasCount})</span>
-                <span className="font-medium" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>${resumen.entregasCobradas.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                <span className="font-medium">${resumen.entregasCobradas.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-gray-500">Cobranza adeudos ({resumen.cobranzaAdeudosCount})</span>
-                <span className="font-medium" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>${resumen.cobranzaAdeudos.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                <span className="font-medium">${resumen.cobranzaAdeudos.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
               </div>
             </div>
           </div>
@@ -298,15 +298,15 @@ export default function CloseRoutePage() {
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
                 <span className="text-gray-500">Ventas crédito ({resumen.ventasCreditoCount})</span>
-                <span className="font-medium" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>${resumen.ventasCredito.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                <span className="font-medium">${resumen.ventasCredito.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-gray-500">Entregas crédito ({resumen.entregasCreditoCount})</span>
-                <span className="font-medium" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>${resumen.entregasCredito.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                <span className="font-medium">${resumen.entregasCredito.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-gray-500">Saldo a favor ({resumen.entregasContadoSaldoFavorCount})</span>
-                <span className="font-medium" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>${resumen.entregasContadoSaldoFavor.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                <span className="font-medium">${resumen.entregasContadoSaldoFavor.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
               </div>
             </div>
           </div>
@@ -320,11 +320,11 @@ export default function CloseRoutePage() {
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
                 <span className="text-gray-500">Pedidos preventa ({resumen.pedidosPreventaCount})</span>
-                <span className="font-medium" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>${resumen.pedidosPreventa.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                <span className="font-medium">${resumen.pedidosPreventa.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-gray-500">Devoluciones ({resumen.devolucionesCount})</span>
-                <span className="font-medium text-red-600" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>${resumen.devoluciones.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                <span className="font-medium text-red-600">${resumen.devoluciones.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
               </div>
             </div>
           </div>
@@ -338,11 +338,11 @@ export default function CloseRoutePage() {
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
                 <span className="text-gray-500">Valor de la ruta</span>
-                <span className="font-medium text-lg" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>${resumen.valorRuta.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                <span className="font-medium text-lg">${resumen.valorRuta.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-gray-500">Efectivo inicial</span>
-                <span className="font-medium" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>${resumen.efectivoInicial.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                <span className="font-medium">${resumen.efectivoInicial.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
               </div>
             </div>
           </div>
@@ -353,12 +353,12 @@ export default function CloseRoutePage() {
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
                 <span className="text-gray-500">A recibir</span>
-                <span className="font-medium text-lg" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>${resumen.aRecibir.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                <span className="font-medium text-lg">${resumen.aRecibir.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
               </div>
               <div className="flex justify-between text-xs items-center">
                 <span className="text-gray-500">Recibido</span>
                 {isReadonly ? (
-                  <span className="font-medium" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>${(resumen.recibido ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                  <span className="font-medium">${(resumen.recibido ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
                 ) : (
                   <input
                     type="number"
@@ -366,14 +366,14 @@ export default function CloseRoutePage() {
                     onChange={(e) => setMontoRecibido(e.target.value)}
                     step="0.01"
                     className="w-32 px-2 py-1 text-right text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
-                    style={{ fontFamily: 'Space Grotesk, sans-serif' }}
+                   
                   />
                 )}
               </div>
               {diferencia !== null && (
                 <div className="flex justify-between text-xs pt-1 border-t">
                   <span className="text-gray-500">Diferencia</span>
-                  <span className={`font-bold text-lg ${diferencia < 0 ? 'text-red-600' : diferencia > 0 ? 'text-green-600' : 'text-gray-900'}`} style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                  <span className={`font-bold text-lg ${diferencia < 0 ? 'text-red-600' : diferencia > 0 ? 'text-green-600' : 'text-gray-900'}`}>
                     {diferencia >= 0 ? '+' : ''}${diferencia.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
@@ -430,19 +430,19 @@ export default function CloseRoutePage() {
                       <td className="py-2 px-2">
                         <span className="text-[12px] text-gray-900">{item.productoNombre}</span>
                       </td>
-                      <td className="py-2 px-2 text-right text-[12px] text-gray-600" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                      <td className="py-2 px-2 text-right text-[12px] text-gray-600">
                         ${item.ventasMonto.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                       </td>
-                      <td className="py-2 px-2 text-center text-[12px] text-gray-900 font-medium" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                      <td className="py-2 px-2 text-center text-[12px] text-gray-900 font-medium">
                         {item.cantidadInicial}
                       </td>
-                      <td className="py-2 px-2 text-center text-[12px] text-gray-600" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                      <td className="py-2 px-2 text-center text-[12px] text-gray-600">
                         {item.vendidos}
                       </td>
-                      <td className="py-2 px-2 text-center text-[12px] text-gray-600" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                      <td className="py-2 px-2 text-center text-[12px] text-gray-600">
                         {item.entregados}
                       </td>
-                      <td className="py-2 px-2 text-center text-[12px] text-gray-600" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                      <td className="py-2 px-2 text-center text-[12px] text-gray-600">
                         {item.devueltos}
                       </td>
                       {/* Mermas stepper */}
@@ -482,7 +482,7 @@ export default function CloseRoutePage() {
                               ? 'bg-yellow-100 text-yellow-700'
                               : 'bg-green-100 text-green-700'
                           }`}
-                          style={{ fontFamily: 'Space Grotesk, sans-serif' }}
+                         
                         >
                           {item.diferencia}
                         </span>
@@ -515,7 +515,7 @@ function Stepper({ value, onDecrement, onIncrement, disabled }: {
       >
         <MinusIcon className="w-3 h-3" />
       </button>
-      <span className="w-6 text-center text-[12px] font-medium" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+      <span className="w-6 text-center text-[12px] font-medium">
         {value}
       </span>
       <button

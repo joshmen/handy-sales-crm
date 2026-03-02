@@ -188,14 +188,14 @@ export default function ActivityLogsPage() {
 
           {/* Title Row */}
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+            <h1 className="text-2xl font-bold text-gray-900">
               Logs de Actividad
             </h1>
             <button
               data-tour="logs-export-btn"
               onClick={handleExport}
               className="flex items-center gap-2 px-4 py-2.5 text-[13px] font-medium text-gray-700 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
-              style={{ fontFamily: 'Space Grotesk, sans-serif' }}
+
             >
               <Download className="w-4 h-4" />
               <span>Exportar CSV</span>
@@ -214,7 +214,7 @@ export default function ActivityLogsPage() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-[280px] pl-10 pr-3 py-2.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                style={{ fontFamily: 'Space Grotesk, sans-serif' }}
+
               />
             </div>
 
@@ -379,7 +379,7 @@ export default function ActivityLogsPage() {
             {/* Pagination */}
             {!loading && totalCount > 0 && (
               <div className="flex items-center justify-between pt-4">
-                <span className="text-sm text-gray-500" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                <span className="text-sm text-gray-500">
                   Mostrando {startItem}-{endItem} de {totalCount.toLocaleString()} registros
                 </span>
                 <div className="flex items-center gap-2">
@@ -387,7 +387,7 @@ export default function ActivityLogsPage() {
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
                     className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-gray-600 border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    style={{ fontFamily: 'Space Grotesk, sans-serif' }}
+
                   >
                     <ChevronLeft className="w-4 h-4" />
                     <span>Anterior</span>
@@ -423,7 +423,7 @@ export default function ActivityLogsPage() {
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
                     className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-gray-600 border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    style={{ fontFamily: 'Space Grotesk, sans-serif' }}
+
                   >
                     <span>Siguiente</span>
                     <ChevronRight className="w-4 h-4" />

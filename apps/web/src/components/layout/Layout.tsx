@@ -1,5 +1,8 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { RocketLaunch } from '@phosphor-icons/react';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { HelpPanel } from '@/components/help/HelpPanel';
@@ -16,6 +19,16 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   const { open, collapsed, setCollapsed, setOpen } = useSidebar();
   const [helpPanelOpen, setHelpPanelOpen] = useState(false);
   const { isImpersonating } = useImpersonationStore();
+  const pathname = usePathname();
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  useEffect(() => {
+    const dismissed = localStorage.getItem('onboarding-completed') === 'true';
+    setShowOnboarding(!dismissed);
+    const onComplete = () => setShowOnboarding(false);
+    window.addEventListener('onboarding-completed', onComplete);
+    return () => window.removeEventListener('onboarding-completed', onComplete);
+  }, []);
 
   // Colapsa según breakpoint SOLO en mount y en cambios del media query
   useEffect(() => {
@@ -64,6 +77,19 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       </div>
       <HelpPanel isOpen={helpPanelOpen} onClose={() => setHelpPanelOpen(false)} />
       <TourPrompt />
+
+      {/* Floating onboarding button — right side, above TourPrompt */}
+      {showOnboarding && pathname !== '/getting-started' && (
+        <Link
+          href="/getting-started"
+          className="fixed bottom-24 right-6 z-40 flex items-center gap-2 px-5 py-3 rounded-full shadow-xl text-white font-medium transition-all hover:scale-105 hover:shadow-2xl active:scale-95 animate-bounce-once"
+          style={{ background: 'linear-gradient(135deg, #FB7185, #E11D48)' }}
+          title="Primeros Pasos"
+        >
+          <RocketLaunch size={20} weight="fill" />
+          <span className="text-sm">Primeros Pasos</span>
+        </Link>
+      )}
     </div>
   );
 };

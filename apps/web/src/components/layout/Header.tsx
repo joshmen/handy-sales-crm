@@ -174,6 +174,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
 
   generateBreadcrumbs();
   const unread = unreadCount;
+  const unreadDisplay = unread > 99 ? '99+' : String(unread);
 
   const getInitials = (name: string) =>
     name
@@ -301,8 +302,8 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
           >
             <Bell className="h-5 w-5 text-amber-500" />
             {unread > 0 && (
-              <div className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 rounded-full flex items-center justify-center">
-                <span className="text-xs text-white font-medium">{unread}</span>
+              <div className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 bg-red-500 rounded-full flex items-center justify-center">
+                <span className="text-[10px] text-white font-semibold leading-none">{unreadDisplay}</span>
               </div>
             )}
           </Button>

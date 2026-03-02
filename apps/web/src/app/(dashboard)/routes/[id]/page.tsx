@@ -235,7 +235,7 @@ export default function RouteDetailPage() {
             <button onClick={() => router.push('/routes')} className="p-1 text-gray-400 hover:text-gray-600 rounded">
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+            <h1 className="text-2xl font-bold text-gray-900">
               {route.nombre}
             </h1>
             <span className={`inline-flex px-2.5 py-0.5 text-[11px] font-medium rounded-full ${badge.cls}`}>
@@ -248,7 +248,7 @@ export default function RouteDetailPage() {
                 <button
                   onClick={handleIniciar}
                   disabled={actionLoading}
-                  className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors disabled:opacity-50"
+                  className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
                 >
                   <Play className="w-4 h-4" />
                   Iniciar ruta
@@ -268,7 +268,7 @@ export default function RouteDetailPage() {
                 <button
                   onClick={handleCompletar}
                   disabled={actionLoading}
-                  className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors disabled:opacity-50"
+                  className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
                 >
                   <CheckCircle className="w-4 h-4" />
                   Completar ruta
@@ -310,7 +310,7 @@ export default function RouteDetailPage() {
               <Calendar className="w-4 h-4 text-gray-400 mt-0.5" />
               <div>
                 <p className="text-[11px] text-gray-500">Fecha</p>
-                <p className="text-[13px] font-medium text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                <p className="text-[13px] font-medium text-gray-900">
                   {new Date(route.fecha).toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                 </p>
               </div>
@@ -319,7 +319,7 @@ export default function RouteDetailPage() {
               <Clock className="w-4 h-4 text-gray-400 mt-0.5" />
               <div>
                 <p className="text-[11px] text-gray-500">Horario</p>
-                <p className="text-[13px] font-medium text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                <p className="text-[13px] font-medium text-gray-900">
                   {route.horaInicioEstimada || '--:--'} - {route.horaFinEstimada || '--:--'}
                 </p>
               </div>
@@ -334,7 +334,7 @@ export default function RouteDetailPage() {
           <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-6">
             <div>
               <span className="text-[11px] text-gray-500">Paradas: </span>
-              <span className="text-[13px] font-medium" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+              <span className="text-[13px] font-medium">
                 <span className={route.paradasCompletadas === route.totalParadas && route.totalParadas > 0 ? 'text-green-600' : ''}>
                   {route.paradasCompletadas}
                 </span>
@@ -344,7 +344,7 @@ export default function RouteDetailPage() {
             {route.kilometrosEstimados && (
               <div>
                 <span className="text-[11px] text-gray-500">Km estimados: </span>
-                <span className="text-[13px] font-medium" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                <span className="text-[13px] font-medium">
                   {route.kilometrosEstimados}
                 </span>
               </div>
@@ -355,13 +355,13 @@ export default function RouteDetailPage() {
         {/* Stops Section */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-semibold text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+            <h2 className="text-lg font-semibold text-gray-900">
               Paradas ({route.totalParadas})
             </h2>
             {isEditable && (
               <button
                 onClick={() => setIsAddStopOpen(true)}
-                className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
+                className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Agregar parada
@@ -391,7 +391,7 @@ export default function RouteDetailPage() {
                 {isEditable && (
                   <button
                     onClick={() => setIsAddStopOpen(true)}
-                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700"
+                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     Agregar parada
@@ -407,7 +407,7 @@ export default function RouteDetailPage() {
                     className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors"
                   >
                     <div className="w-[50px] text-center">
-                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-[11px] font-medium text-gray-600" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-[11px] font-medium text-gray-600">
                         {stop.ordenVisita}
                       </span>
                     </div>
@@ -419,7 +419,7 @@ export default function RouteDetailPage() {
                       <p className="text-[13px] text-gray-600 truncate">{stop.clienteDireccion || '-'}</p>
                     </div>
                     <div className="w-[60px] text-center">
-                      <span className="text-[13px] text-gray-600" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                      <span className="text-[13px] text-gray-600">
                         {stop.duracionEstimadaMinutos || 30}
                       </span>
                     </div>

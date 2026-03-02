@@ -36,6 +36,7 @@ services:
       - ./infra/azure/init-database.sql:/docker-entrypoint-initdb.d/05-admin.sql
       - ./infra/database/schema/04_seed_usuarios.sql:/docker-entrypoint-initdb.d/06-usuarios.sql
       - ./infra/database/schema/05_ef_migrations_baseline.sql:/docker-entrypoint-initdb.d/07-ef-baseline.sql
+      - ./infra/database/schema/08_automations_seed.sql:/docker-entrypoint-initdb.d/08-automations-seed.sql
     command: >
       --default-authentication-plugin=mysql_native_password
       --character-set-server=utf8mb4

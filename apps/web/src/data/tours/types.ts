@@ -15,14 +15,97 @@ export interface TourStep {
   };
 }
 
-/** Boost drawer z-index so driver.js can highlight elements inside it */
-export function boostDrawerForTour() {
-  document.querySelector('[data-drawer-root]')?.classList.add('tour-drawer-active');
+// --- Drawer spotlight: SVG overlay with cutout (like driver.js) ---
+let _tourFrameId: number | null = null;
+
+/** Build the SVG path: outer rect (covers scroll area) with rounded-rect cutout */
+function buildOverlayPath(
+  panel: HTMLElement,
+  activeEl: HTMLElement | null,
+): string {
+  const pw = panel.offsetWidth;
+  const ph = panel.offsetHeight;
+
+  // Determine scroll body area (between header & footer)
+  const header = panel.querySelector(':scope > .flex-shrink-0.border-b') as HTMLElement | null;
+  const footer = panel.querySelector(':scope > .drawer-footer') as HTMLElement | null;
+  const top = header ? header.offsetHeight : 0;
+  const bot = footer ? ph - footer.offsetHeight : ph;
+
+  // Outer rect covering scroll area only (header/footer stay untouched)
+  const outer = `M0,${top} L${pw},${top} L${pw},${bot} L0,${bot}Z`;
+  if (!activeEl) return outer;
+
+  const panelRect = panel.getBoundingClientRect();
+  const elRect = activeEl.getBoundingClientRect();
+  const pad = 10; // matches driver.js stagePadding
+  const r = 8;    // matches driver.js stageRadius
+
+  const x = elRect.left - panelRect.left - pad;
+  const y = elRect.top - panelRect.top - pad;
+  const w = elRect.width + pad * 2;
+  const h = elRect.height + pad * 2;
+
+  // Inner rounded-rect cutout (counter-clockwise → evenodd creates hole)
+  const cutout =
+    `M${x + r},${y} h${w - 2 * r}` +
+    ` a${r},${r} 0 0 1 ${r},${r}` +
+    ` v${h - 2 * r}` +
+    ` a${r},${r} 0 0 1 -${r},${r}` +
+    ` h-${w - 2 * r}` +
+    ` a${r},${r} 0 0 1 -${r},-${r}` +
+    ` v-${h - 2 * r}` +
+    ` a${r},${r} 0 0 1 ${r},-${r}z`;
+
+  return `${outer} ${cutout}`;
 }
 
-/** Restore drawer z-index after tour leaves the drawer */
+/** Boost drawer z-index and inject an SVG overlay with an animated cutout
+ *  that tracks the driver-active-element via requestAnimationFrame. */
+export function boostDrawerForTour() {
+  const root = document.querySelector('[data-drawer-root]');
+  if (!root) return;
+  root.classList.add('tour-drawer-active');
+
+  const panel = root.querySelector('[data-drawer-panel]') as HTMLElement | null;
+  if (!panel || panel.querySelector('.tour-drawer-svg')) return;
+
+  // Create SVG overlay
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.classList.add('tour-drawer-svg');
+  svg.setAttribute('preserveAspectRatio', 'none');
+  svg.style.cssText =
+    'position:absolute;inset:0;width:100%;height:100%;z-index:9999;pointer-events:none;';
+
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.style.fill = 'rgb(0,0,0)';
+  path.style.opacity = '0.7';
+  path.style.fillRule = 'evenodd';
+  svg.appendChild(path);
+  panel.appendChild(svg);
+
+  // rAF loop: keep cutout in sync with the active element
+  function tick() {
+    const pw = panel!.offsetWidth;
+    const ph = panel!.offsetHeight;
+    svg.setAttribute('viewBox', `0 0 ${pw} ${ph}`);
+    const activeEl = panel!.querySelector('.driver-active-element') as HTMLElement | null;
+    path.setAttribute('d', buildOverlayPath(panel!, activeEl));
+    _tourFrameId = requestAnimationFrame(tick);
+  }
+  _tourFrameId = requestAnimationFrame(tick);
+}
+
+/** Restore drawer z-index and remove SVG overlay */
 export function restoreDrawerFromTour() {
-  document.querySelector('[data-drawer-root]')?.classList.remove('tour-drawer-active');
+  if (_tourFrameId != null) {
+    cancelAnimationFrame(_tourFrameId);
+    _tourFrameId = null;
+  }
+  const root = document.querySelector('[data-drawer-root]');
+  if (!root) return;
+  root.classList.remove('tour-drawer-active');
+  root.querySelectorAll('.tour-drawer-svg').forEach(el => el.remove());
 }
 
 /** Close any open drawer (via Escape key) */
@@ -36,6 +119,9 @@ export interface TourConfig {
   title: string;
   description: string;
   steps: TourStep[];
+  /** Override the "done" button text on the last step (default: "Terminar").
+   *  Use "Siguiente" when the tour continues on another page. */
+  doneBtnText?: string;
 }
 
 /** Creates a centered image preview step (no element highlight) */
@@ -48,6 +134,24 @@ export function imageStep(title: string, imagePath: string, caption: string): To
       popoverClass: 'tour-image-step',
     },
   };
+}
+
+// --- Cross-page tour continuation ---
+const TOUR_CONTINUE_KEY = 'handy-tour-continue';
+
+/** Schedule a tour to auto-start on the next page after navigation */
+export function scheduleTourContinuation(tourId: string) {
+  if (typeof sessionStorage !== 'undefined') {
+    sessionStorage.setItem(TOUR_CONTINUE_KEY, tourId);
+  }
+}
+
+/** Check and consume a pending tour continuation. Returns tourId or null. */
+export function consumeTourContinuation(): string | null {
+  if (typeof sessionStorage === 'undefined') return null;
+  const tourId = sessionStorage.getItem(TOUR_CONTINUE_KEY);
+  if (tourId) sessionStorage.removeItem(TOUR_CONTINUE_KEY);
+  return tourId;
 }
 
 /** Normalize dynamic path segments (e.g. /routes/manage/8/load → /routes/manage/[id]/load) */

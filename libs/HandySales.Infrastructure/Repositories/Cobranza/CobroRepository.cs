@@ -100,6 +100,29 @@ public class CobroRepository : ICobroRepository
 
     public async Task<int> CrearAsync(CobroCreateDto dto, int tenantId, int usuarioId)
     {
+        // Over-payment guard: if linked to a pedido, verify monto doesn't exceed remaining balance
+        if (dto.PedidoId.HasValue)
+        {
+            var pedido = await _db.Pedidos
+                .AsNoTracking()
+                .Where(p => p.Id == dto.PedidoId.Value && p.TenantId == tenantId)
+                .Select(p => new { p.Total })
+                .FirstOrDefaultAsync();
+
+            if (pedido != null)
+            {
+                var cobradoPrevio = await _db.Cobros
+                    .AsNoTracking()
+                    .Where(c => c.PedidoId == dto.PedidoId.Value && c.TenantId == tenantId && c.Activo)
+                    .SumAsync(c => c.Monto);
+
+                var saldoPendiente = pedido.Total - cobradoPrevio;
+                if (dto.Monto > saldoPendiente)
+                    throw new InvalidOperationException(
+                        $"El monto ({dto.Monto:C}) excede el saldo pendiente del pedido ({saldoPendiente:C})");
+            }
+        }
+
         var entity = new Cobro
         {
             TenantId = tenantId,
@@ -149,10 +172,12 @@ public class CobroRepository : ICobroRepository
 
     public async Task<List<SaldoClienteDto>> ObtenerSaldosAsync(int tenantId, int? clienteId = null)
     {
-        // Get all delivered/confirmed pedidos with their cobros
+        // Get delivered/confirmed pedidos from the last 12 months
+        var unAnoAtras = DateTime.UtcNow.AddYears(-1);
         var query = _db.Pedidos
             .AsNoTracking()
             .Where(p => p.TenantId == tenantId && p.Activo &&
+                        p.FechaPedido >= unAnoAtras &&
                         (p.Estado == EstadoPedido.Entregado || p.Estado == EstadoPedido.Confirmado || p.Estado == EstadoPedido.EnRuta || p.Estado == EstadoPedido.EnProceso))
             .AsQueryable();
 
@@ -215,15 +240,24 @@ public class CobroRepository : ICobroRepository
         };
     }
 
-    public async Task<EstadoCuentaDto?> ObtenerEstadoCuentaAsync(int clienteId, int tenantId)
+    public async Task<EstadoCuentaDto?> ObtenerEstadoCuentaAsync(int clienteId, int tenantId, bool historico = false)
     {
         var cliente = await _db.Clientes.AsNoTracking().FirstOrDefaultAsync(c => c.Id == clienteId && c.TenantId == tenantId);
         if (cliente == null) return null;
 
-        var pedidos = await _db.Pedidos
+        // Default: last 12 months. historico=true: all-time
+        var pedidosQuery = _db.Pedidos
             .AsNoTracking()
             .Where(p => p.ClienteId == clienteId && p.TenantId == tenantId && p.Activo &&
-                        (p.Estado == EstadoPedido.Entregado || p.Estado == EstadoPedido.Confirmado || p.Estado == EstadoPedido.EnRuta || p.Estado == EstadoPedido.EnProceso))
+                        (p.Estado == EstadoPedido.Entregado || p.Estado == EstadoPedido.Confirmado || p.Estado == EstadoPedido.EnRuta || p.Estado == EstadoPedido.EnProceso));
+
+        if (!historico)
+        {
+            var unAnoAtras = DateTime.UtcNow.AddYears(-1);
+            pedidosQuery = pedidosQuery.Where(p => p.FechaPedido >= unAnoAtras);
+        }
+
+        var pedidos = await pedidosQuery
             .OrderByDescending(p => p.FechaPedido)
             .Select(p => new { p.Id, p.NumeroPedido, p.FechaPedido, p.Total })
             .ToListAsync();
@@ -262,12 +296,7 @@ public class CobroRepository : ICobroRepository
                         Id = c.Id,
                         Monto = c.Monto,
                         MetodoPago = (int)c.MetodoPago,
-                        MetodoPagoNombre = c.MetodoPago == MetodoPago.Efectivo ? "Efectivo"
-                            : c.MetodoPago == MetodoPago.Transferencia ? "Transferencia"
-                            : c.MetodoPago == MetodoPago.Cheque ? "Cheque"
-                            : c.MetodoPago == MetodoPago.TarjetaCredito ? "Tarjeta de Crédito"
-                            : c.MetodoPago == MetodoPago.TarjetaDebito ? "Tarjeta de Débito"
-                            : "Otro",
+                        MetodoPagoNombre = GetMetodoPagoNombre(c.MetodoPago),
                         FechaCobro = c.FechaCobro,
                         Referencia = c.Referencia,
                     }).ToList(),

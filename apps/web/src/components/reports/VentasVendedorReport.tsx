@@ -66,19 +66,19 @@ export function VentasVendedorReport() {
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="text-center p-2 bg-green-50 rounded">
-                    <p className="text-lg font-bold text-green-700" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>{fmt(v.totalVentas)}</p>
+                    <p className="text-lg font-bold text-green-700">{fmt(v.totalVentas)}</p>
                     <p className="text-[10px] text-green-600">Ventas</p>
                   </div>
                   <div className="text-center p-2 bg-blue-50 rounded">
-                    <p className="text-lg font-bold text-blue-700" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>{v.cantidadPedidos}</p>
+                    <p className="text-lg font-bold text-blue-700">{v.cantidadPedidos}</p>
                     <p className="text-[10px] text-blue-600">Pedidos</p>
                   </div>
                   <div className="text-center p-2 bg-amber-50 rounded">
-                    <p className="text-lg font-bold text-amber-700" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>{v.totalVisitas}</p>
+                    <p className="text-lg font-bold text-amber-700">{v.totalVisitas}</p>
                     <p className="text-[10px] text-amber-600">Visitas</p>
                   </div>
                   <div className="text-center p-2 bg-purple-50 rounded">
-                    <p className="text-lg font-bold text-purple-700" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>{v.efectividadVisitas}%</p>
+                    <p className="text-lg font-bold text-purple-700">{v.efectividadVisitas}%</p>
                     <p className="text-[10px] text-purple-600">Efectividad</p>
                   </div>
                 </div>

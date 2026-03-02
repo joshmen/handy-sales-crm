@@ -136,10 +136,10 @@ export default function FormsPage() {
 
           {/* Title Row */}
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+            <h1 className="text-2xl font-bold text-gray-900">
               Formularios {totalItems}
             </h1>
-            <button data-tour="forms-create-btn" className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-green-600 rounded hover:bg-green-700 transition-colors">
+            <button data-tour="forms-create-btn" className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors">
               <Plus className="w-4 h-4" />
               <span>Crear</span>
             </button>
@@ -253,7 +253,7 @@ export default function FormsPage() {
             {/* Pagination */}
             {!loading && totalItems > 0 && (
               <div className="flex items-center justify-between pt-4">
-                <span className="text-sm text-gray-500" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                <span className="text-sm text-gray-500">
                   Mostrando {startItem}-{endItem} de {totalItems} formularios
                 </span>
                 <div className="flex items-center gap-2">
@@ -261,7 +261,7 @@ export default function FormsPage() {
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
                     className="px-3 py-2 text-sm text-gray-600 border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    style={{ fontFamily: 'Space Grotesk, sans-serif' }}
+                   
                   >
                     Anterior
                   </button>
@@ -284,7 +284,7 @@ export default function FormsPage() {
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
                     className="px-3 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    style={{ fontFamily: 'Space Grotesk, sans-serif' }}
+                   
                   >
                     Siguiente
                   </button>

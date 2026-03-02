@@ -35,7 +35,7 @@ export function ReportKPICards({ cards }: ReportKPICardsProps) {
               <p className="text-xs font-medium text-gray-500">{card.label}</p>
               {card.icon}
             </div>
-            <p className={`text-2xl font-bold ${c.text}`} style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+            <p className={`text-2xl font-bold ${c.text}`}>
               {card.value}
             </p>
             {(card.subValue || card.trend !== undefined) && (

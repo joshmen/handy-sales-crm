@@ -153,14 +153,14 @@ export default function ProductCategoriesPage() {
           {/* Title Row */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+              <h1 className="text-2xl font-bold text-gray-900">
                 Categorías de productos
               </h1>
               <span className="px-2 py-0.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-full">
                 {totalItems}
               </span>
             </div>
-            <button className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors">
+            <button className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors">
               <Plus className="w-4 h-4" />
               <span>Agregar categoría</span>
             </button>
@@ -266,7 +266,7 @@ export default function ProductCategoriesPage() {
             {/* Pagination */}
             {!loading && totalItems > 0 && (
               <div className="flex items-center justify-between pt-4">
-                <span className="text-sm text-gray-500" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                <span className="text-sm text-gray-500">
                   Mostrando {startItem}-{endItem} de {totalItems} categorías
                 </span>
                 <div className="flex items-center gap-2">

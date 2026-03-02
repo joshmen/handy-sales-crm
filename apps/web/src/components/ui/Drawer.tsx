@@ -89,6 +89,7 @@ export const Drawer = forwardRef<DrawerHandle, DrawerProps>(({
 
       {/* Panel */}
       <div
+        data-drawer-panel
         className={cn(
           'relative w-full flex flex-col bg-white shadow-xl animate-in slide-in-from-right duration-300',
           widthClasses[width]

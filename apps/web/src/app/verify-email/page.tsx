@@ -3,19 +3,12 @@
 import { useState, useRef, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
-import { Space_Grotesk } from 'next/font/google';
 import { toast } from '@/hooks/useToast';
 import { Mail, ArrowLeft } from 'lucide-react';
 import { AuthLayout } from '@/components/auth/AuthLayout';
 import { BrandedLoadingScreen } from '@/components/ui/BrandedLoadingScreen';
 import axios from 'axios';
 import { API_CONFIG } from '@/lib/constants';
-
-const spaceGrotesk = Space_Grotesk({
-  subsets: ['latin'],
-  weight: ['700'],
-  display: 'swap',
-});
 
 function VerifyEmailContent() {
   const router = useRouter();
@@ -171,7 +164,7 @@ function VerifyEmailContent() {
                 <Mail className="h-8 w-8 text-indigo-600" />
               </div>
             </div>
-            <h1 className={`text-[28px] font-bold text-[#0F172A] tracking-tight ${spaceGrotesk.className}`}>
+            <h1 className="text-[28px] font-bold text-[#0F172A] tracking-tight">
               Verifica tu correo
             </h1>
             <p className="text-[15px] text-[#64748B]">

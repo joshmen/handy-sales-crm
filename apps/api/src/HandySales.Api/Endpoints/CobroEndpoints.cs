@@ -1,3 +1,4 @@
+using FluentValidation;
 using HandySales.Application.Cobranza.DTOs;
 using HandySales.Application.Cobranza.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -41,10 +42,22 @@ public static class CobroEndpoints
         // Crear cobro
         group.MapPost("/", async (
             CobroCreateDto dto,
+            IValidator<CobroCreateDto> validator,
             [FromServices] CobroService servicio) =>
         {
-            var id = await servicio.CrearAsync(dto);
-            return Results.Created($"/cobros/{id}", new { id });
+            var validation = await validator.ValidateAsync(dto);
+            if (!validation.IsValid)
+                return Results.BadRequest(validation.ToDictionary());
+
+            try
+            {
+                var id = await servicio.CrearAsync(dto);
+                return Results.Created($"/cobros/{id}", new { id });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
         })
         .WithSummary("Registrar nuevo cobro");
 
@@ -52,8 +65,13 @@ public static class CobroEndpoints
         group.MapPut("/{id:int}", async (
             int id,
             CobroUpdateDto dto,
+            IValidator<CobroUpdateDto> validator,
             [FromServices] CobroService servicio) =>
         {
+            var validation = await validator.ValidateAsync(dto);
+            if (!validation.IsValid)
+                return Results.BadRequest(validation.ToDictionary());
+
             var ok = await servicio.ActualizarAsync(id, dto);
             return ok ? Results.NoContent() : Results.NotFound();
         })
@@ -91,9 +109,10 @@ public static class CobroEndpoints
         // Estado de cuenta de un cliente
         group.MapGet("/cliente/{clienteId:int}/estado-cuenta", async (
             int clienteId,
-            [FromServices] CobroService servicio) =>
+            [FromQuery] bool historico = false,
+            [FromServices] CobroService servicio = default!) =>
         {
-            var estado = await servicio.ObtenerEstadoCuentaAsync(clienteId);
+            var estado = await servicio.ObtenerEstadoCuentaAsync(clienteId, historico);
             return estado is null ? Results.NotFound() : Results.Ok(estado);
         })
         .WithSummary("Estado de cuenta detallado de un cliente");

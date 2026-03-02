@@ -11,5 +11,5 @@ public interface ICobroRepository
     Task<bool> AnularAsync(int id, int tenantId);
     Task<List<SaldoClienteDto>> ObtenerSaldosAsync(int tenantId, int? clienteId = null);
     Task<ResumenCarteraDto> ObtenerResumenCarteraAsync(int tenantId);
-    Task<EstadoCuentaDto?> ObtenerEstadoCuentaAsync(int clienteId, int tenantId);
+    Task<EstadoCuentaDto?> ObtenerEstadoCuentaAsync(int clienteId, int tenantId, bool historico = false);
 }

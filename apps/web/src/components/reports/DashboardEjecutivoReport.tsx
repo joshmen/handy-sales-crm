@@ -62,20 +62,20 @@ export function DashboardEjecutivoReport() {
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div>
-                <p className="text-2xl font-bold text-green-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>{fmt(data.ventas.total)}</p>
+                <p className="text-2xl font-bold text-green-900">{fmt(data.ventas.total)}</p>
                 <p className="text-xs text-green-700">Total ventas</p>
               </div>
               <div>
-                <p className="text-2xl font-bold text-green-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>{data.ventas.pedidos}</p>
+                <p className="text-2xl font-bold text-green-900">{data.ventas.pedidos}</p>
                 <p className="text-xs text-green-700">Pedidos</p>
               </div>
               <div>
-                <p className="text-2xl font-bold text-green-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>{fmt(data.ventas.ticketPromedio)}</p>
+                <p className="text-2xl font-bold text-green-900">{fmt(data.ventas.ticketPromedio)}</p>
                 <p className="text-xs text-green-700">Ticket promedio</p>
               </div>
               <div>
                 <div className="flex items-center gap-1">
-                  <p className={`text-2xl font-bold ${data.ventas.crecimientoPct >= 0 ? 'text-green-900' : 'text-red-600'}`} style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                  <p className={`text-2xl font-bold ${data.ventas.crecimientoPct >= 0 ? 'text-green-900' : 'text-red-600'}`}>
                     {data.ventas.crecimientoPct > 0 ? '+' : ''}{data.ventas.crecimientoPct}%
                   </p>
                   {data.ventas.crecimientoPct >= 0 ? <TrendingUp className="w-4 h-4 text-green-600" /> : <TrendingDown className="w-4 h-4 text-red-500" />}
@@ -91,7 +91,7 @@ export function DashboardEjecutivoReport() {
               <Eye className="w-5 h-5 text-blue-600" />
               <h3 className="text-sm font-semibold text-blue-800">Visitas</h3>
             </div>
-            <p className="text-3xl font-bold text-blue-900 mb-1" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>{data.visitas.total}</p>
+            <p className="text-3xl font-bold text-blue-900 mb-1">{data.visitas.total}</p>
             <div className="flex items-center gap-3 text-xs">
               <span className="text-green-700">{data.visitas.conVenta} con venta</span>
               <span className="text-gray-500">{data.visitas.sinVenta} sin venta</span>
@@ -108,7 +108,7 @@ export function DashboardEjecutivoReport() {
               <UserPlus className="w-5 h-5 text-amber-600" />
               <h3 className="text-sm font-semibold text-amber-800">Nuevos Clientes</h3>
             </div>
-            <p className="text-3xl font-bold text-amber-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>{data.nuevosClientes}</p>
+            <p className="text-3xl font-bold text-amber-900">{data.nuevosClientes}</p>
             <p className="text-xs text-amber-700 mt-1">{periodoLabel}</p>
           </div>
 

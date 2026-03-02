@@ -3,12 +3,13 @@
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { useAppStore } from '@/stores/useAppStore';
 import { setApiAccessToken } from '@/lib/api';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { UserRole } from '@/types';
 
 export function useAuthSession() {
   const { data: session, status } = useSession();
   const { setUser, setLoading } = useAppStore();
+  const isSigningOut = useRef(false);
 
   useEffect(() => {
     if (status === 'loading') {
@@ -16,11 +17,17 @@ export function useAuthSession() {
     } else {
       setLoading('auth', false);
 
-      // Handle refresh token failure or session expiration
+      // Handle refresh token failure or session expiration — sign out ONCE only
       if (session?.error === 'RefreshAccessTokenError' || session?.error === 'SessionExpired') {
-        signOut({ callbackUrl: '/login' });
+        if (!isSigningOut.current) {
+          isSigningOut.current = true;
+          signOut({ callbackUrl: '/login' });
+        }
         return;
       }
+
+      // Reset the guard once we have a valid session (fresh login)
+      isSigningOut.current = false;
 
       if (session?.user) {
         setUser({

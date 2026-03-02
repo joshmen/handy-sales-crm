@@ -1,13 +1,14 @@
 import { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Space_Grotesk } from 'next/font/google';
+import { Plus_Jakarta_Sans } from 'next/font/google';
 import { LandingNav } from '@/components/landing/LandingNav';
-import { Users, ShoppingBag, MapPin, FileText, Check, Star, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { ScrollReveal } from '@/components/landing/ScrollReveal';
+import { Users, ShoppingBag, MapPin, FileText, Check, Star, ArrowRight, CheckCircle2, Zap, WifiOff, TrendingDown } from 'lucide-react';
 
-const spaceGrotesk = Space_Grotesk({
+const plusJakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
-  weight: ['700'],
+  weight: ['700', '800'],
   display: 'swap',
 });
 
@@ -105,7 +106,7 @@ const jsonLd = {
   offers: {
     '@type': 'AggregateOffer',
     priceCurrency: 'MXN',
-    lowPrice: '0',
+    lowPrice: '499',
     highPrice: '1499',
     offerCount: '3',
   },
@@ -131,12 +132,12 @@ export default function LandingPage() {
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             {/* Left: Text */}
             <div>
-              <div className="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 rounded-full px-3 py-1 text-xs font-medium mb-6">
+              <div className="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 rounded-full px-3 py-1 text-xs font-medium mb-6 page-animate">
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 Certificado SAT CFDI 4.0
               </div>
 
-              <h1 className={`text-4xl lg:text-[52px] font-extrabold tracking-tight text-gray-900 leading-[1.08] ${spaceGrotesk.className}`}>
+              <h1 className={`text-4xl lg:text-[52px] font-extrabold tracking-tight text-gray-900 leading-[1.08] ${plusJakarta.className} page-animate page-animate-delay-2`}>
                 La plataforma{' '}
                 <span className="bg-gradient-to-r from-rose-500 via-indigo-500 to-emerald-500 bg-clip-text text-transparent">
                   todo-en-uno
@@ -144,12 +145,12 @@ export default function LandingPage() {
                 para tu negocio
               </h1>
 
-              <p className="text-lg text-gray-500 mt-5 max-w-lg leading-relaxed">
+              <p className="text-lg text-gray-500 mt-5 max-w-lg leading-relaxed page-animate page-animate-delay-3">
                 Gestiona clientes, ventas, rutas, inventario y facturación
                 desde un solo lugar. Diseñado para PYMEs en México.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-3 mt-8">
+              <div className="flex flex-col sm:flex-row gap-3 mt-8 page-animate page-animate-delay-4">
                 <Link
                   href="/login"
                   className="inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3.5 rounded-xl font-semibold text-base shadow-sm transition-colors"
@@ -165,7 +166,7 @@ export default function LandingPage() {
                 </a>
               </div>
 
-              <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-6 text-xs text-gray-500">
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-6 text-xs text-gray-500 page-animate page-animate-delay-5">
                 <span className="flex items-center gap-1"><Check className="w-3.5 h-3.5 text-emerald-500" /> Sin tarjeta de crédito</span>
                 <span className="flex items-center gap-1"><Check className="w-3.5 h-3.5 text-emerald-500" /> Soporte incluido</span>
                 <span className="flex items-center gap-1"><Check className="w-3.5 h-3.5 text-emerald-500" /> Cancela cuando quieras</span>
@@ -173,7 +174,7 @@ export default function LandingPage() {
             </div>
 
             {/* Right: Browser chrome + screenshot */}
-            <div className="relative">
+            <div className="relative page-animate page-animate-delay-6">
               <div className="rounded-2xl shadow-2xl border border-gray-200 overflow-hidden bg-white">
                 {/* Browser bar */}
                 <div className="bg-gray-100 px-4 py-2.5 flex items-center gap-2">
@@ -183,7 +184,7 @@ export default function LandingPage() {
                     <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
                   </div>
                   <div className="flex-1 mx-4">
-                    <div className="bg-white rounded px-3 py-1 text-xs text-gray-400 max-w-xs">
+                    <div className="bg-white rounded-md px-3 py-1 text-xs text-gray-400 max-w-xs">
                       app.handysuites.com/dashboard
                     </div>
                   </div>
@@ -211,7 +212,7 @@ export default function LandingPage() {
 
       {/* ===== SOCIAL PROOF STRIP ===== */}
       <section className="py-10 bg-white border-y border-gray-100">
-        <div className="max-w-7xl mx-auto px-6">
+        <ScrollReveal className="max-w-7xl mx-auto px-6">
           <p className="text-xs text-gray-400 text-center uppercase tracking-wider mb-6">
             Empresas que confían en Handy Suites
           </p>
@@ -222,49 +223,51 @@ export default function LandingPage() {
               </span>
             ))}
           </div>
-        </div>
+        </ScrollReveal>
       </section>
 
       {/* ===== VALUE PROPS — Beneficios clave ===== */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-14">
+          <ScrollReveal className="text-center mb-14">
             <p className="text-sm font-medium text-emerald-600 mb-2">¿Por qué Handy Suites?</p>
-            <h2 className={`text-3xl lg:text-4xl font-bold text-gray-900 tracking-tight ${spaceGrotesk.className}`}>
+            <h2 className={`text-3xl lg:text-4xl font-bold text-gray-900 tracking-tight ${plusJakarta.className}`}>
               Resultados reales para tu negocio
             </h2>
-          </div>
+          </ScrollReveal>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {[
               {
                 title: 'Control total de tu equipo en campo',
                 desc: 'Monitorea ubicación, visitas y actividad de cada vendedor en tiempo real desde cualquier dispositivo.',
-                icon: '📍',
+                Icon: MapPin,
               },
               {
                 title: 'Reduce tu cartera vencida hasta 40%',
                 desc: 'Alertas de cobranza, seguimiento automático y estado de cuenta actualizado para cada cliente.',
-                icon: '📉',
+                Icon: TrendingDown,
               },
               {
                 title: 'Facturación SAT en 3 clics',
                 desc: 'CFDI 4.0 certificado. Genera, timbra y envía facturas sin salir de la plataforma.',
-                icon: '⚡',
+                Icon: Zap,
               },
               {
                 title: 'Funciona sin internet',
                 desc: 'Tu equipo captura pedidos, visitas y cobros offline. Todo se sincroniza al reconectar.',
-                icon: '📶',
+                Icon: WifiOff,
               },
-            ].map((prop) => (
-              <div key={prop.title} className="text-center">
-                <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center mx-auto mb-4 text-2xl">
-                  {prop.icon}
+            ].map((prop, i) => (
+              <ScrollReveal key={prop.title} delay={i * 0.08}>
+                <div className="text-center">
+                  <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center mx-auto mb-4">
+                    <prop.Icon className="w-6 h-6 text-emerald-500" />
+                  </div>
+                  <h3 className="font-semibold text-gray-900 text-base">{prop.title}</h3>
+                  <p className="text-sm text-gray-500 mt-2 leading-relaxed">{prop.desc}</p>
                 </div>
-                <h3 className="font-semibold text-gray-900 text-base">{prop.title}</h3>
-                <p className="text-sm text-gray-500 mt-2 leading-relaxed">{prop.desc}</p>
-              </div>
+              </ScrollReveal>
             ))}
           </div>
         </div>
@@ -273,30 +276,29 @@ export default function LandingPage() {
       {/* ===== FEATURE GRID ===== */}
       <section id="caracteristicas" className="py-24 bg-zinc-50">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
+          <ScrollReveal className="text-center mb-16">
             <p className="text-sm font-medium text-indigo-600 mb-2">Todo lo que necesitas</p>
-            <h2 className={`text-3xl lg:text-4xl font-bold text-gray-900 tracking-tight ${spaceGrotesk.className}`}>
+            <h2 className={`text-3xl lg:text-4xl font-bold text-gray-900 tracking-tight ${plusJakarta.className}`}>
               Una plataforma. Infinitas posibilidades.
             </h2>
             <p className="text-gray-500 mt-3 max-w-xl mx-auto">
               Desde el primer contacto con tu cliente hasta la factura final, todo en un solo sistema.
             </p>
-          </div>
+          </ScrollReveal>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {features.map((feat) => {
+            {features.map((feat, i) => {
               const Icon = feat.icon;
               return (
-                <div
-                  key={feat.title}
-                  className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${feat.color}`}>
-                    <Icon className="w-6 h-6" />
+                <ScrollReveal key={feat.title} delay={i * 0.08}>
+                  <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow h-full">
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${feat.color}`}>
+                      <Icon className="w-6 h-6" />
+                    </div>
+                    <h3 className="font-semibold text-gray-900 mt-4">{feat.title}</h3>
+                    <p className="text-sm text-gray-500 mt-2 leading-relaxed">{feat.description}</p>
                   </div>
-                  <h3 className="font-semibold text-gray-900 mt-4">{feat.title}</h3>
-                  <p className="text-sm text-gray-500 mt-2 leading-relaxed">{feat.description}</p>
-                </div>
+                </ScrollReveal>
               );
             })}
           </div>
@@ -307,93 +309,99 @@ export default function LandingPage() {
       <section className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-6 space-y-24">
           {/* Row 1: Clients */}
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            <div className="rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
-              <Image
-                src="/images/tour/clientes-crear.jpg"
-                alt="Módulo de creación de clientes en Handy Suites"
-                width={800}
-                height={500}
-                className="w-full"
-              />
+          <ScrollReveal>
+            <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+              <div className="rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+                <Image
+                  src="/images/tour/clientes-crear.jpg"
+                  alt="Módulo de creación de clientes en Handy Suites"
+                  width={800}
+                  height={500}
+                  className="w-full"
+                />
+              </div>
+              <div>
+                <span className="inline-block bg-rose-50 text-rose-600 text-xs font-medium px-2.5 py-1 rounded-full mb-4">CRM</span>
+                <h3 className={`text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight ${plusJakarta.className}`}>
+                  Conoce a tus clientes como nunca antes
+                </h3>
+                <p className="text-gray-500 mt-3 leading-relaxed">
+                  Toda la información de tus clientes en un solo lugar. Historial de compras, visitas, categorías y zonas geográficas.
+                </p>
+                <ul className="mt-5 space-y-2.5">
+                  {['Historial completo de interacciones', 'Segmentación por categoría y zona', 'Seguimiento de visitas en campo'].map((item) => (
+                    <li key={item} className="flex items-center gap-2.5 text-sm text-gray-600">
+                      <Check className="w-4 h-4 text-rose-500 flex-shrink-0" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
-            <div>
-              <span className="inline-block bg-rose-50 text-rose-600 text-xs font-medium px-2.5 py-1 rounded-full mb-4">CRM</span>
-              <h3 className={`text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight ${spaceGrotesk.className}`}>
-                Conoce a tus clientes como nunca antes
-              </h3>
-              <p className="text-gray-500 mt-3 leading-relaxed">
-                Toda la información de tus clientes en un solo lugar. Historial de compras, visitas, categorías y zonas geográficas.
-              </p>
-              <ul className="mt-5 space-y-2.5">
-                {['Historial completo de interacciones', 'Segmentación por categoría y zona', 'Seguimiento de visitas en campo'].map((item) => (
-                  <li key={item} className="flex items-center gap-2.5 text-sm text-gray-600">
-                    <Check className="w-4 h-4 text-rose-500 flex-shrink-0" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
+          </ScrollReveal>
 
           {/* Row 2: Orders (reversed) */}
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            <div className="lg:order-2 rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
-              <Image
-                src="/images/tour/pedidos-crear.jpg"
-                alt="Módulo de creación de pedidos en Handy Suites"
-                width={800}
-                height={500}
-                className="w-full"
-              />
+          <ScrollReveal>
+            <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+              <div className="lg:order-2 rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+                <Image
+                  src="/images/tour/pedidos-crear.jpg"
+                  alt="Módulo de creación de pedidos en Handy Suites"
+                  width={800}
+                  height={500}
+                  className="w-full"
+                />
+              </div>
+              <div className="lg:order-1">
+                <span className="inline-block bg-indigo-50 text-indigo-600 text-xs font-medium px-2.5 py-1 rounded-full mb-4">Ventas</span>
+                <h3 className={`text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight ${plusJakarta.className}`}>
+                  Pedidos ágiles, ventas más rápidas
+                </h3>
+                <p className="text-gray-500 mt-3 leading-relaxed">
+                  Crea pedidos en segundos con búsqueda inteligente de productos, precios automáticos y descuentos por cantidad.
+                </p>
+                <ul className="mt-5 space-y-2.5">
+                  {['Creación rápida con catálogo integrado', 'Precios y descuentos automáticos', 'Seguimiento de estado en tiempo real'].map((item) => (
+                    <li key={item} className="flex items-center gap-2.5 text-sm text-gray-600">
+                      <Check className="w-4 h-4 text-indigo-500 flex-shrink-0" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
-            <div className="lg:order-1">
-              <span className="inline-block bg-indigo-50 text-indigo-600 text-xs font-medium px-2.5 py-1 rounded-full mb-4">Ventas</span>
-              <h3 className={`text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight ${spaceGrotesk.className}`}>
-                Pedidos ágiles, ventas más rápidas
-              </h3>
-              <p className="text-gray-500 mt-3 leading-relaxed">
-                Crea pedidos en segundos con búsqueda inteligente de productos, precios automáticos y descuentos por cantidad.
-              </p>
-              <ul className="mt-5 space-y-2.5">
-                {['Creación rápida con catálogo integrado', 'Precios y descuentos automáticos', 'Seguimiento de estado en tiempo real'].map((item) => (
-                  <li key={item} className="flex items-center gap-2.5 text-sm text-gray-600">
-                    <Check className="w-4 h-4 text-indigo-500 flex-shrink-0" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
+          </ScrollReveal>
         </div>
       </section>
 
       {/* ===== TESTIMONIALS + STATS ===== */}
       <section id="clientes" className="py-24 bg-zinc-50">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
+          <ScrollReveal className="text-center mb-16">
             <p className="text-sm font-medium text-indigo-600 mb-2">Nuestros clientes</p>
-            <h2 className={`text-3xl lg:text-4xl font-bold text-gray-900 tracking-tight ${spaceGrotesk.className}`}>
+            <h2 className={`text-3xl lg:text-4xl font-bold text-gray-900 tracking-tight ${plusJakarta.className}`}>
               Lo que dicen quienes ya lo usan
             </h2>
-          </div>
+          </ScrollReveal>
 
           <div className="grid md:grid-cols-3 gap-6 mb-16">
-            {testimonials.map((t) => (
-              <div key={t.name} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-                <div className="flex gap-0.5 mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 text-amber-400 fill-amber-400" />
-                  ))}
+            {testimonials.map((t, i) => (
+              <ScrollReveal key={t.name} delay={i * 0.08}>
+                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm h-full">
+                  <div className="flex gap-0.5 mb-4">
+                    {[...Array(5)].map((_, j) => (
+                      <Star key={j} className="w-4 h-4 text-amber-400 fill-amber-400" />
+                    ))}
+                  </div>
+                  <p className="text-gray-600 text-sm leading-relaxed italic">
+                    &ldquo;{t.quote}&rdquo;
+                  </p>
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <p className="font-medium text-gray-900 text-sm">{t.name}</p>
+                    <p className="text-xs text-gray-500">{t.role}, {t.company}</p>
+                  </div>
                 </div>
-                <p className="text-gray-600 text-sm leading-relaxed italic">
-                  &ldquo;{t.quote}&rdquo;
-                </p>
-                <div className="mt-4 pt-4 border-t border-gray-100">
-                  <p className="font-medium text-gray-900 text-sm">{t.name}</p>
-                  <p className="text-xs text-gray-500">{t.role}, {t.company}</p>
-                </div>
-              </div>
+              </ScrollReveal>
             ))}
           </div>
 
@@ -404,11 +412,13 @@ export default function LandingPage() {
               { value: '99.9%', label: 'Uptime garantizado', color: 'text-emerald-600' },
               { value: '80%', label: 'Menos tiempo en facturación', color: 'text-rose-500' },
               { value: 'SAT', label: 'Certificado CFDI 4.0', color: 'text-amber-500' },
-            ].map((stat) => (
-              <div key={stat.label} className="text-center">
-                <p className={`text-3xl lg:text-4xl font-bold ${stat.color}`}>{stat.value}</p>
-                <p className="text-sm text-gray-500 mt-1">{stat.label}</p>
-              </div>
+            ].map((stat, i) => (
+              <ScrollReveal key={stat.label} delay={i * 0.06}>
+                <div className="text-center">
+                  <p className={`text-3xl lg:text-4xl font-bold ${stat.color}`}>{stat.value}</p>
+                  <p className="text-sm text-gray-500 mt-1">{stat.label}</p>
+                </div>
+              </ScrollReveal>
             ))}
           </div>
         </div>
@@ -417,58 +427,59 @@ export default function LandingPage() {
       {/* ===== PRICING ===== */}
       <section id="precios" className="py-24 bg-white">
         <div className="max-w-5xl mx-auto px-6">
-          <div className="text-center mb-16">
+          <ScrollReveal className="text-center mb-16">
             <p className="text-sm font-medium text-indigo-600 mb-2">Precios simples y transparentes</p>
-            <h2 className={`text-3xl lg:text-4xl font-bold text-gray-900 tracking-tight ${spaceGrotesk.className}`}>
+            <h2 className={`text-3xl lg:text-4xl font-bold text-gray-900 tracking-tight ${plusJakarta.className}`}>
               Elige el plan ideal para tu negocio
             </h2>
             <p className="text-gray-500 mt-3">
               Todos los planes incluyen 14 días de prueba gratuita. Sin tarjeta de crédito.
             </p>
-          </div>
+          </ScrollReveal>
 
-          <div className="grid md:grid-cols-3 gap-6">
-            {plans.map((plan) => (
-              <div
-                key={plan.name}
-                className={`rounded-2xl p-8 relative ${
-                  plan.popular
-                    ? 'border-2 border-indigo-500 shadow-lg'
-                    : 'border border-gray-200 shadow-sm'
-                }`}
-              >
-                {plan.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="bg-indigo-600 text-white text-xs font-medium px-3 py-1 rounded-full">
-                      Más popular
-                    </span>
-                  </div>
-                )}
-                <h3 className="text-lg font-semibold text-gray-900">{plan.name}</h3>
-                <p className="text-sm text-gray-500 mt-1">{plan.description}</p>
-                <div className="mt-4 mb-6">
-                  <span className="text-3xl font-bold text-gray-900">{plan.price}</span>
-                  {plan.period && <span className="text-gray-500 text-sm"> MXN{plan.period}</span>}
-                </div>
-                <ul className="space-y-2.5 mb-8">
-                  {plan.features.map((feat) => (
-                    <li key={feat} className="flex items-center gap-2 text-sm text-gray-600">
-                      <Check className="w-4 h-4 text-indigo-500 flex-shrink-0" />
-                      {feat}
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  href="/login"
-                  className={`block text-center w-full py-3 rounded-xl font-semibold text-sm transition-colors ${
+          <div className="grid md:grid-cols-3 gap-6 items-center">
+            {plans.map((plan, i) => (
+              <ScrollReveal key={plan.name} delay={i * 0.1}>
+                <div
+                  className={`rounded-2xl p-8 relative ${
                     plan.popular
-                      ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                      : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                      ? 'border-2 border-indigo-500 shadow-lg bg-indigo-50/30 md:scale-105'
+                      : 'border border-gray-200 shadow-sm'
                   }`}
                 >
-                  {plan.cta}
-                </Link>
-              </div>
+                  {plan.popular && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                      <span className="bg-indigo-600 text-white text-xs font-medium px-3 py-1 rounded-full">
+                        Más popular
+                      </span>
+                    </div>
+                  )}
+                  <h3 className="text-lg font-semibold text-gray-900">{plan.name}</h3>
+                  <p className="text-sm text-gray-500 mt-1">{plan.description}</p>
+                  <div className="mt-4 mb-6">
+                    <span className={`text-3xl font-bold ${plan.popular ? 'text-indigo-600' : 'text-gray-900'}`}>{plan.price}</span>
+                    {plan.period && <span className="text-gray-500 text-sm"> MXN{plan.period}</span>}
+                  </div>
+                  <ul className="space-y-2.5 mb-8">
+                    {plan.features.map((feat) => (
+                      <li key={feat} className="flex items-center gap-2 text-sm text-gray-600">
+                        <Check className="w-4 h-4 text-indigo-500 flex-shrink-0" />
+                        {feat}
+                      </li>
+                    ))}
+                  </ul>
+                  <Link
+                    href="/login"
+                    className={`block text-center w-full py-3 rounded-xl font-semibold text-sm transition-colors ${
+                      plan.popular
+                        ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                        : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {plan.cta}
+                  </Link>
+                </div>
+              </ScrollReveal>
             ))}
           </div>
         </div>
@@ -476,8 +487,8 @@ export default function LandingPage() {
 
       {/* ===== FINAL CTA ===== */}
       <section className="py-24 bg-gradient-to-br from-indigo-600 to-indigo-800">
-        <div className="max-w-3xl mx-auto px-6 text-center">
-          <h2 className={`text-3xl lg:text-4xl font-bold text-white tracking-tight ${spaceGrotesk.className}`}>
+        <ScrollReveal className="max-w-3xl mx-auto px-6 text-center">
+          <h2 className={`text-3xl lg:text-4xl font-bold text-white tracking-tight ${plusJakarta.className}`}>
             Empieza hoy. Gratis.
           </h2>
           <p className="text-indigo-200 mt-4 text-lg">
@@ -493,7 +504,7 @@ export default function LandingPage() {
           <p className="text-indigo-300 text-sm mt-4">
             Ya se unen 500+ empresas mexicanas
           </p>
-        </div>
+        </ScrollReveal>
       </section>
 
       {/* ===== FOOTER ===== */}
@@ -514,7 +525,7 @@ export default function LandingPage() {
               <p className="text-sm leading-relaxed">
                 La plataforma todo-en-uno para PYMEs en México.
               </p>
-              <div className="mt-4 inline-flex items-center gap-1.5 bg-gray-800 text-gray-400 rounded px-2.5 py-1 text-xs">
+              <div className="mt-4 inline-flex items-center gap-1.5 bg-gray-800 text-gray-400 rounded-md px-2.5 py-1 text-xs">
                 <CheckCircle2 className="w-3 h-3 text-emerald-500" />
                 SAT CFDI 4.0
               </div>

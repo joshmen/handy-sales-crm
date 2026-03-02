@@ -131,6 +131,44 @@ public static class ImportExportEndpoints
             return GenerateCsvResult(pedidos, "pedidos.csv");
         }).RequireAuthorization();
 
+        app.MapGet("/api/export/cobros", async (
+            [FromQuery] string? desde,
+            [FromQuery] string? hasta,
+            [FromServices] HandySalesDbContext db,
+            [FromServices] ITenantContextService tenantContext) =>
+        {
+            var tenantId = tenantContext.TenantId ?? 0;
+            if (tenantId == 0) return Results.Unauthorized();
+            var query = db.Cobros
+                .Where(c => c.TenantId == tenantId && c.Activo)
+                .Include(c => c.Pedido)
+                .Include(c => c.Cliente)
+                .Include(c => c.Usuario)
+                .AsQueryable();
+
+            if (DateTime.TryParse(desde, out var fechaDesde))
+                query = query.Where(c => c.FechaCobro >= fechaDesde);
+            if (DateTime.TryParse(hasta, out var fechaHasta))
+                query = query.Where(c => c.FechaCobro <= fechaHasta.AddDays(1));
+
+            var cobros = await query
+                .OrderByDescending(c => c.FechaCobro)
+                .Select(c => new CobroCsvRow
+                {
+                    FechaCobro = c.FechaCobro.ToString("yyyy-MM-dd"),
+                    Cliente = c.Cliente.Nombre,
+                    NumeroPedido = c.Pedido != null ? c.Pedido.NumeroPedido : "",
+                    Vendedor = c.Usuario.Nombre,
+                    Monto = c.Monto,
+                    MetodoPago = c.MetodoPago.ToString(),
+                    Referencia = c.Referencia ?? "",
+                    Notas = c.Notas ?? ""
+                })
+                .ToListAsync();
+
+            return GenerateCsvResult(cobros, "cobros.csv");
+        }).RequireAuthorization();
+
         app.MapGet("/api/export/categorias-clientes", async (
             [FromServices] HandySalesDbContext db,
             [FromServices] ITenantContextService tenantContext) =>
@@ -1706,6 +1744,18 @@ public class PedidoCsvRow
     public decimal Descuento { get; set; }
     public decimal Impuestos { get; set; }
     public decimal Total { get; set; }
+    public string Notas { get; set; } = "";
+}
+
+public class CobroCsvRow
+{
+    public string FechaCobro { get; set; } = "";
+    public string Cliente { get; set; } = "";
+    public string NumeroPedido { get; set; } = "";
+    public string Vendedor { get; set; } = "";
+    public decimal Monto { get; set; }
+    public string MetodoPago { get; set; } = "";
+    public string Referencia { get; set; } = "";
     public string Notas { get; set; } = "";
 }
 

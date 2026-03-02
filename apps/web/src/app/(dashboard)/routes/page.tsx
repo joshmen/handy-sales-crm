@@ -335,7 +335,7 @@ export default function RoutesPage() {
           <button
             data-tour="routes-new-btn"
             onClick={handleOpenCreate}
-            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>Nueva ruta</span>
@@ -388,7 +388,7 @@ export default function RoutesPage() {
           <button
             onClick={handleRefresh}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 text-white ${loading ? 'animate-spin' : ''}`} />
             <span className="hidden sm:inline">Actualizar</span>
@@ -448,7 +448,7 @@ export default function RoutesPage() {
                       <Path className="w-5 h-5 text-teal-600" weight="duotone" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-gray-900 truncate" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                      <div className="text-sm font-medium text-gray-900 truncate">
                         {route.nombre}
                       </div>
                       <div className="text-xs text-gray-500 truncate">
@@ -467,7 +467,7 @@ export default function RoutesPage() {
                     <span className={`inline-flex px-2.5 py-0.5 text-[10px] font-medium rounded-full ${badge.cls}`}>
                       {badge.label}
                     </span>
-                    <span className="text-xs text-gray-600" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                    <span className="text-xs text-gray-600">
                       Paradas: <span className={route.paradasCompletadas === route.totalParadas && route.totalParadas > 0 ? 'text-green-600 font-medium' : ''}>
                         {route.paradasCompletadas}
                       </span>/{route.totalParadas}
@@ -543,7 +543,7 @@ export default function RoutesPage() {
                 {!searchTerm && estadoFilter === 'all' && zonaFilter === 'all' && (
                   <button
                     onClick={handleOpenCreate}
-                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded hover:bg-green-700"
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
                   >
                     <Plus className="w-4 h-4" />
                     Nueva ruta
@@ -577,7 +577,7 @@ export default function RoutesPage() {
 
                       {/* Nombre */}
                       <div className="flex-1 min-w-[160px]">
-                        <span className="text-[13px] font-medium text-gray-900 truncate block" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                        <span className="text-[13px] font-medium text-gray-900 truncate block">
                           {route.nombre}
                         </span>
                       </div>
@@ -598,7 +598,7 @@ export default function RoutesPage() {
 
                       {/* Fecha */}
                       <div className="w-[100px]">
-                        <span className="text-[13px] text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                        <span className="text-[13px] text-gray-900">
                           {route.fecha.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                         </span>
                       </div>
@@ -612,7 +612,7 @@ export default function RoutesPage() {
 
                       {/* Paradas */}
                       <div className="w-[80px] text-center">
-                        <span className="text-[13px] text-gray-600" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                        <span className="text-[13px] text-gray-600">
                           <span className={route.paradasCompletadas === route.totalParadas && route.totalParadas > 0 ? 'text-green-600 font-medium' : ''}>
                             {route.paradasCompletadas}
                           </span>

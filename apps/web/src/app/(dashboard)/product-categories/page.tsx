@@ -246,7 +246,7 @@ export default function ProductCategoriesPage() {
           <button
             onClick={handleOpenCreate}
             data-tour="product-categories-create-btn"
-            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>Nueva categoría</span>
@@ -265,9 +265,9 @@ export default function ProductCategoriesPage() {
           />
           <button
             onClick={loadCategories}
-            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
           >
-            <RefreshCw className="w-3.5 h-3.5 text-blue-500" />
+            <RefreshCw className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Actualizar</span>
           </button>
 
@@ -325,7 +325,7 @@ export default function ProductCategoriesPage() {
                     <Tag className="w-5 h-5 text-orange-600" weight="duotone" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-gray-900 truncate" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                    <div className="text-sm font-medium text-gray-900 truncate">
                       {category.nombre}
                     </div>
                     <div className="text-xs text-gray-500 truncate">{category.descripcion || 'Sin descripción'}</div>

@@ -146,7 +146,8 @@ export async function getResumenCartera(): Promise<ResumenCartera> {
   return res.data;
 }
 
-export async function getEstadoCuenta(clienteId: number): Promise<EstadoCuenta> {
-  const res = await api.get<EstadoCuenta>(`/cobros/cliente/${clienteId}/estado-cuenta`);
+export async function getEstadoCuenta(clienteId: number, historico = false): Promise<EstadoCuenta> {
+  const qs = historico ? '?historico=true' : '';
+  const res = await api.get<EstadoCuenta>(`/cobros/cliente/${clienteId}/estado-cuenta${qs}`);
   return res.data;
 }

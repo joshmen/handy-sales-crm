@@ -27,6 +27,7 @@ const ROLE_RESTRICTED_ROUTES = {
   '/devices': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
   '/activity-logs': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
   '/roles': [UserRole.SUPER_ADMIN],
+  '/automations': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
 };
 
 export default withAuth(

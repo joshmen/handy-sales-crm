@@ -156,6 +156,54 @@ export const helpPages: Record<string, HelpPage> = {
       },
     ],
   },
+  '/clients/new': {
+    title: 'Crear Cliente',
+    description: 'Formulario para registrar un nuevo cliente en tu cartera.',
+    articles: [
+      {
+        id: 'campos-obligatorios',
+        title: 'Campos obligatorios',
+        summary: 'Qué datos necesitas para registrar un cliente.',
+        body: 'Para crear un cliente necesitas al mínimo: nombre, categoría, zona, dirección con número exterior, teléfono y correo electrónico. Los demás campos son opcionales y puedes completarlos después desde la pantalla de edición.',
+      },
+      {
+        id: 'datos-fiscales',
+        title: 'Datos fiscales (SAT)',
+        summary: 'Cuándo y cómo activar la facturación.',
+        body: 'Si el cliente requiere factura fiscal CFDI 4.0, activa la opción "Facturable". Se habilitarán campos adicionales: RFC (12 o 13 caracteres), razón social, código postal fiscal, régimen fiscal y uso CFDI. Estos datos deben coincidir exactamente con la Constancia de Situación Fiscal del SAT del cliente.',
+      },
+      {
+        id: 'mapa-ubicacion',
+        title: 'Dirección y mapa',
+        summary: 'Cómo funciona la geolocalización.',
+        body: 'Al escribir la dirección, el autocompletado de Google Maps sugerirá opciones y llenará automáticamente ciudad, colonia y código postal. El mapa mostrará la ubicación y verificará que esté dentro de la zona seleccionada. Si la ubicación cae fuera de la zona, se mostrará una advertencia y no podrás guardar hasta corregirlo.',
+      },
+    ],
+  },
+  '/client-categories': {
+    title: 'Categorías de Clientes',
+    description: 'Clasificación de clientes por tipo de negocio o volumen de compra.',
+    articles: [
+      {
+        id: 'que-son-categorias',
+        title: '¿Qué son las categorías de clientes?',
+        summary: 'Segmenta tu cartera por tipo de negocio.',
+        body: 'Las categorías te permiten clasificar a tus clientes según su tipo de negocio o volumen de compra: Mayorista, Minorista, Tienda de conveniencia, VIP, etc. Esto facilita asignar listas de precios diferenciadas, generar reportes por segmento y filtrar clientes rápidamente.',
+      },
+      {
+        id: 'crear-categoria',
+        title: '¿Cómo crear una categoría?',
+        summary: 'Agrega nuevas categorías para clasificar clientes.',
+        body: 'Haz clic en "Nueva categoría", captura un nombre descriptivo y opcionalmente una descripción. Después podrás asignar esta categoría a tus clientes desde el formulario de cada cliente. Las categorías se usan como filtro en la lista de clientes y en reportes.',
+      },
+      {
+        id: 'importar-categorias',
+        title: 'Importar y exportar categorías',
+        summary: 'Carga masiva o descarga de categorías.',
+        body: 'Usa el botón de importar/exportar para descargar tus categorías en formato CSV o para importar categorías desde un archivo. Esto es útil cuando necesitas migrar datos desde otro sistema o hacer cambios masivos.',
+      },
+    ],
+  },
   '/price-lists': {
     title: 'Listas de Precios',
     description: 'Precios diferenciados por tipo de cliente.',
@@ -177,6 +225,90 @@ export const helpPages: Record<string, HelpPage> = {
         title: '¿Cómo funcionan?',
         summary: 'Descuentos que se activan al comprar cierta cantidad.',
         body: 'Los descuentos por cantidad se aplican automáticamente cuando el cliente compra una cantidad mínima de un producto. Por ejemplo: "Comprando 10 o más unidades de Refresco Cola, obtén 5% de descuento". Se configuran por producto y se pueden combinar con listas de precios.',
+      },
+    ],
+  },
+  '/cobranza': {
+    title: 'Cobranza',
+    description: 'Registra cobros, consulta saldos pendientes y exporta datos de cobranza.',
+    articles: [
+      {
+        id: 'que-es-cobranza',
+        title: '¿Cómo funciona la cobranza?',
+        summary: 'Registra pagos de clientes y revisa quién te debe.',
+        body: 'La sección de Cobranza te permite llevar control de los pagos de tus clientes. En la pestaña "¿Quién debe?" ves rápidamente qué clientes tienen deuda pendiente. Desde "Historial de cobros" puedes revisar todos los pagos recibidos. Para registrar un cobro, haz clic en "Nuevo cobro", selecciona el cliente y el pedido pendiente.',
+      },
+      {
+        id: 'estado-cuenta',
+        title: 'Estado de cuenta por cliente',
+        summary: 'Detalle de deudas y pagos por cliente.',
+        body: 'Haz clic en el ícono de ojo en cualquier cliente para ver su estado de cuenta completo. Ahí verás cada pedido con su monto total, cuánto ha pagado y cuánto falta. La barra de avance te muestra visualmente el progreso de pago.',
+      },
+      {
+        id: 'exportar-cobros',
+        title: 'Exportar cobros',
+        summary: 'Descarga tus cobros en CSV.',
+        body: 'Usa el botón "Exportar" para descargar un archivo CSV con todos los cobros del período seleccionado. Útil para contabilidad, conciliación bancaria o reportes.',
+      },
+    ],
+  },
+  '/orders': {
+    title: 'Pedidos',
+    description: 'Gestión de pedidos de venta: creación, seguimiento y control.',
+    articles: [
+      {
+        id: 'tipos-venta',
+        title: 'Tipos de venta',
+        summary: 'Preventa vs Venta Directa.',
+        body: 'Existen dos tipos de venta: Preventa — el vendedor levanta el pedido durante su ruta y se entrega después desde el almacén. Venta Directa — el vendedor lleva producto y lo entrega en el momento. El tipo se selecciona al crear el pedido y afecta cómo se gestiona la entrega.',
+      },
+      {
+        id: 'estados-pedido',
+        title: 'Estados del pedido',
+        summary: 'Ciclo de vida de un pedido.',
+        body: 'Un pedido pasa por estos estados: Borrador (aún no se envía), Pendiente (enviado, esperando confirmación), Confirmado (aprobado para surtir), En proceso (preparándose o en ruta), Entregado (completado) y Cancelado. Los administradores pueden cambiar el estado manualmente.',
+      },
+      {
+        id: 'crear-pedido',
+        title: '¿Cómo crear un pedido?',
+        summary: 'Pasos para registrar un nuevo pedido.',
+        body: 'Haz clic en "Nuevo pedido", selecciona el cliente, agrega productos con sus cantidades y el sistema calculará subtotales, IVA y total automáticamente. Puedes agregar notas y definir fecha de entrega estimada. Al guardar, el pedido se crea en estado Borrador.',
+      },
+      {
+        id: 'filtros-pedidos',
+        title: 'Filtros y búsqueda',
+        summary: 'Encuentra pedidos rápidamente.',
+        body: 'Usa la barra de búsqueda para encontrar pedidos por número o nombre del cliente. Los filtros de fecha limitan el período (por defecto últimos 30 días). También puedes filtrar por estado, vendedor y tipo de venta para encontrar exactamente lo que necesitas.',
+      },
+    ],
+  },
+  '/automations': {
+    title: 'Automatizaciones',
+    description: 'Recetas automáticas que el sistema ejecuta por ti para ahorrarte tiempo.',
+    articles: [
+      {
+        id: 'que-son-automatizaciones',
+        title: '¿Qué son las automatizaciones?',
+        summary: 'Recetas que el sistema ejecuta solo.',
+        body: 'Las automatizaciones son acciones pre-configuradas que el sistema ejecuta automáticamente. Por ejemplo: enviarte un resumen de ventas al final del día, alertarte cuando un producto tiene stock bajo, o recordarte cobros vencidos. Solo actívalas y el sistema hace el trabajo por ti.',
+      },
+      {
+        id: 'como-activar',
+        title: '¿Cómo activo una automatización?',
+        summary: 'Usa el interruptor en cada tarjeta.',
+        body: 'Cada tarjeta tiene un interruptor (toggle) a la derecha. Al activarlo, la automatización comienza a funcionar. Puedes desactivarla en cualquier momento. Si la automatización tiene parámetros configurables (como "avisar después de 7 días"), puedes ajustarlos haciendo clic en "Configurar".',
+      },
+      {
+        id: 'categorias',
+        title: 'Categorías de automatizaciones',
+        summary: 'Cobranza, Ventas, Inventario y Operación.',
+        body: 'Las automatizaciones están organizadas por área: Cobranza (recordatorios de pago, avisos de cobros vencidos), Ventas (bienvenida a clientes nuevos, sugerencias de reorden), Inventario (alertas de stock bajo) y Operación (resumen diario, alertas de metas).',
+      },
+      {
+        id: 'historial',
+        title: 'Historial de ejecuciones',
+        summary: 'Revisa cuándo se ejecutó cada automatización.',
+        body: 'Al final de la página encontrarás el historial de ejecuciones. Ahí puedes ver cuándo se ejecutó cada automatización, si fue exitosa o tuvo algún error, y qué acción tomó (por ejemplo: "Resumen enviado: 5 ventas, 3 cobros").',
       },
     ],
   },
@@ -205,4 +337,10 @@ export const tooltips: Record<string, string> = {
   'barcode': 'Código EAN/UPC del empaque o código interno. Usado para búsquedas rápidas.',
   'product-category': 'Grupo general del producto (ej: Bebidas, Snacks). Facilita búsqueda y reportes.',
   'product-family': 'Subgrupo dentro de la categoría (ej: Refrescos dentro de Bebidas).',
+
+  // Cobranza
+  'cobranza-total-vendido': 'Suma del monto total de todos los pedidos en el período, sin importar si ya se cobraron.',
+  'cobranza-cobrado': 'Monto efectivamente recibido de clientes en cobros registrados.',
+  'cobranza-por-cobrar': 'Lo que tus clientes aún te deben. Es la diferencia entre lo vendido y lo cobrado.',
+  'cobranza-clientes-deben': 'Cantidad de clientes que tienen al menos un pedido con saldo pendiente.',
 };

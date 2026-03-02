@@ -12,6 +12,7 @@ import { InactiveToggle } from '@/components/ui/InactiveToggle';
 import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
 import { ActiveToggle } from '@/components/ui/ActiveToggle';
 import { ListPagination } from '@/components/ui/ListPagination';
+import { Input } from '@/components/ui/Input';
 import { toast } from '@/hooks/useToast';
 import { api } from '@/lib/api';
 import { exportToCsv } from '@/services/api/importExport';
@@ -299,7 +300,7 @@ export default function ProductFamiliesPage() {
           <button
             onClick={handleOpenCreate}
             data-tour="product-families-create-btn"
-            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>Nueva familia</span>
@@ -318,9 +319,9 @@ export default function ProductFamiliesPage() {
           />
           <button
             onClick={loadFamilies}
-            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
           >
-            <RefreshCw className="w-3.5 h-3.5 text-blue-500" />
+            <RefreshCw className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Actualizar</span>
           </button>
 
@@ -370,7 +371,7 @@ export default function ProductFamiliesPage() {
                     <Package className="w-5 h-5 text-purple-600" weight="duotone" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-gray-900 truncate" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                    <div className="text-sm font-medium text-gray-900 truncate">
                       {family.nombre}
                     </div>
                     <div className="text-xs text-gray-500 truncate">{family.descripcion || 'Sin descripción'}</div>
@@ -460,7 +461,7 @@ export default function ProductFamiliesPage() {
                 {!searchTerm && (
                   <button
                     onClick={handleOpenCreate}
-                    className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded hover:bg-green-700"
+                    className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
                   >
                     <Plus className="w-4 h-4" />
                     Agregar Familia
@@ -590,30 +591,21 @@ export default function ProductFamiliesPage() {
         }
       >
         <form onSubmit={handleSaveFamily} className="p-6 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nombre <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              {...register('nombre')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
-              placeholder="Ej: Implantes, Herramientas, Accesorios..."
-            />
-            {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre.message}</p>}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Descripción
-            </label>
-            <input
-              type="text"
-              {...register('descripcion')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
-              placeholder="Descripción opcional de la familia"
-            />
-          </div>
+          <Input
+            id="nombre"
+            label={<>Nombre <span className="text-red-500">*</span></>}
+            type="text"
+            {...register('nombre')}
+            placeholder="Ej: Implantes, Herramientas, Accesorios..."
+            error={errors.nombre?.message}
+          />
+          <Input
+            id="descripcion"
+            label="Descripción"
+            type="text"
+            {...register('descripcion')}
+            placeholder="Descripción opcional de la familia"
+          />
         </form>
       </Drawer>
 

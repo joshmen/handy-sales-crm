@@ -14,7 +14,6 @@ import { api } from '@/lib/api';
 import { toast } from '@/hooks/useToast';
 import {
   Plus,
-  ChevronDown,
   RefreshCw,
   FileText,
   Edit,
@@ -30,6 +29,7 @@ import { ShoppingCart as ShoppingCartIcon } from '@phosphor-icons/react';
 import { SearchBar } from '@/components/common/SearchBar';
 import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 // Mapeo de estados de API a estados del componente
 const estadoToStatus: Record<string, Order['status']> = {
@@ -150,6 +150,12 @@ export default function OrdersPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterUser, setFilterUser] = useState('all');
   const [tipoVentaFilter, setTipoVentaFilter] = useState<'' | '0' | '1'>('');
+  const [estadoFilter, setEstadoFilter] = useState('');
+  const [fechaDesde, setFechaDesde] = useState(() => {
+    const d = new Date(); d.setDate(d.getDate() - 30);
+    return d.toISOString().split('T')[0];
+  });
+  const [fechaHasta, setFechaHasta] = useState(() => new Date().toISOString().split('T')[0]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
@@ -166,9 +172,12 @@ export default function OrdersPage() {
     try {
       setLoading(true);
       setError(null);
-      const params: { page: number; pageSize: number; usuarioId?: number; tipoVenta?: number } = { page: currentPage, pageSize };
+      const params: { page: number; pageSize: number; usuarioId?: number; tipoVenta?: number; estado?: string; fechaInicio?: string; fechaFin?: string } = { page: currentPage, pageSize };
       if (filterUser !== 'all') params.usuarioId = parseInt(filterUser);
       if (tipoVentaFilter !== '') params.tipoVenta = parseInt(tipoVentaFilter);
+      if (estadoFilter) params.estado = estadoFilter;
+      if (fechaDesde) params.fechaInicio = fechaDesde;
+      if (fechaHasta) params.fechaFin = fechaHasta;
       const response = await orderService.getOrders(params);
       const mappedOrders = response.items.map(mapApiOrderToOrder);
       setOrders(mappedOrders);
@@ -181,7 +190,7 @@ export default function OrdersPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, filterUser, tipoVentaFilter]);
+  }, [currentPage, filterUser, tipoVentaFilter, estadoFilter, fechaDesde, fechaHasta]);
 
   const fetchFormData = useCallback(async () => {
     // Load clients and products independently so one failure doesn't block the other
@@ -296,50 +305,84 @@ export default function OrdersPage() {
 
   return (
     <>
-      <div className="flex flex-col h-full">
-        {/* Header */}
-        <div className="bg-white px-4 py-4 sm:px-8 sm:py-6">
-          {/* Breadcrumb */}
-          <div className="flex items-center gap-2 text-[13px] mb-4">
-            <span className="text-gray-500">Tablero</span>
-            <span className="text-gray-400">&gt;</span>
-            <span className="text-gray-900">Pedidos</span>
-          </div>
+      <PageHeader
+        breadcrumbs={[
+          { label: 'Inicio', href: '/dashboard' },
+          { label: 'Pedidos' },
+        ]}
+        title="Pedidos"
+        subtitle={`$ ${totalAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN`}
+        actions={
+          <>
+            <ExportButton entity="pedidos" label="Exportar" params={{ desde: fechaDesde, hasta: fechaHasta }} />
+            <button
+              data-tour="orders-create-btn"
+              onClick={handleCreateOrder}
+              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Nuevo pedido</span>
+            </button>
+          </>
+        }
+      >
+          {error && (
+            <div className="mb-4">
+              <ErrorBanner error={error} onRetry={fetchOrders} />
+            </div>
+          )}
 
-          {/* Title Row */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
-            <div className="flex items-center gap-3" data-tour="orders-total">
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                Pedidos
-              </h1>
-              <span className="text-base text-gray-600">
-                $ {totalAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN
-              </span>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                data-tour="orders-create-btn"
-                onClick={handleCreateOrder}
-                className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Nuevo pedido</span>
-              </button>
-              <ExportButton entity="pedidos" label="Exportar" />
-            </div>
+          {/* Search */}
+          <div className="mb-3 w-full sm:w-1/2 lg:w-1/3" data-tour="orders-search">
+            <SearchBar
+              value={searchTerm}
+              onChange={(v) => { setSearchTerm(v); setCurrentPage(1); }}
+              placeholder="Buscar pedido por número o cliente..."
+              className="w-full"
+            />
           </div>
 
           {/* Filter Row */}
-          <div className="flex items-center gap-3 mb-4">
-            {/* Date Filter */}
-            <button data-tour="orders-date-filter" className="flex items-center justify-between gap-2 px-3 py-2 h-10 min-w-[260px] text-[11px] text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50">
-              <span>03/05/2025 00:00:00 - 03/05/2025 23:59:59</span>
-              <ChevronDown className="w-4 h-4 text-gray-500" />
-            </button>
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            {/* Date Filters */}
+            <div className="flex items-center gap-1.5" data-tour="orders-date-filter">
+              <label className="text-xs text-gray-500 whitespace-nowrap">Desde</label>
+              <input
+                type="date"
+                value={fechaDesde}
+                onChange={(e) => { setFechaDesde(e.target.value); setCurrentPage(1); }}
+                className="px-2 py-2 h-10 text-[13px] text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <label className="text-xs text-gray-500 whitespace-nowrap">Hasta</label>
+              <input
+                type="date"
+                value={fechaHasta}
+                onChange={(e) => { setFechaHasta(e.target.value); setCurrentPage(1); }}
+                className="px-2 py-2 h-10 text-[13px] text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Estado Filter */}
+            <select
+              data-tour="orders-estado-filter"
+              value={estadoFilter}
+              onChange={(e) => { setEstadoFilter(e.target.value); setCurrentPage(1); }}
+              className="px-3 py-2 h-10 text-[13px] text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            >
+              <option value="">Todos los estados</option>
+              <option value="Borrador">Borrador</option>
+              <option value="Enviado">Pendiente</option>
+              <option value="Confirmado">Confirmado</option>
+              <option value="EnProceso">En proceso</option>
+              <option value="Entregado">Entregado</option>
+              <option value="Cancelado">Cancelado</option>
+            </select>
 
             {/* Users Filter - solo visible para Admin */}
             {isAdmin && (
-            <div className="flex-1" data-tour="orders-user-filter">
+            <div className="min-w-[200px] max-w-[260px]" data-tour="orders-user-filter">
               <SearchableSelect
                 options={[
                   { value: 'all', label: 'Todos los vendedores' },
@@ -354,9 +397,10 @@ export default function OrdersPage() {
 
             {/* Tipo Venta Filter */}
             <select
+              data-tour="orders-tipo-filter"
               value={tipoVentaFilter}
               onChange={(e) => { setTipoVentaFilter(e.target.value as '' | '0' | '1'); setCurrentPage(1); }}
-              className="px-3 py-2 h-10 text-[13px] text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="px-3 py-2 h-10 text-[13px] text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             >
               <option value="">Todos los tipos</option>
               <option value="0">Preventa</option>
@@ -366,33 +410,12 @@ export default function OrdersPage() {
             {/* Refresh Button */}
             <button
               onClick={handleRefresh}
-              className="flex items-center gap-2 px-4 py-2 h-10 text-[13px] font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
             >
-              <RefreshCw className="w-4 h-4 text-blue-500" />
-              <span>Actualizar</span>
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Actualizar</span>
             </button>
           </div>
-
-          {/* Search Row */}
-          <div className="flex items-center justify-end">
-            <SearchBar
-              value={searchTerm}
-              onChange={(v) => { setSearchTerm(v); setCurrentPage(1); }}
-              placeholder="Buscar pedido por ID"
-              dataTour="orders-search"
-            />
-          </div>
-        </div>
-
-        {/* Body */}
-        <div className="flex-1 overflow-auto bg-gray-50">
-          {error && (
-            <div className="mx-8 mt-4">
-              <ErrorBanner error={error} onRetry={fetchOrders} />
-            </div>
-          )}
-
-          <div className="px-4 py-4 sm:px-8 sm:py-6">
             {/* Mobile Cards */}
             <div className="sm:hidden space-y-3">
               {loading && (
@@ -420,7 +443,7 @@ export default function OrdersPage() {
                         <ShoppingCartIcon className="w-5 h-5 text-blue-600" weight="duotone" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-gray-900 truncate" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                        <p className="text-sm font-medium text-gray-900 truncate">
                           {order.code}
                         </p>
                         <p className="text-xs text-gray-500 truncate">{order.client.name}</p>
@@ -587,9 +610,7 @@ export default function OrdersPage() {
                 className="pt-4"
               />
             )}
-          </div>
-        </div>
-      </div>
+      </PageHeader>
 
       {/* Drawer lateral para crear/editar pedidos */}
       <Drawer

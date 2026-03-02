@@ -675,7 +675,7 @@ export default function TenantsPage() {
         <select
           value={planFilter}
           onChange={(e) => setPlanFilter(e.target.value as 'todos' | 'free' | 'basic' | 'pro')}
-          className="px-3 py-2 text-xs border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="px-3 py-2 text-xs border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         >
           <option value="todos">Todos los planes</option>
           <option value="free">Gratis</option>
@@ -749,7 +749,7 @@ export default function TenantsPage() {
                 {!searchTerm && planFilter === 'todos' && (
                   <button
                     onClick={handleOpenCreate}
-                    className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700"
+                    className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
                   >
                     <Plus className="w-4 h-4" />
                     Nueva Empresa
@@ -836,14 +836,14 @@ export default function TenantsPage() {
                   <div className="w-[80px] flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => navigateToDetail(tenant.id)}
-                      className="p-1.5 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                      className="p-1.5 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
                       title="Ver detalle"
                     >
                       <Eye className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => handleOpenEdit(tenant)}
-                      className="p-1.5 text-gray-600 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors"
+                      className="p-1.5 text-gray-600 hover:text-amber-600 hover:bg-amber-50 rounded-md transition-colors"
                       title="Editar"
                     >
                       <Pencil className="h-4 w-4 text-amber-400" />
@@ -885,7 +885,7 @@ export default function TenantsPage() {
               {!searchTerm && planFilter === 'todos' && (
                 <button
                   onClick={handleOpenCreate}
-                  className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700"
+                  className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
                 >
                   <Plus className="w-4 h-4" />
                   Nueva Empresa
@@ -956,14 +956,14 @@ export default function TenantsPage() {
             <div className="flex justify-end gap-1">
               <button
                 onClick={() => navigateToDetail(tenant.id)}
-                className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
               >
                 <Eye className="w-3.5 h-3.5" />
                 <span>Detalle</span>
               </button>
               <button
                 onClick={() => handleOpenEdit(tenant)}
-                className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
               >
                 <Pencil className="w-3.5 h-3.5 text-amber-400" />
                 <span>Editar</span>

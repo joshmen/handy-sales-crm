@@ -14,6 +14,8 @@ import {
   CheckCircle2,
   Clock,
   AlertCircle,
+  Truck,
+  MapPin,
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -21,9 +23,9 @@ import {
   dashboardService,
   VendedorPerformance,
 } from '@/services/dashboardService';
+import deliveryService, { DeliveryStats } from '@/services/api/deliveries';
 import { BrandedLoadingScreen } from '@/components/ui/BrandedLoadingScreen';
 import { useImpersonationStore } from '@/stores/useImpersonationStore';
-import { MapPin } from 'lucide-react';
 
 
 // Tipos para métricas
@@ -108,6 +110,7 @@ export default function DashboardPage() {
   const { isImpersonating } = useImpersonationStore();
   const [isLoading, setIsLoading] = useState(true);
   const [vendedorPerf, setVendedorPerf] = useState<VendedorPerformance | null>(null);
+  const [deliveryStats, setDeliveryStats] = useState<DeliveryStats | null>(null);
 
   const isVendedor = session?.user?.role === 'VENDEDOR';
   const isSuperAdminDirect = session?.user?.role === 'SUPER_ADMIN' && !isImpersonating;
@@ -181,6 +184,19 @@ export default function DashboardPage() {
           setVendedorPerf(perf);
         } else {
           await dashboardService.getMetrics();
+          // Load delivery stats for Admin/Supervisor
+          try {
+            const today = new Date().toISOString().split('T')[0];
+            const stats = await deliveryService.getDeliveryStats({
+              fechaDesde: today,
+              fechaHasta: today,
+              pagina: 1,
+              tamanoPagina: 9999,
+            });
+            setDeliveryStats(stats);
+          } catch {
+            // Non-critical — dashboard works without delivery stats
+          }
         }
       } catch (error) {
         console.error('Error loading metrics:', error);
@@ -238,21 +254,21 @@ export default function DashboardPage() {
 
     return (
       <div className="space-y-8">
-        <div className="flex items-center gap-2 text-sm">
+        <div className="flex items-center gap-2 text-sm page-animate">
           <span className="text-gray-500">Inicio</span>
           <span className="text-gray-400">/</span>
           <span className="text-gray-900 font-medium">Mi Rendimiento</span>
         </div>
 
-        <div>
+        <div className="page-animate page-animate-delay-1">
           <h1 className="text-3xl font-semibold text-gray-900 tracking-tight">Mi Rendimiento</h1>
           <p className="text-gray-500 mt-1">Hola {session?.user?.name}, aquí están tus métricas</p>
         </div>
 
         {/* Métricas del vendedor */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 page-animate page-animate-delay-2">
           {vendedorCards.map((card, index) => (
-            <div key={index} className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-sm transition-shadow">
+            <div key={index} className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-sm text-gray-500">{card.title}</span>
                 <div className={`w-8 h-8 ${card.iconBg} rounded-lg flex items-center justify-center`}>
@@ -271,8 +287,8 @@ export default function DashboardPage() {
         </div>
 
         {/* Detalle de actividad */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 page-animate page-animate-delay-3">
+          <div className="bg-white border border-gray-200 rounded-xl p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                 <ShoppingCart className="w-5 h-5 text-blue-600" />
@@ -295,7 +311,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <div className="bg-white border border-gray-200 rounded-xl p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-violet-100 rounded-lg flex items-center justify-center">
                 <Users className="w-5 h-5 text-violet-600" />
@@ -318,7 +334,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <div className="bg-white border border-gray-200 rounded-xl p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
                 <MapPin className="w-5 h-5 text-emerald-600" />
@@ -348,14 +364,14 @@ export default function DashboardPage() {
   return (
       <div className="space-y-8">
         {/* Breadcrumbs */}
-        <div className="flex items-center gap-2 text-sm">
+        <div className="flex items-center gap-2 text-sm page-animate">
           <span className="text-gray-500">Inicio</span>
           <span className="text-gray-400">/</span>
           <span className="text-gray-900 font-medium">Tablero</span>
         </div>
 
         {/* Title Row */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 page-animate page-animate-delay-1">
           <div>
             <h1 className="text-3xl font-semibold text-gray-900 tracking-tight">Tablero</h1>
             <p className="text-gray-500 mt-1">Resumen de ventas y actividad</p>
@@ -376,11 +392,11 @@ export default function DashboardPage() {
         </div>
 
         {/* Metrics Row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5" data-tour="dashboard-metrics">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 page-animate page-animate-delay-2" data-tour="dashboard-metrics">
           {metricCards.map((card, index) => (
             <div
               key={index}
-              className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-sm transition-shadow"
+              className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
             >
               <div className="flex items-center justify-between mb-4">
                 <span className="text-sm text-gray-500">{card.title}</span>
@@ -405,9 +421,9 @@ export default function DashboardPage() {
         </div>
 
         {/* Content Columns */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 page-animate page-animate-delay-3">
           {/* Chart Card */}
-          <div className="lg:col-span-2 bg-white border border-gray-200 rounded-lg p-6" data-tour="dashboard-chart">
+          <div className="lg:col-span-2 bg-white border border-gray-200 rounded-xl p-6" data-tour="dashboard-chart">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">Ventas Semanales</h3>
@@ -423,8 +439,8 @@ export default function DashboardPage() {
               {weeklyData.map((item, index) => (
                 <div key={index} className="flex flex-col items-center gap-2">
                   <div
-                    className="w-10 sm:w-12 bg-red-500 rounded-t transition-all hover:bg-red-600 cursor-pointer"
-                    style={{ height: `${item.value * 1.5}px` }}
+                    className="w-10 sm:w-12 rounded-t transition-all hover:opacity-80 cursor-pointer"
+                    style={{ height: `${item.value * 1.5}px`, backgroundColor: 'var(--company-primary-color, #16a34a)' }}
                     title={`${item.day}: $${(item.value * 100).toLocaleString()}`}
                   />
                   <span className="text-xs text-gray-500">{item.day}</span>
@@ -434,10 +450,10 @@ export default function DashboardPage() {
           </div>
 
           {/* Activity Card */}
-          <div className="bg-white border border-gray-200 rounded-lg" data-tour="dashboard-activity">
+          <div className="bg-white border border-gray-200 rounded-xl" data-tour="dashboard-activity">
             <div className="flex items-center justify-between p-5 border-b border-gray-100">
               <h3 className="font-semibold text-gray-900">Actividad Reciente</h3>
-              <button className="text-sm text-red-500 hover:text-red-600 font-medium">
+              <button className="text-sm font-medium hover:opacity-80 transition-opacity" style={{ color: 'var(--company-primary-color, #16a34a)' }}>
                 Ver más
               </button>
             </div>
@@ -465,7 +481,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Goal Card */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6" data-tour="dashboard-goal">
+        <div className="bg-white border border-gray-200 rounded-xl p-6 page-animate page-animate-delay-4" data-tour="dashboard-goal">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <h3 className="text-lg font-semibold text-gray-900">Meta de Venta Semanal</h3>
             <span className="px-3 py-1 bg-gray-100 border border-gray-200 rounded-lg text-sm text-gray-600 w-fit">
@@ -483,7 +499,7 @@ export default function DashboardPage() {
             </div>
             <div>
               <p className="text-sm text-gray-500 mb-1">Logrado</p>
-              <p className="text-2xl font-semibold text-red-500">
+              <p className="text-2xl font-semibold" style={{ color: 'var(--company-primary-color, #16a34a)' }}>
                 ${weeklyGoal.current.toLocaleString()}
               </p>
             </div>
@@ -499,8 +515,8 @@ export default function DashboardPage() {
           <div className="space-y-2">
             <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
               <div
-                className="h-full bg-red-500 rounded-full transition-all"
-                style={{ width: `${weeklyGoal.percentage}%` }}
+                className="h-full rounded-full transition-all"
+                style={{ width: `${weeklyGoal.percentage}%`, backgroundColor: 'var(--company-primary-color, #16a34a)' }}
               />
             </div>
             <div className="flex justify-between text-xs text-gray-400">
@@ -509,6 +525,51 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
+
+        {/* Delivery Stats — only shown when data is available */}
+        {deliveryStats && (
+          <div className="page-animate page-animate-delay-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Entregas de Hoy</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="bg-white border border-gray-200 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-7 h-7 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <Truck className="w-3.5 h-3.5 text-blue-600" />
+                  </div>
+                  <span className="text-xs text-gray-500">En Ruta</span>
+                </div>
+                <p className="text-2xl font-semibold text-gray-900">{deliveryStats.totalEnRuta}</p>
+              </div>
+              <div className="bg-white border border-gray-200 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-7 h-7 bg-green-100 rounded-lg flex items-center justify-center">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
+                  </div>
+                  <span className="text-xs text-gray-500">Completadas</span>
+                </div>
+                <p className="text-2xl font-semibold text-gray-900">{deliveryStats.totalCompletadas}</p>
+              </div>
+              <div className="bg-white border border-gray-200 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-7 h-7 bg-amber-100 rounded-lg flex items-center justify-center">
+                    <Clock className="w-3.5 h-3.5 text-amber-600" />
+                  </div>
+                  <span className="text-xs text-gray-500">Pendientes</span>
+                </div>
+                <p className="text-2xl font-semibold text-gray-900">{deliveryStats.totalPendientes}</p>
+              </div>
+              <div className="bg-white border border-gray-200 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-7 h-7 bg-violet-100 rounded-lg flex items-center justify-center">
+                    <TrendingUp className="w-3.5 h-3.5 text-violet-600" />
+                  </div>
+                  <span className="text-xs text-gray-500">% Completado</span>
+                </div>
+                <p className="text-2xl font-semibold text-gray-900">{deliveryStats.porcentajeCompletado}%</p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
   );
 }
