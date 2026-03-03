@@ -292,6 +292,18 @@ export const helpPages: Record<string, HelpPage> = {
         summary: 'Precios personalizados por segmento.',
         body: 'Las listas de precios permiten definir precios distintos para un mismo producto según el tipo de cliente. Por ejemplo, puedes tener una lista "Mayorista" con precios más bajos y una lista "Menudeo" con precios regulares. Cada cliente se asigna a una lista de precios.',
       },
+      {
+        id: 'crear-lista',
+        title: '¿Cómo crear una lista de precios?',
+        summary: 'Agrega listas para segmentar precios.',
+        body: 'Haz clic en "Nueva lista", captura un nombre descriptivo (ej. Mayoreo, Minorista) y opcionalmente una descripción. Una vez creada, podrás asignar precios específicos por producto dentro de cada lista desde la sección de precios por producto.',
+      },
+      {
+        id: 'importar-listas',
+        title: 'Importar y exportar listas',
+        summary: 'Carga masiva o descarga de listas.',
+        body: 'Usa el botón de importar/exportar para descargar tus listas en CSV o importar desde un archivo. El archivo requiere "Nombre" (obligatorio) y opcionalmente "Descripción". Los nombres duplicados serán rechazados. La importación solo crea listas nuevas, no actualiza existentes.',
+      },
     ],
   },
   '/discounts': {

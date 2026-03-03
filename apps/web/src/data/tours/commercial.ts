@@ -151,11 +151,21 @@ export const commercialTours: Record<string, TourConfig> = {
     description: 'Aprende a crear listas de precios diferenciados para distintos tipos de clientes.',
     steps: [
       {
+        element: '[data-tour="pricelists-import-export"]',
+        popover: {
+          title: 'Importar y exportar',
+          description:
+            'Descarga tus listas en CSV o importa desde un archivo para cargas masivas. El archivo requiere nombre (obligatorio) y descripción (opcional).',
+          side: 'bottom',
+          align: 'end',
+        },
+      },
+      {
         element: '[data-tour="pricelists-new-btn"]',
         popover: {
           title: 'Nueva lista de precios',
           description:
-            'Crea una lista de precios con nombre y descripción. Después podrás asignar precios específicos por producto dentro de cada lista.',
+            'Crea una lista de precios para asignar precios específicos por producto según tipo de cliente (mayoreo, menudeo, etc.).',
           side: 'bottom',
           align: 'end',
           onNextClick: (driverObj: Driver) => {
@@ -167,28 +177,52 @@ export const commercialTours: Record<string, TourConfig> = {
           },
         },
       },
+      // ── DRAWER OPEN ──
       {
+        element: '[data-tour="pricelists-drawer-name"]',
         popover: {
-          title: 'Formulario de lista de precios',
+          title: 'Nombre de la lista',
           description:
-            'Define el nombre y descripción de la lista. Después podrás asignar precios específicos por producto.',
-          side: 'over',
+            'Escribe un nombre descriptivo (ej. Lista mayoreo, Lista minorista). Este campo es obligatorio.',
+          side: 'left',
+          align: 'start',
           onPrevClick: (driverObj: Driver) => {
             closeDrawerForTour();
             setTimeout(() => driverObj.movePrevious(), 400);
           },
+        },
+      },
+      {
+        element: '[data-tour="pricelists-drawer-description"]',
+        popover: {
+          title: 'Descripción',
+          description:
+            'Agrega una descripción opcional para identificar mejor la lista de precios.',
+          side: 'left',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="pricelists-drawer-actions"]',
+        popover: {
+          title: 'Guardar o cancelar',
+          description:
+            'Haz clic en "Crear Lista" para guardar o "Cancelar" para descartar. Después podrás asignar precios por producto.',
+          side: 'top',
+          align: 'end',
           onNextClick: (driverObj: Driver) => {
             closeDrawerForTour();
             setTimeout(() => driverObj.moveNext(), 400);
           },
         },
       },
+      // ── DRAWER CLOSE ──
       {
         element: '[data-tour="pricelists-search"]',
         popover: {
           title: 'Buscar listas',
           description:
-            'Escribe el nombre de la lista de precios para encontrarla.',
+            'Escribe el nombre de la lista de precios para encontrarla rápidamente.',
           side: 'bottom',
           align: 'start',
         },
@@ -198,7 +232,7 @@ export const commercialTours: Record<string, TourConfig> = {
         popover: {
           title: 'Mostrar inactivas',
           description:
-            'Activa este switch para ver las listas de precios desactivadas.',
+            'Activa este switch para ver las listas de precios desactivadas. Por defecto solo se muestran las activas.',
           side: 'bottom',
           align: 'end',
         },
@@ -208,7 +242,7 @@ export const commercialTours: Record<string, TourConfig> = {
         popover: {
           title: 'Tabla de listas',
           description:
-            'Cada lista muestra nombre, descripción, última modificación y estado. Puedes editar los precios de cada producto dentro de una lista.',
+            'Cada lista muestra nombre, descripción, última modificación y estado. Puedes seleccionar varias con los checkboxes para activar/desactivar en lote.',
           side: 'top',
           align: 'center',
         },
