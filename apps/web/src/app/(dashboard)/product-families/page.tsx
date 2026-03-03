@@ -266,7 +266,7 @@ export default function ProductFamiliesPage() {
       title="Familias de productos"
       actions={
         <>
-          <div className="relative">
+          <div className="relative" data-tour="product-families-import-export">
             <button
               onClick={() => setShowDataMenu(!showDataMenu)}
               className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
@@ -325,11 +325,12 @@ export default function ProductFamiliesPage() {
             <span className="hidden sm:inline">Actualizar</span>
           </button>
 
-          <InactiveToggle
-            value={showInactive}
-            onChange={(v) => { setShowInactive(v); setCurrentPage(1); }}
-            className="ml-auto"
-          />
+          <div data-tour="product-families-toggle-inactive" className="ml-auto">
+            <InactiveToggle
+              value={showInactive}
+              onChange={(v) => { setShowInactive(v); setCurrentPage(1); }}
+            />
+          </div>
         </div>
 
         {/* Selection Action Bar */}
@@ -569,7 +570,7 @@ export default function ProductFamiliesPage() {
         isDirty={isDirty}
         onSave={handleSaveFamily}
         footer={
-          <div className="flex items-center justify-end gap-3">
+          <div className="flex items-center justify-end gap-3" data-tour="product-families-drawer-actions">
             <button
               type="button"
               onClick={() => drawerRef.current?.requestClose()}
@@ -590,22 +591,26 @@ export default function ProductFamiliesPage() {
           </div>
         }
       >
-        <form onSubmit={handleSaveFamily} className="p-6 space-y-4">
-          <Input
-            id="nombre"
-            label={<>Nombre <span className="text-red-500">*</span></>}
-            type="text"
-            {...register('nombre')}
-            placeholder="Ej: Implantes, Herramientas, Accesorios..."
-            error={errors.nombre?.message}
-          />
-          <Input
-            id="descripcion"
-            label="Descripción"
-            type="text"
-            {...register('descripcion')}
-            placeholder="Descripción opcional de la familia"
-          />
+        <form onSubmit={handleSaveFamily} className="p-6 space-y-4" data-tour="product-families-form">
+          <div data-tour="product-families-drawer-name">
+            <Input
+              id="nombre"
+              label={<>Nombre <span className="text-red-500">*</span></>}
+              type="text"
+              {...register('nombre')}
+              placeholder="Ej: Implantes, Herramientas, Accesorios..."
+              error={errors.nombre?.message}
+            />
+          </div>
+          <div data-tour="product-families-drawer-description">
+            <Input
+              id="descripcion"
+              label="Descripción"
+              type="text"
+              {...register('descripcion')}
+              placeholder="Descripción opcional de la familia"
+            />
+          </div>
         </form>
       </Drawer>
 

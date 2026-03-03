@@ -528,13 +528,68 @@ export const catalogTours: Record<string, TourConfig> = {
     description: 'Aprende a agrupar tus productos por familia (Bebidas, Abarrotes, etc.).',
     steps: [
       {
+        element: '[data-tour="product-families-import-export"]',
+        popover: {
+          title: 'Importar y exportar',
+          description:
+            'Descarga tus familias en CSV o importa desde un archivo para cargas masivas. El archivo requiere nombre (obligatorio) y descripción (opcional).',
+          side: 'bottom',
+          align: 'end',
+        },
+      },
+      {
         element: '[data-tour="product-families-create-btn"]',
         popover: {
           title: 'Nueva familia',
           description:
-            'Crea una nueva familia de productos con nombre y descripción. Las familias son la agrupación principal de tu catálogo.',
+            'Crea una nueva familia de productos. Se abrirá un formulario lateral donde capturarás nombre y descripción.',
           side: 'bottom',
           align: 'end',
+          onNextClick: (driverObj: Driver) => {
+            (document.querySelector('[data-tour="product-families-create-btn"]') as HTMLElement)?.click();
+            setTimeout(() => {
+              boostDrawerForTour();
+              driverObj.moveNext();
+            }, 400);
+          },
+        },
+      },
+      {
+        element: '[data-tour="product-families-drawer-name"]',
+        popover: {
+          title: 'Nombre de la familia',
+          description:
+            'Captura el nombre de la familia (ej: Bebidas, Abarrotes, Lácteos). Es obligatorio y debe ser único. Las familias son la agrupación principal de tu catálogo.',
+          side: 'left',
+          align: 'start',
+          onPrevClick: (driverObj: Driver) => {
+            closeDrawerForTour();
+            setTimeout(() => driverObj.movePrevious(), 400);
+          },
+        },
+      },
+      {
+        element: '[data-tour="product-families-drawer-description"]',
+        popover: {
+          title: 'Descripción',
+          description:
+            'Agrega una descripción opcional para ayudar a identificar el tipo de productos que pertenecen a esta familia.',
+          side: 'left',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="product-families-drawer-actions"]',
+        popover: {
+          title: 'Guardar o cancelar',
+          description:
+            'Haz clic en "Crear Familia" para guardarla o "Cancelar" para descartar.',
+          side: 'left',
+          align: 'end',
+          onNextClick: (driverObj: Driver) => {
+            closeDrawerForTour();
+            setTimeout(() => driverObj.moveNext(), 400);
+          },
         },
       },
       {
@@ -562,7 +617,7 @@ export const catalogTours: Record<string, TourConfig> = {
         popover: {
           title: 'Tabla de familias',
           description:
-            'Lista de familias con nombre, descripción, estado y acciones. Puedes seleccionar varias para activar/desactivar en lote.',
+            'Lista de familias con nombre, descripción, estado y acciones. Puedes seleccionar varias con los checkboxes para activar/desactivar en lote.',
           side: 'top',
           align: 'center',
         },
