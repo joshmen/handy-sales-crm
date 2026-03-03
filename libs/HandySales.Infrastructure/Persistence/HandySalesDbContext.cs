@@ -717,6 +717,9 @@ public class HandySalesDbContext : DbContext
         modelBuilder.Entity<HandySales.Domain.Entities.Inventario>()
             .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
 
+        modelBuilder.Entity<MovimientoInventario>()
+            .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
+
         modelBuilder.Entity<ListaPrecio>()
             .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
 

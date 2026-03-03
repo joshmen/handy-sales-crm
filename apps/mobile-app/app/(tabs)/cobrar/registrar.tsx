@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert, Image, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuthStore } from '@/stores';
@@ -35,7 +35,7 @@ const METODO_ICONS: Record<number, React.ReactNode> = {
 
 export default function RegistrarCobroScreen() {
   const router = useRouter();
-  const { user } = useAuthStore();
+  const user = useAuthStore(s => s.user);
   const params = useLocalSearchParams<{
     clienteId: string;
     clienteNombre: string;
@@ -48,10 +48,16 @@ export default function RegistrarCobroScreen() {
 
   // Client picker state (when no clienteId passed via params)
   const [searchText, setSearchText] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedClient, setSelectedClient] = useState<Cliente | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
 
-  const { data: clientesSearch } = useOfflineClients(searchText);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchText), 300);
+    return () => clearTimeout(timer);
+  }, [searchText]);
+
+  const { data: clientesSearch } = useOfflineClients(debouncedSearch);
 
   // Resolve the effective client (from params OR from picker)
   const effectiveClienteId = paramClienteId || selectedClient?.id;

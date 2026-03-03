@@ -56,3 +56,37 @@ export function validatePhone(phone: string): boolean {
   const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/
   return phoneRegex.test(phone.replace(/\s/g, ""))
 }
+
+export function getInitials(name: string | undefined): string {
+  if (!name) return '??'
+  return name
+    .split(' ')
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+}
+
+export function formatTimeAgo(dateStr: string): string {
+  const now = new Date()
+  const date = new Date(dateStr)
+  const diffMs = now.getTime() - date.getTime()
+  const diffSec = Math.floor(diffMs / 1000)
+  const diffMin = Math.floor(diffSec / 60)
+  const diffHr = Math.floor(diffMin / 60)
+  const diffDays = Math.floor(diffHr / 24)
+
+  if (diffSec < 60) return 'hace unos segundos'
+  if (diffMin < 2) return 'hace 1 min'
+  if (diffMin < 60) return `hace ${diffMin} min`
+  if (diffHr < 2) return 'hace 1 hora'
+  if (diffHr < 24) return `hace ${diffHr} horas`
+  if (diffDays < 2) return 'hace 1 día'
+  if (diffDays < 30) return `hace ${diffDays} días`
+  if (diffDays < 60) return 'hace 1 mes'
+  return `hace ${Math.floor(diffDays / 30)} meses`
+}
+
+export function getErrorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : 'Error desconocido'
+}

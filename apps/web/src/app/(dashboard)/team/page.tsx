@@ -17,21 +17,13 @@ import {
   Loader2,
   RefreshCw,
 } from 'lucide-react';
+import { getInitials } from '@/lib/utils';
 
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('es-MX', {
     style: 'currency',
     currency: 'MXN',
   }).format(amount);
-}
-
-function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .map(w => w[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
 }
 
 export default function TeamPage() {

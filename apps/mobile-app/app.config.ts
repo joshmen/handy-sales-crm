@@ -65,7 +65,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       "expo-build-properties",
       {
         android: {
-          usesCleartextTraffic: true,
           packagingOptions: {
             pickFirst: ["**/libc++_shared.so"],
           },

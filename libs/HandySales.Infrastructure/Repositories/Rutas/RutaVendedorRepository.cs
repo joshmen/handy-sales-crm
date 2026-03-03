@@ -459,12 +459,15 @@ public class RutaVendedorRepository : IRutaVendedorRepository
             .Where(d => d.PedidoId == pedidoId)
             .ToListAsync();
 
+        // Batch-load all existing carga for this ruta to avoid N+1 queries
+        var productIds = detallesPedido.Select(d => d.ProductoId).Distinct().ToList();
+        var cargasExistentes = await _db.RutasCarga
+            .Where(c => c.RutaId == rutaId && productIds.Contains(c.ProductoId) && c.TenantId == tenantId && c.Activo)
+            .ToDictionaryAsync(c => c.ProductoId);
+
         foreach (var det in detallesPedido)
         {
-            var cargaExistente = await _db.RutasCarga
-                .FirstOrDefaultAsync(c => c.RutaId == rutaId && c.ProductoId == det.ProductoId && c.TenantId == tenantId && c.Activo);
-
-            if (cargaExistente != null)
+            if (cargasExistentes.TryGetValue(det.ProductoId, out var cargaExistente))
             {
                 cargaExistente.CantidadEntrega += (int)det.Cantidad;
                 cargaExistente.CantidadTotal = cargaExistente.CantidadEntrega + cargaExistente.CantidadVenta;
@@ -506,12 +509,15 @@ public class RutaVendedorRepository : IRutaVendedorRepository
                 .Where(d => d.PedidoId == pedidoId)
                 .ToListAsync();
 
+            // Batch-load all existing carga for this ruta to avoid N+1 queries
+            var productIds = detallesPedido.Select(d => d.ProductoId).Distinct().ToList();
+            var cargasMap = await _db.RutasCarga
+                .Where(c => c.RutaId == rutaId && productIds.Contains(c.ProductoId) && c.TenantId == tenantId && c.Activo)
+                .ToDictionaryAsync(c => c.ProductoId);
+
             foreach (var det in detallesPedido)
             {
-                var carga = await _db.RutasCarga
-                    .FirstOrDefaultAsync(c => c.RutaId == rutaId && c.ProductoId == det.ProductoId && c.TenantId == tenantId && c.Activo);
-
-                if (carga != null)
+                if (cargasMap.TryGetValue(det.ProductoId, out var carga))
                 {
                     carga.CantidadEntrega = Math.Max(0, carga.CantidadEntrega - (int)det.Cantidad);
                     carga.CantidadTotal = carga.CantidadEntrega + carga.CantidadVenta;

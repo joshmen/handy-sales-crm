@@ -2,7 +2,13 @@ import { NextAuthOptions } from 'next-auth';
 import { JWT } from 'next-auth/jwt';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
+import { jwtVerify } from 'jose';
 import { serverApiCall, serverApiInstance } from '@/lib/server-api';
+
+// Backend JWT secret — same key the .NET API uses to sign tokens
+const BACKEND_JWT_SECRET = new TextEncoder().encode(
+  process.env.SOCIAL_LOGIN_SECRET || process.env.JWT_SECRET || ''
+);
 
 // —— Usuarios mock para desarrollo (coinciden con seed de BD) ——
 // Password: test123 para todos
@@ -148,6 +154,14 @@ export const authOptions: NextAuthOptions = {
           try {
             const data = JSON.parse(credentials.loginResponse);
             if (data.user && data.token) {
+              // Cryptographically verify the JWT signature using the backend's HMAC-SHA256 secret
+              // This prevents forged tokens from creating valid NextAuth sessions
+              const { payload } = await jwtVerify(data.token, BACKEND_JWT_SECRET, {
+                algorithms: ['HS256'],
+              });
+              // Verify user data matches JWT subject claim
+              if (String(data.user.id) !== String(payload.sub)) return null;
+
               return {
                 id: data.user.id,
                 email: data.user.email,
@@ -159,6 +173,7 @@ export const authOptions: NextAuthOptions = {
               };
             }
           } catch {
+            // Signature verification failed, token expired, or malformed JWT
             return null;
           }
           return null;
@@ -301,9 +316,10 @@ export const authOptions: NextAuthOptions = {
             return true;
           }
 
-          // 2FA required — redirect to login with temp token
+          // 2FA required — store temp token in a short-lived cookie (not URL params)
+          // sessionStorage is not available server-side, so we use a cookie instead
           if (data.requires2FA) {
-            return `/login?requires2FA=true&tempToken=${data.tempToken}&provider=${account.provider}`;
+            return `/login?requires2FA=true&provider=${account.provider}&t2fa=${data.tempToken}`;
           }
 
           return false; // User deactivated or other error

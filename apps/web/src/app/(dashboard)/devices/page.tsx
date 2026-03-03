@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from '@/hooks/useToast';
+import { formatTimeAgo } from '@/lib/utils';
 import { deviceSessionService } from '@/services/api';
 import type { DeviceSessionDto } from '@/services/api/deviceSessions';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
@@ -19,26 +20,6 @@ import {
 } from 'lucide-react';
 
 // ============ Helpers ============
-
-function timeAgo(dateStr: string): string {
-  const now = new Date();
-  const date = new Date(dateStr);
-  const diffMs = now.getTime() - date.getTime();
-  const diffSec = Math.floor(diffMs / 1000);
-  const diffMin = Math.floor(diffSec / 60);
-  const diffHr = Math.floor(diffMin / 60);
-  const diffDays = Math.floor(diffHr / 24);
-
-  if (diffSec < 60) return 'hace unos segundos';
-  if (diffMin < 2) return 'hace 1 min';
-  if (diffMin < 60) return `hace ${diffMin} min`;
-  if (diffHr < 2) return 'hace 1 hora';
-  if (diffHr < 24) return `hace ${diffHr} horas`;
-  if (diffDays < 2) return 'hace 1 día';
-  if (diffDays < 30) return `hace ${diffDays} días`;
-  if (diffDays < 60) return 'hace 1 mes';
-  return `hace ${Math.floor(diffDays / 30)} meses`;
-}
 
 function getDeviceIcon(deviceType: number) {
   switch (deviceType) {
@@ -459,7 +440,7 @@ export default function DevicesPage() {
                         {session.appVersion && (
                           <span>v{session.appVersion}</span>
                         )}
-                        <span>{timeAgo(session.lastActivity)}</span>
+                        <span>{formatTimeAgo(session.lastActivity)}</span>
                       </div>
 
                       {/* Row 3: Status + Actions */}
@@ -587,7 +568,7 @@ export default function DevicesPage() {
                                   session.lastActivity
                                 ).toLocaleString('es-MX')}
                               >
-                                {timeAgo(session.lastActivity)}
+                                {formatTimeAgo(session.lastActivity)}
                               </div>
                             </td>
 

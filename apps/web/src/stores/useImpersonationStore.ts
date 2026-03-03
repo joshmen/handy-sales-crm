@@ -1,6 +1,5 @@
 // src/stores/useImpersonationStore.ts
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import { CurrentImpersonationState, ImpersonatedTenantInfo } from '@/types/impersonation';
 
 interface ImpersonationStore {
@@ -29,106 +28,79 @@ interface ImpersonationStore {
 }
 
 export const useImpersonationStore = create<ImpersonationStore>()(
-  persist(
-    (set, get) => ({
-      // Estado inicial
-      isImpersonating: false,
-      sessionId: null,
-      tenant: null,
-      accessLevel: null,
-      expiresAt: null,
-      originalToken: null,
-      impersonationToken: null,
+  (set, get) => ({
+    // Estado inicial — ephemeral (no persist to localStorage)
+    isImpersonating: false,
+    sessionId: null,
+    tenant: null,
+    accessLevel: null,
+    expiresAt: null,
+    originalToken: null,
+    impersonationToken: null,
 
-      // Iniciar impersonación
-      startImpersonation: (sessionId, tenant, accessLevel, expiresAt, impersonationToken, originalToken) => {
+    startImpersonation: (sessionId, tenant, accessLevel, expiresAt, impersonationToken, originalToken) => {
+      set({
+        isImpersonating: true,
+        sessionId,
+        tenant,
+        accessLevel,
+        expiresAt,
+        impersonationToken,
+        originalToken,
+      });
+    },
+
+    endImpersonation: () => {
+      const { originalToken } = get();
+      set({
+        isImpersonating: false,
+        sessionId: null,
+        tenant: null,
+        accessLevel: null,
+        expiresAt: null,
+        impersonationToken: null,
+        originalToken: null,
+      });
+      return originalToken;
+    },
+
+    updateTimeRemaining: () => {
+      const { expiresAt } = get();
+      if (!expiresAt) return 0;
+      const now = new Date();
+      const expires = new Date(expiresAt);
+      const diffMs = expires.getTime() - now.getTime();
+      return Math.max(0, Math.floor(diffMs / 60000));
+    },
+
+    setFromState: (state: CurrentImpersonationState) => {
+      if (state.isImpersonating && state.tenant && state.sessionId) {
         set({
           isImpersonating: true,
-          sessionId,
-          tenant,
-          accessLevel,
-          expiresAt,
-          impersonationToken,
-          originalToken,
+          sessionId: state.sessionId,
+          tenant: state.tenant,
+          accessLevel: state.accessLevel || 'READ_ONLY',
         });
-      },
-
-      // Terminar impersonación
-      endImpersonation: () => {
-        const { originalToken } = get();
+      } else {
         set({
           isImpersonating: false,
           sessionId: null,
           tenant: null,
           accessLevel: null,
-          expiresAt: null,
-          impersonationToken: null,
-          originalToken: null,
         });
-        // Retornar el token original para restaurar la sesión
-        return originalToken;
-      },
+      }
+    },
 
-      // Calcular tiempo restante en minutos
-      updateTimeRemaining: () => {
-        const { expiresAt } = get();
-        if (!expiresAt) return 0;
-        const now = new Date();
-        const expires = new Date(expiresAt);
-        const diffMs = expires.getTime() - now.getTime();
-        return Math.max(0, Math.floor(diffMs / 60000));
-      },
-
-      // Actualizar desde respuesta del servidor
-      setFromState: (state: CurrentImpersonationState) => {
-        if (state.isImpersonating && state.tenant && state.sessionId) {
-          set({
-            isImpersonating: true,
-            sessionId: state.sessionId,
-            tenant: state.tenant,
-            accessLevel: state.accessLevel || 'READ_ONLY',
-          });
-        } else {
-          set({
-            isImpersonating: false,
-            sessionId: null,
-            tenant: null,
-            accessLevel: null,
-          });
-        }
-      },
-
-      // Limpiar todo
-      clear: () => {
-        set({
-          isImpersonating: false,
-          sessionId: null,
-          tenant: null,
-          accessLevel: null,
-          expiresAt: null,
-          originalToken: null,
-          impersonationToken: null,
-        });
-      },
-    }),
-    {
-      name: 'impersonation-storage',
-      // Solo persistir si es necesario para recuperar sesión
-      partialize: (state) => ({
-        isImpersonating: state.isImpersonating,
-        sessionId: state.sessionId,
-        tenant: state.tenant,
-        accessLevel: state.accessLevel,
-        expiresAt: state.expiresAt,
-      }),
-      onRehydrateStorage: () => (state) => {
-        if (!state?.isImpersonating || !state.expiresAt) return;
-        const expires = new Date(state.expiresAt);
-        if (expires.getTime() <= Date.now()) {
-          // Sesión expirada — limpiar estado stale
-          state.clear();
-        }
-      },
-    }
-  )
+    clear: () => {
+      set({
+        isImpersonating: false,
+        sessionId: null,
+        tenant: null,
+        accessLevel: null,
+        expiresAt: null,
+        originalToken: null,
+        impersonationToken: null,
+      });
+    },
+  })
 );

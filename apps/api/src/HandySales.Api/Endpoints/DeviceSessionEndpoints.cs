@@ -1,5 +1,6 @@
 using HandySales.Application.DeviceSessions.DTOs;
 using HandySales.Application.DeviceSessions.Services;
+using HandySales.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HandySales.Api.Endpoints;
@@ -80,8 +81,10 @@ public static class DeviceSessionEndpoints
 
         // ADMIN: Obtener todas las sesiones activas
         group.MapGet("/admin/activas", async (
-            [FromServices] DeviceSessionService servicio) =>
+            [FromServices] DeviceSessionService servicio,
+            [FromServices] ICurrentTenant currentTenant) =>
         {
+            if (!currentTenant.IsAdmin) return Results.Forbid();
             var sesiones = await servicio.ObtenerTodasSesionesActivasAsync();
             return Results.Ok(sesiones);
         });
@@ -89,8 +92,10 @@ public static class DeviceSessionEndpoints
         // ADMIN: Obtener sesiones de un usuario
         group.MapGet("/admin/usuario/{usuarioId:int}", async (
             int usuarioId,
-            [FromServices] DeviceSessionService servicio) =>
+            [FromServices] DeviceSessionService servicio,
+            [FromServices] ICurrentTenant currentTenant) =>
         {
+            if (!currentTenant.IsAdmin) return Results.Forbid();
             var sesiones = await servicio.ObtenerSesionesPorUsuarioAsync(usuarioId);
             return Results.Ok(sesiones);
         });
@@ -99,8 +104,10 @@ public static class DeviceSessionEndpoints
         group.MapPost("/admin/{id:int}/revocar", async (
             int id,
             LogoutDeviceDto? dto,
-            [FromServices] DeviceSessionService servicio) =>
+            [FromServices] DeviceSessionService servicio,
+            [FromServices] ICurrentTenant currentTenant) =>
         {
+            if (!currentTenant.IsAdmin) return Results.Forbid();
             var resultado = await servicio.RevocarSesionAsync(id, dto?.Reason);
             return resultado
                 ? Results.Ok(new { mensaje = "Sesion revocada exitosamente" })
@@ -111,8 +118,10 @@ public static class DeviceSessionEndpoints
         group.MapPost("/admin/usuario/{usuarioId:int}/cerrar-todas", async (
             int usuarioId,
             LogoutDeviceDto? dto,
-            [FromServices] DeviceSessionService servicio) =>
+            [FromServices] DeviceSessionService servicio,
+            [FromServices] ICurrentTenant currentTenant) =>
         {
+            if (!currentTenant.IsAdmin) return Results.Forbid();
             var cantidad = await servicio.CerrarTodasSesionesUsuarioAsync(usuarioId, dto?.Reason);
             return Results.Ok(new { mensaje = $"Se cerraron {cantidad} sesiones del usuario", cantidad });
         });
@@ -120,8 +129,10 @@ public static class DeviceSessionEndpoints
         // ADMIN: Limpiar sesiones expiradas
         group.MapPost("/admin/limpiar-expiradas", async (
             int? diasInactividad,
-            [FromServices] DeviceSessionService servicio) =>
+            [FromServices] DeviceSessionService servicio,
+            [FromServices] ICurrentTenant currentTenant) =>
         {
+            if (!currentTenant.IsAdmin) return Results.Forbid();
             var cantidad = await servicio.LimpiarSesionesExpiradasAsync(diasInactividad ?? 30);
             return Results.Ok(new { mensaje = $"Se limpiaron {cantidad} sesiones expiradas", cantidad });
         });

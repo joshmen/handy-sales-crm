@@ -39,7 +39,7 @@ import {
   IconContext,
 } from '@phosphor-icons/react';
 import { useSidebar } from '@/stores/useUIStore';
-import { cn } from '@/lib/utils';
+import { cn, getInitials } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { useCompany } from '@/contexts/CompanyContext';
@@ -470,6 +470,45 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
   ],
 };
 
+// Group-based icon color palette — 6 families by section
+// Defined at module level so they are not recreated on every render
+const itemGroupMap: Record<string, string> = {
+  // Dashboard
+  dashboard: 'dashboard',
+  // Ventas
+  orders: 'ventas', cobranza: 'ventas',
+  // Catálogo
+  clients: 'catalogo', 'clients-list': 'catalogo', 'client-categories': 'catalogo',
+  products: 'catalogo', 'products-list': 'catalogo', 'product-families': 'catalogo',
+  'product-categories': 'catalogo', units: 'catalogo',
+  'price-lists': 'catalogo', discounts: 'catalogo', promotions: 'catalogo',
+  // Operación
+  routes: 'operacion', 'routes-list': 'operacion', 'routes-manage': 'operacion',
+  inventory: 'operacion', 'inventory-warehouse': 'operacion', 'inventory-movements': 'operacion',
+  zones: 'operacion', visits: 'operacion',
+  // Herramientas
+  forms: 'herramientas', 'form-builder': 'herramientas', 'form-list': 'herramientas',
+  reports: 'herramientas', team: 'herramientas', devices: 'herramientas', automations: 'herramientas',
+  // Administración
+  administration: 'admin', tenants: 'admin', 'system-dashboard': 'admin',
+  users: 'admin', roles: 'admin', 'global-settings': 'admin',
+  'activity-logs': 'admin', 'company-settings': 'admin', settings: 'admin',
+  subscription: 'admin',
+  // SuperAdmin items
+  'sa-dashboard': 'admin', 'sa-tenants': 'admin', 'sa-announcements': 'admin',
+  'sa-plans': 'admin', 'sa-activity-logs': 'admin', 'sa-crash-reports': 'admin',
+  'sa-settings': 'admin',
+};
+
+const groupColors: Record<string, { active: string; inactive: string }> = {
+  dashboard:    { active: 'text-blue-600',    inactive: 'text-blue-500 group-hover:text-blue-600' },
+  ventas:       { active: 'text-indigo-600',  inactive: 'text-indigo-500 group-hover:text-indigo-600' },
+  catalogo:     { active: 'text-emerald-600', inactive: 'text-emerald-500 group-hover:text-emerald-600' },
+  operacion:    { active: 'text-cyan-600',    inactive: 'text-cyan-500 group-hover:text-cyan-600' },
+  herramientas: { active: 'text-amber-600',   inactive: 'text-amber-500 group-hover:text-amber-600' },
+  admin:        { active: 'text-slate-600',   inactive: 'text-slate-500 group-hover:text-slate-600' },
+};
+
 interface SidebarProps {
   /** Cuando el banner de impersonación está activo, desplazar sidebar 40px */
   isImpersonating?: boolean;
@@ -565,52 +604,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
     }
 
     return userPermissions.includes(permission);
-  };
-
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
-      .toUpperCase();
-  };
-
-  // Group-based icon color palette — 6 families by section
-  const itemGroupMap: Record<string, string> = {
-    // Dashboard
-    dashboard: 'dashboard',
-    // Ventas
-    orders: 'ventas', cobranza: 'ventas',
-    // Catálogo
-    clients: 'catalogo', 'clients-list': 'catalogo', 'client-categories': 'catalogo',
-    products: 'catalogo', 'products-list': 'catalogo', 'product-families': 'catalogo',
-    'product-categories': 'catalogo', units: 'catalogo',
-    'price-lists': 'catalogo', discounts: 'catalogo', promotions: 'catalogo',
-    // Operación
-    routes: 'operacion', 'routes-list': 'operacion', 'routes-manage': 'operacion',
-    inventory: 'operacion', 'inventory-warehouse': 'operacion', 'inventory-movements': 'operacion',
-    zones: 'operacion', visits: 'operacion',
-    // Herramientas
-    forms: 'herramientas', 'form-builder': 'herramientas', 'form-list': 'herramientas',
-    reports: 'herramientas', team: 'herramientas', devices: 'herramientas', automations: 'herramientas',
-    // Administración
-    administration: 'admin', tenants: 'admin', 'system-dashboard': 'admin',
-    users: 'admin', roles: 'admin', 'global-settings': 'admin',
-    'activity-logs': 'admin', 'company-settings': 'admin', settings: 'admin',
-    subscription: 'admin',
-    // SuperAdmin items
-    'sa-dashboard': 'admin', 'sa-tenants': 'admin', 'sa-announcements': 'admin',
-    'sa-plans': 'admin', 'sa-activity-logs': 'admin', 'sa-crash-reports': 'admin',
-    'sa-settings': 'admin',
-  };
-
-  const groupColors: Record<string, { active: string; inactive: string }> = {
-    dashboard:    { active: 'text-blue-600',    inactive: 'text-blue-500 group-hover:text-blue-600' },
-    ventas:       { active: 'text-indigo-600',  inactive: 'text-indigo-500 group-hover:text-indigo-600' },
-    catalogo:     { active: 'text-emerald-600', inactive: 'text-emerald-500 group-hover:text-emerald-600' },
-    operacion:    { active: 'text-cyan-600',    inactive: 'text-cyan-500 group-hover:text-cyan-600' },
-    herramientas: { active: 'text-amber-600',   inactive: 'text-amber-500 group-hover:text-amber-600' },
-    admin:        { active: 'text-slate-600',   inactive: 'text-slate-500 group-hover:text-slate-600' },
   };
 
   const getIconColor = (itemId: string, isActive: boolean) => {

@@ -1,7 +1,6 @@
 "use client"
 
 import { AuthProvider } from "./AuthProvider"
-import { AppProvider } from "@/context/AppContext"
 import { UIProvider } from "@/context/UIContext"
 import { GlobalSettingsProvider } from "@/contexts/GlobalSettingsContext"
 import { SignalRProvider } from "@/contexts/SignalRContext"
@@ -33,13 +32,11 @@ export function ClientProviders({ children }: { children: React.ReactNode }) {
           <GlobalSettingsProvider>
             <CompanyProvider>
               <ProfileProvider>
-                <AppProvider>
-                  <UIProvider>
-                    {children}
-                    <Toaster richColors position="top-right" toastOptions={{ duration: 4000 }} />
-                    <GlobalLoadingIndicator />
-                  </UIProvider>
-                </AppProvider>
+                <UIProvider>
+                  {children}
+                  <Toaster richColors position="top-right" toastOptions={{ duration: 4000 }} />
+                  <GlobalLoadingIndicator />
+                </UIProvider>
               </ProfileProvider>
             </CompanyProvider>
           </GlobalSettingsProvider>

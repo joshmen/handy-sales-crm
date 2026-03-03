@@ -26,14 +26,14 @@ namespace HandySales.Tests.Application.CategoriasProductos
         {
             // Arrange
             var esperado = new List<CategoriaProductoDto> { new() { Nombre = "Cat1" } };
-            _repoMock.Setup(r => r.ObtenerPorTenantAsync(1)).ReturnsAsync(esperado);
+            _repoMock.Setup(r => r.ObtenerPorTenantAsync(1, false)).ReturnsAsync(esperado);
 
             // Act
             var resultado = await _service.ObtenerCategoriasAsync();
 
             // Assert
             Assert.Equal(esperado, resultado);
-            _repoMock.Verify(r => r.ObtenerPorTenantAsync(1), Times.Once);
+            _repoMock.Verify(r => r.ObtenerPorTenantAsync(1, false), Times.Once);
         }
 
         [Fact]

@@ -18,7 +18,11 @@ export default function CrearPedidoStep2() {
   const [busqueda, setBusqueda] = useState('');
   const [categoriaId, setCategoriaId] = useState<number | undefined>(undefined);
 
-  const { items, addItem, updateQuantity, removeItem, itemCount, total } = useOrderDraftStore();
+  const items = useOrderDraftStore(s => s.items);
+  const addItem = useOrderDraftStore(s => s.addItem);
+  const updateQuantity = useOrderDraftStore(s => s.updateQuantity);
+  const removeItem = useOrderDraftStore(s => s.removeItem);
+  const { itemCount, total } = useOrderDraftStore();
   const categorias = useCategoriasProducto();
 
   const { data: productos, isLoading } = useOfflineProducts(busqueda || undefined, categoriaId);

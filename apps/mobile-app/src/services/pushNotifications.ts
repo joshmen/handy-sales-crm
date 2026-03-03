@@ -150,10 +150,14 @@ export function getDeepLinkFromNotification(
   const { type, entityId } = data as { type?: string; entityId?: string };
   if (!type) return null;
 
+  // Validate entityId: must be a positive integer string to prevent
+  // path traversal / open-redirect via crafted notification payloads.
+  const safeEntityId = entityId && /^\d+$/.test(entityId) ? entityId : null;
+
   switch (type) {
     case 'order.assigned':
     case 'order.status_changed':
-      return entityId ? `/(tabs)/vender/${entityId}` : '/(tabs)/vender';
+      return safeEntityId ? `/(tabs)/vender/${safeEntityId}` : '/(tabs)/vender';
     case 'route.published':
     case 'visit.reminder':
       return '/(tabs)/ruta';

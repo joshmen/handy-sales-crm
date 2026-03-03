@@ -5,6 +5,28 @@ import { syncCursors } from './cursors';
 import { mapPullToWatermelon, mapPushFromWatermelon } from './mappers';
 import { uploadPendingAttachments, cleanUploadedFiles } from '@/services/evidenceManager';
 import { crashReporter } from '@/services/crashReporter';
+import { useAuthStore } from '@/stores/authStore';
+
+/**
+ * Strips records whose tenantId doesn't match the authenticated user's tenant.
+ * Guards against a rogue/misconfigured server returning cross-tenant data.
+ */
+function filterByTenant(items: any[] | undefined, currentTenantId: number): any[] {
+  if (!items?.length) return [];
+  return items.filter((record) => {
+    const recordTenant = record.tenantId ?? record.tenant_id;
+    // If the server record carries no tenantId at all, allow it through —
+    // some lightweight DTOs omit it. Only reject explicit mismatches.
+    if (recordTenant === undefined || recordTenant === null) return true;
+    const match = Number(recordTenant) === currentTenantId;
+    if (!match) {
+      console.warn(
+        `[Sync] Tenant mismatch — record tenantId=${recordTenant} vs current=${currentTenantId}. Discarding.`
+      );
+    }
+    return match;
+  });
+}
 
 export interface SyncSummary {
   pulled: number;
@@ -54,8 +76,24 @@ export async function performSync(options?: SyncOptions): Promise<void> {
 
         // The /pull endpoint returns: { success, data: { clientes, productos, ... }, summary, serverTimestamp }
         const body = response.data as any;
-        const serverChanges = body.data ?? body;
-        const serverTimestamp = body.serverTimestamp ?? serverChanges.serverTimestamp;
+        const rawServerChanges = body.data ?? body;
+        const serverTimestamp = body.serverTimestamp ?? rawServerChanges.serverTimestamp;
+
+        // Security: discard any records that belong to a different tenant.
+        // This prevents a misconfigured server from leaking cross-tenant data
+        // into the local WatermelonDB database.
+        const currentTenantId = Number(useAuthStore.getState().user?.tenantId ?? 0);
+        const serverChanges = currentTenantId
+          ? {
+              ...rawServerChanges,
+              clientes:  filterByTenant(rawServerChanges.clientes,  currentTenantId),
+              productos: filterByTenant(rawServerChanges.productos, currentTenantId),
+              pedidos:   filterByTenant(rawServerChanges.pedidos,   currentTenantId),
+              visitas:   filterByTenant(rawServerChanges.visitas,   currentTenantId),
+              rutas:     filterByTenant(rawServerChanges.rutas,     currentTenantId),
+              cobros:    filterByTenant(rawServerChanges.cobros,    currentTenantId),
+            }
+          : rawServerChanges; // No tenantId in session — skip filtering (should never happen)
 
         // Count pulled records
         for (const entityData of Object.values(serverChanges)) {

@@ -47,6 +47,7 @@ import {
   Trash2,
   Upload,
 } from 'lucide-react';
+import { getInitials } from '@/lib/utils';
 
 // Roles del sistema
 enum UserRole {
@@ -290,15 +291,6 @@ export default function ProfilePage() {
       </div>
     );
   }
-
-  const getInitials = (name: string | undefined) => {
-    if (!name) return 'U';
-    return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
-      .toUpperCase();
-  };
 
   // Funciones de guardado por sección
   const handleSaveProfile = async (): Promise<boolean> => {

@@ -24,7 +24,7 @@ const METODO_PAGO_OPTIONS = [
 
 export default function CrearPedidoStep3() {
   const router = useRouter();
-  const { user } = useAuthStore();
+  const user = useAuthStore(s => s.user);
   const [sending, setSending] = useState(false);
 
   const {

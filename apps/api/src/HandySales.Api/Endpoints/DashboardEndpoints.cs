@@ -318,33 +318,60 @@ public static class DashboardEndpoints
             return Results.Forbid();
 
         // IgnoreQueryFilters() to get cross-tenant data for SuperAdmin
-        var totalTenants = await context.Tenants.AsNoTracking().CountAsync();
-        var activeTenants = await context.Tenants.AsNoTracking().CountAsync(t => t.Activo);
-        var totalUsuarios = await context.Usuarios.IgnoreQueryFilters().AsNoTracking().CountAsync(u => u.Activo);
-        var totalProductos = await context.Productos.IgnoreQueryFilters().AsNoTracking().CountAsync();
-        var totalClientes = await context.Clientes.IgnoreQueryFilters().AsNoTracking().CountAsync();
-        var totalPedidos = await context.Pedidos.IgnoreQueryFilters().AsNoTracking().CountAsync();
-        var totalVentas = await context.Pedidos.IgnoreQueryFilters().AsNoTracking()
+        // Fire all independent count queries in parallel to reduce round-trips
+        var totalTenantsTask = context.Tenants.AsNoTracking().CountAsync();
+        var activeTenantsTask = context.Tenants.AsNoTracking().CountAsync(t => t.Activo);
+        var totalUsuariosTask = context.Usuarios.IgnoreQueryFilters().AsNoTracking().CountAsync(u => u.Activo);
+        var totalProductosTask = context.Productos.IgnoreQueryFilters().AsNoTracking().CountAsync();
+        var totalClientesTask = context.Clientes.IgnoreQueryFilters().AsNoTracking().CountAsync();
+        var totalPedidosTask = context.Pedidos.IgnoreQueryFilters().AsNoTracking().CountAsync();
+        var totalVentasTask = context.Pedidos.IgnoreQueryFilters().AsNoTracking()
             .Where(p => p.Estado == EstadoPedido.Entregado)
-            .SumAsync(p => (decimal?)p.Total) ?? 0;
-
-        var tenantsRecientes = await context.Tenants.AsNoTracking()
+            .SumAsync(p => (decimal?)p.Total);
+        var tenantsRecientesTask = context.Tenants.AsNoTracking()
             .OrderByDescending(t => t.CreadoEn)
             .Take(5)
             .Select(t => new { t.Id, t.NombreEmpresa, t.PlanTipo, t.Activo, t.CreadoEn })
             .ToListAsync();
-
-        var topTenantsRaw = await context.Pedidos.IgnoreQueryFilters().AsNoTracking()
+        var topTenantsRawTask = context.Pedidos.IgnoreQueryFilters().AsNoTracking()
             .GroupBy(p => p.TenantId)
             .Select(g => new { TenantId = g.Key, Pedidos = g.Count(), Ventas = g.Sum(p => p.Total) })
             .OrderByDescending(t => t.Ventas)
             .Take(5)
             .ToListAsync();
 
+        await Task.WhenAll(totalTenantsTask, activeTenantsTask, totalUsuariosTask,
+            totalProductosTask, totalClientesTask, totalPedidosTask, totalVentasTask,
+            tenantsRecientesTask, topTenantsRawTask);
+
+        var totalTenants = totalTenantsTask.Result;
+        var activeTenants = activeTenantsTask.Result;
+        var totalUsuarios = totalUsuariosTask.Result;
+        var totalProductos = totalProductosTask.Result;
+        var totalClientes = totalClientesTask.Result;
+        var totalPedidos = totalPedidosTask.Result;
+        var totalVentas = totalVentasTask.Result ?? 0;
+        var tenantsRecientes = tenantsRecientesTask.Result;
+        var topTenantsRaw = topTenantsRawTask.Result;
+
         var topTenantIds = topTenantsRaw.Select(t => t.TenantId).ToList();
-        var tenantNames = await context.Tenants.AsNoTracking()
-            .Where(t => topTenantIds.Contains(t.Id))
+        var recentTenantIds = tenantsRecientes.Select(t => t.Id).ToList();
+        var allTenantIds = topTenantIds.Union(recentTenantIds).Distinct().ToList();
+
+        // Single query for tenant names + user counts (instead of 2 sequential queries)
+        var tenantNamesTask = context.Tenants.AsNoTracking()
+            .Where(t => allTenantIds.Contains(t.Id))
             .ToDictionaryAsync(t => t.Id, t => t.NombreEmpresa);
+        var recentUserCountsTask = context.Usuarios.IgnoreQueryFilters().AsNoTracking()
+            .Where(u => recentTenantIds.Contains(u.TenantId) && u.Activo)
+            .GroupBy(u => u.TenantId)
+            .Select(g => new { TenantId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.TenantId, x => x.Count);
+
+        await Task.WhenAll(tenantNamesTask, recentUserCountsTask);
+
+        var tenantNames = tenantNamesTask.Result;
+        var recentUserCounts = recentUserCountsTask.Result;
 
         var enrichedTopTenants = topTenantsRaw.Select(t => new TopTenantDto(
             t.TenantId,
@@ -352,14 +379,6 @@ public static class DashboardEndpoints
             t.Pedidos,
             t.Ventas
         )).ToList();
-
-        // Build recent tenants as TenantListDto
-        var recentTenantIds = tenantsRecientes.Select(t => t.Id).ToList();
-        var recentUserCounts = await context.Usuarios.IgnoreQueryFilters().AsNoTracking()
-            .Where(u => recentTenantIds.Contains(u.TenantId) && u.Activo)
-            .GroupBy(u => u.TenantId)
-            .Select(g => new { TenantId = g.Key, Count = g.Count() })
-            .ToDictionaryAsync(x => x.TenantId, x => x.Count);
 
         var tenantsRecientesDto = tenantsRecientes.Select(t => new TenantListDto(
             t.Id,

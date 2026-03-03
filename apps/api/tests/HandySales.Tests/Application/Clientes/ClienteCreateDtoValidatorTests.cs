@@ -17,6 +17,7 @@ namespace HandySales.Tests.Application.Clientes
             Correo = "cliente@valido.com",
             Telefono = "5512345678",
             Direccion = "Calle Falsa 123",
+            NumeroExterior = "123",
             IdZona = 1,
             CategoriaClienteId = 1
         };

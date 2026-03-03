@@ -26,6 +26,7 @@ public class ClienteEndpointsTests : IClassFixture<CustomWebApplicationFactory>
             Correo = "cliente@test.com",
             Telefono = "5551234567",
             Direccion = "Calle Falsa 123",
+            NumeroExterior = "123",
             IdZona = 1,
             CategoriaClienteId = 1
         };
@@ -69,6 +70,7 @@ public class ClienteEndpointsTests : IClassFixture<CustomWebApplicationFactory>
             Correo = "nuevo@cliente.com",
             Telefono = "5567891234",
             Direccion = "Av Nueva 456",
+            NumeroExterior = "456",
             CategoriaClienteId = 1,
             IdZona = 1
         };
@@ -89,7 +91,7 @@ public class ClienteEndpointsTests : IClassFixture<CustomWebApplicationFactory>
     [Fact]
     public async Task PostCliente_DeberiaRetornarBadRequestSiFaltanCampos()
     {
-        var dto = new ClienteCreateDto { Nombre = "", RFC = "", Correo = "", Telefono = "", Direccion = "" }; // Vacío/inválido
+        var dto = new ClienteCreateDto { Nombre = "", RFC = "", Correo = "", Telefono = "", Direccion = "", NumeroExterior = "" }; // Vacío/inválido
         var response = await _client.PostAsJsonAsync("/clientes", dto);
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -104,6 +106,7 @@ public class ClienteEndpointsTests : IClassFixture<CustomWebApplicationFactory>
             Correo = "no@existe.com",
             Telefono = "0000000000",
             Direccion = "Ahorahere",
+            NumeroExterior = "S/N",
             CategoriaClienteId = 1,
             IdZona = 1
         };

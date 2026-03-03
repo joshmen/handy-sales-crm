@@ -31,6 +31,7 @@ import { InactiveToggle } from '@/components/ui/InactiveToggle';
 import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { ActiveToggle } from '@/components/ui/ActiveToggle';
+import { getInitials } from '@/lib/utils';
 
 export default function ClientsPage() {
   const router = useRouter();
@@ -157,15 +158,6 @@ export default function ClientsPage() {
       toast.error('Error al cambiar el estado de los clientes');
       batch.setBatchLoading(false);
     }
-  };
-
-  // Obtener iniciales del cliente
-  const getInitials = (name: string) => {
-    const parts = name.split(' ');
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
-    }
-    return name.substring(0, 2).toUpperCase();
   };
 
   return (

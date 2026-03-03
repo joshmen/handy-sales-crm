@@ -265,16 +265,15 @@ test.describe('Visual Audit - Dashboard Pages', () => {
         const titleText = await h1.first().textContent();
         expect(titleText?.trim()).toContain(pg.expectedTitle);
 
-        // 2. Check green button exists with correct text
-        const greenBtn = page.locator('button').filter({ hasText: pg.expectedButton });
-        if (await greenBtn.count() > 0) {
-          await expect(greenBtn.first()).toBeVisible();
-          // Verify it has green background
-          const bgColor = await greenBtn.first().evaluate(el => {
+        // 2. Check primary action button exists with correct text
+        const actionBtn = page.locator('button').filter({ hasText: pg.expectedButton });
+        if (await actionBtn.count() > 0) {
+          await expect(actionBtn.first()).toBeVisible();
+          // Verify it has a non-transparent background (company-themed or green)
+          const bgColor = await actionBtn.first().evaluate(el => {
             return window.getComputedStyle(el).backgroundColor;
           });
-          // Green-600 is rgb(22, 163, 74) or similar
-          expect(bgColor).toMatch(/rgb\((?:22|16|21|34), (?:163|185|128|197), (?:74|90|61|94)\)/);
+          expect(bgColor).not.toBe('rgba(0, 0, 0, 0)');
         }
 
         // 3. Check search input exists (if expected)

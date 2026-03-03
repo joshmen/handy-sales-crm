@@ -19,7 +19,7 @@ import {
   Building2,
 } from 'lucide-react';
 import { useSidebar, useTheme } from '@/stores/useUIStore';
-import { cn } from '@/lib/utils';
+import { cn, getInitials } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
@@ -175,13 +175,6 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
   generateBreadcrumbs();
   const unread = unreadCount;
   const unreadDisplay = unread > 99 ? '99+' : String(unread);
-
-  const getInitials = (name: string) =>
-    name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
-      .toUpperCase();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

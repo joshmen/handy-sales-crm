@@ -42,6 +42,7 @@ import {
   METODO_PAGO_OPTIONS,
 } from '@/services/api/cobranza';
 import { clientService } from '@/services/api/clients';
+import { formatCurrency } from '@/lib/utils';
 import { toast } from '@/hooks/useToast';
 
 // ─── Zod Schema ───────────────────────────────────────
@@ -59,9 +60,6 @@ const cobroSchema = z.object({
 type CobroFormData = z.infer<typeof cobroSchema>;
 
 // ─── Helpers ──────────────────────────────────────────
-
-const fmtMoney = (n: number) =>
-  new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(n);
 
 const fmtDate = (d: string) =>
   new Date(d).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -192,21 +190,29 @@ export default function CobranzaPage() {
     finally { setSaldosLoading(false); }
   }, []);
 
-  useEffect(() => { fetchResumen(); }, [fetchResumen]);
+  // Initial load: resumen + active tab data
   useEffect(() => {
+    fetchResumen();
+    if (tab === 'cobros') fetchCobros(); else fetchSaldos();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Tab change: fetch the active tab's data
+  const initialMount = useRef(true);
+  useEffect(() => {
+    if (initialMount.current) { initialMount.current = false; return; }
     if (tab === 'cobros') fetchCobros(); else fetchSaldos();
   }, [tab, fetchCobros, fetchSaldos]);
 
-  // Auto-refresh on date change (debounced)
+  // Date change: refresh cobros + resumen (debounced, skip initial mount)
+  const datesInitialized = useRef(false);
   useEffect(() => {
+    if (!datesInitialized.current) { datesInitialized.current = true; return; }
     const timeout = setTimeout(() => {
       fetchCobros();
-      fetchSaldos();
       fetchResumen();
     }, 500);
     return () => clearTimeout(timeout);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dates.desde, dates.hasta]);
+  }, [dates.desde, dates.hasta, fetchCobros, fetchResumen]);
 
   // Load clients for the new cobro dropdown
   useEffect(() => {
@@ -304,7 +310,7 @@ export default function CobranzaPage() {
 
   const handleInlineCobro = async (pedidoId: number, clienteId: number, saldoPedido: number) => {
     if (inlineCobroData.monto <= 0) { toast.error('El monto debe ser mayor a 0'); return; }
-    if (inlineCobroData.monto > saldoPedido) { toast.error(`El monto excede el saldo pendiente (${fmtMoney(saldoPedido)})`); return; }
+    if (inlineCobroData.monto > saldoPedido) { toast.error(`El monto excede el saldo pendiente (${formatCurrency(saldoPedido)})`); return; }
     setInlineCobroSaving(true);
     try {
       await createCobro({
@@ -418,7 +424,7 @@ export default function CobranzaPage() {
                   <div>
                     <p className="text-[11px] text-gray-500 flex items-center gap-1">Total vendido <HelpTooltip tooltipKey="cobranza-total-vendido" /></p>
                     <p className="text-sm font-bold text-gray-900">
-                      {fmtMoney(resumen.totalFacturado)}
+                      {formatCurrency(resumen.totalFacturado)}
                     </p>
                   </div>
                 </div>
@@ -429,7 +435,7 @@ export default function CobranzaPage() {
                   <div>
                     <p className="text-[11px] text-gray-500 flex items-center gap-1">Cobrado <HelpTooltip tooltipKey="cobranza-cobrado" /></p>
                     <p className="text-sm font-bold text-gray-900">
-                      {fmtMoney(resumen.totalCobrado)}
+                      {formatCurrency(resumen.totalCobrado)}
                     </p>
                   </div>
                 </div>
@@ -440,7 +446,7 @@ export default function CobranzaPage() {
                   <div>
                     <p className="text-[11px] text-gray-500 flex items-center gap-1">Por cobrar <HelpTooltip tooltipKey="cobranza-por-cobrar" /></p>
                     <p className="text-sm font-bold text-amber-600">
-                      {fmtMoney(resumen.totalPendiente)}
+                      {formatCurrency(resumen.totalPendiente)}
                     </p>
                   </div>
                 </div>
@@ -590,7 +596,7 @@ export default function CobranzaPage() {
                           </div>
                           <div className="text-right flex-shrink-0">
                             <div className="text-sm font-medium text-gray-900">
-                              {fmtMoney(c.monto)}
+                              {formatCurrency(c.monto)}
                             </div>
                           </div>
                         </div>
@@ -698,7 +704,7 @@ export default function CobranzaPage() {
                             </span>
                           </div>
                           <div className="w-[110px] text-[13px] font-medium text-gray-900 text-right">
-                            {fmtMoney(c.monto)}
+                            {formatCurrency(c.monto)}
                           </div>
                           <div className="w-[120px] pl-4">
                             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${metodoPagoColors[c.metodoPago] || metodoPagoColors[5]}`}>
@@ -741,7 +747,7 @@ export default function CobranzaPage() {
                           </div>
                           <div className="w-[100px]" />
                           <div className="w-[110px] text-[13px] font-bold text-gray-900 text-right">
-                            {fmtMoney(totalCobros)}
+                            {formatCurrency(totalCobros)}
                           </div>
                           <div className="w-[120px]" />
                           <div className="w-[100px]" />
@@ -791,17 +797,17 @@ export default function CobranzaPage() {
                             </div>
                             <div className="text-right flex-shrink-0">
                               <div className="text-sm font-bold text-amber-600">
-                                {fmtMoney(s.saldoPendiente)}
+                                {formatCurrency(s.saldoPendiente)}
                               </div>
                             </div>
                           </div>
                           {/* Row 2: Badges */}
                           <div className="flex flex-wrap items-center gap-2 mb-2">
                             <span className="text-xs text-gray-600">
-                              Facturado: {fmtMoney(s.totalFacturado)}
+                              Facturado: {formatCurrency(s.totalFacturado)}
                             </span>
                             <span className="text-xs text-green-600">
-                              Cobrado: {fmtMoney(s.totalCobrado)}
+                              Cobrado: {formatCurrency(s.totalCobrado)}
                             </span>
                           </div>
                           {/* Progress bar */}
@@ -878,13 +884,13 @@ export default function CobranzaPage() {
                               {s.pedidosPendientes}
                             </div>
                             <div className="w-[130px] text-[13px] text-gray-900 text-right">
-                              {fmtMoney(s.totalFacturado)}
+                              {formatCurrency(s.totalFacturado)}
                             </div>
                             <div className="w-[130px] text-[13px] text-green-600 text-right">
-                              {fmtMoney(s.totalCobrado)}
+                              {formatCurrency(s.totalCobrado)}
                             </div>
                             <div className="w-[130px] text-[13px] font-bold text-amber-600 text-right">
-                              {fmtMoney(s.saldoPendiente)}
+                              {formatCurrency(s.saldoPendiente)}
                             </div>
                             <div className="w-[100px] px-3">
                               <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -923,13 +929,13 @@ export default function CobranzaPage() {
                           </div>
                           <div className="w-[100px]" />
                           <div className="w-[130px] text-[13px] font-bold text-gray-900 text-right">
-                            {fmtMoney(saldos.reduce((s, x) => s + x.totalFacturado, 0))}
+                            {formatCurrency(saldos.reduce((s, x) => s + x.totalFacturado, 0))}
                           </div>
                           <div className="w-[130px] text-[13px] font-bold text-green-600 text-right">
-                            {fmtMoney(saldos.reduce((s, x) => s + x.totalCobrado, 0))}
+                            {formatCurrency(saldos.reduce((s, x) => s + x.totalCobrado, 0))}
                           </div>
                           <div className="w-[130px] text-[13px] font-bold text-amber-600 text-right">
-                            {fmtMoney(saldos.reduce((s, x) => s + x.saldoPendiente, 0))}
+                            {formatCurrency(saldos.reduce((s, x) => s + x.saldoPendiente, 0))}
                           </div>
                           <div className="w-[100px]" />
                           <div className="w-[100px]" />
@@ -1010,16 +1016,16 @@ export default function CobranzaPage() {
                   <div className="grid grid-cols-3 gap-4">
                     <div>
                       <p className="text-[11px] text-slate-400 mb-0.5">Total facturado</p>
-                      <p className="text-lg font-bold tabular-nums">{fmtMoney(estadoCuenta.totalFacturado)}</p>
+                      <p className="text-lg font-bold tabular-nums">{formatCurrency(estadoCuenta.totalFacturado)}</p>
                     </div>
                     <div>
                       <p className="text-[11px] text-slate-400 mb-0.5">Cobrado</p>
-                      <p className="text-lg font-bold tabular-nums text-emerald-400">{fmtMoney(estadoCuenta.totalCobrado)}</p>
+                      <p className="text-lg font-bold tabular-nums text-emerald-400">{formatCurrency(estadoCuenta.totalCobrado)}</p>
                     </div>
                     <div>
                       <p className="text-[11px] text-slate-400 mb-0.5">Pendiente</p>
                       <p className={`text-lg font-bold tabular-nums ${estadoCuenta.saldoPendiente > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
-                        {fmtMoney(estadoCuenta.saldoPendiente)}
+                        {formatCurrency(estadoCuenta.saldoPendiente)}
                       </p>
                     </div>
                   </div>
@@ -1107,10 +1113,10 @@ export default function CobranzaPage() {
                               </div>
                             </div>
                             <div className="text-right flex-shrink-0">
-                              <p className="text-sm font-bold text-gray-900 tabular-nums">{fmtMoney(p.total)}</p>
+                              <p className="text-sm font-bold text-gray-900 tabular-nums">{formatCurrency(p.total)}</p>
                               {!isPaid && (
                                 <p className="text-xs text-amber-600 font-medium tabular-nums mt-0.5">
-                                  Debe {fmtMoney(p.saldo)}
+                                  Debe {formatCurrency(p.saldo)}
                                 </p>
                               )}
                             </div>
@@ -1145,7 +1151,7 @@ export default function CobranzaPage() {
                                       <span className="text-gray-300 ml-1.5">Ref: {c.referencia}</span>
                                     )}
                                   </span>
-                                  <span className="font-semibold text-green-600 tabular-nums flex-shrink-0">{fmtMoney(c.monto)}</span>
+                                  <span className="font-semibold text-green-600 tabular-nums flex-shrink-0">{formatCurrency(c.monto)}</span>
                                 </div>
                               ))}
                             </div>
@@ -1245,7 +1251,7 @@ export default function CobranzaPage() {
                                 className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold text-white bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg hover:from-green-700 hover:to-emerald-700 active:scale-[0.98] transition-all duration-150 shadow-sm shadow-green-200"
                               >
                                 <CurrencyDollar className="w-4 h-4" weight="bold" />
-                                Cobrar {fmtMoney(p.saldo)}
+                                Cobrar {formatCurrency(p.saldo)}
                               </button>
                             )}
                           </div>
@@ -1324,7 +1330,7 @@ export default function CobranzaPage() {
                   options={formPedidos.map(p => ({
                     value: p.pedidoId,
                     label: p.numeroPedido,
-                    description: `Total: ${fmtMoney(p.total)} · Saldo: ${fmtMoney(p.saldo)}`,
+                    description: `Total: ${formatCurrency(p.total)} · Saldo: ${formatCurrency(p.saldo)}`,
                   }))}
                   value={watch('pedidoId') || null}
                   onChange={(val) => {

@@ -34,6 +34,7 @@ import { UserRole, UserStatus, type User } from '@/types/users';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { GoogleMapWrapper, type MapMarker } from '@/components/maps/GoogleMapWrapper';
 import Papa from 'papaparse';
+import { getInitials } from '@/lib/utils';
 
 export default function UsersPage() {
   const {
@@ -134,15 +135,6 @@ export default function UsersPage() {
       }
     }
     return pages;
-  };
-
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
   };
 
   const getRoleBadgeColor = (role: UserRole) => {

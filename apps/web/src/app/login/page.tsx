@@ -89,12 +89,16 @@ function LoginContent() {
       }
     } catch { /* ignore */ }
 
-    // Handle OAuth 2FA redirect: ?requires2FA=true&tempToken=xxx
+    // Handle OAuth 2FA redirect
     const requires2FA = searchParams.get('requires2FA');
-    const token = searchParams.get('tempToken');
-    if (requires2FA === 'true' && token) {
-      setTempToken(token);
+    const t2fa = searchParams.get('t2fa');
+    if (requires2FA === 'true' && t2fa) {
+      setTempToken(t2fa);
       setLoginStep('totp');
+      // Clean sensitive token from URL without triggering navigation
+      const cleanUrl = new URL(window.location.href);
+      cleanUrl.searchParams.delete('t2fa');
+      window.history.replaceState({}, '', cleanUrl.toString());
     }
 
     // Handle OAuth error
@@ -134,7 +138,8 @@ function LoginContent() {
 
     if (result?.ok) {
       setNavigating(true);
-      router.push(searchParams.get('callbackUrl') || '/dashboard');
+      const callbackUrl = searchParams.get('callbackUrl');
+      router.push(callbackUrl?.startsWith('/') ? callbackUrl : '/dashboard');
     } else {
       toast({
         title: 'Error de sesión',
@@ -218,11 +223,12 @@ function LoginContent() {
           email: data.email,
           password: data.password,
           redirect: false,
-          callbackUrl: searchParams.get('callbackUrl') || '/dashboard',
+          callbackUrl: searchParams.get('callbackUrl')?.startsWith('/') ? searchParams.get('callbackUrl')! : '/dashboard',
         });
         if (result?.ok) {
           setNavigating(true);
-          router.push(searchParams.get('callbackUrl') || '/dashboard');
+          const cb = searchParams.get('callbackUrl');
+          router.push(cb?.startsWith('/') ? cb : '/dashboard');
           return;
         }
       }

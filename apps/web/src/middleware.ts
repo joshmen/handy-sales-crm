@@ -28,6 +28,12 @@ const ROLE_RESTRICTED_ROUTES = {
   '/activity-logs': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
   '/roles': [UserRole.SUPER_ADMIN],
   '/automations': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
+  '/cobranza': [UserRole.ADMIN, UserRole.SUPERVISOR, UserRole.SUPER_ADMIN],
+  '/inventory': [UserRole.ADMIN, UserRole.SUPERVISOR, UserRole.SUPER_ADMIN],
+  '/price-lists': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
+  '/discounts': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
+  '/promotions': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
+  '/subscription': [UserRole.ADMIN, UserRole.SUPER_ADMIN],
 };
 
 export default withAuth(
@@ -149,8 +155,26 @@ export default withAuth(
   },
   {
     callbacks: {
-      authorized: () => true,
-      //authorized: ({ token }) => !!token,
+      authorized: ({ token, req }) => {
+        // Allow public pages through without a token — the middleware body handles redirects
+        const path = req.nextUrl.pathname;
+        if (
+          path === '/' ||
+          path === '/privacidad' ||
+          path === '/terminos' ||
+          path === '/forgot-password' ||
+          path === '/reset-password' ||
+          path === '/tenant-suspended' ||
+          path === '/billing/suspended' ||
+          path.startsWith('/invite') ||
+          path.startsWith('/login') ||
+          path === '/register' ||
+          path === '/verify-email'
+        ) {
+          return true;
+        }
+        return !!token;
+      },
     },
   }
 );

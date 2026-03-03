@@ -57,7 +57,7 @@ namespace HandySales.Tests.Application.Clientes
         [Fact]
         public async Task CrearClienteAsync_DeberiaRetornarSuccessConId()
         {
-            var dto = new ClienteCreateDto { Nombre = "Carlos", RFC = "RFC123456ABC", Correo = "a@a.com", Telefono = "1234567890", Direccion = "Direc", IdZona = 1, CategoriaClienteId = 1 };
+            var dto = new ClienteCreateDto { Nombre = "Carlos", RFC = "RFC123456ABC", Correo = "a@a.com", Telefono = "1234567890", Direccion = "Direc", NumeroExterior = "10", IdZona = 1, CategoriaClienteId = 1 };
             _repoMock.Setup(r => r.ExisteNombreEnTenantAsync(dto.Nombre, 1, null)).ReturnsAsync(false);
             _repoMock.Setup(r => r.CrearAsync(dto, 1)).ReturnsAsync(10);
 
@@ -70,7 +70,7 @@ namespace HandySales.Tests.Application.Clientes
         [Fact]
         public async Task ActualizarClienteAsync_DeberiaRetornarSuccessTrueSiActualiza()
         {
-            var dto = new ClienteCreateDto { Nombre = "Update", RFC = "RFC123456ABC", Correo = "update@a.com", Telefono = "1234567890", Direccion = "Dir", IdZona = 1, CategoriaClienteId = 1 };
+            var dto = new ClienteCreateDto { Nombre = "Update", RFC = "RFC123456ABC", Correo = "update@a.com", Telefono = "1234567890", Direccion = "Dir", NumeroExterior = "20", IdZona = 1, CategoriaClienteId = 1 };
             _repoMock.Setup(r => r.ExisteNombreEnTenantAsync(dto.Nombre, 1, 3)).ReturnsAsync(false);
             _repoMock.Setup(r => r.ActualizarAsync(3, dto, 1)).ReturnsAsync(true);
 

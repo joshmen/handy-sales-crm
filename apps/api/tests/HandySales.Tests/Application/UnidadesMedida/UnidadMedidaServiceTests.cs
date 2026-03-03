@@ -27,13 +27,13 @@ namespace HandySales.Tests.Application.UnidadesMedida
         public async Task ObtenerUnidadesAsync_DeberiaLlamarRepositorio()
         {
             // Arrange
-            _repoMock.Setup(r => r.ObtenerPorTenantAsync(1)).ReturnsAsync(new List<UnidadMedidaDto>());
+            _repoMock.Setup(r => r.ObtenerPorTenantAsync(1, false)).ReturnsAsync(new List<UnidadMedidaDto>());
 
             // Act
             var result = await _service.ObtenerUnidadesAsync();
 
             // Assert
-            _repoMock.Verify(r => r.ObtenerPorTenantAsync(1), Times.Once);
+            _repoMock.Verify(r => r.ObtenerPorTenantAsync(1, false), Times.Once);
         }
 
         [Fact]

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Drawer } from '@/components/ui/Drawer';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
+import { formatTimeAgo } from '@/lib/utils';
 import { automationService } from '@/services/api/automations';
 import type { AutomationTemplate, AutomationExecution } from '@/types/automations';
 import { PARAM_CONFIG, CATEGORY_COLORS, CATEGORY_LABELS } from '@/types/automations';
@@ -68,17 +69,6 @@ const CATEGORY_TAB_COLORS: Record<string, string> = {
   Inventario: 'bg-amber-600 text-white',
   Operacion: 'bg-cyan-600 text-white',
 };
-
-function formatTimeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'hace un momento';
-  if (mins < 60) return `hace ${mins}m`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `hace ${hours}h`;
-  const days = Math.floor(hours / 24);
-  return `hace ${days}d`;
-}
 
 export default function AutomationsPage() {
   const [templates, setTemplates] = useState<AutomationTemplate[]>([]);

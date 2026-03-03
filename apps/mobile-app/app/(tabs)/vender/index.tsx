@@ -1,4 +1,8 @@
 import { useState, useCallback, useMemo } from 'react';
+
+const ITEM_HEIGHT = 90; // Card height (p-4 + ~58px content)
+const ITEM_MARGIN_BOTTOM = 12; // mb-3
+const ITEM_SLOT = ITEM_HEIGHT + ITEM_MARGIN_BOTTOM;
 import { View, Text, FlatList, RefreshControl, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useOfflineOrders, useClientNameMap } from '@/hooks';
@@ -126,6 +130,11 @@ export default function VenderListScreen() {
         data={orders}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
+        getItemLayout={(_data, index) => ({
+          length: ITEM_SLOT,
+          offset: ITEM_SLOT * index,
+          index,
+        })}
         contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl refreshing={false} onRefresh={() => performSync()} tintColor="#2563eb" colors={['#2563eb']} />

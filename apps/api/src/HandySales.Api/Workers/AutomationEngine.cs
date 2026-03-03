@@ -28,48 +28,68 @@ public class AutomationEngine : BackgroundService
             {
                 await ProcessAutomationsAsync(stoppingToken);
             }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                break; // Graceful shutdown — not an error
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error processing automations");
             }
 
-            await Task.Delay(TimeSpan.FromSeconds(60), stoppingToken);
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(60), stoppingToken);
+            }
+            catch (OperationCanceledException)
+            {
+                break; // Graceful shutdown
+            }
         }
+
+        _logger.LogInformation("AutomationEngine stopped");
     }
 
     private async Task ProcessAutomationsAsync(CancellationToken ct)
     {
-        using var scope = _services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<HandySalesDbContext>();
-        var notifications = scope.ServiceProvider.GetRequiredService<INotificationService>();
-        var handlers = scope.ServiceProvider.GetServices<IAutomationHandler>().ToList();
-        var repo = scope.ServiceProvider.GetRequiredService<IAutomationRepository>();
+        List<TenantAutomation> automations;
+        Dictionary<string, IAutomationHandler> handlerMap;
 
-        // Get ALL active automations across all tenants (bypass tenant filter)
-        var automations = await repo.GetAllActiveTenantAutomationsAsync();
+        // Use one scope just to fetch the automation list and build handler map
+        using (var listScope = _services.CreateScope())
+        {
+            var repo = listScope.ServiceProvider.GetRequiredService<IAutomationRepository>();
+            automations = await repo.GetAllActiveTenantAutomationsAsync();
+            if (automations.Count == 0) return;
 
-        if (automations.Count == 0) return;
+            handlerMap = listScope.ServiceProvider.GetServices<IAutomationHandler>()
+                .ToDictionary(h => h.Slug, h => h);
+        }
 
         var now = DateTime.UtcNow;
 
         foreach (var automation in automations)
         {
+            if (!ShouldExecute(automation, now))
+                continue;
+
+            if (!handlerMap.TryGetValue(automation.Template.Slug, out var handler))
+            {
+                _logger.LogWarning("No handler found for automation slug: {Slug}", automation.Template.Slug);
+                continue;
+            }
+
+            // Create a fresh scope per automation — isolates DbContext change tracker per tenant
+            using var execScope = _services.CreateScope();
+            var db = execScope.ServiceProvider.GetRequiredService<HandySalesDbContext>();
+            var notifications = execScope.ServiceProvider.GetRequiredService<INotificationService>();
+            var repo = execScope.ServiceProvider.GetRequiredService<IAutomationRepository>();
+
             try
             {
-                if (!ShouldExecute(automation, now))
-                    continue;
-
-                var handler = handlers.FirstOrDefault(h => h.Slug == automation.Template.Slug);
-                if (handler == null)
-                {
-                    _logger.LogWarning("No handler found for automation slug: {Slug}", automation.Template.Slug);
-                    continue;
-                }
-
                 var context = new AutomationContext(automation, db, notifications);
                 var result = await handler.ExecuteAsync(context, ct);
 
-                // Log execution + update last executed in single SaveChanges
                 await repo.LogAndUpdateAsync(new AutomationExecution
                 {
                     TenantId = automation.TenantId,
@@ -88,7 +108,6 @@ public class AutomationEngine : BackgroundService
             {
                 _logger.LogError(ex, "Error executing automation {Slug} for tenant {TenantId}", automation.Template.Slug, automation.TenantId);
 
-                // Log failed execution
                 try
                 {
                     await repo.LogExecutionAsync(new AutomationExecution
@@ -152,9 +171,13 @@ public class AutomationEngine : BackgroundService
         if (!int.TryParse(parts[0], out var minute)) return false;
         if (!int.TryParse(parts[1], out var hour)) return false;
 
-        // Check hour match (within the current polling window of ~2 minutes)
+        // Check hour match (within the polling window — engine polls every 60s)
         if (now.Hour != hour) return false;
-        if (Math.Abs(now.Minute - minute) > 2) return false;
+        var minuteDiff = now.Minute - minute;
+        // Allow 0..4 minutes AFTER the target minute (never before)
+        // Combined with the "once per day" guard in ShouldExecute, this ensures
+        // the cron fires exactly once even if the engine has processing delays
+        if (minuteDiff < 0 || minuteDiff > 4) return false;
 
         // Check day of week if specified (0=Sun, 1=Mon, ..., 6=Sat)
         if (parts[4] != "*" && int.TryParse(parts[4], out var dow))

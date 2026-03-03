@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { activityLogService, type ActivityLogDto } from '@/services/api/activityLogs';
+import { getInitials } from '@/lib/utils';
 
 const actionLabels: Record<string, string> = {
   create: 'Crear',
@@ -51,10 +52,6 @@ const statusColors: Record<string, string> = {
   pending: 'text-gray-500',
   info: 'text-blue-600',
 };
-
-function getInitials(name: string): string {
-  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-}
 
 const userColorPool = [
   'bg-blue-100 text-blue-600',

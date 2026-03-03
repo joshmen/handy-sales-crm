@@ -11,8 +11,8 @@ public class BienvenidaClienteHandler : IAutomationHandler
     {
         var diasSeguimiento = context.GetParam("dias_seguimiento", 3);
 
-        // Find recently created clients (within last check interval)
-        var since = DateTime.UtcNow.AddMinutes(-2); // Check window — engine polls every 60s
+        // Find clients created since last execution (or last 5 minutes on first run)
+        var since = context.Automation.LastExecutedAt ?? DateTime.UtcNow.AddMinutes(-5);
         var newClients = await context.Db.Clientes
             .Where(c => c.TenantId == context.TenantId && c.CreadoEn >= since && c.Activo)
             .Select(c => new { c.Id, c.Nombre, c.VendedorId })

@@ -162,6 +162,7 @@ export default function OrdersPage() {
   const pageSize = 10;
   const orderFormRef = useRef<OrderFormHandle>(null);
   const drawerRef = useRef<DrawerHandle>(null);
+  const formDataLoaded = useRef(false);
   const [formIsDirty, setFormIsDirty] = useState(false);
   const [usuarios, setUsuarios] = useState<UsuarioOption[]>([]);
 
@@ -210,8 +211,7 @@ export default function OrdersPage() {
 
   useEffect(() => {
     fetchOrders();
-    fetchFormData();
-  }, [fetchOrders, fetchFormData]);
+  }, [fetchOrders]);
 
   // Cargar lista de vendedores (solo para admin)
   useEffect(() => {
@@ -225,14 +225,22 @@ export default function OrdersPage() {
       .catch(() => {});
   }, [isAdmin]);
 
-  const handleCreateOrder = () => {
+  const handleCreateOrder = async () => {
+    if (!formDataLoaded.current) {
+      await fetchFormData();
+      formDataLoaded.current = true;
+    }
     setEditingOrder(null);
     setShowOrderForm(true);
   };
 
-  const handleEditOrder = (orderId: string) => {
+  const handleEditOrder = async (orderId: string) => {
     const order = orders.find(o => o.id === orderId);
     if (order) {
+      if (!formDataLoaded.current) {
+        await fetchFormData();
+        formDataLoaded.current = true;
+      }
       setEditingOrder(order);
       setShowOrderForm(true);
     }

@@ -42,7 +42,7 @@ interface MenuItem {
 
 function MasScreenContent() {
   const insets = useSafeAreaInsets();
-  const { user } = useAuthStore();
+  const user = useAuthStore(s => s.user);
   const router = useRouter();
   const logoutMutation = useLogout();
 

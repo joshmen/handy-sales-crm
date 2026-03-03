@@ -137,7 +137,7 @@ export default function InventoryPage() {
       // Obtener productos y TODOS los inventarios en paralelo
       const [productsRes, allInventory] = await Promise.all([
         productService.getProducts({ page: 1, limit: 500 }),
-        inventoryService.getInventoryItems({ page: 1, limit: 9999 }),
+        inventoryService.getInventoryItems({ page: 1, limit: 500 }),
       ]);
       // Filtrar productos que ya tienen inventario
       const existingProductIds = new Set(allInventory.items.map(item => String(item.productId)));

@@ -23,7 +23,7 @@ import { performSync } from '@/sync/syncEngine';
 
 function HoyScreenContent() {
   const insets = useSafeAreaInsets();
-  const { user } = useAuthStore();
+  const user = useAuthStore(s => s.user);
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
 

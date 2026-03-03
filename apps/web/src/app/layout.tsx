@@ -84,7 +84,7 @@ export default function RootLayout({
                   var companySettings = localStorage.getItem('company_settings');
                   if (companySettings) {
                     var settings = JSON.parse(companySettings);
-                    if (settings.primaryColor) {
+                    if (settings.primaryColor && /^#[0-9a-fA-F]{6}$/.test(settings.primaryColor)) {
                       document.documentElement.style.setProperty('--company-primary-color', settings.primaryColor);
                     }
                   }

@@ -9,6 +9,7 @@ public static class InternalEndpoints
     {
         var group = app.MapGroup("/api/internal")
             .WithTags("Internal")
+            .RequireAuthorization()
             .ExcludeFromDescription(); // Hide from Swagger — internal use only
 
         group.MapPost("/sync-notify", async (

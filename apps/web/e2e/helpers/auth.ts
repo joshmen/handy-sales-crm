@@ -129,7 +129,8 @@ export async function loginAsAdmin(page: Page): Promise<void> {
       await expect(page).toHaveURL(/dashboard/, { timeout: 15000 });
       return;
     } catch {
-      // Session cookie was stale — fall through to full login
+      // Session cookie was stale — clear and fall through to full login
+      await page.context().clearCookies();
     }
   }
 
