@@ -222,7 +222,7 @@ export default function UnitsPage() {
       title="Unidades de medida"
       actions={
         <>
-          <div className="relative">
+          <div className="relative" data-tour="units-import-export">
             <button
               onClick={() => setShowDataMenu(!showDataMenu)}
               className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
@@ -281,11 +281,12 @@ export default function UnitsPage() {
             <span className="hidden sm:inline">Actualizar</span>
           </button>
 
-          <InactiveToggle
-            value={showInactive}
-            onChange={(v) => { setShowInactive(v); setCurrentPage(1); }}
-            className="ml-auto"
-          />
+          <div data-tour="units-toggle-inactive" className="ml-auto">
+            <InactiveToggle
+              value={showInactive}
+              onChange={(v) => { setShowInactive(v); setCurrentPage(1); }}
+            />
+          </div>
         </div>
 
         {/* Selection Action Bar */}
@@ -369,7 +370,7 @@ export default function UnitsPage() {
         {/* Table */}
         <div data-tour="units-table" className="hidden sm:block bg-white border border-gray-200 rounded-lg overflow-x-auto">
           {/* Table Header */}
-          <div className="min-w-[600px] flex items-center gap-3 bg-gray-50 px-4 h-10 border-b border-gray-200">
+          <div className="min-w-[600px] flex items-center gap-3 bg-gray-50 px-5 h-10 border-b border-gray-200">
             <div className="w-[28px] flex items-center justify-center">
               <button
                 onClick={batch.handleSelectAllVisible}
@@ -388,11 +389,11 @@ export default function UnitsPage() {
                 ) : null}
               </button>
             </div>
-            <div className="w-[60px] text-xs font-semibold text-gray-600">ID</div>
-            <div className="flex-1 text-xs font-semibold text-gray-600">Nombre</div>
-            <div className="w-[120px] text-xs font-semibold text-gray-600">Abreviatura</div>
-            <div className="w-[50px] text-xs font-semibold text-gray-600 text-center">Activo</div>
-            <div className="w-[45px] text-xs font-semibold text-gray-600 text-center">Editar</div>
+            <div className="w-[60px] text-[11px] font-medium text-gray-500 uppercase">ID</div>
+            <div className="flex-1 text-[11px] font-medium text-gray-500 uppercase">Nombre</div>
+            <div className="w-[120px] text-[11px] font-medium text-gray-500 uppercase">Abreviatura</div>
+            <div className="w-[50px] text-[11px] font-medium text-gray-500 uppercase text-center">Activo</div>
+            <div className="w-8"></div>
           </div>
 
           {/* Table Body */}
@@ -425,7 +426,7 @@ export default function UnitsPage() {
                 {paginatedUnits.map((unit) => (
                   <div
                     key={unit.id}
-                    className={`min-w-[600px] flex items-center gap-3 px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors ${
+                    className={`min-w-[600px] flex items-center gap-3 px-5 py-3.5 border-b border-gray-200 bg-white hover:bg-gray-50 transition-colors ${
                       !unit.activo ? 'bg-gray-50' : ''
                     }`}
                   >
@@ -464,14 +465,14 @@ export default function UnitsPage() {
                         isLoading={togglingId === unit.id}
                       />
                     </div>
-                    <div className="w-[45px] flex items-center justify-center">
+                    <div className="w-8 flex justify-center">
                       <button
                         onClick={() => handleOpenEdit(unit)}
                         disabled={loading}
-                        className="p-1.5 text-amber-400 hover:text-amber-600 hover:bg-green-50 rounded transition-colors disabled:opacity-50"
+                        className="p-1 hover:bg-amber-50 rounded transition-colors disabled:opacity-50"
                         title="Editar"
                       >
-                        <Edit2 className="w-4 h-4" />
+                        <Edit2 className="w-4 h-4 text-amber-400 hover:text-amber-600" />
                       </button>
                     </div>
                   </div>
@@ -526,7 +527,7 @@ export default function UnitsPage() {
         isDirty={isDirty}
         onSave={handleSubmit}
         footer={
-          <div className="flex items-center justify-end gap-3">
+          <div data-tour="units-drawer-actions" className="flex items-center justify-end gap-3">
             <button
               type="button"
               onClick={() => drawerRef.current?.requestClose()}
@@ -547,8 +548,8 @@ export default function UnitsPage() {
           </div>
         }
       >
-        <div className="p-6 space-y-4">
-          <div className="space-y-2">
+        <form onSubmit={handleSubmit} data-tour="units-form" className="p-6 space-y-4">
+          <div data-tour="units-drawer-name" className="space-y-2">
             <label className="text-sm font-medium">
               Nombre <span className="text-red-500">*</span>
             </label>
@@ -561,7 +562,7 @@ export default function UnitsPage() {
             )}
           </div>
 
-          <div className="space-y-2">
+          <div data-tour="units-drawer-abbreviation" className="space-y-2">
             <label className="text-sm font-medium">Abreviatura</label>
             <Input
               placeholder="Ej: kg, pz, lt, m..."
@@ -575,7 +576,7 @@ export default function UnitsPage() {
               Abreviatura corta para mostrar en tablas y reportes
             </p>
           </div>
-        </div>
+        </form>
       </Drawer>
     </PageHeader>
   );

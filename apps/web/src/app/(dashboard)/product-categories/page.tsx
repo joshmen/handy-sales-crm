@@ -212,7 +212,7 @@ export default function ProductCategoriesPage() {
       title="Categorías de productos"
       actions={
         <>
-          <div className="relative">
+          <div className="relative" data-tour="product-categories-import-export">
             <button
               onClick={() => setShowDataMenu(!showDataMenu)}
               className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
@@ -271,11 +271,12 @@ export default function ProductCategoriesPage() {
             <span className="hidden sm:inline">Actualizar</span>
           </button>
 
-          <InactiveToggle
-            value={showInactive}
-            onChange={(v) => { setShowInactive(v); setCurrentPage(1); }}
-            className="ml-auto"
-          />
+          <div data-tour="product-categories-toggle-inactive" className="ml-auto">
+            <InactiveToggle
+              value={showInactive}
+              onChange={(v) => { setShowInactive(v); setCurrentPage(1); }}
+            />
+          </div>
         </div>
 
         {/* Selection Action Bar */}
@@ -354,8 +355,8 @@ export default function ProductCategoriesPage() {
         {/* Table */}
         <div data-tour="product-categories-table" className="hidden sm:block bg-white border border-gray-200 rounded-lg overflow-x-auto">
           {/* Table Header */}
-          <div className="min-w-[600px] flex items-center bg-gray-50 px-4 h-10 border-b border-gray-200">
-            <div className="w-[40px]">
+          <div className="min-w-[600px] flex items-center gap-3 bg-gray-50 px-5 h-10 border-b border-gray-200">
+            <div className="w-[28px] flex items-center justify-center">
               <button
                 onClick={batch.handleSelectAllVisible}
                 className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
@@ -373,11 +374,11 @@ export default function ProductCategoriesPage() {
                 ) : null}
               </button>
             </div>
-            <div className="w-[60px] text-xs font-semibold text-gray-600">ID</div>
-            <div className="flex-1 text-xs font-semibold text-gray-600">Nombre</div>
-            <div className="flex-1 text-xs font-semibold text-gray-600">Descripción</div>
-            <div className="w-[80px] text-xs font-semibold text-gray-600 text-center">Estado</div>
-            <div className="w-[80px] text-xs font-semibold text-gray-600 text-center">Acciones</div>
+            <div className="w-[60px] text-[11px] font-medium text-gray-500 uppercase">ID</div>
+            <div className="flex-1 text-[11px] font-medium text-gray-500 uppercase">Nombre</div>
+            <div className="flex-1 text-[11px] font-medium text-gray-500 uppercase">Descripción</div>
+            <div className="w-[50px] text-[11px] font-medium text-gray-500 uppercase text-center">Activo</div>
+            <div className="w-8"></div>
           </div>
 
           {/* Table Body */}
@@ -399,9 +400,9 @@ export default function ProductCategoriesPage() {
                 {paginatedCategories.map((category) => (
                   <div
                     key={category.id}
-                    className="min-w-[600px] flex items-center px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                    className="min-w-[600px] flex items-center gap-3 px-5 py-3.5 border-b border-gray-200 bg-white hover:bg-gray-50 transition-colors"
                   >
-                    <div className="w-[40px]">
+                    <div className="w-[28px] flex items-center justify-center">
                       <button
                         onClick={() => batch.handleToggleSelect(category.id)}
                         className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
@@ -422,21 +423,21 @@ export default function ProductCategoriesPage() {
                     <div className="flex-1 text-[13px] text-gray-500 truncate pr-4">
                       {category.descripcion || '-'}
                     </div>
-                    <div className="w-[80px] flex items-center justify-center">
+                    <div className="w-[50px] flex items-center justify-center">
                       <ActiveToggle
                         isActive={category.activo}
                         onToggle={() => handleToggleActive(category)}
                         isLoading={togglingId === category.id}
                       />
                     </div>
-                    <div className="w-[80px] flex items-center justify-center">
+                    <div className="w-8 flex justify-center">
                       <button
                         onClick={() => handleOpenEdit(category)}
                         disabled={loading}
-                        className="p-1.5 text-amber-400 hover:text-amber-600 hover:bg-green-50 rounded transition-colors disabled:opacity-50"
+                        className="p-1 hover:bg-amber-50 rounded transition-colors disabled:opacity-50"
                         title="Editar"
                       >
-                        <Edit2 className="w-4 h-4" />
+                        <Edit2 className="w-4 h-4 text-amber-400 hover:text-amber-600" />
                       </button>
                     </div>
                   </div>
@@ -489,7 +490,7 @@ export default function ProductCategoriesPage() {
         isDirty={isDirty}
         onSave={handleSubmit}
         footer={
-          <div className="flex items-center justify-end gap-3">
+          <div data-tour="product-categories-drawer-actions" className="flex items-center justify-end gap-3">
             <button
               type="button"
               onClick={() => drawerRef.current?.requestClose()}
@@ -510,8 +511,8 @@ export default function ProductCategoriesPage() {
           </div>
         }
       >
-        <div className="p-6 space-y-4">
-          <div className="space-y-2">
+        <form onSubmit={handleSubmit} data-tour="product-categories-form" className="p-6 space-y-4">
+          <div data-tour="product-categories-drawer-name" className="space-y-2">
             <label className="text-sm font-medium">
               Nombre <span className="text-red-500">*</span>
             </label>
@@ -522,14 +523,14 @@ export default function ProductCategoriesPage() {
             {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre.message}</p>}
           </div>
 
-          <div className="space-y-2">
+          <div data-tour="product-categories-drawer-description" className="space-y-2">
             <label className="text-sm font-medium">Descripción</label>
             <Input
               placeholder="Descripción opcional de la categoría"
               {...register('descripcion')}
             />
           </div>
-        </div>
+        </form>
       </Drawer>
     </PageHeader>
   );

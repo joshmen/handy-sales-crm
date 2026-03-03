@@ -490,13 +490,68 @@ export const catalogTours: Record<string, TourConfig> = {
     description: 'Aprende a clasificar tus productos por categoría para organizarlos mejor.',
     steps: [
       {
+        element: '[data-tour="product-categories-import-export"]',
+        popover: {
+          title: 'Importar y exportar',
+          description:
+            'Descarga tus categorías en CSV o importa desde un archivo para cargas masivas. El archivo requiere nombre (obligatorio) y descripción (opcional).',
+          side: 'bottom',
+          align: 'end',
+        },
+      },
+      {
         element: '[data-tour="product-categories-create-btn"]',
         popover: {
           title: 'Nueva categoría',
           description:
-            'Crea una nueva categoría de producto (ej: Refrescos, Galletas, Lácteos). Las categorías subdividen las familias de productos.',
+            'Crea una nueva categoría de producto. Se abrirá un formulario lateral donde capturarás nombre y descripción.',
           side: 'bottom',
           align: 'end',
+          onNextClick: (driverObj: Driver) => {
+            (document.querySelector('[data-tour="product-categories-create-btn"]') as HTMLElement)?.click();
+            setTimeout(() => {
+              boostDrawerForTour();
+              driverObj.moveNext();
+            }, 400);
+          },
+        },
+      },
+      {
+        element: '[data-tour="product-categories-drawer-name"]',
+        popover: {
+          title: 'Nombre de la categoría',
+          description:
+            'Captura el nombre de la categoría (ej: Refrescos, Galletas, Lácteos). Es obligatorio y debe ser único. Las categorías subdividen las familias de productos.',
+          side: 'left',
+          align: 'start',
+          onPrevClick: (driverObj: Driver) => {
+            closeDrawerForTour();
+            setTimeout(() => driverObj.movePrevious(), 400);
+          },
+        },
+      },
+      {
+        element: '[data-tour="product-categories-drawer-description"]',
+        popover: {
+          title: 'Descripción',
+          description:
+            'Agrega una descripción opcional para identificar qué tipo de productos pertenecen a esta categoría.',
+          side: 'left',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="product-categories-drawer-actions"]',
+        popover: {
+          title: 'Guardar o cancelar',
+          description:
+            'Haz clic en "Crear Categoría" para guardarla o "Cancelar" para descartar.',
+          side: 'left',
+          align: 'end',
+          onNextClick: (driverObj: Driver) => {
+            closeDrawerForTour();
+            setTimeout(() => driverObj.moveNext(), 400);
+          },
         },
       },
       {
@@ -510,11 +565,21 @@ export const catalogTours: Record<string, TourConfig> = {
         },
       },
       {
+        element: '[data-tour="product-categories-toggle-inactive"]',
+        popover: {
+          title: 'Mostrar inactivas',
+          description:
+            'Activa este switch para ver también las categorías desactivadas. Por defecto solo se muestran las activas.',
+          side: 'bottom',
+          align: 'end',
+        },
+      },
+      {
         element: '[data-tour="product-categories-table"]',
         popover: {
           title: 'Tabla de categorías',
           description:
-            'Lista de todas las categorías de producto con nombre, descripción y acciones. Puedes editar o eliminar cada una.',
+            'Lista de categorías con nombre, descripción, estado y acciones. Puedes seleccionar varias con los checkboxes para activar/desactivar en lote.',
           side: 'top',
           align: 'center',
         },
@@ -631,13 +696,68 @@ export const catalogTours: Record<string, TourConfig> = {
     description: 'Aprende a configurar las unidades de medida para tus productos.',
     steps: [
       {
+        element: '[data-tour="units-import-export"]',
+        popover: {
+          title: 'Importar y exportar',
+          description:
+            'Descarga tus unidades en CSV o importa desde un archivo para cargas masivas. El archivo requiere nombre (obligatorio) y abreviatura (opcional).',
+          side: 'bottom',
+          align: 'end',
+        },
+      },
+      {
         element: '[data-tour="units-create-btn"]',
         popover: {
           title: 'Nueva unidad',
           description:
-            'Crea una nueva unidad de medida (ej: Pieza, Caja, Litro, Kilogramo). Las unidades se asignan a cada producto.',
+            'Crea una nueva unidad de medida. Se abrirá un formulario lateral donde capturarás nombre y abreviatura.',
           side: 'bottom',
           align: 'end',
+          onNextClick: (driverObj: Driver) => {
+            (document.querySelector('[data-tour="units-create-btn"]') as HTMLElement)?.click();
+            setTimeout(() => {
+              boostDrawerForTour();
+              driverObj.moveNext();
+            }, 400);
+          },
+        },
+      },
+      {
+        element: '[data-tour="units-drawer-name"]',
+        popover: {
+          title: 'Nombre de la unidad',
+          description:
+            'Captura el nombre completo de la unidad (ej: Kilogramo, Pieza, Litro). Es obligatorio y debe ser único. Las unidades se asignan a cada producto.',
+          side: 'left',
+          align: 'start',
+          onPrevClick: (driverObj: Driver) => {
+            closeDrawerForTour();
+            setTimeout(() => driverObj.movePrevious(), 400);
+          },
+        },
+      },
+      {
+        element: '[data-tour="units-drawer-abbreviation"]',
+        popover: {
+          title: 'Abreviatura',
+          description:
+            'Abreviatura corta de la unidad (ej: kg, pz, lt, m). Se muestra en tablas y reportes para ahorrar espacio. Máximo 10 caracteres.',
+          side: 'left',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="units-drawer-actions"]',
+        popover: {
+          title: 'Guardar o cancelar',
+          description:
+            'Haz clic en "Crear Unidad" para guardarla o "Cancelar" para descartar.',
+          side: 'left',
+          align: 'end',
+          onNextClick: (driverObj: Driver) => {
+            closeDrawerForTour();
+            setTimeout(() => driverObj.moveNext(), 400);
+          },
         },
       },
       {
@@ -651,11 +771,21 @@ export const catalogTours: Record<string, TourConfig> = {
         },
       },
       {
+        element: '[data-tour="units-toggle-inactive"]',
+        popover: {
+          title: 'Mostrar inactivas',
+          description:
+            'Activa este switch para ver también las unidades desactivadas. Por defecto solo se muestran las activas.',
+          side: 'bottom',
+          align: 'end',
+        },
+      },
+      {
         element: '[data-tour="units-table"]',
         popover: {
           title: 'Tabla de unidades',
           description:
-            'Lista de unidades de medida con nombre, abreviatura y acciones. Puedes editar o eliminar cada una.',
+            'Lista de unidades con nombre, abreviatura, estado y acciones. Puedes seleccionar varias con los checkboxes para activar/desactivar en lote.',
           side: 'top',
           align: 'center',
         },
