@@ -204,6 +204,78 @@ export const helpPages: Record<string, HelpPage> = {
       },
     ],
   },
+  '/product-categories': {
+    title: 'Categorías de Productos',
+    description: 'Clasificación de productos para organizar tu catálogo.',
+    articles: [
+      {
+        id: 'que-son-categorias-productos',
+        title: '¿Qué son las categorías de productos?',
+        summary: 'Agrupa tus productos por tipo.',
+        body: 'Las categorías permiten organizar tu catálogo agrupando productos similares: Bebidas, Snacks, Limpieza, Lácteos, etc. Esto facilita la búsqueda de productos, la generación de reportes por categoría y la asignación de promociones o descuentos por grupo.',
+      },
+      {
+        id: 'crear-categoria-producto',
+        title: '¿Cómo crear una categoría?',
+        summary: 'Agrega nuevas categorías para clasificar productos.',
+        body: 'Haz clic en "Nueva categoría", captura un nombre descriptivo y opcionalmente una descripción. Después podrás asignar esta categoría al crear o editar cualquier producto. Las categorías se usan como filtro en la lista de productos y en reportes de ventas.',
+      },
+      {
+        id: 'importar-categorias-productos',
+        title: 'Importar y exportar categorías',
+        summary: 'Carga masiva o descarga de categorías.',
+        body: 'Usa el botón de importar/exportar para descargar tus categorías en formato CSV o importar desde un archivo. El archivo requiere una columna "Nombre" (obligatoria) y opcionalmente "Descripción". Las categorías duplicadas (mismo nombre) serán rechazadas.',
+      },
+    ],
+  },
+  '/product-families': {
+    title: 'Familias de Productos',
+    description: 'Subgrupos dentro de categorías para organización más detallada.',
+    articles: [
+      {
+        id: 'que-son-familias',
+        title: '¿Qué son las familias de productos?',
+        summary: 'Nivel adicional de organización bajo categorías.',
+        body: 'Las familias son un nivel más específico dentro de una categoría. Por ejemplo, dentro de la categoría "Bebidas" puedes tener familias como "Refrescos", "Aguas", "Jugos". Esto permite una organización más precisa del catálogo y reportes más detallados.',
+      },
+      {
+        id: 'crear-familia',
+        title: '¿Cómo crear una familia?',
+        summary: 'Agrega familias para detallar tu catálogo.',
+        body: 'Haz clic en "Nueva familia", captura el nombre y opcionalmente una descripción. Las familias son independientes de las categorías — no necesitas asignarlas a una categoría específica. Se asignan directamente a los productos junto con su categoría.',
+      },
+      {
+        id: 'importar-familias',
+        title: 'Importar y exportar familias',
+        summary: 'Carga masiva o descarga de familias.',
+        body: 'Usa el botón de importar/exportar para descargar tus familias en CSV o importar desde un archivo. El archivo requiere "Nombre" (obligatorio) y opcionalmente "Descripción". Los nombres duplicados serán rechazados automáticamente.',
+      },
+    ],
+  },
+  '/units': {
+    title: 'Unidades de Medida',
+    description: 'Define cómo se contabilizan tus productos.',
+    articles: [
+      {
+        id: 'que-son-unidades',
+        title: '¿Qué son las unidades de medida?',
+        summary: 'Definen cómo se cuenta cada producto.',
+        body: 'Las unidades de medida definen cómo se contabiliza un producto: piezas (PZS) para artículos individuales, kilogramos (KG) para productos a granel, litros (LT) para líquidos, cajas (CJ) para paquetes, etc. La unidad afecta cómo se registran movimientos de inventario y cómo se muestran las cantidades en pedidos.',
+      },
+      {
+        id: 'crear-unidad',
+        title: '¿Cómo crear una unidad?',
+        summary: 'Agrega nuevas unidades de medida.',
+        body: 'Haz clic en "Nueva unidad", captura el nombre completo (ej: "Kilogramo") y una abreviatura corta (ej: "KG", máximo 10 caracteres). La abreviatura se muestra junto a las cantidades en pedidos e inventario para ahorrar espacio.',
+      },
+      {
+        id: 'importar-unidades',
+        title: 'Importar y exportar unidades',
+        summary: 'Carga masiva o descarga de unidades.',
+        body: 'Usa el botón de importar/exportar para descargar tus unidades en CSV o importar desde un archivo. El archivo requiere "Nombre" (obligatorio) y opcionalmente "Abreviatura" (máximo 10 caracteres). Los nombres duplicados serán rechazados.',
+      },
+    ],
+  },
   '/price-lists': {
     title: 'Listas de Precios',
     description: 'Precios diferenciados por tipo de cliente.',
