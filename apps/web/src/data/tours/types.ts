@@ -32,8 +32,12 @@ function buildOverlayPath(
   const top = header ? header.offsetHeight : 0;
   const bot = footer ? ph - footer.offsetHeight : ph;
 
-  // Outer rect covering scroll area only (header/footer stay untouched)
-  const outer = `M0,${top} L${pw},${top} L${pw},${bot} L0,${bot}Z`;
+  // Extend overlay to cover footer when the active element lives there
+  const activeInFooter = activeEl && footer && footer.contains(activeEl);
+  const effectiveBot = activeInFooter ? ph : bot;
+
+  // Outer rect covering scroll area (and footer when active element is in it)
+  const outer = `M0,${top} L${pw},${top} L${pw},${effectiveBot} L0,${effectiveBot}Z`;
   if (!activeEl) return outer;
 
   const panelRect = panel.getBoundingClientRect();
