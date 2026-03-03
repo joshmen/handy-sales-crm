@@ -2,6 +2,10 @@ import type { Driver } from 'driver.js';
 
 export interface TourStep {
   element?: string;
+  /** Called when this step becomes the active highlighted step. */
+  onHighlighted?: () => void;
+  /** Called when this step is deselected (navigating away). */
+  onDeselected?: () => void;
   popover: {
     title: string;
     description: string;

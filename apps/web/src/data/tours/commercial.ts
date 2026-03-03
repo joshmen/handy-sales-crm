@@ -20,34 +20,50 @@ export const commercialTours: Record<string, TourConfig> = {
       },
       {
         element: '[data-tour="discounts-create-btn"]',
+        // Force the hover-dropdown visible so the user sees both options
+        onHighlighted: () => {
+          const dropdown = document.querySelector(
+            '[data-tour="discounts-create-btn"] > div',
+          ) as HTMLElement | null;
+          if (dropdown) {
+            dropdown.style.opacity = '1';
+            dropdown.style.visibility = 'visible';
+          }
+        },
+        onDeselected: () => {
+          const dropdown = document.querySelector(
+            '[data-tour="discounts-create-btn"] > div',
+          ) as HTMLElement | null;
+          if (dropdown) {
+            dropdown.style.opacity = '';
+            dropdown.style.visibility = '';
+          }
+        },
         popover: {
-          title: 'Nuevo descuento',
+          title: 'Dos tipos de descuento',
           description:
-            'Elige entre descuento global (aplica a todo el catálogo) o por producto específico. Define porcentaje y cantidad mínima.',
+            'Hay dos tipos: <b>Descuento global</b> (aplica a todo el catálogo) y <b>Descuento por producto</b> (aplica a un producto específico). Veamos primero el global.',
           side: 'bottom',
           align: 'end',
           onNextClick: (driverObj: Driver) => {
-            // Hover the dropdown to make it visible, then click the first option (Global)
-            const btn = document.querySelector('[data-tour="discounts-create-btn"]') as HTMLElement;
-            btn?.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+            // Click "Descuento global" (first option in dropdown)
+            const wrapper = document.querySelector('[data-tour="discounts-create-btn"]');
+            const globalBtn = wrapper?.querySelectorAll(':scope > div > button')?.[0] as HTMLElement;
+            globalBtn?.click();
             setTimeout(() => {
-              const globalOpt = btn?.querySelector('button');
-              if (globalOpt) globalOpt.click();
-              setTimeout(() => {
-                boostDrawerForTour();
-                driverObj.moveNext();
-              }, 400);
-            }, 200);
+              boostDrawerForTour();
+              driverObj.moveNext();
+            }, 400);
           },
         },
       },
-      // ── DRAWER OPEN ──
+      // ── GLOBAL DRAWER OPEN ──
       {
-        element: '[data-tour="discounts-drawer-percentage"]',
+        element: '[data-tour="discounts-drawer-fields"]',
         popover: {
-          title: 'Porcentaje de descuento',
+          title: 'Descuento global — Campos',
           description:
-            'Ingresa el porcentaje de descuento a aplicar (1-100%). Por ejemplo, 10 para un 10% de descuento.',
+            'Para un descuento global solo necesitas dos campos: el <b>porcentaje de descuento</b> (1-100%) y la <b>cantidad mínima</b> de unidades. El descuento aplica a todos los productos del catálogo.',
           side: 'left',
           align: 'start',
           onPrevClick: (driverObj: Driver) => {
@@ -57,11 +73,41 @@ export const commercialTours: Record<string, TourConfig> = {
         },
       },
       {
-        element: '[data-tour="discounts-drawer-quantity"]',
+        element: '[data-tour="discounts-drawer-actions"]',
         popover: {
-          title: 'Cantidad mínima',
+          title: 'Guardar descuento global',
           description:
-            'Define cuántas unidades debe comprar el cliente para que aplique el descuento. A mayor cantidad, mayor descuento (escala progresiva).',
+            'Haz clic en "Crear" para guardar o "Cancelar" para descartar. Ahora veamos cómo se crea un descuento por producto.',
+          side: 'top',
+          align: 'end',
+          onNextClick: (driverObj: Driver) => {
+            // Close Global drawer, reopen as Producto
+            closeDrawerForTour();
+            setTimeout(() => {
+              const wrapper = document.querySelector('[data-tour="discounts-create-btn"]');
+              const dropdown = wrapper?.querySelector(':scope > div') as HTMLElement;
+              // Briefly show dropdown to click Producto option
+              if (dropdown) { dropdown.style.opacity = '1'; dropdown.style.visibility = 'visible'; }
+              setTimeout(() => {
+                const productoBtn = wrapper?.querySelectorAll(':scope > div > button')?.[1] as HTMLElement;
+                productoBtn?.click();
+                if (dropdown) { dropdown.style.opacity = ''; dropdown.style.visibility = ''; }
+                setTimeout(() => {
+                  boostDrawerForTour();
+                  driverObj.moveNext();
+                }, 400);
+              }, 100);
+            }, 400);
+          },
+        },
+      },
+      // ── GLOBAL DRAWER CLOSE → PRODUCTO DRAWER OPEN ──
+      {
+        element: '[data-tour="discounts-drawer-product"]',
+        popover: {
+          title: 'Descuento por producto — Producto',
+          description:
+            'A diferencia del global, aquí debes <b>seleccionar un producto específico</b> del catálogo. El descuento solo aplicará a ese producto. Los campos de porcentaje y cantidad mínima funcionan igual.',
           side: 'left',
           align: 'start',
         },
@@ -69,9 +115,9 @@ export const commercialTours: Record<string, TourConfig> = {
       {
         element: '[data-tour="discounts-drawer-actions"]',
         popover: {
-          title: 'Guardar o cancelar',
+          title: 'Guardar descuento por producto',
           description:
-            'Haz clic en "Crear" para guardar el descuento o "Cancelar" para descartar los cambios.',
+            'Guarda el descuento por producto o cancela para descartar los cambios.',
           side: 'top',
           align: 'end',
           onNextClick: (driverObj: Driver) => {
@@ -80,13 +126,13 @@ export const commercialTours: Record<string, TourConfig> = {
           },
         },
       },
-      // ── DRAWER CLOSE ──
+      // ── PRODUCTO DRAWER CLOSE ──
       {
         element: '[data-tour="discounts-tabs"]',
         popover: {
-          title: 'Tipos de descuento',
+          title: 'Pestañas de tipo',
           description:
-            'Navega entre las pestañas: "Descuento global" aplica a todo el catálogo, "Descuento por producto" aplica solo a un producto específico.',
+            'Navega entre las pestañas para ver los descuentos de cada tipo por separado: "Descuento global" y "Descuento por producto".',
           side: 'bottom',
           align: 'start',
         },

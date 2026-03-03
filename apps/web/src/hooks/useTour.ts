@@ -95,6 +95,8 @@ export function useTour() {
       },
       steps: tourConfig.steps.map((step) => ({
         ...(step.element ? { element: step.element } : {}),
+        ...(step.onHighlighted ? { onHighlighted: step.onHighlighted } : {}),
+        ...(step.onDeselected ? { onDeselected: step.onDeselected } : {}),
         popover: {
           title: step.popover.title,
           description: step.popover.description,
