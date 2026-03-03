@@ -372,7 +372,7 @@ export default function ProductsPage() {
         title="Productos"
         actions={
           <>
-            <div className="relative">
+            <div className="relative" data-tour="products-import-export">
               <button
                 onClick={() => setShowDataMenu(!showDataMenu)}
                 className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
@@ -493,7 +493,7 @@ export default function ProductsPage() {
               products.map((product) => (
                 <div
                   key={product.id}
-                  className={`bg-white border border-gray-200 rounded-lg p-4 ${!product.isActive ? 'opacity-60' : ''}`}
+                  className={`bg-white border border-gray-200 rounded-lg p-3 ${!product.isActive ? 'opacity-60' : ''}`}
                 >
                   {/* Row 1: checkbox + image + name + toggle */}
                   <div className="flex items-start justify-between gap-2">
@@ -530,24 +530,29 @@ export default function ProductsPage() {
                   </div>
                   {/* Row 2: Metrics */}
                   <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-500">
-                    <span className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded font-medium">
+                    <span className="px-2 py-1 bg-emerald-50 text-emerald-700 rounded-md text-xs font-medium">
                       {formatCurrency(product.price)}
                     </span>
-                    <span className={`px-2 py-0.5 rounded font-medium ${
+                    <span className={`px-2 py-1 rounded-md text-xs font-medium ${
                       product.stock <= product.minStock
-                        ? 'bg-red-100 text-red-600'
-                        : 'bg-green-100 text-green-600'
+                        ? 'bg-red-50 text-red-600'
+                        : 'bg-gray-100 text-gray-700'
                     }`}>
                       Stock: {product.stock}
                     </span>
                     {product.family && (
-                      <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded">
+                      <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-md text-xs">
                         {product.family}
                       </span>
                     )}
                     {product.category && (
-                      <span className="text-gray-400">
+                      <span className="px-2 py-1 bg-purple-50 text-purple-700 rounded-md text-xs">
                         {product.category}
+                      </span>
+                    )}
+                    {product.unit && (
+                      <span className="px-2 py-1 bg-gray-100 text-gray-500 rounded-md text-xs">
+                        {product.unit}
                       </span>
                     )}
                   </div>
@@ -568,7 +573,7 @@ export default function ProductsPage() {
           {/* Products Table */}
           <div className="hidden sm:block bg-white border border-gray-200 rounded-lg overflow-x-auto" data-tour="products-table">
             {/* Table Header - Always visible */}
-            <div className="flex items-center gap-3 bg-gray-50 px-4 h-10 border-b border-gray-200 min-w-[850px]">
+            <div className="flex items-center gap-3 bg-gray-50 px-5 h-10 border-b border-gray-200 min-w-[900px]">
               <div className="w-[28px] flex items-center justify-center">
                 <button
                   onClick={batch.handleSelectAllVisible}
@@ -589,14 +594,13 @@ export default function ProductsPage() {
               </div>
               <div className="w-[45px] text-xs font-semibold text-gray-600">Imagen</div>
               <div className="w-[95px] text-xs font-semibold text-gray-600">Código</div>
-              <div className="flex-1 min-w-[120px] text-xs font-semibold text-gray-600">Nombre</div>
-              <div className="w-[85px] text-xs font-semibold text-gray-600">Precio</div>
-              <div className="w-[70px] text-xs font-semibold text-gray-600">Existencia</div>
-              <div className="w-[85px] text-xs font-semibold text-gray-600">Familia</div>
-              <div className="w-[85px] text-xs font-semibold text-gray-600">Categoría</div>
-              <div className="w-[65px] text-xs font-semibold text-gray-600">Unidad</div>
+              <div className="flex-1 min-w-[250px] text-xs font-semibold text-gray-600">Nombre</div>
+              <div className="w-[90px] text-xs font-semibold text-gray-600">Precio</div>
+              <div className="w-[90px] text-xs font-semibold text-gray-600">Existencia</div>
+              <div className="w-[100px] text-xs font-semibold text-gray-600 hidden md:block">Familia</div>
+              <div className="w-[130px] text-xs font-semibold text-gray-600 hidden lg:block">Categoría</div>
               <div className="w-[50px] text-xs font-semibold text-gray-600 text-center">Activo</div>
-              <div className="w-[45px] text-xs font-semibold text-gray-600 text-center">Editar</div>
+              <div className="w-8"></div>
             </div>
 
             {/* Table Body - With loading overlay */}
@@ -628,7 +632,7 @@ export default function ProductsPage() {
                   {products.map((product) => (
                     <div
                       key={product.id}
-                      className={`flex items-center gap-3 px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors min-w-[850px] ${
+                      className={`flex items-center gap-3 px-5 py-3.5 border-b border-gray-100 hover:bg-gray-50 transition-colors min-w-[900px] ${
                         !product.isActive ? 'bg-gray-50' : ''
                       }`}
                     >
@@ -660,32 +664,29 @@ export default function ProductsPage() {
                       <div className="w-[95px] text-[13px] font-mono text-gray-500 truncate">
                         {product.code}
                       </div>
-                      <div className="flex-1 min-w-[120px] text-[13px] font-medium text-gray-900 truncate">
+                      <div className="flex-1 min-w-[250px] text-[13px] font-medium text-gray-900 truncate">
                         {product.name}
                       </div>
-                      <div className="w-[85px] text-[13px] font-medium text-gray-900">
+                      <div className="w-[90px] text-[13px] font-medium text-gray-900">
                         {formatCurrency(product.price)}
                       </div>
-                      <div className={`w-[70px] text-[13px] font-medium ${
+                      <div className={`w-[90px] text-[13px] font-medium ${
                         product.stock <= product.minStock
                           ? 'text-red-600'
                           : 'text-gray-900'
                       }`}>
                         {product.stock}
                       </div>
-                      <div className="w-[85px] text-[13px] text-blue-600 truncate">
+                      <div className="w-[100px] text-[13px] text-blue-600 truncate hidden md:block">
                         {product.family || '-'}
                       </div>
-                      <div className="w-[85px] text-[13px] text-gray-500 truncate">
+                      <div className="w-[130px] text-[13px] text-gray-500 truncate hidden lg:block">
                         {product.category || '-'}
-                      </div>
-                      <div className="w-[65px] text-[13px] text-gray-500 truncate">
-                        {product.unit || '-'}
                       </div>
                       <div className="w-[50px] flex items-center justify-center">
                         <ActiveToggle isActive={product.isActive} onToggle={() => handleToggleActive(product)} disabled={loading} isLoading={togglingId === product.id} title={product.isActive ? 'Desactivar producto' : 'Activar producto'} />
                       </div>
-                      <div className="w-[45px] flex items-center justify-center">
+                      <div className="w-8 flex items-center justify-center">
                         <button
                           onClick={() => handleEditProduct(product)}
                           disabled={loading}
