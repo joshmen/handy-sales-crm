@@ -419,7 +419,7 @@ export default function ProductFamiliesPage() {
         {/* Table */}
         <div data-tour="product-families-table" className="hidden sm:block bg-white border border-gray-200 rounded-lg overflow-x-auto">
           {/* Table Header */}
-          <div className="min-w-[600px] flex items-center gap-3 bg-gray-50 px-4 h-10 border-b border-gray-200">
+          <div className="min-w-[600px] flex items-center gap-3 bg-gray-50 px-5 h-10 border-b border-gray-200">
             <div className="w-[28px] flex items-center justify-center">
               <button
                 onClick={batch.handleSelectAllVisible}
@@ -438,11 +438,11 @@ export default function ProductFamiliesPage() {
                 ) : null}
               </button>
             </div>
-            <div className="w-[60px] text-xs font-semibold text-gray-600">ID</div>
-            <div className="flex-1 text-xs font-semibold text-gray-600">Nombre</div>
-            <div className="flex-1 text-xs font-semibold text-gray-600">Descripción</div>
-            <div className="w-[50px] text-xs font-semibold text-gray-600 text-center">Activo</div>
-            <div className="w-[45px] text-xs font-semibold text-gray-600 text-center">Editar</div>
+            <div className="w-[60px] text-[11px] font-medium text-gray-500 uppercase">ID</div>
+            <div className="flex-1 text-[11px] font-medium text-gray-500 uppercase">Nombre</div>
+            <div className="flex-1 text-[11px] font-medium text-gray-500 uppercase">Descripción</div>
+            <div className="w-[50px] text-[11px] font-medium text-gray-500 uppercase text-center">Activo</div>
+            <div className="w-8"></div>
           </div>
 
           {/* Table Body */}
@@ -475,7 +475,7 @@ export default function ProductFamiliesPage() {
                 {paginatedFamilies.map((family) => (
                   <div
                     key={family.id}
-                    className={`min-w-[600px] flex items-center gap-3 px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors ${
+                    className={`min-w-[600px] flex items-center gap-3 px-5 py-3.5 border-b border-gray-200 bg-white hover:bg-gray-50 transition-colors ${
                       !family.activo ? 'bg-gray-50' : ''
                     }`}
                   >
@@ -508,14 +508,14 @@ export default function ProductFamiliesPage() {
                         isLoading={togglingId === family.id}
                       />
                     </div>
-                    <div className="w-[45px] flex items-center justify-center">
+                    <div className="w-8 flex justify-center">
                       <button
                         onClick={() => handleOpenEdit(family)}
                         disabled={loading}
-                        className="p-1.5 text-amber-400 hover:text-amber-600 hover:bg-green-50 rounded transition-colors disabled:opacity-50"
+                        className="p-1 hover:bg-amber-50 rounded transition-colors disabled:opacity-50"
                         title="Editar"
                       >
-                        <Pencil className="w-4 h-4" />
+                        <Pencil className="w-4 h-4 text-amber-400 hover:text-amber-600" />
                       </button>
                     </div>
                   </div>

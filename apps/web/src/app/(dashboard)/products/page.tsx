@@ -594,14 +594,14 @@ export default function ProductsPage() {
                   ) : null}
                 </button>
               </div>
-              <div className="w-[45px] text-xs font-semibold text-gray-600">Imagen</div>
-              <div className="w-[95px] text-xs font-semibold text-gray-600">Código</div>
-              <div className="flex-1 min-w-[250px] text-xs font-semibold text-gray-600">Nombre</div>
-              <div className="w-[90px] text-xs font-semibold text-gray-600">Precio</div>
-              <div className="w-[90px] text-xs font-semibold text-gray-600">Existencia</div>
-              <div className="w-[100px] text-xs font-semibold text-gray-600 hidden md:block">Familia</div>
-              <div className="w-[130px] text-xs font-semibold text-gray-600 hidden lg:block">Categoría</div>
-              <div className="w-[50px] text-xs font-semibold text-gray-600 text-center">Activo</div>
+              <div className="w-[45px] text-[11px] font-medium text-gray-500 uppercase">Imagen</div>
+              <div className="w-[95px] text-[11px] font-medium text-gray-500 uppercase">Código</div>
+              <div className="flex-1 min-w-[250px] text-[11px] font-medium text-gray-500 uppercase">Nombre</div>
+              <div className="w-[90px] text-[11px] font-medium text-gray-500 uppercase">Precio</div>
+              <div className="w-[90px] text-[11px] font-medium text-gray-500 uppercase">Existencia</div>
+              <div className="w-[100px] text-[11px] font-medium text-gray-500 uppercase hidden md:block">Familia</div>
+              <div className="w-[130px] text-[11px] font-medium text-gray-500 uppercase hidden lg:block">Categoría</div>
+              <div className="w-[50px] text-[11px] font-medium text-gray-500 uppercase text-center">Activo</div>
               <div className="w-8"></div>
             </div>
 
@@ -634,7 +634,7 @@ export default function ProductsPage() {
                   {products.map((product) => (
                     <div
                       key={product.id}
-                      className={`flex items-center gap-3 px-5 py-3.5 border-b border-gray-100 hover:bg-gray-50 transition-colors min-w-[900px] ${
+                      className={`flex items-center gap-3 px-5 py-3.5 border-b border-gray-200 bg-white hover:bg-gray-50 transition-colors min-w-[900px] ${
                         !product.isActive ? 'bg-gray-50' : ''
                       }`}
                     >
@@ -692,7 +692,7 @@ export default function ProductsPage() {
                         <button
                           onClick={() => handleEditProduct(product)}
                           disabled={loading}
-                          className="p-1.5 hover:bg-green-50 rounded transition-colors disabled:opacity-50"
+                          className="p-1 hover:bg-amber-50 rounded transition-colors disabled:opacity-50"
                           title="Editar"
                         >
                           <Pencil className="w-4 h-4 text-amber-400 hover:text-amber-600" />
