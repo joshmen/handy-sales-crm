@@ -451,7 +451,9 @@ export default function ProductsPage() {
             </button>
 
             {/* Toggle para mostrar inactivos */}
-            <InactiveToggle value={showInactive} onChange={(v) => { setShowInactive(v); setCurrentPage(1); }} className="ml-auto" />
+            <div data-tour="products-toggle-inactive" className="ml-auto">
+              <InactiveToggle value={showInactive} onChange={(v) => { setShowInactive(v); setCurrentPage(1); }} />
+            </div>
           </div>
 
           {/* Error message */}
@@ -754,7 +756,7 @@ export default function ProductsPage() {
             form?.requestSubmit();
           }}
           footer={
-            <div className="flex justify-end gap-3">
+            <div className="flex justify-end gap-3" data-tour="product-drawer-actions">
               <button
                 type="button"
                 onClick={() => drawerRef.current?.requestClose()}
@@ -777,7 +779,7 @@ export default function ProductsPage() {
         >
           <form id="product-form" onSubmit={handleSaveProduct} className="space-y-4 p-6" data-tour="product-form">
               {/* Nombre */}
-              <div>
+              <div data-tour="product-drawer-name">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Nombre <span className="text-red-500">*</span>
                 </label>
@@ -791,7 +793,7 @@ export default function ProductsPage() {
               </div>
 
               {/* Codigo de Barras */}
-              <div>
+              <div data-tour="product-drawer-barcode">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Codigo de Barras <span className="text-red-500">*</span>
                 </label>
@@ -805,7 +807,7 @@ export default function ProductsPage() {
               </div>
 
               {/* Descripcion */}
-              <div>
+              <div data-tour="product-drawer-description">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Descripcion
                 </label>
@@ -818,7 +820,7 @@ export default function ProductsPage() {
               </div>
 
               {/* Imagen del producto */}
-              <div>
+              <div data-tour="product-drawer-image">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Imagen del producto
                 </label>
@@ -896,7 +898,7 @@ export default function ProductsPage() {
               </div>
 
               {/* Familia de Productos */}
-              <div>
+              <div data-tour="product-drawer-family">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Familia de Productos <span className="text-red-500">*</span>
                 </label>
@@ -920,7 +922,7 @@ export default function ProductsPage() {
               </div>
 
               {/* Categoria de Productos */}
-              <div>
+              <div data-tour="product-drawer-category">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Categoria <span className="text-red-500">*</span>
                 </label>
@@ -944,7 +946,7 @@ export default function ProductsPage() {
               </div>
 
               {/* Unidad de Medida */}
-              <div>
+              <div data-tour="product-drawer-unit">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Unidad de Medida <span className="text-red-500">*</span>
                 </label>
@@ -968,7 +970,7 @@ export default function ProductsPage() {
               </div>
 
               {/* Precio Base */}
-              <div>
+              <div data-tour="product-drawer-price">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Precio Base <span className="text-red-500">*</span>
                 </label>

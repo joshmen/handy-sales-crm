@@ -181,11 +181,21 @@ export const catalogTours: Record<string, TourConfig> = {
     description: 'Aprende a dar de alta productos, asignar precios, familias y categorías.',
     steps: [
       {
+        element: '[data-tour="products-import-export"]',
+        popover: {
+          title: 'Importar y exportar',
+          description:
+            'Descarga tu catálogo de productos en CSV o importa productos desde un archivo CSV para cargas masivas. El archivo debe incluir nombre, código de barras, precio base, familia, categoría y unidad de medida.',
+          side: 'bottom',
+          align: 'end',
+        },
+      },
+      {
         element: '[data-tour="products-new-btn"]',
         popover: {
           title: 'Crear nuevo producto',
           description:
-            'Haz clic aquí para dar de alta un producto. Deberás capturar nombre, código de barras, familia, categoría, unidad de medida y precio base. También puedes subir una imagen.',
+            'Haz clic aquí para dar de alta un producto. Se abrirá un formulario lateral donde capturarás todos los datos.',
           side: 'bottom',
           align: 'end',
           onNextClick: (driverObj: Driver) => {
@@ -198,15 +208,87 @@ export const catalogTours: Record<string, TourConfig> = {
         },
       },
       {
+        element: '[data-tour="product-drawer-name"]',
         popover: {
-          title: 'Formulario de producto',
+          title: 'Nombre del producto',
           description:
-            'Captura nombre, código de barras, familia, categoría, unidad de medida, precio base y sube una imagen del producto.',
-          side: 'over',
+            'Captura el nombre del producto tal como lo conocen tus vendedores. Es obligatorio y debe ser único.',
+          side: 'left',
+          align: 'start',
           onPrevClick: (driverObj: Driver) => {
             closeDrawerForTour();
             setTimeout(() => driverObj.movePrevious(), 400);
           },
+        },
+      },
+      {
+        element: '[data-tour="product-drawer-barcode"]',
+        popover: {
+          title: 'Código de barras',
+          description:
+            'Ingresa el código de barras del producto (EAN-13, UPC, etc.). Es obligatorio y debe ser único. Los vendedores podrán escanearlo desde la app móvil.',
+          side: 'left',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="product-drawer-image"]',
+        popover: {
+          title: 'Imagen del producto',
+          description:
+            'Sube una foto del producto en JPEG, PNG o WebP (máximo 5 MB). La imagen aparecerá en el catálogo y en la app móvil de los vendedores.',
+          side: 'left',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="product-drawer-family"]',
+        popover: {
+          title: 'Familia de productos',
+          description:
+            'Selecciona la familia principal del producto (ej: Bebidas, Abarrotes, Lácteos). Las familias se configuran en el catálogo de Familias de Productos.',
+          side: 'left',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="product-drawer-category"]',
+        popover: {
+          title: 'Categoría',
+          description:
+            'Selecciona la categoría que subdivide la familia (ej: Refrescos dentro de Bebidas). Las categorías se configuran en el catálogo de Categorías de Productos.',
+          side: 'left',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="product-drawer-unit"]',
+        popover: {
+          title: 'Unidad de medida',
+          description:
+            'Selecciona cómo se vende el producto: Pieza, Caja, Litro, Kilogramo, etc. Las unidades se configuran en el catálogo de Unidades de Medida.',
+          side: 'left',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="product-drawer-price"]',
+        popover: {
+          title: 'Precio base',
+          description:
+            'El precio de venta principal del producto. Si usas listas de precios, cada lista puede tener un precio diferente para este producto.',
+          side: 'left',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="product-drawer-actions"]',
+        popover: {
+          title: 'Guardar o cancelar',
+          description:
+            'Haz clic en "Crear Producto" para guardarlo o "Cancelar" para descartar. Si hay cambios sin guardar, se te pedirá confirmar.',
+          side: 'left',
+          align: 'end',
           onNextClick: (driverObj: Driver) => {
             closeDrawerForTour();
             setTimeout(() => driverObj.moveNext(), 400);
@@ -258,7 +340,7 @@ export const catalogTours: Record<string, TourConfig> = {
         popover: {
           title: 'Catálogo de productos',
           description:
-            'Aquí ves todos tus productos con imagen, código, precio, existencia, familia, categoría y unidad. Los productos con stock bajo se marcan en rojo. Puedes seleccionar varios para activar/desactivar en lote.',
+            'Aquí ves todos tus productos con imagen, código, precio, existencia, familia y categoría. Los productos con stock bajo se marcan en rojo. Puedes seleccionar varios con los checkboxes para activar/desactivar en lote.',
           side: 'top',
           align: 'center',
         },
