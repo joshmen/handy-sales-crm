@@ -136,6 +136,12 @@ export const helpPages: Record<string, HelpPage> = {
         summary: 'Organización jerárquica de productos.',
         body: 'Las categorías agrupan productos similares (ej: "Bebidas", "Snacks", "Limpieza"). Las familias son un nivel más específico dentro de una categoría (ej: dentro de "Bebidas" puedes tener "Refrescos", "Aguas", "Jugos"). Esto facilita la búsqueda y los reportes.',
       },
+      {
+        id: 'importar-productos',
+        title: 'Importar y exportar productos',
+        summary: 'Carga masiva o descarga de tu catálogo.',
+        body: 'Usa el botón de importar/exportar para descargar tu catálogo en CSV o importar productos desde un archivo. El archivo requiere Nombre y Precio (obligatorios). Opcionalmente puedes incluir Código de barras, Categoría, Familia, Unidad de medida, Descripción e IVA. Los productos con nombre duplicado serán rechazados.',
+      },
     ],
   },
   '/clients': {
