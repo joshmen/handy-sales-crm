@@ -279,7 +279,7 @@ export default function DiscountsPage() {
       title="Descuentos por cantidad"
       actions={
         <>
-          <div className="relative">
+          <div className="relative" data-tour="discounts-import-export">
             <button
               onClick={() => setShowDataMenu(!showDataMenu)}
               className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
@@ -380,15 +380,16 @@ export default function DiscountsPage() {
               <span>Actualizar</span>
             </button>
 
-            <InactiveToggle
-              value={showInactive}
-              onChange={(v) => {
-                if (activeTab === 'global') setShowInactiveGlobal(v);
-                else setShowInactiveProduct(v);
-                setCurrentPage(1);
-              }}
-              className="ml-auto"
-            />
+            <div data-tour="discounts-toggle-inactive" className="ml-auto">
+              <InactiveToggle
+                value={showInactive}
+                onChange={(v) => {
+                  if (activeTab === 'global') setShowInactiveGlobal(v);
+                  else setShowInactiveProduct(v);
+                  setCurrentPage(1);
+                }}
+              />
+            </div>
           </div>
 
           {/* Selection Action Bar */}
@@ -490,7 +491,7 @@ export default function DiscountsPage() {
                 {/* Desktop Cards with opacity transition */}
                 <div className={`hidden sm:block space-y-4 transition-opacity duration-200 ${loading ? 'opacity-50' : 'opacity-100'}`}>
                   {/* Select All Header */}
-                  <div className="flex items-center gap-3 px-2">
+                  <div className="flex items-center gap-3 px-5">
                     <button
                       onClick={batch.handleSelectAllVisible}
                       className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
@@ -623,7 +624,7 @@ export default function DiscountsPage() {
         isDirty={isDirty}
         onSave={handleSubmit}
         footer={
-          <div className="flex justify-end gap-3">
+          <div className="flex justify-end gap-3" data-tour="discounts-drawer-actions">
             <button
               onClick={() => drawerRef.current?.requestClose()}
               disabled={actionLoading}
@@ -642,9 +643,9 @@ export default function DiscountsPage() {
           </div>
         }
       >
-        <div className="p-6 space-y-4" data-tour="discount-form">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
+        <form onSubmit={handleSubmit} className="p-6 space-y-4" data-tour="discount-form">
+          <div className="grid grid-cols-2 gap-4" data-tour="discounts-drawer-fields">
+            <div data-tour="discounts-drawer-percentage">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Porcentaje <span className="text-red-500">*</span>
               </label>
@@ -662,7 +663,7 @@ export default function DiscountsPage() {
               {errors.descuentoPorcentaje && <p className="text-red-500 text-xs mt-1">{errors.descuentoPorcentaje.message}</p>}
             </div>
 
-            <div>
+            <div data-tour="discounts-drawer-quantity">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Cantidad minima <span className="text-red-500">*</span>
               </label>
@@ -678,7 +679,7 @@ export default function DiscountsPage() {
           </div>
 
           {watch('tipoAplicacion') === 'Producto' && (
-            <div>
+            <div data-tour="discounts-drawer-product">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Producto <span className="text-red-500">*</span>
               </label>
@@ -694,7 +695,7 @@ export default function DiscountsPage() {
               {errors.productoId && <p className="text-red-500 text-xs mt-1">{errors.productoId.message}</p>}
             </div>
           )}
-        </div>
+        </form>
       </Drawer>
 
       {/* Batch Confirm Modal */}

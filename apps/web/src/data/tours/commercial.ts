@@ -9,44 +9,84 @@ export const commercialTours: Record<string, TourConfig> = {
     description: 'Aprende a crear descuentos por cantidad, globales o por producto específico.',
     steps: [
       {
-        element: '[data-tour="discounts-create-btn"]',
+        element: '[data-tour="discounts-import-export"]',
         popover: {
-          title: 'Crear nuevo descuento',
+          title: 'Importar y exportar',
           description:
-            'Haz clic aquí y elige entre descuento global (aplica a todos los productos) o por producto específico. Define el porcentaje y la cantidad mínima.',
+            'Descarga tus descuentos en CSV o importa desde un archivo. Columnas: TipoAplicacion (Global/Producto), Producto, CantidadMinima, DescuentoPorcentaje.',
           side: 'bottom',
           align: 'end',
-          onNextClick: (driverObj: Driver) => {
-            (document.querySelector('[data-tour="discounts-create-btn"]') as HTMLElement)?.click();
-            setTimeout(() => {
-              boostDrawerForTour();
-              driverObj.moveNext();
-            }, 400);
-          },
         },
       },
       {
+        element: '[data-tour="discounts-create-btn"]',
         popover: {
-          title: 'Formulario de descuento',
+          title: 'Nuevo descuento',
           description:
-            'Elige entre descuento global o por producto, define rangos de cantidad y porcentaje de descuento para cada rango.',
-          side: 'over',
+            'Elige entre descuento global (aplica a todo el catálogo) o por producto específico. Define porcentaje y cantidad mínima.',
+          side: 'bottom',
+          align: 'end',
+          onNextClick: (driverObj: Driver) => {
+            // Hover the dropdown to make it visible, then click the first option (Global)
+            const btn = document.querySelector('[data-tour="discounts-create-btn"]') as HTMLElement;
+            btn?.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+            setTimeout(() => {
+              const globalOpt = btn?.querySelector('button');
+              if (globalOpt) globalOpt.click();
+              setTimeout(() => {
+                boostDrawerForTour();
+                driverObj.moveNext();
+              }, 400);
+            }, 200);
+          },
+        },
+      },
+      // ── DRAWER OPEN ──
+      {
+        element: '[data-tour="discounts-drawer-percentage"]',
+        popover: {
+          title: 'Porcentaje de descuento',
+          description:
+            'Ingresa el porcentaje de descuento a aplicar (1-100%). Por ejemplo, 10 para un 10% de descuento.',
+          side: 'left',
+          align: 'start',
           onPrevClick: (driverObj: Driver) => {
             closeDrawerForTour();
             setTimeout(() => driverObj.movePrevious(), 400);
           },
+        },
+      },
+      {
+        element: '[data-tour="discounts-drawer-quantity"]',
+        popover: {
+          title: 'Cantidad mínima',
+          description:
+            'Define cuántas unidades debe comprar el cliente para que aplique el descuento. A mayor cantidad, mayor descuento (escala progresiva).',
+          side: 'left',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="discounts-drawer-actions"]',
+        popover: {
+          title: 'Guardar o cancelar',
+          description:
+            'Haz clic en "Crear" para guardar el descuento o "Cancelar" para descartar los cambios.',
+          side: 'top',
+          align: 'end',
           onNextClick: (driverObj: Driver) => {
             closeDrawerForTour();
             setTimeout(() => driverObj.moveNext(), 400);
           },
         },
       },
+      // ── DRAWER CLOSE ──
       {
         element: '[data-tour="discounts-tabs"]',
         popover: {
           title: 'Tipos de descuento',
           description:
-            'Navega entre las pestañas para ver descuentos globales (aplican a todo el catálogo) o por producto (aplican solo a un producto específico).',
+            'Navega entre las pestañas: "Descuento global" aplica a todo el catálogo, "Descuento por producto" aplica solo a un producto específico.',
           side: 'bottom',
           align: 'start',
         },
@@ -66,7 +106,7 @@ export const commercialTours: Record<string, TourConfig> = {
         popover: {
           title: 'Mostrar inactivos',
           description:
-            'Activa este switch para ver también los descuentos desactivados.',
+            'Activa este switch para ver también los descuentos desactivados. Por defecto solo se muestran los activos.',
           side: 'bottom',
           align: 'end',
         },
@@ -76,7 +116,7 @@ export const commercialTours: Record<string, TourConfig> = {
         popover: {
           title: 'Tarjetas de descuento',
           description:
-            'Cada tarjeta muestra el porcentaje de descuento, la cantidad mínima, quién lo creó y su estado. Puedes seleccionar varios para activar/desactivar en lote.',
+            'Cada tarjeta muestra el porcentaje, cantidad mínima, quién lo creó y su estado. Puedes seleccionar varios con los checkboxes para activar/desactivar en lote.',
           side: 'top',
           align: 'center',
         },
