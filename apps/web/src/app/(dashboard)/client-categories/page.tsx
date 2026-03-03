@@ -301,12 +301,12 @@ export default function ClientCategoriesPage() {
             {/* Table */}
             <div data-tour="client-categories-table" className="hidden sm:block bg-white border border-gray-200 rounded-lg overflow-x-auto">
               {/* Table Header - Always visible */}
-              <div className="min-w-[600px] flex items-center bg-gray-50 px-4 h-10 border-b border-gray-200">
+              <div className="min-w-[600px] flex items-center gap-3 bg-gray-50 px-5 h-10 border-b border-gray-200">
                 <div className="w-[80px] text-[11px] font-medium text-gray-500 uppercase">ID</div>
                 <div className="flex-1 text-[11px] font-medium text-gray-500 uppercase">Nombre</div>
                 <div className="flex-1 text-[11px] font-medium text-gray-500 uppercase">Descripción</div>
-                <div className="w-[50px] text-[11px] font-medium text-gray-500 uppercase text-center">Estado</div>
-                <div className="w-[60px] text-[11px] font-medium text-gray-500 uppercase text-center">Editar</div>
+                <div className="w-[50px] text-[11px] font-medium text-gray-500 uppercase text-center">Activo</div>
+                <div className="w-8"></div>
               </div>
 
               {/* Table Body - With loading overlay */}
@@ -339,7 +339,7 @@ export default function ClientCategoriesPage() {
                     {paginatedCategories.map((category) => (
                       <div
                         key={category.id}
-                        className={`min-w-[600px] flex items-center px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors ${!category.activo ? 'opacity-50' : ''}`}
+                        className={`min-w-[600px] flex items-center gap-3 px-5 py-3.5 border-b border-gray-200 bg-white hover:bg-gray-50 transition-colors ${!category.activo ? 'opacity-50' : ''}`}
                       >
                         <div className="w-[80px] text-[13px] font-mono text-gray-500">
                           {category.id}
@@ -359,11 +359,11 @@ export default function ClientCategoriesPage() {
                             title={category.activo ? 'Desactivar categoría' : 'Activar categoría'}
                           />
                         </div>
-                        <div className="w-[60px] flex items-center justify-center">
+                        <div className="w-8 flex justify-center">
                           <button
                             onClick={() => handleOpenEdit(category)}
                             disabled={loading}
-                            className="p-1.5 text-amber-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors disabled:opacity-50"
+                            className="p-1 text-amber-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors disabled:opacity-50"
                             title="Editar"
                           >
                             <Edit2 className="w-4 h-4" />
@@ -398,7 +398,7 @@ export default function ClientCategoriesPage() {
           isDirty={isDirty}
           onSave={handleSubmit}
           footer={
-            <div className="flex items-center justify-end gap-3">
+            <div data-tour="client-categories-drawer-actions" className="flex items-center justify-end gap-3">
               <button
                 type="button"
                 onClick={() => drawerRef.current?.requestClose()}
@@ -419,8 +419,8 @@ export default function ClientCategoriesPage() {
             </div>
           }
         >
-          <div className="p-6 space-y-4" data-tour="client-categories-form">
-            <div className="space-y-2">
+          <form onSubmit={handleSubmit} data-tour="client-categories-form" className="p-6 space-y-4">
+            <div data-tour="client-categories-drawer-name" className="space-y-2">
               <label className="text-sm font-medium">
                 Nombre <span className="text-red-500">*</span>
               </label>
@@ -431,14 +431,14 @@ export default function ClientCategoriesPage() {
               {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre.message}</p>}
             </div>
 
-            <div className="space-y-2">
+            <div data-tour="client-categories-drawer-description" className="space-y-2">
               <label className="text-sm font-medium">Descripción</label>
               <Input
                 placeholder="Descripción opcional de la categoría"
                 {...register('descripcion')}
               />
             </div>
-          </div>
+          </form>
         </Drawer>
 
         {/* CSV Import Modal */}

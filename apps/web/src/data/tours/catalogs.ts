@@ -411,7 +411,7 @@ export const catalogTours: Record<string, TourConfig> = {
         popover: {
           title: 'Importar y exportar',
           description:
-            'Descarga tus categorías en CSV o importa categorías desde un archivo para cargas masivas.',
+            'Descarga tus categorías en CSV o importa desde un archivo para cargas masivas. El archivo requiere nombre (obligatorio) y descripción (opcional).',
           side: 'bottom',
           align: 'end',
         },
@@ -421,7 +421,7 @@ export const catalogTours: Record<string, TourConfig> = {
         popover: {
           title: 'Nueva categoría',
           description:
-            'Crea una nueva categoría de cliente con nombre y descripción. Las categorías te permiten segmentar tu cartera.',
+            'Crea una nueva categoría de cliente para segmentar tu cartera (mayorista, minorista, VIP, etc.).',
           side: 'bottom',
           align: 'end',
           onNextClick: (driverObj: Driver) => {
@@ -433,24 +433,46 @@ export const catalogTours: Record<string, TourConfig> = {
           },
         },
       },
+      // ── DRAWER OPEN ──
       {
-        element: '[data-tour="client-categories-form"]',
+        element: '[data-tour="client-categories-drawer-name"]',
         popover: {
-          title: 'Formulario de categoría',
+          title: 'Nombre de la categoría',
           description:
-            'Captura el nombre y una descripción opcional para la categoría. Las categorías te ayudan a segmentar clientes (mayorista, minorista, VIP, etc.).',
+            'Escribe un nombre descriptivo para la categoría (ej. Mayorista, VIP, Distribuidor). Este campo es obligatorio.',
           side: 'left',
           align: 'start',
           onPrevClick: (driverObj: Driver) => {
             closeDrawerForTour();
             setTimeout(() => driverObj.movePrevious(), 400);
           },
+        },
+      },
+      {
+        element: '[data-tour="client-categories-drawer-description"]',
+        popover: {
+          title: 'Descripción',
+          description:
+            'Agrega una descripción opcional para identificar mejor la categoría.',
+          side: 'left',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="client-categories-drawer-actions"]',
+        popover: {
+          title: 'Guardar o cancelar',
+          description:
+            'Haz clic en "Crear Categoría" para guardar o "Cancelar" para descartar los cambios.',
+          side: 'top',
+          align: 'end',
           onNextClick: (driverObj: Driver) => {
             closeDrawerForTour();
             setTimeout(() => driverObj.moveNext(), 400);
           },
         },
       },
+      // ── DRAWER CLOSE ──
       {
         element: '[data-tour="client-categories-search"]',
         popover: {
