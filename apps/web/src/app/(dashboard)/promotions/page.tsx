@@ -264,7 +264,7 @@ export default function PromotionsPage() {
       title="Promociones"
       actions={
         <>
-          <div className="relative">
+          <div className="relative" data-tour="promotions-import-export">
             <button
               onClick={() => setShowDataMenu(!showDataMenu)}
               className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
@@ -325,11 +325,12 @@ export default function PromotionsPage() {
             <span className="hidden sm:inline">Actualizar</span>
           </button>
 
-          <InactiveToggle
-            value={showInactive}
-            onChange={(v) => { setShowInactive(v); setCurrentPage(1); }}
-            className="ml-auto"
-          />
+          <div data-tour="promotions-toggle-inactive" className="ml-auto">
+            <InactiveToggle
+              value={showInactive}
+              onChange={(v) => { setShowInactive(v); setCurrentPage(1); }}
+            />
+          </div>
         </div>
 
         {/* Selection Action Bar */}
@@ -408,7 +409,7 @@ export default function PromotionsPage() {
         {/* Desktop Table */}
         <div data-tour="promotions-table" className="hidden sm:block bg-white border border-gray-200 rounded-lg overflow-x-auto">
           {/* Table Header */}
-          <div className="flex items-center gap-3 bg-gray-50 px-4 h-10 border-b border-gray-200 min-w-[800px]">
+          <div className="flex items-center gap-3 bg-gray-50 px-5 h-10 border-b border-gray-200 min-w-[800px]">
             <div className="w-[28px] flex items-center justify-center">
               <button
                 onClick={batch.handleSelectAllVisible}
@@ -427,12 +428,12 @@ export default function PromotionsPage() {
                 ) : null}
               </button>
             </div>
-            <div className="flex-1 min-w-[150px] text-xs font-semibold text-gray-600">Nombre</div>
-            <div className="w-[200px] text-xs font-semibold text-gray-600">Productos</div>
-            <div className="w-[80px] text-xs font-semibold text-gray-600 text-center">Descuento</div>
-            <div className="w-[200px] text-xs font-semibold text-gray-600">Vigencia</div>
-            <div className="w-[50px] text-xs font-semibold text-gray-600 text-center">Activo</div>
-            <div className="w-[80px] text-xs font-semibold text-gray-600 text-center">Acciones</div>
+            <div className="flex-1 min-w-[150px] text-[11px] font-medium text-gray-500 uppercase">Nombre</div>
+            <div className="w-[200px] text-[11px] font-medium text-gray-500 uppercase">Productos</div>
+            <div className="w-[80px] text-[11px] font-medium text-gray-500 uppercase text-center">Descuento</div>
+            <div className="w-[200px] text-[11px] font-medium text-gray-500 uppercase">Vigencia</div>
+            <div className="w-[50px] text-[11px] font-medium text-gray-500 uppercase text-center">Activo</div>
+            <div className="w-8"></div>
           </div>
 
           {/* Table Body */}
@@ -459,8 +460,8 @@ export default function PromotionsPage() {
                 {paginatedPromotions.map((promo) => (
                   <div
                     key={promo.id}
-                    className={`flex items-center gap-3 px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors min-w-[800px] ${
-                      !promo.activo ? 'bg-gray-50' : ''
+                    className={`flex items-center gap-3 px-5 py-3.5 border-b border-gray-200 bg-white hover:bg-gray-50 transition-colors min-w-[800px] ${
+                      !promo.activo ? 'opacity-50' : ''
                     }`}
                   >
                     {/* Checkbox */}
@@ -541,12 +542,12 @@ export default function PromotionsPage() {
                       />
                     </div>
 
-                    {/* Acciones */}
-                    <div className="w-[80px] flex items-center justify-center gap-1">
+                    {/* Editar */}
+                    <div className="w-8 flex items-center justify-center">
                       <button
                         onClick={() => handleOpenEdit(promo)}
                         disabled={loading}
-                        className="p-1.5 text-amber-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors disabled:opacity-50"
+                        className="p-1 text-amber-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors disabled:opacity-50"
                         title="Editar"
                       >
                         <Pencil className="w-4 h-4" />
@@ -595,7 +596,7 @@ export default function PromotionsPage() {
         isDirty={isDirty}
         onSave={handleSubmit}
         footer={
-          <div className="flex justify-end gap-3">
+          <div className="flex justify-end gap-3" data-tour="promotions-drawer-actions">
             <button
               onClick={() => drawerRef.current?.requestClose()}
               disabled={actionLoading}
@@ -614,8 +615,8 @@ export default function PromotionsPage() {
           </div>
         }
       >
-        <div data-tour="promotion-form" className="px-6 py-6 space-y-4">
-          <div>
+        <form onSubmit={handleSubmit} data-tour="promotion-form" className="px-6 py-6 space-y-4">
+          <div data-tour="promotions-drawer-name">
             <label className="block text-sm font-medium text-gray-700 mb-1">Nombre <span className="text-red-500">*</span></label>
             <input
               type="text"
@@ -626,7 +627,7 @@ export default function PromotionsPage() {
             {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre.message}</p>}
           </div>
 
-          <div>
+          <div data-tour="promotions-drawer-description">
             <label className="block text-sm font-medium text-gray-700 mb-1">Descripcion</label>
             <input
               type="text"
@@ -636,7 +637,7 @@ export default function PromotionsPage() {
             />
           </div>
 
-          <div>
+          <div data-tour="promotions-drawer-products">
             <label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">Productos <span className="text-red-500">*</span> <HelpTooltip tooltipKey="promo-products" /></label>
             {/* Selected product chips */}
             {watch('productoIds').length > 0 && (
@@ -688,7 +689,7 @@ export default function PromotionsPage() {
             <p className="text-xs text-gray-400 mt-1">{watch('productoIds').length} de {productos.length} producto{watch('productoIds').length !== 1 ? 's' : ''} seleccionado{watch('productoIds').length !== 1 ? 's' : ''}</p>
           </div>
 
-          <div>
+          <div data-tour="promotions-drawer-discount">
             <label className="block text-sm font-medium text-gray-700 mb-1">Descuento (%) <span className="text-red-500">*</span></label>
             <input
               type="number"
@@ -701,7 +702,7 @@ export default function PromotionsPage() {
             {errors.descuentoPorcentaje && <p className="text-red-500 text-xs mt-1">{errors.descuentoPorcentaje.message}</p>}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4" data-tour="promotions-drawer-dates">
             <div>
               <label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">Fecha inicio <span className="text-red-500">*</span> <HelpTooltip tooltipKey="promo-dates" /></label>
               <input
@@ -721,7 +722,7 @@ export default function PromotionsPage() {
               {errors.fechaFin && <p className="text-red-500 text-xs mt-1">{errors.fechaFin.message}</p>}
             </div>
           </div>
-        </div>
+        </form>
       </Drawer>
 
       <CsvImportModal

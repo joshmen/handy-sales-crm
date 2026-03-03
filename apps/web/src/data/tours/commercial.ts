@@ -176,11 +176,21 @@ export const commercialTours: Record<string, TourConfig> = {
     description: 'Aprende a crear promociones con descuento para tus productos.',
     steps: [
       {
+        element: '[data-tour="promotions-import-export"]',
+        popover: {
+          title: 'Importar y exportar',
+          description:
+            'Descarga tus promociones en CSV o importa desde un archivo. Columnas: Nombre*, Descripcion, DescuentoPorcentaje*, FechaInicio*, FechaFin*, Productos* (separados por punto y coma).',
+          side: 'bottom',
+          align: 'end',
+        },
+      },
+      {
         element: '[data-tour="promotions-create-btn"]',
         popover: {
-          title: 'Crear promoción',
+          title: 'Nueva promoción',
           description:
-            'Crea una nueva promoción con descuento para uno o más productos. Define nombre, productos, descuento y fechas de vigencia.',
+            'Crea una promoción con descuento para uno o más productos con fechas de vigencia.',
           side: 'bottom',
           align: 'end',
           onNextClick: (driverObj: Driver) => {
@@ -192,20 +202,74 @@ export const commercialTours: Record<string, TourConfig> = {
           },
         },
       },
+      // ── DRAWER OPEN ──
       {
+        element: '[data-tour="promotions-drawer-name"]',
         popover: {
-          title: 'Formulario de promoción',
+          title: 'Nombre de la promoción',
           description:
-            'Define el nombre, selecciona productos, establece el porcentaje de descuento y las fechas de vigencia de la promoción.',
-          side: 'over',
+            'Escribe un nombre descriptivo (ej. "Promo Verano 2026"). El nombre debe ser único, no puede repetirse.',
+          side: 'left',
+          align: 'start',
           onPrevClick: (driverObj: Driver) => {
             closeDrawerForTour();
             setTimeout(() => driverObj.movePrevious(), 400);
           },
+        },
+      },
+      {
+        element: '[data-tour="promotions-drawer-products"]',
+        popover: {
+          title: 'Seleccionar productos',
+          description:
+            'Selecciona los productos que incluirá la promoción. Puedes agregar varios productos y también usar "Seleccionar todos". Un producto no puede estar en dos promociones activas con fechas que se solapen.',
+          side: 'left',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="promotions-drawer-discount"]',
+        popover: {
+          title: 'Porcentaje de descuento',
+          description:
+            'Define el porcentaje de descuento (1-100%). Se aplica automáticamente al crear pedidos con estos productos durante la vigencia.',
+          side: 'left',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="promotions-drawer-dates"]',
+        popover: {
+          title: 'Fechas de vigencia',
+          description:
+            'Define cuándo inicia y termina la promoción (formato yyyy-MM-dd). La fecha de fin debe ser posterior a la de inicio. Al vencer, la promoción se marca como expirada.',
+          side: 'left',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="promotions-drawer-actions"]',
+        popover: {
+          title: 'Guardar o cancelar',
+          description:
+            'Haz clic en "Crear promoción" para guardar o "Cancelar" para descartar los cambios.',
+          side: 'top',
+          align: 'end',
           onNextClick: (driverObj: Driver) => {
             closeDrawerForTour();
             setTimeout(() => driverObj.moveNext(), 400);
           },
+        },
+      },
+      // ── DRAWER CLOSE ──
+      {
+        element: '[data-tour="promotions-search"]',
+        popover: {
+          title: 'Buscar promociones',
+          description:
+            'Busca por nombre o descripción de la promoción.',
+          side: 'bottom',
+          align: 'start',
         },
       },
       {
@@ -215,15 +279,15 @@ export const commercialTours: Record<string, TourConfig> = {
           description:
             'Activa este filtro para ver también las promociones desactivadas o vencidas. Útil para reactivar promociones anteriores.',
           side: 'bottom',
-          align: 'start',
+          align: 'end',
         },
       },
       {
         element: '[data-tour="promotions-table"]',
         popover: {
-          title: 'Lista de promociones',
+          title: 'Tabla de promociones',
           description:
-            'Cada promoción muestra su nombre, productos incluidos, porcentaje de descuento, fechas de vigencia y estado. Puedes activar/desactivar, editar o eliminar.',
+            'Cada promoción muestra nombre, productos incluidos, porcentaje, vigencia y estado. Puedes seleccionar varias con los checkboxes para activar/desactivar en lote.',
           side: 'top',
           align: 'center',
         },
