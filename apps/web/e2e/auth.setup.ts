@@ -16,7 +16,7 @@ import { test as setup, expect } from '@playwright/test';
 
 setup('authenticate as admin', async ({ page }, testInfo) => {
   const isMobile = testInfo.project.name.includes('mobile');
-  const email = isMobile ? 'e2e-mobile-admin@jeyma.com' : 'admin@jeyma.com';
+  const email = isMobile ? 'e2e-mobile-admin@jeyma.com' : 'xjoshmenx@gmail.com';
   const statePath = isMobile ? 'e2e/.auth/admin-mobile.json' : 'e2e/.auth/admin-desktop.json';
 
   await page.goto('/login');
