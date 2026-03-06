@@ -30,6 +30,7 @@ import { SearchBar } from '@/components/common/SearchBar';
 import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { useFormatters } from '@/hooks/useFormatters';
 
 // Mapeo de estados de API a estados del componente
 const estadoToStatus: Record<string, Order['status']> = {
@@ -137,6 +138,7 @@ interface UsuarioOption {
 }
 
 export default function OrdersPage() {
+  const { formatCurrency, formatDate } = useFormatters();
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN';
 
@@ -319,7 +321,7 @@ export default function OrdersPage() {
           { label: 'Pedidos' },
         ]}
         title="Pedidos"
-        subtitle={`$ ${totalAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN`}
+        subtitle={totalItems > 0 ? `${totalItems} pedido${totalItems !== 1 ? 's' : ''}` : undefined}
         actions={
           <>
             <ExportButton entity="pedidos" label="Exportar" params={{ desde: fechaDesde, hasta: fechaHasta }} />
@@ -474,11 +476,11 @@ export default function OrdersPage() {
                     <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 mb-2.5">
                       <span className="flex items-center gap-1">
                         <span className="font-medium text-gray-900">
-                          ${order.total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                          ${formatCurrency(order.total)}
                         </span>
                       </span>
                       <span>•</span>
-                      <span>{order.orderDate.toLocaleDateString('es-MX')}</span>
+                      <span>{formatDate(order.orderDate)}</span>
                       <span>•</span>
                       <span>{order.user.name}</span>
                     </div>
@@ -556,7 +558,7 @@ export default function OrdersPage() {
                       {order.user.name}
                     </div>
                     <div className="w-[100px] text-[13px] text-gray-600">
-                      {order.orderDate.toLocaleDateString('es-MX')}
+                      {formatDate(order.orderDate)}
                     </div>
                     <div className="w-[100px]">
                       <span className={`px-2 py-1 text-[11px] font-medium rounded-full ${statusColors[order.status]}`}>
@@ -573,7 +575,7 @@ export default function OrdersPage() {
                       </span>
                     </div>
                     <div className="w-[100px] text-[13px] text-gray-900 font-medium text-right">
-                      ${order.total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                      ${formatCurrency(order.total)}
                     </div>
                     <div className="w-[100px] flex items-center justify-center gap-1">
                       <button

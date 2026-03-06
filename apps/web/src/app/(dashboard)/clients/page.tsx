@@ -407,7 +407,7 @@ export default function ClientsPage() {
 
           {/* Table Body - With loading overlay */}
           <div className="relative min-h-[200px]">
-            <TableLoadingOverlay loading={loading} />
+            <TableLoadingOverlay loading={loading} message="Cargando clientes..." />
 
             {/* Empty State */}
             {!loading && clients.length === 0 ? (

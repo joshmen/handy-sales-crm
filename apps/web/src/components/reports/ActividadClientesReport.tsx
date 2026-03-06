@@ -7,6 +7,8 @@ import { ReportTable, ReportColumn } from './ReportTable';
 import { getActividadClientes, ActividadCliente } from '@/services/api/reports';
 import { toast } from '@/hooks/useToast';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useReportExport } from '@/hooks/useReportExport';
+import { useFormatters } from '@/hooks/useFormatters';
 
 function defaultDates() {
   const h = new Date();
@@ -15,10 +17,11 @@ function defaultDates() {
   return { desde: d.toISOString().slice(0, 10), hasta: h.toISOString().slice(0, 10) };
 }
 
-const fmt = (n: number) => `$${n.toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
-const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) : '-';
 
 export function ActividadClientesReport() {
+  const { formatCurrency, formatDate } = useFormatters();
+  const fmt = (n: number) => formatCurrency(n);
+  const fmtDate = (d: string | null) => d ? formatDate(d, { day: '2-digit', month: 'short' }) : '-';
   const [dates, setDates] = useState(defaultDates);
   const [data, setData] = useState<ActividadCliente[]>([]);
   const [total, setTotal] = useState(0);
@@ -27,6 +30,20 @@ export function ActividadClientesReport() {
   const limit = 30;
   const datesRef = useRef(dates);
   datesRef.current = dates;
+  const { exportPDF, exporting } = useReportExport({
+    fileName: 'actividad-clientes',
+    title: 'Actividad de Clientes',
+    dateRange: dates,
+    kpis: data.length > 0 ? [
+      { label: 'Clientes', value: total },
+      { label: 'Total Ventas', value: fmt(data.reduce((s, c) => s + c.ventasTotales, 0)) },
+      { label: 'Total Pedidos', value: data.reduce((s, c) => s + c.pedidos, 0) },
+    ] : undefined,
+    table: data.length > 0 ? {
+      headers: ['Cliente', 'Zona', 'Pedidos', 'Ventas', 'Visitas', 'Últ. Visita', 'Últ. Pedido'],
+      rows: data.map(c => [c.nombre, c.zona || '-', c.pedidos, fmt(c.ventasTotales), c.visitas, fmtDate(c.ultimaVisita), fmtDate(c.ultimoPedido)]),
+    } : undefined,
+  });
 
   const fetchData = async (p: number) => {
     try {
@@ -70,7 +87,7 @@ export function ActividadClientesReport() {
 
   return (
     <div className="space-y-4">
-      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={handleApply} loading={loading} />
+      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={handleApply} loading={loading} onExportPDF={data.length > 0 ? exportPDF : undefined} exporting={exporting} />
 
       <ReportKPICards cards={[
         { label: 'Clientes', value: total, color: 'blue' },

@@ -4,8 +4,8 @@ import React, { useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Button } from '@/components/ui/Button';
 import { SearchableSelect, SearchableSelectOption } from '@/components/ui/SearchableSelect';
+import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { ClienteVisitaCreateDto, TipoVisita } from '@/types/visits';
 import { Client } from '@/types';
 
@@ -79,7 +79,7 @@ export const VisitForm: React.FC<VisitFormProps> = ({
   return (
     <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6">
       {/* Cliente */}
-      <div>
+      <div data-tour="visits-form-client">
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Cliente <span className="text-red-500">*</span>
         </label>
@@ -98,7 +98,7 @@ export const VisitForm: React.FC<VisitFormProps> = ({
       </div>
 
       {/* Tipo de visita */}
-      <div>
+      <div data-tour="visits-form-type">
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Tipo de Visita
         </label>
@@ -118,18 +118,14 @@ export const VisitForm: React.FC<VisitFormProps> = ({
       </div>
 
       {/* Fecha programada */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Fecha Programada (opcional)
-        </label>
-        <input
-          type="datetime-local"
-          {...register('fechaProgramada')}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+      <div data-tour="visits-form-date">
+        <DateTimePicker
+          mode="datetime"
+          label="Fecha Programada (opcional)"
+          value={watch('fechaProgramada') || ''}
+          onChange={(val) => setValue('fechaProgramada', val, { shouldValidate: true, shouldDirty: true })}
+          hint="Deja vacío para visita inmediata"
         />
-        <p className="mt-1 text-xs text-gray-500">
-          Deja vacío para visita inmediata
-        </p>
       </div>
 
       {/* Notas */}
@@ -151,11 +147,20 @@ export const VisitForm: React.FC<VisitFormProps> = ({
       </div>
 
       {/* Botones */}
-      <div className="flex justify-end space-x-3 pt-4 border-t">
-        <Button type="button" variant="outline" onClick={onCancel}>
+      <div data-tour="visits-form-actions" className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+        >
           Cancelar
-        </Button>
-        <Button type="submit">Programar Visita</Button>
+        </button>
+        <button
+          type="submit"
+          className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+        >
+          Programar Visita
+        </button>
       </div>
     </form>
   );

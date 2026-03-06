@@ -1,10 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from '@/hooks/useToast';
 import { formatTimeAgo } from '@/lib/utils';
 import { deviceSessionService } from '@/services/api';
 import type { DeviceSessionDto } from '@/services/api/deviceSessions';
+import { Modal } from '@/components/ui/Modal';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import {
   Smartphone,
@@ -17,7 +18,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Search,
+  Wifi,
+  TabletSmartphone,
 } from 'lucide-react';
+import { useFormatters } from '@/hooks/useFormatters';
 
 // ============ Helpers ============
 
@@ -87,6 +91,7 @@ function getStatusConfig(status: number): StatusConfig {
 // ============ Component ============
 
 export default function DevicesPage() {
+  const { formatDate, formatNumber } = useFormatters();
   const [sessions, setSessions] = useState<DeviceSessionDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -95,17 +100,23 @@ export default function DevicesPage() {
   const [revokingId, setRevokingId] = useState<number | null>(null);
   const [cleaningExpired, setCleaningExpired] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [confirmAction, setConfirmAction] = useState<{
+    type: 'revoke' | 'clean';
+    session?: DeviceSessionDto;
+  } | null>(null);
   const pageSize = 15;
 
-  const fetchSessions = useCallback(async () => {
+  const fetchSessions = useCallback(async (): Promise<boolean> => {
     try {
       setLoading(true);
       setError(null);
       const data = await deviceSessionService.getActiveSessions();
       setSessions(data);
+      return true;
     } catch (err) {
       console.error('Error al cargar dispositivos:', err);
       setError('Error al cargar las sesiones de dispositivos. Intenta de nuevo.');
+      return false;
     } finally {
       setLoading(false);
     }
@@ -116,42 +127,41 @@ export default function DevicesPage() {
   }, [fetchSessions]);
 
   const handleRefresh = useCallback(async () => {
-    await fetchSessions();
-    if (!error) {
-      toast.success('Lista de dispositivos actualizada');
-    }
-  }, [fetchSessions, error]);
+    const success = await fetchSessions();
+    if (success) toast.success('Lista de dispositivos actualizada');
+  }, [fetchSessions]);
 
-  const handleRevokeSession = useCallback(async (session: DeviceSessionDto) => {
+  const handleRevokeSession = useCallback((session: DeviceSessionDto) => {
     if (session.esSesionActual) {
       toast.warning('No puedes revocar tu propia sesión activa');
       return;
     }
+    setConfirmAction({ type: 'revoke', session });
+  }, []);
 
-    const confirmed = window.confirm(
-      `¿Revocar la sesión de ${session.usuarioNombre} en ${session.deviceName || session.deviceTypeNombre}?\n\nEl usuario será desconectado inmediatamente.`
-    );
-    if (!confirmed) return;
-
+  const executeRevoke = useCallback(async () => {
+    const session = confirmAction?.session;
+    if (!session) return;
+    setConfirmAction(null);
     try {
       setRevokingId(session.id);
       await deviceSessionService.revokeSession(session.id, 'Revocada por administrador');
-      setSessions(prev => prev.filter(s => s.id !== session.id));
       toast.success(`Sesión de ${session.usuarioNombre} revocada exitosamente`);
+      await fetchSessions();
     } catch (err) {
       console.error('Error al revocar sesión:', err);
       toast.error('Error al revocar la sesión. Intenta de nuevo.');
     } finally {
       setRevokingId(null);
     }
+  }, [confirmAction, fetchSessions]);
+
+  const handleCleanExpired = useCallback(() => {
+    setConfirmAction({ type: 'clean' });
   }, []);
 
-  const handleCleanExpired = useCallback(async () => {
-    const confirmed = window.confirm(
-      '¿Limpiar todas las sesiones expiradas?\n\nEsto eliminará sesiones inactivas por más de 30 días.'
-    );
-    if (!confirmed) return;
-
+  const executeCleanExpired = useCallback(async () => {
+    setConfirmAction(null);
     try {
       setCleaningExpired(true);
       const count = await deviceSessionService.cleanExpiredSessions(30);
@@ -166,7 +176,7 @@ export default function DevicesPage() {
   }, [fetchSessions]);
 
   // Filtering
-  const filteredSessions = sessions.filter(session => {
+  const filteredSessions = useMemo(() => sessions.filter(session => {
     const matchesSearch =
       searchTerm === '' ||
       session.usuarioNombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -178,23 +188,36 @@ export default function DevicesPage() {
       filterStatus === 'all' || session.status === parseInt(filterStatus);
 
     return matchesSearch && matchesStatus;
-  });
+  }), [sessions, searchTerm, filterStatus]);
 
   // Pagination
   const totalItems = filteredSessions.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-  const safeCurrentPage = Math.min(currentPage, totalPages);
-  const startItem = totalItems > 0 ? (safeCurrentPage - 1) * pageSize + 1 : 0;
-  const endItem = Math.min(safeCurrentPage * pageSize, totalItems);
+  const startItem = totalItems > 0 ? (currentPage - 1) * pageSize + 1 : 0;
+  const endItem = Math.min(currentPage * pageSize, totalItems);
   const paginatedSessions = filteredSessions.slice(
-    (safeCurrentPage - 1) * pageSize,
-    safeCurrentPage * pageSize
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
   );
+
+  // Clamp currentPage when totalPages shrinks (e.g. after revoke or filter)
+  useEffect(() => {
+    setCurrentPage(prev => Math.min(prev, totalPages));
+  }, [totalPages]);
 
   // Reset page on filter change
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, filterStatus]);
+
+  // Compute stats from loaded sessions (more complete than resumen which is user-scoped)
+  const stats = useMemo(() => {
+    const active = sessions.filter(s => s.status === 0).length;
+    const android = sessions.filter(s => s.deviceType === 2).length;
+    const ios = sessions.filter(s => s.deviceType === 3).length;
+    const web = sessions.filter(s => s.deviceType === 1 || s.deviceType === 4).length;
+    return { total: sessions.length, active, android, ios, web };
+  }, [sessions]);
 
   // ============ Skeleton ============
   const renderSkeleton = () => (
@@ -215,7 +238,11 @@ export default function DevicesPage() {
               <div className="h-3 bg-gray-100 rounded w-24" />
             </div>
           </div>
-          <div className="w-[140px]">
+          <div className="w-[130px] space-y-1.5">
+            <div className="h-4 bg-gray-200 rounded w-16" />
+            <div className="h-3 bg-gray-100 rounded w-12" />
+          </div>
+          <div className="w-[130px]">
             <div className="h-4 bg-gray-200 rounded w-20" />
           </div>
           <div className="w-[100px]">
@@ -297,7 +324,7 @@ export default function DevicesPage() {
             <button
               onClick={handleCleanExpired}
               disabled={cleaningExpired || loading}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-700 border border-gray-200 rounded hover:bg-gray-50 transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-700 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50"
 
             >
               {cleaningExpired ? (
@@ -310,7 +337,7 @@ export default function DevicesPage() {
             <button
               onClick={handleRefresh}
               disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors disabled:opacity-50"
 
             >
               {loading ? (
@@ -329,21 +356,21 @@ export default function DevicesPage() {
         {/* Toolbar */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative w-full sm:w-72">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
               placeholder="Buscar por vendedor, dispositivo o IP..."
+              aria-label="Buscar dispositivos"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-
             />
           </div>
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
+            aria-label="Filtrar por estado"
             className="w-full sm:w-48 px-3 py-2 text-xs border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white"
-
           >
             <option value="all">Todos los estados</option>
             <option value="0">Activo</option>
@@ -358,6 +385,27 @@ export default function DevicesPage() {
             {!loading && `${totalItems} sesión${totalItems !== 1 ? 'es' : ''}`}
           </div>
         </div>
+
+        {/* Summary Stats */}
+        {!loading && !error && sessions.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            {[
+              { label: 'Total', value: stats.total, icon: TabletSmartphone, color: 'text-gray-700 bg-gray-50 border-gray-200' },
+              { label: 'Activas', value: stats.active, icon: Wifi, color: 'text-green-700 bg-green-50 border-green-200' },
+              { label: 'Android', value: stats.android, icon: Smartphone, color: 'text-green-700 bg-green-50 border-green-200' },
+              { label: 'iOS', value: stats.ios, icon: Smartphone, color: 'text-blue-700 bg-blue-50 border-blue-200' },
+              { label: 'Web', value: stats.web, icon: Monitor, color: 'text-amber-700 bg-amber-50 border-amber-200' },
+            ].map((stat) => (
+              <div key={stat.label} className={`flex items-center gap-3 px-4 py-3 rounded-lg border ${stat.color}`}>
+                <stat.icon className="w-5 h-5 flex-shrink-0 opacity-60" />
+                <div>
+                  <p className="text-lg font-bold leading-none">{stat.value}</p>
+                  <p className="text-[11px] opacity-70 mt-0.5">{stat.label}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Error State */}
         {error && !loading && (
@@ -440,6 +488,7 @@ export default function DevicesPage() {
                         {session.appVersion && (
                           <span>v{session.appVersion}</span>
                         )}
+                        <span>Desde: {formatDate(session.loggedInAt, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
                         <span>{formatTimeAgo(session.lastActivity)}</span>
                       </div>
 
@@ -488,10 +537,13 @@ export default function DevicesPage() {
                         <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-700 w-[220px]">
                           Dispositivo
                         </th>
-                        <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-700 w-[140px]">
-                          Última Actividad
+                        <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-700 w-[130px]">
+                          Conectado desde
                         </th>
                         <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-700 w-[130px]">
+                          Última Actividad
+                        </th>
+                        <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-700 w-[110px]">
                           Estado
                         </th>
                         <th className="px-4 py-2.5 text-right text-xs font-semibold text-gray-700 w-[100px]">
@@ -507,7 +559,7 @@ export default function DevicesPage() {
                         return (
                           <tr
                             key={session.id}
-                            className={`hover:bg-gray-50 transition-colors ${
+                            className={`hover:bg-amber-50 transition-colors ${
                               session.esSesionActual ? 'bg-green-50/40' : ''
                             }`}
                           >
@@ -560,13 +612,26 @@ export default function DevicesPage() {
                               </div>
                             </td>
 
+                            {/* Conectado desde */}
+                            <td className="px-4 py-3">
+                              <div
+                                className="text-sm text-gray-700"
+                                title={formatDate(session.loggedInAt)}
+                              >
+                                {formatDate(session.loggedInAt, { day: '2-digit', month: 'short' })}
+                              </div>
+                              <div className="text-[11px] text-gray-400">
+                                {formatDate(session.loggedInAt, { hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                            </td>
+
                             {/* Última Actividad */}
                             <td className="px-4 py-3">
                               <div
                                 className="text-sm text-gray-700"
-                                title={new Date(
+                                title={formatDate(
                                   session.lastActivity
-                                ).toLocaleString('es-MX')}
+                                )}
                               >
                                 {formatTimeAgo(session.lastActivity)}
                               </div>
@@ -626,7 +691,8 @@ export default function DevicesPage() {
                     onClick={() =>
                       setCurrentPage((p) => Math.max(1, p - 1))
                     }
-                    disabled={safeCurrentPage === 1}
+                    disabled={currentPage === 1}
+                    aria-label="Página anterior"
                     className="px-3 py-2 border border-gray-200 rounded-md text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     <ChevronLeft className="w-4 h-4" />
@@ -636,7 +702,7 @@ export default function DevicesPage() {
                     .filter((page) => {
                       if (totalPages <= 5) return true;
                       if (page === 1 || page === totalPages) return true;
-                      return Math.abs(page - safeCurrentPage) <= 1;
+                      return Math.abs(page - currentPage) <= 1;
                     })
                     .reduce<(number | string)[]>((acc, page, idx, arr) => {
                       if (idx > 0) {
@@ -648,13 +714,13 @@ export default function DevicesPage() {
                     }, [])
                     .map((page, idx) => (
                       <button
-                        key={idx}
+                        key={typeof page === 'number' ? `page-${page}` : `ellipsis-${idx}`}
                         onClick={() =>
                           typeof page === 'number' && setCurrentPage(page)
                         }
                         disabled={page === '...'}
                         className={`min-w-[32px] px-2 py-1.5 text-sm rounded-md transition-colors ${
-                          page === safeCurrentPage
+                          page === currentPage
                             ? 'bg-green-600 text-white'
                             : page === '...'
                             ? 'text-gray-400 cursor-default'
@@ -669,8 +735,9 @@ export default function DevicesPage() {
                     onClick={() =>
                       setCurrentPage((p) => Math.min(totalPages, p + 1))
                     }
-                    disabled={safeCurrentPage === totalPages}
-                    className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    disabled={currentPage === totalPages}
+                    aria-label="Página siguiente"
+                    className="px-3 py-2 border border-gray-200 rounded-md text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
@@ -680,6 +747,64 @@ export default function DevicesPage() {
           </>
         )}
       </div>
+
+      {/* Confirmation Modal */}
+      <Modal
+        isOpen={confirmAction !== null}
+        onClose={() => setConfirmAction(null)}
+        title={confirmAction?.type === 'revoke' ? 'Revocar sesión' : 'Limpiar sesiones expiradas'}
+        size="sm"
+      >
+        {confirmAction?.type === 'revoke' && confirmAction.session && (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              ¿Revocar la sesión de <span className="font-semibold text-gray-900">{confirmAction.session.usuarioNombre}</span> en{' '}
+              <span className="font-semibold text-gray-900">{confirmAction.session.deviceName || confirmAction.session.deviceTypeNombre}</span>?
+            </p>
+            <div className="bg-red-50 border border-red-200 rounded-md px-3 py-2">
+              <p className="text-xs text-red-700">El usuario será desconectado inmediatamente.</p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setConfirmAction(null)}
+                className="px-4 py-2 text-xs font-medium text-gray-700 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={executeRevoke}
+                className="px-4 py-2 text-xs font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors"
+              >
+                Revocar sesión
+              </button>
+            </div>
+          </div>
+        )}
+        {confirmAction?.type === 'clean' && (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              ¿Limpiar todas las sesiones expiradas?
+            </p>
+            <div className="bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+              <p className="text-xs text-amber-700">Esto eliminará sesiones inactivas por más de 30 días.</p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setConfirmAction(null)}
+                className="px-4 py-2 text-xs font-medium text-gray-700 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={executeCleanExpired}
+                className="px-4 py-2 text-xs font-medium text-white bg-amber-600 rounded-md hover:bg-amber-700 transition-colors"
+              >
+                Limpiar expiradas
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

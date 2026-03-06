@@ -7,8 +7,10 @@ import { Button } from '@/components/ui/Button';
 import { ShieldAlert, ShieldCheck, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { impersonationService } from '@/services/api/impersonation';
 import { ImpersonationSession } from '@/types/impersonation';
+import { useFormatters } from '@/hooks/useFormatters';
 
 export const ImpersonationHistoryCard: React.FC = () => {
+  const { formatDate } = useFormatters();
   const [sessions, setSessions] = useState<ImpersonationSession[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
@@ -99,7 +101,7 @@ export const ImpersonationHistoryCard: React.FC = () => {
                       <td className="py-2.5 text-muted-foreground max-w-[200px] truncate">{s.reason}</td>
                       <td className="py-2.5">{accessBadge(s.accessLevel)}</td>
                       <td className="py-2.5 text-muted-foreground">
-                        {new Date(s.startedAt).toLocaleDateString('es-MX', {
+                        {formatDate(s.startedAt, {
                           day: '2-digit', month: 'short', year: 'numeric',
                           hour: '2-digit', minute: '2-digit',
                         })}
@@ -122,7 +124,7 @@ export const ImpersonationHistoryCard: React.FC = () => {
                   </div>
                   <p className="text-xs text-muted-foreground truncate">{s.reason}</p>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span>{new Date(s.startedAt).toLocaleDateString('es-MX', {
+                    <span>{formatDate(s.startedAt, {
                       day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
                     })}</span>
                     <span>·</span>

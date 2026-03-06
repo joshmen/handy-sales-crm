@@ -12,6 +12,8 @@ import {
   CheckCircle,
   ShoppingCart,
 } from 'lucide-react';
+import { useFormatters } from '@/hooks/useFormatters';
+import { formatDate as libFmtDate } from '@/lib/formatters';
 
 interface VisitCardProps {
   visit: ClienteVisitaListaDto;
@@ -75,19 +77,19 @@ export const VisitCard: React.FC<VisitCardProps> = ({
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return '-';
-    return new Intl.DateTimeFormat('es-MX', {
+    return libFmtDate(dateStr, null, {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
-    }).format(new Date(dateStr));
+    });
   };
 
   const formatTime = (dateStr?: string) => {
     if (!dateStr) return '-';
-    return new Intl.DateTimeFormat('es-MX', {
+    return libFmtDate(dateStr, null, {
       hour: '2-digit',
       minute: '2-digit',
-    }).format(new Date(dateStr));
+    });
   };
 
   const isInProgress = visit.fechaHoraInicio && !visit.fechaHoraFin;

@@ -24,8 +24,10 @@ import {
   Loader2,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useFormatters } from '@/hooks/useFormatters';
 
 export default function RouteDetailPage() {
+  const { formatDate } = useFormatters();
   const params = useParams();
   const router = useRouter();
   const routeId = Number(params.id);
@@ -311,7 +313,7 @@ export default function RouteDetailPage() {
               <div>
                 <p className="text-[11px] text-gray-500">Fecha</p>
                 <p className="text-[13px] font-medium text-gray-900">
-                  {new Date(route.fecha).toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                  {formatDate(route.fecha, { day: '2-digit', month: '2-digit', year: 'numeric' })}
                 </p>
               </div>
             </div>

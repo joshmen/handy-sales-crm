@@ -7,8 +7,10 @@ import { AlertTriangle, Clock, X } from 'lucide-react';
 import { subscriptionService } from '@/services/api/subscriptions';
 import type { SubscriptionStatus } from '@/types/subscription';
 import { UserRole } from '@/types/users';
+import { useFormatters } from '@/hooks/useFormatters';
 
 export function ExpirationBanner() {
+  const { formatDate } = useFormatters();
   const { data: session } = useSession();
   const router = useRouter();
   const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null);
@@ -58,7 +60,7 @@ export function ExpirationBanner() {
     if (expDate && expDate > now) {
       const daysLeft = Math.ceil((expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
       bannerType = 'warning';
-      message = `Tu suscripción fue cancelada. El acceso continúa hasta el ${expDate.toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })} (${daysLeft} día${daysLeft !== 1 ? 's' : ''}).`;
+      message = `Tu suscripción fue cancelada. El acceso continúa hasta el ${formatDate(expDate, { year: 'numeric', month: 'long', day: 'numeric' })} (${daysLeft} día${daysLeft !== 1 ? 's' : ''}).`;
       actionLabel = 'Reactivar';
     }
   } else if (expDate && status === 'Active') {

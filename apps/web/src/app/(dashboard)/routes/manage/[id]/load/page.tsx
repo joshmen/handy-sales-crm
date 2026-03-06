@@ -21,6 +21,7 @@ import {
   Search,
   User,
 } from 'lucide-react';
+import { useFormatters } from '@/hooks/useFormatters';
 
 interface ProductoOption {
   id: number;
@@ -37,6 +38,7 @@ interface PedidoOption {
 }
 
 export default function LoadInventoryPage() {
+  const { formatCurrency, formatDate } = useFormatters();
   const params = useParams();
   const router = useRouter();
   const rutaId = Number(params.id);
@@ -282,7 +284,7 @@ export default function LoadInventoryPage() {
           </div>
           <div className="flex items-center gap-2">
             <DollarSign className="w-4 h-4 text-gray-400" />
-            <span className="text-xs text-gray-600">Total asignado: <strong>${totalAsignado.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</strong></span>
+            <span className="text-xs text-gray-600">Total asignado: <strong>{formatCurrency(totalAsignado)}</strong></span>
           </div>
         </div>
       </div>
@@ -354,7 +356,7 @@ export default function LoadInventoryPage() {
                   <div>
                     <span className="text-[13px] font-medium text-gray-900">Pedido #{p.pedidoId}</span>
                     <span className="text-xs text-gray-500 ml-2">{p.clienteNombre}</span>
-                    <span className="text-xs text-gray-400 ml-2">${p.montoTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                    <span className="text-xs text-gray-400 ml-2">{formatCurrency(p.montoTotal)}</span>
                   </div>
                   <button
                     onClick={() => handleRemovePedido(p.pedidoId)}
@@ -461,10 +463,10 @@ export default function LoadInventoryPage() {
                         </span>
                       </td>
                       <td className="py-2 px-3 text-right text-[13px] text-gray-600">
-                        ${item.precioUnitario.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                        {formatCurrency(item.precioUnitario)}
                       </td>
                       <td className="py-2 px-3 text-right text-[13px] font-medium text-gray-900">
-                        ${(item.cantidadTotal * item.precioUnitario).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                        {formatCurrency(item.cantidadTotal * item.precioUnitario)}
                       </td>
                       <td className="py-2 px-3 text-center">
                         <button
@@ -486,7 +488,7 @@ export default function LoadInventoryPage() {
                     <td></td>
                     <td></td>
                     <td className="py-2 px-3 text-right text-[13px] font-bold text-green-600">
-                      ${totalAsignado.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                      {formatCurrency(totalAsignado)}
                     </td>
                     <td></td>
                   </tr>
@@ -553,7 +555,7 @@ export default function LoadInventoryPage() {
                       <div>
                         <span className="text-[13px] font-medium text-gray-900">#{p.numeroPedido || p.id}</span>
                         <span className="text-xs text-gray-500 ml-2">{p.clienteNombre || 'Sin cliente'}</span>
-                        <span className="text-xs text-gray-400 ml-2">${(p.total || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                        <span className="text-xs text-gray-400 ml-2">{formatCurrency(p.total || 0)}</span>
                       </div>
                       <button
                         onClick={() => handleAddPedido(p.id)}

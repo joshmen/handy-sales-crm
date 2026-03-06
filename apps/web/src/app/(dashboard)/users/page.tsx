@@ -35,8 +35,10 @@ import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { GoogleMapWrapper, type MapMarker } from '@/components/maps/GoogleMapWrapper';
 import Papa from 'papaparse';
 import { getInitials } from '@/lib/utils';
+import { useFormatters } from '@/hooks/useFormatters';
 
 export default function UsersPage() {
+  const { formatDate, formatNumber } = useFormatters();
   const {
     users: apiUsers,
     totalCount,
@@ -288,7 +290,7 @@ export default function UsersPage() {
         {u.clienteNombre && <p className="text-gray-600">Visitando: {u.clienteNombre}</p>}
         {u.fechaUbicacion && (
           <p className="text-gray-500 text-xs mt-1">
-            {new Date(u.fechaUbicacion).toLocaleString('es-MX')}
+            {formatDate(u.fechaUbicacion)}
           </p>
         )}
       </div>
@@ -347,8 +349,8 @@ export default function UsersPage() {
       Rol: getRoleLabel(u.role),
       Estado: u.status === UserStatus.ACTIVE ? 'Activo' : 'Inactivo',
       Teléfono: u.phone || '',
-      'Última actividad': u.lastLogin ? new Date(u.lastLogin).toLocaleString('es-MX') : 'N/A',
-      'Fecha creación': u.createdAt ? new Date(u.createdAt).toLocaleDateString('es-MX') : '',
+      'Última actividad': u.lastLogin ? formatDate(u.lastLogin) : 'N/A',
+      'Fecha creación': u.createdAt ? formatDate(u.createdAt) : '',
     }));
 
     const csv = Papa.unparse(csvData);
@@ -542,7 +544,7 @@ export default function UsersPage() {
                             {user.status === UserStatus.ACTIVE ? 'Activo' : 'Inactivo'}
                           </span>
                           <span className="text-xs text-gray-400">
-                            {user.lastLogin ? `Última sesión: ${user.lastLogin.toLocaleDateString('es-MX')}` : 'Sesión no iniciada'}
+                            {user.lastLogin ? `Última sesión: ${formatDate(user.lastLogin)}` : 'Sesión no iniciada'}
                           </span>
                         </div>
                       </div>

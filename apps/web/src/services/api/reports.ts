@@ -140,6 +140,7 @@ export interface DashboardEjecutivoResponse {
     efectividadPct: number;
   };
   nuevosClientes: number;
+  clientesActivos: number;
   topVendedor: { nombre: string; totalVentas: number } | null;
   topProducto: { nombre: string; totalVentas: number; cantidadVendida: number } | null;
   alertas: {

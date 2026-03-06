@@ -36,7 +36,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { ListPagination } from '@/components/ui/ListPagination';
-import { MapPin as MapPinIcon } from '@phosphor-icons/react';
+import { MapPin as MapPinIcon, CaretRight } from '@phosphor-icons/react';
 import { GoogleMapWrapper, Circle } from '@/components/maps/GoogleMapWrapper';
 import type { MapMarker } from '@/components/maps/GoogleMapWrapper';
 import { GoogleMap, useJsApiLoader, Marker as GMarker, Circle as GCircle, Autocomplete } from '@react-google-maps/api';
@@ -87,6 +87,7 @@ export default function ZonesPage() {
   const [drawerMapCenter, setDrawerMapCenter] = useState(DEFAULT_CENTER);
   const [drawerMapRadius, setDrawerMapRadius] = useState(5); // km
   const circleRef = useRef<google.maps.Circle | null>(null);
+  const circleInitRef = useRef(false);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
 
   const { isLoaded: isMapsLoaded } = useJsApiLoader({
@@ -100,6 +101,7 @@ export default function ZonesPage() {
     handleSubmit,
     reset,
     setValue,
+    getValues,
     watch,
     formState: { errors, isDirty },
   } = useForm<ZoneFormData>({
@@ -118,11 +120,16 @@ export default function ZonesPage() {
   const watchedColor = watch('color');
 
   // Move marker + update form values
-  const moveMarkerTo = useCallback((lat: number, lng: number) => {
+  const moveMarkerTo = useCallback((lat: number, lng: number, markDirty = true) => {
     setDrawerMapCenter({ lat, lng });
-    setValue('centroLatitud', lat, { shouldDirty: true });
-    setValue('centroLongitud', lng, { shouldDirty: true });
-  }, [setValue]);
+    if (markDirty) {
+      setValue('centroLatitud', lat, { shouldDirty: true });
+      setValue('centroLongitud', lng, { shouldDirty: true });
+    } else {
+      // Update values AND defaults so the form stays clean
+      reset({ ...getValues(), centroLatitud: lat, centroLongitud: lng }, { keepDirtyValues: true });
+    }
+  }, [setValue, reset, getValues]);
 
   // Handle Places Autocomplete selection
   const handlePlaceSelected = useCallback(() => {
@@ -177,19 +184,18 @@ export default function ZonesPage() {
       isEnabled: true,
       centroLatitud: undefined,
       centroLongitud: undefined,
-      radioKm: undefined,
+      radioKm: 5,
     });
     // Try to get user's location for new zones
     setDrawerMapRadius(5);
-    setValue('radioKm', 5, { shouldDirty: true });
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (pos) => moveMarkerTo(pos.coords.latitude, pos.coords.longitude),
-        () => moveMarkerTo(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng),
+        (pos) => moveMarkerTo(pos.coords.latitude, pos.coords.longitude, false),
+        () => moveMarkerTo(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng, false),
         { timeout: 5000 }
       );
     } else {
-      moveMarkerTo(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng);
+      moveMarkerTo(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng, false);
     }
     setShowZoneForm(true);
   };
@@ -247,6 +253,7 @@ export default function ZonesPage() {
   const handleCloseDrawer = () => {
     setShowZoneForm(false);
     setEditingZone(null);
+    circleRef.current = null;
     reset();
   };
 
@@ -337,16 +344,18 @@ export default function ZonesPage() {
         { label: 'Zonas' },
       ]}
       title="Zonas"
+      subtitle={totalZones > 0 ? `${totalZones} zona${totalZones !== 1 ? 's' : ''}` : undefined}
       actions={
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           <button
+            data-tour="zones-map-btn"
             onClick={handleViewMap}
             className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
           >
             <Map className="w-3.5 h-3.5 text-blue-500" />
             <span className="hidden sm:inline">Mapa</span>
           </button>
-          <div className="relative">
+          <div className="relative" data-tour="zones-import-export">
             <button
               onClick={() => setShowDataMenu(!showDataMenu)}
               className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
@@ -402,7 +411,9 @@ export default function ZonesPage() {
             <span className="hidden sm:inline">Actualizar</span>
           </button>
 
-          <InactiveToggle value={showInactive} onChange={(v) => { setShowInactive(v); setCurrentPage(1); }} className="ml-auto" />
+          <div data-tour="zones-toggle-inactive" className="ml-auto">
+            <InactiveToggle value={showInactive} onChange={(v) => { setShowInactive(v); setCurrentPage(1); }} />
+          </div>
         </div>
 
           {/* Error message */}
@@ -512,9 +523,9 @@ export default function ZonesPage() {
           </div>
 
           {/* Zones Table */}
-          <div className="hidden sm:block bg-white border border-gray-200 rounded overflow-hidden" data-tour="zones-table">
-            {/* Table Header - Always visible */}
-            <div className="flex items-center gap-3 bg-gray-50 px-4 h-10 border-b border-gray-200">
+          <div className="hidden sm:block bg-white border border-gray-200 rounded-lg overflow-hidden" data-tour="zones-table">
+            {/* Table Header */}
+            <div className="flex items-center gap-3 bg-gray-50 px-5 h-10 border-b border-gray-200">
               <div className="w-[28px] flex items-center justify-center">
                 <button
                   onClick={batch.handleSelectAllVisible}
@@ -533,11 +544,11 @@ export default function ZonesPage() {
                   ) : null}
                 </button>
               </div>
-              <div className="w-[40px] text-xs font-semibold text-gray-700">Color</div>
-              <div className="flex-1 text-xs font-semibold text-gray-700">Nombre</div>
-              <div className="w-[100px] text-xs font-semibold text-gray-700 text-center">Clientes</div>
-              <div className="w-[80px] text-xs font-semibold text-gray-700">Activa</div>
-              <div className="w-[50px] text-xs font-semibold text-gray-700 text-center">Editar</div>
+              <div className="w-[40px] text-[11px] font-medium text-gray-500 uppercase">Color</div>
+              <div className="flex-1 text-[11px] font-medium text-gray-500 uppercase">Nombre</div>
+              <div className="w-[100px] text-[11px] font-medium text-gray-500 uppercase text-center">Clientes</div>
+              <div className="w-[80px] text-[11px] font-medium text-gray-500 uppercase">Activa</div>
+              <div className="w-8" />
             </div>
 
             {/* Table Body - With loading overlay */}
@@ -571,12 +582,13 @@ export default function ZonesPage() {
                   {zones.map((zone) => (
                   <div
                     key={zone.id}
-                    className={`flex items-center gap-3 px-4 h-11 border-b border-gray-200 hover:bg-gray-50 transition-colors ${
-                      !zone.isEnabled ? 'bg-gray-50' : ''
+                    onClick={() => handleEditZone(zone)}
+                    className={`flex items-center gap-3 px-5 py-3.5 border-b border-gray-200 bg-white hover:bg-amber-50 cursor-pointer transition-colors group ${
+                      !zone.isEnabled ? 'opacity-60' : ''
                     }`}
                   >
                     {/* Checkbox */}
-                    <div className="w-[28px] flex items-center justify-center">
+                    <div className="w-[28px] flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => batch.handleToggleSelect(parseInt(zone.id))}
                         className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
@@ -613,20 +625,13 @@ export default function ZonesPage() {
                     </div>
 
                     {/* Activa - Toggle Switch */}
-                    <div className="w-[80px]">
+                    <div className="w-[80px]" onClick={(e) => e.stopPropagation()}>
                       <ActiveToggle isActive={zone.isEnabled} onToggle={() => handleToggleActive(zone)} disabled={loading} isLoading={togglingId === zone.id} title={zone.isEnabled ? 'Desactivar zona' : 'Activar zona'} />
                     </div>
 
-                    {/* Editar */}
-                    <div className="w-[50px] flex items-center justify-center">
-                      <button
-                        onClick={() => handleEditZone(zone)}
-                        disabled={loading}
-                        className="p-1.5 text-amber-400 hover:text-amber-600 hover:bg-green-50 rounded transition-colors disabled:opacity-50"
-                        title="Editar"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
+                    {/* Chevron */}
+                    <div className="w-8 flex items-center justify-center">
+                      <CaretRight className="w-4 h-4 text-gray-300 group-hover:text-amber-500 transition-colors" weight="bold" />
                     </div>
                   </div>
                   ))}
@@ -654,10 +659,26 @@ export default function ZonesPage() {
             isOpen={isMapOpen}
             onClose={() => setIsMapOpen(false)}
             title="Mapa de Zonas"
+            size="2xl"
           >
-            <div className="py-2">
+            <div className="space-y-3">
               {(() => {
                 const zonesWithGeo = allZonesForMap.filter(z => z.mapSettings?.centerLatitude && z.mapSettings?.centerLongitude);
+
+                if (zonesWithGeo.length === 0) {
+                  return (
+                    <div className="flex flex-col items-center justify-center py-16 text-center">
+                      <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                        <Map className="w-8 h-8 text-gray-300" />
+                      </div>
+                      <p className="text-sm font-medium text-gray-700">Sin zonas geolocalizadas</p>
+                      <p className="text-xs text-gray-400 mt-1.5 max-w-xs">
+                        Edita una zona y agrega latitud, longitud y radio para verla en el mapa.
+                      </p>
+                    </div>
+                  );
+                }
+
                 const markers: MapMarker[] = zonesWithGeo.map(z => ({
                   id: z.id,
                   lat: z.mapSettings!.centerLatitude!,
@@ -665,61 +686,71 @@ export default function ZonesPage() {
                   title: z.name,
                   label: z.name,
                   info: (
-                    <div>
-                      <p className="font-semibold">{z.name}</p>
-                      {z.description && <p className="text-xs text-gray-500">{z.description}</p>}
-                      <p className="text-xs mt-1">{z.clientCount || 0} clientes</p>
-                      {z.boundaries?.[0]?.radius && (
-                        <p className="text-xs text-gray-500">Radio: {z.boundaries[0].radius} km</p>
-                      )}
+                    <div className="min-w-[160px]">
+                      <p className="font-semibold text-sm">{z.name}</p>
+                      {z.description && <p className="text-xs text-gray-500 mt-0.5">{z.description}</p>}
+                      <div className="flex items-center gap-3 mt-2 pt-2 border-t border-gray-100">
+                        <span className="text-xs text-gray-600">
+                          {z.clientCount || 0} cliente{(z.clientCount || 0) !== 1 ? 's' : ''}
+                        </span>
+                        {z.boundaries?.[0]?.radius && (
+                          <span className="text-xs text-gray-400">Radio: {z.boundaries[0].radius} km</span>
+                        )}
+                      </div>
                     </div>
                   ),
                 }));
 
-                if (zonesWithGeo.length === 0) {
-                  return (
-                    <div className="flex flex-col items-center justify-center py-12 text-center">
-                      <Map className="w-12 h-12 text-gray-300 mb-3" />
-                      <p className="text-sm text-gray-600 font-medium">Sin coordenadas</p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        Edita una zona y agrega latitud, longitud y radio para verla en el mapa.
-                      </p>
-                    </div>
-                  );
-                }
+                const zonesWithoutGeo = allZonesForMap.filter(z => !z.mapSettings?.centerLatitude || !z.mapSettings?.centerLongitude);
 
                 return (
                   <>
-                    <GoogleMapWrapper markers={markers} height="450px">
-                      {zonesWithGeo.map(z => {
-                        const radius = z.boundaries?.[0]?.radius;
-                        if (!radius) return null;
-                        return (
-                          <Circle
-                            key={`circle-${z.id}`}
-                            center={{ lat: z.mapSettings!.centerLatitude!, lng: z.mapSettings!.centerLongitude! }}
-                            radius={radius * 1000} // km to meters
-                            options={{
-                              fillColor: z.color,
-                              fillOpacity: 0.15,
-                              strokeColor: z.color,
-                              strokeOpacity: 0.6,
-                              strokeWeight: 2,
-                            }}
-                          />
-                        );
-                      })}
-                    </GoogleMapWrapper>
+                    <div className="rounded-md overflow-hidden border border-gray-200 shadow-sm">
+                      <GoogleMapWrapper markers={markers} height="520px">
+                        {zonesWithGeo.map(z => {
+                          const radius = z.boundaries?.[0]?.radius;
+                          if (!radius) return null;
+                          return (
+                            <Circle
+                              key={`circle-${z.id}`}
+                              center={{ lat: z.mapSettings!.centerLatitude!, lng: z.mapSettings!.centerLongitude! }}
+                              radius={radius * 1000}
+                              options={{
+                                fillColor: z.color,
+                                fillOpacity: 0.15,
+                                strokeColor: z.color,
+                                strokeOpacity: 0.6,
+                                strokeWeight: 2,
+                              }}
+                            />
+                          );
+                        })}
+                      </GoogleMapWrapper>
+                    </div>
                     {/* Legend */}
-                    <div className="mt-3 flex flex-wrap gap-3">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-1">
+                      <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">
+                        {zonesWithoutGeo.length > 0
+                          ? `${zonesWithGeo.length} de ${allZonesForMap.length} en mapa`
+                          : 'Zonas'}
+                      </span>
                       {zonesWithGeo.map(z => (
-                        <div key={z.id} className="flex items-center gap-1.5">
-                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: z.color }} />
-                          <span className="text-xs text-gray-600">{z.name}</span>
+                        <button
+                          key={z.id}
+                          type="button"
+                          onClick={() => {
+                            setIsMapOpen(false);
+                            handleEditZone(z);
+                          }}
+                          className="flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-gray-100 transition-colors group"
+                          title={`Editar ${z.name}`}
+                        >
+                          <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: z.color }} />
+                          <span className="text-xs text-gray-600 group-hover:text-gray-900">{z.name}</span>
                           {z.boundaries?.[0]?.radius && (
-                            <span className="text-xs text-gray-400">({z.boundaries[0].radius} km)</span>
+                            <span className="text-[11px] text-gray-400">{z.boundaries[0].radius} km</span>
                           )}
-                        </div>
+                        </button>
                       ))}
                     </div>
                   </>
@@ -749,11 +780,11 @@ export default function ZonesPage() {
           onClose={handleCloseDrawer}
           title={editingZone ? 'Editar Zona' : 'Nueva Zona'}
           icon={<MapPin className="w-5 h-5" />}
-          width="lg"
+          width="xl"
           isDirty={isDirty}
           onSave={handleSubmit(handleSaveZone)}
           footer={
-            <div className="flex items-center justify-end gap-3">
+            <div data-tour="zones-drawer-actions" className="flex items-center justify-end gap-3">
               <button
                 type="button"
                 onClick={() => drawerRef.current?.requestClose()}
@@ -779,20 +810,53 @@ export default function ZonesPage() {
             <div className="space-y-4">
               <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Información general</h4>
 
-              <div>
-                <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
-                  <Map className="w-3.5 h-3.5 text-teal-500" />
-                  Nombre <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  {...register('name')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                  placeholder="Nombre de la zona"
-                />
-                {errors.name && (
-                  <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>
-                )}
+              {/* Name + Color on same row */}
+              <div className="flex gap-4 items-start" data-tour="zones-drawer-name">
+                <div className="flex-1">
+                  <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
+                    <Map className="w-3.5 h-3.5 text-green-600" />
+                    Nombre <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    {...register('name')}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                    placeholder="Nombre de la zona"
+                  />
+                  {errors.name && (
+                    <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>
+                  )}
+                </div>
+
+                <div data-tour="zones-drawer-color">
+                  <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
+                    <span
+                      className="w-3 h-3 rounded-full border border-gray-200"
+                      style={{ backgroundColor: watchedColor || '#EC4899' }}
+                    />
+                    Color
+                  </label>
+                  <div className="flex gap-1.5 flex-wrap max-w-[180px]">
+                    {availableColors.map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() => setValue('color', color, { shouldDirty: true })}
+                        className={`w-7 h-7 rounded-full border-2 transition-all relative flex items-center justify-center ${
+                          watchedColor === color
+                            ? 'border-gray-800 ring-2 ring-offset-1 ring-gray-300'
+                            : 'border-transparent hover:border-gray-300'
+                        }`}
+                        style={{ backgroundColor: color }}
+                        title={color}
+                      >
+                        {watchedColor === color && (
+                          <Check className="w-3.5 h-3.5 text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               <div>
@@ -801,43 +865,23 @@ export default function ZonesPage() {
                 </label>
                 <textarea
                   {...register('description')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                  placeholder="Descripción de la zona"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                  placeholder="Descripción breve de la zona (opcional)"
                   rows={2}
                 />
                 {errors.description && (
                   <p className="mt-1 text-xs text-red-600">{errors.description.message}</p>
                 )}
               </div>
-
-              <div>
-                <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-2">
-                  <span className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: watchedColor || '#EC4899' }} />
-                  Color
-                </label>
-                <div className="flex gap-2">
-                  {availableColors.map((color) => (
-                    <button
-                      key={color}
-                      type="button"
-                      onClick={() => setValue('color', color, { shouldDirty: true })}
-                      className={`w-8 h-8 rounded-full border-2 transition-all ${
-                        watchedColor === color ? 'border-gray-900 scale-110' : 'border-transparent'
-                      }`}
-                      style={{ backgroundColor: color }}
-                    />
-                  ))}
-                </div>
-              </div>
             </div>
 
             <hr className="border-gray-100" />
 
             {/* ── Ubicación ── */}
-            <div className="space-y-4">
+            <div data-tour="zones-drawer-map" className="space-y-4">
               <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Ubicación</h4>
               {isMapsLoaded ? (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {/* Place search */}
                   <Autocomplete
                     onLoad={(ac) => { autocompleteRef.current = ac; }}
@@ -849,13 +893,13 @@ export default function ZonesPage() {
                       <input
                         type="text"
                         placeholder="Buscar lugar... (ej. Zapopan, Guadalajara)"
-                        className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                        className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
                       />
                     </div>
                   </Autocomplete>
 
-                  {/* Map */}
-                  <div className="rounded-lg overflow-hidden border border-gray-200" style={{ height: 320 }}>
+                  {/* Map with hint overlay */}
+                  <div className="relative rounded-md overflow-hidden border border-gray-200 shadow-sm" style={{ height: 380 }}>
                     <GoogleMap
                       mapContainerStyle={{ width: '100%', height: '100%' }}
                       center={drawerMapCenter}
@@ -891,9 +935,12 @@ export default function ZonesPage() {
                         }}
                         onLoad={(circle) => {
                           circleRef.current = circle;
+                          // Skip the initial onRadiusChanged that fires right after mount
+                          circleInitRef.current = true;
+                          requestAnimationFrame(() => { circleInitRef.current = false; });
                         }}
                         onRadiusChanged={() => {
-                          if (circleRef.current) {
+                          if (circleRef.current && !circleInitRef.current) {
                             const newRadius = circleRef.current.getRadius() / 1000;
                             const clamped = Math.max(0.1, Math.round(newRadius * 10) / 10);
                             setDrawerMapRadius(clamped);
@@ -910,15 +957,18 @@ export default function ZonesPage() {
                         }}
                       />
                     </GoogleMap>
+                    {/* Hint overlay */}
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent px-3 py-2 pointer-events-none">
+                      <p className="text-[11px] text-white/90 text-center">
+                        Doble clic para posicionar · Arrastra el marcador · Ajusta el radio desde el borde del círculo
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-xs text-gray-400">
-                    Busca un lugar, haz doble clic en el mapa, o arrastra el marcador para posicionar la zona.
-                  </p>
 
-                  {/* Radius input + coordinates */}
-                  <div className="grid grid-cols-4 gap-2 items-end">
+                  {/* Radius + Coordinates */}
+                  <div className="grid grid-cols-3 gap-3">
                     <div>
-                      <label className="block text-xs text-gray-500 mb-1">Radio (km)</label>
+                      <label className="block text-xs font-medium text-gray-700 mb-1.5">Radio (km)</label>
                       <input
                         type="number"
                         step="0.1"
@@ -930,19 +980,25 @@ export default function ZonesPage() {
                           setDrawerMapRadius(val);
                           setValue('radioKm', val, { shouldDirty: true });
                         }}
-                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
                       />
                     </div>
-                    <div className="col-span-3">
-                      <div className="flex gap-3 text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2.5">
-                        <span><span className="font-medium">Lat:</span> {drawerMapCenter.lat.toFixed(4)}</span>
-                        <span><span className="font-medium">Lng:</span> {drawerMapCenter.lng.toFixed(4)}</span>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1.5">Latitud</label>
+                      <div className="px-3 py-2 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg tabular-nums">
+                        {drawerMapCenter.lat.toFixed(6)}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1.5">Longitud</label>
+                      <div className="px-3 py-2 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg tabular-nums">
+                        {drawerMapCenter.lng.toFixed(6)}
                       </div>
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center justify-center h-40 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center justify-center h-48 bg-gray-50 rounded-lg border border-gray-200">
                   <div className="flex items-center gap-2 text-sm text-gray-400">
                     <Loader2 className="w-4 h-4 animate-spin" />
                     Cargando mapa...
@@ -954,15 +1010,23 @@ export default function ZonesPage() {
             <hr className="border-gray-100" />
 
             {/* ── Estado ── */}
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="isEnabled"
-                {...register('isEnabled')}
-                className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-600"
-              />
-              <label htmlFor="isEnabled" className="text-xs font-medium text-gray-700">
-                Zona activa
+            <div className="space-y-3">
+              <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Estado</h4>
+              <label htmlFor="isEnabled" className="flex items-start gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  id="isEnabled"
+                  {...register('isEnabled')}
+                  className="mt-0.5 w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-600"
+                />
+                <div>
+                  <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors">
+                    Zona activa
+                  </span>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    Las zonas inactivas no se asignan a rutas ni aparecen en los filtros de vendedores.
+                  </p>
+                </div>
               </label>
             </div>
           </form>

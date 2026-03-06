@@ -32,6 +32,8 @@ import {
   ShoppingCart, User, MapPin, Calendar, Clock, X,
 } from 'lucide-react';
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, subDays, subWeeks, subMonths } from 'date-fns';
+import { useFormatters } from '@/hooks/useFormatters';
+import { formatDate as libFmtDate } from '@/lib/formatters';
 
 type ViewMode = 'list' | 'calendar';
 
@@ -108,12 +110,12 @@ function getDateRange(preset: string): { desde?: string; hasta?: string } {
 
 const formatDate = (dateStr?: string) => {
   if (!dateStr) return '-';
-  return new Intl.DateTimeFormat('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(dateStr));
+  return libFmtDate(dateStr, null, { day: '2-digit', month: '2-digit', year: 'numeric' });
 };
 
 const formatTime = (dateStr?: string) => {
   if (!dateStr) return '-';
-  return new Intl.DateTimeFormat('es-MX', { hour: '2-digit', minute: '2-digit' }).format(new Date(dateStr));
+  return libFmtDate(dateStr, null, { hour: '2-digit', minute: '2-digit' });
 };
 
 function VisitsPageContent() {
@@ -987,6 +989,7 @@ function VisitsPageContent() {
 }
 
 export default function VisitsPage() {
+  const { formatDate } = useFormatters();
   return (
     <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600" /></div>}>
       <VisitsPageContent />

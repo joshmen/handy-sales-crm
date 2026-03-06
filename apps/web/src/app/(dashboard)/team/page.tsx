@@ -18,15 +18,14 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { getInitials } from '@/lib/utils';
+import { useFormatters } from '@/hooks/useFormatters';
 
 function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('es-MX', {
-    style: 'currency',
-    currency: 'MXN',
-  }).format(amount);
+  return formatCurrency(amount);
 }
 
 export default function TeamPage() {
+  const { formatCurrency } = useFormatters();
   const { data: session } = useSession();
   const [vendedores, setVendedores] = useState<SupervisorVendedor[]>([]);
   const [dashboard, setDashboard] = useState<SupervisorDashboard | null>(null);

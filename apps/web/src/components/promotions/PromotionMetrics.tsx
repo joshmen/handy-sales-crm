@@ -4,12 +4,14 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Promotion, PromotionStatus } from '@/types/promotions';
+import { useFormatters } from '@/hooks/useFormatters';
 
 interface PromotionMetricsProps {
   promotions: Promotion[];
 }
 
 export const PromotionMetrics: React.FC<PromotionMetricsProps> = ({ promotions }) => {
+  const { formatCurrency } = useFormatters();
   const activePromotions = promotions.filter(p => p.status === PromotionStatus.ACTIVE);
   const pausedPromotions = promotions.filter(p => p.status === PromotionStatus.PAUSED);
   const finishedPromotions = promotions.filter(p => p.status === PromotionStatus.FINISHED);
@@ -46,7 +48,7 @@ export const PromotionMetrics: React.FC<PromotionMetricsProps> = ({ promotions }
     },
     {
       title: 'Ahorro Total Generado',
-      value: `$${totalSavings.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`,
+      value: formatCurrency(totalSavings),
       subtitle: 'En todas las promociones',
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
@@ -54,7 +56,7 @@ export const PromotionMetrics: React.FC<PromotionMetricsProps> = ({ promotions }
     },
     {
       title: 'Presupuesto Utilizado',
-      value: `$${totalBudgetUsed.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`,
+      value: formatCurrency(totalBudgetUsed),
       subtitle: 'Inversión total',
       color: 'text-purple-600',
       bgColor: 'bg-purple-50',

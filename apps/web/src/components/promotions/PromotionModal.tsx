@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { AlertTriangle, Download, Upload } from 'lucide-react';
 import { Promotion, PromotionStatus, PromotionType, RewardMethod } from '@/types/promotions';
+import { useFormatters } from '@/hooks/useFormatters';
 
 interface PromotionModalProps {
   isOpen: boolean;
@@ -24,6 +25,7 @@ export const PromotionModal: React.FC<PromotionModalProps> = ({
   promotion,
   onConfirm,
 }) => {
+  const { formatCurrency } = useFormatters();
   const getStatusBadge = (status: PromotionStatus) => {
     const statusConfig = {
       [PromotionStatus.ACTIVE]: { label: 'Activa', variant: 'success' as const },
@@ -54,13 +56,9 @@ export const PromotionModal: React.FC<PromotionModalProps> = ({
     return methodLabels[method];
   };
 
-  const formatCurrency = (amount: number) => {
-    return `$${amount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`;
-  };
-
   const formatDate = (date?: Date) => {
     if (!date) return 'No especificada';
-    return new Date(date).toLocaleDateString('es-MX');
+    return formatDate(date);
   };
 
   if (type === 'view' && promotion) {

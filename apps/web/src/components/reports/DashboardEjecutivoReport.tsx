@@ -1,16 +1,31 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { getDashboardEjecutivo, DashboardEjecutivoResponse } from '@/services/api/reports';
 import { toast } from '@/hooks/useToast';
-import { TrendingUp, TrendingDown, ShoppingCart, Eye, UserPlus, Trophy, Star, AlertTriangle, Loader2 } from 'lucide-react';
+import { TrendingUp, TrendingDown, ShoppingCart, Eye, UserPlus, Trophy, Star, AlertTriangle, Loader2, Download } from 'lucide-react';
+import { useReportExport } from '@/hooks/useReportExport';
+import { useFormatters } from '@/hooks/useFormatters';
 
-const fmt = (n: number) => `$${n.toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
 export function DashboardEjecutivoReport() {
+  const { formatCurrency } = useFormatters();
+  const fmt = (n: number) => formatCurrency(n);
   const [periodo, setPeriodo] = useState<'semana' | 'mes' | 'trimestre'>('mes');
   const [data, setData] = useState<DashboardEjecutivoResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const { exportPDF, exporting } = useReportExport({
+    fileName: 'dashboard-ejecutivo',
+    title: 'Dashboard Ejecutivo',
+    kpis: data ? [
+      { label: 'Ventas', value: fmt(data.ventas.total) },
+      { label: 'Pedidos', value: data.ventas.pedidos },
+      { label: 'Visitas', value: data.visitas.total },
+      { label: 'Nuevos Clientes', value: data.nuevosClientes },
+    ] : undefined,
+    fallbackRef: contentRef,
+  });
 
   const fetch = useCallback(async () => {
     try {
@@ -31,6 +46,13 @@ export function DashboardEjecutivoReport() {
       {/* Period selector */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-600">Resumen ejecutivo <span className="font-medium text-gray-900">{periodoLabel}</span></p>
+        <div className="flex items-center gap-2">
+          {data && !loading && (
+            <button onClick={exportPDF} disabled={exporting} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50" title="Exportar a PDF">
+              {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+              PDF
+            </button>
+          )}
         <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
           {(['semana', 'mes', 'trimestre'] as const).map(p => (
             <button
@@ -44,6 +66,7 @@ export function DashboardEjecutivoReport() {
             </button>
           ))}
         </div>
+        </div>
       </div>
 
       {loading && (
@@ -53,7 +76,7 @@ export function DashboardEjecutivoReport() {
       )}
 
       {data && !loading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div ref={contentRef} className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {/* Ventas */}
           <div className="col-span-1 md:col-span-2 xl:col-span-2 bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-xl p-5">
             <div className="flex items-center gap-2 mb-3">

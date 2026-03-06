@@ -1,4 +1,5 @@
 // Utilidades genéricas para exportación de datos
+import { formatCurrency as libFmtCurrency, formatDate as libFmtDate } from '@/lib/formatters';
 
 export interface ExportColumn<T = unknown> {
   key: keyof T | string;
@@ -96,7 +97,7 @@ function getNestedValue(obj: unknown, path: string): unknown {
 // Función para formatear valores de celda
 function formatCellValue(value: unknown): string {
   if (value === null || value === undefined) return '';
-  if (value instanceof Date) return value.toLocaleString('es-MX');
+  if (value instanceof Date) return libFmtDate(value, null);
   if (typeof value === 'boolean') return value ? 'Sí' : 'No';
   if (typeof value === 'object') return JSON.stringify(value);
   return String(value);
@@ -124,15 +125,15 @@ function downloadFile(content: string, filename: string, mimeType: string): void
 export const commonFormatters = {
   date: (value: unknown) =>
     typeof value === 'string' || typeof value === 'number' || value instanceof Date
-      ? new Date(value).toLocaleDateString('es-MX')
+      ? libFmtDate(String(value), null)
       : '',
   dateTime: (value: unknown) =>
     typeof value === 'string' || typeof value === 'number' || value instanceof Date
-      ? new Date(value).toLocaleString('es-MX')
+      ? libFmtDate(String(value), null)
       : '',
   boolean: (value: unknown) => (value ? 'Sí' : 'No'),
   currency: (value: unknown) =>
-    value ? `$${Number(value).toLocaleString('es-MX', { minimumFractionDigits: 2 })}` : '$0.00',
+    value ? libFmtCurrency(Number(value), null) : '$0.00',
   percentage: (value: unknown) => (value ? `${Number(value).toFixed(2)}%` : '0%'),
   phone: (value: unknown) => value || 'N/A',
   email: (value: unknown) => value || 'N/A',

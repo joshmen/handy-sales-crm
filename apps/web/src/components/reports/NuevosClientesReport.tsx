@@ -7,6 +7,8 @@ import { ReportKPICards } from './ReportKPICards';
 import { ReportTable, ReportColumn } from './ReportTable';
 import { getNuevosClientes, NuevoCliente } from '@/services/api/reports';
 import { toast } from '@/hooks/useToast';
+import { useFormatters } from '@/hooks/useFormatters';
+import { formatDate as libFmtDate } from '@/lib/formatters';
 
 function defaultDates() {
   const h = new Date();
@@ -15,9 +17,10 @@ function defaultDates() {
   return { desde: d.toISOString().slice(0, 10), hasta: h.toISOString().slice(0, 10) };
 }
 
-const fmtDate = (d: string) => new Date(d).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+const fmtDate = (d: string) => libFmtDate(d, null, { day: '2-digit', month: 'short', year: 'numeric' });
 
 export function NuevosClientesReport() {
+  const { formatDate } = useFormatters();
   const [dates, setDates] = useState(defaultDates);
   const [data, setData] = useState<{ clientes: NuevoCliente[]; total: number; porMes: { mes: string; cantidad: number }[] } | null>(null);
   const [loading, setLoading] = useState(false);

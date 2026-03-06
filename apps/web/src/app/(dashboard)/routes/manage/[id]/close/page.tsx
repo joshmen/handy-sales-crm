@@ -17,6 +17,7 @@ import {
   X,
   Package,
 } from 'lucide-react';
+import { useFormatters } from '@/hooks/useFormatters';
 
 type TabKey = 'pendiente' | 'aceptada' | 'terminada' | 'cerrada';
 
@@ -28,6 +29,7 @@ const TABS: { key: TabKey; label: string; estados: number[] }[] = [
 ];
 
 export default function CloseRoutePage() {
+  const { formatCurrency, formatDate } = useFormatters();
   const params = useParams();
   const router = useRouter();
   const rutaId = Number(params.id);
@@ -259,7 +261,7 @@ export default function CloseRoutePage() {
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-900">{ruta.usuarioNombre}</p>
               <p className="text-xs text-gray-500">
-                Ruta: {ruta.nombre} | Zona: {ruta.zonaNombre || 'Sin zona'} | Creado: {new Date(ruta.creadoEn).toLocaleDateString('es-MX')}
+                Ruta: {ruta.nombre} | Zona: {ruta.zonaNombre || 'Sin zona'} | Creado: {formatDate(ruta.creadoEn)}
               </p>
             </div>
           </div>
@@ -276,15 +278,15 @@ export default function CloseRoutePage() {
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
                 <span className="text-gray-500">Ventas contado ({resumen.ventasContadoCount})</span>
-                <span className="font-medium">${resumen.ventasContado.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                <span className="font-medium">{formatCurrency(resumen.ventasContado)}</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-gray-500">Entregas cobradas ({resumen.entregasCobradasCount})</span>
-                <span className="font-medium">${resumen.entregasCobradas.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                <span className="font-medium">{formatCurrency(resumen.entregasCobradas)}</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-gray-500">Cobranza adeudos ({resumen.cobranzaAdeudosCount})</span>
-                <span className="font-medium">${resumen.cobranzaAdeudos.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                <span className="font-medium">{formatCurrency(resumen.cobranzaAdeudos)}</span>
               </div>
             </div>
           </div>
@@ -298,15 +300,15 @@ export default function CloseRoutePage() {
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
                 <span className="text-gray-500">Ventas crédito ({resumen.ventasCreditoCount})</span>
-                <span className="font-medium">${resumen.ventasCredito.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                <span className="font-medium">{formatCurrency(resumen.ventasCredito)}</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-gray-500">Entregas crédito ({resumen.entregasCreditoCount})</span>
-                <span className="font-medium">${resumen.entregasCredito.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                <span className="font-medium">{formatCurrency(resumen.entregasCredito)}</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-gray-500">Saldo a favor ({resumen.entregasContadoSaldoFavorCount})</span>
-                <span className="font-medium">${resumen.entregasContadoSaldoFavor.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                <span className="font-medium">{formatCurrency(resumen.entregasContadoSaldoFavor)}</span>
               </div>
             </div>
           </div>
@@ -320,11 +322,11 @@ export default function CloseRoutePage() {
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
                 <span className="text-gray-500">Pedidos preventa ({resumen.pedidosPreventaCount})</span>
-                <span className="font-medium">${resumen.pedidosPreventa.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                <span className="font-medium">{formatCurrency(resumen.pedidosPreventa)}</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-gray-500">Devoluciones ({resumen.devolucionesCount})</span>
-                <span className="font-medium text-red-600">${resumen.devoluciones.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                <span className="font-medium text-red-600">{formatCurrency(resumen.devoluciones)}</span>
               </div>
             </div>
           </div>
@@ -338,11 +340,11 @@ export default function CloseRoutePage() {
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
                 <span className="text-gray-500">Valor de la ruta</span>
-                <span className="font-medium text-lg">${resumen.valorRuta.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                <span className="font-medium text-lg">{formatCurrency(resumen.valorRuta)}</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-gray-500">Efectivo inicial</span>
-                <span className="font-medium">${resumen.efectivoInicial.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                <span className="font-medium">{formatCurrency(resumen.efectivoInicial)}</span>
               </div>
             </div>
           </div>
@@ -353,12 +355,12 @@ export default function CloseRoutePage() {
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
                 <span className="text-gray-500">A recibir</span>
-                <span className="font-medium text-lg">${resumen.aRecibir.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                <span className="font-medium text-lg">{formatCurrency(resumen.aRecibir)}</span>
               </div>
               <div className="flex justify-between text-xs items-center">
                 <span className="text-gray-500">Recibido</span>
                 {isReadonly ? (
-                  <span className="font-medium">${(resumen.recibido ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                  <span className="font-medium">{formatCurrency(resumen.recibido ?? 0)}</span>
                 ) : (
                   <input
                     type="number"
@@ -374,7 +376,7 @@ export default function CloseRoutePage() {
                 <div className="flex justify-between text-xs pt-1 border-t">
                   <span className="text-gray-500">Diferencia</span>
                   <span className={`font-bold text-lg ${diferencia < 0 ? 'text-red-600' : diferencia > 0 ? 'text-green-600' : 'text-gray-900'}`}>
-                    {diferencia >= 0 ? '+' : ''}${diferencia.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                    {diferencia >= 0 ? '+' : ''}{formatCurrency(diferencia)}
                   </span>
                 </div>
               )}
@@ -431,7 +433,7 @@ export default function CloseRoutePage() {
                         <span className="text-[12px] text-gray-900">{item.productoNombre}</span>
                       </td>
                       <td className="py-2 px-2 text-right text-[12px] text-gray-600">
-                        ${item.ventasMonto.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                        {formatCurrency(item.ventasMonto)}
                       </td>
                       <td className="py-2 px-2 text-center text-[12px] text-gray-900 font-medium">
                         {item.cantidadInicial}

@@ -20,6 +20,7 @@ import {
   Download,
 } from 'lucide-react';
 import { Path, CaretRight } from '@phosphor-icons/react';
+import { useFormatters } from '@/hooks/useFormatters';
 
 interface UsuarioOption {
   id: number;
@@ -27,6 +28,7 @@ interface UsuarioOption {
 }
 
 export default function ManageRoutesPage() {
+  const { formatDate } = useFormatters();
   const router = useRouter();
   const [routes, setRoutes] = useState<RouteListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -151,10 +153,18 @@ export default function ManageRoutesPage() {
         { label: 'Administrar' },
       ]}
       title="Administrar rutas"
-      subtitle="Selecciona una ruta para cargar inventario o cerrarla"
+      subtitle={totalItems > 0 ? `${totalItems} ruta${totalItems !== 1 ? 's' : ''}` : undefined}
       actions={
         <button
-          onClick={() => exportToCsv('rutas')}
+          data-tour="routes-manage-export-btn"
+          onClick={async () => {
+            try {
+              await exportToCsv('rutas');
+              toast.success('Rutas exportadas');
+            } catch {
+              toast.error('Error al exportar rutas');
+            }
+          }}
           className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
         >
           <Download className="w-3.5 h-3.5 text-emerald-500" />
@@ -164,7 +174,7 @@ export default function ManageRoutesPage() {
     >
       <div className="space-y-4">
         {/* Filter Row */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+        <div data-tour="routes-manage-filters" className="flex flex-wrap items-center gap-2 sm:gap-3">
           {/* Date range */}
           <div data-tour="routes-manage-date-filter" className="flex items-center gap-2">
             <Calendar className="w-4 h-4 text-gray-400" />
@@ -243,13 +253,14 @@ export default function ManageRoutesPage() {
               <p className="text-sm text-gray-500">No hay rutas</p>
             </div>
           ) : (
-            !loading && routes.map((route) => {
+            !loading && routes.map((route, index) => {
               const badge = getEstadoBadge(route.estado);
               const action = getActionForEstado(route.estado);
               const progreso = getProgreso(route);
               return (
                 <div
                   key={route.id}
+                  data-tour={index === 0 ? 'routes-manage-row' : undefined}
                   onClick={() => handleRowClick(route)}
                   className="border border-gray-200 rounded-lg p-3 bg-white active:bg-green-50 transition-colors cursor-pointer"
                 >
@@ -274,7 +285,7 @@ export default function ManageRoutesPage() {
                       {badge.label}
                     </span>
                     <span className="text-xs text-gray-500">
-                      {route.fecha.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                      {formatDate(route.fecha, { day: '2-digit', month: '2-digit', year: 'numeric' })}
                     </span>
                     {progreso && (
                       <span className="text-xs text-gray-600">
@@ -304,14 +315,14 @@ export default function ManageRoutesPage() {
         {/* Table */}
         <div data-tour="routes-manage-table" className="hidden sm:block bg-white border border-gray-200 rounded-lg overflow-hidden">
           {/* Table Header */}
-          <div className="flex items-center gap-3 bg-gray-50 px-4 h-10 border-b border-gray-200">
-            <div className="flex-1 min-w-[160px] text-xs font-semibold text-gray-600">Nombre</div>
-            <div className="w-[140px] text-xs font-semibold text-gray-600">Usuario</div>
-            <div className="w-[120px] text-xs font-semibold text-gray-600">Zona</div>
-            <div className="w-[100px] text-xs font-semibold text-gray-600">Fecha</div>
-            <div className="w-[120px] text-xs font-semibold text-gray-600 text-center">Estado</div>
-            <div className="w-[100px] text-xs font-semibold text-gray-600 text-center">Progreso</div>
-            <div className="w-[110px] text-xs font-semibold text-gray-600 text-center">Acción</div>
+          <div className="flex items-center gap-3 bg-gray-50 px-5 h-10 border-b border-gray-200">
+            <div className="flex-1 min-w-[160px] text-[11px] font-medium text-gray-500 uppercase">Nombre</div>
+            <div className="w-[140px] text-[11px] font-medium text-gray-500 uppercase">Usuario</div>
+            <div className="w-[120px] text-[11px] font-medium text-gray-500 uppercase">Zona</div>
+            <div className="w-[100px] text-[11px] font-medium text-gray-500 uppercase">Fecha</div>
+            <div className="w-[120px] text-[11px] font-medium text-gray-500 uppercase text-center">Estado</div>
+            <div className="w-[100px] text-[11px] font-medium text-gray-500 uppercase text-center">Progreso</div>
+            <div className="w-8"></div>
           </div>
 
           {/* Table Body */}
@@ -328,15 +339,15 @@ export default function ManageRoutesPage() {
               </div>
             ) : (
               <div className={`transition-opacity duration-200 ${loading ? 'opacity-50' : 'opacity-100'}`}>
-                {routes.map((route) => {
+                {routes.map((route, index) => {
                   const badge = getEstadoBadge(route.estado);
                   const progreso = getProgreso(route);
-                  const action = getActionForEstado(route.estado);
                   return (
                     <div
                       key={route.id}
+                      data-tour={index === 0 ? 'routes-manage-row' : undefined}
                       onClick={() => handleRowClick(route)}
-                      className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 hover:bg-green-50 cursor-pointer transition-colors group"
+                      className="flex items-center gap-3 px-5 py-3.5 border-b border-gray-200 bg-white hover:bg-amber-50 cursor-pointer transition-colors group"
                     >
                       {/* Nombre */}
                       <div className="flex-1 min-w-[160px]">
@@ -362,7 +373,7 @@ export default function ManageRoutesPage() {
                       {/* Fecha */}
                       <div className="w-[100px]">
                         <span className="text-[13px] text-gray-900">
-                          {route.fecha.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                          {formatDate(route.fecha, { day: '2-digit', month: '2-digit', year: 'numeric' })}
                         </span>
                       </div>
 
@@ -393,16 +404,8 @@ export default function ManageRoutesPage() {
                       </div>
 
                       {/* Acción */}
-                      <div className="w-[110px] flex items-center justify-center gap-1.5">
-                        {action && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleRowClick(route); }}
-                            className={`px-2.5 py-1 text-[11px] font-medium border rounded-full transition-colors ${action.cls}`}
-                          >
-                            {action.label}
-                          </button>
-                        )}
-                        <CaretRight className="w-4 h-4 text-gray-300 group-hover:text-green-500 transition-colors" weight="bold" />
+                      <div className="w-8 flex items-center justify-center">
+                        <CaretRight className="w-4 h-4 text-gray-300 group-hover:text-amber-500 transition-colors" weight="bold" />
                       </div>
                     </div>
                   );

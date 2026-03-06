@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { ReportFilters } from './ReportFilters';
 import { ReportKPICards } from './ReportKPICards';
 import { ReportTable, ReportColumn } from './ReportTable';
 import { getVentasProducto, VentasProductoResponse, VentaProducto } from '@/services/api/reports';
 import { toast } from '@/hooks/useToast';
+import { useReportExport } from '@/hooks/useReportExport';
+import { useFormatters } from '@/hooks/useFormatters';
 
 function defaultDates() {
   const h = new Date();
@@ -15,15 +17,32 @@ function defaultDates() {
   return { desde: d.toISOString().slice(0, 10), hasta: h.toISOString().slice(0, 10) };
 }
 
-const fmt = (n: number) => `$${n.toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
 type Tab = 'masVendidos' | 'mayorVenta' | 'sinVenta';
 
 export function VentasProductoReport() {
+  const { formatCurrency } = useFormatters();
+  const fmt = (n: number) => formatCurrency(n);
   const [dates, setDates] = useState(defaultDates);
   const [data, setData] = useState<VentasProductoResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState<Tab>('masVendidos');
+  const chartRef = useRef<HTMLDivElement>(null);
+  const { exportPDF, exporting } = useReportExport({
+    fileName: 'ventas-producto',
+    title: 'Ventas por Producto',
+    dateRange: dates,
+    kpis: data ? [
+      { label: 'Total Ventas', value: fmt(data.totalGeneral) },
+      { label: 'Productos Vendidos', value: data.masVendidos.length },
+      { label: 'Sin Venta', value: data.sinVenta.length },
+    ] : undefined,
+    chartRef,
+    table: data ? {
+      headers: ['Producto', 'Cantidad', 'Total Ventas', '% del Total'],
+      rows: data.masVendidos.map(p => [p.nombre, p.cantidadVendida, fmt(p.totalVentas), `${p.porcentajeDelTotal}%`]),
+    } : undefined,
+  });
 
   const fetch = useCallback(async () => {
     try {
@@ -59,7 +78,7 @@ export function VentasProductoReport() {
 
   return (
     <div className="space-y-4">
-      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={fetch} loading={loading} />
+      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={fetch} loading={loading} onExportPDF={data ? exportPDF : undefined} exporting={exporting} />
 
       {data && (
         <>
@@ -89,7 +108,7 @@ export function VentasProductoReport() {
 
           {/* Chart for product tabs */}
           {tab !== 'sinVenta' && chartData.length > 0 && (
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <div ref={chartRef} className="bg-white border border-gray-200 rounded-lg p-4">
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={chartData} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />

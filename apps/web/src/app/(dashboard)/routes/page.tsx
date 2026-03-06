@@ -39,6 +39,7 @@ import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
 import { ActiveToggle } from '@/components/ui/ActiveToggle';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { Path } from '@phosphor-icons/react';
+import { useFormatters } from '@/hooks/useFormatters';
 
 interface ZoneOption {
   id: number;
@@ -64,6 +65,7 @@ const routeSchema = z.object({
 type RouteFormData = z.infer<typeof routeSchema>;
 
 export default function RoutesPage() {
+  const { formatDate } = useFormatters();
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN';
 
@@ -323,10 +325,12 @@ export default function RoutesPage() {
         { label: 'Rutas' },
       ]}
       title="Rutas"
+      subtitle={totalItems > 0 ? `${totalItems} ruta${totalItems !== 1 ? 's' : ''}` : undefined}
       actions={
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           <button
-            onClick={() => exportToCsv('rutas')}
+            data-tour="routes-export-btn"
+            onClick={async () => { try { await exportToCsv('rutas'); toast.success('Archivo CSV descargado'); } catch { toast.error('Error al exportar datos'); } }}
             className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
           >
             <Download className="w-3.5 h-3.5 text-emerald-500" />
@@ -345,7 +349,7 @@ export default function RoutesPage() {
     >
       <div className="space-y-4">
         {/* Filter Row */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+        <div data-tour="routes-filters" className="flex flex-wrap items-center gap-2 sm:gap-3">
           <SearchBar
             value={searchTerm}
             onChange={(v) => { setSearchTerm(v); setCurrentPage(1); }}
@@ -394,11 +398,12 @@ export default function RoutesPage() {
             <span className="hidden sm:inline">Actualizar</span>
           </button>
 
-          <InactiveToggle
-            value={showInactive}
-            onChange={(v) => { setShowInactive(v); setCurrentPage(1); }}
-            className="ml-auto"
-          />
+          <div data-tour="routes-toggle-inactive" className="ml-auto">
+            <InactiveToggle
+              value={showInactive}
+              onChange={(v) => { setShowInactive(v); setCurrentPage(1); }}
+            />
+          </div>
         </div>
 
         {/* Selection Action Bar */}
@@ -476,7 +481,7 @@ export default function RoutesPage() {
                       {route.usuarioNombre}
                     </span>
                     <span className="text-xs text-gray-500">
-                      {route.fecha.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                      {formatDate(route.fecha, { day: '2-digit', month: '2-digit', year: 'numeric' })}
                     </span>
                   </div>
                   {/* Row 3: Actions */}
@@ -498,7 +503,7 @@ export default function RoutesPage() {
         {/* Table */}
         <div data-tour="routes-table" className="hidden sm:block bg-white border border-gray-200 rounded-lg overflow-x-auto">
           {/* Table Header */}
-          <div className="flex items-center gap-3 bg-gray-50 px-4 h-10 border-b border-gray-200 min-w-[900px]">
+          <div className="flex items-center gap-3 bg-gray-50 px-5 h-10 border-b border-gray-200 min-w-[900px]">
             <div className="w-[28px] flex items-center justify-center">
               <button
                 onClick={batch.handleSelectAllVisible}
@@ -517,14 +522,14 @@ export default function RoutesPage() {
                 ) : null}
               </button>
             </div>
-            <div className="flex-1 min-w-[160px] text-xs font-semibold text-gray-600">Nombre</div>
-            <div className="w-[120px] text-xs font-semibold text-gray-600">Zona</div>
-            <div className="w-[140px] text-xs font-semibold text-gray-600">Usuario</div>
-            <div className="w-[100px] text-xs font-semibold text-gray-600">Fecha</div>
-            <div className="w-[110px] text-xs font-semibold text-gray-600 text-center">Estado</div>
-            <div className="w-[80px] text-xs font-semibold text-gray-600 text-center">Paradas</div>
-            <div className="w-[50px] text-xs font-semibold text-gray-600 text-center">Activo</div>
-            <div className="w-[70px] text-xs font-semibold text-gray-600 text-center">Acciones</div>
+            <div className="flex-1 min-w-[160px] text-[11px] font-medium text-gray-500 uppercase">Nombre</div>
+            <div className="w-[120px] text-[11px] font-medium text-gray-500 uppercase">Zona</div>
+            <div className="w-[140px] text-[11px] font-medium text-gray-500 uppercase">Usuario</div>
+            <div className="w-[100px] text-[11px] font-medium text-gray-500 uppercase">Fecha</div>
+            <div className="w-[110px] text-[11px] font-medium text-gray-500 uppercase text-center">Estado</div>
+            <div className="w-[80px] text-[11px] font-medium text-gray-500 uppercase text-center">Paradas</div>
+            <div className="w-[50px] text-[11px] font-medium text-gray-500 uppercase text-center">Activo</div>
+            <div className="w-8"></div>
           </div>
 
           {/* Table Body */}
@@ -557,8 +562,8 @@ export default function RoutesPage() {
                   return (
                     <div
                       key={route.id}
-                      className={`flex items-center gap-3 px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors min-w-[900px] ${
-                        !route.activo ? 'bg-gray-50' : ''
+                      className={`flex items-center gap-3 px-5 py-3.5 border-b border-gray-200 bg-white hover:bg-gray-50 transition-colors min-w-[900px] ${
+                        !route.activo ? 'opacity-50' : ''
                       }`}
                     >
                       {/* Checkbox */}
@@ -599,7 +604,7 @@ export default function RoutesPage() {
                       {/* Fecha */}
                       <div className="w-[100px]">
                         <span className="text-[13px] text-gray-900">
-                          {route.fecha.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                          {formatDate(route.fecha, { day: '2-digit', month: '2-digit', year: 'numeric' })}
                         </span>
                       </div>
 
@@ -630,12 +635,12 @@ export default function RoutesPage() {
                         />
                       </div>
 
-                      {/* Acciones */}
-                      <div className="w-[70px] flex items-center justify-center gap-1">
+                      {/* Editar */}
+                      <div className="w-8 flex items-center justify-center">
                         <button
                           onClick={() => handleOpenEdit(route)}
                           disabled={loading}
-                          className="p-1 text-amber-400 hover:text-amber-600 hover:bg-green-50 rounded transition-colors disabled:opacity-50"
+                          className="p-1 text-amber-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors disabled:opacity-50"
                           title="Editar"
                         >
                           <Pencil className="w-4 h-4" />
@@ -687,7 +692,7 @@ export default function RoutesPage() {
         isDirty={isDirty}
         onSave={rhfSubmit(handleSubmit)}
         footer={
-          <div className="flex justify-end gap-3">
+          <div data-tour="routes-drawer-actions" className="flex justify-end gap-3">
             <button
               onClick={() => drawerRef.current?.requestClose()}
               disabled={actionLoading}
@@ -706,13 +711,13 @@ export default function RoutesPage() {
           </div>
         }
       >
-        <div className="p-6 space-y-5">
+        <form onSubmit={rhfSubmit(handleSubmit)} className="p-6 space-y-5">
           {/* ── Información general ── */}
           <div className="space-y-4">
             <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Información general</h4>
 
             {/* Nombre */}
-            <div>
+            <div data-tour="routes-drawer-nombre">
               <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
                 <Map className="w-3.5 h-3.5 text-teal-500" />
                 Nombre <span className="text-red-500">*</span>
@@ -729,7 +734,7 @@ export default function RoutesPage() {
 
             {/* Usuario (solo crear) */}
             {!editingRoute && (
-              <div>
+              <div data-tour="routes-drawer-vendedor">
                 <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
                   <User className="w-3.5 h-3.5 text-blue-500" />
                   Vendedor <span className="text-red-500">*</span>
@@ -744,7 +749,7 @@ export default function RoutesPage() {
             )}
 
             {/* Zona */}
-            <div>
+            <div data-tour="routes-drawer-zona">
               <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
                 <MapPinned className="w-3.5 h-3.5 text-violet-500" />
                 Zona
@@ -768,7 +773,7 @@ export default function RoutesPage() {
             <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Programación</h4>
 
             {/* Fecha */}
-            <div>
+            <div data-tour="routes-drawer-fecha">
               <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
                 <Calendar className="w-3.5 h-3.5 text-amber-500" />
                 Fecha <span className="text-red-500">*</span>
@@ -782,7 +787,7 @@ export default function RoutesPage() {
             </div>
 
             {/* Hora inicio / Hora fin (2 columnas) */}
-            <div className="grid grid-cols-2 gap-4">
+            <div data-tour="routes-drawer-horario" className="grid grid-cols-2 gap-4">
               <div>
                 <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
                   <Clock className="w-3.5 h-3.5 text-cyan-500" />
@@ -815,7 +820,7 @@ export default function RoutesPage() {
             <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Detalles adicionales</h4>
 
             {/* Descripción */}
-            <div>
+            <div data-tour="routes-drawer-descripcion">
               <label className="block text-xs font-medium text-gray-700 mb-1.5">
                 Descripción
               </label>
@@ -828,7 +833,7 @@ export default function RoutesPage() {
             </div>
 
             {/* Notas */}
-            <div>
+            <div data-tour="routes-drawer-notas">
               <label className="block text-xs font-medium text-gray-700 mb-1.5">
                 Notas
               </label>
@@ -840,7 +845,7 @@ export default function RoutesPage() {
               />
             </div>
           </div>
-        </div>
+        </form>
       </Drawer>
     </PageHeader>
   );

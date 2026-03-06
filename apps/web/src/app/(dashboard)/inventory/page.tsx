@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -30,7 +31,7 @@ import { ListPagination } from '@/components/ui/ListPagination';
 import { SearchBar } from '@/components/common/SearchBar';
 import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
-import { Package as PackageIcon } from '@phosphor-icons/react';
+import { Package as PackageIcon, CaretRight } from '@phosphor-icons/react';
 import { HelpTooltip } from '@/components/help/HelpTooltip';
 
 const inventorySchema = z.object({
@@ -40,16 +41,36 @@ const inventorySchema = z.object({
   stockMaximo: z.number().min(0, 'Mínimo 0'),
 });
 type InventoryFormData = z.infer<typeof inventorySchema>;
+// Whitelist segura — solo estos valores son válidos, cualquier otro se ignora
+const ALERTAS_VALIDAS = ['stock_bajo', 'critico'] as const;
+type AlertaInventario = typeof ALERTAS_VALIDAS[number];
+
+const ALERTA_LABELS: Record<AlertaInventario, string> = {
+  stock_bajo: 'Stock bajo',
+  critico: 'En cero',
+};
+
 export default function InventoryPage() {
+  const router = useRouter();
   const drawerRef = useRef<DrawerHandle>(null);
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [alertFilter, setAlertFilter] = useState<AlertaInventario | null>(null);
   const [totalItems, setTotalItems] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const pageSize = 10;
+
+  // Leer query param al montar — whitelist estricta, nunca se renderiza raw
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const raw = params.get('alerta');
+    if (raw && (ALERTAS_VALIDAS as readonly string[]).includes(raw)) {
+      setAlertFilter(raw as AlertaInventario);
+    }
+  }, []);
 
   // Modal state
   const [modalOpen, setModalOpen] = useState(false);
@@ -112,12 +133,17 @@ export default function InventoryPage() {
       setError(null);
       const response = await inventoryService.getInventoryItems({
         page: currentPage,
-        limit: pageSize,
+        limit: alertFilter ? 100 : pageSize,
         search: searchTerm || undefined,
+        lowStock: alertFilter === 'stock_bajo' || alertFilter === 'critico' || undefined,
       });
-      setInventoryItems(response.items);
-      setTotalItems(response.total);
-      setTotalPages(response.totalPages);
+      // Para "critico" filtramos adicionalmente los que están exactamente en cero
+      const items = alertFilter === 'critico'
+        ? response.items.filter(i => i.warehouseQuantity <= 0)
+        : response.items;
+      setInventoryItems(items);
+      setTotalItems(alertFilter === 'critico' ? items.length : response.total);
+      setTotalPages(alertFilter ? 1 : response.totalPages);
     } catch (err) {
       console.error('Error al cargar inventario:', err);
       setError('Error al cargar el inventario. Intenta de nuevo.');
@@ -125,7 +151,7 @@ export default function InventoryPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, searchTerm]);
+  }, [currentPage, searchTerm, alertFilter]);
 
   useEffect(() => {
     fetchInventory();
@@ -267,9 +293,10 @@ export default function InventoryPage() {
         { label: 'Inventario de almacén' },
       ]}
       title="Inventario de almacén"
+      subtitle={totalItems > 0 ? `${totalItems} producto${totalItems !== 1 ? 's' : ''}` : undefined}
       actions={
         <>
-          <div className="relative">
+          <div className="relative" data-tour="inventory-import-export">
             <button
               onClick={() => setShowDataMenu(!showDataMenu)}
               className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
@@ -321,6 +348,25 @@ export default function InventoryPage() {
             dataTour="inventory-search"
           />
 
+          {/* Chip de alerta — solo cuando viene de notificación */}
+          {alertFilter && (
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full ${
+              alertFilter === 'critico'
+                ? 'bg-red-100 text-red-700'
+                : 'bg-amber-100 text-amber-700'
+            }`}>
+              <AlertTriangle className="w-3 h-3" />
+              {ALERTA_LABELS[alertFilter]}
+              <button
+                onClick={() => { setAlertFilter(null); router.push('/inventory'); }}
+                className="ml-0.5 hover:opacity-70"
+                aria-label="Quitar filtro"
+              >
+                ×
+              </button>
+            </span>
+          )}
+
           <button
             onClick={handleRefresh}
             disabled={loading}
@@ -335,7 +381,7 @@ export default function InventoryPage() {
         <ErrorBanner error={error} onRetry={fetchInventory} />
 
           {/* Table */}
-          <div data-tour="inventory-table" className="bg-white border border-gray-200 rounded overflow-x-auto">
+          <div data-tour="inventory-table" className="bg-white border border-gray-200 rounded-lg overflow-x-auto">
             {/* Mobile Cards */}
             <div className="sm:hidden">
               {loading && (
@@ -422,13 +468,13 @@ export default function InventoryPage() {
 
             {/* Desktop Table */}
             <div className="hidden sm:block">
-              <div className="flex items-center bg-gray-50 px-4 h-10 border-b border-gray-200 min-w-[750px]">
-                <div className="flex-1 text-xs font-semibold text-gray-700">Producto</div>
-                <div className="w-[120px] text-xs font-semibold text-gray-700">Unidad</div>
-                <div className="w-[120px] text-xs font-semibold text-gray-700 text-center flex items-center justify-center gap-1">Existencias <HelpTooltip tooltipKey="total-quantity" /></div>
-                <div data-tour="inventory-stock-columns" className="w-[100px] text-xs font-semibold text-gray-700 text-center flex items-center justify-center gap-1">Stock mín. <HelpTooltip tooltipKey="min-stock" /></div>
-                <div className="w-[100px] text-xs font-semibold text-gray-700 text-center flex items-center justify-center gap-1">Stock máx. <HelpTooltip tooltipKey="max-stock" /></div>
-                <div className="w-[80px] text-xs font-semibold text-gray-700 text-center">Acciones</div>
+              <div className="flex items-center bg-gray-50 px-5 h-10 border-b border-gray-200 min-w-[750px]">
+                <div className="flex-1 text-[11px] font-medium text-gray-500 uppercase">Producto</div>
+                <div className="w-[120px] text-[11px] font-medium text-gray-500 uppercase">Unidad</div>
+                <div className="w-[120px] text-[11px] font-medium text-gray-500 uppercase text-center flex items-center justify-center gap-1">Existencias <HelpTooltip tooltipKey="total-quantity" /></div>
+                <div data-tour="inventory-stock-columns" className="w-[100px] text-[11px] font-medium text-gray-500 uppercase text-center flex items-center justify-center gap-1">Stock mín. <HelpTooltip tooltipKey="min-stock" /></div>
+                <div className="w-[100px] text-[11px] font-medium text-gray-500 uppercase text-center flex items-center justify-center gap-1">Stock máx. <HelpTooltip tooltipKey="max-stock" /></div>
+                <div className="w-8"></div>
               </div>
 
               <div className="relative min-h-[200px]">
@@ -460,7 +506,8 @@ export default function InventoryPage() {
                       return (
                         <div
                           key={item.id}
-                          className="flex items-center px-4 py-2.5 border-b border-gray-100 hover:bg-gray-50 transition-colors min-w-[750px]"
+                          onClick={() => handleOpenEdit(item)}
+                          className="flex items-center px-5 py-3.5 border-b border-gray-200 bg-white hover:bg-amber-50 cursor-pointer transition-colors group min-w-[750px]"
                         >
                           <div className="flex-1 flex items-center gap-2.5">
                             {item.product?.images && item.product.images.length > 0 ? (
@@ -505,14 +552,8 @@ export default function InventoryPage() {
                             {item.maxStock || '-'}
                           </div>
 
-                          <div className="w-[80px] flex justify-center">
-                            <button
-                              onClick={() => handleOpenEdit(item)}
-                              className="p-1.5 hover:bg-green-50 rounded transition-colors"
-                              title="Editar inventario"
-                            >
-                              <Pencil className="w-4 h-4 text-amber-400 hover:text-amber-600" />
-                            </button>
+                          <div className="w-8 flex items-center justify-center">
+                            <CaretRight className="w-4 h-4 text-gray-300 group-hover:text-amber-500 transition-colors" weight="bold" />
                           </div>
                         </div>
                       );
@@ -548,7 +589,7 @@ export default function InventoryPage() {
           isDirty={isDirty || imageFile !== null}
           onSave={handleSubmit}
           footer={
-            <div className="flex justify-end gap-3">
+            <div data-tour="inventory-drawer-actions" className="flex justify-end gap-3">
               <button
                 onClick={() => drawerRef.current?.requestClose()}
                 disabled={submitting}
@@ -569,7 +610,7 @@ export default function InventoryPage() {
         >
           <div data-tour="inventory-form" className="p-6 space-y-4">
             {modalMode === 'create' ? (
-              <div>
+              <div data-tour="inventory-product-selector">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Producto <span className="text-red-500">*</span>
                 </label>
@@ -660,7 +701,7 @@ export default function InventoryPage() {
               </div>
             )}
 
-            <div>
+            <div data-tour="inventory-quantity">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Cantidad actual <span className="text-red-500">*</span>
               </label>
@@ -676,7 +717,7 @@ export default function InventoryPage() {
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div data-tour="inventory-stock-fields" className="grid grid-cols-2 gap-4">
               <div>
                 <label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">Stock minimo <HelpTooltip tooltipKey="min-stock" /></label>
                 <input

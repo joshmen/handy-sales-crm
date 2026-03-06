@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Eye, Edit, Play, Pause, Trash2, Copy } from 'lucide-react';
 import { Promotion, PromotionStatus, PromotionType, RewardMethod } from '@/types/promotions';
+import { useFormatters } from '@/hooks/useFormatters';
 
 interface PromotionTableProps {
   promotions: Promotion[];
@@ -26,6 +27,7 @@ export const PromotionTable: React.FC<PromotionTableProps> = ({
   onDelete,
   onDuplicate,
 }) => {
+  const { formatCurrency } = useFormatters();
   const getStatusBadge = (status: PromotionStatus) => {
     const statusConfig = {
       [PromotionStatus.ACTIVE]: { label: 'Activa', variant: 'success' as const },
@@ -67,10 +69,6 @@ export const PromotionTable: React.FC<PromotionTableProps> = ({
     }
     
     return moreCount > 0 ? `${rewardText} +${moreCount} más` : rewardText;
-  };
-
-  const formatCurrency = (amount: number) => {
-    return `$${amount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`;
   };
 
   const getBudgetProgress = (promotion: Promotion) => {

@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { ReportFilters } from './ReportFilters';
 import { ReportKPICards } from './ReportKPICards';
 import { ReportTable, ReportColumn } from './ReportTable';
 import { getVentasPeriodo, VentaPeriodo, VentasPeriodoResponse } from '@/services/api/reports';
 import { toast } from '@/hooks/useToast';
+import { useReportExport } from '@/hooks/useReportExport';
+import { useFormatters } from '@/hooks/useFormatters';
 
 function defaultDates() {
   const h = new Date();
@@ -15,13 +17,31 @@ function defaultDates() {
   return { desde: d.toISOString().slice(0, 10), hasta: h.toISOString().slice(0, 10) };
 }
 
-const fmt = (n: number) => `$${n.toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
 export function VentasPeriodoReport() {
+  const { formatCurrency } = useFormatters();
+  const fmt = (n: number) => formatCurrency(n);
   const [dates, setDates] = useState(defaultDates);
   const [agrupacion, setAgrupacion] = useState<'dia' | 'semana' | 'mes'>('dia');
   const [data, setData] = useState<VentasPeriodoResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const chartRef = useRef<HTMLDivElement>(null);
+  const { exportPDF, exporting } = useReportExport({
+    fileName: 'ventas-periodo',
+    title: 'Ventas por Período',
+    dateRange: dates,
+    kpis: data ? [
+      { label: 'Total Ventas', value: fmt(data.totales.totalVentas) },
+      { label: 'Pedidos', value: data.totales.cantidadPedidos },
+      { label: 'Ticket Promedio', value: fmt(data.totales.ticketPromedio) },
+    ] : undefined,
+    chartRef,
+    table: data ? {
+      headers: ['Período', 'Pedidos', 'Total Ventas', 'Ticket Promedio'],
+      rows: data.periodos.map(p => [p.fecha, p.cantidadPedidos, fmt(p.totalVentas), fmt(p.ticketPromedio)]),
+      footerRow: ['TOTAL', data.totales.cantidadPedidos, fmt(data.totales.totalVentas), fmt(data.totales.ticketPromedio)],
+    } : undefined,
+  });
 
   const fetch = useCallback(async () => {
     try {
@@ -44,7 +64,7 @@ export function VentasPeriodoReport() {
 
   return (
     <div className="space-y-4">
-      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={fetch} loading={loading}>
+      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={fetch} loading={loading} onExportPDF={data ? exportPDF : undefined} exporting={exporting}>
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-gray-600">Agrupar por</label>
           <select value={agrupacion} onChange={e => setAgrupacion(e.target.value as 'dia' | 'semana' | 'mes')} className="px-3 py-2 text-sm border border-gray-300 rounded-md">
@@ -64,7 +84,7 @@ export function VentasPeriodoReport() {
           ]} />
 
           {data.periodos.length > 0 && (
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <div ref={chartRef} className="bg-white border border-gray-200 rounded-lg p-4">
               <ResponsiveContainer width="100%" height={300}>
                 {agrupacion === 'dia' ? (
                   <LineChart data={data.periodos}>

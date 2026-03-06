@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { profileService, TwoFactorSetupResponse } from '@/services/api/profileService';
 import { toast } from '@/hooks/useToast';
+import { useFormatters } from '@/hooks/useFormatters';
 
 type Step = 'qr' | 'verify' | 'recovery';
 
@@ -40,6 +41,7 @@ export const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
   onOpenChange,
   onComplete,
 }) => {
+  const { formatDate, formatNumber } = useFormatters();
   const [step, setStep] = useState<Step>('qr');
   const [setupData, setSetupData] = useState<TwoFactorSetupResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -130,7 +132,7 @@ export const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
   const handleDownloadRecoveryCodes = () => {
     const text = [
       'Handy Suites - Códigos de Recuperación 2FA',
-      `Generados: ${new Date().toLocaleString('es-MX')}`,
+      `Generados: ${formatDate(new Date())}`,
       '',
       'Guarda estos códigos en un lugar seguro.',
       'Cada código solo puede usarse una vez.',

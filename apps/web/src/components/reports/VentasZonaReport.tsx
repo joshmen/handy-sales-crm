@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import type { PieLabelRenderProps } from 'recharts';
 import { ReportFilters } from './ReportFilters';
@@ -8,6 +8,8 @@ import { ReportKPICards } from './ReportKPICards';
 import { ReportTable, ReportColumn } from './ReportTable';
 import { getVentasZona, VentaZona, VentasZonaResponse } from '@/services/api/reports';
 import { toast } from '@/hooks/useToast';
+import { useReportExport } from '@/hooks/useReportExport';
+import { useFormatters } from '@/hooks/useFormatters';
 
 function defaultDates() {
   const h = new Date();
@@ -16,13 +18,31 @@ function defaultDates() {
   return { desde: d.toISOString().slice(0, 10), hasta: h.toISOString().slice(0, 10) };
 }
 
-const fmt = (n: number) => `$${n.toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 const COLORS = ['#16a34a', '#2563eb', '#d97706', '#dc2626', '#7c3aed', '#0891b2', '#be185d', '#059669'];
 
 export function VentasZonaReport() {
+  const { formatCurrency } = useFormatters();
+  const fmt = (n: number) => formatCurrency(n);
   const [dates, setDates] = useState(defaultDates);
   const [data, setData] = useState<VentasZonaResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const chartRef = useRef<HTMLDivElement>(null);
+  const { exportPDF, exporting } = useReportExport({
+    fileName: 'ventas-zona',
+    title: 'Ventas por Zona',
+    dateRange: dates,
+    kpis: data ? [
+      { label: 'Total Ventas', value: fmt(data.totales.totalVentas) },
+      { label: 'Total Pedidos', value: data.totales.totalPedidos },
+      { label: 'Total Clientes', value: data.totales.totalClientes },
+    ] : undefined,
+    chartRef,
+    table: data ? {
+      headers: ['Zona', 'Clientes', 'Pedidos', 'Ventas Totales'],
+      rows: data.zonas.map(z => [z.nombre, z.totalClientes, z.pedidos, fmt(z.ventasTotales)]),
+      footerRow: ['TOTAL', data.totales.totalClientes, data.totales.totalPedidos, fmt(data.totales.totalVentas)],
+    } : undefined,
+  });
 
   const fetch = useCallback(async () => {
     try {
@@ -45,7 +65,7 @@ export function VentasZonaReport() {
 
   return (
     <div className="space-y-4">
-      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={fetch} loading={loading} />
+      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={fetch} loading={loading} onExportPDF={data ? exportPDF : undefined} exporting={exporting} />
 
       {data && (
         <>
@@ -56,7 +76,7 @@ export function VentasZonaReport() {
           ]} />
 
           {data.zonas.length > 0 && (
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <div ref={chartRef} className="bg-white border border-gray-200 rounded-lg p-4">
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie

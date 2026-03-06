@@ -11,7 +11,9 @@ import {
   Map,
   BarChart3,
   Boxes,
+  LayoutDashboard,
 } from 'lucide-react';
+import { DashboardEjecutivoReport } from '@/components/reports/DashboardEjecutivoReport';
 import { VentasPeriodoReport } from '@/components/reports/VentasPeriodoReport';
 import { VentasVendedorReport } from '@/components/reports/VentasVendedorReport';
 import { VentasProductoReport } from '@/components/reports/VentasProductoReport';
@@ -21,6 +23,7 @@ import { NuevosClientesReport } from '@/components/reports/NuevosClientesReport'
 import { InventarioReport } from '@/components/reports/InventarioReport';
 
 type ReportId =
+  | 'ejecutivo'
   | 'ventas-periodo'
   | 'ventas-vendedor'
   | 'ventas-producto'
@@ -39,6 +42,14 @@ interface ReportCard {
 }
 
 const reports: ReportCard[] = [
+  {
+    id: 'ejecutivo',
+    label: 'Dashboard Ejecutivo',
+    description: 'Resumen general con KPIs de ventas, pedidos, clientes y tendencias del período.',
+    icon: LayoutDashboard,
+    color: 'green',
+    section: 'General',
+  },
   {
     id: 'ventas-periodo',
     label: 'Ventas por Período',
@@ -98,6 +109,7 @@ const reports: ReportCard[] = [
 ];
 
 const reportComponents: Record<ReportId, React.ComponentType> = {
+  'ejecutivo': DashboardEjecutivoReport,
   'ventas-periodo': VentasPeriodoReport,
   'ventas-vendedor': VentasVendedorReport,
   'ventas-producto': VentasProductoReport,

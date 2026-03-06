@@ -44,6 +44,8 @@ import {
 import { clientService } from '@/services/api/clients';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from '@/hooks/useToast';
+import { useFormatters } from '@/hooks/useFormatters';
+import { formatDate } from '@/lib/formatters';
 
 // ─── Zod Schema ───────────────────────────────────────
 
@@ -62,7 +64,7 @@ type CobroFormData = z.infer<typeof cobroSchema>;
 // ─── Helpers ──────────────────────────────────────────
 
 const fmtDate = (d: string) =>
-  new Date(d).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+  formatDate(d, null, { day: '2-digit', month: 'short', year: 'numeric' });
 
 function defaultDates() {
   const h = new Date();
@@ -108,6 +110,7 @@ type Tab = 'cobros' | 'saldos';
 // ─── Page ─────────────────────────────────────────────
 
 export default function CobranzaPage() {
+  const { formatCurrency, formatDate } = useFormatters();
   const drawerEstadoCuentaRef = useRef<DrawerHandle>(null);
   const drawerNewCobroRef = useRef<DrawerHandle>(null);
 

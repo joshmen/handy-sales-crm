@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { ReportKPICards } from './ReportKPICards';
 import { ReportTable, ReportColumn } from './ReportTable';
 import { getInventario, InventarioProducto } from '@/services/api/reports';
 import { toast } from '@/hooks/useToast';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Download, Loader2 } from 'lucide-react';
+import { useReportExport } from '@/hooks/useReportExport';
 
 const estadoColors: Record<string, { bg: string; text: string; label: string; pie: string }> = {
   sin_stock: { bg: 'bg-red-100', text: 'text-red-700', label: 'Sin Stock', pie: '#dc2626' },
@@ -18,6 +19,22 @@ const estadoColors: Record<string, { bg: string; text: string; label: string; pi
 export function InventarioReport() {
   const [data, setData] = useState<{ productos: InventarioProducto[]; resumen: { total: number; sinStock: number; bajo: number; normal: number; exceso: number } } | null>(null);
   const [loading, setLoading] = useState(false);
+  const chartRef = useRef<HTMLDivElement>(null);
+  const { exportPDF, exporting } = useReportExport({
+    fileName: 'inventario',
+    title: 'Inventario Actual',
+    kpis: data ? [
+      { label: 'Total Productos', value: data.resumen.total },
+      { label: 'Sin Stock', value: data.resumen.sinStock },
+      { label: 'Stock Bajo', value: data.resumen.bajo },
+      { label: 'Normal', value: data.resumen.normal },
+    ] : undefined,
+    chartRef,
+    table: data ? {
+      headers: ['Producto', 'Código', 'Actual', 'Mínimo', 'Máximo', 'Estado'],
+      rows: data.productos.map(p => [p.nombre, p.codigoBarra || '-', p.stockActual, p.stockMinimo, p.stockMaximo, estadoColors[p.estado]?.label || p.estado]),
+    } : undefined,
+  });
 
   const fetch = useCallback(async () => {
     try {
@@ -55,7 +72,13 @@ export function InventarioReport() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-end gap-2">
+        {data && (
+          <button onClick={exportPDF} disabled={exporting} className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50" title="Exportar a PDF">
+            {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+            {exporting ? 'Exportando...' : 'PDF'}
+          </button>
+        )}
         <button onClick={fetch} disabled={loading} className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50">
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           Actualizar
@@ -72,7 +95,7 @@ export function InventarioReport() {
           ]} />
 
           {pieData.length > 0 && (
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <div ref={chartRef} className="bg-white border border-gray-200 rounded-lg p-4">
               <ResponsiveContainer width="100%" height={260}>
                 <PieChart>
                   <Pie

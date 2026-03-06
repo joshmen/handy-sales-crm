@@ -30,6 +30,7 @@ import { SearchBar } from '@/components/common/SearchBar';
 import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
 import { HelpTooltip } from '@/components/help/HelpTooltip';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
+import { useFormatters } from '@/hooks/useFormatters';
 
 type MovementType = 'ENTRADA' | 'SALIDA' | 'AJUSTE';
 
@@ -50,6 +51,7 @@ interface ProductOption {
 }
 
 export default function InventoryMovementsPage() {
+  const { formatDate } = useFormatters();
   const drawerRef = useRef<DrawerHandle>(null);
   const [movements, setMovements] = useState<InventoryMovement[]>([]);
   const [loading, setLoading] = useState(true);
@@ -293,10 +295,12 @@ export default function InventoryMovementsPage() {
         { label: 'Inventario', href: '/inventory' },
         { label: 'Movimientos' },
       ]}
-      title={`Movimientos de inventario (${totalItems})`}
+      title="Movimientos de inventario"
+      subtitle={totalItems > 0 ? `${totalItems} movimiento${totalItems !== 1 ? 's' : ''}` : undefined}
       actions={
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           <button
+            data-tour="movements-export-btn"
             onClick={() => exportToCsv('inventario')}
             className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
           >
@@ -328,6 +332,7 @@ export default function InventoryMovementsPage() {
             }}
             placeholder="Buscar producto..."
             className="w-64"
+            dataTour="movements-search"
           />
 
           {/* Type Filter */}
@@ -377,8 +382,8 @@ export default function InventoryMovementsPage() {
         )}
 
         {/* Movements Table */}
-        <div data-tour="movements-table" className="relative border border-gray-200 rounded-lg overflow-x-auto">
-          <TableLoadingOverlay loading={loading} />
+        <div data-tour="movements-table" className="relative min-h-[200px] border border-gray-200 rounded-lg overflow-x-auto">
+          <TableLoadingOverlay loading={loading} message="Cargando movimientos..." />
           {!loading && movements.length === 0 ? (
           <div className="flex items-center justify-center h-64 bg-white text-gray-400">
             <div className="text-center">
@@ -425,7 +430,7 @@ export default function InventoryMovementsPage() {
                       )}
                       <span className="flex items-center gap-1">
                         <Calendar className="w-3 h-3 text-violet-500" />
-                        {movement.createdAt.toLocaleDateString('es-MX')}
+                        {formatDate(movement.createdAt)}
                       </span>
                     </div>
                     <div className="mt-2.5 flex items-center justify-between border-t border-gray-100 pt-2 text-xs">
@@ -462,15 +467,15 @@ export default function InventoryMovementsPage() {
                 return (
                   <div
                     key={movement.id}
-                    className="flex items-center px-5 py-3.5 border-b border-gray-200 bg-white hover:bg-gray-50 transition-colors min-w-[1100px]"
+                    className="flex items-center px-5 py-3.5 border-b border-gray-200 bg-white hover:bg-amber-50 transition-colors min-w-[1100px]"
                   >
                     {/* Fecha */}
                     <div className="w-[130px]">
                       <span className="text-[13px] text-gray-900">
-                        {movement.createdAt.toLocaleDateString('es-MX')}
+                        {formatDate(movement.createdAt)}
                       </span>
                       <div className="text-[11px] text-gray-500">
-                        {movement.createdAt.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+                        {formatDate(movement.createdAt, { hour: '2-digit', minute: '2-digit' })}
                       </div>
                     </div>
 
@@ -555,7 +560,7 @@ export default function InventoryMovementsPage() {
         isDirty={isDirty}
         onSave={handleCreateMovement}
         footer={
-          <div className="flex items-center justify-end gap-3">
+          <div data-tour="movements-drawer-actions" className="flex items-center justify-end gap-3">
             <button
               onClick={() => drawerRef.current?.requestClose()}
               className="px-4 py-2 text-xs font-medium text-gray-700 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
@@ -574,7 +579,7 @@ export default function InventoryMovementsPage() {
       >
         <div className="px-6 py-4 space-y-4">
           {/* Product Select */}
-          <div>
+          <div data-tour="movements-product-selector">
             <label className="block text-xs font-medium text-gray-700 mb-1.5">Producto *</label>
             <SearchableSelect
               options={products.map(p => ({ value: p.id, label: p.name, description: p.code, imageUrl: p.imageUrl }))}
@@ -628,7 +633,7 @@ export default function InventoryMovementsPage() {
           )}
 
           {/* Movement Type */}
-          <div>
+          <div data-tour="movements-type-selector">
             <label className="flex items-center gap-1 text-xs font-medium text-gray-700 mb-1.5">Tipo de movimiento * <HelpTooltip tooltipKey="movement-type" /></label>
             <div className="flex gap-2">
               {(['ENTRADA', 'SALIDA', 'AJUSTE'] as MovementType[]).map(type => {
@@ -665,7 +670,7 @@ export default function InventoryMovementsPage() {
           </div>
 
           {/* Quantity */}
-          <div>
+          <div data-tour="movements-quantity">
             <label className="flex items-center gap-1 text-xs font-medium text-gray-700 mb-1.5">Cantidad * <HelpTooltip tooltipKey="movement-quantity" /></label>
             <input
               type="number"
@@ -681,7 +686,7 @@ export default function InventoryMovementsPage() {
           </div>
 
           {/* Reason — context-aware per movement type */}
-          <div>
+          <div data-tour="movements-reason">
             <label className="block text-xs font-medium text-gray-700 mb-1.5">Motivo *</label>
             <SearchableSelect
               options={motivosPorTipo[watchedTipoMovimiento] || []}

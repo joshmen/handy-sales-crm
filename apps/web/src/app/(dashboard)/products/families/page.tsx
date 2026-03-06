@@ -14,6 +14,7 @@ import {
   Edit,
   Trash2,
 } from 'lucide-react';
+import { useFormatters } from '@/hooks/useFormatters';
 
 const mockFamilies: ProductFamily[] = [
   {
@@ -85,6 +86,7 @@ const mockFamilies: ProductFamily[] = [
 ];
 
 export default function ProductFamiliesPage() {
+  const { formatDate: _fmtDate } = useFormatters();
   const [families, setFamilies] = useState<ProductFamily[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDisabled, setShowDisabled] = useState(false);
@@ -129,7 +131,7 @@ export default function ProductFamiliesPage() {
   );
 
   const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('es-MX', {
+    return _fmtDate(date, {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',

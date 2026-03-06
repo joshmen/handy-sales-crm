@@ -23,6 +23,7 @@ import {
   Play,
   Loader2,
 } from 'lucide-react';
+import { useFormatters } from '@/hooks/useFormatters';
 
 const pageSize = 20;
 
@@ -31,6 +32,7 @@ function toDateStr(d: Date) {
 }
 
 export default function DeliveriesPage() {
+  const { formatDate } = useFormatters();
   const [routes, setRoutes] = useState<RouteItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -131,14 +133,6 @@ export default function DeliveriesPage() {
       (route.zonaNombre?.toLowerCase().includes(term) ?? false)
     );
   });
-
-  const formatDate = (date: Date) =>
-    new Intl.DateTimeFormat('es-MX', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    }).format(date);
-
   const getStatusBadge = (estado: string) => {
     const color = deliveryService.getStatusColor(estado);
     const label = deliveryService.getStatusLabel(estado);
@@ -184,7 +178,7 @@ export default function DeliveriesPage() {
         { label: 'Entregas' },
       ]}
       title="Entregas"
-      subtitle={`${totalRoutes} rutas`}
+      subtitle={totalRoutes > 0 ? `${totalRoutes} ruta${totalRoutes !== 1 ? 's' : ''}` : undefined}
       actions={
         <ExportButton entity="rutas" params={{ desde: fechaDesde, hasta: fechaHasta }} />
       }

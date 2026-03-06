@@ -39,6 +39,7 @@ import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { useBatchOperations } from '@/hooks/useBatchOperations';
 import { BatchActionBar } from '@/components/shared/BatchActionBar';
 import { BatchConfirmModal } from '@/components/shared/BatchConfirmModal';
+import { useFormatters } from '@/hooks/useFormatters';
 
 // Tipos locales para los catálogos (coinciden con el backend)
 interface FamiliaProducto {
@@ -86,6 +87,7 @@ const productSchema = z.object({
 type ProductFormData = z.infer<typeof productSchema>;
 
 export default function ProductsPage() {
+  const { formatCurrency } = useFormatters();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -354,15 +356,6 @@ export default function ProductsPage() {
       batch.setBatchLoading(false);
     }
   };
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency: 'MXN',
-    }).format(value);
-  };
-
-
   return (
       <PageHeader
         breadcrumbs={[
@@ -370,6 +363,7 @@ export default function ProductsPage() {
           { label: 'Productos' },
         ]}
         title="Productos"
+        subtitle={totalProducts > 0 ? `${totalProducts} producto${totalProducts !== 1 ? 's' : ''}` : undefined}
         actions={
           <>
             <div className="relative" data-tour="products-import-export">
