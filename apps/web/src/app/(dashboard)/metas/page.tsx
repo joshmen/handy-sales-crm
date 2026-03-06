@@ -84,8 +84,7 @@ const metaSchema = z.object({
 type MetaFormData = z.infer<typeof metaSchema>;
 
 // ─── Helpers ───────────────────────────────────────────
-const fmtDateSimple = (d: string) =>
-  new Date(d).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 const nextMonthStr = () => {
@@ -600,7 +599,8 @@ export default function MetasPage() {
         icon={<Target className="w-5 h-5" weight="duotone" />}
         isDirty={isDirty}
       >
-        <form onSubmit={handleFormSubmit(onSubmit as any)} className="flex flex-col gap-5 p-6">
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+        <form onSubmit={handleFormSubmit(onSubmit as Parameters<typeof handleFormSubmit>[0])} className="flex flex-col gap-5 p-6">
 
           {/* Vendedor */}
           <div data-tour="metas-drawer-vendedor">
