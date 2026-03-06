@@ -1,3 +1,4 @@
+using HandySales.Application.Notifications.Interfaces;
 using HandySales.Domain.Entities;
 using HandySales.Infrastructure.Persistence;
 using HandySales.Infrastructure.Repositories;
@@ -87,6 +88,10 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             services.AddHttpClient<PwnedPasswordService>()
                 .ConfigurePrimaryHttpMessageHandler(() => new FakePwnedPasswordHandler());
 
+            // Stub IRealtimePushService so SignalRPushService (which needs IHubContext) is not resolved
+            services.RemoveAll<IRealtimePushService>();
+            services.AddScoped<IRealtimePushService, FakeRealtimePushService>();
+
             // Crea base de datos
             var sp = services.BuildServiceProvider();
             using var scope = sp.CreateScope();
@@ -103,4 +108,13 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
         _connection?.Close();
         _connection?.Dispose();
     }
+}
+
+/// <summary>
+/// No-op push service for tests (avoids SignalR/IHubContext dependency).
+/// </summary>
+internal class FakeRealtimePushService : IRealtimePushService
+{
+    public Task SendToUserAsync(int userId, object payload) => Task.CompletedTask;
+    public Task SendToUsersAsync(IEnumerable<int> userIds, object payload) => Task.CompletedTask;
 }

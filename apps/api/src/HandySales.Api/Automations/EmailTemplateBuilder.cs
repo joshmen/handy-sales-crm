@@ -74,7 +74,6 @@ public class EmailTemplateBuilder
     {
         var preheader = preheaderText ?? titulo;
         var lighterBg = "#f8faf9";
-        var borderColor = "#e5e7eb";
 
         return $"""
         <!DOCTYPE html>
