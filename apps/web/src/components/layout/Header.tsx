@@ -17,6 +17,7 @@ import {
   Menu,
   Info,
   Building2,
+  ArrowRight,
 } from 'lucide-react';
 import { useSidebar, useTheme } from '@/stores/useUIStore';
 import { cn, getInitials } from '@/lib/utils';
@@ -33,6 +34,7 @@ import { getRoleDisplayName, getRoleColor } from '@/lib/roles';
 import { ImpersonationModal } from '@/components/impersonation';
 import { useNotifications } from '@/hooks/useNotifications';
 import type { DefaultSession } from 'next-auth';
+import { useFormatters } from '@/hooks/useFormatters';
 
 // Extiende el user de NextAuth con los campos que usas en tu app
 type AppSessionUser = DefaultSession['user'] & {
@@ -83,6 +85,7 @@ export interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpersonating }) => {
+  const { formatDate } = useFormatters();
   const isClient = useClientOnly();
   const [mounted, setMounted] = useState(false);
   const { toggle } = useSidebar(); // fallback
@@ -199,12 +202,12 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
   };
 
   const formatTime = (date: Date) =>
-    new Intl.DateTimeFormat('es-MX', { hour: '2-digit', minute: '2-digit' }).format(date);
+    formatDate(date, { hour: '2-digit', minute: '2-digit' });
 
   if (!mounted || !isClient) {
     return (
       <header className={cn(
-        "fixed left-0 right-0 z-50 w-full bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 border-b border-gray-200 shadow-sm",
+        "fixed left-0 right-0 z-50 w-full bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 border-b border-border shadow-sm",
         isImpersonating ? "top-10" : "top-0"
       )}>
         <div className="flex h-16 items-center px-4 lg:px-6">
@@ -218,7 +221,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
 
   return (
     <header className={cn(
-      "fixed left-0 right-0 z-50 w-full bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 border-b border-gray-200 shadow-sm",
+      "fixed left-0 right-0 z-50 w-full bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 border-b border-border shadow-sm",
       isImpersonating ? "top-10" : "top-0"
     )}>
       <div className="flex h-16 items-center px-4 lg:px-6">
@@ -228,7 +231,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden text-gray-600 hover:bg-gray-100"
+            className="lg:hidden text-muted-foreground hover:bg-accent"
             onClick={onMenuClick ?? toggle}
           >
             <Menu className="h-5 w-5" />
@@ -251,12 +254,12 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
                 className="w-9 h-9"
               />
             )}
-            <span className="hidden sm:block text-xl font-semibold text-gray-900">
+            <span className="hidden sm:block text-xl font-semibold text-foreground">
               {companyConfig.name}
             </span>
             {/* Indicador de configuración para SUPER_ADMIN */}
             {companyConfig.hasGlobalCustomization && (
-              <span className="hidden md:inline-block ml-2 px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded-full font-medium">
+              <span className="hidden md:inline-block ml-2 px-2 py-1 text-xs bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 rounded-full font-medium">
                 Global
               </span>
             )}
@@ -270,7 +273,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
             <input
               type="text"
               placeholder="Buscar clientes, productos, pedidos..."
-              className="w-full h-10 pl-11 pr-4 text-gray-900 bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent hover:shadow-md transition-all duration-200 text-sm"
+              className="w-full h-10 pl-11 pr-4 text-foreground bg-muted border border-border rounded-full focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent hover:shadow-md transition-all duration-200 text-sm"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) =>
@@ -287,7 +290,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
             data-tour="header-notifications"
             variant="ghost"
             size="icon"
-            className="relative text-gray-600 hover:bg-gray-100 rounded-full"
+            className="relative text-muted-foreground hover:bg-accent rounded-full"
             onClick={() => {
               fetchNotifications();
               setIsNotificationsOpen(true);
@@ -306,7 +309,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
             data-tour="header-help"
             variant="ghost"
             size="icon"
-            className="text-gray-600 hover:bg-gray-100 rounded-full"
+            className="text-muted-foreground hover:bg-accent rounded-full"
             onClick={onHelpClick}
             aria-label="Ayuda"
           >
@@ -317,7 +320,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
           <Button
             variant="ghost"
             size="icon"
-            className="text-gray-600 hover:bg-gray-100 rounded-full"
+            className="text-muted-foreground hover:bg-accent rounded-full"
           >
             <div className="grid grid-cols-3 gap-0.5 w-4 h-4">
               {[...Array(9)].map((_, i) => (
@@ -330,11 +333,11 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
           <Button
             data-tour="header-user-menu"
             variant="ghost"
-            className="flex items-center space-x-2 px-2 py-1.5 hover:bg-gray-100 rounded-full h-auto"
+            className="flex items-center space-x-2 px-2 py-1.5 hover:bg-accent rounded-full h-auto"
             onClick={() => setIsUserMenuOpen(true)}
           >
             <div className="hidden md:block text-right mr-1">
-              <p className="text-sm font-medium text-gray-900 leading-none">{currentUser.name}</p>
+              <p className="text-sm font-medium text-foreground leading-none">{currentUser.name}</p>
             </div>
             <Avatar className="h-8 w-8">
               <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
@@ -375,8 +378,8 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-r-transparent" />
             </div>
           ) : notifications.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <Bell className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+            <div className="text-center py-8 text-muted-foreground">
+              <Bell className="h-12 w-12 mx-auto mb-3 text-muted-foreground/40" />
               <p>No tienes notificaciones</p>
             </div>
           ) : (
@@ -392,18 +395,24 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
                     className={cn(
                       'p-3 rounded-lg border transition-colors cursor-pointer',
                       isUnread
-                        ? 'bg-blue-50 border-blue-200 hover:bg-blue-100'
-                        : 'hover:bg-gray-50'
+                        ? 'bg-primary/5 border-primary/20 hover:bg-primary/10'
+                        : 'hover:bg-accent'
                     )}
                     onClick={async () => {
                       if (isUnread) await markAsRead(n.id);
-                      setExpandedNotifId(prev => prev === n.id ? null : n.id);
+                      const url = n.data?.['url'];
+                      if (url) {
+                        router.push(url);
+                        setIsNotificationsOpen(false);
+                      } else {
+                        setExpandedNotifId(prev => prev === n.id ? null : n.id);
+                      }
                     }}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <h4 className="text-sm font-medium text-gray-900 truncate">
+                          <h4 className="text-sm font-medium text-foreground truncate">
                             {n.titulo}
                           </h4>
                           {n.tipo !== 'General' && (
@@ -416,14 +425,19 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
                           )}
                         </div>
                         <p className={cn(
-                          'text-sm text-gray-600 mt-1 transition-all',
+                          'text-sm text-muted-foreground mt-1 transition-all',
                           expandedNotifId === n.id ? '' : 'line-clamp-2'
                         )}>
                           {n.mensaje}
                         </p>
-                        <span className="text-xs text-gray-400 mt-1 block">
-                          {formatTime(createdDate)}
-                        </span>
+                        <div className="flex items-center justify-between mt-1">
+                          <span className="text-xs text-muted-foreground/70">{formatTime(createdDate)}</span>
+                          {n.data?.['url'] && (
+                            <span className="text-xs text-blue-500 font-medium flex items-center gap-0.5">
+                              Ver detalles <ArrowRight className="h-3 w-3" />
+                            </span>
+                          )}
+                        </div>
                       </div>
                       {isUnread && (
                         <div className="h-2 w-2 bg-blue-500 rounded-full flex-shrink-0 mt-2" />
@@ -453,7 +467,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
             <DialogTitle>Cuenta de usuario</DialogTitle>
           </DialogHeader>
           <div className="space-y-6">
-            <div className="flex items-center space-x-4 p-4 rounded-xl bg-gradient-to-r from-blue-50 to-purple-50 border">
+            <div className="flex items-center space-x-4 p-4 rounded-xl bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950 border">
               <Avatar className="h-12 w-12">
                 <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
                 <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
@@ -461,8 +475,8 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
-                <h3 className="font-semibold text-gray-900">{currentUser.name}</h3>
-                <p className="text-sm text-gray-600">{currentUser.email}</p>
+                <h3 className="font-semibold text-foreground">{currentUser.name}</h3>
+                <p className="text-sm text-muted-foreground">{currentUser.email}</p>
                 <div className="mt-1">
                   <span
                     className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(
@@ -478,7 +492,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
             <div className="space-y-2">
               <Button
                 variant="ghost"
-                className="w-full justify-start h-12 text-gray-700 hover:bg-gray-50"
+                className="w-full justify-start h-12 text-foreground hover:bg-accent"
                 onClick={() => {
                   router.push('/profile');
                   setIsUserMenuOpen(false);
@@ -491,7 +505,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
               {(currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN') && (
                 <Button
                   variant="ghost"
-                  className="w-full justify-start h-12 text-gray-700 hover:bg-gray-50"
+                  className="w-full justify-start h-12 text-foreground hover:bg-accent"
                   onClick={() => {
                     // SA sin impersonar → global-settings (no tiene acceso a /settings)
                     const target = currentUser.role === 'SUPER_ADMIN' ? '/global-settings' : '/settings';
@@ -499,7 +513,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
                     setIsUserMenuOpen(false);
                   }}
                 >
-                  <Settings className="h-4 w-4 mr-3 text-gray-500" />
+                  <Settings className="h-4 w-4 mr-3 text-muted-foreground" />
                   {currentUser.role === 'SUPER_ADMIN' ? 'Configuración Global' : 'Configuración'}
                 </Button>
               )}
@@ -507,7 +521,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
               {currentUser.role === 'SUPER_ADMIN' && (
                 <Button
                   variant="ghost"
-                  className="w-full justify-start h-12 text-gray-700 hover:bg-gray-50"
+                  className="w-full justify-start h-12 text-foreground hover:bg-accent"
                   onClick={() => {
                     setIsUserMenuOpen(false);
                     setIsImpersonationOpen(true);

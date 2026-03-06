@@ -80,51 +80,41 @@ body {
   }
 
   .dark {
-    /* Background colors */
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    /* Warm Graphite palette — layered depth, not cold blue-black */
+    --background: 228 12% 8%;
+    --foreground: 210 15% 93%;
 
-    /* Card colors */
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 228 10% 12%;
+    --card-foreground: 210 15% 93%;
 
-    /* Popover colors */
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 228 12% 14%;
+    --popover-foreground: 210 15% 93%;
 
-    /* Primary colors */
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 213 90% 60%;
+    --primary-foreground: 228 12% 8%;
 
-    /* Secondary colors */
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 228 10% 16%;
+    --secondary-foreground: 210 15% 90%;
 
-    /* Muted colors */
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 228 10% 15%;
+    --muted-foreground: 220 8% 56%;
 
-    /* Accent colors */
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 228 10% 18%;
+    --accent-foreground: 210 15% 93%;
 
-    /* Destructive colors */
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
 
-    /* Border colors */
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
+    --border: 228 10% 19%;
+    --input: 228 10% 19%;
 
-    /* Ring colors */
-    --ring: 212.7 26.8% 83.9%;
+    --ring: 213 90% 60%;
 
-    /* Chart colors */
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --chart-1: 213 85% 58%;
+    --chart-2: 152 55% 50%;
+    --chart-3: 25 85% 58%;
+    --chart-4: 280 60% 62%;
+    --chart-5: 340 70% 58%;
   }
 }
 
@@ -186,6 +176,92 @@ body {
   pre code {
     @apply bg-transparent p-0;
   }
+}
+
+
+/* ============================================
+   Dark mode — remap hardcoded Tailwind grays
+   One file to rule them all: fixes ~2,192 references across 200+ page files.
+   ============================================ */
+.dark .bg-white { background-color: hsl(var(--card)); }
+.dark .bg-gray-50 { background-color: hsl(var(--background)); }
+.dark .bg-gray-100 { background-color: hsl(var(--muted)); }
+
+.dark .text-gray-900 { color: hsl(var(--foreground)); }
+.dark .text-gray-800 { color: hsl(var(--foreground)); }
+.dark .text-gray-700 { color: hsl(var(--card-foreground)); }
+.dark .text-gray-600 { color: hsl(var(--muted-foreground)); }
+.dark .text-gray-500 { color: hsl(var(--muted-foreground)); }
+.dark .text-gray-400 { color: hsl(var(--muted-foreground) / 0.7); }
+.dark .text-gray-300 { color: hsl(var(--muted-foreground) / 0.5); }
+
+.dark .border-gray-200 { border-color: hsl(var(--border)); }
+.dark .border-gray-100 { border-color: hsl(var(--border)); }
+.dark .border-gray-300 { border-color: hsl(var(--border)); }
+.dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) { border-color: hsl(var(--border)); }
+
+.dark .hover\:bg-gray-50:hover { background-color: hsl(var(--accent)); }
+.dark .hover\:bg-gray-100:hover { background-color: hsl(var(--accent)); }
+.dark .hover\:bg-gray-200:hover { background-color: hsl(var(--accent)); }
+.dark .hover\:text-gray-900:hover { color: hsl(var(--foreground)); }
+.dark .hover\:text-gray-700:hover { color: hsl(var(--foreground)); }
+
+.dark .ring-gray-200 { --tw-ring-color: hsl(var(--border)); }
+.dark .ring-gray-300 { --tw-ring-color: hsl(var(--border)); }
+
+.dark .placeholder\:text-gray-400::placeholder { color: hsl(var(--muted-foreground) / 0.5); }
+.dark .placeholder\:text-gray-500::placeholder { color: hsl(var(--muted-foreground) / 0.5); }
+
+/* Shadows — softer on dark backgrounds */
+.dark .shadow-sm { box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.2); }
+.dark .shadow-md { box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.2); }
+.dark .shadow-lg { box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.3); }
+
+/* Google-style utility classes — dark mode aware */
+.dark .google-card { background-color: hsl(var(--card)); }
+.dark .google-input { background-color: hsl(var(--muted)); border-color: hsl(var(--border)); color: hsl(var(--foreground)); }
+.dark .google-text-primary { color: hsl(var(--foreground)); }
+.dark .google-text-secondary { color: hsl(var(--muted-foreground)); }
+.dark .google-text-muted { color: hsl(var(--muted-foreground)); }
+
+/* Colored tint backgrounds — low opacity on dark */
+.dark .bg-blue-50 { background-color: hsl(213 90% 60% / 0.08); }
+.dark .bg-blue-100 { background-color: hsl(213 90% 60% / 0.12); }
+.dark .bg-green-50 { background-color: hsl(152 60% 48% / 0.08); }
+.dark .bg-green-100 { background-color: hsl(152 60% 48% / 0.12); }
+.dark .bg-red-50 { background-color: hsl(0 72% 55% / 0.08); }
+.dark .bg-red-100 { background-color: hsl(0 72% 55% / 0.12); }
+.dark .bg-yellow-50 { background-color: hsl(45 93% 57% / 0.08); }
+.dark .bg-yellow-100 { background-color: hsl(45 93% 57% / 0.12); }
+.dark .bg-purple-50 { background-color: hsl(280 60% 62% / 0.08); }
+.dark .bg-purple-100 { background-color: hsl(280 60% 62% / 0.12); }
+.dark .bg-indigo-50 { background-color: hsl(230 70% 60% / 0.08); }
+.dark .bg-indigo-100 { background-color: hsl(230 70% 60% / 0.12); }
+.dark .bg-orange-50 { background-color: hsl(25 85% 58% / 0.08); }
+
+/* Auth components — dark */
+.dark .auth-input:focus {
+  border-color: #818cf8;
+  box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.15);
+  background-color: hsl(var(--card));
+}
+.dark .auth-separator {
+  background: linear-gradient(to right, transparent, hsl(var(--border)) 20%, hsl(var(--border)) 80%, transparent);
+}
+
+/* Tour popover — dark */
+.dark .driver-popover.handy-tour-popover {
+  background: hsl(var(--card));
+}
+.dark .driver-popover.handy-tour-popover .driver-popover-description {
+  color: hsl(var(--muted-foreground));
+  background: hsl(var(--muted));
+  border-left-color: hsl(152 60% 48% / 0.3);
+}
+.dark .driver-popover.handy-tour-popover .driver-popover-prev-btn {
+  background: hsl(var(--muted));
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--border));
 }
 
 /* Custom scrollbar */

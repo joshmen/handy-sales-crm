@@ -21,6 +21,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   const { isImpersonating } = useImpersonationStore();
   const pathname = usePathname();
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [tourActive, setTourActive] = useState(false);
 
   useEffect(() => {
     const dismissed = localStorage.getItem('onboarding-completed') === 'true';
@@ -28,6 +29,18 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     const onComplete = () => setShowOnboarding(false);
     window.addEventListener('onboarding-completed', onComplete);
     return () => window.removeEventListener('onboarding-completed', onComplete);
+  }, []);
+
+  // Hide floating widgets while a tour is running
+  useEffect(() => {
+    const onActive = () => setTourActive(true);
+    const onInactive = () => setTourActive(false);
+    window.addEventListener('tour-active', onActive);
+    window.addEventListener('tour-inactive', onInactive);
+    return () => {
+      window.removeEventListener('tour-active', onActive);
+      window.removeEventListener('tour-inactive', onInactive);
+    };
   }, []);
 
   // Colapsa según breakpoint SOLO en mount y en cambios del media query
@@ -43,7 +56,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   }, [setCollapsed, setOpen]); // <- no depende de `collapsed`/`open`
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Banner de impersonación (arriba del header) */}
       {isImpersonating && <ImpersonationBanner />}
 
@@ -76,10 +89,12 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         </main>
       </div>
       <HelpPanel isOpen={helpPanelOpen} onClose={() => setHelpPanelOpen(false)} />
-      <TourPrompt />
+      <div className={tourActive ? 'hidden' : ''}>
+        <TourPrompt />
+      </div>
 
       {/* Floating onboarding button — right side, above TourPrompt */}
-      {showOnboarding && pathname !== '/getting-started' && (
+      {showOnboarding && !tourActive && pathname !== '/getting-started' && (
         <Link
           href="/getting-started"
           className="fixed bottom-24 right-6 z-40 flex items-center gap-2 px-5 py-3 rounded-full shadow-xl text-white font-medium transition-all hover:scale-105 hover:shadow-2xl active:scale-95 animate-bounce-once"

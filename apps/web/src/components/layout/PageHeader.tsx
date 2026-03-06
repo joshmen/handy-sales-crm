@@ -17,17 +17,17 @@ export function PageHeader({ breadcrumbs, title, subtitle, actions, children }: 
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="bg-white px-4 py-4 sm:px-8 sm:py-6 border-b border-gray-200">
+      <div className="bg-card px-4 py-4 sm:px-8 sm:py-6 border-b border-border relative z-10">
         <div className="page-animate">
           <Breadcrumb items={breadcrumbs} />
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between page-animate page-animate-delay-1">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">
               {title}
             </h1>
             {subtitle && (
-              <p className="text-sm text-gray-500 mt-1">{subtitle}</p>
+              <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
             )}
           </div>
           {actions && (

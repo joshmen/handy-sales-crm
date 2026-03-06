@@ -43,25 +43,55 @@ export const Drawer = forwardRef<DrawerHandle, DrawerProps>(({
 }, ref) => {
   const [showUnsaved, setShowUnsaved] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const [entered, setEntered] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  // Sync visibility with isOpen
+  useEffect(() => {
+    if (isOpen) {
+      setIsClosing(false);
+      setVisible(true);
+      // Double rAF: first frame paints translate-x-full, second triggers transition to translate-x-0
+      const raf = requestAnimationFrame(() => {
+        requestAnimationFrame(() => setEntered(true));
+      });
+      return () => cancelAnimationFrame(raf);
+    } else if (visible && !isClosing) {
+      // Parent set isOpen=false programmatically (e.g. after save) → animate out
+      performClose();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
+  const performClose = useCallback(() => {
+    setIsClosing(true);
+    setEntered(false);
+    setTimeout(() => {
+      setVisible(false);
+      setIsClosing(false);
+      onClose();
+    }, 300); // matches duration-300
+  }, [onClose]);
+
   const handleRequestClose = useCallback(() => {
     if (isDirty) {
       setShowUnsaved(true);
     } else {
-      onClose();
+      performClose();
     }
-  }, [isDirty, onClose]);
+  }, [isDirty, performClose]);
 
   useImperativeHandle(ref, () => ({
     requestClose: handleRequestClose,
   }));
 
   useEffect(() => {
-    if (isOpen) {
+    if (visible) {
       document.body.style.overflow = 'hidden';
       const handleKeyDown = (e: KeyboardEvent) => {
         if (e.key === 'Escape') handleRequestClose();
@@ -75,38 +105,45 @@ export const Drawer = forwardRef<DrawerHandle, DrawerProps>(({
       document.body.style.overflow = 'unset';
       setShowUnsaved(false);
     }
-  }, [isOpen, handleRequestClose]);
+  }, [visible, handleRequestClose]);
 
-  if (!isOpen || !mounted) return null;
+  if (!visible || !mounted) return null;
 
   const drawerContent = (
     <div className="fixed inset-0 max-sm:top-16 z-[60] flex justify-end" data-drawer-root>
       {/* Overlay */}
       <div
-        className="absolute inset-0 bg-black/40 transition-opacity"
+        className={cn(
+          'absolute inset-0 bg-black/40 transition-opacity duration-300',
+          entered ? 'opacity-100' : 'opacity-0'
+        )}
         onClick={handleRequestClose}
       />
 
       {/* Panel */}
       <div
         data-drawer-panel
+        role="dialog"
+        aria-modal="true"
         className={cn(
-          'relative w-full flex flex-col bg-white shadow-xl animate-in slide-in-from-right duration-300',
+          'relative w-full flex flex-col bg-card shadow-xl transition-transform duration-300 ease-out',
+          entered ? 'translate-x-0' : 'translate-x-full',
           widthClasses[width]
         )}
       >
         {/* Header */}
         {title && (
-          <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 flex-shrink-0">
+          <div className="flex items-center justify-between h-16 px-6 border-b border-border flex-shrink-0">
             <div className="flex items-center gap-3">
               {icon}
-              <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+              <h2 className="text-lg font-semibold text-foreground">{title}</h2>
             </div>
             <button
               onClick={handleRequestClose}
-              className="flex items-center justify-center w-9 h-9 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+              aria-label="Cerrar"
+              className="flex items-center justify-center w-9 h-9 rounded-lg bg-accent hover:bg-accent/80 transition-colors focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-1"
             >
-              <X className="w-[18px] h-[18px] text-gray-500" />
+              <X className="w-[18px] h-[18px] text-muted-foreground" />
             </button>
           </div>
         )}
@@ -118,7 +155,7 @@ export const Drawer = forwardRef<DrawerHandle, DrawerProps>(({
 
         {/* Sticky Footer */}
         {footer && (
-          <div className="drawer-footer flex-shrink-0 border-t border-gray-200 bg-white px-6 py-4">
+          <div className="drawer-footer flex-shrink-0 border-t border-border shadow-[0_-2px_8px_rgba(0,0,0,0.06)] bg-card px-6 py-4">
             {footer}
           </div>
         )}
@@ -131,7 +168,7 @@ export const Drawer = forwardRef<DrawerHandle, DrawerProps>(({
         onCancel={() => setShowUnsaved(false)}
         onContinue={() => {
           setShowUnsaved(false);
-          onClose();
+          performClose();
         }}
         onSave={onSave ? () => {
           setShowUnsaved(false);

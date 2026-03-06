@@ -34,6 +34,7 @@ import {
   Megaphone,
   DeviceMobile,
   Robot,
+  Target,
   Bug,
   ClockCounterClockwise,
   IconContext,
@@ -280,6 +281,13 @@ const sidebarItems: SidebarItem[] = [
     href: '/automations',
     permission: 'view_automations',
   },
+  {
+    id: 'metas',
+    label: 'Metas de Vendedor',
+    icon: Target,
+    href: '/metas',
+    permission: 'view_automations',
+  },
 
   // — ADMINISTRACIÓN —
   {
@@ -488,7 +496,7 @@ const itemGroupMap: Record<string, string> = {
   zones: 'operacion', visits: 'operacion',
   // Herramientas
   forms: 'herramientas', 'form-builder': 'herramientas', 'form-list': 'herramientas',
-  reports: 'herramientas', team: 'herramientas', devices: 'herramientas', automations: 'herramientas',
+  reports: 'herramientas', team: 'herramientas', devices: 'herramientas', automations: 'herramientas', metas: 'herramientas',
   // Administración
   administration: 'admin', tenants: 'admin', 'system-dashboard': 'admin',
   users: 'admin', roles: 'admin', 'global-settings': 'admin',
@@ -655,7 +663,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
                     isExpanded && 'rotate-180'
                   )}
                 >
-                  <ChevronDown size={14} className="text-gray-400" />
+                  <ChevronDown size={14} className="text-muted-foreground" />
                 </div>
               )}
             </div>
@@ -682,8 +690,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
       !item.href && 'w-full',
       level > 0 && 'ml-6 py-2',
       activeState
-        ? item.href ? 'bg-blue-100 text-blue-900 shadow-sm' : 'bg-blue-50 text-blue-900'
-        : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900',
+        ? item.href ? 'bg-primary/10 text-primary shadow-sm' : 'bg-primary/5 text-primary'
+        : 'text-muted-foreground hover:bg-accent hover:text-foreground',
       !showLabels && 'justify-center px-2'
     );
 
@@ -733,7 +741,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
       {/* Modern Google-style Sidebar */}
       <aside
         className={cn(
-          'fixed left-0 z-30 bg-white border-r border-gray-200 transition-all duration-300 ease-in-out',
+          'fixed left-0 z-30 bg-card border-r border-border transition-all duration-300 ease-in-out',
           isImpersonatingProp
             ? 'top-[calc(4rem+2.5rem)] h-[calc(100vh-4rem-2.5rem)]'
             : 'top-16 h-[calc(100vh-4rem)]',
@@ -749,10 +757,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
       >
         <div className="flex h-full flex-col">
           {/* Navigation Header */}
-          <div className="p-4 border-b border-gray-100">
+          <div className="p-4 border-b border-border">
             <div className="flex items-center justify-between">
               {!sidebarCollapsed && (
-                <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
+                <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide">
                   {isSuperAdminDirect ? 'Administración' : 'Navegación'}
                 </h2>
               )}
@@ -761,7 +769,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
                 variant="ghost"
                 size="icon"
                 onClick={toggleCollapsed}
-                className="hidden lg:flex h-8 w-8 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full"
+                className="hidden lg:flex h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-accent rounded-full"
               >
                 {sidebarCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
               </Button>
@@ -771,7 +779,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
                 variant="ghost"
                 size="icon"
                 onClick={toggle}
-                className="lg:hidden h-8 w-8 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full"
+                className="lg:hidden h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-accent rounded-full"
               >
                 <X size={16} />
               </Button>
@@ -788,10 +796,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
                     {item.section && showLabels && (
                       <div className="pt-4 pb-1 px-3 first:pt-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">
                             {item.section}
                           </span>
-                          <div className="flex-1 h-px bg-gray-100" />
+                          <div className="flex-1 h-px bg-border" />
                         </div>
                       </div>
                     )}
@@ -804,24 +812,24 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
 
           {/* Bottom User Section */}
           {!sidebarCollapsed && session?.user && (
-            <div className="border-t border-gray-100 p-4">
+            <div className="border-t border-border p-4">
               {isSuperAdminDirect ? (
                 // SuperAdmin (not impersonating) sees their profile
-                <div className="flex items-center space-x-3 p-3 rounded-xl bg-gradient-to-r from-slate-50 to-indigo-50">
+                <div className="flex items-center space-x-3 p-3 rounded-xl bg-gradient-to-r from-slate-50 to-indigo-50 dark:from-slate-900 dark:to-indigo-950">
                   <Avatar className="h-10 w-10">
                     <AvatarFallback className="bg-gradient-to-br from-slate-700 to-indigo-800 text-white text-sm">
                       SA
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 truncate">
+                    <p className="text-sm font-semibold text-foreground truncate">
                       {profile?.nombre || session.user.name || 'Super Admin'}
                     </p>
-                    <p className="text-xs text-gray-500 truncate">
+                    <p className="text-xs text-muted-foreground truncate">
                       {session.user.email}
                     </p>
                     <div className="mt-1">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
                         Super Admin
                       </span>
                     </div>
@@ -830,7 +838,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
               ) : shouldShowCompanySettings ? (
                 // Non-super admin (or impersonating) sees company info with company logo
                 <div
-                  className={`flex items-center space-x-3 p-3 rounded-xl bg-gradient-to-r from-green-50 to-blue-50 hover:from-green-100 hover:to-blue-100 transition-all duration-200
+                  className={`flex items-center space-x-3 p-3 rounded-xl bg-gradient-to-r from-green-50 to-blue-50 hover:from-green-100 hover:to-blue-100 dark:from-green-950 dark:to-blue-950 dark:hover:from-green-900 dark:hover:to-blue-900 transition-all duration-200
                       ${(session.user.role === 'ADMIN' || isImpersonating) ? 'cursor-pointer' : 'cursor-default'}`}
                   onClick={() => {
                     if (session.user.role === 'ADMIN' || isImpersonating) {
@@ -838,25 +846,26 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
                     }
                   }}
                 >
-                  <Avatar className="h-10 w-10">
+                  <Avatar className="h-10 w-10 rounded-lg">
                     <AvatarImage
                       src={companySettings?.companyLogo || ''}
                       alt={companySettings?.companyName || 'Mi Empresa'}
+                      className="object-contain rounded-lg bg-card"
                     />
-                    <AvatarFallback className="bg-gradient-to-br from-green-500 to-blue-600 text-white text-sm">
+                    <AvatarFallback className="rounded-lg bg-gradient-to-br from-green-500 to-blue-600 text-white text-sm">
                       {getInitials(companySettings?.companyName || 'Mi Empresa')}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 truncate">
+                    <p className="text-sm font-semibold text-foreground truncate">
                       {companySettings?.companyName || 'Mi Empresa'}
                     </p>
-                    <p className="text-xs text-gray-500 truncate">
+                    <p className="text-xs text-muted-foreground truncate">
                       {profile?.nombre || session.user.name}
                     </p>
                     <div className="mt-1">
                       <span
-                        className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                        className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
                       >
                         {isImpersonating ? 'ADMIN (Soporte)' : session.user.role}
                       </span>
