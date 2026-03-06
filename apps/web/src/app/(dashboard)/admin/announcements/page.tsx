@@ -37,6 +37,7 @@ import {
 } from '@/services/api/announcements';
 import { tenantService } from '@/services/api/tenants';
 import type { Tenant } from '@/types/tenant';
+import { useFormatters } from '@/hooks/useFormatters';
 
 const tipoLabels: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
   Broadcast: { label: 'Broadcast', icon: <Radio className="h-4 w-4" />, color: 'bg-purple-100 text-purple-700' },
@@ -58,6 +59,7 @@ const displayModeLabels: Record<string, { label: string; icon: React.ReactNode; 
 };
 
 export default function AnnouncementsPage() {
+  const { formatDate } = useFormatters();
   const { data: session } = useSession();
   const router = useRouter();
 
@@ -319,7 +321,7 @@ export default function AnnouncementsPage() {
                       <div className="flex items-center gap-4 mt-1 text-xs text-gray-400">
                         <span className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
-                          {new Date(ann.creadoEn).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}
+                          {formatDate(ann.creadoEn, { dateStyle: 'short', timeStyle: 'short' })}
                         </span>
                         {ann.sentCount > 0 && (
                           <span className="flex items-center gap-1">

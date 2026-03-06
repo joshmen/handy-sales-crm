@@ -38,6 +38,7 @@ import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
 import { ActiveToggle } from '@/components/ui/ActiveToggle';
 import { Megaphone } from '@phosphor-icons/react';
 import { HelpTooltip } from '@/components/help/HelpTooltip';
+import { useFormatters } from '@/hooks/useFormatters';
 
 interface ProductoSimple {
   id: number;
@@ -59,6 +60,7 @@ const promotionSchema = z.object({
 type PromotionFormData = z.infer<typeof promotionSchema>;
 
 export default function PromotionsPage() {
+  const { formatDate: _fmtDate } = useFormatters();
   const drawerRef = useRef<DrawerHandle>(null);
   const [promotions, setPromotions] = useState<PromocionDto[]>([]);
   const [productos, setProductos] = useState<ProductoSimple[]>([]);
@@ -247,7 +249,7 @@ export default function PromotionsPage() {
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+    return _fmtDate(dateStr, { day: '2-digit', month: 'short', year: 'numeric' });
   };
 
   const isExpired = (fechaFin: string) => {

@@ -16,8 +16,10 @@ import {
   UserCheck,
   Crown
 } from 'lucide-react';
+import { useFormatters } from '@/hooks/useFormatters';
 
 export default function SystemDashboardPage() {
+  const { formatCurrency: _fmtCur, formatNumber: _fmtNum } = useFormatters();
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -43,14 +45,11 @@ export default function SystemDashboardPage() {
   };
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency: 'MXN',
-    }).format(value);
+    return _fmtCur(value);
   };
 
   const formatNumber = (value: number) => {
-    return value.toLocaleString('es-MX');
+    return _fmtNum(value);
   };
 
   if (loading) {

@@ -264,6 +264,7 @@ export default function ProductFamiliesPage() {
         { label: 'Familias de productos' },
       ]}
       title="Familias de productos"
+      subtitle={totalItems > 0 ? `${totalItems} familia${totalItems !== 1 ? 's' : ''}` : undefined}
       actions={
         <>
           <div className="relative" data-tour="product-families-import-export">

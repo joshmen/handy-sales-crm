@@ -34,6 +34,7 @@ import {
 } from '@/types/tenant';
 import { tenantService } from '@/services/api/tenants';
 import { toast } from '@/hooks/useToast';
+import { useFormatters } from '@/hooks/useFormatters';
 
 interface TenantFormData {
   nombreEmpresa: string;
@@ -54,6 +55,7 @@ interface TenantFormData {
 type DrawerMode = 'none' | 'create' | 'edit';
 
 export default function TenantsPage() {
+  const { formatDate: _fmtDate } = useFormatters();
   const router = useRouter();
 
   // State
@@ -333,7 +335,7 @@ export default function TenantsPage() {
   const formatDate = (dateString: string | null) => {
     if (!dateString) return '-';
     const date = new Date(dateString);
-    return date.toLocaleDateString('es-MX', {
+    return _fmtDate(date, {
       year: 'numeric',
       month: 'short',
       day: 'numeric',

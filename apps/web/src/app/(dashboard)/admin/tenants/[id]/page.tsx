@@ -34,6 +34,7 @@ import {
 import { tenantService } from '@/services/api/tenants';
 import { toast } from '@/hooks/useToast';
 import { ImpersonationModal } from '@/components/impersonation';
+import { useFormatters } from '@/hooks/useFormatters';
 
 interface TenantFormData {
   nombreEmpresa: string;
@@ -51,6 +52,7 @@ interface AddUserFormData {
 type DrawerMode = 'none' | 'edit' | 'suspend' | 'addUser';
 
 export default function TenantDetailPage() {
+  const { formatDate: _fmtDate } = useFormatters();
   const params = useParams();
   const router = useRouter();
   const tenantId = Number(params.id);
@@ -279,7 +281,7 @@ export default function TenantDetailPage() {
   const formatDate = (dateString: string | null) => {
     if (!dateString) return '-';
     const date = new Date(dateString);
-    return date.toLocaleDateString('es-MX', {
+    return _fmtDate(date, {
       year: 'numeric',
       month: 'short',
       day: 'numeric',

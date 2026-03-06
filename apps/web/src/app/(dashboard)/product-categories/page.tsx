@@ -210,6 +210,7 @@ export default function ProductCategoriesPage() {
         { label: 'Categorías de productos' },
       ]}
       title="Categorías de productos"
+      subtitle={totalItems > 0 ? `${totalItems} categoría${totalItems !== 1 ? 's' : ''}` : undefined}
       actions={
         <>
           <div className="relative" data-tour="product-categories-import-export">

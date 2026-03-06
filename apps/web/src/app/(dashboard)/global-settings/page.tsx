@@ -23,6 +23,7 @@ import {
   Trash2,
   Upload,
 } from 'lucide-react';
+import { useFormatters } from '@/hooks/useFormatters';
 
 interface GlobalSettings {
   id: string;
@@ -43,6 +44,7 @@ interface GlobalSettings {
 }
 
 export default function GlobalSettingsPage() {
+  const { formatDate, formatNumber } = useFormatters();
   const { data: session } = useSession();
   const router = useRouter();
   const {
@@ -497,7 +499,7 @@ export default function GlobalSettingsPage() {
 
           {/* Footer Info */}
           <div className="text-center text-sm text-gray-500">
-            Última actualización: {new Date(settings.updatedAt).toLocaleString('es-MX')}
+            Última actualización: {formatDate(settings.updatedAt)}
           </div>
       </div>
   );

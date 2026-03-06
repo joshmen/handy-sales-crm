@@ -14,8 +14,10 @@ import {
 import { signOut } from 'next-auth/react';
 import { subscriptionService } from '@/services/api/subscriptions';
 import type { SubscriptionPlan, SubscriptionStatus } from '@/types/subscription';
+import { useFormatters } from '@/hooks/useFormatters';
 
 export default function SubscriptionExpiredPage() {
+  const { formatCurrency } = useFormatters();
   const router = useRouter();
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null);
@@ -58,7 +60,7 @@ export default function SubscriptionExpiredPage() {
   };
 
   const formatPrice = (price: number) =>
-    new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(price);
+    formatCurrency(price);
 
   const graceEnd = subscription?.gracePeriodEnd ? new Date(subscription.gracePeriodEnd) : null;
   const daysLeft = graceEnd

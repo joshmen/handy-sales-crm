@@ -48,6 +48,7 @@ import {
   Upload,
 } from 'lucide-react';
 import { getInitials } from '@/lib/utils';
+import { useFormatters } from '@/hooks/useFormatters';
 
 // Roles del sistema
 enum UserRole {
@@ -58,6 +59,7 @@ enum UserRole {
 }
 
 export default function ProfilePage() {
+  const { formatDate } = useFormatters();
   // TODOS los hooks deben estar al inicio para cumplir las reglas de hooks
   useSession();
   const {
@@ -463,7 +465,7 @@ export default function ProfilePage() {
 
 
   const formatTime = (date: Date) => {
-    return date.toLocaleString('es-MX', {
+    return formatDate(date, {
       day: 'numeric',
       month: 'short',
       hour: '2-digit',

@@ -33,6 +33,7 @@ import { SearchBar } from '@/components/common/SearchBar';
 import { InactiveToggle } from '@/components/ui/InactiveToggle';
 import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
 import { ActiveToggle } from '@/components/ui/ActiveToggle';
+import { useFormatters } from '@/hooks/useFormatters';
 
 type TipoAplicacion = 'Global' | 'Producto';
 
@@ -49,6 +50,7 @@ const discountSchema = z.object({
 type DiscountFormData = z.infer<typeof discountSchema>;
 
 export default function DiscountsPage() {
+  const { formatDate } = useFormatters();
   const drawerRef = useRef<DrawerHandle>(null);
 
   const [discounts, setDiscounts] = useState<DescuentoPorCantidadDto[]>([]);
@@ -267,7 +269,7 @@ export default function DiscountsPage() {
     if (days === 1) return 'hace un día';
     if (days < 7) return `hace ${days} días`;
     if (days < 30) return `hace ${Math.floor(days / 7)} semanas`;
-    return date.toLocaleDateString('es-MX');
+    return formatDate(date);
   };
 
   return (
@@ -277,6 +279,7 @@ export default function DiscountsPage() {
         { label: 'Descuentos por cantidad' },
       ]}
       title="Descuentos por cantidad"
+      subtitle={totalItems > 0 ? `${totalItems} descuento${totalItems !== 1 ? 's' : ''}` : undefined}
       actions={
         <>
           <div className="relative" data-tour="discounts-import-export">

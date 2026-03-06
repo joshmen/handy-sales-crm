@@ -12,6 +12,7 @@ import {
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { activityLogService, type ActivityLogDto } from '@/services/api/activityLogs';
 import { getInitials } from '@/lib/utils';
+import { useFormatters } from '@/hooks/useFormatters';
 
 const actionLabels: Record<string, string> = {
   create: 'Crear',
@@ -86,6 +87,7 @@ function getDateRange(filter: string): { dateFrom?: string; dateTo?: string } {
 }
 
 export default function ActivityLogsPage() {
+  const { formatDate, formatNumber } = useFormatters();
   const [logs, setLogs] = useState<ActivityLogDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
@@ -138,7 +140,7 @@ export default function ActivityLogsPage() {
     }
     const headers = ['Fecha', 'Usuario', 'Acción', 'Categoría', 'Estado', 'Descripción', 'IP'];
     const rows = logs.map(log => [
-      new Date(log.createdAt).toLocaleString('es-MX'),
+      formatDate(log.createdAt),
       log.userName,
       log.activityType,
       log.activityCategory,
@@ -159,11 +161,11 @@ export default function ActivityLogsPage() {
 
   const formatDateTime = (dateStr: string) => {
     const date = new Date(dateStr);
-    return date.toLocaleDateString('es-MX', {
+    return formatDate(date, {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
-    }) + ' ' + date.toLocaleTimeString('es-MX', {
+    }) + ' ' + formatDate(date, {
       hour: '2-digit',
       minute: '2-digit',
     });

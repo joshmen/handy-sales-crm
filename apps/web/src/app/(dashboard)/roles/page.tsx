@@ -57,6 +57,7 @@ import { RolesTableSkeleton } from '@/components/ui/TableSkeleton';
 import { useAsyncPaginatedTable } from '@/hooks/useAsyncTableState';
 import { ImportButton } from '@/components/ui/ImportButton';
 import { ImportColumn, commonValidators, commonTransformers } from '@/lib/import';
+import { useFormatters } from '@/hooks/useFormatters';
 
 const roleSchema = z.object({
   nombre: z.string().min(1, 'El nombre es requerido'),
@@ -83,6 +84,7 @@ const statusLabels = {
 };
 
 export default function RolesPage() {
+  const { formatDate: _fmtDate } = useFormatters();
   const {
     roles: apiRoles,
     totalCount,
@@ -276,7 +278,7 @@ export default function RolesPage() {
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('es-MX', {
+    return _fmtDate(dateString, {
       year: 'numeric',
       month: 'short',
       day: 'numeric',

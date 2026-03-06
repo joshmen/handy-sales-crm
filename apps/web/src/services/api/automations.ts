@@ -13,15 +13,6 @@ class AutomationService {
     }
   }
 
-  async getMisAutomaciones(): Promise<AutomationTemplate[]> {
-    try {
-      const response = await api.get<AutomationTemplate[]>(`${this.basePath}/mis-automaciones`);
-      return response.data;
-    } catch (error) {
-      throw handleApiError(error);
-    }
-  }
-
   async activar(slug: string, paramsJson?: string): Promise<{ id: number }> {
     try {
       const response = await api.post<{ id: number }>(`${this.basePath}/${slug}/activar`, {
@@ -49,6 +40,15 @@ class AutomationService {
     }
   }
 
+  async test(slug: string): Promise<{ success: boolean; action: string; error?: string }> {
+    try {
+      const response = await api.post<{ success: boolean; action: string; error?: string }>(`${this.basePath}/${slug}/test`);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  }
+
   async getHistorial(page = 1, pageSize = 20, slug?: string): Promise<{ items: AutomationExecution[]; total: number }> {
     try {
       const params: Record<string, string | number> = { page, pageSize };
@@ -63,4 +63,3 @@ class AutomationService {
 }
 
 export const automationService = new AutomationService();
-export default automationService;

@@ -10,6 +10,7 @@ import {
   ToggleRight,
   Construction,
 } from 'lucide-react';
+import { useFormatters } from '@/hooks/useFormatters';
 
 interface Form {
   id: string;
@@ -76,6 +77,7 @@ const mockForms: Form[] = [
 ];
 
 export default function FormsPage() {
+  const { formatDate } = useFormatters();
   const [forms, setForms] = useState<Form[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDisabled, setShowDisabled] = useState(false);
@@ -109,7 +111,7 @@ export default function FormsPage() {
     if (days === 1) return 'hace un día';
     if (days < 7) return `hace ${days} días`;
     if (days < 30) return `hace ${Math.floor(days / 7)} semanas`;
-    return date.toLocaleDateString('es-MX');
+    return formatDate(date);
   };
 
   return (

@@ -38,6 +38,8 @@ import {
   CrashReportDto,
   CrashReportEstadisticas,
 } from '@/services/api/crashReports';
+import { useFormatters } from '@/hooks/useFormatters';
+import { formatDate as libFmtDate } from '@/lib/formatters';
 
 const PAGE_SIZE = 20;
 
@@ -93,7 +95,7 @@ function getEstadoBadge(resuelto: boolean) {
 function formatDate(dateStr: string) {
   try {
     const date = new Date(dateStr);
-    return date.toLocaleDateString('es-MX', {
+    return libFmtDate(date, null, {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
@@ -112,6 +114,7 @@ function truncateText(text: string, maxLength: number) {
 }
 
 export default function CrashReportsPage() {
+  const { formatCurrency } = useFormatters();
   const { isConnected, on, off } = useSignalR();
 
   // Data state

@@ -26,6 +26,7 @@ import {
   SubscriptionPlanCreateDto,
   SubscriptionPlanUpdateDto,
 } from '@/services/api/subscriptionPlansAdmin';
+import { useFormatters } from '@/hooks/useFormatters';
 
 const AVAILABLE_FEATURES = [
   'CRM y clientes',
@@ -47,6 +48,7 @@ const AVAILABLE_FEATURES = [
 type DrawerMode = 'none' | 'create' | 'edit';
 
 export default function SubscriptionPlansAdminPage() {
+  const { formatCurrency } = useFormatters();
   const [plans, setPlans] = useState<SubscriptionPlanAdminDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [drawerMode, setDrawerMode] = useState<DrawerMode>('none');
@@ -188,7 +190,7 @@ export default function SubscriptionPlansAdminPage() {
   };
 
   const formatPrice = (price: number) =>
-    new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(price);
+    formatCurrency(price);
 
   // KPI calculations
   const totalPlans = plans.length;

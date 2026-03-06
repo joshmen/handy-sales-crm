@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Drawer } from '@/components/ui/Drawer';
+import { Modal } from '@/components/ui/Modal';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { formatTimeAgo } from '@/lib/utils';
 import { automationService } from '@/services/api/automations';
@@ -20,7 +21,11 @@ import {
   CaretUp,
   Lightning,
   Crown,
+  Lock,
   Package,
+  User,
+  Users,
+  UsersThree,
   ClipboardText,
   UserPlus,
   BellRinging,
@@ -29,9 +34,12 @@ import {
   MapPinLine,
   Target,
   Sparkle,
+  Play,
+  CircleNotch,
 } from '@phosphor-icons/react';
 import type { IconProps } from '@phosphor-icons/react';
 import { Switch } from '@/components/ui/Switch';
+import { useFormatters } from '@/hooks/useFormatters';
 
 const CATEGORIES = ['Todas', ...Object.keys(CATEGORY_LABELS)];
 
@@ -51,26 +59,33 @@ const STATUS_STYLES: Record<string, { bg: string; label: string; icon?: React.Co
   Skipped: { bg: 'bg-gray-100 text-gray-600', label: 'Omitido' },
 };
 
+const DESTINATARIO_INFO: Record<string, { icon: React.ComponentType<IconProps>; label: string }> = {
+  admin: { icon: User, label: 'Admin' },
+  vendedores: { icon: Users, label: 'Vendedores' },
+  ambos: { icon: UsersThree, label: 'Todos' },
+};
+
+function getDestinatario(template: AutomationTemplate): string {
+  try {
+    const params = template.paramsJson || template.defaultParamsJson;
+    if (params) return JSON.parse(params).destinatario || 'admin';
+  } catch { /* fallback */ }
+  return 'admin';
+}
+
 function StatusBadge({ status, size = 'sm' }: { status: string; size?: 'sm' | 'xs' }) {
   const s = STATUS_STYLES[status] || STATUS_STYLES.Skipped;
   const IconComp = s.icon;
   return (
-    <span className={`inline-flex items-center gap-1 font-medium px-2 py-0.5 rounded-full ${s.bg} ${size === 'xs' ? 'text-[10px]' : 'text-xs'}`}>
+    <span className={`inline-flex items-center gap-1 font-medium px-2 py-0.5 rounded-md ${s.bg} ${size === 'xs' ? 'text-[10px]' : 'text-xs'}`}>
       {IconComp && <IconComp size={12} weight="fill" />}
       {s.label}
     </span>
   );
 }
 
-const CATEGORY_TAB_COLORS: Record<string, string> = {
-  Todas: 'bg-gray-900 text-white',
-  Cobranza: 'bg-rose-600 text-white',
-  Ventas: 'bg-indigo-600 text-white',
-  Inventario: 'bg-amber-600 text-white',
-  Operacion: 'bg-cyan-600 text-white',
-};
-
 export default function AutomationsPage() {
+  const { formatDate, formatNumber } = useFormatters();
   const [templates, setTemplates] = useState<AutomationTemplate[]>([]);
   const [historial, setHistorial] = useState<AutomationExecution[]>([]);
   const [historialTotal, setHistorialTotal] = useState(0);
@@ -82,12 +97,17 @@ export default function AutomationsPage() {
   // Config drawer
   const [configDrawerOpen, setConfigDrawerOpen] = useState(false);
   const [configTemplate, setConfigTemplate] = useState<AutomationTemplate | null>(null);
-  const [configParams, setConfigParams] = useState<Record<string, unknown>>({});
+  const [configParams, setConfigParams] = useState<Record<string, string | number | boolean>>({});
   const [savingConfig, setSavingConfig] = useState(false);
+  const [testingSlug, setTestingSlug] = useState<string | null>(null);
+
+  // Deactivation confirmation
+  const [confirmDeactivate, setConfirmDeactivate] = useState<AutomationTemplate | null>(null);
 
   // Historial
   const [showHistorial, setShowHistorial] = useState(false);
   const [historialPage, setHistorialPage] = useState(1);
+  const [historialLoading, setHistorialLoading] = useState(false);
 
   const loadTemplates = useCallback(async () => {
     try {
@@ -104,12 +124,15 @@ export default function AutomationsPage() {
 
   const loadHistorial = useCallback(async (page = 1) => {
     try {
+      setHistorialLoading(true);
       const { items, total } = await automationService.getHistorial(page, 10);
       setHistorial(items);
       setHistorialTotal(total);
       setHistorialPage(page);
     } catch {
-      // Silent fail for historial
+      toast({ title: 'Error', description: 'No se pudo cargar el historial de ejecuciones', variant: 'destructive' });
+    } finally {
+      setHistorialLoading(false);
     }
   }, []);
 
@@ -118,6 +141,15 @@ export default function AutomationsPage() {
   }, [loadTemplates]);
 
   const handleToggle = async (template: AutomationTemplate) => {
+    // Confirm before deactivating
+    if (template.activada) {
+      setConfirmDeactivate(template);
+      return;
+    }
+    await executeToggle(template);
+  };
+
+  const executeToggle = async (template: AutomationTemplate) => {
     setTogglingSlug(template.slug);
     try {
       if (template.activada) {
@@ -165,16 +197,40 @@ export default function AutomationsPage() {
     }
   };
 
-  const filtered = activeCategory === 'Todas'
-    ? templates
-    : templates.filter(t => t.categoria === activeCategory);
+  const handleTest = async (slug: string, nombre: string) => {
+    setTestingSlug(slug);
+    try {
+      const result = await automationService.test(slug);
+      if (result.success) {
+        toast({ title: 'Prueba exitosa', description: result.action });
+      } else {
+        toast({ title: 'Prueba falló', description: result.error || 'Error desconocido', variant: 'destructive' });
+      }
+      await loadTemplates();
+      loadHistorial();
+    } catch (err: unknown) {
+      toast({ title: 'Error', description: err instanceof Error ? err.message : 'Error al probar', variant: 'destructive' });
+    } finally {
+      setTestingSlug(null);
+    }
+  };
 
-  const activeCount = templates.filter(t => t.activada).length;
-  const totalExecutions = templates.reduce((sum, t) => sum + t.totalEjecuciones, 0);
-  const lastExecution = templates
-    .filter(t => t.ultimaEjecucion)
-    .sort((a, b) => new Date(b.ultimaEjecucion!).getTime() - new Date(a.ultimaEjecucion!).getTime())[0]
-    ?.ultimaEjecucion;
+  const filtered = useMemo(() =>
+    activeCategory === 'Todas'
+      ? templates
+      : templates.filter(t => t.categoria === activeCategory),
+    [templates, activeCategory]
+  );
+
+  const { activeCount, totalExecutions, lastExecution } = useMemo(() => {
+    const active = templates.filter(t => t.activada).length;
+    const total = templates.reduce((sum, t) => sum + t.totalEjecuciones, 0);
+    const last = templates
+      .filter(t => t.ultimaEjecucion)
+      .sort((a, b) => new Date(b.ultimaEjecucion!).getTime() - new Date(a.ultimaEjecucion!).getTime())[0]
+      ?.ultimaEjecucion ?? null;
+    return { activeCount: active, totalExecutions: total, lastExecution: last };
+  }, [templates]);
 
   return (
     <>
@@ -201,38 +257,29 @@ export default function AutomationsPage() {
           {error && <ErrorBanner error={error} onRetry={() => { setError(''); loadTemplates(); }} />}
 
           {/* KPI summary bar */}
-          <div className="grid grid-cols-3 gap-3" data-tour="automations-kpis">
-            <div className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-sm transition-shadow">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-7 h-7 bg-emerald-100 rounded-lg flex items-center justify-center">
-                  <Lightning size={14} weight="fill" className="text-emerald-600" />
-                </div>
-                <span className="text-xs text-gray-500">Activas</span>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3" data-tour="automations-kpis">
+            <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-green-200 bg-green-50 text-green-700">
+              <Lightning size={18} weight="fill" className="flex-shrink-0 opacity-60" />
+              <div>
+                <p className="text-lg font-bold leading-none">{loading ? '—' : activeCount}</p>
+                <p className="text-[11px] opacity-70 mt-0.5">Activas de {templates.length}</p>
               </div>
-              <p className="text-2xl font-semibold text-gray-900">{loading ? '—' : activeCount}</p>
-              <p className="text-[11px] text-gray-400">de {templates.length} disponibles</p>
             </div>
-            <div className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-sm transition-shadow">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-7 h-7 bg-indigo-100 rounded-lg flex items-center justify-center">
-                  <Sparkle size={14} weight="fill" className="text-indigo-600" />
-                </div>
-                <span className="text-xs text-gray-500">Ejecuciones</span>
+            <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 text-gray-700">
+              <Sparkle size={18} weight="fill" className="flex-shrink-0 opacity-60" />
+              <div>
+                <p className="text-lg font-bold leading-none">{loading ? '—' : totalExecutions}</p>
+                <p className="text-[11px] opacity-70 mt-0.5">Ejecuciones total</p>
               </div>
-              <p className="text-2xl font-semibold text-gray-900">{loading ? '—' : totalExecutions}</p>
-              <p className="text-[11px] text-gray-400">total acumulado</p>
             </div>
-            <div className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-sm transition-shadow">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-7 h-7 bg-violet-100 rounded-lg flex items-center justify-center">
-                  <Clock size={14} weight="fill" className="text-violet-600" />
-                </div>
-                <span className="text-xs text-gray-500">Última ejecución</span>
+            <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 text-gray-700">
+              <Clock size={18} weight="fill" className="flex-shrink-0 opacity-60" />
+              <div>
+                <p className="text-lg font-bold leading-none truncate">
+                  {loading ? '—' : lastExecution ? formatTimeAgo(lastExecution) : 'Ninguna'}
+                </p>
+                <p className="text-[11px] opacity-70 mt-0.5">Última ejecución</p>
               </div>
-              <p className="text-lg font-semibold text-gray-900 truncate">
-                {loading ? '—' : lastExecution ? formatTimeAgo(lastExecution) : 'Ninguna'}
-              </p>
-              <p className="text-[11px] text-gray-400">más reciente</p>
             </div>
           </div>
 
@@ -242,9 +289,9 @@ export default function AutomationsPage() {
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all duration-200 ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
                   activeCategory === cat
-                    ? CATEGORY_TAB_COLORS[cat] || 'bg-gray-900 text-white'
+                    ? 'bg-green-600 text-white'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
@@ -255,27 +302,27 @@ export default function AutomationsPage() {
 
           {/* Grid */}
           {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {[1, 2, 3, 4, 5, 6].map(i => (
-                <div key={i} className="bg-white rounded-xl border border-gray-200 p-5 animate-pulse">
-                  <div className="flex items-start gap-3 mb-4">
-                    <div className="w-10 h-10 bg-gray-200 rounded-lg" />
+                <div key={i} className="bg-white rounded-lg border border-gray-200 p-3 animate-pulse">
+                  <div className="flex items-start gap-2.5 mb-3">
+                    <div className="w-9 h-9 bg-gray-200 rounded-lg" />
                     <div className="flex-1">
                       <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
                       <div className="h-3 bg-gray-100 rounded w-full" />
                     </div>
                   </div>
-                  <div className="flex gap-2 mb-3">
-                    <div className="h-5 bg-gray-100 rounded-full w-16" />
-                    <div className="h-5 bg-gray-100 rounded-full w-14" />
+                  <div className="flex gap-2 mb-2">
+                    <div className="h-5 bg-gray-100 rounded-md w-16" />
+                    <div className="h-5 bg-gray-100 rounded-md w-14" />
                   </div>
-                  <div className="h-8 bg-gray-50 rounded" />
+                  <div className="h-7 bg-gray-50 rounded" />
                 </div>
               ))}
             </div>
           ) : filtered.length === 0 ? (
             <div className="text-center py-16">
-              <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-4">
                 <Robot size={32} className="text-gray-300" />
               </div>
               <p className="font-semibold text-gray-700 mb-1">Sin automatizaciones en esta categoría</p>
@@ -294,87 +341,120 @@ export default function AutomationsPage() {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-tour="automations-grid">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3" data-tour="automations-grid">
               {filtered.map(template => {
                 const Icon = getTemplateIcon(template.icono);
                 const isPremium = template.tier === 'Premium';
+                const isLocked = isPremium && !template.activada;
                 const isToggling = togglingSlug === template.slug;
 
                 return (
                   <div
                     key={template.slug}
-                    className={`bg-white rounded-xl border transition-all duration-200 ${
-                      template.activada
-                        ? 'border-emerald-200 ring-1 ring-emerald-100 hover:shadow-md hover:-translate-y-0.5'
-                        : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                    className={`bg-white rounded-lg border transition-colors ${
+                      isLocked
+                        ? 'border-amber-200 bg-amber-50/20'
+                        : template.activada
+                        ? 'border-green-200 hover:bg-gray-50'
+                        : 'border-gray-200 hover:bg-gray-50 opacity-60'
                     }`}
                   >
-                    <div className="p-5">
-                      {/* Header: Icon + Name + Toggle */}
-                      <div className="flex items-start justify-between gap-3 mb-3">
-                        <div className="flex items-start gap-3 flex-1 min-w-0">
-                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
-                            template.activada ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-500'
+                    <div className="p-3">
+                      {/* Header: Icon + Name + Toggle/Lock */}
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                          <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                            isLocked
+                              ? 'bg-amber-50 text-amber-600'
+                              : template.activada
+                              ? 'bg-green-50 text-green-600'
+                              : 'bg-gray-100 text-gray-400'
                           }`}>
-                            <Icon size={22} />
+                            <Icon size={20} />
                           </div>
                           <div className="min-w-0">
-                            <h3 className="font-semibold text-gray-900 text-sm leading-tight">
-                              {template.nombre}
-                            </h3>
+                            <div className="flex items-center gap-1.5">
+                              <h3 className="font-medium text-gray-900 text-[13px] leading-tight truncate">
+                                {template.nombre}
+                              </h3>
+                              {isPremium && (
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded text-[9px] font-semibold shrink-0">
+                                  <Crown size={9} weight="fill" /> Pro
+                                </span>
+                              )}
+                            </div>
                             <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
                               {template.descripcionCorta}
                             </p>
                           </div>
                         </div>
-                        <div className="shrink-0" data-tour="automations-toggle">
-                          <Switch
-                            checked={template.activada}
-                            onCheckedChange={() => handleToggle(template)}
-                            disabled={isToggling}
-                          />
+                        <div className="shrink-0 mt-0.5" data-tour="automations-toggle">
+                          {isLocked ? (
+                            <button
+                              className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium text-amber-700 bg-amber-100 hover:bg-amber-200 rounded-md transition-colors"
+                              onClick={() => toast({ title: 'Plan Premium requerido', description: `"${template.nombre}" está disponible en el plan Premium.` })}
+                            >
+                              <Lock size={10} weight="bold" /> Mejorar plan
+                            </button>
+                          ) : isToggling ? (
+                            <RefreshCw className="w-5 h-5 text-green-600 animate-spin" />
+                          ) : (
+                            <Switch
+                              checked={template.activada}
+                              onCheckedChange={() => handleToggle(template)}
+                              disabled={isToggling}
+                            />
+                          )}
                         </div>
                       </div>
 
-                      {/* Badges */}
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                      {/* Footer: Badge + Destinatario + Stats + Config */}
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium ${
                           CATEGORY_COLORS[template.categoria] || 'bg-gray-100 text-gray-600'
                         }`}>
                           {CATEGORY_LABELS[template.categoria] || template.categoria}
                         </span>
-                        {isPremium && (
-                          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 flex items-center gap-1">
-                            <Crown size={10} weight="fill" /> Premium
+                        {(() => {
+                          const dest = getDestinatario(template);
+                          const info = DESTINATARIO_INFO[dest];
+                          if (!info) return null;
+                          const DestIcon = info.icon;
+                          return (
+                            <span className="inline-flex items-center gap-0.5 text-[10px] text-gray-400" title={`Notifica a: ${info.label}`}>
+                              <DestIcon size={11} />
+                              {info.label}
+                            </span>
+                          );
+                        })()}
+                        {template.activada && template.totalEjecuciones > 0 && (
+                          <span className="text-[10px] text-gray-400">
+                            {template.totalEjecuciones} ejec.{template.ultimaEjecucion ? ` · ${formatTimeAgo(template.ultimaEjecucion)}` : ''}
                           </span>
                         )}
-                      </div>
-
-                      {/* Active info */}
-                      {template.activada && (
-                        <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                          <div className="flex items-center gap-3 text-xs text-gray-500">
-                            {template.ultimaEjecucion && (
-                              <span className="flex items-center gap-1">
-                                <Clock size={12} />
-                                {formatTimeAgo(template.ultimaEjecucion)}
-                              </span>
-                            )}
-                            {template.totalEjecuciones > 0 && (
-                              <span>{template.totalEjecuciones} ejecuciones</span>
-                            )}
-                          </div>
-                          {template.defaultParamsJson && (
+                        <span className="ml-auto inline-flex items-center gap-1">
+                          {!isLocked && (
                             <button
-                              onClick={() => handleOpenConfig(template)}
-                              className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1 transition-colors"
-                              data-tour="automations-config-btn"
+                              onClick={() => handleTest(template.slug, template.nombre)}
+                              disabled={testingSlug === template.slug}
+                              className="text-gray-400 hover:text-green-600 text-xs transition-colors disabled:opacity-50"
+                              title="Probar ahora"
                             >
-                              <GearSix size={14} /> Configurar
+                              {testingSlug === template.slug ? <CircleNotch size={14} className="animate-spin" /> : <Play size={14} weight="fill" />}
                             </button>
                           )}
-                        </div>
-                      )}
+                          {template.defaultParamsJson && !isLocked && (
+                            <button
+                              onClick={() => handleOpenConfig(template)}
+                              className="text-gray-400 hover:text-gray-600 text-xs transition-colors"
+                              data-tour="automations-config-btn"
+                              title="Configurar"
+                            >
+                              <GearSix size={14} />
+                            </button>
+                          )}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 );
@@ -383,19 +463,19 @@ export default function AutomationsPage() {
           )}
 
           {/* Historial section */}
-          <div className="bg-white rounded-xl border border-gray-200" data-tour="automations-historial">
+          <div className="bg-white rounded-lg border border-gray-200" data-tour="automations-historial">
             <button
               onClick={() => {
                 setShowHistorial(!showHistorial);
                 if (!showHistorial && historial.length === 0) loadHistorial();
               }}
-              className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 transition-colors rounded-xl"
+              className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 transition-colors rounded-lg"
             >
               <div className="flex items-center gap-2">
                 <Lightning size={18} className="text-amber-500" />
                 <span className="font-semibold text-sm text-gray-900">Historial de ejecuciones</span>
                 {historialTotal > 0 && (
-                  <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+                  <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-md">
                     {historialTotal}
                   </span>
                 )}
@@ -405,7 +485,12 @@ export default function AutomationsPage() {
 
             {showHistorial && (
               <div className="border-t border-gray-100">
-                {historial.length === 0 ? (
+                {historialLoading ? (
+                  <div className="py-12 text-center">
+                    <RefreshCw className="w-6 h-6 mx-auto mb-2 text-gray-300 animate-spin" />
+                    <p className="text-sm text-gray-400">Cargando historial...</p>
+                  </div>
+                ) : historial.length === 0 ? (
                   <div className="py-12 text-center">
                     <Clock size={32} className="mx-auto mb-2 text-gray-200" />
                     <p className="text-sm text-gray-400">Sin ejecuciones registradas</p>
@@ -428,7 +513,7 @@ export default function AutomationsPage() {
                           {historial.map(exec => (
                             <tr key={exec.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
                               <td className="px-5 py-2.5 text-gray-600 whitespace-nowrap">
-                                {new Date(exec.ejecutadoEn).toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                {formatDate(exec.ejecutadoEn, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                               </td>
                               <td className="px-5 py-2.5 font-medium text-gray-900">
                                 {exec.templateNombre}
@@ -455,7 +540,7 @@ export default function AutomationsPage() {
                           </div>
                           <p className="text-xs text-gray-500 truncate">{exec.errorMessage || exec.actionTaken}</p>
                           <p className="text-[10px] text-gray-400 mt-1">
-                            {new Date(exec.ejecutadoEn).toLocaleString('es-MX')}
+                            {formatDate(exec.ejecutadoEn)}
                           </p>
                         </div>
                       ))}
@@ -499,7 +584,7 @@ export default function AutomationsPage() {
         description="Ajusta los parámetros de esta automatización"
         icon={<GearSix size={20} className="text-gray-500" />}
         footer={
-          <div className="flex gap-3 justify-end">
+          <div className="flex gap-3 justify-end" data-tour="automations-drawer-actions">
             <button
               onClick={() => setConfigDrawerOpen(false)}
               className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
@@ -509,17 +594,16 @@ export default function AutomationsPage() {
             <button
               onClick={handleSaveConfig}
               disabled={savingConfig}
-              className="px-4 py-2 text-sm text-white rounded-lg disabled:opacity-50 transition-colors"
-              style={{ backgroundColor: 'var(--company-primary-color, #16a34a)' }}
+              className="px-4 py-2 text-sm text-white bg-green-600 hover:bg-green-700 rounded-lg disabled:opacity-50 transition-colors"
             >
               {savingConfig ? 'Guardando...' : 'Guardar cambios'}
             </button>
           </div>
         }
       >
-        <div className="space-y-5 p-1">
+        <div className="space-y-5 p-6" data-tour="automations-drawer-form">
           {configTemplate?.descripcion && (
-            <p className="text-sm text-gray-500 bg-gray-50 rounded-lg p-3">
+            <p className="text-sm text-gray-500 bg-gray-50 rounded-lg p-3" data-tour="automations-drawer-desc">
               {configTemplate.descripcion}
             </p>
           )}
@@ -533,7 +617,7 @@ export default function AutomationsPage() {
                 <label key={key} className="flex items-center justify-between">
                   <span className="text-sm text-gray-700">{config.label}</span>
                   <Switch
-                    checked={value as boolean}
+                    checked={Boolean(value)}
                     onCheckedChange={(checked: boolean) =>
                       setConfigParams(prev => ({ ...prev, [key]: checked }))
                     }
@@ -550,8 +634,25 @@ export default function AutomationsPage() {
                     type="time"
                     value={String(value || '')}
                     onChange={e => setConfigParams(prev => ({ ...prev, [key]: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   />
+                </div>
+              );
+            }
+
+            if (config.type === 'select') {
+              return (
+                <div key={key}>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{config.label}</label>
+                  <select
+                    value={String(value || '')}
+                    onChange={e => setConfigParams(prev => ({ ...prev, [key]: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white"
+                  >
+                    {config.options.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
                 </div>
               );
             }
@@ -565,7 +666,7 @@ export default function AutomationsPage() {
                   min={config.min}
                   max={config.max}
                   onChange={e => setConfigParams(prev => ({ ...prev, [key]: parseInt(e.target.value, 10) }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 />
                 {config.min !== undefined && config.max !== undefined && (
                   <p className="text-[11px] text-gray-400 mt-1">Rango: {config.min} – {config.max}</p>
@@ -575,6 +676,37 @@ export default function AutomationsPage() {
           })}
         </div>
       </Drawer>
+
+      {/* Deactivation confirmation modal */}
+      <Modal
+        isOpen={!!confirmDeactivate}
+        onClose={() => setConfirmDeactivate(null)}
+        title="Desactivar automatización"
+        size="sm"
+      >
+        <p className="text-sm text-gray-600 mb-4">
+          ¿Deseas desactivar <strong>{confirmDeactivate?.nombre}</strong>? Esta automatización dejará de ejecutarse hasta que la reactives.
+        </p>
+        <div className="flex gap-3 justify-end">
+          <button
+            onClick={() => setConfirmDeactivate(null)}
+            className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={async () => {
+              if (confirmDeactivate) {
+                setConfirmDeactivate(null);
+                await executeToggle(confirmDeactivate);
+              }
+            }}
+            className="px-4 py-2 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+          >
+            Desactivar
+          </button>
+        </div>
+      </Modal>
     </>
   );
 }

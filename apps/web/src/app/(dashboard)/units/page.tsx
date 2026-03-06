@@ -220,6 +220,7 @@ export default function UnitsPage() {
         { label: 'Unidades de medida' },
       ]}
       title="Unidades de medida"
+      subtitle={totalItems > 0 ? `${totalItems} unidad${totalItems !== 1 ? 'es' : ''}` : undefined}
       actions={
         <>
           <div className="relative" data-tour="units-import-export">

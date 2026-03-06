@@ -32,6 +32,7 @@ import { SearchBar } from '@/components/common/SearchBar';
 import { InactiveToggle } from '@/components/ui/InactiveToggle';
 import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
 import { ActiveToggle } from '@/components/ui/ActiveToggle';
+import { useFormatters } from '@/hooks/useFormatters';
 
 interface ListaPrecio {
   id: number;
@@ -49,6 +50,7 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 export default function PriceListsPage() {
+  const { formatDate: _fmtDate } = useFormatters();
   // State
   const [priceLists, setPriceLists] = useState<ListaPrecio[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -237,7 +239,7 @@ export default function PriceListsPage() {
     if (days === 1) return 'hace un día';
     if (days < 7) return `hace ${days} días`;
     if (days < 30) return `hace ${Math.floor(days / 7)} semanas`;
-    return date.toLocaleDateString('es-MX');
+    return _fmtDate(date);
   };
 
   return (

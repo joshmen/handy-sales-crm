@@ -15,6 +15,7 @@ import {
   Info,
 } from 'lucide-react';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
+import { useFormatters } from '@/hooks/useFormatters';
 
 type NotificationType = 'order' | 'alert' | 'route' | 'inventory' | 'general';
 type NotificationStatus = 'sent' | 'pending' | 'failed';
@@ -130,6 +131,7 @@ const statusColors: Record<NotificationStatus, string> = {
 };
 
 export default function NotificationsPage() {
+  const { formatDate } = useFormatters();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -183,7 +185,7 @@ export default function NotificationsPage() {
     if (hours < 24) return `Hace ${hours} horas`;
     if (days === 1) return 'Hace un día';
     if (days < 7) return `Hace ${days} días`;
-    return date.toLocaleDateString('es-MX');
+    return formatDate(date);
   };
 
   return (
