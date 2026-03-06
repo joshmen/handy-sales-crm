@@ -17,6 +17,9 @@ using HandySales.Infrastructure.Repositories;
 using HandySales.Application.Zonas.Interfaces;
 using HandySales.Infrastructure.Zonas.Repositories;
 using HandySales.Application.Zonas.Services;
+using HandySales.Application.Metas.Interfaces;
+using HandySales.Infrastructure.Repositories.Metas;
+using HandySales.Application.Metas.Services;
 using HandySales.Application.FamiliasProductos.Interfaces;
 using HandySales.Infrastructure.FamiliasProductos.Repositories;
 using HandySales.Application.FamiliasProductos.Services;
@@ -90,6 +93,7 @@ using HandySales.Application.Notifications.Interfaces;
 using HandySales.Application.Notifications.Services;
 using HandySales.Infrastructure.Notifications.Repositories;
 using HandySales.Infrastructure.Notifications.Services;
+using HandySales.Api.Hubs;
 using HandySales.Application.Interfaces;
 using HandySales.Application.Impersonation.Interfaces;
 using HandySales.Application.Impersonation.Services;
@@ -188,6 +192,8 @@ public static class ServiceRegistrationExtensions
 
         services.AddScoped<IZonaRepository, ZonaRepository>();
         services.AddScoped<ZonaService>();
+        services.AddScoped<IMetaVendedorRepository, MetaVendedorRepository>();
+        services.AddScoped<MetaVendedorService>();
         services.AddValidatorsFromAssemblyContaining<ZonaCreateDtoValidator>();
         services.AddValidatorsFromAssemblyContaining<ZonaUpdateDtoValidator>();
 
@@ -263,6 +269,7 @@ public static class ServiceRegistrationExtensions
         // Notification Services
         services.AddScoped<IFcmService, FcmService>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
+        services.AddScoped<IRealtimePushService, SignalRPushService>();
         services.AddScoped<INotificationService, NotificationService>();
 
         // Cobranza
@@ -313,6 +320,13 @@ public static class ServiceRegistrationExtensions
         services.AddScoped<IAutomationHandler, ResumenDiarioHandler>();
         services.AddScoped<IAutomationHandler, CobroVencidoRecordatorioHandler>();
         services.AddScoped<IAutomationHandler, BienvenidaClienteHandler>();
+        services.AddScoped<IAutomationHandler, InventarioCriticoHandler>();
+        services.AddScoped<IAutomationHandler, ClienteInactivoVisitaHandler>();
+        services.AddScoped<IAutomationHandler, PedidoRecurrenteHandler>();
+        services.AddScoped<IAutomationHandler, RutaSemanalAutoHandler>();
+        services.AddScoped<IAutomationHandler, CobroExitosoAvisoHandler>();
+        services.AddScoped<IAutomationHandler, MetaNoCumplidaHandler>();
+        services.AddScoped<IAutomationHandler, MetaAutoRenovacionHandler>();
 
         return services;
     }

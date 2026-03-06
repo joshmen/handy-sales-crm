@@ -1,8 +1,10 @@
+using System.Text.Json;
 using HandySales.Api.Automations;
 using HandySales.Application.Automations.Interfaces;
 using HandySales.Application.Notifications.Interfaces;
 using HandySales.Domain.Entities;
 using HandySales.Infrastructure.Persistence;
+using HandySales.Shared.Email;
 using Microsoft.EntityFrameworkCore;
 
 namespace HandySales.Api.Workers;
@@ -53,41 +55,55 @@ public class AutomationEngine : BackgroundService
     private async Task ProcessAutomationsAsync(CancellationToken ct)
     {
         List<TenantAutomation> automations;
-        Dictionary<string, IAutomationHandler> handlerMap;
 
-        // Use one scope just to fetch the automation list and build handler map
+        // Use one scope just to fetch the automation list
         using (var listScope = _services.CreateScope())
         {
             var repo = listScope.ServiceProvider.GetRequiredService<IAutomationRepository>();
             automations = await repo.GetAllActiveTenantAutomationsAsync();
             if (automations.Count == 0) return;
-
-            handlerMap = listScope.ServiceProvider.GetServices<IAutomationHandler>()
-                .ToDictionary(h => h.Slug, h => h);
         }
 
         var now = DateTime.UtcNow;
 
+        // Batch-load tenant timezones to avoid N+1 queries
+        Dictionary<int, string> tenantTimezones;
+        using (var tzScope = _services.CreateScope())
+        {
+            var tzDb = tzScope.ServiceProvider.GetRequiredService<HandySalesDbContext>();
+            var tenantIds = automations.Select(a => a.TenantId).Distinct().ToList();
+            tenantTimezones = await tzDb.CompanySettings
+                .Where(cs => tenantIds.Contains(cs.TenantId))
+                .ToDictionaryAsync(cs => cs.TenantId, cs => cs.Timezone, ct);
+        }
+
         foreach (var automation in automations)
         {
-            if (!ShouldExecute(automation, now))
+            var tenantTz = tenantTimezones.GetValueOrDefault(automation.TenantId, "America/Mexico_City");
+            if (string.IsNullOrEmpty(tenantTz)) tenantTz = "America/Mexico_City";
+            if (!ShouldExecute(automation, now, tenantTz))
                 continue;
 
-            if (!handlerMap.TryGetValue(automation.Template.Slug, out var handler))
+            // Create a fresh scope per automation — isolates DbContext + handlers per tenant
+            using var execScope = _services.CreateScope();
+
+            var handler = execScope.ServiceProvider.GetServices<IAutomationHandler>()
+                .FirstOrDefault(h => h.Slug == automation.Template.Slug);
+
+            if (handler is null)
             {
                 _logger.LogWarning("No handler found for automation slug: {Slug}", automation.Template.Slug);
                 continue;
             }
 
-            // Create a fresh scope per automation — isolates DbContext change tracker per tenant
-            using var execScope = _services.CreateScope();
             var db = execScope.ServiceProvider.GetRequiredService<HandySalesDbContext>();
             var notifications = execScope.ServiceProvider.GetRequiredService<INotificationService>();
+            var emailService = execScope.ServiceProvider.GetService<IEmailService>();
             var repo = execScope.ServiceProvider.GetRequiredService<IAutomationRepository>();
 
             try
             {
-                var context = new AutomationContext(automation, db, notifications);
+                var context = new AutomationContext(automation, db, notifications, emailService);
                 var result = await handler.ExecuteAsync(context, ct);
 
                 await repo.LogAndUpdateAsync(new AutomationExecution
@@ -117,7 +133,7 @@ public class AutomationEngine : BackgroundService
                         TemplateSlug = automation.Template.Slug,
                         Status = ExecutionStatus.Failed,
                         ActionTaken = "",
-                        ErrorMessage = ex.Message,
+                        ErrorMessage = SanitizeErrorMessage(ex.Message),
                         EjecutadoEn = DateTime.UtcNow,
                     });
                 }
@@ -129,7 +145,7 @@ public class AutomationEngine : BackgroundService
         }
     }
 
-    private static bool ShouldExecute(TenantAutomation automation, DateTime now)
+    private static bool ShouldExecute(TenantAutomation automation, DateTime nowUtc, string tenantTimezone = "America/Mexico_City")
     {
         var template = automation.Template;
 
@@ -137,60 +153,117 @@ public class AutomationEngine : BackgroundService
         if (template.TriggerType == AutomationTriggerType.Condition)
         {
             // Cooldown: don't run more than once per hour
-            if (automation.LastExecutedAt.HasValue && (now - automation.LastExecutedAt.Value).TotalMinutes < 60)
+            if (automation.LastExecutedAt.HasValue && (nowUtc - automation.LastExecutedAt.Value).TotalMinutes < 60)
                 return false;
 
             return true;
         }
 
-        // Cron triggers: simple time-window matching (not a full cron parser)
-        if (template.TriggerType == AutomationTriggerType.Cron && !string.IsNullOrEmpty(template.TriggerCron))
+        // Cron triggers: use tenant's "hora" param if available, else fall back to template cron
+        if (template.TriggerType == AutomationTriggerType.Cron)
         {
             // Don't run more than once per day for cron jobs
-            if (automation.LastExecutedAt.HasValue && automation.LastExecutedAt.Value.Date == now.Date)
+            if (automation.LastExecutedAt.HasValue && automation.LastExecutedAt.Value.Date == nowUtc.Date)
                 return false;
 
-            return MatchesCronWindow(template.TriggerCron, now);
+            // Try to read "hora" from tenant's ParamsJson (e.g. "22:31", "19:00")
+            // This is in the tenant's local time (configured timezone)
+            var horaLocal = GetParamString(automation.ParamsJson, "hora");
+            if (!string.IsNullOrEmpty(horaLocal))
+                return MatchesHoraParam(horaLocal, nowUtc, tenantTimezone);
+
+            // Fall back to template cron (in UTC)
+            if (!string.IsNullOrEmpty(template.TriggerCron))
+                return MatchesCronWindow(template.TriggerCron, nowUtc);
+
+            return false;
         }
 
         return false;
     }
 
     /// <summary>
-    /// Simple cron matching for common patterns:
-    /// "0 19 * * *" = daily at 19:00
-    /// "0 6 * * 1" = Mondays at 06:00
-    /// "0 18 * * 5" = Fridays at 18:00
+    /// Match against a tenant-configured "hora" param (HH:mm in tenant's local time).
+    /// Converts to UTC before comparing.
     /// </summary>
-    private static bool MatchesCronWindow(string cron, DateTime now)
+    private static bool MatchesHoraParam(string hora, DateTime nowUtc, string tenantTimezone = "America/Mexico_City")
+    {
+        var parts = hora.Split(':');
+        if (parts.Length < 2) return false;
+        if (!int.TryParse(parts[0], out var localHour)) return false;
+        if (!int.TryParse(parts[1], out var localMinute)) return false;
+
+        // Convert tenant's local time to UTC for comparison
+        try
+        {
+            var tz = TimeZoneInfo.FindSystemTimeZoneById(tenantTimezone);
+            var today = TimeZoneInfo.ConvertTimeFromUtc(nowUtc, tz).Date;
+            var localTarget = new DateTime(today.Year, today.Month, today.Day, localHour, localMinute, 0);
+            var utcTarget = TimeZoneInfo.ConvertTimeToUtc(localTarget, tz);
+
+            var diff = (nowUtc - utcTarget).TotalMinutes;
+            return diff >= 0 && diff <= 4;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Simple cron matching for common patterns (times in UTC):
+    /// "0 19 * * *" = daily at 19:00 UTC
+    /// "0 6 * * 1" = Mondays at 06:00 UTC
+    /// </summary>
+    private static bool MatchesCronWindow(string cron, DateTime nowUtc)
     {
         var parts = cron.Split(' ');
         if (parts.Length < 5) return false;
 
-        // Parse minute and hour
         if (!int.TryParse(parts[0], out var minute)) return false;
         if (!int.TryParse(parts[1], out var hour)) return false;
 
-        // Check hour match (within the polling window — engine polls every 60s)
-        if (now.Hour != hour) return false;
-        var minuteDiff = now.Minute - minute;
-        // Allow 0..4 minutes AFTER the target minute (never before)
-        // Combined with the "once per day" guard in ShouldExecute, this ensures
-        // the cron fires exactly once even if the engine has processing delays
+        if (nowUtc.Hour != hour) return false;
+        var minuteDiff = nowUtc.Minute - minute;
         if (minuteDiff < 0 || minuteDiff > 4) return false;
 
-        // Check day of week if specified (0=Sun, 1=Mon, ..., 6=Sat)
         if (parts[4] != "*" && int.TryParse(parts[4], out var dow))
         {
-            if ((int)now.DayOfWeek != dow) return false;
+            if ((int)nowUtc.DayOfWeek != dow) return false;
         }
 
-        // Check day of month if specified
         if (parts[2] != "*" && int.TryParse(parts[2], out var dom))
         {
-            if (now.Day != dom) return false;
+            if (nowUtc.Day != dom) return false;
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// Extract a string param from ParamsJson without allocating AutomationContext.
+    /// </summary>
+    private static string? GetParamString(string? paramsJson, string key)
+    {
+        if (string.IsNullOrEmpty(paramsJson)) return null;
+        try
+        {
+            using var doc = JsonDocument.Parse(paramsJson);
+            if (doc.RootElement.TryGetProperty(key, out var prop) && prop.ValueKind == JsonValueKind.String)
+                return prop.GetString();
+        }
+        catch { /* ignore */ }
+        return null;
+    }
+
+    private static string SanitizeErrorMessage(string message)
+    {
+        if (string.IsNullOrEmpty(message)) return "Error desconocido";
+
+        // Truncate to 500 chars max — prevents storing huge stack traces
+        if (message.Length > 500)
+            message = message[..500] + "...";
+
+        return message;
     }
 }

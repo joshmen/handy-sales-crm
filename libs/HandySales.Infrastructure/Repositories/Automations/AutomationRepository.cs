@@ -102,6 +102,7 @@ public class AutomationRepository : IAutomationRepository
     public async Task<List<TenantAutomation>> GetAllActiveTenantAutomationsAsync()
     {
         return await _db.TenantAutomations
+            .AsNoTracking()
             .IgnoreQueryFilters()
             .Include(ta => ta.Template)
             .Where(ta => ta.Activo && ta.EliminadoEn == null
@@ -117,9 +118,9 @@ public class AutomationRepository : IAutomationRepository
 
         if (existing != null)
         {
-            // Reactivate
+            // Reactivate — preserve pre-configured params if caller doesn't provide new ones
             existing.Activo = true;
-            existing.ParamsJson = paramsJson;
+            existing.ParamsJson = paramsJson ?? existing.ParamsJson;
             existing.ActivatedBy = userId;
             existing.EliminadoEn = null;
             existing.EliminadoPor = null;
@@ -159,9 +160,24 @@ public class AutomationRepository : IAutomationRepository
     public async Task<bool> ConfigurarAsync(int tenantId, int templateId, string paramsJson)
     {
         var entity = await _db.TenantAutomations
-            .FirstOrDefaultAsync(ta => ta.TenantId == tenantId && ta.TemplateId == templateId && ta.Activo);
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(ta => ta.TenantId == tenantId && ta.TemplateId == templateId && ta.EliminadoEn == null);
 
-        if (entity == null) return false;
+        if (entity == null)
+        {
+            // No TenantAutomation record yet — create one (inactive) to store params
+            entity = new TenantAutomation
+            {
+                TenantId = tenantId,
+                TemplateId = templateId,
+                ParamsJson = paramsJson,
+                Activo = false,
+                CreadoEn = DateTime.UtcNow,
+            };
+            _db.TenantAutomations.Add(entity);
+            await _db.SaveChangesAsync();
+            return true;
+        }
 
         entity.ParamsJson = paramsJson;
         entity.ActualizadoEn = DateTime.UtcNow;
