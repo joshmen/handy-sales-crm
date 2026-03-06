@@ -186,6 +186,30 @@ export const helpPages: Record<string, HelpPage> = {
       },
     ],
   },
+  '/zones': {
+    title: 'Zonas',
+    description: 'Organiza tu territorio en zonas geográficas para asignar clientes y vendedores.',
+    articles: [
+      {
+        id: 'que-son-zonas',
+        title: '¿Qué son las zonas?',
+        summary: 'Divisiones geográficas de tu territorio de ventas.',
+        body: 'Las zonas permiten dividir tu territorio de ventas en áreas geográficas (ej. "Centro", "Zona Norte", "Industrial"). Cada zona tiene un nombre, color, descripción y opcionalmente una ubicación en el mapa con un radio de cobertura en kilómetros.',
+      },
+      {
+        id: 'mapa-zonas',
+        title: 'Mapa y ubicación',
+        summary: 'Cómo posicionar una zona en el mapa.',
+        body: 'Al crear o editar una zona puedes buscar un lugar con Google Maps, hacer doble clic en el mapa o arrastrar el marcador para definir el centro. Ajusta el radio arrastrando el borde del círculo o escribiendo el valor en km. El mapa general muestra todas las zonas como círculos de colores superpuestos.',
+      },
+      {
+        id: 'asignar-clientes',
+        title: 'Asignar clientes a zonas',
+        summary: 'Cómo vincular clientes con una zona.',
+        body: 'Al crear o editar un cliente puedes seleccionar la zona a la que pertenece. El contador "Clientes" en la tabla de zonas muestra cuántos clientes tiene cada una. Si intentas eliminar una zona con clientes asignados, el sistema te lo impedirá hasta que reasignes los clientes.',
+      },
+    ],
+  },
   '/client-categories': {
     title: 'Categorías de Clientes',
     description: 'Clasificación de clientes por tipo de negocio o volumen de compra.',
@@ -330,6 +354,102 @@ export const helpPages: Record<string, HelpPage> = {
       },
     ],
   },
+  '/routes': {
+    title: 'Rutas de Venta',
+    description: 'Planificación y seguimiento de rutas de visita para vendedores.',
+    articles: [
+      {
+        id: 'que-son-rutas',
+        title: '¿Qué son las rutas?',
+        summary: 'Asigna rutas de visita a tus vendedores.',
+        body: 'Las rutas permiten planificar la jornada de tus vendedores: a qué zona ir, qué clientes visitar y en qué fecha. Cada ruta tiene un estado (Planificada, En progreso, Completada, Cerrada, etc.) y muestra el progreso de paradas completadas vs totales.',
+      },
+      {
+        id: 'crear-ruta',
+        title: '¿Cómo crear una ruta?',
+        summary: 'Pasos para asignar una ruta a un vendedor.',
+        body: 'Haz clic en "Nueva ruta", selecciona el vendedor, opcionalmente una zona, la fecha programada y el horario estimado de inicio y fin. Puedes agregar descripción y notas. Una vez creada, la ruta aparece como "Planificada" y el vendedor la verá en su app móvil.',
+      },
+      {
+        id: 'exportar-rutas',
+        title: 'Exportar rutas',
+        summary: 'Descarga tus rutas en archivo CSV.',
+        body: 'Usa el botón "Exportar" para descargar un CSV con todas las rutas: Nombre, Fecha, Vendedor, Zona, Estado, TotalParadas, ParadasCompletadas, HoraInicioEstimada, HoraFinEstimada, Descripcion, Notas y Activo. Útil para reportes de productividad y análisis de cobertura.',
+      },
+    ],
+  },
+  '/routes/manage': {
+    title: 'Administrar Rutas',
+    description: 'Gestión operativa de rutas: carga de inventario, seguimiento y cierre.',
+    articles: [
+      {
+        id: 'que-es-admin-rutas',
+        title: '¿Qué es Administrar Rutas?',
+        summary: 'Panel de operación diaria para gestionar rutas activas.',
+        body: 'Administrar Rutas es el centro de operaciones donde gestionas las rutas del día: cargas inventario antes de que el vendedor salga, das seguimiento mientras está en campo y cierras la ruta al final del día reconciliando inventario y efectivo.',
+      },
+      {
+        id: 'flujo-ruta',
+        title: 'Flujo de una ruta operativa',
+        summary: 'Desde la carga hasta el cierre.',
+        body: 'Una ruta pasa por estas etapas: 1) Planificada — se creó pero no tiene carga. 2) Pendiente de aceptar — se envió la carga al vendedor. 3) Carga aceptada — el vendedor aceptó la carga en su app. 4) En progreso — el vendedor está realizando entregas y ventas. 5) Terminada — el vendedor finalizó su jornada. 6) Cerrada — el administrador reconcilió inventario y efectivo.',
+      },
+      {
+        id: 'exportar-admin-rutas',
+        title: 'Exportar rutas',
+        summary: 'Descarga datos operativos en CSV.',
+        body: 'Usa el botón "Exportar" para descargar un CSV con todas las rutas filtradas. Incluye: Nombre, Fecha, Vendedor, Zona, Estado, Total de paradas, Paradas completadas, Horarios estimados, Descripción, Notas y estado Activo.',
+      },
+    ],
+  },
+  '/routes/manage/[id]/load': {
+    title: 'Cargar Inventario de Ruta',
+    description: 'Asigna productos y pedidos al vendedor antes de salir a campo.',
+    articles: [
+      {
+        id: 'como-cargar-ruta',
+        title: '¿Cómo cargar inventario a una ruta?',
+        summary: 'Pasos para preparar la carga del vendedor.',
+        body: 'Para cargar una ruta: 1) Define el efectivo inicial (viáticos/cambio) y comentarios. 2) Asigna pedidos confirmados que el vendedor debe entregar. 3) Agrega productos adicionales para venta directa (sin pedido previo). 4) Verifica la tabla consolidada que muestra el total de la carga. 5) Haz clic en "Enviar a carga" para que el vendedor reciba la notificación en su app.',
+      },
+      {
+        id: 'tipos-carga',
+        title: 'Pedidos vs venta directa',
+        summary: 'Diferencia entre los dos tipos de carga.',
+        body: 'La carga tiene dos componentes: Pedidos para entrega — pedidos previamente confirmados que el vendedor debe entregar a clientes específicos. Productos para venta directa — inventario adicional que el vendedor lleva para vender sin pedido previo (autoventa). La tabla consolidada suma ambos tipos y muestra la disponibilidad en almacén.',
+      },
+      {
+        id: 'disponibilidad-stock',
+        title: 'Disponibilidad de stock',
+        summary: 'Verificar que hay suficiente inventario.',
+        body: 'La columna "Disponible" en la tabla consolidada muestra cuántas unidades hay en almacén. Si aparece en rojo, no hay suficiente stock para cubrir la cantidad total asignada. En ese caso, ajusta las cantidades o registra una entrada de inventario antes de enviar la carga.',
+      },
+    ],
+  },
+  '/routes/manage/[id]/close': {
+    title: 'Cierre de Ruta',
+    description: 'Reconcilia inventario, verifica efectivo y cierra la ruta al final del día.',
+    articles: [
+      {
+        id: 'como-cerrar-ruta',
+        title: '¿Cómo cerrar una ruta?',
+        summary: 'Pasos para la reconciliación de fin de día.',
+        body: 'Para cerrar una ruta: 1) Revisa el resumen financiero (ventas, cobros, devoluciones). 2) Verifica el balance: compara el monto "a recibir" con lo "recibido" realmente. 3) Reconcilia el inventario de retorno: para cada producto, indica cuántas unidades se perdieron (mermas), cuántas regresan al almacén y cuántas se quedan en el vehículo. 4) Cuando la diferencia sea 0 en todos los productos, haz clic en "Cerrar ruta".',
+      },
+      {
+        id: 'inventario-retorno',
+        title: 'Inventario de retorno',
+        summary: 'Reconcilia lo que sale vs lo que regresa.',
+        body: 'La tabla de retorno muestra por cada producto: cantidad inicial (lo que se cargó), vendidos, entregados, devueltos por clientes, mermas (pérdidas), recepción a almacén y carga en vehículo. La columna "Dif." debe ser 0 — usa los botones +/- para ajustar mermas, almacén o carga. Los botones rápidos "Almacén" y "Carga" asignan toda la diferencia restante automáticamente.',
+      },
+      {
+        id: 'diferencia-financiera',
+        title: 'Diferencia financiera',
+        summary: 'Sobrante o faltante de efectivo.',
+        body: 'El balance muestra la diferencia entre lo que el vendedor debería entregar ("A recibir") y lo que realmente entregó ("Recibido"). Una diferencia positiva (verde) indica sobrante de efectivo. Una diferencia negativa (rojo) indica faltante. Ambos casos deben investigarse antes de cerrar la ruta.',
+      },
+    ],
+  },
   '/cobranza': {
     title: 'Cobranza',
     description: 'Registra cobros, consulta saldos pendientes y exporta datos de cobranza.',
@@ -398,19 +518,86 @@ export const helpPages: Record<string, HelpPage> = {
         id: 'como-activar',
         title: '¿Cómo activo una automatización?',
         summary: 'Usa el interruptor en cada tarjeta.',
-        body: 'Cada tarjeta tiene un interruptor (toggle) a la derecha. Al activarlo, la automatización comienza a funcionar. Puedes desactivarla en cualquier momento. Si la automatización tiene parámetros configurables (como "avisar después de 7 días"), puedes ajustarlos haciendo clic en "Configurar".',
+        body: 'Cada tarjeta tiene un interruptor (toggle) a la derecha. Al activarlo, la automatización comienza a funcionar. Puedes desactivarla en cualquier momento. Haz clic en el ícono de engranaje para ajustar parámetros como umbrales, frecuencias y a quién se notifica.',
+      },
+      {
+        id: 'destinatario-y-canales',
+        title: '¿A quién notifica y cómo?',
+        summary: 'Configura destinatarios. El canal es automático.',
+        body: 'En la configuración de cada automatización puedes elegir a quién notificar: solo al administrador, solo a los vendedores, o a ambos. El canal de entrega se asigna automáticamente: alertas operativas (stock bajo, cobros vencidos) se envían por push al celular/web, mientras que reportes como el resumen diario se envían por email. No necesitas configurar el canal — el sistema elige el más adecuado.',
       },
       {
         id: 'categorias',
         title: 'Categorías de automatizaciones',
         summary: 'Cobranza, Ventas, Inventario y Operación.',
-        body: 'Las automatizaciones están organizadas por área: Cobranza (recordatorios de pago, avisos de cobros vencidos), Ventas (bienvenida a clientes nuevos, sugerencias de reorden), Inventario (alertas de stock bajo) y Operación (resumen diario, alertas de metas).',
+        body: 'Las automatizaciones están organizadas por área: Cobranza (recordatorios de pago, avisos de cobros vencidos), Ventas (bienvenida a clientes nuevos, sugerencias de reorden), Inventario (alertas de stock bajo y producto en cero) y Operación (resumen diario por email, alertas de metas).',
       },
       {
         id: 'historial',
         title: 'Historial de ejecuciones',
         summary: 'Revisa cuándo se ejecutó cada automatización.',
         body: 'Al final de la página encontrarás el historial de ejecuciones. Ahí puedes ver cuándo se ejecutó cada automatización, si fue exitosa o tuvo algún error, y qué acción tomó (por ejemplo: "Resumen enviado: 5 ventas, 3 cobros").',
+      },
+    ],
+  },
+
+  '/visits': {
+    title: 'Visitas',
+    description: 'Planificación, seguimiento y registro de visitas a clientes.',
+    articles: [
+      {
+        id: 'visits-overview',
+        title: '¿Qué son las visitas?',
+        summary: 'Registro de cada interacción presencial con un cliente.',
+        body: 'Las visitas representan cada vez que un vendedor acude a un cliente. Puedes programarlas con anticipación, iniciarlas con check-in (registra hora y ubicación de llegada) y finalizarlas con check-out (registra resultado: con venta, sin venta, no encontrado o reprogramada).',
+      },
+      {
+        id: 'visits-checkin-checkout',
+        title: 'Check-In y Check-Out',
+        summary: 'Cómo registrar el inicio y fin de una visita.',
+        body: 'Al iniciar una visita (check-in), el sistema captura tu ubicación GPS y la hora exacta. Al finalizar (check-out), seleccionas el resultado de la visita. Si hubo venta, se puede asociar un pedido. La duración se calcula automáticamente.',
+      },
+      {
+        id: 'visits-calendar',
+        title: 'Vista de calendario',
+        summary: 'Visualiza las visitas en formato calendario.',
+        body: 'Usa el toggle Lista/Calendario para cambiar la vista. En el calendario puedes ver las visitas del mes, navegar entre meses, y hacer clic en un día vacío para programar una nueva visita directamente en esa fecha.',
+      },
+      {
+        id: 'visits-filters',
+        title: 'Filtros y búsqueda',
+        summary: 'Filtra visitas por tipo, resultado o fecha.',
+        body: 'Puedes filtrar por tipo de visita (Rutina, Cobranza, Entrega, etc.), por resultado (Pendiente, Con Venta, Sin Venta, etc.) y por rango de fechas (Hoy, Esta semana, Este mes, etc.). Usa la barra de búsqueda para encontrar visitas por nombre de cliente.',
+      },
+    ],
+  },
+  '/reports': {
+    title: 'Reportes',
+    description: 'Análisis de ventas, clientes e inventario con gráficas y tablas descargables.',
+    articles: [
+      {
+        id: 'reports-overview',
+        title: '¿Qué reportes hay disponibles?',
+        summary: 'Siete reportes organizados en tres categorías.',
+        body: 'Los reportes se dividen en Ventas (por período, vendedor, producto y zona), Clientes (actividad y nuevos registros) e Inventario (estado actual de stock). Cada uno incluye tarjetas de KPI, gráficas interactivas y tabla de datos con ordenamiento.',
+      },
+      {
+        id: 'reports-filters',
+        title: 'Filtros de fecha',
+        summary: 'Selecciona el rango de fechas para analizar.',
+        body: 'Todos los reportes de ventas y clientes requieren un rango de fechas (Desde / Hasta). Por defecto se muestra el último mes. Usa el botón "Consultar" para aplicar los filtros. El reporte de inventario muestra datos en tiempo real sin filtro de fecha.',
+      },
+      {
+        id: 'reports-charts',
+        title: 'Gráficas interactivas',
+        summary: 'Líneas, barras y pastel para visualizar tendencias.',
+        body: 'Ventas por período muestra tendencias en línea o barras según la agrupación (día, semana, mes). Ventas por zona usa gráfica de pastel para distribución porcentual. Inventario muestra una dona con el estado del stock. Pasa el cursor sobre las gráficas para ver valores exactos.',
+      },
+      {
+        id: 'reports-tables',
+        title: 'Tablas de datos',
+        summary: 'Ordena por cualquier columna para encontrar lo que buscas.',
+        body: 'Cada reporte incluye una tabla detallada. Haz clic en el encabezado de cualquier columna para ordenar ascendente o descendente. Algunas tablas muestran una fila de totales al final. La tabla de actividad de clientes tiene paginación para manejar grandes volúmenes.',
       },
     ],
   },

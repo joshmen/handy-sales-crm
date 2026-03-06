@@ -92,6 +92,7 @@ export function useTour() {
         restoreDrawerFromTour();
         closeDrawerForTour();
         driverRef.current = null;
+        window.dispatchEvent(new Event('tour-inactive'));
       },
       steps: tourConfig.steps.map((step) => ({
         ...(step.element ? { element: step.element } : {}),
@@ -120,6 +121,7 @@ export function useTour() {
     // Small delay to ensure data-tour elements are rendered
     requestAnimationFrame(() => {
       instance.drive();
+      window.dispatchEvent(new Event('tour-active'));
     });
   }, [tourConfig]);
 
@@ -127,6 +129,8 @@ export function useTour() {
   useEffect(() => {
     const continueId = consumeTourContinuation();
     if (continueId && tourConfig?.id === continueId) {
+      // Hide floating widgets immediately while we wait for DOM
+      window.dispatchEvent(new Event('tour-active'));
       // Delay to ensure DOM is rendered with data-tour attributes
       const timer = setTimeout(() => startTour(), 600);
       return () => clearTimeout(timer);

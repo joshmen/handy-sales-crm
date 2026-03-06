@@ -1,5 +1,5 @@
 import type { Driver } from 'driver.js';
-import { TourConfig, imageStep, boostDrawerForTour, closeDrawerForTour, scheduleTourContinuation } from './types';
+import { TourConfig, boostDrawerForTour, closeDrawerForTour, scheduleTourContinuation } from './types';
 
 /** Clients, Products, Zones, Client Categories, Product Categories, Product Families, Units */
 export const catalogTours: Record<string, TourConfig> = {
@@ -354,26 +354,98 @@ export const catalogTours: Record<string, TourConfig> = {
     description: 'Aprende a organizar tu territorio en zonas geográficas para tus vendedores.',
     steps: [
       {
-        element: '[data-tour="zones-add-btn"]',
+        element: '[data-tour="zones-map-btn"]',
         popover: {
-          title: 'Agregar nueva zona',
+          title: 'Ver mapa de zonas',
           description:
-            'Crea una zona geográfica con nombre, descripción y color. Después podrás asignar clientes y vendedores a cada zona.',
+            'Abre un mapa interactivo con todas tus zonas dibujadas como círculos de colores. Útil para visualizar la cobertura territorial de tu equipo.',
           side: 'bottom',
           align: 'end',
         },
       },
-      imageStep(
-        'Formulario de nueva zona',
-        '/images/tour/zonas-crear.jpg',
-        'Formulario para crear una zona geográfica con nombre y color',
-      ),
+      {
+        element: '[data-tour="zones-import-export"]',
+        popover: {
+          title: 'Importar / Exportar',
+          description:
+            'Exporta tus zonas a CSV o importa desde un archivo para cargas masivas. El CSV incluye nombre, descripción y color.',
+          side: 'bottom',
+          align: 'end',
+        },
+      },
+      {
+        element: '[data-tour="zones-add-btn"]',
+        popover: {
+          title: 'Nueva zona',
+          description:
+            'Crea una zona geográfica con nombre, color y ubicación en el mapa. Después podrás asignar clientes a cada zona.',
+          side: 'bottom',
+          align: 'end',
+          onNextClick: (driverObj: Driver) => {
+            (document.querySelector('[data-tour="zones-add-btn"]') as HTMLElement)?.click();
+            setTimeout(() => {
+              boostDrawerForTour();
+              driverObj.moveNext();
+            }, 400);
+          },
+        },
+      },
+      // ── DRAWER OPEN ──
+      {
+        element: '[data-tour="zones-drawer-name"]',
+        popover: {
+          title: 'Nombre de la zona',
+          description:
+            'Escribe un nombre descriptivo para la zona (ej. "Centro Histórico", "Zona Norte", "Industrial Zapopan").',
+          side: 'left',
+          align: 'start',
+          onPrevClick: (driverObj: Driver) => {
+            closeDrawerForTour();
+            setTimeout(() => driverObj.movePrevious(), 400);
+          },
+        },
+      },
+      {
+        element: '[data-tour="zones-drawer-color"]',
+        popover: {
+          title: 'Color de la zona',
+          description:
+            'Selecciona un color para identificar visualmente la zona en el mapa y en las listas. Elige uno diferente para cada zona.',
+          side: 'left',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="zones-drawer-map"]',
+        popover: {
+          title: 'Ubicación y radio',
+          description:
+            'Busca un lugar, haz doble clic en el mapa o arrastra el marcador para posicionar la zona. Ajusta el radio arrastrando el borde del círculo o escribiendo el valor en km.',
+          side: 'left',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="zones-drawer-actions"]',
+        popover: {
+          title: 'Guardar o cancelar',
+          description:
+            'Haz clic en "Crear Zona" para guardar o "Cancelar" para descartar los cambios.',
+          side: 'top',
+          align: 'end',
+          onNextClick: (driverObj: Driver) => {
+            closeDrawerForTour();
+            setTimeout(() => driverObj.moveNext(), 400);
+          },
+        },
+      },
+      // ── DRAWER CLOSE ──
       {
         element: '[data-tour="zones-search"]',
         popover: {
           title: 'Buscar zonas',
           description:
-            'Escribe el nombre de la zona para encontrarla rápidamente.',
+            'Escribe el nombre de la zona para encontrarla rápidamente. La búsqueda filtra en tiempo real.',
           side: 'bottom',
           align: 'start',
         },
@@ -383,7 +455,7 @@ export const catalogTours: Record<string, TourConfig> = {
         popover: {
           title: 'Mostrar inactivas',
           description:
-            'Activa este switch para ver las zonas desactivadas.',
+            'Activa este switch para ver también las zonas desactivadas. Por defecto solo se muestran las activas.',
           side: 'bottom',
           align: 'end',
         },
@@ -393,7 +465,7 @@ export const catalogTours: Record<string, TourConfig> = {
         popover: {
           title: 'Tabla de zonas',
           description:
-            'Cada zona muestra su color, nombre, cantidad de clientes asignados y estado activo. Puedes seleccionar varias para activar/desactivar en lote.',
+            'Cada zona muestra su color, nombre, clientes asignados y estado activo/inactivo. Haz clic en una fila para editarla. Selecciona varias con los checkboxes para activar/desactivar en lote.',
           side: 'top',
           align: 'center',
         },
@@ -808,6 +880,115 @@ export const catalogTours: Record<string, TourConfig> = {
           title: 'Tabla de unidades',
           description:
             'Lista de unidades con nombre, abreviatura, estado y acciones. Puedes seleccionar varias con los checkboxes para activar/desactivar en lote.',
+          side: 'top',
+          align: 'center',
+        },
+      },
+    ],
+  },
+
+  '/metas': {
+    id: 'metas-tour',
+    title: 'Tour de Metas de Vendedor',
+    description: 'Aprende a definir y dar seguimiento a las metas de ventas, pedidos y visitas de tu equipo.',
+    steps: [
+      {
+        element: '[data-tour="metas-add-btn"]',
+        popover: {
+          title: 'Nueva meta',
+          description:
+            'Crea una meta para un vendedor: elige si es de ventas ($), pedidos o visitas, define el período (semanal o mensual) y el objetivo numérico.',
+          side: 'bottom',
+          align: 'end',
+          onNextClick: (driverObj: Driver) => {
+            (document.querySelector('[data-tour="metas-add-btn"]') as HTMLElement)?.click();
+            setTimeout(() => {
+              boostDrawerForTour();
+              driverObj.moveNext();
+            }, 400);
+          },
+        },
+      },
+      {
+        element: '[data-tour="metas-drawer-vendedor"]',
+        popover: {
+          title: 'Seleccionar vendedor',
+          description:
+            'Elige a qué vendedor aplica esta meta. Cada vendedor puede tener metas distintas para cada tipo de indicador.',
+          side: 'left',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="metas-drawer-tipo"]',
+        popover: {
+          title: 'Tipo de meta',
+          description:
+            'Ventas ($) mide el monto total vendido. Pedidos (#) cuenta el número de pedidos cerrados. Visitas (#) mide las visitas completadas al cliente.',
+          side: 'left',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="metas-drawer-monto"]',
+        popover: {
+          title: 'Objetivo',
+          description:
+            'Ingresa el número a alcanzar: monto en pesos para ventas, o cantidad de pedidos/visitas para los otros tipos.',
+          side: 'left',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="metas-drawer-fechas"]',
+        popover: {
+          title: 'Período de vigencia',
+          description:
+            'Define el rango de fechas en que aplica la meta. La automatización "Meta no cumplida" evalúa estos rangos cada viernes para enviar alertas.',
+          side: 'left',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="metas-drawer-actions"]',
+        popover: {
+          title: 'Guardar meta',
+          description:
+            'Crea la meta. Aparecerá en el tablero del vendedor y en la automatización de alerta semanal.',
+          side: 'top',
+          align: 'center',
+          onNextClick: (driverObj: Driver) => {
+            closeDrawerForTour();
+            setTimeout(() => driverObj.moveNext(), 350);
+          },
+        },
+      },
+      {
+        element: '[data-tour="metas-search"]',
+        popover: {
+          title: 'Buscar metas',
+          description:
+            'Filtra por nombre del vendedor o tipo de meta para encontrar rápidamente lo que buscas.',
+          side: 'bottom',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="metas-tipo-filter"]',
+        popover: {
+          title: 'Filtrar por tipo',
+          description:
+            'Muestra solo las metas de ventas, de pedidos o de visitas para comparar objetivos del mismo indicador.',
+          side: 'bottom',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="metas-table"]',
+        popover: {
+          title: 'Lista de metas',
+          description:
+            'Cada fila muestra el vendedor, tipo, período, objetivo y estado. Usa el toggle para activar/desactivar y los botones de acción para editar o eliminar.',
           side: 'top',
           align: 'center',
         },

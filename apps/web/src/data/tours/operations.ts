@@ -1,5 +1,5 @@
 import type { Driver } from 'driver.js';
-import { TourConfig, boostDrawerForTour, closeDrawerForTour } from './types';
+import { TourConfig, boostDrawerForTour, closeDrawerForTour, scheduleTourContinuation } from './types';
 
 /** Orders, Inventory, Movements, Routes (all variants), Deliveries, Calendar, Visits */
 export const operationTours: Record<string, TourConfig> = {
@@ -142,6 +142,16 @@ export const operationTours: Record<string, TourConfig> = {
     description: 'Aprende a gestionar el inventario de tu almacén y monitorear niveles de stock.',
     steps: [
       {
+        element: '[data-tour="inventory-import-export"]',
+        popover: {
+          title: 'Importar / Exportar',
+          description:
+            'Exporta tu inventario completo a CSV (producto, código de barra, cantidad, stock mín/máx). También puedes importar desde un CSV — si el producto ya tiene inventario, se actualizan sus valores.',
+          side: 'bottom',
+          align: 'end',
+        },
+      },
+      {
         element: '[data-tour="inventory-add-btn"]',
         popover: {
           title: 'Agregar al inventario',
@@ -158,28 +168,62 @@ export const operationTours: Record<string, TourConfig> = {
           },
         },
       },
+      // ── DRAWER OPEN ──
       {
+        element: '[data-tour="inventory-product-selector"]',
         popover: {
-          title: 'Formulario de inventario',
+          title: 'Seleccionar producto',
           description:
-            'Selecciona el producto, define la cantidad inicial, stock mínimo y stock máximo para mantener control de tu almacén.',
-          side: 'over',
+            'Elige el producto que deseas agregar al inventario. Solo aparecen productos que aún no tienen registro de inventario. La búsqueda es por nombre o código de barra.',
+          side: 'left',
+          align: 'start',
           onPrevClick: (driverObj: Driver) => {
             closeDrawerForTour();
             setTimeout(() => driverObj.movePrevious(), 400);
           },
+        },
+      },
+      {
+        element: '[data-tour="inventory-quantity"]',
+        popover: {
+          title: 'Cantidad actual',
+          description:
+            'Define cuántas unidades hay disponibles en el almacén. Este es el punto de partida; luego los movimientos (entradas, salidas, ajustes) actualizan este valor automáticamente.',
+          side: 'left',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="inventory-stock-fields"]',
+        popover: {
+          title: 'Stock mínimo y máximo',
+          description:
+            'El stock mínimo te alerta cuando el producto está por agotarse. El stock máximo te ayuda a evitar sobreinventario. Cuando las existencias caen al mínimo, la fila se marca en rojo.',
+          side: 'left',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="inventory-drawer-actions"]',
+        popover: {
+          title: 'Guardar o cancelar',
+          description:
+            'Haz clic en "Agregar" para registrar el producto en el inventario o "Cancelar" para descartar.',
+          side: 'top',
+          align: 'end',
           onNextClick: (driverObj: Driver) => {
             closeDrawerForTour();
             setTimeout(() => driverObj.moveNext(), 400);
           },
         },
       },
+      // ── DRAWER CLOSE ──
       {
         element: '[data-tour="inventory-search"]',
         popover: {
           title: 'Buscar en inventario',
           description:
-            'Filtra la lista escribiendo el nombre o código del producto que buscas.',
+            'Filtra la lista escribiendo el nombre o código del producto que buscas. La búsqueda se aplica en tiempo real.',
           side: 'bottom',
           align: 'start',
         },
@@ -189,7 +233,7 @@ export const operationTours: Record<string, TourConfig> = {
         popover: {
           title: 'Tabla de inventario',
           description:
-            'Aquí ves todos los productos con sus existencias. Los indicadores de color te ayudan: verde = disponible, amarillo = stock bajo, rojo = sin stock o por debajo del mínimo.',
+            'Cada fila muestra producto, unidad, existencias, stock mín/máx. Haz clic en una fila para editar sus valores. Los productos con stock bajo se resaltan con un indicador de alerta.',
           side: 'top',
           align: 'center',
         },
@@ -199,7 +243,7 @@ export const operationTours: Record<string, TourConfig> = {
         popover: {
           title: 'Columnas de stock mín./máx.',
           description:
-            'El stock mínimo te alerta cuando un producto está por agotarse. El stock máximo te ayuda a evitar sobreinventario. Configura estos valores para cada producto.',
+            'Configura estos valores para cada producto. Cuando las existencias bajan del mínimo aparece un triángulo de alerta. Usa esto para saber cuándo reabastecer.',
           side: 'top',
           align: 'center',
         },
@@ -213,13 +257,100 @@ export const operationTours: Record<string, TourConfig> = {
     description: 'Aprende a registrar entradas, salidas y ajustes de inventario.',
     steps: [
       {
+        element: '[data-tour="movements-export-btn"]',
+        popover: {
+          title: 'Exportar inventario',
+          description:
+            'Descarga tu inventario completo a CSV desde aquí. Útil para respaldos o análisis en Excel.',
+          side: 'bottom',
+          align: 'end',
+        },
+      },
+      {
         element: '[data-tour="movements-new-btn"]',
         popover: {
           title: 'Nuevo movimiento',
           description:
-            'Registra una entrada (mercancía de proveedores), salida (venta a clientes) o ajuste (corrección por conteo físico). Selecciona producto, tipo, cantidad y motivo.',
+            'Registra una entrada (mercancía de proveedores), salida (venta a clientes) o ajuste (corrección por conteo físico).',
           side: 'bottom',
           align: 'end',
+          onNextClick: (driverObj: Driver) => {
+            (document.querySelector('[data-tour="movements-new-btn"]') as HTMLElement)?.click();
+            setTimeout(() => {
+              boostDrawerForTour();
+              driverObj.moveNext();
+            }, 400);
+          },
+        },
+      },
+      // ── DRAWER OPEN ──
+      {
+        element: '[data-tour="movements-product-selector"]',
+        popover: {
+          title: 'Seleccionar producto',
+          description:
+            'Elige el producto al que quieres registrar el movimiento. Se muestra su stock actual para que sepas cuánto hay disponible.',
+          side: 'left',
+          align: 'start',
+          onPrevClick: (driverObj: Driver) => {
+            closeDrawerForTour();
+            setTimeout(() => driverObj.movePrevious(), 400);
+          },
+        },
+      },
+      {
+        element: '[data-tour="movements-type-selector"]',
+        popover: {
+          title: 'Tipo de movimiento',
+          description:
+            'Selecciona Entrada (llega mercancía al almacén), Salida (sale mercancía) o Ajuste (corrección de inventario). Si no hay existencias, "Salida" se desactiva automáticamente.',
+          side: 'left',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="movements-quantity"]',
+        popover: {
+          title: 'Cantidad',
+          description:
+            'Define cuántas unidades entran, salen o se ajustan. El sistema te muestra la proyección del stock resultante en tiempo real.',
+          side: 'left',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="movements-reason"]',
+        popover: {
+          title: 'Motivo del movimiento',
+          description:
+            'Cada tipo tiene motivos específicos: Entrada → Compra, Devolución, Transferencia. Salida → Venta, Merma, Devolución a proveedor. Ajuste → Ajuste de inventario, Merma.',
+          side: 'left',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="movements-drawer-actions"]',
+        popover: {
+          title: 'Guardar o cancelar',
+          description:
+            'Haz clic en "Guardar" para registrar el movimiento. El inventario se actualizará automáticamente con la cantidad indicada.',
+          side: 'top',
+          align: 'end',
+          onNextClick: (driverObj: Driver) => {
+            closeDrawerForTour();
+            setTimeout(() => driverObj.moveNext(), 400);
+          },
+        },
+      },
+      // ── DRAWER CLOSE ──
+      {
+        element: '[data-tour="movements-search"]',
+        popover: {
+          title: 'Buscar movimientos',
+          description:
+            'Filtra el historial escribiendo el nombre del producto. La búsqueda se aplica en tiempo real.',
+          side: 'bottom',
+          align: 'start',
         },
       },
       {
@@ -227,7 +358,7 @@ export const operationTours: Record<string, TourConfig> = {
         popover: {
           title: 'Filtro por tipo',
           description:
-            'Filtra movimientos: Entrada (llega mercancía), Salida (sale mercancía) o Ajuste (correcciones de inventario).',
+            'Filtra movimientos por tipo: Entrada (llega mercancía), Salida (sale mercancía) o Ajuste (correcciones de inventario).',
           side: 'bottom',
           align: 'start',
         },
@@ -237,7 +368,7 @@ export const operationTours: Record<string, TourConfig> = {
         popover: {
           title: 'Filtro por motivo',
           description:
-            'Filtra por motivo específico: Compra a proveedor, Venta a cliente, Devolución, Merma, Conteo físico, etc.',
+            'Filtra por motivo específico: Compra, Venta, Devolución, Merma, Ajuste de inventario o Transferencia.',
           side: 'bottom',
           align: 'start',
         },
@@ -247,7 +378,7 @@ export const operationTours: Record<string, TourConfig> = {
         popover: {
           title: 'Historial de movimientos',
           description:
-            'Cada fila muestra un movimiento con su tipo, producto, cantidad, stock anterior y nuevo. Las entradas se muestran en verde (+) y las salidas en rojo (-).',
+            'Cada fila muestra fecha, producto, tipo, cantidad (verde +entrada, rojo -salida), stock anterior → nuevo, motivo y usuario. Usa los filtros para encontrar movimientos específicos.',
           side: 'top',
           align: 'center',
         },
@@ -261,33 +392,120 @@ export const operationTours: Record<string, TourConfig> = {
     description: 'Aprende a asignar rutas de visita a tus vendedores y dar seguimiento a su progreso.',
     steps: [
       {
-        element: '[data-tour="routes-new-btn"]',
+        element: '[data-tour="routes-export-btn"]',
         popover: {
-          title: 'Nueva asignación de ruta',
+          title: 'Exportar rutas',
           description:
-            'Asigna una ruta de visita a un vendedor. Selecciona zona, clientes a visitar y fecha programada.',
+            'Descarga todas tus rutas en un archivo CSV con nombre, fecha, vendedor, zona, estado, paradas y horarios. Útil para reportes y análisis.',
           side: 'bottom',
           align: 'end',
         },
       },
       {
-        element: '[data-tour="routes-date-filter"]',
+        element: '[data-tour="routes-new-btn"]',
         popover: {
-          title: 'Filtro de fecha',
+          title: 'Nueva ruta',
           description:
-            'Selecciona la fecha para ver las rutas programadas para ese día.',
+            'Crea una ruta de venta asignada a un vendedor. Define zona, fecha y horario estimado.',
+          side: 'bottom',
+          align: 'end',
+          onNextClick: (driverObj: Driver) => {
+            (document.querySelector('[data-tour="routes-new-btn"]') as HTMLElement)?.click();
+            setTimeout(() => {
+              boostDrawerForTour();
+              driverObj.moveNext();
+            }, 400);
+          },
+        },
+      },
+      // ── DRAWER OPEN ──
+      {
+        element: '[data-tour="routes-drawer-nombre"]',
+        popover: {
+          title: 'Nombre de la ruta',
+          description:
+            'Escribe un nombre descriptivo para identificar la ruta (ej. "Ruta Centro - Lunes", "Zona Norte AM"). Máximo 100 caracteres.',
+          side: 'left',
+          align: 'start',
+          onPrevClick: (driverObj: Driver) => {
+            closeDrawerForTour();
+            setTimeout(() => driverObj.movePrevious(), 400);
+          },
+        },
+      },
+      {
+        element: '[data-tour="routes-drawer-vendedor"]',
+        popover: {
+          title: 'Vendedor asignado',
+          description:
+            'Selecciona el vendedor que realizará esta ruta. Solo aparece al crear; al editar no se puede cambiar el vendedor.',
+          side: 'left',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="routes-drawer-zona"]',
+        popover: {
+          title: 'Zona (opcional)',
+          description:
+            'Asigna una zona geográfica a la ruta. Esto ayuda a organizar las rutas por territorio y facilita los filtros.',
+          side: 'left',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="routes-drawer-fecha"]',
+        popover: {
+          title: 'Fecha de la ruta',
+          description:
+            'Selecciona la fecha programada. Por defecto se usa la fecha de hoy. Formato yyyy-MM-dd.',
+          side: 'left',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="routes-drawer-horario"]',
+        popover: {
+          title: 'Horario estimado',
+          description:
+            'Define la hora de inicio y fin estimadas para la ruta. Son opcionales y sirven para planificar la jornada del vendedor.',
+          side: 'left',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="routes-drawer-actions"]',
+        popover: {
+          title: 'Guardar o cancelar',
+          description:
+            'Haz clic en "Crear ruta" para guardar o "Cancelar" para descartar los cambios.',
+          side: 'top',
+          align: 'end',
+          onNextClick: (driverObj: Driver) => {
+            closeDrawerForTour();
+            setTimeout(() => driverObj.moveNext(), 400);
+          },
+        },
+      },
+      // ── DRAWER CLOSE ──
+      {
+        element: '[data-tour="routes-filters"]',
+        popover: {
+          title: 'Filtros de búsqueda',
+          description:
+            'Filtra rutas por texto, estado (Planificada, En progreso, Completada, etc.), zona y vendedor asignado. Los administradores ven el filtro de vendedor.',
           side: 'bottom',
           align: 'start',
         },
       },
       {
-        element: '[data-tour="routes-user-filter"]',
+        element: '[data-tour="routes-toggle-inactive"]',
         popover: {
-          title: 'Filtro por vendedor',
+          title: 'Mostrar inactivas',
           description:
-            'Filtra las rutas por vendedor asignado para ver su agenda del día.',
+            'Activa este switch para ver también las rutas desactivadas. Por defecto solo se muestran las activas.',
           side: 'bottom',
-          align: 'start',
+          align: 'end',
         },
       },
       {
@@ -295,7 +513,7 @@ export const operationTours: Record<string, TourConfig> = {
         popover: {
           title: 'Tabla de rutas',
           description:
-            'Cada ruta muestra zona, vendedor asignado, estado, clientes por visitar, progreso de visitas y monto de ventas del día.',
+            'Cada ruta muestra nombre, zona, vendedor, fecha, estado, paradas completadas/total y toggle activo. Selecciona varias con los checkboxes para activar/desactivar en lote.',
           side: 'top',
           align: 'center',
         },
@@ -307,15 +525,26 @@ export const operationTours: Record<string, TourConfig> = {
     id: 'routes-manage-tour',
     title: 'Tour de Administrar Rutas',
     description: 'Aprende a gestionar las rutas operativas: cargar inventario, dar seguimiento y cerrar rutas.',
+    doneBtnText: 'Ir al detalle →',
     steps: [
       {
-        element: '[data-tour="routes-manage-new-btn"]',
+        element: '[data-tour="routes-manage-export-btn"]',
         popover: {
-          title: 'Nueva asignación',
+          title: 'Exportar rutas',
           description:
-            'Haz clic aquí para ir a la pantalla de asignación de nuevas rutas a tus vendedores.',
+            'Descarga un CSV con todas las rutas incluyendo nombre, fecha, vendedor, zona, estado, paradas y horarios.',
           side: 'bottom',
           align: 'end',
+        },
+      },
+      {
+        element: '[data-tour="routes-manage-filters"]',
+        popover: {
+          title: 'Filtros de búsqueda',
+          description:
+            'Filtra rutas por fecha, vendedor y estado. Usa "+ Más filtros" para ver el filtro de estado con opciones: Planificada, En progreso, Terminada, Cancelada, Pend. aceptar, Carga aceptada o Cerrada.',
+          side: 'bottom',
+          align: 'start',
         },
       },
       {
@@ -323,7 +552,7 @@ export const operationTours: Record<string, TourConfig> = {
         popover: {
           title: 'Filtro por fecha',
           description:
-            'Selecciona un rango de fechas para ver las rutas programadas en ese período.',
+            'Selecciona un rango de fechas (desde/hasta) para ver solo las rutas programadas en ese período.',
           side: 'bottom',
           align: 'start',
         },
@@ -333,7 +562,7 @@ export const operationTours: Record<string, TourConfig> = {
         popover: {
           title: 'Filtro por usuario',
           description:
-            'Filtra las rutas por vendedor asignado para ver su carga de trabajo.',
+            'Filtra las rutas por vendedor asignado para ver su carga de trabajo y seguimiento.',
           side: 'bottom',
           align: 'start',
         },
@@ -341,21 +570,11 @@ export const operationTours: Record<string, TourConfig> = {
       {
         element: '[data-tour="routes-manage-estado-filter"]',
         popover: {
-          title: 'Filtro por estado',
+          title: 'Más filtros',
           description:
-            'Usa "+ Más filtros" para ver el filtro de estado. Filtra por: Planificada, En progreso, Terminada, Cancelada, Pend. aceptar, Carga aceptada o Cerrada.',
+            'Haz clic aquí para mostrar u ocultar el filtro de estado. Permite acotar aún más los resultados por la etapa operativa de cada ruta.',
           side: 'bottom',
           align: 'start',
-        },
-      },
-      {
-        element: '[data-tour="routes-manage-table"]',
-        popover: {
-          title: 'Lista de rutas',
-          description:
-            'Cada fila muestra nombre, vendedor, zona, fecha, estado y progreso. Haz clic en una ruta para ir a su detalle: si está pendiente verás la pantalla de carga; si ya fue completada verás el cierre.',
-          side: 'top',
-          align: 'center',
         },
       },
       {
@@ -363,9 +582,40 @@ export const operationTours: Record<string, TourConfig> = {
         popover: {
           title: 'Actualizar lista',
           description:
-            'Haz clic aquí para recargar la lista de rutas con los datos más recientes.',
+            'Recarga la lista con los datos más recientes del servidor. Útil cuando otro usuario está modificando rutas en paralelo.',
           side: 'bottom',
           align: 'end',
+        },
+      },
+      {
+        element: '[data-tour="routes-manage-table"]',
+        popover: {
+          title: 'Lista de rutas operativas',
+          description:
+            'Cada fila muestra nombre, vendedor, zona, fecha, estado y progreso de paradas. Haz clic en cualquier fila para abrir su detalle operativo.',
+          side: 'top',
+          align: 'center',
+        },
+      },
+      {
+        element: '[data-tour="routes-manage-row"]',
+        popover: {
+          title: 'Abrir detalle de una ruta',
+          description:
+            'Haz clic en una ruta para administrarla. Según su estado: "Planificada" abre la pantalla de carga de inventario, "En progreso" o "Pend. aceptar" muestra el seguimiento, y "Terminada" abre el cierre donde reconcilias inventario y efectivo.',
+          side: 'bottom',
+          align: 'start',
+          onNextClick: (driverObj: Driver) => {
+            const row = document.querySelector('[data-tour="routes-manage-row"]') as HTMLElement;
+            if (!row) return;
+            // Detect if the route goes to close page (Terminada/Cerrada) or load page
+            const badge = row.querySelector('.rounded-full');
+            const badgeText = badge?.textContent?.trim() || '';
+            const isClose = badgeText === 'Terminada' || badgeText === 'Cerrada';
+            scheduleTourContinuation(isClose ? 'routes-close-tour' : 'routes-load-tour');
+            driverObj.destroy();
+            row.click();
+          },
         },
       },
     ],
@@ -377,11 +627,31 @@ export const operationTours: Record<string, TourConfig> = {
     description: 'Aprende a cargar inventario a una ruta antes de que el vendedor salga a campo.',
     steps: [
       {
+        element: '[data-tour="routes-load-stats"]',
+        popover: {
+          title: 'Resumen de la carga',
+          description:
+            'Indicadores en tiempo real: total de entregas, productos cargados y monto total asignado. Se actualizan automáticamente al agregar productos o pedidos.',
+          side: 'bottom',
+          align: 'center',
+        },
+      },
+      {
+        element: '[data-tour="routes-load-header-actions"]',
+        popover: {
+          title: 'Guardar y actualizar',
+          description:
+            'Usa "Guardar" para guardar el efectivo inicial y comentarios. El botón de refrescar recarga los datos de la ruta desde el servidor.',
+          side: 'bottom',
+          align: 'end',
+        },
+      },
+      {
         element: '[data-tour="routes-load-user-section"]',
         popover: {
           title: 'Vendedor y efectivo inicial',
           description:
-            'Aquí ves el vendedor asignado y puedes definir el monto de viático o efectivo inicial que se le entrega.',
+            'Muestra el vendedor asignado a la ruta. Define el monto de efectivo inicial (viáticos/cambio) y comentarios para el vendedor.',
           side: 'bottom',
           align: 'start',
         },
@@ -389,9 +659,9 @@ export const operationTours: Record<string, TourConfig> = {
       {
         element: '[data-tour="routes-load-pedidos"]',
         popover: {
-          title: 'Pedidos asignados',
+          title: 'Pedidos para entrega',
           description:
-            'Estos son los pedidos de clientes que el vendedor debe entregar en la ruta. Los productos de estos pedidos se suman automáticamente a la carga.',
+            'Pedidos confirmados que el vendedor debe entregar en su ruta. Sus productos se suman automáticamente a la carga. Usa "Agregar pedidos" para asignar pedidos del catálogo.',
           side: 'bottom',
           align: 'start',
         },
@@ -399,9 +669,9 @@ export const operationTours: Record<string, TourConfig> = {
       {
         element: '[data-tour="routes-load-add-products"]',
         popover: {
-          title: 'Agregar productos para venta directa',
+          title: 'Productos para venta directa',
           description:
-            'Agrega productos adicionales que el vendedor llevará para venta directa (sin pedido previo). Selecciona producto y define la cantidad.',
+            'Agrega productos adicionales para que el vendedor los lleve y venda directamente (sin pedido previo). Selecciona producto, cantidad y precio unitario.',
           side: 'bottom',
           align: 'start',
         },
@@ -411,18 +681,8 @@ export const operationTours: Record<string, TourConfig> = {
         popover: {
           title: 'Tabla consolidada de carga',
           description:
-            'Aquí ves el resumen de todos los productos que se cargarán: cantidad para entrega, cantidad para venta directa, total y precio unitario.',
+            'Resumen de TODO lo que se cargará: cantidad asignada para entrega, para venta directa, total, disponibilidad en almacén, precio y monto total. Si "Disponible" se muestra en rojo, no hay suficiente stock.',
           side: 'top',
-          align: 'center',
-        },
-      },
-      {
-        element: '[data-tour="routes-load-stats"]',
-        popover: {
-          title: 'Resumen de la carga',
-          description:
-            'Indicadores resumen: total de productos, pedidos asignados, monto estimado y efectivo inicial.',
-          side: 'bottom',
           align: 'center',
         },
       },
@@ -431,9 +691,9 @@ export const operationTours: Record<string, TourConfig> = {
         popover: {
           title: 'Enviar a carga',
           description:
-            'Cuando todo esté listo, haz clic aquí para confirmar la carga de inventario. El vendedor recibirá la notificación en su app móvil.',
-          side: 'top',
-          align: 'end',
+            'Cuando todo esté listo, haz clic aquí para confirmar la carga y enviarla al vendedor. Recibirá una notificación en su app móvil para aceptar la carga.',
+          side: 'left',
+          align: 'center',
         },
       },
     ],
@@ -447,9 +707,9 @@ export const operationTours: Record<string, TourConfig> = {
       {
         element: '[data-tour="routes-close-tabs"]',
         popover: {
-          title: 'Pestañas de cierre',
+          title: 'Pestañas de estado',
           description:
-            'Navega entre las pestañas: Detalles de la ruta, Resumen financiero y Retorno de inventario.',
+            'Las pestañas reflejan la etapa de la ruta: Pendiente de aceptar, Carga aceptada, Terminada y Cerrada. La pestaña activa se selecciona automáticamente según el estado de la ruta.',
           side: 'bottom',
           align: 'start',
         },
@@ -459,7 +719,7 @@ export const operationTours: Record<string, TourConfig> = {
         popover: {
           title: 'Detalles de la ruta',
           description:
-            'Información general: vendedor, zona, fecha, estado y comentarios. Aquí puedes ver el contexto completo de la ruta.',
+            'Información del vendedor asignado, nombre de la ruta, zona geográfica y fecha de creación. Proporciona el contexto completo de la operación.',
           side: 'bottom',
           align: 'start',
         },
@@ -469,7 +729,17 @@ export const operationTours: Record<string, TourConfig> = {
         popover: {
           title: 'Resumen financiero',
           description:
-            'Muestra efectivo inicial, ventas totales, cobros realizados, efectivo recibido y la diferencia. Verifica que los montos cuadren.',
+            'Tres tarjetas: Efectivo entrante (ventas contado + entregas cobradas + cobranza), Movimientos a saldo (ventas crédito + entregas crédito) y Otros movimientos (preventas + devoluciones). Muestra el desglose completo de la operación.',
+          side: 'bottom',
+          align: 'center',
+        },
+      },
+      {
+        element: '[data-tour="routes-close-balance"]',
+        popover: {
+          title: 'Balance: Al inicio vs Al cierre',
+          description:
+            'Compara el valor de la ruta y efectivo inicial contra el monto a recibir, lo recibido y la diferencia. Un diferencia positiva (verde) indica sobrante, negativa (rojo) indica faltante.',
           side: 'bottom',
           align: 'center',
         },
@@ -477,9 +747,9 @@ export const operationTours: Record<string, TourConfig> = {
       {
         element: '[data-tour="routes-close-inventory"]',
         popover: {
-          title: 'Retorno de inventario',
+          title: 'Inventario de retorno',
           description:
-            'Tabla de reconciliación: cantidad cargada al inicio, vendidos, entregados, devueltos, mermas y lo que regresa al almacén. El sistema calcula las diferencias automáticamente.',
+            'Tabla de reconciliación producto por producto: cantidad inicial, vendidos, entregados, devueltos, mermas, recibido a almacén y en vehículo. El sistema calcula la diferencia automáticamente — debe ser 0 al cerrar.',
           side: 'top',
           align: 'center',
         },
@@ -489,7 +759,7 @@ export const operationTours: Record<string, TourConfig> = {
         popover: {
           title: 'Acciones de inventario',
           description:
-            'Usa estos botones para marcar productos como "Regresa a almacén" o "Se queda en vehículo" para la siguiente ruta.',
+            'Botones rápidos: "Almacén" envía toda la diferencia a recepción de almacén, "Carga" la deja en el vehículo para la siguiente ruta. Ajusta con los steppers (+/-) de cada fila.',
           side: 'bottom',
           align: 'start',
         },
@@ -499,7 +769,7 @@ export const operationTours: Record<string, TourConfig> = {
         popover: {
           title: 'Cerrar ruta',
           description:
-            'Cuando toda la reconciliación esté completa, haz clic aquí para cerrar la ruta definitivamente. Esta acción no se puede deshacer.',
+            'Cuando toda la reconciliación esté completa y hayas ingresado el monto recibido, haz clic aquí para cerrar la ruta definitivamente. Esta acción no se puede deshacer.',
           side: 'bottom',
           align: 'end',
         },
@@ -629,31 +899,31 @@ export const operationTours: Record<string, TourConfig> = {
     description: 'Aprende a gestionar el historial de visitas a clientes y registrar resultados.',
     steps: [
       {
-        element: '[data-tour="visits-list"]',
+        element: '[data-tour="visits-summary"]',
         popover: {
-          title: 'Lista de visitas',
+          title: 'Resumen del día',
           description:
-            'Aquí ves todas las visitas programadas y realizadas con su estado, cliente, vendedor y resultado.',
-          side: 'top',
-          align: 'center',
-        },
-      },
-      {
-        element: '[data-tour="visits-checkin"]',
-        popover: {
-          title: 'Iniciar visita (Check-In)',
-          description:
-            'Al iniciar una visita se registra la hora y ubicación de llegada del vendedor al cliente.',
+            'KPIs de visitas: total programadas, completadas, con venta, pendientes y tasa de conversión.',
           side: 'bottom',
           align: 'center',
         },
       },
       {
-        element: '[data-tour="visits-checkout"]',
+        element: '[data-tour="visits-list"]',
         popover: {
-          title: 'Finalizar visita (Check-Out)',
+          title: 'Lista de visitas',
           description:
-            'Al finalizar, selecciona el resultado: Con venta, Sin venta, No encontrado o Reprogramada.',
+            'Todas las visitas con su estado, cliente y resultado. Haz clic en una fila para ver los detalles. Desde ahí puedes iniciar (check-in) o finalizar (check-out) la visita.',
+          side: 'top',
+          align: 'center',
+        },
+      },
+      {
+        element: '[data-tour="visits-view-toggle"]',
+        popover: {
+          title: 'Vista de calendario',
+          description:
+            'Alterna entre vista de lista y calendario. En el calendario puedes hacer clic en un día para programar una visita.',
           side: 'bottom',
           align: 'center',
         },
@@ -661,13 +931,70 @@ export const operationTours: Record<string, TourConfig> = {
       {
         element: '[data-tour="visits-create"]',
         popover: {
-          title: 'Crear nueva visita',
+          title: 'Programar visita',
           description:
-            'Programa una nueva visita seleccionando vendedor, cliente, fecha y hora.',
+            'Abre el formulario para programar una nueva visita.',
           side: 'bottom',
           align: 'end',
+          onNextClick: (driverObj: Driver) => {
+            (document.querySelector('[data-tour="visits-create"]') as HTMLElement)?.click();
+            setTimeout(() => {
+              boostDrawerForTour();
+              driverObj.moveNext();
+            }, 400);
+          },
         },
       },
+      // ── DRAWER OPEN ──
+      {
+        element: '[data-tour="visits-form-client"]',
+        popover: {
+          title: 'Seleccionar cliente',
+          description:
+            'Busca y selecciona el cliente que vas a visitar. Es el único campo obligatorio.',
+          side: 'left',
+          align: 'start',
+          onPrevClick: (driverObj: Driver) => {
+            closeDrawerForTour();
+            setTimeout(() => driverObj.movePrevious(), 400);
+          },
+        },
+      },
+      {
+        element: '[data-tour="visits-form-type"]',
+        popover: {
+          title: 'Tipo de visita',
+          description:
+            'Selecciona el motivo: Rutina (visita regular), Cobranza, Entrega, Prospección, Seguimiento u Otro.',
+          side: 'left',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="visits-form-date"]',
+        popover: {
+          title: 'Fecha programada',
+          description:
+            'Selecciona fecha y hora. Deja vacío para visita inmediata (se registrará con la fecha de hoy).',
+          side: 'left',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="visits-form-actions"]',
+        popover: {
+          title: 'Guardar o cancelar',
+          description:
+            'Haz clic en "Programar Visita" para guardar o "Cancelar" para descartar.',
+          side: 'top',
+          align: 'end',
+          onNextClick: (driverObj: Driver) => {
+            closeDrawerForTour();
+            setTimeout(() => driverObj.moveNext(), 400);
+          },
+        },
+      },
+      // ── DRAWER CLOSE ──
     ],
   },
 
@@ -701,7 +1028,7 @@ export const operationTours: Record<string, TourConfig> = {
         popover: {
           title: 'Recetas disponibles',
           description:
-            'Cada tarjeta es una automatización que el sistema puede ejecutar por ti. Lee la descripción para entender qué hace cada una.',
+            'Cada tarjeta es una automatización. El ícono de persona indica a quién notifica: <b>Admin</b>, <b>Vendedores</b> o <b>Todos</b>. El sistema elige automáticamente si envía push (alertas) o email (reportes).',
           side: 'top',
           align: 'center',
         },
@@ -717,11 +1044,69 @@ export const operationTours: Record<string, TourConfig> = {
         },
       },
       {
+        element: '[data-tour="automations-config-btn"]',
+        popover: {
+          title: 'Configurar parámetros',
+          description:
+            'Haz clic en el engranaje para abrir la configuración. Veamos qué puedes ajustar dentro.',
+          side: 'left',
+          align: 'center',
+          onNextClick: (driverObj: Driver) => {
+            const btn = document.querySelector('[data-tour="automations-config-btn"]') as HTMLElement;
+            btn?.click();
+            setTimeout(() => {
+              boostDrawerForTour();
+              driverObj.moveNext();
+            }, 400);
+          },
+        },
+      },
+      // ── DRAWER OPEN ──
+      {
+        element: '[data-tour="automations-drawer-desc"]',
+        popover: {
+          title: 'Descripción de la receta',
+          description:
+            'Aquí se describe exactamente qué hace esta automatización: cuándo se ejecuta, qué condición detecta y qué acción toma.',
+          side: 'bottom',
+          align: 'start',
+          onPrevClick: (driverObj: Driver) => {
+            closeDrawerForTour();
+            setTimeout(() => driverObj.movePrevious(), 400);
+          },
+        },
+      },
+      {
+        element: '[data-tour="automations-drawer-form"]',
+        popover: {
+          title: 'Parámetros configurables',
+          description:
+            'Ajusta umbrales, frecuencias, horarios y especialmente <b>a quién notificar</b>: solo al administrador, solo a los vendedores, o a ambos. Cada automatización tiene parámetros distintos según su función.',
+          side: 'left',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="automations-drawer-actions"]',
+        popover: {
+          title: 'Guardar configuración',
+          description:
+            'Haz clic en "Guardar cambios" para aplicar tus ajustes. Los cambios se reflejan en la próxima ejecución de la automatización.',
+          side: 'top',
+          align: 'end',
+          onNextClick: (driverObj: Driver) => {
+            closeDrawerForTour();
+            setTimeout(() => driverObj.moveNext(), 400);
+          },
+        },
+      },
+      // ── DRAWER CLOSE ──
+      {
         element: '[data-tour="automations-historial"]',
         popover: {
           title: 'Historial de ejecuciones',
           description:
-            'Aquí puedes ver cuándo se ejecutó cada automatización y si fue exitosa. Útil para verificar que todo funciona correctamente.',
+            'Aquí puedes ver cuándo se ejecutó cada automatización y si fue exitosa. Muestra la acción tomada y cualquier error que haya ocurrido.',
           side: 'top',
           align: 'center',
         },
@@ -846,6 +1231,23 @@ export const operationTours: Record<string, TourConfig> = {
           description:
             'Muestra cada cliente con su deuda pendiente y una barra de avance hacia el pago completo. Haz clic en un cliente para ver su estado de cuenta detallado por pedido.',
           side: 'top',
+          align: 'center',
+        },
+      },
+    ],
+  },
+  '/reports': {
+    id: 'reports-tour',
+    title: 'Tour de Reportes',
+    description: 'Conoce los reportes de ventas, clientes e inventario disponibles.',
+    steps: [
+      {
+        element: '[data-tour="reports-cards"]',
+        popover: {
+          title: 'Catálogo de reportes',
+          description:
+            'Aquí están todos los reportes organizados por categoría: Ventas, Clientes e Inventario. Haz clic en cualquier tarjeta para ver el reporte completo con gráficas y tablas.',
+          side: 'bottom',
           align: 'center',
         },
       },
