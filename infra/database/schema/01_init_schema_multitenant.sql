@@ -341,3 +341,31 @@ CREATE INDEX idx_cobro_tenant_cliente ON Cobros(tenant_id, cliente_id);
 CREATE INDEX idx_cobro_tenant_pedido ON Cobros(tenant_id, pedido_id);
 CREATE INDEX idx_cobro_tenant_usuario ON Cobros(tenant_id, usuario_id);
 CREATE INDEX idx_cobro_tenant_fecha ON Cobros(tenant_id, fecha_cobro);
+
+-- ========================================
+-- Tabla de Metas de Vendedor
+-- ========================================
+CREATE TABLE IF NOT EXISTS MetasVendedor (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  tenant_id INT NOT NULL,
+  usuario_id INT NOT NULL,
+  tipo LONGTEXT NOT NULL,
+  periodo LONGTEXT NOT NULL,
+  monto DECIMAL(18,2) NOT NULL,
+  fecha_inicio DATETIME(6) NOT NULL,
+  fecha_fin DATETIME(6) NOT NULL,
+  auto_renovar TINYINT(1) NOT NULL DEFAULT 0,
+  activo TINYINT(1) NOT NULL DEFAULT 1,
+  creado_en DATETIME(6) NOT NULL,
+  actualizado_en DATETIME(6) NULL,
+  creado_por LONGTEXT NULL,
+  actualizado_por LONGTEXT NULL,
+  eliminado_en DATETIME(6) NULL,
+  eliminado_por LONGTEXT NULL,
+  version BIGINT NOT NULL DEFAULT 0,
+  FOREIGN KEY (tenant_id) REFERENCES Tenants(id) ON DELETE CASCADE,
+  FOREIGN KEY (usuario_id) REFERENCES Usuarios(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE INDEX IX_MetasVendedor_tenant_id ON MetasVendedor(tenant_id);
+CREATE INDEX IX_MetasVendedor_usuario_id ON MetasVendedor(usuario_id);

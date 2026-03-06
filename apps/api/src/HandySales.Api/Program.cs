@@ -113,6 +113,7 @@ app.MapPrecioPorProductoEndpoints();
 app.MapDescuentosPorCantidadEndpoints();
 app.MapPromocionesEndpoints();
 app.MapZonaEndpoints();
+app.MapMetaVendedorEndpoints();
 app.MapFamiliasProductosEndpoints();
 app.MapCategoriaClienteEndpoints();
 app.MapCategoriaProductoEndpoints();

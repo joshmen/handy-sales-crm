@@ -64,6 +64,10 @@ namespace HandySales.Application.CompanySettings.Services
                     PrimaryColor = settings.PrimaryColor,
                     SecondaryColor = settings.SecondaryColor,
                     CloudinaryFolder = settings.CloudinaryFolder,
+                    Timezone = settings.Timezone,
+                    Currency = settings.Currency,
+                    Language = settings.Language,
+                    Theme = settings.Theme,
                     UpdatedAt = settings.ActualizadoEn ?? settings.CreadoEn,
                     UpdatedBy = settings.ActualizadoPor
                 };
@@ -105,6 +109,18 @@ namespace HandySales.Application.CompanySettings.Services
                 if (!string.IsNullOrEmpty(request.SecondaryColor))
                     settings.SecondaryColor = request.SecondaryColor;
 
+                if (!string.IsNullOrEmpty(request.Timezone))
+                    settings.Timezone = request.Timezone;
+
+                if (!string.IsNullOrEmpty(request.Language))
+                    settings.Language = request.Language;
+
+                if (!string.IsNullOrEmpty(request.Currency))
+                    settings.Currency = request.Currency;
+
+                if (!string.IsNullOrEmpty(request.Theme))
+                    settings.Theme = request.Theme;
+
                 settings.ActualizadoPor = userId.ToString();
 
                 var updatedSettings = await _repository.UpdateAsync(settings);
@@ -117,6 +133,10 @@ namespace HandySales.Application.CompanySettings.Services
                     PrimaryColor = updatedSettings.PrimaryColor,
                     SecondaryColor = updatedSettings.SecondaryColor,
                     CloudinaryFolder = updatedSettings.CloudinaryFolder,
+                    Timezone = updatedSettings.Timezone,
+                    Currency = updatedSettings.Currency,
+                    Language = updatedSettings.Language,
+                    Theme = updatedSettings.Theme,
                     UpdatedAt = updatedSettings.ActualizadoEn ?? updatedSettings.CreadoEn
                 };
             }

@@ -519,6 +519,10 @@ public static class ReportEndpoints
                 .Where(c => c.TenantId == tenantId && c.CreadoEn >= fechaDesde)
                 .CountAsync();
 
+            var clientesActivos = await db.Clientes
+                .Where(c => c.TenantId == tenantId && c.Activo)
+                .CountAsync();
+
             var topVendedor = pedidosActual
                 .GroupBy(p => p.UsuarioId)
                 .OrderByDescending(g => g.Sum(p => p.Total))
@@ -570,6 +574,7 @@ public static class ReportEndpoints
                         : 0
                 },
                 nuevosClientes,
+                clientesActivos,
                 topVendedor = topVendedor != null ? new { nombre = topVendedorNombre, topVendedor.totalVentas } : null,
                 topProducto,
                 alertas = new

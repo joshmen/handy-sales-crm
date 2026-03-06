@@ -62,6 +62,7 @@ public class HandySalesDbContext : DbContext
 
     public DbSet<ScheduledAction> ScheduledActions => Set<ScheduledAction>();
     public DbSet<SubscriptionPlan> SubscriptionPlans => Set<SubscriptionPlan>();
+    public DbSet<MetaVendedor> MetasVendedor => Set<MetaVendedor>();
 
     // Log (sin filtro de tenant ni soft-delete)
     public DbSet<CrashReport> CrashReports => Set<CrashReport>();
@@ -819,5 +820,8 @@ public class HandySalesDbContext : DbContext
         // AutomationExecution: tenant filter only (no AuditableEntity, no soft delete)
         modelBuilder.Entity<AutomationExecution>()
             .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
+
+        modelBuilder.Entity<MetaVendedor>()
+            .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
     }
 }

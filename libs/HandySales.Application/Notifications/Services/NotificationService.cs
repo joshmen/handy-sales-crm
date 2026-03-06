@@ -13,17 +13,20 @@ public class NotificationService : INotificationService
     private readonly IDeviceSessionRepository _deviceSessionRepository;
     private readonly ICurrentTenant _tenant;
     private readonly IFcmService _fcmService;
+    private readonly IRealtimePushService? _realtimePush;
 
     public NotificationService(
         INotificationRepository repository,
         IDeviceSessionRepository deviceSessionRepository,
         ICurrentTenant tenant,
-        IFcmService fcmService)
+        IFcmService fcmService,
+        IRealtimePushService? realtimePush = null)
     {
         _repository = repository;
         _deviceSessionRepository = deviceSessionRepository;
         _tenant = tenant;
         _fcmService = fcmService;
+        _realtimePush = realtimePush;
     }
 
     public async Task<NotificationSendResultDto> EnviarNotificacionAsync(SendNotificationDto dto)
@@ -50,6 +53,22 @@ public class NotificationService : INotificationService
 
             notification = await _repository.CrearAsync(notification);
             result.NotificationId = notification.Id;
+
+            // Push real-time via SignalR (independent of FCM)
+            if (_realtimePush != null)
+            {
+                try
+                {
+                    await _realtimePush.SendToUserAsync(dto.UsuarioId, new
+                    {
+                        id = notification.Id,
+                        titulo = dto.Titulo,
+                        mensaje = dto.Mensaje,
+                        tipo = dto.Tipo,
+                    });
+                }
+                catch { /* SignalR failure should not block notification flow */ }
+            }
 
             // Obtener push tokens del usuario
             var tokens = await _repository.ObtenerPushTokensAsync(_tenant.TenantId, new List<int> { dto.UsuarioId });
@@ -136,6 +155,22 @@ public class NotificationService : INotificationService
                 notification = await _repository.CrearAsync(notification);
                 result.TotalEnviados++;
                 result.NotifiedUserIds.Add(usuarioId);
+
+                // Push real-time via SignalR
+                if (_realtimePush != null)
+                {
+                    try
+                    {
+                        await _realtimePush.SendToUserAsync(usuarioId, new
+                        {
+                            id = notification.Id,
+                            titulo = dto.Titulo,
+                            mensaje = dto.Mensaje,
+                            tipo = dto.Tipo,
+                        });
+                    }
+                    catch { /* SignalR failure should not block broadcast */ }
+                }
 
                 var tokenStrings = userTokens.Select(t => t.PushToken).ToList();
                 var fcmResult = await _fcmService.EnviarMulticastAsync(tokenStrings, dto.Titulo, dto.Mensaje, dto.Data);

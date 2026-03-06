@@ -84,7 +84,7 @@ public static class DeviceSessionEndpoints
             [FromServices] DeviceSessionService servicio,
             [FromServices] ICurrentTenant currentTenant) =>
         {
-            if (!currentTenant.IsAdmin) return Results.Forbid();
+            if (currentTenant.Role is not ("ADMIN" or "SUPER_ADMIN")) return Results.Forbid();
             var sesiones = await servicio.ObtenerTodasSesionesActivasAsync();
             return Results.Ok(sesiones);
         });
@@ -95,7 +95,7 @@ public static class DeviceSessionEndpoints
             [FromServices] DeviceSessionService servicio,
             [FromServices] ICurrentTenant currentTenant) =>
         {
-            if (!currentTenant.IsAdmin) return Results.Forbid();
+            if (currentTenant.Role is not ("ADMIN" or "SUPER_ADMIN")) return Results.Forbid();
             var sesiones = await servicio.ObtenerSesionesPorUsuarioAsync(usuarioId);
             return Results.Ok(sesiones);
         });
@@ -107,7 +107,7 @@ public static class DeviceSessionEndpoints
             [FromServices] DeviceSessionService servicio,
             [FromServices] ICurrentTenant currentTenant) =>
         {
-            if (!currentTenant.IsAdmin) return Results.Forbid();
+            if (currentTenant.Role is not ("ADMIN" or "SUPER_ADMIN")) return Results.Forbid();
             var resultado = await servicio.RevocarSesionAsync(id, dto?.Reason);
             return resultado
                 ? Results.Ok(new { mensaje = "Sesion revocada exitosamente" })
@@ -121,7 +121,7 @@ public static class DeviceSessionEndpoints
             [FromServices] DeviceSessionService servicio,
             [FromServices] ICurrentTenant currentTenant) =>
         {
-            if (!currentTenant.IsAdmin) return Results.Forbid();
+            if (currentTenant.Role is not ("ADMIN" or "SUPER_ADMIN")) return Results.Forbid();
             var cantidad = await servicio.CerrarTodasSesionesUsuarioAsync(usuarioId, dto?.Reason);
             return Results.Ok(new { mensaje = $"Se cerraron {cantidad} sesiones del usuario", cantidad });
         });
@@ -132,7 +132,7 @@ public static class DeviceSessionEndpoints
             [FromServices] DeviceSessionService servicio,
             [FromServices] ICurrentTenant currentTenant) =>
         {
-            if (!currentTenant.IsAdmin) return Results.Forbid();
+            if (currentTenant.Role is not ("ADMIN" or "SUPER_ADMIN")) return Results.Forbid();
             var cantidad = await servicio.LimpiarSesionesExpiradasAsync(diasInactividad ?? 30);
             return Results.Ok(new { mensaje = $"Se limpiaron {cantidad} sesiones expiradas", cantidad });
         });

@@ -1,4 +1,7 @@
 using FluentValidation;
+using HandySales.Api.Hubs;
+using Microsoft.AspNetCore.SignalR;
+using HandySales.Infrastructure.Persistence;
 using HandySales.Application.Cobranza.DTOs;
 using HandySales.Application.Cobranza.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -43,7 +46,9 @@ public static class CobroEndpoints
         group.MapPost("/", async (
             CobroCreateDto dto,
             IValidator<CobroCreateDto> validator,
-            [FromServices] CobroService servicio) =>
+            [FromServices] CobroService servicio,
+            [FromServices] ITenantContextService tenantContext,
+            [FromServices] IHubContext<NotificationHub> hubContext) =>
         {
             var validation = await validator.ValidateAsync(dto);
             if (!validation.IsValid)
@@ -52,6 +57,9 @@ public static class CobroEndpoints
             try
             {
                 var id = await servicio.CrearAsync(dto);
+                var tenantId = tenantContext.TenantId ?? 0;
+                if (tenantId > 0)
+                    await hubContext.Clients.Group($"tenant:{tenantId}").SendAsync("DashboardUpdate", new { tipo = "cobro", id });
                 return Results.Created($"/cobros/{id}", new { id });
             }
             catch (InvalidOperationException ex)

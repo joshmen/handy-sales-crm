@@ -1,3 +1,6 @@
+using HandySales.Api.Hubs;
+using Microsoft.AspNetCore.SignalR;
+using HandySales.Infrastructure.Persistence;
 using HandySales.Application.Visitas.DTOs;
 using HandySales.Application.Visitas.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -16,9 +19,14 @@ public static class ClienteVisitaEndpoints
         // CRUD
         group.MapPost("/", async (
             ClienteVisitaCreateDto dto,
-            [FromServices] ClienteVisitaService servicio) =>
+            [FromServices] ClienteVisitaService servicio,
+            [FromServices] ITenantContextService tenantContext,
+            [FromServices] IHubContext<NotificationHub> hubContext) =>
         {
             var id = await servicio.CrearAsync(dto);
+            var tenantId = tenantContext.TenantId ?? 0;
+            if (tenantId > 0)
+                await hubContext.Clients.Group($"tenant:{tenantId}").SendAsync("DashboardUpdate", new { tipo = "visita", id });
             return Results.Created($"/visitas/{id}", new { id });
         })
         .WithSummary("Programar nueva visita")

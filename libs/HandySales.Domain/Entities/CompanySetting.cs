@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using HandySales.Domain.Common;
 
@@ -32,6 +33,22 @@ public class CompanySetting : AuditableEntity
     
     [Column("cloudinary_folder")]
     public string? CloudinaryFolder { get; set; }
+
+    [Column("timezone")]
+    [MaxLength(50)]
+    public string Timezone { get; set; } = "America/Mexico_City";
+
+    [Column("language")]
+    [MaxLength(10)]
+    public string Language { get; set; } = "es";
+
+    [Column("currency")]
+    [MaxLength(10)]
+    public string Currency { get; set; } = "MXN";
+
+    [Column("theme")]
+    [MaxLength(10)]
+    public string Theme { get; set; } = "light";
 
     // Navigation properties
     public Tenant Tenant { get; set; } = null!;

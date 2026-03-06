@@ -28,6 +28,12 @@ namespace HandySales.Application.CompanySettings.DTOs
         [JsonPropertyName("currency")]
         public string Currency { get; set; } = "MXN";
 
+        [JsonPropertyName("language")]
+        public string Language { get; set; } = "es";
+
+        [JsonPropertyName("theme")]
+        public string Theme { get; set; } = "light";
+
         [JsonPropertyName("cloudinaryFolder")]
         public string? CloudinaryFolder { get; set; }
 
@@ -61,6 +67,14 @@ namespace HandySales.Application.CompanySettings.DTOs
         public string? PrimaryColor { get; set; }
         [JsonPropertyName("companySecondaryColor")]
         public string? SecondaryColor { get; set; }
+        [JsonPropertyName("timezone")]
+        public string? Timezone { get; set; }
+        [JsonPropertyName("language")]
+        public string? Language { get; set; }
+        [JsonPropertyName("currency")]
+        public string? Currency { get; set; }
+        [JsonPropertyName("theme")]
+        public string? Theme { get; set; }
     }
 
     public class UploadLogoResponse

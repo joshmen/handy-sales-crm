@@ -1,3 +1,6 @@
+using HandySales.Api.Hubs;
+using Microsoft.AspNetCore.SignalR;
+using HandySales.Infrastructure.Persistence;
 using HandySales.Application.Pedidos.DTOs;
 using HandySales.Application.Pedidos.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -16,9 +19,14 @@ public static class PedidoEndpoints
         // CRUD básico
         group.MapPost("/", async (
             PedidoCreateDto dto,
-            [FromServices] PedidoService servicio) =>
+            [FromServices] PedidoService servicio,
+            [FromServices] ITenantContextService tenantContext,
+            [FromServices] IHubContext<NotificationHub> hubContext) =>
         {
             var id = await servicio.CrearAsync(dto);
+            var tenantId = tenantContext.TenantId ?? 0;
+            if (tenantId > 0)
+                await hubContext.Clients.Group($"tenant:{tenantId}").SendAsync("DashboardUpdate", new { tipo = "pedido", id });
             return Results.Created($"/pedidos/{id}", new { id });
         })
         .WithSummary("Crear nuevo pedido")

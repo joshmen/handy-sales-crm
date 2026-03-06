@@ -1,8 +1,6 @@
-using HandySales.Api.Hubs;
 using HandySales.Application.Notifications.DTOs;
 using HandySales.Application.Notifications.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
 
 namespace HandySales.Api.Endpoints;
 
@@ -91,22 +89,9 @@ public static class NotificationEndpoints
         // ADMIN: Enviar notificación a usuario específico
         group.MapPost("/enviar", async (
             SendNotificationDto dto,
-            [FromServices] INotificationService service,
-            [FromServices] IHubContext<NotificationHub> hubContext) =>
+            [FromServices] INotificationService service) =>
         {
             var result = await service.EnviarNotificacionAsync(dto);
-            if (result.Success)
-            {
-                // Push real-time notification to the target user
-                await hubContext.Clients.Group($"user:{dto.UsuarioId}")
-                    .SendAsync("ReceiveNotification", new
-                    {
-                        id = result.NotificationId,
-                        titulo = dto.Titulo,
-                        mensaje = dto.Mensaje,
-                        tipo = dto.Tipo,
-                    });
-            }
             return result.Success ? Results.Ok(result) : Results.BadRequest(result);
         })
         .WithSummary("Enviar notificación (Admin)")
@@ -118,22 +103,9 @@ public static class NotificationEndpoints
         // ADMIN: Enviar broadcast a múltiples usuarios
         group.MapPost("/broadcast", async (
             BroadcastNotificationDto dto,
-            [FromServices] INotificationService service,
-            [FromServices] IHubContext<NotificationHub> hubContext) =>
+            [FromServices] INotificationService service) =>
         {
             var result = await service.EnviarBroadcastAsync(dto);
-
-            // Push real-time notification to all notified users (explicit list, zone, or vendedores)
-            if (result.NotifiedUserIds.Count > 0)
-            {
-                var payload = new { titulo = dto.Titulo, mensaje = dto.Mensaje, tipo = dto.Tipo };
-                foreach (var uid in result.NotifiedUserIds)
-                {
-                    await hubContext.Clients.Group($"user:{uid}")
-                        .SendAsync("ReceiveNotification", payload);
-                }
-            }
-
             return Results.Ok(result);
         })
         .WithSummary("Broadcast de notificación (Admin)")
