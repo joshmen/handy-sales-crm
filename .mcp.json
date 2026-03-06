@@ -3,6 +3,14 @@
     "notion": {
       "type": "http",
       "url": "https://mcp.notion.com/mcp"
+    },
+    "whisper-stt": {
+      "type": "stdio",
+      "command": "C:/Python310/python.exe",
+      "args": ["C:/Users/AW AREA 51M R2/.claude/tools/whisper_stt.py"],
+      "env": {
+        "OPENAI_API_KEY": "${OPENAI_API_KEY}"
+      }
     }
   }
 }
