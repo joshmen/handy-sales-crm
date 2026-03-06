@@ -26,9 +26,11 @@ export function formatDate(
   settings: FormatSettings | null,
   options?: Intl.DateTimeFormatOptions
 ): string {
+  if (!date) return '';
   const tz = settings?.timezone || 'America/Mexico_City';
   const locale = getLocale(settings);
   const d = typeof date === 'string' ? new Date(date) : date;
+  if (isNaN(d.getTime())) return '';
   return d.toLocaleString(locale, { timeZone: tz, ...options });
 }
 
@@ -41,6 +43,7 @@ export function formatCurrency(
 ): string {
   const currency = settings?.currency || 'MXN';
   const locale = getLocale(settings);
+  if (amount == null || isNaN(amount)) return '$0';
   return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency,
@@ -56,6 +59,7 @@ export function formatNumber(
   value: number,
   settings: FormatSettings | null
 ): string {
+  if (value == null || isNaN(value)) return '0';
   const locale = getLocale(settings);
   return value.toLocaleString(locale);
 }
