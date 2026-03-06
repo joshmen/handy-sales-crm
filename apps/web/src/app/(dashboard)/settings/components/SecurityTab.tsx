@@ -23,8 +23,10 @@ import { TwoFactorSetup } from '@/components/settings/TwoFactorSetup';
 import { TwoFactorDisable } from '@/components/settings/TwoFactorDisable';
 import { ImpersonationHistoryCard } from '@/components/settings/ImpersonationHistoryCard';
 import { toast } from '@/hooks/useToast';
+import { useFormatters } from '@/hooks/useFormatters';
 
 export const SecurityTab: React.FC = () => {
+  const { formatDate } = useFormatters();
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === 'ADMIN';
 
@@ -226,7 +228,7 @@ export const SecurityTab: React.FC = () => {
                   <p className="font-medium text-green-800">2FA está activo</p>
                   <p className="text-sm text-green-700">
                     {tfaStatus.enabledAt && (
-                      <>Activado el {new Date(tfaStatus.enabledAt).toLocaleDateString('es-MX', {
+                      <>Activado el {formatDate(tfaStatus.enabledAt, {
                         year: 'numeric', month: 'long', day: 'numeric',
                       })}</>
                     )}

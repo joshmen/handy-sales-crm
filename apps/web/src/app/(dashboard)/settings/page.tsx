@@ -33,7 +33,6 @@ function SettingsPageContent() {
   // Note: Only ADMIN (not SUPER_ADMIN) can access company settings as they are tenant-specific
   const defaultTab = searchParams.get('tab') || (isAdmin ? 'perfil-empresa' : 'notifications');
   const [activeTab, setActiveTab] = useState(defaultTab);
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [notifications, setNotifications] = useState({
     email: true,
     push: true,
@@ -193,7 +192,7 @@ function SettingsPageContent() {
 
           {/* Appearance Tab */}
           <TabsContent value="appearance" className="space-y-6">
-            <AppearanceTab isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />
+            <AppearanceTab />
           </TabsContent>
 
           {/* System Tab */}
@@ -201,7 +200,6 @@ function SettingsPageContent() {
             <SystemTab
               profile={profile}
               notifications={notifications}
-              isDarkMode={isDarkMode}
               companySettings={companySettings}
               isAdmin={isAdmin}
               isSuperAdmin={isSuperAdmin}

@@ -7,6 +7,8 @@ import { Label } from '@/components/ui/Label';
 import { Separator } from '@/components/ui/Separator';
 import { Trash2, Download, AlertCircle, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/useToast';
+import { useFormatters } from '@/hooks/useFormatters';
+import { useTheme } from '@/stores/useUIStore';
 
 interface HealthResponse {
   status: string;
@@ -31,7 +33,6 @@ interface SystemTabProps {
     sms: boolean;
     desktop: boolean;
   };
-  isDarkMode: boolean;
   companySettings: {
     name: string;
     logo: string;
@@ -45,11 +46,13 @@ interface SystemTabProps {
 export const SystemTab: React.FC<SystemTabProps> = ({
   profile,
   notifications,
-  isDarkMode,
   companySettings,
   isAdmin,
   isSuperAdmin
 }) => {
+  const { formatDate } = useFormatters();
+  const { theme } = useTheme();
+  const isDarkMode = theme === 'dark';
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [healthLoading, setHealthLoading] = useState(true);
   const [healthError, setHealthError] = useState(false);
@@ -78,7 +81,7 @@ export const SystemTab: React.FC<SystemTabProps> = ({
 
   const formatTimestamp = (ts: string) => {
     try {
-      return new Date(ts).toLocaleString('es-MX', {
+      return formatDate(ts, {
         dateStyle: 'medium',
         timeStyle: 'short',
       });

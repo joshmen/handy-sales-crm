@@ -30,6 +30,8 @@ export interface CompanySettings {
   companySecondaryColor?: string;
   timezone: string;
   currency: string;
+  language: string;
+  theme: string;
   cloudinaryFolder?: string;
   subscriptionStatus: string;
   subscriptionPlan: string;
@@ -59,6 +61,10 @@ export interface UpdateCompanyRequest {
   companyName?: string;
   companyPrimaryColor?: string;
   companySecondaryColor?: string;
+  timezone?: string;
+  language?: string;
+  currency?: string;
+  theme?: string;
 }
 
 export interface ApiResponse<T> {

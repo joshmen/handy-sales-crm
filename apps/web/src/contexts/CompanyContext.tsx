@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { useSession } from 'next-auth/react';
 import { CompanySettings, UpdateCompanyRequest, companyService } from '@/services/api/companyService';
 import { toast } from '@/hooks/useToast';
+import { useUIStore } from '@/stores/useUIStore';
 
 interface CompanyContextType {
   settings: CompanySettings | null;
@@ -59,6 +60,11 @@ export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) =>
 
         // Guardar en localStorage como respaldo
         localStorage.setItem('company_settings', JSON.stringify(response.data));
+
+        // Sync theme from DB to Zustand store (DB wins over localStorage)
+        if (response.data.theme === 'dark' || response.data.theme === 'light') {
+          useUIStore.getState().setTheme(response.data.theme);
+        }
       } else {
         // Fallback a configuración por defecto usando el tenant del usuario
         const defaultSettings: CompanySettings = {
@@ -67,6 +73,8 @@ export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) =>
           companyName: 'Mi Empresa',
           timezone: 'America/Mexico_City',
           currency: 'MXN',
+          language: 'es',
+          theme: 'light',
           subscriptionStatus: 'TRIAL',
           subscriptionPlan: 'BASIC',
           currentUsers: 0,
@@ -95,6 +103,8 @@ export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) =>
           companyName: 'Mi Empresa',
           timezone: 'America/Mexico_City',
           currency: 'MXN',
+          language: 'es',
+          theme: 'light',
           subscriptionStatus: 'TRIAL',
           subscriptionPlan: 'BASIC',
           currentUsers: 0,
