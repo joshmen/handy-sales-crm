@@ -60,8 +60,7 @@ namespace HandySales.Tests.Application.Cobros
             };
 
             var response = await _client.PostAsJsonAsync("/cobros", cobro);
-            // SQLite cannot Sum() on decimal columns, so cobro creation may fail in test env
-            response.StatusCode.Should().BeOneOf(HttpStatusCode.Created, HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError);
+            response.StatusCode.Should().BeOneOf(HttpStatusCode.Created, HttpStatusCode.OK, HttpStatusCode.BadRequest);
         }
 
         [Fact]

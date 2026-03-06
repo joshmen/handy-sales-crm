@@ -111,10 +111,12 @@ public class CobroRepository : ICobroRepository
 
             if (pedido != null)
             {
-                var cobradoPrevio = await _db.Cobros
+                var cobradoPrevio = (await _db.Cobros
                     .AsNoTracking()
                     .Where(c => c.PedidoId == dto.PedidoId.Value && c.TenantId == tenantId && c.Activo)
-                    .SumAsync(c => c.Monto);
+                    .Select(c => c.Monto)
+                    .ToListAsync())
+                    .Sum();
 
                 var saldoPendiente = pedido.Total - cobradoPrevio;
                 if (dto.Monto > saldoPendiente)
@@ -184,8 +186,12 @@ public class CobroRepository : ICobroRepository
         if (clienteId.HasValue)
             query = query.Where(p => p.ClienteId == clienteId.Value);
 
-        var pedidosPorCliente = await query
-            .GroupBy(p => new { p.ClienteId, Nombre = p.Cliente.Nombre })
+        var pedidosRaw = await query
+            .Select(p => new { p.ClienteId, p.Cliente.Nombre, p.Total, p.Id })
+            .ToListAsync();
+
+        var pedidosPorCliente = pedidosRaw
+            .GroupBy(p => new { p.ClienteId, p.Nombre })
             .Select(g => new
             {
                 g.Key.ClienteId,
@@ -194,18 +200,22 @@ public class CobroRepository : ICobroRepository
                 PedidoIds = g.Select(p => p.Id).ToList(),
                 CantidadPedidos = g.Count(),
             })
-            .ToListAsync();
+            .ToList();
 
         if (pedidosPorCliente.Count == 0) return new List<SaldoClienteDto>();
 
         // Get all active cobros for these clients
         var allPedidoIds = pedidosPorCliente.SelectMany(p => p.PedidoIds).ToList();
-        var cobrosPorPedido = await _db.Cobros
+        var cobrosRaw = await _db.Cobros
             .AsNoTracking()
             .Where(c => c.TenantId == tenantId && c.Activo && c.PedidoId.HasValue && allPedidoIds.Contains(c.PedidoId.Value))
+            .Select(c => new { c.ClienteId, c.Monto })
+            .ToListAsync();
+
+        var cobrosPorPedido = cobrosRaw
             .GroupBy(c => c.ClienteId)
             .Select(g => new { ClienteId = g.Key, TotalCobrado = g.Sum(c => c.Monto) })
-            .ToListAsync();
+            .ToList();
 
         var cobrosDict = cobrosPorPedido.ToDictionary(c => c.ClienteId, c => c.TotalCobrado);
 

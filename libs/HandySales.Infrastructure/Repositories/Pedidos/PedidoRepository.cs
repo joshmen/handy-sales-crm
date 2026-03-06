@@ -506,10 +506,12 @@ public class PedidoRepository : IPedidoRepository
 
     public async Task<decimal> CalcularTotalAsync(int pedidoId, int tenantId)
     {
-        return await _db.DetallePedidos
+        return (await _db.DetallePedidos
             .AsNoTracking()
             .Where(d => d.PedidoId == pedidoId && d.Activo)
-            .SumAsync(d => d.Total);
+            .Select(d => d.Total)
+            .ToListAsync())
+            .Sum();
     }
 
     private async Task RecalcularTotalesAsync(int pedidoId)

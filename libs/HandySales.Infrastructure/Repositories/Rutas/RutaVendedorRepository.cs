@@ -572,10 +572,12 @@ public class RutaVendedorRepository : IRutaVendedorRepository
         if (ruta == null) return new CierreRutaResumenDto();
 
         // Calculate valor de la ruta (total carga)
-        var valorRuta = await _db.RutasCarga
+        var valorRuta = (await _db.RutasCarga
             .AsNoTracking()
             .Where(c => c.RutaId == rutaId && c.TenantId == tenantId && c.Activo)
-            .SumAsync(c => c.CantidadTotal * c.PrecioUnitario);
+            .Select(c => c.CantidadTotal * c.PrecioUnitario)
+            .ToListAsync())
+            .Sum();
 
         // For now return basic structure - real calculations will use pedidos/ventas data
         var resumen = new CierreRutaResumenDto
