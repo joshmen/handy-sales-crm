@@ -87,7 +87,7 @@ function StatusBadge({ status, size = 'sm' }: { status: string; size?: 'sm' | 'x
 export default function AutomationsPage() {
   const { formatDate, formatNumber } = useFormatters();
   const { data: session } = useSession();
-  const subscriptionStatus = (session?.user as any)?.subscriptionStatus;
+  const subscriptionStatus = (session?.user as Record<string, unknown>)?.subscriptionStatus as string | undefined;
   const isExpired = subscriptionStatus === 'Expired' || subscriptionStatus === 'PastDue';
   const [templates, setTemplates] = useState<AutomationTemplate[]>([]);
   const [historial, setHistorial] = useState<AutomationExecution[]>([]);
