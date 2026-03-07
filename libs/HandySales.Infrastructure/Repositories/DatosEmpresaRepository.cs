@@ -2,6 +2,7 @@ using HandySales.Application.DatosEmpresa.DTOs;
 using HandySales.Application.DatosEmpresa.Interfaces;
 using HandySales.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace HandySales.Infrastructure.Repositories;
 
@@ -26,7 +27,8 @@ public class DatosEmpresaRepository : IDatosEmpresaRepository
             entity.Id,
             entity.TenantId,
             entity.RazonSocial,
-            entity.RFC,
+            entity.IdentificadorFiscal,
+            entity.TipoIdentificadorFiscal,
             entity.Telefono,
             entity.Email,
             entity.Contacto,
@@ -54,7 +56,8 @@ public class DatosEmpresaRepository : IDatosEmpresaRepository
         }
 
         if (dto.RazonSocial != null) entity.RazonSocial = dto.RazonSocial;
-        if (dto.RFC != null) entity.RFC = dto.RFC;
+        if (dto.IdentificadorFiscal != null) entity.IdentificadorFiscal = dto.IdentificadorFiscal;
+        if (dto.TipoIdentificadorFiscal != null) entity.TipoIdentificadorFiscal = dto.TipoIdentificadorFiscal;
         if (dto.Telefono != null) entity.Telefono = dto.Telefono;
         if (dto.Email != null) entity.Email = dto.Email;
         if (dto.Contacto != null) entity.Contacto = dto.Contacto;
@@ -67,13 +70,23 @@ public class DatosEmpresaRepository : IDatosEmpresaRepository
 
         entity.ActualizadoPor = actualizadoPor;
 
-        await _db.SaveChangesAsync();
+        try
+        {
+            await _db.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex) when (
+            ex.InnerException is PostgresException pgEx && pgEx.SqlState == "23505"
+            && pgEx.Message.Contains("identificador_fiscal"))
+        {
+            throw new InvalidOperationException("Este identificador fiscal ya tiene una cuenta registrada.");
+        }
 
         return new DatosEmpresaDto(
             entity.Id,
             entity.TenantId,
             entity.RazonSocial,
-            entity.RFC,
+            entity.IdentificadorFiscal,
+            entity.TipoIdentificadorFiscal,
             entity.Telefono,
             entity.Email,
             entity.Contacto,

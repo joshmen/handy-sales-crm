@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { Label } from '@/components/ui/Label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { Plus, X, Search } from 'lucide-react';
@@ -515,21 +516,22 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
 
             <div>
               <Label htmlFor="startDate">Rango de fechas para la promoción (inicio)</Label>
-              <Input
+              <DateTimePicker
                 id="startDate"
-                type="date"
+                mode="date"
                 value={formData.limits.startDate ? formData.limits.startDate.toISOString().split('T')[0] : ''}
-                onChange={(e) => handleLimitsChange('startDate', e.target.value ? new Date(e.target.value) : undefined)}
+                onChange={(val) => handleLimitsChange('startDate', val ? new Date(val) : undefined)}
               />
             </div>
 
             <div>
               <Label htmlFor="endDate">Rango de fechas para la promoción (fin)</Label>
-              <Input
+              <DateTimePicker
                 id="endDate"
-                type="date"
+                mode="date"
                 value={formData.limits.endDate ? formData.limits.endDate.toISOString().split('T')[0] : ''}
-                onChange={(e) => handleLimitsChange('endDate', e.target.value ? new Date(e.target.value) : undefined)}
+                onChange={(val) => handleLimitsChange('endDate', val ? new Date(val) : undefined)}
+                min={formData.limits.startDate ? formData.limits.startDate.toISOString().split('T')[0] : undefined}
               />
             </div>
           </div>

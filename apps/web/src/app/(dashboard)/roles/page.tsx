@@ -504,7 +504,7 @@ export default function RolesPage() {
               <div key={role.id} className="bg-white border border-gray-200 rounded-lg p-4">
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white flex-shrink-0">
+                    <div className="h-10 w-10 rounded-full bg-primary/15 flex items-center justify-center text-primary flex-shrink-0">
                       <Shield className="h-5 w-5" />
                     </div>
                     <div className="min-w-0">
@@ -573,7 +573,7 @@ export default function RolesPage() {
                   <TableRow key={role.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-medium">
+                        <div className="h-10 w-10 rounded-full bg-primary/15 flex items-center justify-center text-primary font-medium">
                           <Shield className="h-5 w-5" />
                         </div>
                         <div>

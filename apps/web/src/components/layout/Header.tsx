@@ -18,6 +18,8 @@ import {
   Info,
   Building2,
   ArrowRight,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { useSidebar, useTheme } from '@/stores/useUIStore';
 import { cn, getInitials } from '@/lib/utils';
@@ -89,7 +91,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
   const isClient = useClientOnly();
   const [mounted, setMounted] = useState(false);
   const { toggle } = useSidebar(); // fallback
-  const { theme } = useTheme();
+  const { theme, toggle: toggleTheme } = useTheme();
   const pathname = usePathname();
   const router = useRouter();
   const { data: session } = useSession();
@@ -316,6 +318,21 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
             <Info className="h-5 w-5 text-blue-400" />
           </Button>
 
+          {/* Theme toggle */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground hover:bg-accent rounded-full"
+            onClick={toggleTheme}
+            aria-label={theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+          >
+            {theme === 'dark' ? (
+              <Sun className="h-5 w-5 text-amber-400" />
+            ) : (
+              <Moon className="h-5 w-5 text-slate-500" />
+            )}
+          </Button>
+
           {/* Apps menu */}
           <Button
             variant="ghost"
@@ -341,7 +358,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
             </div>
             <Avatar className="h-8 w-8">
               <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
-              <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-sm font-medium">
+              <AvatarFallback className="bg-primary/15 text-primary font-semibold text-sm font-medium">
                 {getInitials(currentUser.name)}
               </AvatarFallback>
             </Avatar>
@@ -470,7 +487,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
             <div className="flex items-center space-x-4 p-4 rounded-xl bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950 border">
               <Avatar className="h-12 w-12">
                 <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
-                <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+                <AvatarFallback className="bg-primary/15 text-primary font-semibold">
                   {getInitials(currentUser.name)}
                 </AvatarFallback>
               </Avatar>

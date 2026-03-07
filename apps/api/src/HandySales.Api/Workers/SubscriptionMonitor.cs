@@ -148,8 +148,7 @@ public class SubscriptionMonitor : BackgroundService
             .Where(t => t.Activo
                 && t.FechaExpiracion != null
                 && t.FechaExpiracion <= now
-                && (t.SubscriptionStatus == "Active" || t.SubscriptionStatus == "Trial")
-                && t.PlanTipo != "FREE") // Free plan never expires
+                && (t.SubscriptionStatus == "Active" || t.SubscriptionStatus == "Trial"))
             .ToListAsync(ct);
 
         foreach (var tenant in expiredTenants)

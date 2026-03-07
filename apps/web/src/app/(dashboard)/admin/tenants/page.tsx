@@ -41,7 +41,7 @@ interface TenantFormData {
   planTipo?: string;
   maxUsuarios: number;
   // DatosEmpresa fields (only for create)
-  rfc?: string;
+  identificadorFiscal?: string;
   contacto?: string;
   telefono?: string;
   email?: string;
@@ -95,7 +95,7 @@ export default function TenantsPage() {
       filtered = filtered.filter(
         (t) =>
           t.nombreEmpresa.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (t.rfc && t.rfc.toLowerCase().includes(searchTerm.toLowerCase()))
+          (t.identificadorFiscal && t.identificadorFiscal.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
     if (!showInactive) {
@@ -131,7 +131,7 @@ export default function TenantsPage() {
     setSelectedTenant(null);
     reset({
       nombreEmpresa: '',
-      rfc: '',
+      identificadorFiscal: '',
       contacto: '',
       telefono: '',
       email: '',
@@ -190,7 +190,7 @@ export default function TenantsPage() {
       } else {
         const createData: TenantCreateRequest = {
           nombreEmpresa: data.nombreEmpresa,
-          rfc: data.rfc || undefined,
+          identificadorFiscal: data.identificadorFiscal || undefined,
           contacto: data.contacto || undefined,
           telefono: data.telefono || undefined,
           email: data.email || undefined,
@@ -396,28 +396,26 @@ export default function TenantsPage() {
             {/* DatosEmpresa fields - Only on create */}
             {drawerMode === 'create' && (
               <>
-                {/* RFC */}
+                {/* Identificador Fiscal */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    RFC
+                    ID Fiscal
                   </label>
                   <div className="relative">
                     <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <input
                       type="text"
-                      {...register('rfc', {
-                        pattern: {
-                          value: /^[A-Z&Ñ]{3,4}\d{6}[A-Z0-9]{3}$/,
-                          message: 'RFC inválido',
-                        },
+                      {...register('identificadorFiscal', {
+                        maxLength: { value: 20, message: 'Máximo 20 caracteres' },
+                        setValueAs: (v: string) => typeof v === 'string' ? v.toUpperCase() : v,
                       })}
                       className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
-                      placeholder="Ej: ABC123456XYZ"
-                      maxLength={13}
+                      placeholder="Ej: XAXX010101000"
+                      maxLength={20}
                     />
                   </div>
-                  {errors.rfc && (
-                    <p className="text-sm text-red-600 mt-1">{errors.rfc.message}</p>
+                  {errors.identificadorFiscal && (
+                    <p className="text-sm text-red-600 mt-1">{errors.identificadorFiscal.message}</p>
                   )}
                 </div>
 
@@ -792,8 +790,8 @@ export default function TenantsPage() {
                       <div className="text-[13px] font-medium text-gray-900 truncate">
                         {tenant.nombreEmpresa}
                       </div>
-                      {tenant.rfc && (
-                        <div className="text-[11px] text-gray-500">{tenant.rfc}</div>
+                      {tenant.identificadorFiscal && (
+                        <div className="text-[11px] text-gray-500">{tenant.identificadorFiscal}</div>
                       )}
                     </div>
                   </div>
@@ -929,8 +927,8 @@ export default function TenantsPage() {
                 <div className="text-sm font-medium text-gray-900 truncate">
                   {tenant.nombreEmpresa}
                 </div>
-                {tenant.rfc && (
-                  <div className="text-xs text-gray-500">{tenant.rfc}</div>
+                {tenant.identificadorFiscal && (
+                  <div className="text-xs text-gray-500">{tenant.identificadorFiscal}</div>
                 )}
               </div>
 

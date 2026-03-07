@@ -28,7 +28,7 @@ export enum MembershipPlan {
 export interface Company {
   id: string;
   name: string;
-  rfc?: string;
+  identificadorFiscal?: string;
   address?: string;
   phone: string;
   email: string;

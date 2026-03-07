@@ -815,9 +815,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
             <div className="border-t border-border p-4">
               {isSuperAdminDirect ? (
                 // SuperAdmin (not impersonating) sees their profile
-                <div className="flex items-center space-x-3 p-3 rounded-xl bg-gradient-to-r from-slate-50 to-indigo-50 dark:from-slate-900 dark:to-indigo-950">
+                <div className="flex items-center space-x-3 p-3 rounded-xl hover:bg-accent/50 transition-colors">
                   <Avatar className="h-10 w-10">
-                    <AvatarFallback className="bg-gradient-to-br from-slate-700 to-indigo-800 text-white text-sm">
+                    <AvatarFallback className="bg-violet-600/15 text-violet-700 dark:text-violet-400 text-sm font-semibold">
                       SA
                     </AvatarFallback>
                   </Avatar>
@@ -829,7 +829,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
                       {session.user.email}
                     </p>
                     <div className="mt-1">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-foreground/5 text-muted-foreground">
                         Super Admin
                       </span>
                     </div>
@@ -838,7 +838,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
               ) : shouldShowCompanySettings ? (
                 // Non-super admin (or impersonating) sees company info with company logo
                 <div
-                  className={`flex items-center space-x-3 p-3 rounded-xl bg-gradient-to-r from-green-50 to-blue-50 hover:from-green-100 hover:to-blue-100 dark:from-green-950 dark:to-blue-950 dark:hover:from-green-900 dark:hover:to-blue-900 transition-all duration-200
+                  className={`flex items-center space-x-3 p-3 rounded-xl hover:bg-accent/50 transition-colors
                       ${(session.user.role === 'ADMIN' || isImpersonating) ? 'cursor-pointer' : 'cursor-default'}`}
                   onClick={() => {
                     if (session.user.role === 'ADMIN' || isImpersonating) {
@@ -852,7 +852,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
                       alt={companySettings?.companyName || 'Mi Empresa'}
                       className="object-contain rounded-lg bg-card"
                     />
-                    <AvatarFallback className="rounded-lg bg-gradient-to-br from-green-500 to-blue-600 text-white text-sm">
+                    <AvatarFallback className="rounded-lg bg-emerald-600/15 text-emerald-700 dark:text-emerald-400 text-sm font-semibold">
                       {getInitials(companySettings?.companyName || 'Mi Empresa')}
                     </AvatarFallback>
                   </Avatar>
@@ -863,12 +863,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
                     <p className="text-xs text-muted-foreground truncate">
                       {profile?.nombre || session.user.name}
                     </p>
-                    <div className="mt-1">
+                    <div className="mt-1 flex flex-col items-start gap-0.5">
                       <span
-                        className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                        className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-foreground/5 text-muted-foreground"
                       >
                         {isImpersonating ? 'ADMIN (Soporte)' : session.user.role}
                       </span>
+                      {companySettings?.subscriptionPlan && (
+                        <span className="text-[10px] text-muted-foreground/70 mt-0.5">
+                          {({'BASIC': 'Plan Basico', 'PRO': 'Plan Profesional', 'ENTERPRISE': 'Plan Empresarial'} as Record<string, string>)[companySettings.subscriptionPlan.toUpperCase()] || companySettings.subscriptionPlan}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>

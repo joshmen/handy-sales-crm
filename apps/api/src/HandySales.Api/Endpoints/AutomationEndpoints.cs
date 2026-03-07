@@ -61,6 +61,12 @@ public static class AutomationEndpoints
             var userId = GetUserId(context);
             if (userId <= 0) return Results.Unauthorized();
 
+            // Validate subscription is active (Trial or Active)
+            var db = context.RequestServices.GetRequiredService<HandySalesDbContext>();
+            var tenant = await db.Tenants.AsNoTracking().FirstOrDefaultAsync(t => t.Id == tenantId);
+            if (tenant?.SubscriptionStatus is not ("Trial" or "Active"))
+                return Results.Json(new { error = "Tu suscripción ha expirado. Suscríbete para activar automatizaciones." }, statusCode: 402);
+
             try
             {
                 var id = await service.ActivarAsync(tenantId, userId, slug, request?.ParamsJson);
@@ -139,6 +145,11 @@ public static class AutomationEndpoints
             if (currentTenant.Role is not ("ADMIN" or "SUPER_ADMIN")) return Results.Forbid();
             var tenantId = GetTenantId(context);
             if (tenantId <= 0) return Results.Unauthorized();
+
+            // Verify active subscription before allowing test execution
+            var tenant = await db.Tenants.AsNoTracking().FirstOrDefaultAsync(t => t.Id == tenantId, ct);
+            if (tenant?.SubscriptionStatus is not ("Trial" or "Active"))
+                return Results.Json(new { error = "Tu suscripción ha expirado. Suscríbete para ejecutar automatizaciones." }, statusCode: 402);
 
             var template = await repo.GetTemplateBySlugAsync(slug);
             if (template == null) return Results.NotFound(new { error = $"Template '{slug}' not found" });

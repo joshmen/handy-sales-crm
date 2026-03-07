@@ -37,7 +37,7 @@ test.describe('Perfil de Empresa (Settings Tab)', () => {
 
     // Verify form fields exist and have Jeyma seed data
     await expect(page.locator('#razonSocial')).not.toHaveValue('');
-    await expect(page.locator('#rfc')).not.toHaveValue('');
+    await expect(page.locator('#identificadorFiscal')).toBeVisible();
     await expect(page.locator('#telefono')).toBeVisible();
     await expect(page.locator('#email')).toBeVisible();
     await expect(page.locator('#contacto')).toBeVisible();

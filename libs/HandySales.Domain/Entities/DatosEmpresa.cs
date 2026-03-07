@@ -17,9 +17,13 @@ public class DatosEmpresa : AuditableEntity
     [MaxLength(255)]
     public string? RazonSocial { get; set; }
 
-    [Column("rfc")]
-    [MaxLength(13)]
-    public string? RFC { get; set; }
+    [Column("identificador_fiscal")]
+    [MaxLength(20)]
+    public string? IdentificadorFiscal { get; set; }
+
+    [Column("tipo_identificador_fiscal")]
+    [MaxLength(10)]
+    public string TipoIdentificadorFiscal { get; set; } = "RFC";
 
     [Column("telefono")]
     [MaxLength(20)]

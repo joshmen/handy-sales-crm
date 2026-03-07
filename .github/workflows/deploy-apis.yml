@@ -18,7 +18,7 @@ on:
         default: 'true'
 
 # Required secrets (configure in GitHub repo settings):
-# - PRODUCTION_DB_CONNECTION_STRING: MySQL connection string for EF Core migrations
+# - PRODUCTION_DB_CONNECTION_STRING: PostgreSQL connection string for EF Core migrations
 #
 # Railway auto-deploys from main branch (configured in Railway dashboard).
 # This workflow only runs EF Core migrations BEFORE Railway deploys.

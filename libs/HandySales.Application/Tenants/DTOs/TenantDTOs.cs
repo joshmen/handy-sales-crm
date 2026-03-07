@@ -5,7 +5,7 @@ namespace HandySales.Application.Tenants.DTOs;
 public record TenantListDto(
     int Id,
     string NombreEmpresa,
-    string? RFC,
+    string? IdentificadorFiscal,
     bool Activo,
     string? PlanTipo,
     int UsuarioCount,
@@ -42,7 +42,8 @@ public record TenantCreateDto(
     DateTime? FechaSuscripcion,
     DateTime? FechaExpiracion,
     // Datos de empresa opcionales para crear junto al tenant
-    string? RFC,
+    string? IdentificadorFiscal,
+    string? TipoIdentificadorFiscal,
     string? Contacto,
     string? Telefono,
     string? Email,

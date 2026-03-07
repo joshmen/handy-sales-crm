@@ -11,6 +11,7 @@ import {
   Legend,
 } from "recharts";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
+import { useChartTheme } from "@/hooks/useChartTheme";
 
 interface VisitsData {
   date: string;
@@ -40,6 +41,7 @@ export const VisitsChart: React.FC<VisitsChartProps> = ({
   isLoading = false,
   className = "",
 }) => {
+  const ct = useChartTheme();
   // Colores para cada tipo de visita
   const colors = {
     programadas: "#3b82f6", // Azul
@@ -57,8 +59,8 @@ export const VisitsChart: React.FC<VisitsChartProps> = ({
       );
 
       return (
-        <div className="bg-white p-3 border rounded-lg shadow-lg">
-          <p className="text-sm font-medium text-gray-600 mb-2">{label}</p>
+        <div className="p-3 rounded-lg shadow-lg" style={{ backgroundColor: ct.tooltipBg, border: "1px solid " + ct.tooltipBorder }}>
+          <p className="text-sm font-medium mb-2" style={{ color: ct.tooltipText }}>{label}</p>
           <div className="space-y-1">
             {payload.map((entry: any, index: number) => (
               <div
@@ -115,7 +117,7 @@ export const VisitsChart: React.FC<VisitsChartProps> = ({
               className="w-3 h-3 rounded-full"
               style={{ backgroundColor: entry.color }}
             ></div>
-            <span className="text-sm text-gray-600 capitalize">
+            <span className="text-sm capitalize" style={{ color: ct.textSecondary }}>
               {entry.value}
             </span>
           </div>
@@ -182,9 +184,9 @@ export const VisitsChart: React.FC<VisitsChartProps> = ({
               data={data}
               margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="date" tick={{ fontSize: 12 }} stroke="#6b7280" />
-              <YAxis tick={{ fontSize: 12 }} stroke="#6b7280" />
+              <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
+              <XAxis dataKey="date" tick={{ fontSize: 12 }} stroke={ct.axis} />
+              <YAxis tick={{ fontSize: 12 }} stroke={ct.axis} />
               <Tooltip content={<CustomTooltip />} />
               <Legend content={<CustomLegend />} />
 

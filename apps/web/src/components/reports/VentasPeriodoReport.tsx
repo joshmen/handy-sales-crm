@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { ReportFilters } from './ReportFilters';
+import { useChartTheme } from '@/hooks/useChartTheme';
 import { ReportKPICards } from './ReportKPICards';
 import { ReportTable, ReportColumn } from './ReportTable';
 import { getVentasPeriodo, VentaPeriodo, VentasPeriodoResponse } from '@/services/api/reports';
@@ -22,6 +23,7 @@ export function VentasPeriodoReport() {
   const { formatCurrency } = useFormatters();
   const fmt = (n: number) => formatCurrency(n);
   const [dates, setDates] = useState(defaultDates);
+  const ct = useChartTheme();
   const [agrupacion, setAgrupacion] = useState<'dia' | 'semana' | 'mes'>('dia');
   const [data, setData] = useState<VentasPeriodoResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -88,7 +90,7 @@ export function VentasPeriodoReport() {
               <ResponsiveContainer width="100%" height={300}>
                 {agrupacion === 'dia' ? (
                   <LineChart data={data.periodos}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
                     <XAxis dataKey="fecha" tick={{ fontSize: 11 }} />
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} />
                     <Tooltip formatter={(v) => [fmt(Number(v)), 'Ventas']} />
@@ -96,7 +98,7 @@ export function VentasPeriodoReport() {
                   </LineChart>
                 ) : (
                   <BarChart data={data.periodos}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
                     <XAxis dataKey="fecha" tick={{ fontSize: 11 }} />
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} />
                     <Tooltip formatter={(v) => [fmt(Number(v)), 'Ventas']} />

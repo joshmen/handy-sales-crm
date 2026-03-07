@@ -167,7 +167,7 @@ export default function SubscriptionPage() {
       )}
 
       {/* Current Plan Overview */}
-      <Card className="border-2 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50">
+      <Card className="border-2 border-green-200 dark:border-green-800/40 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">

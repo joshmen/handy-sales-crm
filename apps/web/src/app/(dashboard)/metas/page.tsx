@@ -6,6 +6,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
+import { Button } from '@/components/ui/Button';
+import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { SearchBar } from '@/components/common/SearchBar';
 import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
@@ -362,7 +364,7 @@ export default function MetasPage() {
         <button
           onClick={loadMetas}
           disabled={loading}
-          className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-white bg-success rounded-lg hover:bg-success/90 transition-colors disabled:opacity-50"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           <span className="hidden sm:inline">Actualizar</span>
@@ -696,10 +698,10 @@ export default function MetasPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 Inicio <span className="text-red-500">*</span>
               </label>
-              <input
-                type="date"
-                {...register('fechaInicio')}
-                className="w-full h-10 border border-gray-300 rounded-lg text-sm px-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              <DateTimePicker
+                mode="date"
+                value={watch('fechaInicio')}
+                onChange={(val) => setValue('fechaInicio', val, { shouldValidate: true, shouldDirty: true })}
               />
               {errors.fechaInicio && (
                 <p className="text-red-500 text-xs mt-1">{errors.fechaInicio.message}</p>
@@ -709,10 +711,11 @@ export default function MetasPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 Fin <span className="text-red-500">*</span>
               </label>
-              <input
-                type="date"
-                {...register('fechaFin')}
-                className="w-full h-10 border border-gray-300 rounded-lg text-sm px-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              <DateTimePicker
+                mode="date"
+                value={watch('fechaFin')}
+                onChange={(val) => setValue('fechaFin', val, { shouldValidate: true, shouldDirty: true })}
+                min={watch('fechaInicio')}
               />
               {errors.fechaFin && (
                 <p className="text-red-500 text-xs mt-1">{errors.fechaFin.message}</p>
@@ -738,21 +741,13 @@ export default function MetasPage() {
 
           {/* Buttons */}
           <div className="flex gap-3 pt-2" data-tour="metas-drawer-actions">
-            <button
-              type="button"
-              onClick={closeDrawer}
-              className="flex-1 h-10 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-            >
+            <Button type="button" variant="outline" onClick={closeDrawer} className="flex-1">
               Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={actionLoading}
-              className="flex-1 h-10 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-            >
+            </Button>
+            <Button type="submit" variant="success" disabled={actionLoading} className="flex-1 flex items-center justify-center gap-2">
               {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-              {editingMeta ? 'Guardar cambios' : 'Crear meta'}
-            </button>
+              {editingMeta ? 'Guardar Cambios' : 'Crear Meta'}
+            </Button>
           </div>
         </form>
       </Drawer>
@@ -764,20 +759,13 @@ export default function MetasPage() {
             <h3 className="font-semibold text-gray-900 mb-2">Eliminar meta</h3>
             <p className="text-sm text-gray-600 mb-6">¿Estás seguro? Esta acción no se puede deshacer.</p>
             <div className="flex gap-3">
-              <button
-                onClick={() => setConfirmDeleteId(null)}
-                className="flex-1 h-9 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-              >
+              <Button type="button" variant="outline" onClick={() => setConfirmDeleteId(null)} className="flex-1">
                 Cancelar
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={deleteLoading}
-                className="flex-1 h-9 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
-              >
+              </Button>
+              <Button type="button" variant="destructive" onClick={handleDelete} disabled={deleteLoading} className="flex-1 flex items-center justify-center gap-2">
                 {deleteLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                 Eliminar
-              </button>
+              </Button>
             </div>
           </div>
         </div>

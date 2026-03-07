@@ -4,7 +4,8 @@ public record DatosEmpresaDto(
     int Id,
     int TenantId,
     string? RazonSocial,
-    string? RFC,
+    string? IdentificadorFiscal,
+    string? TipoIdentificadorFiscal,
     string? Telefono,
     string? Email,
     string? Contacto,
@@ -17,7 +18,8 @@ public record DatosEmpresaDto(
 
 public record DatosEmpresaUpdateDto(
     string? RazonSocial,
-    string? RFC,
+    string? IdentificadorFiscal,
+    string? TipoIdentificadorFiscal,
     string? Telefono,
     string? Email,
     string? Contacto,

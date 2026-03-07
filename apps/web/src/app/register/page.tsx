@@ -21,7 +21,7 @@ const registerSchema = z.object({
   password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
   confirmPassword: z.string(),
   nombreEmpresa: z.string().min(1, 'El nombre de la empresa es obligatorio'),
-  rfc: z.string().max(13, 'El RFC no debe exceder 13 caracteres').optional().or(z.literal('')),
+  identificadorFiscal: z.string().max(20, 'El identificador fiscal no debe exceder 20 caracteres').optional().or(z.literal('')),
   contacto: z.string().max(100).optional().or(z.literal('')),
   aceptaTerminos: z.literal(true, { errorMap: () => ({ message: 'Debes aceptar los términos y el aviso de privacidad' }) }),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -34,7 +34,7 @@ const googleRegisterSchema = z.object({
   nombre: z.string().min(1, 'El nombre es obligatorio'),
   email: z.string().email('Formato de correo inválido'),
   nombreEmpresa: z.string().min(1, 'El nombre de la empresa es obligatorio'),
-  rfc: z.string().max(13, 'El RFC no debe exceder 13 caracteres').optional().or(z.literal('')),
+  identificadorFiscal: z.string().max(20, 'El identificador fiscal no debe exceder 20 caracteres').optional().or(z.literal('')),
   contacto: z.string().max(100).optional().or(z.literal('')),
   aceptaTerminos: z.literal(true, { errorMap: () => ({ message: 'Debes aceptar los términos y el aviso de privacidad' }) }),
 });
@@ -66,7 +66,7 @@ function RegisterContent() {
       password: '',
       confirmPassword: '',
       nombreEmpresa: '',
-      rfc: '',
+      identificadorFiscal: '',
       contacto: '',
     },
   });
@@ -78,7 +78,7 @@ function RegisterContent() {
       nombre: googleName || '',
       email: googleEmail || '',
       nombreEmpresa: '',
-      rfc: '',
+      identificadorFiscal: '',
       contacto: '',
     },
   });
@@ -101,7 +101,7 @@ function RegisterContent() {
           password: data.password,
           nombre: data.nombre,
           nombreEmpresa: data.nombreEmpresa,
-          rfc: data.rfc || undefined,
+          identificadorFiscal: data.identificadorFiscal || undefined,
           contacto: data.contacto || undefined,
         },
         { timeout: API_CONFIG.TIMEOUT, validateStatus: () => true }
@@ -138,7 +138,7 @@ function RegisterContent() {
           provider: googleProvider,
           avatarUrl: googleAvatar || undefined,
           nombreEmpresa: data.nombreEmpresa,
-          rfc: data.rfc || undefined,
+          identificadorFiscal: data.identificadorFiscal || undefined,
           contacto: data.contacto || undefined,
         }),
       });
@@ -229,12 +229,12 @@ function RegisterContent() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label className="block text-[14px] font-medium text-[#374151]">RFC</label>
+                <label className="block text-[14px] font-medium text-[#374151]">Identificador Fiscal</label>
                 <input
-                  {...googleForm.register('rfc')}
+                  {...googleForm.register('identificadorFiscal', { setValueAs: (v: string) => typeof v === 'string' ? v.toUpperCase() : v })}
                   placeholder="Opcional"
                   disabled={submitting}
-                  className={inputClassName(!!googleForm.formState.errors.rfc)}
+                  className={inputClassName(!!googleForm.formState.errors.identificadorFiscal)}
                 />
               </div>
               <div className="space-y-1.5">
@@ -375,12 +375,12 @@ function RegisterContent() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label className="block text-[14px] font-medium text-[#374151]">RFC</label>
+                  <label className="block text-[14px] font-medium text-[#374151]">Identificador Fiscal</label>
                   <input
-                    {...manualForm.register('rfc')}
+                    {...manualForm.register('identificadorFiscal', { setValueAs: (v: string) => typeof v === 'string' ? v.toUpperCase() : v })}
                     placeholder="Opcional"
                     disabled={submitting}
-                    className={inputClassName(!!manualForm.formState.errors.rfc)}
+                    className={inputClassName(!!manualForm.formState.errors.identificadorFiscal)}
                   />
                 </div>
                 <div className="space-y-1.5">

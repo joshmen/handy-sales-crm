@@ -82,6 +82,8 @@ module.exports = {
           900: "#1e3a8a",
         },
         success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
           50: "#f0fdf4",
           100: "#dcfce7",
           200: "#bbf7d0",

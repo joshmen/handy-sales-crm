@@ -12,13 +12,10 @@ public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<HandySales
     public HandySalesDbContext CreateDbContext(string[] args)
     {
         var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
-            ?? "Server=localhost;Port=3306;Database=handy_erp;User=handy_user;Password=handy_pass;CharSet=utf8mb4";
+            ?? "Host=localhost;Port=5432;Database=handy_erp;Username=handy_user;Password=handy_pass";
 
         var optionsBuilder = new DbContextOptionsBuilder<HandySalesDbContext>();
-        optionsBuilder.UseMySql(
-            connectionString,
-            new MySqlServerVersion(new Version(8, 0, 0))
-        );
+        optionsBuilder.UseNpgsql(connectionString);
 
         return new HandySalesDbContext(optionsBuilder.Options);
     }

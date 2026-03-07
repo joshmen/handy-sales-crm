@@ -6,11 +6,13 @@ namespace HandySales.Infrastructure.Persistence;
 
 /// <summary>
 /// Applies pending EF Core migrations on startup.
-/// Uses MySQL advisory lock to prevent concurrent runs
+/// Uses PostgreSQL advisory lock to prevent concurrent runs
 /// (Main API and Mobile API share the same database).
 /// </summary>
 public static class DatabaseMigrator
 {
+    private const long MigrationLockId = 123456789;
+
     public static async Task MigrateAsync(IServiceProvider services, ILogger logger)
     {
         using var scope = services.CreateScope();
@@ -31,23 +33,19 @@ public static class DatabaseMigrator
 
         var connection = dbContext.Database.GetDbConnection();
         await connection.OpenAsync();
-        var isMySql = connection.GetType().Name.Contains("MySql", StringComparison.OrdinalIgnoreCase);
 
         try
         {
-            if (isMySql)
-            {
-                // MySQL advisory lock prevents concurrent migration runs
-                using var lockCommand = connection.CreateCommand();
-                lockCommand.CommandText = "SELECT GET_LOCK('handysales_migration', 30)";
-                var lockResult = await lockCommand.ExecuteScalarAsync();
+            // PostgreSQL advisory lock prevents concurrent migration runs
+            using var lockCommand = connection.CreateCommand();
+            lockCommand.CommandText = $"SELECT pg_try_advisory_lock({MigrationLockId})";
+            var lockResult = await lockCommand.ExecuteScalarAsync();
 
-                if (lockResult?.ToString() != "1")
-                {
-                    logger.LogWarning(
-                        "Could not acquire migration lock. Another instance may be migrating. Skipping.");
-                    return;
-                }
+            if (lockResult is not true)
+            {
+                logger.LogWarning(
+                    "Could not acquire migration lock. Another instance may be migrating. Skipping.");
+                return;
             }
 
             try
@@ -57,12 +55,9 @@ public static class DatabaseMigrator
             }
             finally
             {
-                if (isMySql)
-                {
-                    using var unlockCommand = connection.CreateCommand();
-                    unlockCommand.CommandText = "SELECT RELEASE_LOCK('handysales_migration')";
-                    await unlockCommand.ExecuteScalarAsync();
-                }
+                using var unlockCommand = connection.CreateCommand();
+                unlockCommand.CommandText = $"SELECT pg_advisory_unlock({MigrationLockId})";
+                await unlockCommand.ExecuteScalarAsync();
             }
         }
         finally

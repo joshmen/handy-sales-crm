@@ -12,6 +12,7 @@ import { api } from '@/lib/api';
 import { toast } from '@/hooks/useToast';
 import { useBatchOperations } from '@/hooks/useBatchOperations';
 import { BatchActionBar } from '@/components/shared/BatchActionBar';
+import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { BatchConfirmModal } from '@/components/shared/BatchConfirmModal';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
@@ -778,10 +779,10 @@ export default function RoutesPage() {
                 <Calendar className="w-3.5 h-3.5 text-amber-500" />
                 Fecha <span className="text-red-500">*</span>
               </label>
-              <input
-                type="date"
-                {...register('fecha')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              <DateTimePicker
+                mode="date"
+                value={watch('fecha')}
+                onChange={(val) => setValue('fecha', val, { shouldValidate: true, shouldDirty: true })}
               />
               {errors.fecha && <p className="text-xs text-red-500 mt-1">{errors.fecha.message}</p>}
             </div>

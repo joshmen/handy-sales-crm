@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Switch } from '@/components/ui/Switch';
 import { Separator } from '@/components/ui/Separator';
-import { Mail, Phone, Smartphone, Monitor, Save } from 'lucide-react';
+import { Mail, Smartphone, Monitor, Save } from 'lucide-react';
 import { notificationService } from '@/services/api/notificationService';
 import { toast } from '@/hooks/useToast';
 
@@ -167,30 +167,6 @@ export const NotificationsTab: React.FC<NotificationsTabProps> = ({
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">Notificaciones SMS</span>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Recibe mensajes de texto para eventos críticos
-              </p>
-            </div>
-            <Switch
-              checked={notifications.sms}
-              onCheckedChange={checked =>
-                setNotifications({
-                  ...notifications,
-                  sms: checked,
-                })
-              }
-              disabled={isLoading || (!isSuperAdmin && !isAdmin)}
-            />
-          </div>
-
-          <Separator />
-
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <div className="flex items-center gap-2">
                 <Monitor className="h-4 w-4 text-muted-foreground" />
                 <span className="font-medium">Notificaciones de escritorio</span>
               </div>
@@ -222,7 +198,7 @@ export const NotificationsTab: React.FC<NotificationsTabProps> = ({
         </div>
 
         <p className="text-xs text-muted-foreground mt-4">
-          Estas preferencias controlan qué tipo de notificaciones recibes dentro de la aplicación. La configuración del servidor de correo (SendGrid) se administra desde las variables de entorno del servidor.
+          Email se envía via SendGrid. Push llega a tu dispositivo móvil. Escritorio muestra notificaciones en tiempo real dentro de la app.
         </p>
       </CardContent>
     </Card>

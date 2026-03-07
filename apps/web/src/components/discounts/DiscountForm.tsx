@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { Label } from '@/components/ui/Label';
 import { SelectCompat as Select } from '@/components/ui/SelectCompat';
 import { Badge } from '@/components/ui/Badge';
@@ -357,26 +358,27 @@ export function DiscountForm({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="validFrom">Fecha de inicio</Label>
-                <Input
+                <DateTimePicker
                   id="validFrom"
-                  type="date"
+                  mode="date"
                   value={formData.validFrom ? formData.validFrom.toISOString().split('T')[0] : ''}
-                  onChange={(e) => onFormChange({ 
+                  onChange={(val) => onFormChange({ 
                     ...formData, 
-                    validFrom: e.target.value ? new Date(e.target.value) : undefined 
+                    validFrom: val ? new Date(val) : undefined 
                   })}
                 />
               </div>
               <div>
                 <Label htmlFor="validTo">Fecha de fin</Label>
-                <Input
+                <DateTimePicker
                   id="validTo"
-                  type="date"
+                  mode="date"
                   value={formData.validTo ? formData.validTo.toISOString().split('T')[0] : ''}
-                  onChange={(e) => onFormChange({ 
+                  onChange={(val) => onFormChange({ 
                     ...formData, 
-                    validTo: e.target.value ? new Date(e.target.value) : undefined 
+                    validTo: val ? new Date(val) : undefined 
                   })}
+                  min={formData.validFrom ? formData.validFrom.toISOString().split('T')[0] : undefined}
                 />
               </div>
             </div>

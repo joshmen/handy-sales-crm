@@ -221,7 +221,7 @@ export default function GlobalSettingsPage() {
                           src={settings.platformLogo || ''}
                           alt="Logo de la plataforma"
                         />
-                        <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-lg font-bold">
+                        <AvatarFallback className="bg-primary/15 text-primary font-semibold text-lg font-bold">
                           {settings.platformName
                             ? settings.platformName.charAt(0).toUpperCase()
                             : 'H'}

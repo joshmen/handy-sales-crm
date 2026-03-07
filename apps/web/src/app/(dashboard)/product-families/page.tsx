@@ -6,6 +6,7 @@ import { BatchActionBar } from '@/components/shared/BatchActionBar';
 import { BatchConfirmModal } from '@/components/shared/BatchConfirmModal';
 import { Modal } from '@/components/ui/Modal';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
+import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { SearchBar } from '@/components/common/SearchBar';
 import { InactiveToggle } from '@/components/ui/InactiveToggle';
@@ -572,23 +573,13 @@ export default function ProductFamiliesPage() {
         onSave={handleSaveFamily}
         footer={
           <div className="flex items-center justify-end gap-3" data-tour="product-families-drawer-actions">
-            <button
-              type="button"
-              onClick={() => drawerRef.current?.requestClose()}
-              disabled={savingFamily}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
-            >
+            <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()} disabled={savingFamily}>
               Cancelar
-            </button>
-            <button
-              type="button"
-              onClick={handleSaveFamily}
-              disabled={savingFamily}
-              className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
-            >
+            </Button>
+            <Button type="button" variant="success" onClick={handleSaveFamily} disabled={savingFamily} className="flex items-center gap-2">
               {savingFamily && <Loader2 className="w-4 h-4 animate-spin" />}
               {editingFamily ? 'Guardar Cambios' : 'Crear Familia'}
-            </button>
+            </Button>
           </div>
         }
       >
@@ -629,21 +620,13 @@ export default function ProductFamiliesPage() {
             </p>
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t">
-            <button
-              onClick={() => { setShowDeleteConfirm(false); setDeletingFamily(null); }}
-              disabled={savingFamily}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
-            >
+            <Button type="button" variant="outline" onClick={() => { setShowDeleteConfirm(false); setDeletingFamily(null); }} disabled={savingFamily}>
               Cancelar
-            </button>
-            <button
-              onClick={handleDelete}
-              disabled={savingFamily}
-              className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center gap-2"
-            >
+            </Button>
+            <Button type="button" variant="destructive" onClick={handleDelete} disabled={savingFamily} className="flex items-center gap-2">
               {savingFamily && <Loader2 className="w-4 h-4 animate-spin" />}
               Eliminar
-            </button>
+            </Button>
           </div>
         </Modal>
       )}

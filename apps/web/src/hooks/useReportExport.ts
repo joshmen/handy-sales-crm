@@ -134,7 +134,7 @@ export function useReportExport(config: ReportExportConfig) {
         pdf.setFont('helvetica', 'normal').setFontSize(7.5).setTextColor(110, 110, 110);
         let sy = MARGIN + 11;
 
-        if (_datos?.rfc) { pdf.text(`RFC: ${_datos.rfc}`, lx, sy); sy += 3.5; }
+        if (_datos?.identificadorFiscal) { pdf.text(`ID Fiscal: ${_datos.identificadorFiscal}`, lx, sy); sy += 3.5; }
 
         const addr = [_datos?.direccion, _datos?.ciudad, _datos?.estado, _datos?.codigoPostal].filter(Boolean);
         if (addr.length) { pdf.text(addr.join(', '), lx, sy); sy += 3.5; }

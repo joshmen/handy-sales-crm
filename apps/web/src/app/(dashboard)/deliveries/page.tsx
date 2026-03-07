@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
+import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { deliveryService, RouteItem, DeliveryStats } from '@/services/api/deliveries';
 import { toast } from '@/hooks/useToast';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -253,24 +254,21 @@ export default function DeliveriesPage() {
 
         {/* Filters Row */}
         <div className="flex flex-wrap items-center gap-3" data-tour="deliveries-filters">
-          <div className="flex items-center gap-1.5">
-            <label className="text-xs text-gray-500 whitespace-nowrap">Desde</label>
-            <input
-              type="date"
-              value={fechaDesde}
-              onChange={(e) => { setFechaDesde(e.target.value); setCurrentPage(1); }}
-              className="px-2 py-2 h-10 text-[13px] text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            />
-          </div>
-          <div className="flex items-center gap-1.5">
-            <label className="text-xs text-gray-500 whitespace-nowrap">Hasta</label>
-            <input
-              type="date"
-              value={fechaHasta}
-              onChange={(e) => { setFechaHasta(e.target.value); setCurrentPage(1); }}
-              className="px-2 py-2 h-10 text-[13px] text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            />
-          </div>
+          <DateTimePicker
+            compact
+            mode="date"
+            value={fechaDesde}
+            onChange={(val) => { setFechaDesde(val); setCurrentPage(1); }}
+            placeholder="Desde"
+          />
+          <DateTimePicker
+            compact
+            mode="date"
+            value={fechaHasta}
+            onChange={(val) => { setFechaHasta(val); setCurrentPage(1); }}
+            placeholder="Hasta"
+            min={fechaDesde}
+          />
           <div className="min-w-[200px] max-w-[260px]" data-tour="deliveries-status-filter">
             <SearchableSelect
               options={[

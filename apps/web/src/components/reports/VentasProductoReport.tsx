@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { ReportFilters } from './ReportFilters';
+import { useChartTheme } from '@/hooks/useChartTheme';
 import { ReportKPICards } from './ReportKPICards';
 import { ReportTable, ReportColumn } from './ReportTable';
 import { getVentasProducto, VentasProductoResponse, VentaProducto } from '@/services/api/reports';
@@ -24,6 +25,7 @@ export function VentasProductoReport() {
   const { formatCurrency } = useFormatters();
   const fmt = (n: number) => formatCurrency(n);
   const [dates, setDates] = useState(defaultDates);
+  const ct = useChartTheme();
   const [data, setData] = useState<VentasProductoResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState<Tab>('masVendidos');
@@ -111,7 +113,7 @@ export function VentasProductoReport() {
             <div ref={chartRef} className="bg-white border border-gray-200 rounded-lg p-4">
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={chartData} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
                   <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={v => tab === 'masVendidos' ? String(v) : `$${(v / 1000).toFixed(0)}k`} />
                   <YAxis type="category" dataKey="nombre" tick={{ fontSize: 10 }} width={150} />
                   <Tooltip formatter={(v) => [tab === 'masVendidos' ? v : fmt(Number(v)), tab === 'masVendidos' ? 'Cantidad' : 'Ventas']} />

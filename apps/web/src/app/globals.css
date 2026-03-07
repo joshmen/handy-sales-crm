@@ -61,6 +61,10 @@ body {
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
+    /* Success colors — company green #16a34a */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+
     /* Border colors - Subtle Google borders */
     --border: 0 0% 90%;
     --input: 0 0% 90%;
@@ -104,6 +108,9 @@ body {
 
     --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 100%;
+
+    --success: 142 64% 48%;
+    --success-foreground: 0 0% 100%;
 
     --border: 228 10% 19%;
     --input: 228 10% 19%;

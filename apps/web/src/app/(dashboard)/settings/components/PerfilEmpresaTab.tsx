@@ -18,7 +18,8 @@ export const PerfilEmpresaTab: React.FC = () => {
 
   const [form, setForm] = useState<DatosEmpresaUpdate>({
     razonSocial: '',
-    rfc: '',
+    identificadorFiscal: '',
+    tipoIdentificadorFiscal: '',
     telefono: '',
     email: '',
     contacto: '',
@@ -34,7 +35,8 @@ export const PerfilEmpresaTab: React.FC = () => {
 
   const mapToForm = useCallback((d: DatosEmpresa): DatosEmpresaUpdate => ({
     razonSocial: d.razonSocial || '',
-    rfc: d.rfc || '',
+    identificadorFiscal: d.identificadorFiscal || '',
+    tipoIdentificadorFiscal: d.tipoIdentificadorFiscal || 'RFC',
     telefono: d.telefono || '',
     email: d.email || '',
     contacto: d.contacto || '',
@@ -141,17 +143,33 @@ export const PerfilEmpresaTab: React.FC = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="rfc">RFC</Label>
+              <Label htmlFor="identificadorFiscal">Identificador Fiscal</Label>
               <Input
-                id="rfc"
-                value={form.rfc}
-                onChange={e => handleChange('rfc', e.target.value.toUpperCase())}
+                id="identificadorFiscal"
+                value={form.identificadorFiscal}
+                onChange={e => handleChange('identificadorFiscal', e.target.value.toUpperCase())}
                 placeholder="XAXX010101000"
-                maxLength={13}
+                maxLength={20}
               />
               <p className="text-xs text-muted-foreground">
-                12 caracteres (persona moral) o 13 (persona física)
+                RFC (México), NIT (Colombia), CUIT (Argentina), CNPJ (Brasil), RUT (Chile), RUC (Perú)
               </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="tipoIdentificadorFiscal">Tipo de Identificador</Label>
+              <select
+                id="tipoIdentificadorFiscal"
+                value={form.tipoIdentificadorFiscal || 'RFC'}
+                onChange={e => handleChange('tipoIdentificadorFiscal', e.target.value)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <option value="RFC">RFC (México)</option>
+                <option value="NIT">NIT (Colombia)</option>
+                <option value="CUIT">CUIT (Argentina)</option>
+                <option value="CNPJ">CNPJ (Brasil)</option>
+                <option value="RUT">RUT (Chile)</option>
+                <option value="RUC">RUC (Perú)</option>
+              </select>
             </div>
           </div>
         </div>

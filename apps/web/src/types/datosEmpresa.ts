@@ -2,7 +2,8 @@ export interface DatosEmpresa {
   id: number;
   tenantId: number;
   razonSocial?: string;
-  rfc?: string;
+  identificadorFiscal?: string;
+  tipoIdentificadorFiscal?: string;
   telefono?: string;
   email?: string;
   contacto?: string;
@@ -16,7 +17,8 @@ export interface DatosEmpresa {
 
 export interface DatosEmpresaUpdate {
   razonSocial?: string;
-  rfc?: string;
+  identificadorFiscal?: string;
+  tipoIdentificadorFiscal?: string;
   telefono?: string;
   email?: string;
   contacto?: string;

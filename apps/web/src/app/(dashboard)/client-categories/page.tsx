@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
+import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { toast } from '@/hooks/useToast';
 import { clientCategoryService } from '@/services/api';
@@ -399,23 +400,13 @@ export default function ClientCategoriesPage() {
           onSave={handleSubmit}
           footer={
             <div data-tour="client-categories-drawer-actions" className="flex items-center justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => drawerRef.current?.requestClose()}
-                disabled={actionLoading}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
-              >
+              <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()} disabled={actionLoading}>
                 Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleSubmit}
-                disabled={actionLoading}
-                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
-              >
+              </Button>
+              <Button type="button" variant="success" onClick={handleSubmit} disabled={actionLoading} className="flex items-center gap-2">
                 {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                 {editingCategory ? 'Guardar Cambios' : 'Crear Categoría'}
-              </button>
+              </Button>
             </div>
           }
         >

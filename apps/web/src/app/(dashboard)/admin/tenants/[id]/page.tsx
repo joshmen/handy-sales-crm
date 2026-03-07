@@ -805,12 +805,12 @@ export default function TenantDetailPage() {
             Información de la Empresa
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-            {tenant.datosEmpresa?.rfc && (
+            {tenant.datosEmpresa?.identificadorFiscal && (
               <div className="flex items-start gap-2">
                 <FileText className="h-4 w-4 text-gray-400 mt-0.5" />
                 <div>
-                  <div className="text-xs text-gray-500">RFC</div>
-                  <div className="text-gray-900 font-medium">{tenant.datosEmpresa.rfc}</div>
+                  <div className="text-xs text-gray-500">ID Fiscal</div>
+                  <div className="text-gray-900 font-medium">{tenant.datosEmpresa.identificadorFiscal}</div>
                 </div>
               </div>
             )}

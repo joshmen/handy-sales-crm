@@ -12,6 +12,7 @@ import {
   AreaChart,
 } from "recharts";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
+import { useChartTheme } from "@/hooks/useChartTheme";
 
 interface SalesData {
   date: string;
@@ -41,6 +42,7 @@ export const SalesChart: React.FC<SalesChartProps> = ({
   isLoading = false,
   className = "",
 }) => {
+  const ct = useChartTheme();
   // Formatear valores para mostrar en el tooltip
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("es-MX", {
@@ -59,8 +61,8 @@ export const SalesChart: React.FC<SalesChartProps> = ({
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white p-3 border rounded-lg shadow-lg">
-          <p className="text-sm font-medium text-gray-600 mb-2">{label}</p>
+        <div className="p-3 rounded-lg shadow-lg" style={{ backgroundColor: ct.tooltipBg, border: "1px solid " + ct.tooltipBorder }}>
+          <p className="text-sm font-medium mb-2" style={{ color: ct.tooltipText }}>{label}</p>
           {payload.map((entry: any, index: number) => (
             <div key={index} className="flex items-center space-x-2">
               <div
@@ -156,15 +158,15 @@ export const SalesChart: React.FC<SalesChartProps> = ({
                     <stop offset="95%" stopColor={color} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
                 <XAxis
                   dataKey="date"
                   tick={{ fontSize: 12 }}
-                  stroke="#6b7280"
+                  stroke={ct.axis}
                 />
                 <YAxis
                   tick={{ fontSize: 12 }}
-                  stroke="#6b7280"
+                  stroke={ct.axis}
                   tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
                 />
                 <Tooltip content={<CustomTooltip />} />
@@ -178,15 +180,15 @@ export const SalesChart: React.FC<SalesChartProps> = ({
               </AreaChart>
             ) : (
               <LineChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
                 <XAxis
                   dataKey="date"
                   tick={{ fontSize: 12 }}
-                  stroke="#6b7280"
+                  stroke={ct.axis}
                 />
                 <YAxis
                   tick={{ fontSize: 12 }}
-                  stroke="#6b7280"
+                  stroke={ct.axis}
                   tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
                 />
                 <Tooltip content={<CustomTooltip />} />

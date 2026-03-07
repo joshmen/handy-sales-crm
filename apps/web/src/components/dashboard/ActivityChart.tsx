@@ -11,6 +11,7 @@ import {
   Legend,
 } from 'recharts';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
+import { useChartTheme } from '@/hooks/useChartTheme';
 import { ActivityChartData } from '@/services/dashboardService';
 
 interface ActivityChartProps {
@@ -30,6 +31,7 @@ export const ActivityChart: React.FC<ActivityChartProps> = ({
   isLoading = false,
   className = '',
 }) => {
+  const ct = useChartTheme();
   // Colores para cada métrica
   const colors = {
     totalActivities: '#3b82f6', // Azul
@@ -42,8 +44,8 @@ export const ActivityChart: React.FC<ActivityChartProps> = ({
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white p-3 border rounded-lg shadow-lg">
-          <p className="text-sm font-medium text-gray-600 mb-2">{label}</p>
+        <div className="p-3 rounded-lg shadow-lg" style={{ backgroundColor: ct.tooltipBg, border: "1px solid " + ct.tooltipBorder }}>
+          <p className="text-sm font-medium mb-2" style={{ color: ct.tooltipText }}>{label}</p>
           <div className="space-y-1">
             {payload.map((entry: any, index: number) => (
               <div key={index} className="flex items-center justify-between space-x-4">
@@ -97,7 +99,7 @@ export const ActivityChart: React.FC<ActivityChartProps> = ({
               className="w-3 h-3 rounded-full"
               style={{ backgroundColor: entry.color }}
             ></div>
-            <span className="text-sm text-gray-600">{labels[entry.value] || entry.value}</span>
+            <span className="text-sm" style={{ color: ct.textSecondary }}>{labels[entry.value] || entry.value}</span>
           </div>
         ))}
       </div>
@@ -181,9 +183,9 @@ export const ActivityChart: React.FC<ActivityChartProps> = ({
                   <stop offset="95%" stopColor={colors.logins} stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="date" tick={{ fontSize: 12 }} stroke="#6b7280" />
-              <YAxis tick={{ fontSize: 12 }} stroke="#6b7280" />
+              <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
+              <XAxis dataKey="date" tick={{ fontSize: 12 }} stroke={ct.axis} />
+              <YAxis tick={{ fontSize: 12 }} stroke={ct.axis} />
               <Tooltip content={<CustomTooltip />} />
               <Legend content={<CustomLegend />} />
 

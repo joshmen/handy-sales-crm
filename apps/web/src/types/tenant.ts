@@ -1,7 +1,7 @@
 export interface Tenant {
   id: number;
   nombreEmpresa: string;
-  rfc: string | null;
+  identificadorFiscal: string | null;
   activo: boolean;
   planTipo: string | null;
   usuarioCount: number;
@@ -13,7 +13,8 @@ export interface TenantDatosEmpresa {
   id: number;
   tenantId: number;
   razonSocial: string | null;
-  rfc: string | null;
+  identificadorFiscal: string | null;
+  tipoIdentificadorFiscal: string | null;
   telefono: string | null;
   email: string | null;
   contacto: string | null;
@@ -49,7 +50,8 @@ export interface TenantStats {
 
 export interface TenantCreateRequest {
   nombreEmpresa: string;
-  rfc?: string;
+  identificadorFiscal?: string;
+  tipoIdentificadorFiscal?: string;
   contacto?: string;
   telefono?: string;
   email?: string;

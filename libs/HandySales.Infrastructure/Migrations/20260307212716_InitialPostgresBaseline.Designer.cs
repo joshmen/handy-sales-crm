@@ -3,76 +3,76 @@ using System;
 using HandySales.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
 namespace HandySales.Infrastructure.Migrations
 {
     [DbContext(typeof(HandySalesDbContext))]
-    [Migration("20260228012228_AddClienteCamposCompletos")]
-    partial class AddClienteCamposCompletos
+    [Migration("20260307212716_InitialPostgresBaseline")]
+    partial class InitialPostgresBaseline
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.13")
-                .HasAnnotation("Relational:MaxIdentifierLength", 64);
+                .HasAnnotation("ProductVersion", "8.0.11")
+                .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
-            MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
+            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("CategoriaCliente", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Activo")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("actualizado_por");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("creado_por");
 
                     b.Property<string>("Descripcion")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("descripcion");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("eliminado_por");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("nombre");
 
                     b.Property<int>("TenantId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("tenant_id");
 
                     b.Property<long>("Version")
@@ -91,50 +91,50 @@ namespace HandySales.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Activo")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("actualizado_por");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("creado_por");
 
                     b.Property<string>("Descripcion")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("descripcion");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("eliminado_por");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("nombre");
 
                     b.Property<int>("TenantId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("tenant_id");
 
                     b.Property<long>("Version")
@@ -153,27 +153,27 @@ namespace HandySales.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("ActivityCategory")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("varchar(50)")
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("activity_category");
 
                     b.Property<string>("ActivityStatus")
                         .IsRequired()
                         .HasMaxLength(20)
-                        .HasColumnType("varchar(20)")
+                        .HasColumnType("character varying(20)")
                         .HasColumnName("activity_status");
 
                     b.Property<string>("ActivityType")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("varchar(50)")
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("activity_type");
 
                     b.Property<string>("AdditionalData")
@@ -182,71 +182,71 @@ namespace HandySales.Infrastructure.Migrations
 
                     b.Property<string>("Browser")
                         .HasMaxLength(100)
-                        .HasColumnType("varchar(100)")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("browser");
 
                     b.Property<string>("BrowserVersion")
                         .HasMaxLength(20)
-                        .HasColumnType("varchar(20)")
+                        .HasColumnType("character varying(20)")
                         .HasColumnName("browser_version");
 
                     b.Property<string>("City")
                         .HasMaxLength(100)
-                        .HasColumnType("varchar(100)")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("city");
 
                     b.Property<string>("CountryCode")
                         .HasMaxLength(2)
-                        .HasColumnType("varchar(2)")
+                        .HasColumnType("character varying(2)")
                         .HasColumnName("country_code");
 
                     b.Property<string>("CountryName")
                         .HasMaxLength(100)
-                        .HasColumnType("varchar(100)")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("country_name");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<string>("Description")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("description");
 
                     b.Property<string>("DeviceType")
                         .HasMaxLength(50)
-                        .HasColumnType("varchar(50)")
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("device_type");
 
                     b.Property<int?>("EntityId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("entity_id");
 
                     b.Property<string>("EntityName")
                         .HasMaxLength(255)
-                        .HasColumnType("varchar(255)")
+                        .HasColumnType("character varying(255)")
                         .HasColumnName("entity_name");
 
                     b.Property<string>("EntityType")
                         .HasMaxLength(50)
-                        .HasColumnType("varchar(50)")
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("entity_type");
 
                     b.Property<string>("ErrorMessage")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("error_message");
 
                     b.Property<string>("IpAddress")
                         .HasMaxLength(45)
-                        .HasColumnType("varchar(45)")
+                        .HasColumnType("character varying(45)")
                         .HasColumnName("ip_address");
 
                     b.Property<decimal?>("Latitude")
-                        .HasColumnType("decimal(65,30)")
+                        .HasColumnType("numeric")
                         .HasColumnName("latitude");
 
                     b.Property<decimal?>("Longitude")
-                        .HasColumnType("decimal(65,30)")
+                        .HasColumnType("numeric")
                         .HasColumnName("longitude");
 
                     b.Property<string>("NewValues")
@@ -259,55 +259,55 @@ namespace HandySales.Infrastructure.Migrations
 
                     b.Property<string>("OperatingSystem")
                         .HasMaxLength(100)
-                        .HasColumnType("varchar(100)")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("operating_system");
 
                     b.Property<string>("Region")
                         .HasMaxLength(100)
-                        .HasColumnType("varchar(100)")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("region");
 
                     b.Property<string>("RequestId")
                         .HasMaxLength(255)
-                        .HasColumnType("varchar(255)")
+                        .HasColumnType("character varying(255)")
                         .HasColumnName("request_id");
 
                     b.Property<string>("RequestMethod")
                         .HasMaxLength(10)
-                        .HasColumnType("varchar(10)")
+                        .HasColumnType("character varying(10)")
                         .HasColumnName("request_method");
 
                     b.Property<string>("RequestUrl")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("request_url");
 
                     b.Property<int?>("ResponseStatus")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("response_status");
 
                     b.Property<int?>("ResponseTimeMs")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("response_time_ms");
 
                     b.Property<string>("SessionId")
                         .HasMaxLength(255)
-                        .HasColumnType("varchar(255)")
+                        .HasColumnType("character varying(255)")
                         .HasColumnName("session_id");
 
                     b.Property<string>("StackTrace")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("stack_trace");
 
                     b.Property<int>("TenantId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("tenant_id");
 
                     b.Property<string>("UserAgent")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("user_agent");
 
                     b.Property<int>("UserId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("user_id");
 
                     b.HasKey("Id");
@@ -323,95 +323,95 @@ namespace HandySales.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Activo")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("actualizado_por");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("creado_por");
 
                     b.Property<string>("DataJson")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("data_json");
 
                     b.Property<int>("DisplayMode")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("display_mode");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("eliminado_por");
 
                     b.Property<DateTime?>("ExpiresAt")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_at");
 
                     b.Property<bool>("IsDismissible")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("is_dismissible");
 
                     b.Property<string>("Mensaje")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("mensaje");
 
                     b.Property<int>("Prioridad")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("prioridad");
 
                     b.Property<int>("ReadCount")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("read_count");
 
                     b.Property<DateTime?>("ScheduledAt")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("scheduled_at");
 
                     b.Property<int>("SentCount")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("sent_count");
 
                     b.Property<int>("SuperAdminId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("super_admin_id");
 
                     b.Property<string>("TargetRoles")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("target_roles");
 
                     b.Property<string>("TargetTenantIds")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("target_tenant_ids");
 
                     b.Property<int>("Tipo")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("tipo");
 
                     b.Property<string>("Titulo")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("titulo");
 
                     b.Property<long>("Version")
@@ -436,21 +436,21 @@ namespace HandySales.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<int>("AnnouncementId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("announcement_id");
 
                     b.Property<DateTime>("DismissedAt")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("dismissed_at");
 
                     b.Property<int>("UsuarioId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("usuario_id");
 
                     b.HasKey("Id");
@@ -463,172 +463,323 @@ namespace HandySales.Infrastructure.Migrations
                     b.ToTable("AnnouncementDismissals", (string)null);
                 });
 
+            modelBuilder.Entity("HandySales.Domain.Entities.AutomationExecution", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("ActionTaken")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("action_taken");
+
+                    b.Property<int>("AutomationId")
+                        .HasColumnType("integer")
+                        .HasColumnName("automation_id");
+
+                    b.Property<DateTime>("EjecutadoEn")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ejecutado_en");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("error_message");
+
+                    b.Property<string>("ResultadoJson")
+                        .HasColumnType("text")
+                        .HasColumnName("resultado_json");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<string>("TemplateSlug")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("template_slug");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("integer")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("TriggerEntity")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("trigger_entity");
+
+                    b.Property<int?>("TriggerEntityId")
+                        .HasColumnType("integer")
+                        .HasColumnName("trigger_entity_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AutomationId");
+
+                    b.HasIndex("TenantId", "EjecutadoEn");
+
+                    b.HasIndex("TenantId", "TemplateSlug");
+
+                    b.ToTable("AutomationExecutions");
+                });
+
+            modelBuilder.Entity("HandySales.Domain.Entities.AutomationTemplate", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ActionType")
+                        .HasColumnType("integer")
+                        .HasColumnName("action_type");
+
+                    b.Property<int>("Categoria")
+                        .HasColumnType("integer")
+                        .HasColumnName("categoria");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("DefaultParamsJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("default_params_json");
+
+                    b.Property<string>("Descripcion")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("descripcion");
+
+                    b.Property<string>("DescripcionCorta")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("descripcion_corta");
+
+                    b.Property<string>("Icono")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("icono");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("nombre");
+
+                    b.Property<int>("Orden")
+                        .HasColumnType("integer")
+                        .HasColumnName("orden");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("slug");
+
+                    b.Property<int>("Tier")
+                        .HasColumnType("integer")
+                        .HasColumnName("tier");
+
+                    b.Property<string>("TriggerCron")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("trigger_cron");
+
+                    b.Property<string>("TriggerEvent")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("trigger_event");
+
+                    b.Property<int>("TriggerType")
+                        .HasColumnType("integer")
+                        .HasColumnName("trigger_type");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Slug")
+                        .IsUnique();
+
+                    b.ToTable("AutomationTemplates");
+                });
+
             modelBuilder.Entity("HandySales.Domain.Entities.Cliente", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Activo")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("actualizado_por");
 
                     b.Property<int>("CategoriaClienteId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("categoria_cliente_id");
 
                     b.Property<string>("Ciudad")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("ciudad");
 
                     b.Property<string>("CodigoPostal")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("codigo_postal");
 
                     b.Property<string>("CodigoPostalFiscal")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("codigo_postal_fiscal");
 
                     b.Property<string>("Colonia")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("colonia");
 
                     b.Property<string>("Comentarios")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("comentarios");
 
                     b.Property<string>("Correo")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("correo");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("creado_por");
 
                     b.Property<decimal>("Descuento")
-                        .HasColumnType("decimal(65,30)")
+                        .HasColumnType("numeric")
                         .HasColumnName("descuento");
 
                     b.Property<int>("DiasCredito")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("dias_credito");
 
                     b.Property<string>("Direccion")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("direccion");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("eliminado_por");
 
                     b.Property<string>("Encargado")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("encargado");
 
                     b.Property<bool>("EsProspecto")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("es_prospecto");
 
                     b.Property<bool>("Facturable")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("facturable");
 
                     b.Property<int>("IdZona")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("id_zona");
 
                     b.Property<double?>("Latitud")
-                        .HasColumnType("double")
+                        .HasColumnType("double precision")
                         .HasColumnName("latitud");
 
                     b.Property<decimal>("LimiteCredito")
-                        .HasColumnType("decimal(65,30)")
+                        .HasColumnType("numeric")
                         .HasColumnName("limite_credito");
 
                     b.Property<int?>("ListaPreciosId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("lista_precios_id");
 
                     b.Property<double?>("Longitud")
-                        .HasColumnType("double")
+                        .HasColumnType("double precision")
                         .HasColumnName("longitud");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("nombre");
 
                     b.Property<string>("NumeroExterior")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("numero_exterior");
 
                     b.Property<string>("RFC")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("rfc");
 
                     b.Property<string>("RazonSocial")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("razon_social");
 
                     b.Property<string>("RegimenFiscal")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("regimen_fiscal");
 
                     b.Property<decimal>("Saldo")
-                        .HasColumnType("decimal(65,30)")
+                        .HasColumnType("numeric")
                         .HasColumnName("saldo");
 
                     b.Property<string>("Telefono")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("telefono");
 
                     b.Property<int>("TenantId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("tenant_id");
 
                     b.Property<string>("TipoPagoPredeterminado")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("tipo_pago_predeterminado");
 
                     b.Property<string>("TiposPagoPermitidos")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("tipos_pago_permitidos");
 
                     b.Property<string>("UsoCFDIPredeterminado")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("uso_cfdi_predeterminado");
 
                     b.Property<int?>("VendedorId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("vendedor_id");
 
                     b.Property<decimal>("VentaMinimaEfectiva")
-                        .HasColumnType("decimal(65,30)")
+                        .HasColumnType("numeric")
                         .HasColumnName("venta_minima_efectiva");
 
                     b.Property<long>("Version")
@@ -653,109 +804,109 @@ namespace HandySales.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Activo")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("actualizado_por");
 
                     b.Property<int>("ClienteId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("cliente_id");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("creado_por");
 
                     b.Property<double?>("DistanciaCliente")
-                        .HasColumnType("double")
+                        .HasColumnType("double precision")
                         .HasColumnName("distancia_cliente");
 
                     b.Property<int?>("DuracionMinutos")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("duracion_minutos");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("eliminado_por");
 
                     b.Property<DateTime?>("FechaHoraFin")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("fecha_hora_fin");
 
                     b.Property<DateTime?>("FechaHoraInicio")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("fecha_hora_inicio");
 
                     b.Property<DateTime?>("FechaProgramada")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("fecha_programada");
 
                     b.Property<string>("Fotos")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("fotos");
 
                     b.Property<double?>("LatitudFin")
-                        .HasColumnType("double")
+                        .HasColumnType("double precision")
                         .HasColumnName("latitud_fin");
 
                     b.Property<double?>("LatitudInicio")
-                        .HasColumnType("double")
+                        .HasColumnType("double precision")
                         .HasColumnName("latitud_inicio");
 
                     b.Property<double?>("LongitudFin")
-                        .HasColumnType("double")
+                        .HasColumnType("double precision")
                         .HasColumnName("longitud_fin");
 
                     b.Property<double?>("LongitudInicio")
-                        .HasColumnType("double")
+                        .HasColumnType("double precision")
                         .HasColumnName("longitud_inicio");
 
                     b.Property<string>("Notas")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("notas");
 
                     b.Property<string>("NotasPrivadas")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("notas_privadas");
 
                     b.Property<int?>("PedidoId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("pedido_id");
 
                     b.Property<int>("Resultado")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("resultado");
 
                     b.Property<int>("TenantId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("tenant_id");
 
                     b.Property<int>("TipoVisita")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("tipo_visita");
 
                     b.Property<int>("UsuarioId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("usuario_id");
 
                     b.Property<long>("Version")
@@ -786,73 +937,73 @@ namespace HandySales.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Activo")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("actualizado_por");
 
                     b.Property<int>("ClienteId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("cliente_id");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("creado_por");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("eliminado_por");
 
                     b.Property<DateTime>("FechaCobro")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("fecha_cobro");
 
                     b.Property<int>("MetodoPago")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("metodo_pago");
 
                     b.Property<decimal>("Monto")
-                        .HasColumnType("decimal(65,30)")
+                        .HasColumnType("numeric")
                         .HasColumnName("monto");
 
                     b.Property<string>("Notas")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("notas");
 
                     b.Property<int?>("PedidoId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("pedido_id");
 
                     b.Property<string>("Referencia")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("referencia");
 
                     b.Property<int>("TenantId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("tenant_id");
 
                     b.Property<int>("UsuarioId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("usuario_id");
 
                     b.Property<long>("Version")
@@ -883,98 +1034,98 @@ namespace HandySales.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Address")
-                        .HasColumnType("longtext");
+                        .HasColumnType("text");
 
                     b.Property<string>("City")
-                        .HasColumnType("longtext");
+                        .HasColumnType("text");
 
                     b.Property<string>("CompanyDescription")
-                        .HasColumnType("longtext");
+                        .HasColumnType("text");
 
                     b.Property<string>("CompanyLogo")
-                        .HasColumnType("longtext");
+                        .HasColumnType("text");
 
                     b.Property<string>("CompanyName")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("text");
 
                     b.Property<string>("CompanyPrimaryColor")
-                        .HasColumnType("longtext");
+                        .HasColumnType("text");
 
                     b.Property<string>("CompanySecondaryColor")
-                        .HasColumnType("longtext");
+                        .HasColumnType("text");
 
                     b.Property<string>("ContactEmail")
-                        .HasColumnType("longtext");
+                        .HasColumnType("text");
 
                     b.Property<string>("ContactPhone")
-                        .HasColumnType("longtext");
+                        .HasColumnType("text");
 
                     b.Property<string>("Country")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Currency")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("text");
 
                     b.Property<long>("CurrentStorage")
                         .HasColumnType("bigint");
 
                     b.Property<int>("CurrentUsers")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<bool>("IsActive")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("boolean");
 
                     b.Property<long?>("MaxStorage")
                         .HasColumnType("bigint");
 
                     b.Property<int?>("MaxUsers")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("PostalCode")
-                        .HasColumnType("longtext");
+                        .HasColumnType("text");
 
                     b.Property<string>("State")
-                        .HasColumnType("longtext");
+                        .HasColumnType("text");
 
                     b.Property<DateTime?>("SubscriptionExpiresAt")
-                        .HasColumnType("datetime(6)");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("SubscriptionPlan")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("text");
 
                     b.Property<int>("SubscriptionStatus")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("TaxId")
-                        .HasColumnType("longtext");
+                        .HasColumnType("text");
 
                     b.Property<int>("TenantId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("Timezone")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("text");
 
                     b.Property<DateTime?>("TrialEndsAt")
-                        .HasColumnType("datetime(6)");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime(6)");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("UpdatedBy")
-                        .HasColumnType("longtext");
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
@@ -985,73 +1136,97 @@ namespace HandySales.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Activo")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("actualizado_por");
 
                     b.Property<string>("CloudinaryFolder")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("cloudinary_folder");
 
                     b.Property<int?>("CompanyId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("company_id");
 
                     b.Property<string>("CompanyName")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("company_name");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("creado_por");
 
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("currency");
+
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("eliminado_por");
 
+                    b.Property<string>("Language")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("language");
+
                     b.Property<string>("LogoPublicId")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("logo_public_id");
 
                     b.Property<string>("LogoUrl")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("logo_url");
 
                     b.Property<string>("PrimaryColor")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("primary_color");
 
                     b.Property<string>("SecondaryColor")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("secondary_color");
 
                     b.Property<int>("TenantId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("tenant_id");
+
+                    b.Property<string>("Theme")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("theme");
+
+                    b.Property<string>("Timezone")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("timezone");
 
                     b.Property<long>("Version")
                         .IsConcurrencyToken()
@@ -1071,82 +1246,82 @@ namespace HandySales.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("AppVersion")
                         .IsRequired()
                         .HasMaxLength(20)
-                        .HasColumnType("varchar(20)")
+                        .HasColumnType("character varying(20)")
                         .HasColumnName("app_version");
 
                     b.Property<string>("ComponentName")
                         .HasMaxLength(200)
-                        .HasColumnType("varchar(200)")
+                        .HasColumnType("character varying(200)")
                         .HasColumnName("component_name");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("DeviceId")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("varchar(100)")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("device_id");
 
                     b.Property<string>("DeviceName")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("varchar(200)")
+                        .HasColumnType("character varying(200)")
                         .HasColumnName("device_name");
 
                     b.Property<string>("ErrorMessage")
                         .IsRequired()
                         .HasMaxLength(2000)
-                        .HasColumnType("varchar(2000)")
+                        .HasColumnType("character varying(2000)")
                         .HasColumnName("error_message");
 
                     b.Property<string>("NotaResolucion")
                         .HasMaxLength(500)
-                        .HasColumnType("varchar(500)")
+                        .HasColumnType("character varying(500)")
                         .HasColumnName("nota_resolucion");
 
                     b.Property<string>("OsVersion")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("varchar(50)")
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("os_version");
 
                     b.Property<bool>("Resuelto")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("resuelto");
 
                     b.Property<int?>("ResueltoByUsuarioId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int?>("ResueltoPor")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("resuelto_por");
 
                     b.Property<string>("Severity")
                         .IsRequired()
                         .HasMaxLength(20)
-                        .HasColumnType("varchar(20)")
+                        .HasColumnType("character varying(20)")
                         .HasColumnName("severity");
 
                     b.Property<string>("StackTrace")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("stack_trace");
 
                     b.Property<int?>("TenantId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("tenant_id");
 
                     b.Property<int?>("UserId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("user_id");
 
                     b.HasKey("Id");
@@ -1164,96 +1339,102 @@ namespace HandySales.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Activo")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("actualizado_por");
 
                     b.Property<string>("Ciudad")
                         .HasMaxLength(100)
-                        .HasColumnType("varchar(100)")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("ciudad");
 
                     b.Property<string>("CodigoPostal")
                         .HasMaxLength(10)
-                        .HasColumnType("varchar(10)")
+                        .HasColumnType("character varying(10)")
                         .HasColumnName("codigo_postal");
 
                     b.Property<string>("Contacto")
                         .HasMaxLength(255)
-                        .HasColumnType("varchar(255)")
+                        .HasColumnType("character varying(255)")
                         .HasColumnName("contacto");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("creado_por");
 
                     b.Property<string>("Descripcion")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("descripcion");
 
                     b.Property<string>("Direccion")
                         .HasMaxLength(500)
-                        .HasColumnType("varchar(500)")
+                        .HasColumnType("character varying(500)")
                         .HasColumnName("direccion");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("eliminado_por");
 
                     b.Property<string>("Email")
                         .HasMaxLength(255)
-                        .HasColumnType("varchar(255)")
+                        .HasColumnType("character varying(255)")
                         .HasColumnName("email");
 
                     b.Property<string>("Estado")
                         .HasMaxLength(100)
-                        .HasColumnType("varchar(100)")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("estado");
 
-                    b.Property<string>("RFC")
-                        .HasMaxLength(13)
-                        .HasColumnType("varchar(13)")
-                        .HasColumnName("rfc");
+                    b.Property<string>("IdentificadorFiscal")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("identificador_fiscal");
 
                     b.Property<string>("RazonSocial")
                         .HasMaxLength(255)
-                        .HasColumnType("varchar(255)")
+                        .HasColumnType("character varying(255)")
                         .HasColumnName("razon_social");
 
                     b.Property<string>("SitioWeb")
                         .HasMaxLength(255)
-                        .HasColumnType("varchar(255)")
+                        .HasColumnType("character varying(255)")
                         .HasColumnName("sitio_web");
 
                     b.Property<string>("Telefono")
                         .HasMaxLength(20)
-                        .HasColumnType("varchar(20)")
+                        .HasColumnType("character varying(20)")
                         .HasColumnName("telefono");
 
                     b.Property<int>("TenantId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("tenant_id");
+
+                    b.Property<string>("TipoIdentificadorFiscal")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("tipo_identificador_fiscal");
 
                     b.Property<long>("Version")
                         .IsConcurrencyToken()
@@ -1261,6 +1442,9 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("version");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("IdentificadorFiscal")
+                        .IsUnique();
 
                     b.HasIndex("TenantId")
                         .IsUnique();
@@ -1272,199 +1456,199 @@ namespace HandySales.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Activo")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("actualizado_por");
 
                     b.Property<string>("Calle")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("varchar(200)");
+                        .HasColumnType("character varying(200)");
 
                     b.Property<string>("CertificadoCSD")
                         .IsRequired()
                         .HasMaxLength(500)
-                        .HasColumnType("varchar(500)");
+                        .HasColumnType("character varying(500)");
 
                     b.Property<string>("CodigoPostal")
                         .IsRequired()
                         .HasMaxLength(5)
-                        .HasColumnType("varchar(5)");
+                        .HasColumnType("character varying(5)");
 
                     b.Property<string>("Colonia")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("CorreoElectronico")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
+                        .HasColumnType("character varying(100)");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("creado_por");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("eliminado_por");
 
                     b.Property<string>("Estado")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
+                        .HasColumnType("character varying(100)");
 
                     b.Property<bool>("FacturacionActiva")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("boolean");
 
                     b.Property<int>("FolioActual")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("FolioInicial")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("FormaPagoPredeterminada")
                         .IsRequired()
                         .HasMaxLength(2)
-                        .HasColumnType("varchar(2)");
+                        .HasColumnType("character varying(2)");
 
                     b.Property<string>("LlaveCSD")
                         .IsRequired()
                         .HasMaxLength(500)
-                        .HasColumnType("varchar(500)");
+                        .HasColumnType("character varying(500)");
 
                     b.Property<string>("LogoFactura")
                         .IsRequired()
                         .HasMaxLength(500)
-                        .HasColumnType("varchar(500)");
+                        .HasColumnType("character varying(500)");
 
                     b.Property<string>("LugarExpedicion")
                         .IsRequired()
                         .HasMaxLength(20)
-                        .HasColumnType("varchar(20)");
+                        .HasColumnType("character varying(20)");
 
                     b.Property<string>("MetodoPagoPredeterminado")
                         .IsRequired()
                         .HasMaxLength(3)
-                        .HasColumnType("varchar(3)");
+                        .HasColumnType("character varying(3)");
 
                     b.Property<string>("MonedaPredeterminada")
                         .IsRequired()
                         .HasMaxLength(3)
-                        .HasColumnType("varchar(3)");
+                        .HasColumnType("character varying(3)");
 
                     b.Property<string>("Municipio")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("NombreComercial")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("varchar(200)");
+                        .HasColumnType("character varying(200)");
 
                     b.Property<string>("NombrePAC")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("NumeroExterior")
                         .IsRequired()
                         .HasMaxLength(10)
-                        .HasColumnType("varchar(10)");
+                        .HasColumnType("character varying(10)");
 
                     b.Property<string>("NumeroInterior")
                         .IsRequired()
                         .HasMaxLength(10)
-                        .HasColumnType("varchar(10)");
+                        .HasColumnType("character varying(10)");
 
                     b.Property<string>("Pais")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("varchar(50)");
+                        .HasColumnType("character varying(50)");
 
                     b.Property<string>("PasswordCSD")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("PasswordPAC")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("RFC")
                         .IsRequired()
                         .HasMaxLength(13)
-                        .HasColumnType("varchar(13)");
+                        .HasColumnType("character varying(13)");
 
                     b.Property<string>("RazonSocial")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("varchar(200)");
+                        .HasColumnType("character varying(200)");
 
                     b.Property<string>("RegimenFiscal")
                         .IsRequired()
                         .HasMaxLength(3)
-                        .HasColumnType("varchar(3)");
+                        .HasColumnType("character varying(3)");
 
                     b.Property<string>("Serie")
                         .IsRequired()
                         .HasMaxLength(10)
-                        .HasColumnType("varchar(10)");
+                        .HasColumnType("character varying(10)");
 
                     b.Property<string>("Telefono")
                         .IsRequired()
                         .HasMaxLength(20)
-                        .HasColumnType("varchar(20)");
+                        .HasColumnType("character varying(20)");
 
                     b.Property<int>("TenantId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("TipoComprobantePredeterminado")
                         .IsRequired()
                         .HasMaxLength(1)
-                        .HasColumnType("varchar(1)");
+                        .HasColumnType("character varying(1)");
 
                     b.Property<string>("URLPACCancelacion")
                         .IsRequired()
                         .HasMaxLength(500)
-                        .HasColumnType("varchar(500)");
+                        .HasColumnType("character varying(500)");
 
                     b.Property<string>("URLPACTimbrado")
                         .IsRequired()
                         .HasMaxLength(500)
-                        .HasColumnType("varchar(500)");
+                        .HasColumnType("character varying(500)");
 
                     b.Property<string>("UsoCFDI")
                         .IsRequired()
                         .HasMaxLength(3)
-                        .HasColumnType("varchar(3)");
+                        .HasColumnType("character varying(3)");
 
                     b.Property<string>("UsuarioPAC")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
+                        .HasColumnType("character varying(100)");
 
                     b.Property<long>("Version")
                         .IsConcurrencyToken()
@@ -1474,7 +1658,7 @@ namespace HandySales.Infrastructure.Migrations
                     b.Property<string>("VersionCFDI")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("varchar(50)");
+                        .HasColumnType("character varying(50)");
 
                     b.HasKey("Id");
 
@@ -1488,58 +1672,58 @@ namespace HandySales.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Activo")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("actualizado_por");
 
                     b.Property<decimal>("CantidadMinima")
-                        .HasColumnType("decimal(65,30)")
+                        .HasColumnType("numeric")
                         .HasColumnName("cantidad_minima");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("creado_por");
 
                     b.Property<decimal>("DescuentoPorcentaje")
-                        .HasColumnType("decimal(65,30)")
+                        .HasColumnType("numeric")
                         .HasColumnName("descuento_porcentaje");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("eliminado_por");
 
                     b.Property<int?>("ProductoId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("producto_id");
 
                     b.Property<int>("TenantId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("tenant_id");
 
                     b.Property<string>("TipoAplicacion")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("tipo_aplicacion");
 
                     b.Property<long>("Version")
@@ -1560,77 +1744,77 @@ namespace HandySales.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Activo")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("actualizado_por");
 
                     b.Property<decimal>("Cantidad")
-                        .HasColumnType("decimal(65,30)")
+                        .HasColumnType("numeric")
                         .HasColumnName("cantidad");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("creado_por");
 
                     b.Property<decimal>("Descuento")
-                        .HasColumnType("decimal(65,30)")
+                        .HasColumnType("numeric")
                         .HasColumnName("descuento");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("eliminado_por");
 
                     b.Property<decimal>("Impuesto")
-                        .HasColumnType("decimal(65,30)")
+                        .HasColumnType("numeric")
                         .HasColumnName("impuesto");
 
                     b.Property<string>("Notas")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("notas");
 
                     b.Property<int>("PedidoId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("pedido_id");
 
                     b.Property<decimal>("PorcentajeDescuento")
-                        .HasColumnType("decimal(65,30)")
+                        .HasColumnType("numeric")
                         .HasColumnName("porcentaje_descuento");
 
                     b.Property<decimal>("PrecioUnitario")
-                        .HasColumnType("decimal(65,30)")
+                        .HasColumnType("numeric")
                         .HasColumnName("precio_unitario");
 
                     b.Property<int>("ProductoId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("producto_id");
 
                     b.Property<decimal>("Subtotal")
-                        .HasColumnType("decimal(65,30)")
+                        .HasColumnType("numeric")
                         .HasColumnName("subtotal");
 
                     b.Property<decimal>("Total")
-                        .HasColumnType("decimal(65,30)")
+                        .HasColumnType("numeric")
                         .HasColumnName("total");
 
                     b.Property<long>("Version")
@@ -1651,110 +1835,110 @@ namespace HandySales.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Activo")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("actualizado_por");
 
                     b.Property<string>("AppVersion")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("app_version");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("creado_por");
 
                     b.Property<string>("DeviceFingerprint")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("device_fingerprint");
 
                     b.Property<string>("DeviceId")
                         .IsRequired()
-                        .HasColumnType("varchar(255)")
+                        .HasColumnType("text")
                         .HasColumnName("device_id");
 
                     b.Property<string>("DeviceModel")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("device_model");
 
                     b.Property<string>("DeviceName")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("device_name");
 
                     b.Property<int>("DeviceType")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("device_type");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("eliminado_por");
 
                     b.Property<string>("IpAddress")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("ip_address");
 
                     b.Property<DateTime>("LastActivity")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_activity");
 
                     b.Property<DateTime>("LoggedInAt")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("logged_in_at");
 
                     b.Property<DateTime?>("LoggedOutAt")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("logged_out_at");
 
                     b.Property<string>("LogoutReason")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("logout_reason");
 
                     b.Property<string>("OsVersion")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("os_version");
 
                     b.Property<string>("PushToken")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("push_token");
 
                     b.Property<int?>("RefreshTokenId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("refresh_token_id");
 
                     b.Property<int>("Status")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("status");
 
                     b.Property<int>("TenantId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("tenant_id");
 
                     b.Property<string>("UserAgent")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("user_agent");
 
                     b.Property<int>("UsuarioId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("usuario_id");
 
                     b.Property<long>("Version")
@@ -1783,51 +1967,51 @@ namespace HandySales.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Activo")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("actualizado_por");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("creado_por");
 
                     b.Property<string>("Descripcion")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("descripcion");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("eliminado_por");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("nombre");
 
                     b.Property<int>("TenantId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("tenant_id");
 
                     b.Property<long>("Version")
@@ -1846,62 +2030,62 @@ namespace HandySales.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("AllowSelfRegistration")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("boolean");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("DefaultLanguage")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("text");
 
                     b.Property<string>("DefaultTimezone")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("text");
 
                     b.Property<string>("MaintenanceMessage")
-                        .HasColumnType("longtext");
+                        .HasColumnType("text");
 
                     b.Property<bool>("MaintenanceMode")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("boolean");
 
                     b.Property<long?>("MaxStoragePerCompany")
                         .HasColumnType("bigint");
 
                     b.Property<int?>("MaxUsersPerCompany")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("PlatformLogo")
-                        .HasColumnType("longtext");
+                        .HasColumnType("text");
 
                     b.Property<string>("PlatformLogoPublicId")
-                        .HasColumnType("longtext");
+                        .HasColumnType("text");
 
                     b.Property<string>("PlatformName")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("text");
 
                     b.Property<string>("PlatformPrimaryColor")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("text");
 
                     b.Property<string>("PlatformSecondaryColor")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("text");
 
                     b.Property<bool>("RequireEmailVerification")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("boolean");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime(6)");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("UpdatedBy")
-                        .HasColumnType("longtext");
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
@@ -1912,97 +2096,97 @@ namespace HandySales.Infrastructure.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)")
+                        .HasColumnType("uuid")
                         .HasColumnName("id");
 
                     b.Property<string>("AccessLevel")
                         .IsRequired()
                         .HasMaxLength(20)
-                        .HasColumnType("varchar(20)")
+                        .HasColumnType("character varying(20)")
                         .HasColumnName("access_level");
 
                     b.Property<string>("ActionsPerformed")
                         .IsRequired()
-                        .HasColumnType("json")
+                        .HasColumnType("jsonb")
                         .HasColumnName("actions_performed");
 
                     b.Property<DateTime?>("EndedAt")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("ended_at");
 
                     b.Property<DateTime>("ExpiresAt")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_at");
 
                     b.Property<string>("IpAddress")
                         .IsRequired()
                         .HasMaxLength(45)
-                        .HasColumnType("varchar(45)")
+                        .HasColumnType("character varying(45)")
                         .HasColumnName("ip_address");
 
                     b.Property<bool>("NotificationSent")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("notification_sent");
 
                     b.Property<DateTime?>("NotificationSentAt")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("notification_sent_at");
 
                     b.Property<string>("PagesVisited")
                         .IsRequired()
-                        .HasColumnType("json")
+                        .HasColumnType("jsonb")
                         .HasColumnName("pages_visited");
 
                     b.Property<string>("Reason")
                         .IsRequired()
                         .HasMaxLength(1000)
-                        .HasColumnType("varchar(1000)")
+                        .HasColumnType("character varying(1000)")
                         .HasColumnName("reason");
 
                     b.Property<DateTime>("StartedAt")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("started_at");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)
-                        .HasColumnType("varchar(20)")
+                        .HasColumnType("character varying(20)")
                         .HasColumnName("status");
 
                     b.Property<string>("SuperAdminEmail")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("varchar(255)")
+                        .HasColumnType("character varying(255)")
                         .HasColumnName("super_admin_email");
 
                     b.Property<int>("SuperAdminId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("super_admin_id");
 
                     b.Property<string>("SuperAdminName")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("varchar(255)")
+                        .HasColumnType("character varying(255)")
                         .HasColumnName("super_admin_name");
 
                     b.Property<int>("TargetTenantId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("target_tenant_id");
 
                     b.Property<string>("TargetTenantName")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("varchar(255)")
+                        .HasColumnType("character varying(255)")
                         .HasColumnName("target_tenant_name");
 
                     b.Property<string>("TicketNumber")
                         .HasMaxLength(100)
-                        .HasColumnType("varchar(100)")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("ticket_number");
 
                     b.Property<string>("UserAgent")
                         .HasMaxLength(500)
-                        .HasColumnType("varchar(500)")
+                        .HasColumnType("character varying(500)")
                         .HasColumnName("user_agent");
 
                     b.HasKey("Id");
@@ -2026,57 +2210,57 @@ namespace HandySales.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Activo")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("actualizado_por");
 
                     b.Property<decimal>("CantidadActual")
-                        .HasColumnType("decimal(65,30)")
+                        .HasColumnType("numeric")
                         .HasColumnName("cantidad_actual");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("creado_por");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("eliminado_por");
 
                     b.Property<int>("ProductoId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("producto_id");
 
                     b.Property<decimal>("StockMaximo")
-                        .HasColumnType("decimal(65,30)")
+                        .HasColumnType("numeric")
                         .HasColumnName("stock_maximo");
 
                     b.Property<decimal>("StockMinimo")
-                        .HasColumnType("decimal(65,30)")
+                        .HasColumnType("numeric")
                         .HasColumnName("stock_minimo");
 
                     b.Property<int>("TenantId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("tenant_id");
 
                     b.Property<long>("Version")
@@ -2098,51 +2282,51 @@ namespace HandySales.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Activo")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("actualizado_por");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("creado_por");
 
                     b.Property<string>("Descripcion")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("descripcion");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("eliminado_por");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("nombre");
 
                     b.Property<int>("TenantId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("tenant_id");
 
                     b.Property<long>("Version")
@@ -2157,86 +2341,171 @@ namespace HandySales.Infrastructure.Migrations
                     b.ToTable("ListasPrecios");
                 });
 
+            modelBuilder.Entity("HandySales.Domain.Entities.MetaVendedor", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Activo")
+                        .HasColumnType("boolean")
+                        .HasColumnName("activo");
+
+                    b.Property<DateTime?>("ActualizadoEn")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("actualizado_en");
+
+                    b.Property<string>("ActualizadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("actualizado_por");
+
+                    b.Property<bool>("AutoRenovar")
+                        .HasColumnType("boolean")
+                        .HasColumnName("auto_renovar");
+
+                    b.Property<DateTime>("CreadoEn")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("creado_en");
+
+                    b.Property<string>("CreadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("creado_por");
+
+                    b.Property<DateTime?>("EliminadoEn")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("eliminado_en");
+
+                    b.Property<string>("EliminadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("eliminado_por");
+
+                    b.Property<DateTime>("FechaFin")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha_fin");
+
+                    b.Property<DateTime>("FechaInicio")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha_inicio");
+
+                    b.Property<decimal>("Monto")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("monto");
+
+                    b.Property<string>("Periodo")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("periodo");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("integer")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("tipo");
+
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("integer")
+                        .HasColumnName("usuario_id");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("UsuarioId");
+
+                    b.ToTable("MetasVendedor");
+                });
+
             modelBuilder.Entity("HandySales.Domain.Entities.MovimientoInventario", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Activo")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("actualizado_por");
 
                     b.Property<decimal>("Cantidad")
-                        .HasColumnType("decimal(65,30)")
+                        .HasColumnType("numeric")
                         .HasColumnName("cantidad");
 
                     b.Property<decimal>("CantidadAnterior")
-                        .HasColumnType("decimal(65,30)")
+                        .HasColumnType("numeric")
                         .HasColumnName("cantidad_anterior");
 
                     b.Property<decimal>("CantidadNueva")
-                        .HasColumnType("decimal(65,30)")
+                        .HasColumnType("numeric")
                         .HasColumnName("cantidad_nueva");
 
                     b.Property<string>("Comentario")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("comentario");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("creado_por");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("eliminado_por");
 
                     b.Property<string>("Motivo")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("motivo");
 
                     b.Property<int>("ProductoId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("producto_id");
 
                     b.Property<int?>("ReferenciaId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("referencia_id");
 
                     b.Property<string>("ReferenciaTipo")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("referencia_tipo");
 
                     b.Property<int>("TenantId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("tenant_id");
 
                     b.Property<string>("TipoMovimiento")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("tipo_movimiento");
 
                     b.Property<int>("UsuarioId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("usuario_id");
 
                     b.Property<long>("Version")
@@ -2259,87 +2528,87 @@ namespace HandySales.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Activo")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("actualizado_por");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("creado_por");
 
                     b.Property<string>("DataJson")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("data_json");
 
                     b.Property<int?>("DeviceSessionId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("device_session_id");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("eliminado_por");
 
                     b.Property<DateTime?>("EnviadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("enviado_en");
 
                     b.Property<string>("ErrorMessage")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("error_message");
 
                     b.Property<string>("FcmMessageId")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("fcm_message_id");
 
                     b.Property<DateTime?>("LeidoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("leido_en");
 
                     b.Property<string>("Mensaje")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("mensaje");
 
                     b.Property<int>("Status")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("status");
 
                     b.Property<int>("TenantId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("tenant_id");
 
                     b.Property<int>("Tipo")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("tipo");
 
                     b.Property<string>("Titulo")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("titulo");
 
                     b.Property<int?>("UsuarioId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("usuario_id");
 
                     b.Property<long>("Version")
@@ -2368,79 +2637,79 @@ namespace HandySales.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Activo")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("actualizado_por");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("creado_por");
 
                     b.Property<bool>("DesktopNotifications")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("boolean");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("eliminado_por");
 
                     b.Property<bool>("EmailInventoryAlerts")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("boolean");
 
                     b.Property<bool>("EmailNotifications")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("boolean");
 
                     b.Property<bool>("EmailOrderUpdates")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("boolean");
 
                     b.Property<bool>("EmailWeeklyReports")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("boolean");
 
                     b.Property<bool>("PushInventoryAlerts")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("boolean");
 
                     b.Property<bool>("PushNotifications")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("boolean");
 
                     b.Property<bool>("PushOrderUpdates")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("boolean");
 
                     b.Property<bool>("PushRouteReminders")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("boolean");
 
                     b.Property<TimeOnly?>("QuietHoursEnd")
-                        .HasColumnType("time(6)");
+                        .HasColumnType("time without time zone");
 
                     b.Property<TimeOnly?>("QuietHoursStart")
-                        .HasColumnType("time(6)");
+                        .HasColumnType("time without time zone");
 
                     b.Property<bool>("SmsNotifications")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("boolean");
 
                     b.Property<int>("TenantId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("UserId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<long>("Version")
                         .IsConcurrencyToken()
@@ -2461,110 +2730,110 @@ namespace HandySales.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Activo")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("actualizado_por");
 
                     b.Property<int>("ClienteId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("cliente_id");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("creado_por");
 
                     b.Property<decimal>("Descuento")
-                        .HasColumnType("decimal(65,30)")
+                        .HasColumnType("numeric")
                         .HasColumnName("descuento");
 
                     b.Property<string>("DireccionEntrega")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("direccion_entrega");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("eliminado_por");
 
                     b.Property<int>("Estado")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("estado");
 
                     b.Property<DateTime?>("FechaEntregaEstimada")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("fecha_entrega_estimada");
 
                     b.Property<DateTime?>("FechaEntregaReal")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("fecha_entrega_real");
 
                     b.Property<DateTime>("FechaPedido")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("fecha_pedido");
 
                     b.Property<decimal>("Impuestos")
-                        .HasColumnType("decimal(65,30)")
+                        .HasColumnType("numeric")
                         .HasColumnName("impuestos");
 
                     b.Property<double?>("Latitud")
-                        .HasColumnType("double")
+                        .HasColumnType("double precision")
                         .HasColumnName("latitud");
 
                     b.Property<int?>("ListaPrecioId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("lista_precio_id");
 
                     b.Property<double?>("Longitud")
-                        .HasColumnType("double")
+                        .HasColumnType("double precision")
                         .HasColumnName("longitud");
 
                     b.Property<string>("Notas")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("notas");
 
                     b.Property<string>("NumeroPedido")
                         .IsRequired()
-                        .HasColumnType("varchar(255)")
+                        .HasColumnType("text")
                         .HasColumnName("numero_pedido");
 
                     b.Property<decimal>("Subtotal")
-                        .HasColumnType("decimal(65,30)")
+                        .HasColumnType("numeric")
                         .HasColumnName("subtotal");
 
                     b.Property<int>("TenantId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("tenant_id");
 
                     b.Property<int>("TipoVenta")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("tipo_venta");
 
                     b.Property<decimal>("Total")
-                        .HasColumnType("decimal(65,30)")
+                        .HasColumnType("numeric")
                         .HasColumnName("total");
 
                     b.Property<int>("UsuarioId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("usuario_id");
 
                     b.Property<long>("Version")
@@ -2598,53 +2867,53 @@ namespace HandySales.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Activo")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("actualizado_por");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("creado_por");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("eliminado_por");
 
                     b.Property<int>("ListaPrecioId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("lista_precio_id");
 
                     b.Property<decimal>("Precio")
-                        .HasColumnType("decimal(65,30)")
+                        .HasColumnType("numeric")
                         .HasColumnName("precio");
 
                     b.Property<int>("ProductoId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("producto_id");
 
                     b.Property<int>("TenantId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("tenant_id");
 
                     b.Property<long>("Version")
@@ -2667,76 +2936,76 @@ namespace HandySales.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Activo")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("actualizado_por");
 
                     b.Property<int>("CategoraId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("categoria_id");
 
                     b.Property<string>("CodigoBarra")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("codigo_barra");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("creado_por");
 
                     b.Property<string>("Descripcion")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("descripcion");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("eliminado_por");
 
                     b.Property<int>("FamiliaId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("familia_id");
 
                     b.Property<string>("ImagenUrl")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("ImagenUrl");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("nombre");
 
                     b.Property<decimal>("PrecioBase")
-                        .HasColumnType("decimal(65,30)")
+                        .HasColumnType("numeric")
                         .HasColumnName("precio_base");
 
                     b.Property<int>("TenantId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("tenant_id");
 
                     b.Property<int>("UnidadMedidaId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("unidad_medida_id");
 
                     b.Property<long>("Version")
@@ -2761,63 +3030,63 @@ namespace HandySales.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Activo")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("actualizado_por");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("creado_por");
 
                     b.Property<string>("Descripcion")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("descripcion");
 
                     b.Property<decimal>("DescuentoPorcentaje")
-                        .HasColumnType("decimal(65,30)")
+                        .HasColumnType("numeric")
                         .HasColumnName("descuento_porcentaje");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("eliminado_por");
 
                     b.Property<DateTime>("FechaFin")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("fecha_fin");
 
                     b.Property<DateTime>("FechaInicio")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("fecha_inicio");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("nombre");
 
                     b.Property<int>("TenantId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("tenant_id");
 
                     b.Property<long>("Version")
@@ -2836,25 +3105,25 @@ namespace HandySales.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<int>("ProductoId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("producto_id");
 
                     b.Property<int>("PromocionId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("promocion_id");
 
                     b.Property<int>("TenantId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("tenant_id");
 
                     b.HasKey("Id");
@@ -2870,38 +3139,38 @@ namespace HandySales.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("Id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("CreatedAt");
 
                     b.Property<DateTime>("ExpiresAt")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("ExpiresAt");
 
                     b.Property<bool>("IsRevoked")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("IsRevoked");
 
                     b.Property<string>("ReplacedByToken")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("ReplacedByToken");
 
                     b.Property<DateTime?>("RevokedAt")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("RevokedAt");
 
                     b.Property<string>("Token")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("Token");
 
                     b.Property<int>("UserId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("UserId");
 
                     b.HasKey("Id");
@@ -2915,35 +3184,35 @@ namespace HandySales.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Activo")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasDefaultValue(true)
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("actualizado_por");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("creado_por");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<string>("Descripcion")
@@ -2951,21 +3220,21 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("descripcion");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("eliminado_por");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("varchar(50)")
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("nombre");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
                     b.Property<long>("Version")
@@ -2985,65 +3254,65 @@ namespace HandySales.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Activo")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("actualizado_por");
 
                     b.Property<int>("CantidadEntrega")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("cantidad_entrega");
 
                     b.Property<int>("CantidadTotal")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("cantidad_total");
 
                     b.Property<int>("CantidadVenta")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("cantidad_venta");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("creado_por");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("eliminado_por");
 
                     b.Property<double>("PrecioUnitario")
-                        .HasColumnType("double")
+                        .HasColumnType("double precision")
                         .HasColumnName("precio_unitario");
 
                     b.Property<int>("ProductoId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("producto_id");
 
                     b.Property<int>("RutaId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("ruta_id");
 
                     b.Property<int>("TenantId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("tenant_id");
 
                     b.Property<long>("Version")
@@ -3069,93 +3338,93 @@ namespace HandySales.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Activo")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("actualizado_por");
 
                     b.Property<int>("ClienteId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("cliente_id");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("creado_por");
 
                     b.Property<double?>("DistanciaDesdeAnterior")
-                        .HasColumnType("double")
+                        .HasColumnType("double precision")
                         .HasColumnName("distancia_desde_anterior");
 
                     b.Property<int?>("DuracionEstimadaMinutos")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("duracion_estimada_minutos");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("eliminado_por");
 
                     b.Property<int>("Estado")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("estado");
 
                     b.Property<TimeSpan?>("HoraEstimadaLlegada")
-                        .HasColumnType("time(6)")
+                        .HasColumnType("interval")
                         .HasColumnName("hora_estimada_llegada");
 
                     b.Property<DateTime?>("HoraLlegadaReal")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("hora_llegada_real");
 
                     b.Property<DateTime?>("HoraSalidaReal")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("hora_salida_real");
 
                     b.Property<double?>("Latitud")
-                        .HasColumnType("double")
+                        .HasColumnType("double precision")
                         .HasColumnName("latitud");
 
                     b.Property<double?>("Longitud")
-                        .HasColumnType("double")
+                        .HasColumnType("double precision")
                         .HasColumnName("longitud");
 
                     b.Property<string>("Notas")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("notas");
 
                     b.Property<int>("OrdenVisita")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("orden_visita");
 
                     b.Property<int?>("PedidoId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("pedido_id");
 
                     b.Property<string>("RazonOmision")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("razon_omision");
 
                     b.Property<int>("RutaId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("ruta_id");
 
                     b.Property<long>("Version")
@@ -3164,7 +3433,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("version");
 
                     b.Property<int?>("VisitaId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("visita_id");
 
                     b.HasKey("Id");
@@ -3188,37 +3457,37 @@ namespace HandySales.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Activo")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<int>("Estado")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("estado");
 
                     b.Property<int>("PedidoId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("pedido_id");
 
                     b.Property<int>("RutaId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("ruta_id");
 
                     b.Property<int>("TenantId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("tenant_id");
 
                     b.HasKey("Id");
@@ -3239,69 +3508,69 @@ namespace HandySales.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Activo")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<int>("CantidadInicial")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("cantidad_inicial");
 
                     b.Property<int>("CargaVehiculo")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("carga_vehiculo");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<int>("Devueltos")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("devueltos");
 
                     b.Property<int>("Diferencia")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("diferencia");
 
                     b.Property<int>("Entregados")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("entregados");
 
                     b.Property<int>("Mermas")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("mermas");
 
                     b.Property<int>("ProductoId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("producto_id");
 
                     b.Property<int>("RecAlmacen")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("rec_almacen");
 
                     b.Property<int>("RutaId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("ruta_id");
 
                     b.Property<int>("TenantId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("tenant_id");
 
                     b.Property<int>("Vendidos")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("vendidos");
 
                     b.Property<double>("VentasMonto")
-                        .HasColumnType("double")
+                        .HasColumnType("double precision")
                         .HasColumnName("ventas_monto");
 
                     b.HasKey("Id");
@@ -3322,110 +3591,110 @@ namespace HandySales.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Activo")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("actualizado_por");
 
                     b.Property<DateTime?>("CerradoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("cerrado_en");
 
                     b.Property<string>("CerradoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("cerrado_por");
 
                     b.Property<string>("ComentariosCarga")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("comentarios_carga");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("creado_por");
 
                     b.Property<string>("Descripcion")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("descripcion");
 
                     b.Property<double?>("EfectivoInicial")
-                        .HasColumnType("double")
+                        .HasColumnType("double precision")
                         .HasColumnName("efectivo_inicial");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("eliminado_por");
 
                     b.Property<int>("Estado")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("estado");
 
                     b.Property<DateTime>("Fecha")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("fecha");
 
                     b.Property<TimeSpan?>("HoraFinEstimada")
-                        .HasColumnType("time(6)")
+                        .HasColumnType("interval")
                         .HasColumnName("hora_fin_estimada");
 
                     b.Property<DateTime?>("HoraFinReal")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("hora_fin_real");
 
                     b.Property<TimeSpan?>("HoraInicioEstimada")
-                        .HasColumnType("time(6)")
+                        .HasColumnType("interval")
                         .HasColumnName("hora_inicio_estimada");
 
                     b.Property<DateTime?>("HoraInicioReal")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("hora_inicio_real");
 
                     b.Property<double?>("KilometrosEstimados")
-                        .HasColumnType("double")
+                        .HasColumnType("double precision")
                         .HasColumnName("kilometros_estimados");
 
                     b.Property<double?>("KilometrosReales")
-                        .HasColumnType("double")
+                        .HasColumnType("double precision")
                         .HasColumnName("kilometros_reales");
 
                     b.Property<double?>("MontoRecibido")
-                        .HasColumnType("double")
+                        .HasColumnType("double precision")
                         .HasColumnName("monto_recibido");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("nombre");
 
                     b.Property<string>("Notas")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("notas");
 
                     b.Property<int>("TenantId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("tenant_id");
 
                     b.Property<int>("UsuarioId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("usuario_id");
 
                     b.Property<long>("Version")
@@ -3434,7 +3703,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("version");
 
                     b.Property<int?>("ZonaId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("zona_id");
 
                     b.HasKey("Id");
@@ -3458,55 +3727,55 @@ namespace HandySales.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("ActionType")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("action_type");
 
                     b.Property<DateTime?>("CancelledAt")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("cancelled_at");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<int>("CreatedByUserId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("created_by_user_id");
 
                     b.Property<DateTime?>("ExecutedAt")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("executed_at");
 
                     b.Property<string>("Notes")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("notes");
 
                     b.Property<bool>("NotificationSent")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("notification_sent");
 
                     b.Property<string>("Reason")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("reason");
 
                     b.Property<DateTime>("ScheduledAt")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("scheduled_at");
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("status");
 
                     b.Property<int>("TargetId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("target_id");
 
                     b.HasKey("Id");
@@ -3518,68 +3787,68 @@ namespace HandySales.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Activo")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("activo");
 
                     b.Property<string>("Caracteristicas")
                         .IsRequired()
-                        .HasColumnType("json")
+                        .HasColumnType("jsonb")
                         .HasColumnName("caracteristicas");
 
                     b.Property<string>("Codigo")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("codigo");
 
                     b.Property<bool>("IncluyeReportes")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("incluye_reportes");
 
                     b.Property<bool>("IncluyeSoportePrioritario")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("incluye_soporte_prioritario");
 
                     b.Property<int>("MaxClientesPorMes")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("max_clientes_por_mes");
 
                     b.Property<int>("MaxProductos")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("max_productos");
 
                     b.Property<int>("MaxUsuarios")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("max_usuarios");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("nombre");
 
                     b.Property<int>("Orden")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("orden");
 
                     b.Property<decimal>("PrecioAnual")
-                        .HasColumnType("decimal(65,30)")
+                        .HasColumnType("numeric")
                         .HasColumnName("precio_anual");
 
                     b.Property<decimal>("PrecioMensual")
-                        .HasColumnType("decimal(65,30)")
+                        .HasColumnType("numeric")
                         .HasColumnName("precio_mensual");
 
                     b.Property<string>("StripePriceIdAnual")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("stripe_price_id_anual");
 
                     b.Property<string>("StripePriceIdMensual")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("stripe_price_id_mensual");
 
                     b.HasKey("Id");
@@ -3591,91 +3860,91 @@ namespace HandySales.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Activo")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("actualizado_por");
 
                     b.Property<string>("CancellationReason")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("cancellation_reason");
 
                     b.Property<DateTime?>("CancelledAt")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("cancelled_at");
 
                     b.Property<string>("CloudinaryFolder")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("cloudinary_folder");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("creado_por");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("eliminado_por");
 
                     b.Property<DateTime?>("FechaExpiracion")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("fecha_expiracion");
 
                     b.Property<DateTime?>("FechaSuscripcion")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("fecha_suscripcion");
 
                     b.Property<DateTime?>("GracePeriodEnd")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("grace_period_end");
 
                     b.Property<int>("MaxUsuarios")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("max_usuarios");
 
                     b.Property<string>("NombreEmpresa")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("nombre_empresa");
 
                     b.Property<string>("PlanTipo")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("plan_tipo");
 
                     b.Property<string>("StripeCustomerId")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("stripe_customer_id");
 
                     b.Property<string>("StripePriceId")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("stripe_price_id");
 
                     b.Property<string>("StripeSubscriptionId")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("stripe_subscription_id");
 
                     b.Property<string>("SubscriptionStatus")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("subscription_status");
 
                     b.Property<long>("Version")
@@ -3688,30 +3957,108 @@ namespace HandySales.Infrastructure.Migrations
                     b.ToTable("Tenants");
                 });
 
+            modelBuilder.Entity("HandySales.Domain.Entities.TenantAutomation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ActivatedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("activated_by");
+
+                    b.Property<bool>("Activo")
+                        .HasColumnType("boolean")
+                        .HasColumnName("activo");
+
+                    b.Property<DateTime?>("ActualizadoEn")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("actualizado_en");
+
+                    b.Property<string>("ActualizadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("actualizado_por");
+
+                    b.Property<DateTime>("CreadoEn")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("creado_en");
+
+                    b.Property<string>("CreadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("creado_por");
+
+                    b.Property<DateTime?>("EliminadoEn")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("eliminado_en");
+
+                    b.Property<string>("EliminadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("eliminado_por");
+
+                    b.Property<int>("ExecutionCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("execution_count");
+
+                    b.Property<DateTime?>("LastExecutedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_executed_at");
+
+                    b.Property<string>("ParamsJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("params_json");
+
+                    b.Property<int>("TemplateId")
+                        .HasColumnType("integer")
+                        .HasColumnName("template_id");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("integer")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActivatedBy");
+
+                    b.HasIndex("TemplateId");
+
+                    b.HasIndex("TenantId", "TemplateId")
+                        .IsUnique();
+
+                    b.ToTable("TenantAutomations");
+                });
+
             modelBuilder.Entity("HandySales.Domain.Entities.TwoFactorRecoveryCode", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("CodeHash")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("code_hash");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<DateTime?>("UsedAt")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("used_at");
 
                     b.Property<int>("UsuarioId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("usuario_id");
 
                     b.HasKey("Id");
@@ -3725,120 +4072,120 @@ namespace HandySales.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Activo")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("actualizado_por");
 
                     b.Property<string>("AvatarUrl")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("avatar_url");
 
                     b.Property<string>("CodigoVerificacion")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("codigo_verificacion");
 
                     b.Property<DateTime?>("CodigoVerificacionExpiry")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("codigo_verificacion_expiry");
 
                     b.Property<int?>("CompanyId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("CompanyId");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("creado_por");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("eliminado_por");
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("email");
 
                     b.Property<bool>("EmailVerificado")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("email_verificado");
 
                     b.Property<bool>("EsAdmin")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("es_admin");
 
                     b.Property<bool>("EsSuperAdmin")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("es_super_admin");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("nombre");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("password_hash");
 
                     b.Property<DateTime?>("PasswordResetExpiry")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("password_reset_expiry");
 
                     b.Property<string>("PasswordResetToken")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("password_reset_token");
 
                     b.Property<string>("RolExplicito")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("rol");
 
                     b.Property<int?>("RoleId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("role_id");
 
                     b.Property<int>("SessionVersion")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("session_version");
 
                     b.Property<int?>("SupervisorId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("supervisor_id");
 
                     b.Property<int>("TenantId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("tenant_id");
 
                     b.Property<bool>("TotpEnabled")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("totp_enabled");
 
                     b.Property<DateTime?>("TotpEnabledAt")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("totp_enabled_at");
 
                     b.Property<string>("TotpSecretEncrypted")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("totp_secret_encrypted");
 
                     b.Property<long>("Version")
@@ -3863,62 +4210,62 @@ namespace HandySales.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Activo")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("actualizado_por");
 
                     b.Property<double?>("CentroLatitud")
-                        .HasColumnType("double")
+                        .HasColumnType("double precision")
                         .HasColumnName("centro_latitud");
 
                     b.Property<double?>("CentroLongitud")
-                        .HasColumnType("double")
+                        .HasColumnType("double precision")
                         .HasColumnName("centro_longitud");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("creado_por");
 
                     b.Property<string>("Descripcion")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("descripcion");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("eliminado_por");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("nombre");
 
                     b.Property<double?>("RadioKm")
-                        .HasColumnType("double")
+                        .HasColumnType("double precision")
                         .HasColumnName("radio_km");
 
                     b.Property<int>("TenantId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("tenant_id");
 
                     b.Property<long>("Version")
@@ -3937,50 +4284,50 @@ namespace HandySales.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Abreviatura")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("abreviatura");
 
                     b.Property<bool>("Activo")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("actualizado_por");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("creado_por");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("eliminado_por");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("nombre");
 
                     b.Property<int>("TenantId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("tenant_id");
 
                     b.Property<long>("Version")
@@ -4064,6 +4411,17 @@ namespace HandySales.Infrastructure.Migrations
                     b.Navigation("Announcement");
 
                     b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("HandySales.Domain.Entities.AutomationExecution", b =>
+                {
+                    b.HasOne("HandySales.Domain.Entities.TenantAutomation", "Automation")
+                        .WithMany()
+                        .HasForeignKey("AutomationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Automation");
                 });
 
             modelBuilder.Entity("HandySales.Domain.Entities.Cliente", b =>
@@ -4343,6 +4701,25 @@ namespace HandySales.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Tenant");
+                });
+
+            modelBuilder.Entity("HandySales.Domain.Entities.MetaVendedor", b =>
+                {
+                    b.HasOne("HandySales.Domain.Entities.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HandySales.Domain.Entities.Usuario", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Tenant");
+
+                    b.Navigation("Usuario");
                 });
 
             modelBuilder.Entity("HandySales.Domain.Entities.MovimientoInventario", b =>
@@ -4693,6 +5070,33 @@ namespace HandySales.Infrastructure.Migrations
                     b.Navigation("Zona");
                 });
 
+            modelBuilder.Entity("HandySales.Domain.Entities.TenantAutomation", b =>
+                {
+                    b.HasOne("HandySales.Domain.Entities.Usuario", "ActivatedByUser")
+                        .WithMany()
+                        .HasForeignKey("ActivatedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("HandySales.Domain.Entities.AutomationTemplate", "Template")
+                        .WithMany("TenantAutomations")
+                        .HasForeignKey("TemplateId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("HandySales.Domain.Entities.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ActivatedByUser");
+
+                    b.Navigation("Template");
+
+                    b.Navigation("Tenant");
+                });
+
             modelBuilder.Entity("HandySales.Domain.Entities.TwoFactorRecoveryCode", b =>
                 {
                     b.HasOne("HandySales.Domain.Entities.Usuario", "Usuario")
@@ -4768,6 +5172,11 @@ namespace HandySales.Infrastructure.Migrations
             modelBuilder.Entity("HandySales.Domain.Entities.Announcement", b =>
                 {
                     b.Navigation("Dismissals");
+                });
+
+            modelBuilder.Entity("HandySales.Domain.Entities.AutomationTemplate", b =>
+                {
+                    b.Navigation("TenantAutomations");
                 });
 
             modelBuilder.Entity("HandySales.Domain.Entities.Company", b =>

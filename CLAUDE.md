@@ -63,14 +63,14 @@ CRM/ERP system for Mexican SMEs with SAT billing compliance. Multi-tenant, micro
 
 ```
 Frontend (apps/web/)         -> Next.js 15 + React 19 + TypeScript + Tailwind CSS 3.4
-Main API (apps/api/)         -> .NET 8, Clean Architecture, EF Core, MySQL 8.0
+Main API (apps/api/)         -> .NET 8, Clean Architecture, EF Core, PostgreSQL 16
 Mobile API (apps/mobile/)    -> .NET 8, Minimal APIs for React Native app (SEPARATE)
-Billing API (apps/billing/)  -> .NET 9, SAT CFDI compliance, separate MySQL schema
+Billing API (apps/billing/)  -> .NET 9, SAT CFDI compliance, separate PostgreSQL schema
 Mobile App (apps/mobile-app/) -> React Native (Expo), TypeScript, WatermelonDB, offline-first
 AI Gateway (apps/ai/)         -> .NET 8, OpenAI/Azure OpenAI, pgvector, RAG per tenant
 Shared Libraries (libs/)     -> Domain, Application, Infrastructure, Shared
-Database (infra/database/)   -> MySQL 8.0 dual: handy_erp + handy_billing
-Deployment                   -> Vercel (frontend) + Railway (APIs + MySQL) ~$25-40/month
+Database (infra/database/)   -> PostgreSQL 16 dual: handy_erp + handy_billing
+Deployment                   -> Vercel (frontend) + Railway (APIs + PostgreSQL) ~$25-40/month
 ```
 
 > Full structure: `docs/architecture/PROJECT_STRUCTURE.md` | Entities & endpoints: `docs/architecture/OVERVIEW.md`
@@ -83,8 +83,8 @@ Deployment                   -> Vercel (frontend) + Railway (APIs + MySQL) ~$25-
 | Backend | .NET 8/9, C# 12, EF Core, FluentValidation, AutoMapper, Serilog, JWT Bearer |
 | Mobile | React Native 0.76+, Expo SDK 52, TypeScript 5, WatermelonDB, Zustand, TanStack Query |
 | AI | .NET 8, OpenAI API (gpt-4o-mini default), pgvector, text-embedding-3-small |
-| Database | MySQL 8.0 (Pomelo provider), multi-tenant with tenant_id |
-| Infra | Docker, Vercel (frontend), Railway (APIs + MySQL) |
+| Database | PostgreSQL 16 (Npgsql provider), multi-tenant with tenant_id |
+| Infra | Docker, Vercel (frontend), Railway (APIs + PostgreSQL) |
 
 ## Development Quick Start
 
@@ -130,7 +130,7 @@ Billing API: http://localhost:1051  (Swagger: /swagger)
 Mobile API:  http://localhost:1052  (Swagger: /swagger)
 AI Gateway:  http://localhost:1053  (Swagger: /swagger)
 Seq Logs:    http://localhost:1082
-MySQL:       localhost:3306
+PostgreSQL:  localhost:5432
 ```
 
 > Full port table & credentials: `docs/development/PORTS_AND_CREDENTIALS.md`
@@ -139,8 +139,8 @@ MySQL:       localhost:3306
 
 | What | User | Password |
 |------|------|----------|
-| MySQL | `handy_user` | `handy_pass` |
-| MySQL root | `root` | `root123` |
+| PostgreSQL | `handy_user` | `handy_pass` |
+| PostgreSQL root | `postgres` | `root123` |
 | App (all users) | `admin@jeyma.com` | `test123` |
 
 **Recommended for testing:** `admin@jeyma.com` / `test123` (tenant with most seed data)
@@ -224,7 +224,7 @@ Use Haiku for exploration/moves/builds ($0.25/M), Sonnet for coding/refactoring/
 
 ## Deployment
 
-**Current**: Vercel (frontend, $0) + Railway (3 APIs + MySQL, $25-40/month)
+**Current**: Vercel (frontend, $0) + Railway (3 APIs + PostgreSQL, $25-40/month)
 **Future**: Azure Mexico Central when 1,000+ users ($75-140/month)
 **CI/CD**: `.github/workflows/deploy-apis.yml` — push to main → auto-deploy
 

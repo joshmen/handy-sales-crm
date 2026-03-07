@@ -7,7 +7,7 @@
 The frontend runs **locally** (NOT in Docker) for best performance. Docker volume mounts on Windows add ~3s latency per page navigation. Running locally gives instant Hot Module Replacement.
 
 ```bash
-# 1. Start backend services in Docker (APIs, MySQL, Seq)
+# 1. Start backend services in Docker (APIs, PostgreSQL, Seq)
 docker-compose -f docker-compose.dev.yml up -d
 
 # 2. Start frontend locally (in separate terminal)

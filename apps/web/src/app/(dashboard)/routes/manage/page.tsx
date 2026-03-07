@@ -6,6 +6,7 @@ import { routeService, RouteListItem, ESTADO_RUTA, ESTADO_RUTA_LABELS, ESTADO_RU
 import { api } from '@/lib/api';
 import { toast } from '@/hooks/useToast';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { ListPagination } from '@/components/ui/ListPagination';
 import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
@@ -177,21 +178,21 @@ export default function ManageRoutesPage() {
         <div data-tour="routes-manage-filters" className="flex flex-wrap items-center gap-2 sm:gap-3">
           {/* Date range */}
           <div data-tour="routes-manage-date-filter" className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-gray-400" />
-            <input
-              type="date"
+            <DateTimePicker
+              compact
+              mode="date"
               value={fechaDesde}
-              onChange={(e) => { setFechaDesde(e.target.value); setCurrentPage(1); }}
-              className="px-2 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+              onChange={(val) => { setFechaDesde(val); setCurrentPage(1); }}
               placeholder="Desde"
             />
             <span className="text-xs text-gray-400">-</span>
-            <input
-              type="date"
+            <DateTimePicker
+              compact
+              mode="date"
               value={fechaHasta}
-              onChange={(e) => { setFechaHasta(e.target.value); setCurrentPage(1); }}
-              className="px-2 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+              onChange={(val) => { setFechaHasta(val); setCurrentPage(1); }}
               placeholder="Hasta"
+              min={fechaDesde}
             />
           </div>
 

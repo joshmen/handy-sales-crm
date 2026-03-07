@@ -74,12 +74,12 @@ public static class TenantEndpoints
             .Select(g => new { TenantId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.TenantId, x => x.Count);
 
-        // Join con DatosEmpresa para obtener RFC
+        // Join con DatosEmpresa para obtener IdentificadorFiscal
         var datosEmpresaMap = await context.DatosEmpresa
             .IgnoreQueryFilters()
             .AsNoTracking()
             .Where(d => tenantIds.Contains(d.TenantId))
-            .ToDictionaryAsync(d => d.TenantId, d => d.RFC);
+            .ToDictionaryAsync(d => d.TenantId, d => d.IdentificadorFiscal);
 
         var result = tenants.Select(t => new TenantListDto(
             t.Id,
@@ -124,7 +124,7 @@ public static class TenantEndpoints
         Application.DatosEmpresa.DTOs.DatosEmpresaDto? datosDto = datosEmpresa != null
             ? new Application.DatosEmpresa.DTOs.DatosEmpresaDto(
                 datosEmpresa.Id, datosEmpresa.TenantId, datosEmpresa.RazonSocial,
-                datosEmpresa.RFC, datosEmpresa.Telefono, datosEmpresa.Email,
+                datosEmpresa.IdentificadorFiscal, datosEmpresa.TipoIdentificadorFiscal, datosEmpresa.Telefono, datosEmpresa.Email,
                 datosEmpresa.Contacto, datosEmpresa.Direccion, datosEmpresa.Ciudad,
                 datosEmpresa.Estado, datosEmpresa.CodigoPostal, datosEmpresa.SitioWeb,
                 datosEmpresa.Descripcion)
@@ -173,14 +173,15 @@ public static class TenantEndpoints
         var created = await tenantRepo.CrearAsync(tenant);
 
         // Crear DatosEmpresa si se proporcionaron datos de negocio
-        if (!string.IsNullOrEmpty(dto.RFC) || !string.IsNullOrEmpty(dto.Contacto) ||
+        if (!string.IsNullOrEmpty(dto.IdentificadorFiscal) || !string.IsNullOrEmpty(dto.Contacto) ||
             !string.IsNullOrEmpty(dto.Telefono) || !string.IsNullOrEmpty(dto.Email) ||
             !string.IsNullOrEmpty(dto.Direccion))
         {
             var datosEmpresa = new Domain.Entities.DatosEmpresa
             {
                 TenantId = created.Id,
-                RFC = dto.RFC,
+                IdentificadorFiscal = dto.IdentificadorFiscal,
+                TipoIdentificadorFiscal = dto.TipoIdentificadorFiscal ?? "RFC",
                 Contacto = dto.Contacto,
                 Telefono = dto.Telefono,
                 Email = dto.Email,

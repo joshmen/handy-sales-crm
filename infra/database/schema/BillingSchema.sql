@@ -1,20 +1,14 @@
+c handy_billing
 -- =============================================
 -- Base de datos para el microservicio de Facturación
 -- HandySales Billing Service
 -- =============================================
 
-CREATE DATABASE IF NOT EXISTS handy_billing 
-CHARACTER SET utf8mb4 
-COLLATE utf8mb4_unicode_ci;
-
-USE handy_billing;
-SET NAMES utf8mb4;
-
 -- =============================================
 -- Tabla: configuracion_fiscal
 -- =============================================
 CREATE TABLE IF NOT EXISTS configuracion_fiscal (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     tenant_id VARCHAR(50) NOT NULL,
     empresa_id INT NOT NULL,
     regimen_fiscal VARCHAR(100),
@@ -32,19 +26,20 @@ CREATE TABLE IF NOT EXISTS configuracion_fiscal (
     logo_url VARCHAR(500),
     activo BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_tenant_empresa (tenant_id, empresa_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_config_fiscal_tenant_empresa ON configuracion_fiscal (tenant_id, empresa_id);
 
 -- =============================================
 -- Tabla: tipos_comprobante
 -- =============================================
 CREATE TABLE IF NOT EXISTS tipos_comprobante (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     codigo VARCHAR(10) NOT NULL UNIQUE,
     descripcion VARCHAR(100) NOT NULL,
     activo BOOLEAN DEFAULT TRUE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 -- Datos iniciales para tipos de comprobante
 INSERT INTO tipos_comprobante (codigo, descripcion) VALUES
@@ -52,18 +47,19 @@ INSERT INTO tipos_comprobante (codigo, descripcion) VALUES
 ('E', 'Egreso'),
 ('T', 'Traslado'),
 ('N', 'Nómina'),
-('P', 'Pago');
+('P', 'Pago')
+ON CONFLICT DO NOTHING;
 
 -- =============================================
 -- Tabla: metodos_pago
 -- =============================================
 CREATE TABLE IF NOT EXISTS metodos_pago (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     codigo VARCHAR(10) NOT NULL UNIQUE,
     descripcion VARCHAR(100) NOT NULL,
     requiere_banco BOOLEAN DEFAULT FALSE,
     activo BOOLEAN DEFAULT TRUE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 -- Datos iniciales para métodos de pago
 INSERT INTO metodos_pago (codigo, descripcion, requiere_banco) VALUES
@@ -74,17 +70,18 @@ INSERT INTO metodos_pago (codigo, descripcion, requiere_banco) VALUES
 ('03', 'Transferencia electrónica de fondos', TRUE),
 ('04', 'Tarjeta de crédito', TRUE),
 ('28', 'Tarjeta de débito', TRUE),
-('99', 'Por definir', FALSE);
+('99', 'Por definir', FALSE)
+ON CONFLICT DO NOTHING;
 
 -- =============================================
 -- Tabla: formas_pago
 -- =============================================
 CREATE TABLE IF NOT EXISTS formas_pago (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     codigo VARCHAR(10) NOT NULL UNIQUE,
     descripcion VARCHAR(100) NOT NULL,
     activo BOOLEAN DEFAULT TRUE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 -- Datos iniciales para formas de pago
 INSERT INTO formas_pago (codigo, descripcion) VALUES
@@ -93,19 +90,20 @@ INSERT INTO formas_pago (codigo, descripcion) VALUES
 ('03', 'Transferencia electrónica de fondos'),
 ('04', 'Tarjeta de crédito'),
 ('28', 'Tarjeta de débito'),
-('99', 'Por definir');
+('99', 'Por definir')
+ON CONFLICT DO NOTHING;
 
 -- =============================================
 -- Tabla: usos_cfdi
 -- =============================================
 CREATE TABLE IF NOT EXISTS usos_cfdi (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     codigo VARCHAR(10) NOT NULL UNIQUE,
     descripcion VARCHAR(200) NOT NULL,
     aplica_persona_fisica BOOLEAN DEFAULT TRUE,
     aplica_persona_moral BOOLEAN DEFAULT TRUE,
     activo BOOLEAN DEFAULT TRUE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 -- Datos iniciales para usos CFDI
 INSERT INTO usos_cfdi (codigo, descripcion, aplica_persona_fisica, aplica_persona_moral) VALUES
@@ -115,19 +113,20 @@ INSERT INTO usos_cfdi (codigo, descripcion, aplica_persona_fisica, aplica_person
 ('I01', 'Construcciones', TRUE, TRUE),
 ('I02', 'Mobiliario y equipo de oficina por inversiones', TRUE, TRUE),
 ('P01', 'Por definir', TRUE, TRUE),
-('S01', 'Sin efectos fiscales', TRUE, TRUE);
+('S01', 'Sin efectos fiscales', TRUE, TRUE)
+ON CONFLICT DO NOTHING;
 
 -- =============================================
 -- Tabla: facturas
 -- =============================================
 CREATE TABLE IF NOT EXISTS facturas (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     tenant_id VARCHAR(50) NOT NULL,
     uuid VARCHAR(50) UNIQUE,
     serie VARCHAR(10),
     folio INT NOT NULL,
-    fecha_emision DATETIME NOT NULL,
-    fecha_timbrado DATETIME,
+    fecha_emision TIMESTAMP NOT NULL,
+    fecha_timbrado TIMESTAMP,
     tipo_comprobante VARCHAR(10) NOT NULL,
     metodo_pago VARCHAR(10),
     forma_pago VARCHAR(10),
@@ -159,12 +158,12 @@ CREATE TABLE IF NOT EXISTS facturas (
     sello_sat TEXT,
     cadena_original_sat TEXT,
     certificado_sat VARCHAR(50),
-    fecha_certificacion DATETIME,
+    fecha_certificacion TIMESTAMP,
     
     -- Estado y referencias
     estado VARCHAR(50) DEFAULT 'PENDIENTE', -- PENDIENTE, TIMBRADA, CANCELADA, ERROR
     estado_cancelacion VARCHAR(50),
-    fecha_cancelacion DATETIME,
+    fecha_cancelacion TIMESTAMP,
     motivo_cancelacion VARCHAR(500),
     folio_sustitucion VARCHAR(50),
     
@@ -175,26 +174,26 @@ CREATE TABLE IF NOT EXISTS facturas (
     
     -- Auditoría
     observaciones TEXT,
-    xml_content LONGTEXT,
+    xml_content TEXT,
     pdf_url VARCHAR(500),
     created_by INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    INDEX idx_tenant (tenant_id),
-    INDEX idx_uuid (uuid),
-    INDEX idx_serie_folio (serie, folio),
-    INDEX idx_fecha (fecha_emision),
-    INDEX idx_receptor (receptor_rfc),
-    INDEX idx_estado (estado),
-    INDEX idx_cliente (cliente_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_facturas_tenant ON facturas (tenant_id);
+CREATE INDEX idx_facturas_uuid ON facturas (uuid);
+CREATE INDEX idx_facturas_serie_folio ON facturas (serie, folio);
+CREATE INDEX idx_facturas_fecha ON facturas (fecha_emision);
+CREATE INDEX idx_facturas_receptor ON facturas (receptor_rfc);
+CREATE INDEX idx_facturas_estado ON facturas (estado);
+CREATE INDEX idx_facturas_cliente ON facturas (cliente_id);
 
 -- =============================================
 -- Tabla: detalle_facturas
 -- =============================================
 CREATE TABLE IF NOT EXISTS detalle_facturas (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     factura_id BIGINT NOT NULL,
     numero_linea INT NOT NULL,
     
@@ -217,16 +216,17 @@ CREATE TABLE IF NOT EXISTS detalle_facturas (
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
-    FOREIGN KEY (factura_id) REFERENCES facturas(id) ON DELETE CASCADE,
-    INDEX idx_factura (factura_id),
-    INDEX idx_producto (producto_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    FOREIGN KEY (factura_id) REFERENCES facturas(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_detalle_facturas_factura ON detalle_facturas (factura_id);
+CREATE INDEX idx_detalle_facturas_producto ON detalle_facturas (producto_id);
 
 -- =============================================
 -- Tabla: impuestos_factura
 -- =============================================
 CREATE TABLE IF NOT EXISTS impuestos_factura (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     factura_id BIGINT NOT NULL,
     detalle_factura_id BIGINT,
     tipo VARCHAR(20) NOT NULL, -- TRASLADO, RETENCION
@@ -237,18 +237,19 @@ CREATE TABLE IF NOT EXISTS impuestos_factura (
     importe DECIMAL(18,2),
     
     FOREIGN KEY (factura_id) REFERENCES facturas(id) ON DELETE CASCADE,
-    FOREIGN KEY (detalle_factura_id) REFERENCES detalle_facturas(id) ON DELETE CASCADE,
-    INDEX idx_factura (factura_id),
-    INDEX idx_detalle (detalle_factura_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    FOREIGN KEY (detalle_factura_id) REFERENCES detalle_facturas(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_impuestos_factura_factura ON impuestos_factura (factura_id);
+CREATE INDEX idx_impuestos_factura_detalle ON impuestos_factura (detalle_factura_id);
 
 -- =============================================
 -- Tabla: complementos_pago
 -- =============================================
 CREATE TABLE IF NOT EXISTS complementos_pago (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     factura_id BIGINT NOT NULL,
-    fecha_pago DATETIME NOT NULL,
+    fecha_pago TIMESTAMP NOT NULL,
     forma_pago VARCHAR(10) NOT NULL,
     moneda VARCHAR(10) DEFAULT 'MXN',
     tipo_cambio DECIMAL(10,4) DEFAULT 1,
@@ -261,32 +262,34 @@ CREATE TABLE IF NOT EXISTS complementos_pago (
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
-    FOREIGN KEY (factura_id) REFERENCES facturas(id) ON DELETE CASCADE,
-    INDEX idx_factura (factura_id),
-    INDEX idx_fecha (fecha_pago)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    FOREIGN KEY (factura_id) REFERENCES facturas(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_complementos_pago_factura ON complementos_pago (factura_id);
+CREATE INDEX idx_complementos_pago_fecha ON complementos_pago (fecha_pago);
 
 -- =============================================
 -- Tabla: documentos_relacionados
 -- =============================================
 CREATE TABLE IF NOT EXISTS documentos_relacionados (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     factura_id BIGINT NOT NULL,
     factura_relacionada_id BIGINT,
     uuid_relacionado VARCHAR(50),
     tipo_relacion VARCHAR(10) NOT NULL, -- 01=Nota de crédito, 02=Nota de débito, etc.
     
     FOREIGN KEY (factura_id) REFERENCES facturas(id) ON DELETE CASCADE,
-    FOREIGN KEY (factura_relacionada_id) REFERENCES facturas(id) ON DELETE SET NULL,
-    INDEX idx_factura (factura_id),
-    INDEX idx_relacionada (factura_relacionada_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    FOREIGN KEY (factura_relacionada_id) REFERENCES facturas(id) ON DELETE SET NULL
+);
+
+CREATE INDEX idx_docs_rel_factura ON documentos_relacionados (factura_id);
+CREATE INDEX idx_docs_rel_relacionada ON documentos_relacionados (factura_relacionada_id);
 
 -- =============================================
 -- Tabla: numeracion_documentos
 -- =============================================
 CREATE TABLE IF NOT EXISTS numeracion_documentos (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     tenant_id VARCHAR(50) NOT NULL,
     tipo_documento VARCHAR(50) NOT NULL, -- FACTURA, NOTA_CREDITO, NOTA_DEBITO, REMISION
     serie VARCHAR(10),
@@ -295,33 +298,34 @@ CREATE TABLE IF NOT EXISTS numeracion_documentos (
     folio_final INT,
     activo BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
-    UNIQUE KEY uk_numeracion (tenant_id, tipo_documento, serie),
-    INDEX idx_tenant_tipo (tenant_id, tipo_documento)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    UNIQUE (tenant_id, tipo_documento, serie)
+);
+
+CREATE INDEX idx_numeracion_docs_tenant_tipo ON numeracion_documentos (tenant_id, tipo_documento);
 
 -- =============================================
 -- Tabla: auditoria_facturacion
 -- =============================================
 CREATE TABLE IF NOT EXISTS auditoria_facturacion (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     tenant_id VARCHAR(50) NOT NULL,
     factura_id BIGINT,
     accion VARCHAR(50) NOT NULL, -- CREAR, TIMBRAR, CANCELAR, ENVIAR, DESCARGAR
     descripcion TEXT,
-    datos_anteriores JSON,
-    datos_nuevos JSON,
+    datos_anteriores JSONB,
+    datos_nuevos JSONB,
     ip_address VARCHAR(45),
     user_agent VARCHAR(500),
     usuario_id INT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    INDEX idx_tenant (tenant_id),
-    INDEX idx_factura (factura_id),
-    INDEX idx_fecha (created_at),
-    INDEX idx_usuario (usuario_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_auditoria_tenant ON auditoria_facturacion (tenant_id);
+CREATE INDEX idx_auditoria_factura ON auditoria_facturacion (factura_id);
+CREATE INDEX idx_auditoria_fecha ON auditoria_facturacion (created_at);
+CREATE INDEX idx_auditoria_usuario ON auditoria_facturacion (usuario_id);
 
 -- =============================================
 -- Vistas útiles
@@ -333,7 +337,7 @@ SELECT
     f.id,
     f.tenant_id,
     f.uuid,
-    CONCAT(f.serie, '-', LPAD(f.folio, 6, '0')) as folio_completo,
+    CONCAT(f.serie, '-', LPAD(f.folio::TEXT, 6, '0')) as folio_completo,
     f.fecha_emision,
     f.tipo_comprobante,
     f.receptor_rfc,
@@ -354,8 +358,8 @@ CREATE OR REPLACE VIEW v_ingresos_periodo AS
 SELECT 
     tenant_id,
     DATE(fecha_emision) as fecha,
-    YEAR(fecha_emision) as año,
-    MONTH(fecha_emision) as mes,
+    EXTRACT(YEAR FROM fecha_emision)::INT as año,
+    EXTRACT(MONTH FROM fecha_emision)::INT as mes,
     COUNT(*) as total_facturas,
     SUM(subtotal) as subtotal,
     SUM(total_impuestos_trasladados) as total_iva,
@@ -363,66 +367,58 @@ SELECT
 FROM facturas
 WHERE estado = 'TIMBRADA'
 AND tipo_comprobante = 'I'
-GROUP BY tenant_id, DATE(fecha_emision);
+GROUP BY tenant_id, DATE(fecha_emision), EXTRACT(YEAR FROM fecha_emision), EXTRACT(MONTH FROM fecha_emision);
 
 -- =============================================
--- Stored Procedures
+-- Funciones
 -- =============================================
 
-DELIMITER //
-
--- Procedimiento para obtener siguiente folio
-CREATE PROCEDURE sp_obtener_siguiente_folio(
-    IN p_tenant_id VARCHAR(50),
-    IN p_tipo_documento VARCHAR(50),
-    IN p_serie VARCHAR(10),
-    OUT p_folio INT
-)
+-- Funcion para obtener siguiente folio
+CREATE OR REPLACE FUNCTION sp_obtener_siguiente_folio(
+    p_tenant_id VARCHAR(50),
+    p_tipo_documento VARCHAR(50),
+    p_serie VARCHAR(10)
+) RETURNS INT AS $fn$
+DECLARE
+    v_folio_actual INT;
+    v_folio INT;
 BEGIN
-    DECLARE v_folio_actual INT;
-    
-    START TRANSACTION;
-    
     SELECT folio_actual INTO v_folio_actual
     FROM numeracion_documentos
-    WHERE tenant_id = p_tenant_id 
+    WHERE tenant_id = p_tenant_id
     AND tipo_documento = p_tipo_documento
     AND (serie = p_serie OR (serie IS NULL AND p_serie IS NULL))
     AND activo = TRUE
     FOR UPDATE;
-    
+
     IF v_folio_actual IS NULL THEN
-        -- Si no existe, crear registro
         INSERT INTO numeracion_documentos (tenant_id, tipo_documento, serie, folio_inicial, folio_actual)
         VALUES (p_tenant_id, p_tipo_documento, p_serie, 1, 1);
-        SET p_folio = 1;
+        v_folio := 1;
     ELSE
-        -- Incrementar folio
-        SET p_folio = v_folio_actual + 1;
-        
+        v_folio := v_folio_actual + 1;
+
         UPDATE numeracion_documentos
-        SET folio_actual = p_folio,
+        SET folio_actual = v_folio,
             updated_at = CURRENT_TIMESTAMP
-        WHERE tenant_id = p_tenant_id 
+        WHERE tenant_id = p_tenant_id
         AND tipo_documento = p_tipo_documento
         AND (serie = p_serie OR (serie IS NULL AND p_serie IS NULL))
         AND activo = TRUE;
     END IF;
-    
-    COMMIT;
-END //
 
-DELIMITER ;
+    RETURN v_folio;
+END;
+$fn$ LANGUAGE plpgsql;
 
 -- =============================================
 -- Índices adicionales para optimización
 -- =============================================
 CREATE INDEX idx_facturas_fecha_estado ON facturas(fecha_emision, estado);
 CREATE INDEX idx_facturas_tenant_fecha ON facturas(tenant_id, fecha_emision);
-CREATE INDEX idx_detalle_facturas_producto ON detalle_facturas(producto_id);
 
 -- =============================================
 -- Permisos (ajustar según usuario)
 -- =============================================
--- GRANT ALL PRIVILEGES ON handy_billing.* TO 'handy_user'@'%';
--- FLUSH PRIVILEGES;
+-- GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO handy_user;
+-- GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO handy_user;

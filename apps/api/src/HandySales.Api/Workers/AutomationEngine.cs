@@ -77,8 +77,28 @@ public class AutomationEngine : BackgroundService
                 .ToDictionaryAsync(cs => cs.TenantId, cs => cs.Timezone, ct);
         }
 
+        // Batch-load tenant subscription statuses to skip expired tenants
+        Dictionary<int, string?> tenantStatuses;
+        using (var statusScope = _services.CreateScope())
+        {
+            var statusDb = statusScope.ServiceProvider.GetRequiredService<HandySalesDbContext>();
+            var tenantIds2 = automations.Select(a => a.TenantId).Distinct().ToList();
+            tenantStatuses = await statusDb.Tenants
+                .Where(t => tenantIds2.Contains(t.Id))
+                .ToDictionaryAsync(t => t.Id, t => (string?)t.SubscriptionStatus, ct);
+        }
+
         foreach (var automation in automations)
         {
+            // Skip automations for tenants with expired/inactive subscriptions
+            var subStatus = tenantStatuses.GetValueOrDefault(automation.TenantId);
+            if (subStatus is not ("Trial" or "Active"))
+            {
+                _logger.LogWarning("Skipping automation {Slug} for tenant {TenantId}: subscription {Status}",
+                    automation.Template.Slug, automation.TenantId, subStatus ?? "unknown");
+                continue;
+            }
+
             var tenantTz = tenantTimezones.GetValueOrDefault(automation.TenantId, "America/Mexico_City");
             if (string.IsNullOrEmpty(tenantTz)) tenantTz = "America/Mexico_City";
             if (!ShouldExecute(automation, now, tenantTz))
@@ -97,6 +117,19 @@ public class AutomationEngine : BackgroundService
             }
 
             var db = execScope.ServiceProvider.GetRequiredService<HandySalesDbContext>();
+
+            // Re-validate subscription with fresh data (eliminates stale-status race window)
+            var freshStatus = await db.Tenants.AsNoTracking()
+                .Where(t => t.Id == automation.TenantId)
+                .Select(t => t.SubscriptionStatus)
+                .FirstOrDefaultAsync(ct);
+            if (freshStatus is not ("Trial" or "Active"))
+            {
+                _logger.LogWarning("Skipping automation {Slug} for tenant {TenantId}: subscription expired during processing",
+                    automation.Template.Slug, automation.TenantId);
+                continue;
+            }
+
             var notifications = execScope.ServiceProvider.GetRequiredService<INotificationService>();
             var emailService = execScope.ServiceProvider.GetService<IEmailService>();
             var repo = execScope.ServiceProvider.GetRequiredService<IAutomationRepository>();

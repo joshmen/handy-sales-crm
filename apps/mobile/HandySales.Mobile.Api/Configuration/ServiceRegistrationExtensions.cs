@@ -79,9 +79,8 @@ public static class ServiceRegistrationExtensions
         if (environment != "Testing")
         {
             services.AddDbContext<HandySalesDbContext>(options =>
-                options.UseMySql(
-                    config.GetConnectionString("DefaultConnection"),
-                    ServerVersion.AutoDetect(config.GetConnectionString("DefaultConnection"))
+                options.UseNpgsql(
+                    config.GetConnectionString("DefaultConnection")
                 ));
         }
 

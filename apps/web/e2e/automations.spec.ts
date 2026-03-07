@@ -45,7 +45,7 @@ test.describe('Automations Page', () => {
     // Click the label (parent of checkbox)
     await toggleArea.locator('label').click();
 
-    // If was active → confirm deactivation dialog
+    // If was active -> confirm deactivation dialog
     if (wasChecked) {
       const confirmBtn = page.getByRole('button', { name: /Desactivar/i });
       if (await confirmBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
@@ -111,7 +111,7 @@ test.describe('Automations Page', () => {
       const btn = playButtons.nth(i);
       await btn.scrollIntoViewIfNeeded();
       await btn.click();
-      // Wait for each test to complete (spinner → result toast)
+      // Wait for each test to complete (spinner -> result toast)
       await page.waitForTimeout(6000);
     }
 
@@ -119,5 +119,35 @@ test.describe('Automations Page', () => {
     const historialSection = page.locator('[data-tour="automations-historial"]');
     await historialSection.scrollIntoViewIfNeeded();
     await expect(historialSection).toBeVisible({ timeout: 5000 });
+  });
+
+  test('should NOT show any Premium/Lock badges on automation cards', async ({ page }) => {
+    await navigateToAutomations(page);
+
+    // No Crown/Pro badges should exist
+    const proBadges = page.locator('text=Pro').filter({ has: page.locator('svg') });
+    await expect(proBadges).toHaveCount(0);
+
+    // No "Mejorar plan" buttons should exist
+    const lockButtons = page.getByRole('button', { name: /Mejorar plan/i });
+    await expect(lockButtons).toHaveCount(0);
+  });
+
+  test('all automation cards should have toggle switches (no locked cards)', async ({ page }) => {
+    await navigateToAutomations(page);
+
+    const cards = page.locator('[data-tour="automations-grid"] > div');
+    const cardCount = await cards.count();
+    expect(cardCount).toBeGreaterThanOrEqual(5);
+
+    // Each card's toggle area should have an input[type="checkbox"] (Switch), not a lock button
+    const toggleAreas = page.locator('[data-tour="automations-toggle"]');
+    const toggleCount = await toggleAreas.count();
+    expect(toggleCount).toBe(cardCount);
+
+    // Count switches - should match card count
+    const switches = page.locator('[data-tour="automations-toggle"] input[type="checkbox"]');
+    const switchCount = await switches.count();
+    expect(switchCount).toBe(cardCount);
   });
 });

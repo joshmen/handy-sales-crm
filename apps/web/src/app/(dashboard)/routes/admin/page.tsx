@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { SelectCompat as Select } from '@/components/ui/SelectCompat';
 import { Modal } from '@/components/ui/Modal';
 import { Badge } from '@/components/ui/Badge';
@@ -473,10 +474,10 @@ export default function RouteAdminPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Fecha de asignación
                 </label>
-                <Input
-                  type="date"
+                <DateTimePicker
+                  mode="date"
                   value={format(selectedDate, 'yyyy-MM-dd')}
-                  onChange={e => setSelectedDate(new Date(e.target.value))}
+                  onChange={(val) => setSelectedDate(new Date(val))}
                 />
               </div>
 

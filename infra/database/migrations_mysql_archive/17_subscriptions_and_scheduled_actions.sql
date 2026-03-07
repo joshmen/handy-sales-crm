@@ -85,7 +85,7 @@ CREATE TABLE IF NOT EXISTS subscription_plans (
 
 INSERT INTO subscription_plans (nombre, codigo, precio_mensual, precio_anual, max_usuarios, max_productos, max_clientes_por_mes, incluye_reportes, incluye_soporte_prioritario, orden)
 VALUES
-    ('Gratis', 'FREE', 0, 0, 2, 50, 20, 0, 0, 1),
+    ('Trial', 'FREE', 0, 0, 2, 50, 20, 0, 0, 1),
     ('Básico', 'BASIC', 499, 4990, 5, 500, 100, 1, 0, 2),
     ('Profesional', 'PRO', 999, 9990, 20, 5000, 500, 1, 1, 3)
 ON DUPLICATE KEY UPDATE nombre = VALUES(nombre);

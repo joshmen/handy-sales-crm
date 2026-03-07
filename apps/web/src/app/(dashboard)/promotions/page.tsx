@@ -8,6 +8,8 @@ import { useBatchOperations } from '@/hooks/useBatchOperations';
 import { BatchActionBar } from '@/components/shared/BatchActionBar';
 import { BatchConfirmModal } from '@/components/shared/BatchConfirmModal';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
+import { Button } from '@/components/ui/Button';
+import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { PromocionDto, PromocionCreateRequest, promotionService } from '@/services/api/promotions';
 import { toast } from '@/hooks/useToast';
@@ -300,7 +302,7 @@ export default function PromotionsPage() {
           <button
             data-tour="promotions-create-btn"
             onClick={handleOpenCreate}
-            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-success rounded-lg hover:bg-success/90 transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>Nueva promoción</span>
@@ -321,7 +323,7 @@ export default function PromotionsPage() {
           <button
             onClick={handleRefresh}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-success rounded-lg hover:bg-success/90 transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             <span className="hidden sm:inline">Actualizar</span>
@@ -357,7 +359,7 @@ export default function PromotionsPage() {
             <div className="flex flex-col items-center justify-center py-12">
               <Gift className="w-12 h-12 text-yellow-300 mb-3" />
               <p className="text-sm text-gray-500 mb-3">No hay promociones</p>
-              <button onClick={handleOpenCreate} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700">
+              <button onClick={handleOpenCreate} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-success rounded-lg hover:bg-success/90">
                 <Plus className="w-4 h-4" /> Nueva promocion
               </button>
             </div>
@@ -369,7 +371,7 @@ export default function PromotionsPage() {
                     <button
                       onClick={() => batch.handleToggleSelect(promo.id)}
                       className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                        batch.selectedIds.has(promo.id) ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300'
+                        batch.selectedIds.has(promo.id) ? 'bg-success border-success text-success-foreground' : 'border-gray-300'
                       }`}
                     >
                       {batch.selectedIds.has(promo.id) && <Check className="w-3 h-3" />}
@@ -417,7 +419,7 @@ export default function PromotionsPage() {
                 onClick={batch.handleSelectAllVisible}
                 className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
                   batch.allVisibleSelected
-                    ? 'bg-green-600 border-green-600 text-white'
+                    ? 'bg-success border-success text-success-foreground'
                     : batch.someVisibleSelected
                     ? 'bg-green-100 border-green-600'
                     : 'border-gray-300 hover:border-green-500'
@@ -451,7 +453,7 @@ export default function PromotionsPage() {
                 </p>
                 <button
                   onClick={handleOpenCreate}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-success rounded-lg hover:bg-success/90"
                 >
                   <Plus className="w-4 h-4" />
                   Nueva promocion
@@ -472,7 +474,7 @@ export default function PromotionsPage() {
                         onClick={() => batch.handleToggleSelect(promo.id)}
                         className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
                           batch.selectedIds.has(promo.id)
-                            ? 'bg-green-600 border-green-600 text-white'
+                            ? 'bg-success border-success text-success-foreground'
                             : 'border-gray-300 hover:border-green-500'
                         }`}
                       >
@@ -599,21 +601,13 @@ export default function PromotionsPage() {
         onSave={handleSubmit}
         footer={
           <div className="flex justify-end gap-3" data-tour="promotions-drawer-actions">
-            <button
-              onClick={() => drawerRef.current?.requestClose()}
-              disabled={actionLoading}
-              className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
-            >
+            <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()} disabled={actionLoading}>
               Cancelar
-            </button>
-            <button
-              onClick={handleSubmit}
-              disabled={actionLoading}
-              className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
-            >
+            </Button>
+            <Button type="button" variant="success" onClick={handleSubmit} disabled={actionLoading} className="flex items-center gap-2">
               {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-              {editingPromotion ? 'Guardar cambios' : 'Crear promocion'}
-            </button>
+              {editingPromotion ? 'Guardar Cambios' : 'Crear Promoción'}
+            </Button>
           </div>
         }
       >
@@ -707,19 +701,20 @@ export default function PromotionsPage() {
           <div className="grid grid-cols-2 gap-4" data-tour="promotions-drawer-dates">
             <div>
               <label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">Fecha inicio <span className="text-red-500">*</span> <HelpTooltip tooltipKey="promo-dates" /></label>
-              <input
-                type="date"
-                {...register('fechaInicio')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              <DateTimePicker
+                mode="date"
+                value={watch('fechaInicio')}
+                onChange={(val) => setValue('fechaInicio', val, { shouldValidate: true, shouldDirty: true })}
               />
               {errors.fechaInicio && <p className="text-red-500 text-xs mt-1">{errors.fechaInicio.message}</p>}
             </div>
             <div>
               <label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">Fecha fin <span className="text-red-500">*</span></label>
-              <input
-                type="date"
-                {...register('fechaFin')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              <DateTimePicker
+                mode="date"
+                value={watch('fechaFin')}
+                onChange={(val) => setValue('fechaFin', val, { shouldValidate: true, shouldDirty: true })}
+                min={watch('fechaInicio')}
               />
               {errors.fechaFin && <p className="text-red-500 text-xs mt-1">{errors.fechaFin.message}</p>}
             </div>

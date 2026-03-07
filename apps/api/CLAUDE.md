@@ -35,7 +35,7 @@ curl -s http://localhost:1050/health
 
 ### Tech Stack
 - **Framework**: .NET 8 Web API with Minimal APIs
-- **Database**: MySQL 8.0 with Pomelo.EntityFrameworkCore
+- **Database**: PostgreSQL 16 with Npgsql.EntityFrameworkCore
 - **Authentication**: JWT Bearer + 2FA/TOTP + session management
 - **Real-time**: SignalR (self-hosted hub at `/hubs/notifications`)
 - **Validation**: FluentValidation
@@ -63,7 +63,7 @@ curl -s http://localhost:1050/health
 4. **HandySales.Infrastructure** (`libs/HandySales.Infrastructure/`) — Data Access
    - `HandySalesDbContext` with multi-tenant global query filters
    - Repository implementations with `AsNoTracking` for reads
-   - `DatabaseMigrator` with MySQL advisory lock for safe auto-migration
+   - `DatabaseMigrator` with PostgreSQL advisory lock for safe auto-migration
 
 5. **HandySales.Shared** (`libs/HandySales.Shared/`) — Cross-cutting utilities
 
@@ -80,7 +80,7 @@ curl -s http://localhost:1050/health
 - Crash report collection endpoint (mobile app)
 
 ### Database
-- MySQL 8.0 (Pomelo provider), dual schemas: `handy_erp` + `handy_billing`
+- PostgreSQL 16 (Npgsql provider), dual schemas: `handy_erp` + `handy_billing`
 - Multi-tenant: all business tables have `tenant_id`
 - Soft deletes via `SaveChangesAsync` override (converts `.Remove()` to `EliminadoEn` timestamp)
 

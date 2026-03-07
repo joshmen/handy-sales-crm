@@ -6,14 +6,14 @@
 
 ```
 Frontend (apps/web/)         -> Next.js 15 + React 19 + TypeScript + Tailwind CSS 3.4
-Main API (apps/api/)         -> .NET 8, Clean Architecture, EF Core, MySQL 8.0
+Main API (apps/api/)         -> .NET 8, Clean Architecture, EF Core, PostgreSQL 16
 Mobile API (apps/mobile/)    -> .NET 8, Minimal APIs for React Native app (SEPARATE MICROSERVICE)
-Billing API (apps/billing/)  -> .NET 9, SAT CFDI compliance, separate MySQL schema
+Billing API (apps/billing/)  -> .NET 9, SAT CFDI compliance, separate PostgreSQL schema
 Mobile App (apps/mobile-app/) -> React Native (Expo), TypeScript, WatermelonDB, offline-first
 AI Gateway (apps/ai/)         -> .NET 8, OpenAI/Azure OpenAI, pgvector, RAG per tenant
 Shared Libraries (libs/)     -> Domain, Application, Infrastructure, Shared (shared across microservices)
-Database (infra/database/)   -> MySQL 8.0 dual: handy_erp + handy_billing
-Deployment                   -> Vercel (frontend) + Railway (APIs + MySQL) ~$25-40/month
+Database (infra/database/)   -> PostgreSQL 16 dual: handy_erp + handy_billing
+Deployment                   -> Vercel (frontend) + Railway (APIs + PostgreSQL) ~$25-40/month
 ```
 
 ## Core Business Entities
@@ -48,5 +48,5 @@ Deployment                   -> Vercel (frontend) + Railway (APIs + MySQL) ~$25-
 | Backend | .NET 8/9, C# 12, EF Core, FluentValidation, AutoMapper, Serilog, JWT Bearer |
 | Mobile | React Native 0.76+, Expo SDK 52, TypeScript 5, WatermelonDB, Zustand, TanStack Query, react-native-maps, FCM |
 | AI | .NET 8, OpenAI API (gpt-4o-mini default), pgvector, text-embedding-3-small |
-| Database | MySQL 8.0 (Pomelo provider), multi-tenant with tenant_id |
+| Database | PostgreSQL 16 (Npgsql provider), multi-tenant with tenant_id |
 | Infra | Docker, Azure Container Instances, Nginx, Vercel (frontend) |

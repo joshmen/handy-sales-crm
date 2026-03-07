@@ -11,6 +11,7 @@ import { productService } from '@/services/api/products';
 import { Product } from '@/types';
 import { toast } from '@/hooks/useToast';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
+import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { exportToCsv } from '@/services/api/importExport';
@@ -26,6 +27,7 @@ import {
   Package,
   RefreshCw,
   ChevronDown,
+  Loader2,
 } from 'lucide-react';
 import { ListPagination } from '@/components/ui/ListPagination';
 import { SearchBar } from '@/components/common/SearchBar';
@@ -590,21 +592,13 @@ export default function InventoryPage() {
           onSave={handleSubmit}
           footer={
             <div data-tour="inventory-drawer-actions" className="flex justify-end gap-3">
-              <button
-                onClick={() => drawerRef.current?.requestClose()}
-                disabled={submitting}
-                className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 transition-colors disabled:opacity-50"
-              >
+              <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()} disabled={submitting}>
                 Cancelar
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={submitting || (modalMode === 'create' && !watch('productoId'))}
-                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center gap-2"
-              >
-                {submitting && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />}
-                {submitting ? 'Guardando...' : modalMode === 'create' ? 'Agregar' : 'Guardar cambios'}
-              </button>
+              </Button>
+              <Button type="button" variant="success" onClick={handleSubmit} disabled={submitting || (modalMode === 'create' && !watch('productoId'))} className="flex items-center gap-2">
+                {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                {modalMode === 'create' ? 'Crear Ajuste' : 'Guardar Cambios'}
+              </Button>
             </div>
           }
         >

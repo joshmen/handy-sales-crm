@@ -25,6 +25,7 @@ import {
   Search,
 } from 'lucide-react';
 import { Drawer } from '@/components/ui/Drawer';
+import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { toast } from '@/hooks/useToast';
 import {
   getAnnouncements,
@@ -661,11 +662,10 @@ export default function AnnouncementsPage() {
           {/* Expiration */}
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-gray-700">Expiración (opcional)</label>
-            <input
-              type="datetime-local"
+            <DateTimePicker
+              mode="datetime"
               value={form.expiresAt || ''}
-              onChange={(e) => setForm(f => ({ ...f, expiresAt: e.target.value || undefined }))}
-              className="w-full h-10 px-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+              onChange={(val) => setForm(f => ({ ...f, expiresAt: val || undefined }))}
             />
           </div>
 

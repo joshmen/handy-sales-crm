@@ -28,7 +28,8 @@ namespace HandySales.Tests.Integration.Auth
                 Password = "Password123",
                 Nombre = "Usuario Test",
                 NombreEmpresa = "Empresa Test",
-                RFC = "ABC123456789",
+                IdentificadorFiscal = "XAXX010101000",
+                TipoIdentificadorFiscal = "RFC",
                 Contacto = "Contacto Test"
             };
 

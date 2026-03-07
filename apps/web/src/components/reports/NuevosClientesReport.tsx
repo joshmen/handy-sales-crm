@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { ReportFilters } from './ReportFilters';
+import { useChartTheme } from '@/hooks/useChartTheme';
 import { ReportKPICards } from './ReportKPICards';
 import { ReportTable, ReportColumn } from './ReportTable';
 import { getNuevosClientes, NuevoCliente } from '@/services/api/reports';
@@ -22,6 +23,7 @@ const fmtDate = (d: string) => libFmtDate(d, null, { day: '2-digit', month: 'sho
 export function NuevosClientesReport() {
   const { formatDate } = useFormatters();
   const [dates, setDates] = useState(defaultDates);
+  const ct = useChartTheme();
   const [data, setData] = useState<{ clientes: NuevoCliente[]; total: number; porMes: { mes: string; cantidad: number }[] } | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -61,7 +63,7 @@ export function NuevosClientesReport() {
               <p className="text-xs font-medium text-gray-600 mb-3">Nuevos clientes por mes</p>
               <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={data.porMes}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
                   <XAxis dataKey="mes" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
                   <Tooltip />

@@ -128,12 +128,18 @@ public record AutomationContext(
 
     /// <summary>
     /// Send notification to a specific user via the given canal.
+    /// Respects user's NotificationPreferences (push, email). Defaults to enabled if no prefs saved.
     /// For email: uses branded template with company logo, address, and colors.
     /// </summary>
     public async Task NotifyUserAsync(int userId, string titulo, string mensaje, string tipo, string canal, CancellationToken ct,
         Dictionary<string, string>? data = null)
     {
-        if (canal.Contains("push"))
+        var prefs = await Db.NotificationPreferences
+            .AsNoTracking()
+            .Where(p => p.UserId == userId && p.TenantId == TenantId)
+            .FirstOrDefaultAsync(ct);
+
+        if (canal.Contains("push") && (prefs?.PushNotifications ?? true))
         {
             await Notifications.EnviarNotificacionAsync(new SendNotificationDto
             {
@@ -145,7 +151,7 @@ public record AutomationContext(
             });
         }
 
-        if (canal.Contains("email") && EmailService != null)
+        if (canal.Contains("email") && EmailService != null && (prefs?.EmailNotifications ?? true))
         {
             var email = await Db.Usuarios
                 .Where(u => u.Id == userId)
@@ -177,6 +183,12 @@ public record AutomationContext(
         var userIds = await ResolveDestinatarioIdsAsync(ct);
         foreach (var userId in userIds)
         {
+            var emailPrefs = await Db.NotificationPreferences
+                .AsNoTracking()
+                .Where(p => p.UserId == userId && p.TenantId == TenantId)
+                .FirstOrDefaultAsync(ct);
+            if (!(emailPrefs?.EmailNotifications ?? true)) continue;
+
             var email = await Db.Usuarios
                 .Where(u => u.Id == userId)
                 .Select(u => u.Email)
@@ -197,6 +209,12 @@ public record AutomationContext(
 
         var adminId = await GetAdminUserIdAsync(ct);
         if (!adminId.HasValue) return;
+
+        var adminPrefs = await Db.NotificationPreferences
+            .AsNoTracking()
+            .Where(p => p.UserId == adminId.Value && p.TenantId == TenantId)
+            .FirstOrDefaultAsync(ct);
+        if (!(adminPrefs?.EmailNotifications ?? true)) return;
 
         var email = await Db.Usuarios
             .Where(u => u.Id == adminId.Value)

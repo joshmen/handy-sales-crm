@@ -118,7 +118,7 @@ public class HandySalesDbContext : DbContext
                   .HasConversion(
                       v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
                       v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>())
-                  .HasColumnType("json")
+                  .HasColumnType("jsonb")
                   .Metadata.SetValueComparer(stringListComparer);
         });
 
@@ -545,8 +545,8 @@ public class HandySalesDbContext : DbContext
             entity.Property(ims => ims.IpAddress).HasMaxLength(45).IsRequired();
             entity.Property(ims => ims.UserAgent).HasMaxLength(500);
             entity.Property(ims => ims.Status).HasMaxLength(20).IsRequired();
-            entity.Property(ims => ims.ActionsPerformed).HasColumnType("json");
-            entity.Property(ims => ims.PagesVisited).HasColumnType("json");
+            entity.Property(ims => ims.ActionsPerformed).HasColumnType("jsonb");
+            entity.Property(ims => ims.PagesVisited).HasColumnType("jsonb");
 
             // Relación con Usuario (SuperAdmin)
             entity.HasOne(ims => ims.SuperAdmin)
@@ -659,7 +659,7 @@ public class HandySalesDbContext : DbContext
         modelBuilder.Entity<AutomationTemplate>(entity =>
         {
             entity.HasIndex(a => a.Slug).IsUnique();
-            entity.Property(a => a.DefaultParamsJson).HasColumnType("json");
+            entity.Property(a => a.DefaultParamsJson).HasColumnType("jsonb");
         });
 
         // Configure TenantAutomation entity
@@ -681,7 +681,7 @@ public class HandySalesDbContext : DbContext
                   .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasIndex(a => new { a.TenantId, a.TemplateId }).IsUnique();
-            entity.Property(a => a.ParamsJson).HasColumnType("json");
+            entity.Property(a => a.ParamsJson).HasColumnType("jsonb");
         });
 
         // Configure AutomationExecution entity
@@ -763,6 +763,9 @@ public class HandySalesDbContext : DbContext
         modelBuilder.Entity<Domain.Entities.DatosEmpresa>(entity =>
         {
             entity.HasIndex(d => d.TenantId).IsUnique();
+            entity.HasIndex(d => d.IdentificadorFiscal)
+                  .IsUnique()
+                  .HasFilter("\"identificador_fiscal\" IS NOT NULL AND \"eliminado_en\" IS NULL");
             entity.HasOne(d => d.Tenant)
                   .WithOne(t => t.DatosEmpresa)
                   .HasForeignKey<Domain.Entities.DatosEmpresa>(d => d.TenantId);

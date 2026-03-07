@@ -5,6 +5,7 @@ public class SocialRegisterDto
     public string Provider { get; set; } = string.Empty;
     public string? AvatarUrl { get; set; }
     public string NombreEmpresa { get; set; } = string.Empty;
-    public string? RFC { get; set; }
+    public string? IdentificadorFiscal { get; set; }
+    public string? TipoIdentificadorFiscal { get; set; }
     public string? Contacto { get; set; }
 }

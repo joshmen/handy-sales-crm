@@ -139,9 +139,8 @@ public static class ServiceRegistrationExtensions
         {
             // No registrar DbContext aquí: los tests usarán Sqlite desde CustomWebApplicationFactory
             services.AddDbContext<HandySalesDbContext>(options =>
-             options.UseMySql(
-                 config.GetConnectionString("DefaultConnection"),
-                 new MySqlServerVersion(new Version(8, 0, 0))
+             options.UseNpgsql(
+                 config.GetConnectionString("DefaultConnection")
              ));
         }
         services.AddFluentValidationAutoValidation();

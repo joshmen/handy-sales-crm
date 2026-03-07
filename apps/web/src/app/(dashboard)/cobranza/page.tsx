@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Modal } from '@/components/ui/Modal';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
+import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ExportButton } from '@/components/shared/ExportButton';
 import { HelpTooltip } from '@/components/help/HelpTooltip';
@@ -496,23 +497,24 @@ export default function CobranzaPage() {
 
           {/* Filter Row */}
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <div data-tour="cobranza-date-filter" className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-violet-500" />
-              <input
-                type="date"
+            <div data-tour="cobranza-date-filter">
+              <DateTimePicker
+                compact
+                mode="date"
                 value={dates.desde}
-                onChange={(e) => { setDates(d => ({ ...d, desde: e.target.value })); setActivePreset(null); }}
-                className="pl-9 pr-3 py-2 text-xs border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                onChange={(val) => { setDates(d => ({ ...d, desde: val })); setActivePreset(null); }}
+                placeholder="Desde"
               />
             </div>
             <span className="text-xs text-gray-400">—</span>
-            <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-violet-500" />
-              <input
-                type="date"
+            <div>
+              <DateTimePicker
+                compact
+                mode="date"
                 value={dates.hasta}
-                onChange={(e) => { setDates(d => ({ ...d, hasta: e.target.value })); setActivePreset(null); }}
-                className="pl-9 pr-3 py-2 text-xs border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                onChange={(val) => { setDates(d => ({ ...d, hasta: val })); setActivePreset(null); }}
+                placeholder="Hasta"
+                min={dates.desde}
               />
             </div>
             <button
@@ -1390,10 +1392,10 @@ export default function CobranzaPage() {
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Fecha del Cobro</label>
-            <input
-              type="date"
-              {...register('fechaCobro')}
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
+            <DateTimePicker
+              mode="date"
+              value={watch('fechaCobro')}
+              onChange={(val) => setValue('fechaCobro', val, { shouldValidate: true, shouldDirty: true })}
             />
           </div>
           <div>

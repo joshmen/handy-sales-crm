@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button, Input } from '@/components/ui';
+import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
 import { SelectCompat as Select } from '@/components/ui/SelectCompat';
 import { Calendar } from 'lucide-react';
@@ -164,10 +165,11 @@ export const VisitModal: React.FC<VisitModalProps> = ({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input
+          <DateTimePicker
             label="Fecha *"
-            type="date"
-            {...register('date')}
+            mode="date"
+            value={watch('date')}
+            onChange={(val) => setValue('date', val, { shouldValidate: true, shouldDirty: true })}
             error={errors.date?.message}
           />
 

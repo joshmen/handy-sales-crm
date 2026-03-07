@@ -25,8 +25,7 @@ builder.Services.AddSwaggerConfiguration();
 builder.Services.AddDbContext<BillingDbContext>(options =>
 {
     var connectionString = builder.Configuration.GetConnectionString("BillingConnection");
-    var serverVersion = new MySqlServerVersion(new Version(8, 0, 0));
-    options.UseMySql(connectionString, serverVersion)
+    options.UseNpgsql(connectionString)
         .UseSnakeCaseNamingConvention();
 });
 

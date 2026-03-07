@@ -1,4 +1,5 @@
 using FluentValidation;
+using HandySales.Shared.Validation;
 
 namespace HandySales.Application.Usuarios.Validators
 {
@@ -20,9 +21,11 @@ namespace HandySales.Application.Usuarios.Validators
             RuleFor(x => x.NombreEmpresa)
                 .NotEmpty().WithMessage("El nombre de la empresa es obligatorio.");
 
-            RuleFor(x => x.RFC)
-                .MaximumLength(13).WithMessage("El RFC no debe exceder los 13 caracteres.")
-                .When(x => !string.IsNullOrWhiteSpace(x.RFC));
+            RuleFor(x => x.IdentificadorFiscal)
+                .MaximumLength(20).WithMessage("El identificador fiscal no debe exceder los 20 caracteres.")
+                .Must((dto, id) => FiscalIdValidator.Validate(id, dto.TipoIdentificadorFiscal) == null)
+                .WithMessage(dto => FiscalIdValidator.Validate(dto.IdentificadorFiscal, dto.TipoIdentificadorFiscal) ?? "")
+                .When(x => !string.IsNullOrWhiteSpace(x.IdentificadorFiscal));
 
             RuleFor(x => x.Contacto)
                 .MaximumLength(100).WithMessage("El nombre de contacto no debe exceder los 100 caracteres.")

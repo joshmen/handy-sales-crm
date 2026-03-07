@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Modal } from '@/components/ui/Modal';
+import { Button } from '@/components/ui/Button';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
 import { useBatchOperations } from '@/hooks/useBatchOperations';
 import { BatchActionBar } from '@/components/shared/BatchActionBar';
@@ -389,7 +390,7 @@ export default function ZonesPage() {
           <button
             data-tour="zones-add-btn"
             onClick={handleCreateZone}
-            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-success rounded-lg hover:bg-success/90 transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>Nueva zona</span>
@@ -405,7 +406,7 @@ export default function ZonesPage() {
           <button
             onClick={handleRefresh}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-success rounded-lg hover:bg-success/90 transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 text-white ${loading ? 'animate-spin' : ''}`} />
             <span className="hidden sm:inline">Actualizar</span>
@@ -451,7 +452,7 @@ export default function ZonesPage() {
                 {!searchTerm && (
                   <button
                     onClick={handleCreateZone}
-                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
+                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-success rounded-lg hover:bg-success/90"
                   >
                     <Plus className="w-4 h-4" />
                     Agregar Zona
@@ -474,7 +475,7 @@ export default function ZonesPage() {
                     onClick={() => batch.handleToggleSelect(parseInt(zone.id))}
                     className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
                       batch.selectedIds.has(parseInt(zone.id))
-                        ? 'bg-green-600 border-green-600 text-white'
+                        ? 'bg-success border-success text-success-foreground'
                         : 'border-gray-300 hover:border-green-500'
                     }`}
                   >
@@ -531,7 +532,7 @@ export default function ZonesPage() {
                   onClick={batch.handleSelectAllVisible}
                   className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
                     batch.allVisibleSelected
-                      ? 'bg-green-600 border-green-600 text-white'
+                      ? 'bg-success border-success text-success-foreground'
                       : batch.someVisibleSelected
                       ? 'bg-green-100 border-green-600'
                       : 'border-gray-300 hover:border-green-500'
@@ -568,7 +569,7 @@ export default function ZonesPage() {
                     {!searchTerm && (
                       <button
                         onClick={handleCreateZone}
-                        className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
+                        className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-success rounded-lg hover:bg-success/90"
                       >
                         <Plus className="w-4 h-4" />
                         Agregar Zona
@@ -593,7 +594,7 @@ export default function ZonesPage() {
                         onClick={() => batch.handleToggleSelect(parseInt(zone.id))}
                         className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
                           batch.selectedIds.has(parseInt(zone.id))
-                            ? 'bg-green-600 border-green-600 text-white'
+                            ? 'bg-success border-success text-success-foreground'
                             : 'border-gray-300 hover:border-green-500'
                         }`}
                       >
@@ -785,23 +786,13 @@ export default function ZonesPage() {
           onSave={handleSubmit(handleSaveZone)}
           footer={
             <div data-tour="zones-drawer-actions" className="flex items-center justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => drawerRef.current?.requestClose()}
-                disabled={savingZone}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
-              >
+              <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()} disabled={savingZone}>
                 Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleSubmit(handleSaveZone)}
-                disabled={savingZone}
-                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
-              >
+              </Button>
+              <Button type="button" variant="success" onClick={handleSubmit(handleSaveZone)} disabled={savingZone} className="flex items-center gap-2">
                 {savingZone && <Loader2 className="w-4 h-4 animate-spin" />}
                 {editingZone ? 'Guardar Cambios' : 'Crear Zona'}
-              </button>
+              </Button>
             </div>
           }
         >

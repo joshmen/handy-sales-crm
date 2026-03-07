@@ -490,7 +490,7 @@ export default function ProfilePage() {
               <div data-tour="profile-avatar" className="relative">
                 <Avatar className="h-24 w-24">
                   <AvatarImage src={profile.avatarUrl} alt={profile.nombre} />
-                  <AvatarFallback className="text-2xl bg-gradient-to-br from-blue-500 to-purple-500 text-white">
+                  <AvatarFallback className="text-2xl bg-primary/15 text-primary font-semibold">
                     {getInitials(profile.nombre)}
                   </AvatarFallback>
                 </Avatar>

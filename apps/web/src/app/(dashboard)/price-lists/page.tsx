@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
+import { Button } from '@/components/ui/Button';
 import { useBatchOperations } from '@/hooks/useBatchOperations';
 import { BatchActionBar } from '@/components/shared/BatchActionBar';
 import { BatchConfirmModal } from '@/components/shared/BatchConfirmModal';
@@ -558,23 +559,13 @@ export default function PriceListsPage() {
         onSave={handleSaveList}
         footer={
           <div data-tour="pricelists-drawer-actions" className="flex items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => drawerRef.current?.requestClose()}
-              disabled={savingList}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
-            >
+            <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()} disabled={savingList}>
               Cancelar
-            </button>
-            <button
-              type="button"
-              onClick={handleSaveList}
-              disabled={savingList}
-              className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
-            >
+            </Button>
+            <Button type="button" variant="success" onClick={handleSaveList} disabled={savingList} className="flex items-center gap-2">
               {savingList && <Loader2 className="w-4 h-4 animate-spin" />}
               {editingList ? 'Guardar Cambios' : 'Crear Lista'}
-            </button>
+            </Button>
           </div>
         }
       >

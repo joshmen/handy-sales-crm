@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { ReportFilters } from './ReportFilters';
+import { useChartTheme } from '@/hooks/useChartTheme';
 import { ReportTable, ReportColumn } from './ReportTable';
 import { getVentasVendedor, VentaVendedor } from '@/services/api/reports';
 import { toast } from '@/hooks/useToast';
@@ -21,6 +22,7 @@ export function VentasVendedorReport() {
   const { formatCurrency } = useFormatters();
   const fmt = (n: number) => formatCurrency(n);
   const [dates, setDates] = useState(defaultDates);
+  const ct = useChartTheme();
   const [data, setData] = useState<VentaVendedor[]>([]);
   const [loading, setLoading] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
@@ -108,7 +110,7 @@ export function VentasVendedorReport() {
           <div ref={chartRef} className="bg-white border border-gray-200 rounded-lg p-4">
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={data} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
                 <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} />
                 <YAxis type="category" dataKey="nombre" tick={{ fontSize: 11 }} width={120} />
                 <Tooltip formatter={(v) => [fmt(Number(v)), 'Ventas']} />

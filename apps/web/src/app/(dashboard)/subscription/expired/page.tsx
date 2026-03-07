@@ -68,7 +68,7 @@ export default function SubscriptionExpiredPage() {
     : null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-orange-50 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-orange-50 dark:from-red-950/30 dark:via-background dark:to-orange-950/30 p-4">
       <div className="max-w-5xl mx-auto pt-8">
         {/* Alert Banner */}
         <div className="bg-red-50 border border-red-200 rounded-xl p-6 mb-8">

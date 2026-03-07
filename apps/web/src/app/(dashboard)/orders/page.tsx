@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
+import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { OrderForm, OrderFormHandle } from '@/components/orders/OrderForm';
 import { Order } from '@/types/orders';
@@ -355,22 +356,23 @@ export default function OrdersPage() {
           {/* Filter Row */}
           <div className="flex flex-wrap items-center gap-3 mb-4">
             {/* Date Filters */}
-            <div className="flex items-center gap-1.5" data-tour="orders-date-filter">
-              <label className="text-xs text-gray-500 whitespace-nowrap">Desde</label>
-              <input
-                type="date"
+            <div data-tour="orders-date-filter">
+              <DateTimePicker
+                compact
+                mode="date"
                 value={fechaDesde}
-                onChange={(e) => { setFechaDesde(e.target.value); setCurrentPage(1); }}
-                className="px-2 py-2 h-10 text-[13px] text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                onChange={(val) => { setFechaDesde(val); setCurrentPage(1); }}
+                placeholder="Desde"
               />
             </div>
-            <div className="flex items-center gap-1.5">
-              <label className="text-xs text-gray-500 whitespace-nowrap">Hasta</label>
-              <input
-                type="date"
+            <div>
+              <DateTimePicker
+                compact
+                mode="date"
                 value={fechaHasta}
-                onChange={(e) => { setFechaHasta(e.target.value); setCurrentPage(1); }}
-                className="px-2 py-2 h-10 text-[13px] text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                onChange={(val) => { setFechaHasta(val); setCurrentPage(1); }}
+                placeholder="Hasta"
+                min={fechaDesde}
               />
             </div>
 

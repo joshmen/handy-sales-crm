@@ -17,10 +17,10 @@
 | **Mobile API Swagger** | 1052 | http://localhost:1052/swagger |
 | **AI Gateway** | 1053 | http://localhost:1053 |
 | **AI Gateway Swagger** | 1053 | http://localhost:1053/swagger |
-| **phpMyAdmin (optional)** | 1081 | http://localhost:1081 |
+| **pgAdmin (optional)** | 1081 | http://localhost:1081 |
 | **Seq Logging UI** | 1082 | http://localhost:1082 |
 | **Seq Ingestion API** | 1341 | http://localhost:1341 |
-| **MySQL** | 3306 | localhost:3306 |
+| **PostgreSQL** | 5432 | localhost:5432 |
 
 ### Quick Reference
 ```
@@ -34,7 +34,7 @@ Seq Logs:    http://localhost:1082
 
 ## Credentials
 
-**MySQL Database:**
+**PostgreSQL Database:**
 - User: `handy_user` / Password: `handy_pass`
 - Root: `root` / Password: `root123`
 

@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
+import { Button } from '@/components/ui/Button';
 import { useBatchOperations } from '@/hooks/useBatchOperations';
 import { BatchActionBar } from '@/components/shared/BatchActionBar';
 import { BatchConfirmModal } from '@/components/shared/BatchConfirmModal';
@@ -628,21 +629,13 @@ export default function DiscountsPage() {
         onSave={handleSubmit}
         footer={
           <div className="flex justify-end gap-3" data-tour="discounts-drawer-actions">
-            <button
-              onClick={() => drawerRef.current?.requestClose()}
-              disabled={actionLoading}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
-            >
+            <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()} disabled={actionLoading}>
               Cancelar
-            </button>
-            <button
-              onClick={handleSubmit}
-              disabled={actionLoading}
-              className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
-            >
+            </Button>
+            <Button type="button" variant="success" onClick={handleSubmit} disabled={actionLoading} className="flex items-center gap-2">
               {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-              {editingDiscount ? 'Actualizar' : 'Crear'}
-            </button>
+              {editingDiscount ? 'Guardar Cambios' : 'Crear Descuento'}
+            </Button>
           </div>
         }
       >

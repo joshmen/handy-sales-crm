@@ -104,7 +104,7 @@ export const CompanyTab: React.FC<CompanyTabProps> = ({
               <div className="relative">
                 <Avatar className="h-16 w-16">
                   <AvatarImage src={companySettings.logo || ''} alt="Logo" />
-                  <AvatarFallback className="bg-gradient-to-br from-green-500 to-emerald-600 text-white text-lg font-bold">
+                  <AvatarFallback className="bg-emerald-600/15 text-emerald-700 dark:text-emerald-400 font-semibold text-lg font-bold">
                     {companySettings.name ? companySettings.name.charAt(0).toUpperCase() : 'E'}
                   </AvatarFallback>
                 </Avatar>

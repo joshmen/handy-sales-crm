@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
+import { Button } from '@/components/ui/Button';
 import { Product } from '@/types';
 import { productService } from '@/services/api/products';
 import { productCategoryService, unitService } from '@/services/api';
@@ -751,23 +752,13 @@ export default function ProductsPage() {
           }}
           footer={
             <div className="flex justify-end gap-3" data-tour="product-drawer-actions">
-              <button
-                type="button"
-                onClick={() => drawerRef.current?.requestClose()}
-                disabled={savingProduct}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
-              >
+              <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()} disabled={savingProduct}>
                 Cancelar
-              </button>
-              <button
-                type="submit"
-                form="product-form"
-                disabled={savingProduct || loadingCatalogs}
-                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
-              >
+              </Button>
+              <Button type="submit" form="product-form" variant="success" disabled={savingProduct || loadingCatalogs} className="flex items-center gap-2">
                 {savingProduct && <Loader2 className="w-4 h-4 animate-spin" />}
                 {editingProduct ? 'Guardar Cambios' : 'Crear Producto'}
-              </button>
+              </Button>
             </div>
           }
         >

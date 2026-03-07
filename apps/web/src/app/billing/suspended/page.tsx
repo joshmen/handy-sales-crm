@@ -27,7 +27,7 @@ export default function SuspendedPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 flex items-center justify-center p-4">
       <Card className="max-w-2xl w-full p-8 shadow-xl">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-20 h-20 bg-red-100 rounded-full mb-4">
@@ -86,7 +86,7 @@ export default function SuspendedPage() {
           <Button
             onClick={handleReactivate}
             disabled={isProcessing}
-            className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
+            className="w-full bg-success hover:bg-success/90"
             size="lg"
           >
             {isProcessing ? (

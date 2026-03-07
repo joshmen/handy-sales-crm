@@ -4,6 +4,7 @@ import React, { useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { Button } from '@/components/ui/Button';
 import { SearchableSelect, SearchableSelectOption } from '@/components/ui/SearchableSelect';
 import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { ClienteVisitaCreateDto, TipoVisita } from '@/types/visits';
@@ -148,19 +149,12 @@ export const VisitForm: React.FC<VisitFormProps> = ({
 
       {/* Botones */}
       <div data-tour="visits-form-actions" className="flex justify-end gap-3 pt-4 border-t border-gray-100">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-        >
+        <Button type="button" variant="outline" onClick={onCancel}>
           Cancelar
-        </button>
-        <button
-          type="submit"
-          className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
-        >
+        </Button>
+        <Button type="submit" variant="success">
           Programar Visita
-        </button>
+        </Button>
       </div>
     </form>
   );

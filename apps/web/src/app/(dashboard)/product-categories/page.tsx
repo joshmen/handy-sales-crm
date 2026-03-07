@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
+import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { toast } from '@/hooks/useToast';
 import { api } from '@/lib/api';
@@ -247,7 +248,7 @@ export default function ProductCategoriesPage() {
           <button
             onClick={handleOpenCreate}
             data-tour="product-categories-create-btn"
-            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-success rounded-lg hover:bg-success/90 transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>Nueva categoría</span>
@@ -266,7 +267,7 @@ export default function ProductCategoriesPage() {
           />
           <button
             onClick={loadCategories}
-            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-white bg-success rounded-lg hover:bg-success/90 transition-colors"
           >
             <RefreshCw className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Actualizar</span>
@@ -317,7 +318,7 @@ export default function ProductCategoriesPage() {
                     onClick={() => batch.handleToggleSelect(category.id)}
                     className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
                       batch.selectedIds.has(category.id)
-                        ? 'bg-green-600 border-green-600 text-white'
+                        ? 'bg-success border-success text-success-foreground'
                         : 'border-gray-300 hover:border-green-500'
                     }`}
                   >
@@ -362,7 +363,7 @@ export default function ProductCategoriesPage() {
                 onClick={batch.handleSelectAllVisible}
                 className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
                   batch.allVisibleSelected
-                    ? 'bg-green-600 border-green-600 text-white'
+                    ? 'bg-success border-success text-success-foreground'
                     : batch.someVisibleSelected
                     ? 'bg-green-100 border-green-600'
                     : 'border-gray-300 hover:border-green-500'
@@ -408,7 +409,7 @@ export default function ProductCategoriesPage() {
                         onClick={() => batch.handleToggleSelect(category.id)}
                         className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
                           batch.selectedIds.has(category.id)
-                            ? 'bg-green-600 border-green-600 text-white'
+                            ? 'bg-success border-success text-success-foreground'
                             : 'border-gray-300 hover:border-green-500'
                         }`}
                       >
@@ -492,23 +493,13 @@ export default function ProductCategoriesPage() {
         onSave={handleSubmit}
         footer={
           <div data-tour="product-categories-drawer-actions" className="flex items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => drawerRef.current?.requestClose()}
-              disabled={actionLoading}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
-            >
+            <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()} disabled={actionLoading}>
               Cancelar
-            </button>
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={actionLoading}
-              className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
-            >
+            </Button>
+            <Button type="button" variant="success" onClick={handleSubmit} disabled={actionLoading} className="flex items-center gap-2">
               {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
               {editingCategory ? 'Guardar Cambios' : 'Crear Categoría'}
-            </button>
+            </Button>
           </div>
         }
       >

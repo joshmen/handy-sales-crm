@@ -4,6 +4,7 @@ using HandySales.Infrastructure.Persistence;
 using HandySales.Shared.Email;
 using HandySales.Shared.Security;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using HandySales.Application.ActivityTracking.Services;
 using HandySales.Application.CompanySettings.Interfaces;
 using HandySales.Application.Tenants.Interfaces;
@@ -75,18 +76,26 @@ public class AuthService
             SubscriptionStatus = "Trial"
         };
 
+        // Stage both Tenant + DatosEmpresa before single SaveChanges (atomic)
         _db.Tenants.Add(tenant);
-        await _db.SaveChangesAsync();
-
-        // Crear DatosEmpresa para el nuevo tenant
         var datosEmpresa = new DatosEmpresa
         {
-            TenantId = tenant.Id,
-            RFC = dto.RFC,
+            Tenant = tenant,
+            IdentificadorFiscal = dto.IdentificadorFiscal,
+            TipoIdentificadorFiscal = dto.TipoIdentificadorFiscal ?? "RFC",
             Contacto = dto.Contacto
         };
         _db.DatosEmpresa.Add(datosEmpresa);
-        await _db.SaveChangesAsync();
+        try
+        {
+            await _db.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex) when (
+            ex.InnerException is PostgresException pgEx && pgEx.SqlState == "23505"
+            && pgEx.Message.Contains("identificador_fiscal"))
+        {
+            throw new InvalidOperationException("Este identificador fiscal ya tiene una cuenta registrada.");
+        }
 
         // Crear carpeta en Cloudinary para el nuevo tenant
         await CreateCloudinaryFolderAsync(tenant);
@@ -139,18 +148,26 @@ public class AuthService
             SubscriptionStatus = "Trial"
         };
 
+        // Stage both Tenant + DatosEmpresa before single SaveChanges (atomic)
         _db.Tenants.Add(tenant);
-        await _db.SaveChangesAsync();
-
-        // Crear DatosEmpresa para el nuevo tenant
         var datosEmpresa = new DatosEmpresa
         {
-            TenantId = tenant.Id,
-            RFC = dto.RFC,
+            Tenant = tenant,
+            IdentificadorFiscal = dto.IdentificadorFiscal,
+            TipoIdentificadorFiscal = dto.TipoIdentificadorFiscal ?? "RFC",
             Contacto = dto.Contacto
         };
         _db.DatosEmpresa.Add(datosEmpresa);
-        await _db.SaveChangesAsync();
+        try
+        {
+            await _db.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex) when (
+            ex.InnerException is PostgresException pgEx && pgEx.SqlState == "23505"
+            && pgEx.Message.Contains("identificador_fiscal"))
+        {
+            throw new InvalidOperationException("Este identificador fiscal ya tiene una cuenta registrada.");
+        }
 
         // Crear carpeta en Cloudinary
         await CreateCloudinaryFolderAsync(tenant);

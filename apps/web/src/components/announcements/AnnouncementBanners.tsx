@@ -33,62 +33,62 @@ interface BannerStyle {
 function getBannerStyle(tipo: string, prioridad: string): BannerStyle {
   if (tipo === 'Maintenance') {
     return {
-      bg: 'bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50',
-      border: 'border-amber-200/60',
+      bg: 'bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 dark:from-amber-950/40 dark:via-orange-950/30 dark:to-amber-950/40',
+      border: 'border-amber-200/60 dark:border-amber-800/40',
       icon: <Wrench className="h-4 w-4" />,
       iconBg: 'bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-sm shadow-amber-200',
       accent: 'bg-gradient-to-b from-amber-400 to-orange-500',
-      textColor: 'text-amber-900',
-      dismissHover: 'hover:bg-amber-200/40',
+      textColor: 'text-amber-900 dark:text-amber-200',
+      dismissHover: 'hover:bg-amber-200/40 dark:hover:bg-amber-800/30',
       shimmer: true,
     };
   }
 
   if (prioridad === 'Critical') {
     return {
-      bg: 'bg-gradient-to-r from-red-50 via-rose-50 to-red-50',
-      border: 'border-red-200/60',
+      bg: 'bg-gradient-to-r from-red-50 via-rose-50 to-red-50 dark:from-red-950/40 dark:via-rose-950/30 dark:to-red-950/40',
+      border: 'border-red-200/60 dark:border-red-800/40',
       icon: <ShieldAlert className="h-4 w-4" />,
       iconBg: 'bg-gradient-to-br from-red-500 to-rose-600 text-white shadow-sm shadow-red-200',
       accent: 'bg-gradient-to-b from-red-500 to-rose-600',
-      textColor: 'text-red-900',
-      dismissHover: 'hover:bg-red-200/40',
+      textColor: 'text-red-900 dark:text-red-200',
+      dismissHover: 'hover:bg-red-200/40 dark:hover:bg-red-800/30',
       glow: true,
     };
   }
 
   if (prioridad === 'High') {
     return {
-      bg: 'bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-50',
-      border: 'border-amber-200/60',
+      bg: 'bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-50 dark:from-amber-950/40 dark:via-yellow-950/30 dark:to-amber-950/40',
+      border: 'border-amber-200/60 dark:border-amber-800/40',
       icon: <AlertTriangle className="h-4 w-4" />,
       iconBg: 'bg-gradient-to-br from-amber-400 to-yellow-500 text-white shadow-sm shadow-amber-200',
       accent: 'bg-gradient-to-b from-amber-400 to-yellow-500',
-      textColor: 'text-amber-900',
-      dismissHover: 'hover:bg-amber-200/40',
+      textColor: 'text-amber-900 dark:text-amber-200',
+      dismissHover: 'hover:bg-amber-200/40 dark:hover:bg-amber-800/30',
     };
   }
 
   if (tipo === 'Broadcast') {
     return {
-      bg: 'bg-gradient-to-r from-teal-50 via-emerald-50 to-teal-50',
-      border: 'border-teal-200/60',
+      bg: 'bg-gradient-to-r from-teal-50 via-emerald-50 to-teal-50 dark:from-teal-950/40 dark:via-emerald-950/30 dark:to-teal-950/40',
+      border: 'border-teal-200/60 dark:border-teal-800/40',
       icon: <Megaphone className="h-4 w-4" />,
       iconBg: 'bg-gradient-to-br from-teal-500 to-emerald-600 text-white shadow-sm shadow-teal-200',
       accent: 'bg-gradient-to-b from-teal-500 to-emerald-600',
-      textColor: 'text-teal-900',
-      dismissHover: 'hover:bg-teal-200/40',
+      textColor: 'text-teal-900 dark:text-teal-200',
+      dismissHover: 'hover:bg-teal-200/40 dark:hover:bg-teal-800/30',
     };
   }
 
   return {
-    bg: 'bg-gradient-to-r from-blue-50 via-indigo-50 to-blue-50',
-    border: 'border-blue-200/60',
+    bg: 'bg-gradient-to-r from-blue-50 via-indigo-50 to-blue-50 dark:from-blue-950/40 dark:via-indigo-950/30 dark:to-blue-950/40',
+    border: 'border-blue-200/60 dark:border-blue-800/40',
     icon: <Info className="h-4 w-4" />,
     iconBg: 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-sm shadow-blue-200',
     accent: 'bg-gradient-to-b from-blue-500 to-indigo-600',
-    textColor: 'text-blue-900',
-    dismissHover: 'hover:bg-blue-200/40',
+    textColor: 'text-blue-900 dark:text-blue-200',
+    dismissHover: 'hover:bg-blue-200/40 dark:hover:bg-blue-800/30',
   };
 }
 

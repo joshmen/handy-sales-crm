@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button, Input } from '@/components/ui';
+import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { Order, OrderItem } from '@/types/orders';
 import { Client, Product } from '@/types';
@@ -232,10 +233,10 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
             <label className="block text-[13px] font-medium text-gray-700 mb-1">
               Fecha de entrega
             </label>
-            <input
-              type="date"
-              {...register('deliveryDate')}
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            <DateTimePicker
+              mode="date"
+              value={watch('deliveryDate')}
+              onChange={(val) => setValue('deliveryDate', val, { shouldValidate: true, shouldDirty: true })}
             />
           </div>
 

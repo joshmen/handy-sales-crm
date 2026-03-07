@@ -77,11 +77,11 @@ namespace HandySales.Tests.Application.Usuarios
                 Password = "segura123",
                 Nombre = "Juan",
                 NombreEmpresa = "Empresa SA",
-                RFC = new string('X', 14) // Excede 13 caracteres
+                IdentificadorFiscal = new string('X', 21) // Excede 20 caracteres
             };
 
             var result = _validator.TestValidate(dto);
-            result.ShouldHaveValidationErrorFor(x => x.RFC);
+            result.ShouldHaveValidationErrorFor(x => x.IdentificadorFiscal);
         }
 
         [Fact]
@@ -109,12 +109,81 @@ namespace HandySales.Tests.Application.Usuarios
                 Password = "segura123",
                 Nombre = "Juan Pérez",
                 NombreEmpresa = "Empresa SA",
-                RFC = "ABC1234567890",
+                IdentificadorFiscal = "XAXX010101000",
+                TipoIdentificadorFiscal = "RFC",
                 Contacto = "Persona contacto"
             };
 
             var result = _validator.TestValidate(dto);
             result.ShouldNotHaveAnyValidationErrors();
+        }
+
+        [Fact]
+        public void IdentificadorFiscalFormatoInvalido_DeberiaFallar()
+        {
+            var dto = new UsuarioRegisterDto
+            {
+                Email = "user@demo.com",
+                Password = "segura123",
+                Nombre = "Juan",
+                NombreEmpresa = "Empresa SA",
+                IdentificadorFiscal = "ABC123", // Invalid RFC format
+                TipoIdentificadorFiscal = "RFC"
+            };
+
+            var result = _validator.TestValidate(dto);
+            result.ShouldHaveValidationErrorFor(x => x.IdentificadorFiscal);
+        }
+
+        [Fact]
+        public void IdentificadorFiscalRFCValido_DeberiaPasar()
+        {
+            var dto = new UsuarioRegisterDto
+            {
+                Email = "user@demo.com",
+                Password = "segura123",
+                Nombre = "Juan",
+                NombreEmpresa = "Empresa SA",
+                IdentificadorFiscal = "XAXX010101000",
+                TipoIdentificadorFiscal = "RFC"
+            };
+
+            var result = _validator.TestValidate(dto);
+            result.ShouldNotHaveValidationErrorFor(x => x.IdentificadorFiscal);
+        }
+
+        [Fact]
+        public void IdentificadorFiscalNITValido_DeberiaPasar()
+        {
+            var dto = new UsuarioRegisterDto
+            {
+                Email = "user@demo.com",
+                Password = "segura123",
+                Nombre = "Juan",
+                NombreEmpresa = "Empresa SA",
+                IdentificadorFiscal = "900123456-7",
+                TipoIdentificadorFiscal = "NIT"
+            };
+
+            var result = _validator.TestValidate(dto);
+            result.ShouldNotHaveValidationErrorFor(x => x.IdentificadorFiscal);
+        }
+
+        [Fact]
+        public void IdentificadorFiscalVacio_DeberiaPasar()
+        {
+            var dto = new UsuarioRegisterDto
+            {
+                Email = "user@demo.com",
+                Password = "segura123",
+                Nombre = "Juan",
+                NombreEmpresa = "Empresa SA",
+                IdentificadorFiscal = "",
+                TipoIdentificadorFiscal = "RFC"
+            };
+
+            var result = _validator.TestValidate(dto);
+            result.ShouldNotHaveValidationErrorFor(x => x.IdentificadorFiscal);
         }
     }
 }

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Drawer } from '@/components/ui/Drawer';
+import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { formatTimeAgo } from '@/lib/utils';
@@ -10,7 +11,7 @@ import { automationService } from '@/services/api/automations';
 import type { AutomationTemplate, AutomationExecution } from '@/types/automations';
 import { PARAM_CONFIG, CATEGORY_COLORS, CATEGORY_LABELS } from '@/types/automations';
 import { toast } from '@/hooks/useToast';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Loader2 } from 'lucide-react';
 import {
   Robot,
   CheckCircle,
@@ -20,8 +21,6 @@ import {
   CaretDown,
   CaretUp,
   Lightning,
-  Crown,
-  Lock,
   Package,
   User,
   Users,
@@ -40,6 +39,7 @@ import {
 import type { IconProps } from '@phosphor-icons/react';
 import { Switch } from '@/components/ui/Switch';
 import { useFormatters } from '@/hooks/useFormatters';
+import { useSession } from 'next-auth/react';
 
 const CATEGORIES = ['Todas', ...Object.keys(CATEGORY_LABELS)];
 
@@ -86,6 +86,9 @@ function StatusBadge({ status, size = 'sm' }: { status: string; size?: 'sm' | 'x
 
 export default function AutomationsPage() {
   const { formatDate, formatNumber } = useFormatters();
+  const { data: session } = useSession();
+  const subscriptionStatus = (session?.user as any)?.subscriptionStatus;
+  const isExpired = subscriptionStatus === 'Expired' || subscriptionStatus === 'PastDue';
   const [templates, setTemplates] = useState<AutomationTemplate[]>([]);
   const [historial, setHistorial] = useState<AutomationExecution[]>([]);
   const [historialTotal, setHistorialTotal] = useState(0);
@@ -344,29 +347,23 @@ export default function AutomationsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3" data-tour="automations-grid">
               {filtered.map(template => {
                 const Icon = getTemplateIcon(template.icono);
-                const isPremium = template.tier === 'Premium';
-                const isLocked = isPremium && !template.activada;
                 const isToggling = togglingSlug === template.slug;
 
                 return (
                   <div
                     key={template.slug}
                     className={`bg-white rounded-lg border transition-colors ${
-                      isLocked
-                        ? 'border-amber-200 bg-amber-50/20'
-                        : template.activada
+                      template.activada
                         ? 'border-green-200 hover:bg-gray-50'
                         : 'border-gray-200 hover:bg-gray-50 opacity-60'
                     }`}
                   >
                     <div className="p-3">
-                      {/* Header: Icon + Name + Toggle/Lock */}
+                      {/* Header: Icon + Name + Toggle */}
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div className="flex items-center gap-2.5 flex-1 min-w-0">
                           <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
-                            isLocked
-                              ? 'bg-amber-50 text-amber-600'
-                              : template.activada
+                            template.activada
                               ? 'bg-green-50 text-green-600'
                               : 'bg-gray-100 text-gray-400'
                           }`}>
@@ -377,11 +374,7 @@ export default function AutomationsPage() {
                               <h3 className="font-medium text-gray-900 text-[13px] leading-tight truncate">
                                 {template.nombre}
                               </h3>
-                              {isPremium && (
-                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded text-[9px] font-semibold shrink-0">
-                                  <Crown size={9} weight="fill" /> Pro
-                                </span>
-                              )}
+
                             </div>
                             <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
                               {template.descripcionCorta}
@@ -389,14 +382,7 @@ export default function AutomationsPage() {
                           </div>
                         </div>
                         <div className="shrink-0 mt-0.5" data-tour="automations-toggle">
-                          {isLocked ? (
-                            <button
-                              className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium text-amber-700 bg-amber-100 hover:bg-amber-200 rounded-md transition-colors"
-                              onClick={() => toast({ title: 'Plan Premium requerido', description: `"${template.nombre}" está disponible en el plan Premium.` })}
-                            >
-                              <Lock size={10} weight="bold" /> Mejorar plan
-                            </button>
-                          ) : isToggling ? (
+                          {isToggling ? (
                             <RefreshCw className="w-5 h-5 text-green-600 animate-spin" />
                           ) : (
                             <Switch
@@ -433,8 +419,7 @@ export default function AutomationsPage() {
                           </span>
                         )}
                         <span className="ml-auto inline-flex items-center gap-1">
-                          {!isLocked && (
-                            <button
+                          <button
                               onClick={() => handleTest(template.slug, template.nombre)}
                               disabled={testingSlug === template.slug}
                               className="text-gray-400 hover:text-green-600 text-xs transition-colors disabled:opacity-50"
@@ -442,8 +427,7 @@ export default function AutomationsPage() {
                             >
                               {testingSlug === template.slug ? <CircleNotch size={14} className="animate-spin" /> : <Play size={14} weight="fill" />}
                             </button>
-                          )}
-                          {template.defaultParamsJson && !isLocked && (
+                          {template.defaultParamsJson && (
                             <button
                               onClick={() => handleOpenConfig(template)}
                               className="text-gray-400 hover:text-gray-600 text-xs transition-colors"
@@ -576,6 +560,18 @@ export default function AutomationsPage() {
         </div>
       </PageHeader>
 
+      {isExpired && (
+        <div className="mx-4 mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-3">
+          <Warning size={20} className="text-amber-600 shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-amber-800">Tu suscripción ha expirado</p>
+            <p className="text-xs text-amber-600 mt-0.5">
+              Las automatizaciones están pausadas. Suscríbete para reactivarlas.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Config Drawer */}
       <Drawer
         isOpen={configDrawerOpen}
@@ -585,19 +581,13 @@ export default function AutomationsPage() {
         icon={<GearSix size={20} className="text-gray-500" />}
         footer={
           <div className="flex gap-3 justify-end" data-tour="automations-drawer-actions">
-            <button
-              onClick={() => setConfigDrawerOpen(false)}
-              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
-            >
+            <Button type="button" variant="outline" onClick={() => setConfigDrawerOpen(false)}>
               Cancelar
-            </button>
-            <button
-              onClick={handleSaveConfig}
-              disabled={savingConfig}
-              className="px-4 py-2 text-sm text-white bg-green-600 hover:bg-green-700 rounded-lg disabled:opacity-50 transition-colors"
-            >
-              {savingConfig ? 'Guardando...' : 'Guardar cambios'}
-            </button>
+            </Button>
+            <Button type="button" variant="success" onClick={handleSaveConfig} disabled={savingConfig} className="flex items-center gap-2">
+              {savingConfig && <Loader2 className="w-4 h-4 animate-spin" />}
+              Guardar Cambios
+            </Button>
           </div>
         }
       >
@@ -688,23 +678,17 @@ export default function AutomationsPage() {
           ¿Deseas desactivar <strong>{confirmDeactivate?.nombre}</strong>? Esta automatización dejará de ejecutarse hasta que la reactives.
         </p>
         <div className="flex gap-3 justify-end">
-          <button
-            onClick={() => setConfirmDeactivate(null)}
-            className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
-          >
+          <Button type="button" variant="outline" onClick={() => setConfirmDeactivate(null)}>
             Cancelar
-          </button>
-          <button
-            onClick={async () => {
+          </Button>
+          <Button type="button" variant="destructive" onClick={async () => {
               if (confirmDeactivate) {
                 setConfirmDeactivate(null);
                 await executeToggle(confirmDeactivate);
               }
-            }}
-            className="px-4 py-2 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
-          >
+            }}>
             Desactivar
-          </button>
+          </Button>
         </div>
       </Modal>
     </>

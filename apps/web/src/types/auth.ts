@@ -39,7 +39,7 @@ export enum UserRole {
 export interface Company {
   id: string;
   name: string;
-  rfc?: string;
+  identificadorFiscal?: string;
   email: string;
   phone: string;
   address: string;

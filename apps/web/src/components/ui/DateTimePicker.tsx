@@ -44,6 +44,8 @@ interface DateTimePickerProps {
   className?: string;
   /** Name for form integration */
   name?: string;
+  /** Compact mode for inline filter bars (smaller trigger, no label) */
+  compact?: boolean;
 }
 
 // ─── Day names (Spanish, 1 letter) ─────────────────────────────────────────
@@ -66,6 +68,7 @@ export function DateTimePicker({
   id,
   className,
   name,
+  compact = false,
 }: DateTimePickerProps) {
   const [open, setOpen] = useState(false);
 
@@ -188,7 +191,7 @@ export function DateTimePicker({
 
   return (
     <div className={cn('flex flex-col gap-1', className)}>
-      {label && (
+      {label && !compact && (
         <label htmlFor={id} className="text-sm font-medium text-gray-700">
           {label}
         </label>
@@ -201,7 +204,7 @@ export function DateTimePicker({
             id={id}
             disabled={disabled}
             className={cn(
-              'flex h-10 w-full items-center rounded-md border bg-white px-3 py-2 text-sm text-left',
+              cn('flex w-full items-center rounded-md border bg-white text-left', compact ? 'h-8 px-2 py-1 text-xs' : 'h-10 px-3 py-2 text-sm'),
               'ring-offset-background transition-colors',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-1',
               'disabled:cursor-not-allowed disabled:opacity-50',
