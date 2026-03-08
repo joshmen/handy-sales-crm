@@ -447,17 +447,8 @@ export default function ZonesPage() {
                 <MapPin className="w-12 h-12 text-teal-300 mb-4" />
                 <p className="text-lg font-medium text-gray-900">No hay zonas</p>
                 <p className="text-sm text-gray-500 mb-4">
-                  {searchTerm ? 'No se encontraron resultados' : 'Comienza agregando tu primera zona'}
+                  {searchTerm ? 'No se encontraron resultados' : 'Crea tu primera zona para comenzar'}
                 </p>
-                {!searchTerm && (
-                  <button
-                    onClick={handleCreateZone}
-                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-success rounded-lg hover:bg-success/90"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Agregar Zona
-                  </button>
-                )}
               </div>
             )}
 
@@ -564,17 +555,8 @@ export default function ZonesPage() {
                     <MapPin className="w-12 h-12 mx-auto mb-4 text-teal-300" />
                     <p className="text-lg font-medium">No hay zonas</p>
                     <p className="text-sm">
-                      {searchTerm ? 'No se encontraron resultados' : 'Comienza agregando tu primera zona'}
+                      {searchTerm ? 'No se encontraron resultados' : 'Crea tu primera zona para comenzar'}
                     </p>
-                    {!searchTerm && (
-                      <button
-                        onClick={handleCreateZone}
-                        className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-success rounded-lg hover:bg-success/90"
-                      >
-                        <Plus className="w-4 h-4" />
-                        Agregar Zona
-                      </button>
-                    )}
                   </div>
                 </div>
               ) : (

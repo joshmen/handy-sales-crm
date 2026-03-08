@@ -677,13 +677,9 @@ export default function CobranzaPage() {
                         {searchCobros ? 'Sin resultados' : 'No hay cobros en este período'}
                       </h3>
                       <p className="text-sm text-gray-500 text-center">
-                        {searchCobros ? (
-                          <span>No se encontraron cobros para &quot;{searchCobros}&quot;</span>
-                        ) : (
-                          <>Registra un{' '}
-                          <span className="text-green-600 cursor-pointer" onClick={() => setShowNewCobro(true)}>nuevo cobro</span>
-                          {' '}para empezar</>
-                        )}
+                        {searchCobros
+                          ? `No se encontraron cobros para "${searchCobros}"`
+                          : 'Registra cobros usando el botón superior'}
                       </p>
                     </div>
                   ) : (

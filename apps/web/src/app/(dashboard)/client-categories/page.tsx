@@ -249,15 +249,6 @@ export default function ClientCategoriesPage() {
                   <p className="text-sm text-gray-500">
                     {searchTerm ? 'No se encontraron categorías' : 'No hay categorías'}
                   </p>
-                  {!searchTerm && (
-                    <button
-                      onClick={handleOpenCreate}
-                      className="mt-3 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Crear categoría
-                    </button>
-                  )}
                 </div>
               ) : (
                 paginatedCategories.map((category) => (
@@ -324,15 +315,6 @@ export default function ClientCategoriesPage() {
                         ? 'No se encontraron categorías con ese término'
                         : 'Crea tu primera categoría de clientes para comenzar'}
                     </p>
-                    {!searchTerm && (
-                      <button
-                        onClick={handleOpenCreate}
-                        className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
-                      >
-                        <Plus className="w-4 h-4" />
-                        Crear categoría
-                      </button>
-                    )}
                   </div>
                 ) : (
                   /* Table Rows - With opacity transition */

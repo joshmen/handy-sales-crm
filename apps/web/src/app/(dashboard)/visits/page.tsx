@@ -614,12 +614,6 @@ function VisitsPageContent() {
                     <MapPin className="w-12 h-12 mb-3 text-gray-300" />
                     <p className="text-lg font-medium">No hay visitas</p>
                     <p className="text-sm mt-1">Programa una nueva visita para comenzar</p>
-                    <button
-                      onClick={handleCreateVisit}
-                      className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
-                    >
-                      <Plus className="w-4 h-4" /> Programar Visita
-                    </button>
                   </div>
                 )}
                 {!loading && filteredVisits.length > 0 && (

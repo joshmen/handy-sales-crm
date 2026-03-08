@@ -546,15 +546,6 @@ export default function RoutesPage() {
                     ? 'No se encontraron resultados con los filtros aplicados'
                     : 'Crea tu primera ruta de venta para comenzar'}
                 </p>
-                {!searchTerm && estadoFilter === 'all' && zonaFilter === 'all' && (
-                  <button
-                    onClick={handleOpenCreate}
-                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Nueva ruta
-                  </button>
-                )}
               </div>
             ) : (
               <div className={`transition-opacity duration-200 ${loading ? 'opacity-50' : 'opacity-100'}`}>

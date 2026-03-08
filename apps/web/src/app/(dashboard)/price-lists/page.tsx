@@ -447,18 +447,9 @@ export default function PriceListsPage() {
                 <h3 className="text-lg font-semibold text-gray-700 mb-2">No hay listas de precios</h3>
                 <p className="text-sm text-gray-500 text-center">
                   {searchTerm
-                    ? 'No se encontraron listas con ese término'
+                    ? 'No se encontraron resultados para tu búsqueda'
                     : 'Crea tu primera lista de precios para comenzar'}
                 </p>
-                {!searchTerm && (
-                  <button
-                    onClick={handleOpenCreate}
-                    className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Nueva lista de precios
-                  </button>
-                )}
               </div>
             ) : (
               /* Table Rows */

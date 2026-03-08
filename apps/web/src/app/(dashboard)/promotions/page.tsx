@@ -358,10 +358,8 @@ export default function PromotionsPage() {
           {!loading && paginatedPromotions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12">
               <Gift className="w-12 h-12 text-yellow-300 mb-3" />
-              <p className="text-sm text-gray-500 mb-3">No hay promociones</p>
-              <button onClick={handleOpenCreate} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-success rounded-lg hover:bg-success/90">
-                <Plus className="w-4 h-4" /> Nueva promocion
-              </button>
+              <p className="text-sm text-gray-500">No hay promociones</p>
+              <p className="text-xs text-gray-400 mt-1">Crea tu primera promoción para comenzar</p>
             </div>
           ) : (
             paginatedPromotions.map((promo) => (
@@ -449,15 +447,8 @@ export default function PromotionsPage() {
                 <Gift className="w-16 h-16 text-yellow-300 mb-4" />
                 <h3 className="text-lg font-semibold text-gray-700 mb-2">No hay promociones</h3>
                 <p className="text-sm text-gray-500 text-center mb-4">
-                  Crea tu primera promocion especial para comenzar
+                  Crea tu primera promoción para comenzar
                 </p>
-                <button
-                  onClick={handleOpenCreate}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-success rounded-lg hover:bg-success/90"
-                >
-                  <Plus className="w-4 h-4" />
-                  Nueva promocion
-                </button>
               </div>
             ) : (
               <div className={`transition-opacity duration-200 ${loading ? 'opacity-50' : 'opacity-100'}`}>

@@ -286,17 +286,8 @@ export default function ClientsPage() {
               <div className="text-center">
                 <p className="text-lg font-medium">No hay clientes</p>
                 <p className="text-sm mt-1">
-                  {searchTerm ? 'No se encontraron resultados' : 'Comienza agregando tu primer cliente'}
+                  {searchTerm ? 'No se encontraron resultados para tu búsqueda' : 'Crea tu primer cliente para comenzar'}
                 </p>
-                {!searchTerm && (
-                  <button
-                    onClick={handleCreateClient}
-                    className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Agregar Cliente
-                  </button>
-                )}
               </div>
             </div>
           )}
@@ -416,17 +407,8 @@ export default function ClientsPage() {
                 <div className="text-center">
                   <p className="text-lg font-medium">No hay clientes</p>
                   <p className="text-sm">
-                    {searchTerm ? 'No se encontraron resultados' : 'Comienza agregando tu primer cliente'}
+                    {searchTerm ? 'No se encontraron resultados para tu búsqueda' : 'Crea tu primer cliente para comenzar'}
                   </p>
-                  {!searchTerm && (
-                    <button
-                      onClick={handleCreateClient}
-                      className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Agregar Cliente
-                    </button>
-                  )}
                 </div>
               </div>
             ) : (

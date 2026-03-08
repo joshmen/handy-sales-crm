@@ -400,17 +400,9 @@ export default function InventoryPage() {
                   <div className="text-center px-4">
                     <Package className="w-12 h-12 mx-auto mb-4 text-indigo-300" />
                     <p className="text-lg font-medium">No hay inventario</p>
-                    <p className="text-sm mb-4">
-                      {searchTerm ? 'No se encontraron resultados' : 'No hay productos en inventario'}
+                    <p className="text-sm">
+                      {searchTerm ? 'No se encontraron resultados para tu búsqueda' : 'Crea tu primer registro de inventario para comenzar'}
                     </p>
-                    {!searchTerm && (
-                      <button
-                        onClick={handleOpenCreate}
-                        className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
-                      >
-                        Agregar producto al inventario
-                      </button>
-                    )}
                   </div>
                 </div>
               ) : (
@@ -487,17 +479,9 @@ export default function InventoryPage() {
                     <div className="text-center">
                       <Package className="w-12 h-12 mx-auto mb-4 text-indigo-300" />
                       <p className="text-lg font-medium">No hay inventario</p>
-                      <p className="text-sm mb-4">
-                        {searchTerm ? 'No se encontraron resultados' : 'No hay productos en inventario'}
+                      <p className="text-sm">
+                        {searchTerm ? 'No se encontraron resultados para tu búsqueda' : 'Crea tu primer registro de inventario para comenzar'}
                       </p>
-                      {!searchTerm && (
-                        <button
-                          onClick={handleOpenCreate}
-                          className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
-                        >
-                          Agregar producto al inventario
-                        </button>
-                      )}
                     </div>
                   </div>
                 ) : (

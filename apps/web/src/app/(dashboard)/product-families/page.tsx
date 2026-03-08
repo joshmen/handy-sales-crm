@@ -461,15 +461,6 @@ export default function ProductFamiliesPage() {
                     ? 'No se encontraron familias con ese término'
                     : 'Crea tu primera familia de productos para comenzar'}
                 </p>
-                {!searchTerm && (
-                  <button
-                    onClick={handleOpenCreate}
-                    className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Agregar Familia
-                  </button>
-                )}
               </div>
             ) : (
               /* Table Rows */

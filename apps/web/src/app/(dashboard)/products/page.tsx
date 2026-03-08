@@ -475,16 +475,10 @@ export default function ProductsPage() {
             {!loading && products.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12">
                 <Package className="w-12 h-12 text-purple-300 mb-3" />
-                <p className="text-sm text-gray-500 mb-3">No hay productos</p>
-                {!searchTerm && (
-                  <button
-                    onClick={handleCreateProduct}
-                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Agregar Producto
-                  </button>
-                )}
+                <p className="text-sm text-gray-500">No hay productos</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {searchTerm ? 'No se encontraron resultados para tu búsqueda' : 'Crea tu primer producto para comenzar'}
+                </p>
               </div>
             ) : (
               products.map((product) => (
@@ -611,17 +605,8 @@ export default function ProductsPage() {
                   <Package className="w-16 h-16 text-purple-300 mb-4" />
                   <h3 className="text-lg font-semibold text-gray-700 mb-2">No hay productos</h3>
                   <p className="text-sm text-gray-500 text-center">
-                    {searchTerm ? 'No se encontraron resultados' : 'Comienza agregando tu primer producto'}
+                    {searchTerm ? 'No se encontraron resultados para tu búsqueda' : 'Crea tu primer producto para comenzar'}
                   </p>
-                  {!searchTerm && (
-                    <button
-                      onClick={handleCreateProduct}
-                      className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Agregar Producto
-                    </button>
-                  )}
                 </div>
               ) : (
                 /* Table Rows - With opacity transition */

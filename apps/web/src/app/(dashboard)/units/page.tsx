@@ -412,15 +412,6 @@ export default function UnitsPage() {
                     ? 'No se encontraron unidades con ese término'
                     : 'Crea tu primera unidad de medida para comenzar'}
                 </p>
-                {!searchTerm && (
-                  <button
-                    onClick={handleOpenCreate}
-                    className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Agregar Unidad
-                  </button>
-                )}
               </div>
             ) : (
               /* Table Rows */
