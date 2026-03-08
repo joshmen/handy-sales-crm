@@ -28,15 +28,10 @@ services:
       - "5432:5432"
     volumes:
       - postgres_dev_data:/var/lib/postgresql/data
-      # Scripts de inicialización (orden correcto)
-      - ./infra/database/schema/00_create_databases.sql:/docker-entrypoint-initdb.d/00-databases.sql
-      - ./infra/database/schema/01_init_schema_multitenant.sql:/docker-entrypoint-initdb.d/01-schema.sql
-      - ./infra/database/schema/02_seed_data.sql:/docker-entrypoint-initdb.d/02-seed.sql
-      - ./infra/database/schema/03_create_user.sql:/docker-entrypoint-initdb.d/03-user.sql
-      - ./infra/database/schema/BillingSchema.sql:/docker-entrypoint-initdb.d/04-billing-schema.sql
-      - ./infra/database/schema/04_seed_usuarios.sql:/docker-entrypoint-initdb.d/06-usuarios.sql
-      - ./infra/database/schema/05_ef_migrations_baseline.sql:/docker-entrypoint-initdb.d/07-ef-baseline.sql
-      - ./infra/database/schema/08_automations_seed.sql:/docker-entrypoint-initdb.d/08-automations-seed.sql
+      # EF Core creates all 48 tables via migration on api_main startup.
+      # After first startup, seed data manually:
+      #   docker exec -i handysales_postgres_dev psql -U handy_user -d handy_erp < infra/database/schema/seed_local_pg.sql
+      #   docker exec -i handysales_postgres_dev psql -U handy_user -d handy_erp < infra/database/schema/seed_e2e_pg.sql
     command: >
       postgres
       -c shared_buffers=256MB
@@ -62,7 +57,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:1050
-      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=handy_erp;Username=handy_user;Password=handy_pass;Pooling=true;MinimumPoolSize=5;MaximumPoolSize=50;ConnectionLifeTime=300;"
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=handy_erp;Username=handy_user;Password=handy_pass;Pooling=true;Minimum Pool Size=5;Maximum Pool Size=50;Connection Lifetime=300;"
       Jwt__Secret: "DevelopmentSecretKeyThatIsAtLeast256BitsLong_1234567890123456789012345678901234567890"
       Jwt__Issuer: "HandySales"
       Jwt__Audience: "HandySalesUsers"
@@ -145,7 +140,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:1052
-      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=handy_erp;Username=handy_user;Password=handy_pass;Pooling=true;MinimumPoolSize=5;MaximumPoolSize=50;ConnectionLifeTime=300;"
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=handy_erp;Username=handy_user;Password=handy_pass;Pooling=true;Minimum Pool Size=5;Maximum Pool Size=50;Connection Lifetime=300;"
       Jwt__Secret: "DevelopmentSecretKeyThatIsAtLeast256BitsLong_1234567890123456789012345678901234567890"
       Jwt__Issuer: "HandySales"
       Jwt__Audience: "HandySalesUsers"

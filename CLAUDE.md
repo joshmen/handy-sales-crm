@@ -92,7 +92,11 @@ Deployment                   -> Vercel (frontend) + Railway (APIs + PostgreSQL) 
 # 1. Start backend services in Docker
 docker-compose -f docker-compose.dev.yml up -d
 
-# 2. Start frontend locally (separate terminal)
+# 2. First-time only: seed database (after EF Core creates tables ~30s)
+docker exec -i handysales_postgres_dev psql -U handy_user -d handy_erp < infra/database/schema/seed_local_pg.sql
+docker exec -i handysales_postgres_dev psql -U handy_user -d handy_erp < infra/database/schema/seed_e2e_pg.sql
+
+# 3. Start frontend locally (separate terminal)
 cd apps/web && npm run dev
 ```
 
