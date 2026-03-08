@@ -52,7 +52,7 @@ interface CompanyProviderProps {
 }
 
 export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) => {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [settings, setSettings] = useState<CompanySettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);

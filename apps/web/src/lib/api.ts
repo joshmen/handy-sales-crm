@@ -56,6 +56,16 @@ apiInstance.interceptors.request.use(
 let isLoggingOut = false;
 let isRefreshing = false;
 let refreshPromise: Promise<string | null> | null = null;
+let refreshFailCount = 0;
+const MAX_REFRESH_FAILURES = 2;
+
+/** Reset auth state after successful login (call from useAuthSession) */
+export function resetAuthState() {
+  isLoggingOut = false;
+  isRefreshing = false;
+  refreshPromise = null;
+  refreshFailCount = 0;
+}
 
 async function tryRefreshSession(): Promise<string | null> {
   try {

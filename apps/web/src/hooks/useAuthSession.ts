@@ -2,7 +2,7 @@
 
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { useAppStore } from '@/stores/useAppStore';
-import { setApiAccessToken } from '@/lib/api';
+import { setApiAccessToken, resetAuthState } from '@/lib/api';
 import { useEffect, useRef } from 'react';
 import { UserRole } from '@/types';
 
@@ -28,6 +28,7 @@ export function useAuthSession() {
 
       // Reset the guard once we have a valid session (fresh login)
       isSigningOut.current = false;
+      resetAuthState();
 
       if (session?.user) {
         setUser({

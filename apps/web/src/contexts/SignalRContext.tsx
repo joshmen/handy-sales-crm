@@ -92,11 +92,11 @@ export function SignalRProvider({ children }: { children: React.ReactNode }) {
     }
 
     const hubUrl = `${API_URL}/hubs/notifications`;
-    const token = session.accessToken;
+    // Don't capture token in closure - use ref for dynamic access on reconnect
 
     const connection = new HubConnectionBuilder()
       .withUrl(hubUrl, {
-        accessTokenFactory: () => token,
+        accessTokenFactory: () => tokenRef.current || '',
       })
       .withAutomaticReconnect([0, 2000, 10000, 30000])
       .configureLogging(LogLevel.Warning)
