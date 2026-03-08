@@ -77,7 +77,7 @@ public class GlobalExceptionMiddleware
             ArgumentException => (int)HttpStatusCode.BadRequest,
             UnauthorizedAccessException => (int)HttpStatusCode.Unauthorized,
             KeyNotFoundException => (int)HttpStatusCode.NotFound,
-            InvalidOperationException => (int)HttpStatusCode.BadRequest,
+            InvalidOperationException => (int)HttpStatusCode.InternalServerError,
             _ => (int)HttpStatusCode.InternalServerError
         };
     }

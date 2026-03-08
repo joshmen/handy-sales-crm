@@ -8,6 +8,10 @@ using HandySales.Infrastructure.Persistence;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.ResponseCompression;
 
+// Npgsql 6+ requires UTC DateTimes for 'timestamp with time zone'.
+// Enable legacy behavior so Unspecified-Kind DateTimes (from query strings) work.
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 var builder = WebApplication.CreateBuilder(args);
 
 // CONFIGURACIÓN DE LOGGING
