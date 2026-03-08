@@ -100,7 +100,7 @@ public static class MetaVendedorEndpoints
             if (role is not ("ADMIN" or "SUPER_ADMIN"))
                 return Results.Forbid();
 
-            if (request.Ids == null || request.Ids.Count == 0)
+            if (request.Ids == null || request.Ids.Count == 0 || request.Ids.Count > 1000)
                 return Results.BadRequest(new { error = "Se requiere al menos un ID" });
 
             var count = await servicio.BatchToggleActivoAsync(request.Ids, request.Activo);

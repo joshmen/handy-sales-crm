@@ -173,7 +173,15 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    localStorage.clear();
+                    // Only clear app-specific keys, preserve auth session
+                    const keysToRemove: string[] = [];
+                    for (let i = 0; i < localStorage.length; i++) {
+                      const key = localStorage.key(i);
+                      if (key && (key.startsWith('handy') || key.startsWith('company_') || key === 'sidebar-collapsed')) {
+                        keysToRemove.push(key);
+                      }
+                    }
+                    keysToRemove.forEach(k => localStorage.removeItem(k));
                     sessionStorage.clear();
                     toast({
                       title: 'Caché limpiado',

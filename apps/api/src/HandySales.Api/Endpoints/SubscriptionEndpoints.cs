@@ -102,14 +102,13 @@ public static class SubscriptionEndpoints
 
         try
         {
-            var url = await stripeService.CreateCheckoutSessionAsync(
+            var (clientSecret, sessionId) = await stripeService.CreateCheckoutSessionAsync(
                 currentTenant.TenantId,
                 dto.PlanCode,
                 dto.Interval,
-                dto.SuccessUrl,
-                dto.CancelUrl);
+                dto.ReturnUrl);
 
-            return Results.Ok(new { url });
+            return Results.Ok(new { clientSecret, sessionId });
         }
         catch (Exception ex)
         {
@@ -166,5 +165,5 @@ public static class SubscriptionEndpoints
 }
 
 // DTOs
-public record CheckoutRequest(string PlanCode, string Interval, string SuccessUrl, string CancelUrl);
+public record CheckoutRequest(string PlanCode, string Interval, string ReturnUrl);
 public record PortalRequest(string ReturnUrl);

@@ -38,7 +38,7 @@ namespace HandySales.Api.Endpoints
                 }
                 catch (Exception ex)
                 {
-                    return Results.Problem($"Error interno del servidor: {ex.Message}");
+                    return Results.Problem("Error interno del servidor");
                 }
             })
             .WithName("GetMyNotificationPreferences")
@@ -99,7 +99,7 @@ namespace HandySales.Api.Endpoints
                 }
                 catch (Exception ex)
                 {
-                    return Results.Problem($"Error interno del servidor: {ex.Message}");
+                    return Results.Problem("Error interno del servidor");
                 }
             })
             .WithName("SaveNotificationPreferences")
@@ -124,7 +124,7 @@ namespace HandySales.Api.Endpoints
                 }
                 catch (Exception ex)
                 {
-                    return Results.Problem($"Error interno del servidor: {ex.Message}");
+                    return Results.Problem("Error interno del servidor");
                 }
             })
             .RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"))

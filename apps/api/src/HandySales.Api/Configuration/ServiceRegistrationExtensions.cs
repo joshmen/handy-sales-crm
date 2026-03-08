@@ -1,5 +1,9 @@
 using HandySales.Infrastructure.Persistence;
 using HandySales.Shared.Multitenancy;
+using HandySales.Application.Ai.Interfaces;
+using HandySales.Application.Geo.Interfaces;
+using HandySales.Infrastructure.Ai.Services;
+using HandySales.Application.SubscriptionPlans.Interfaces;
 using HandySales.Application.CrashReporting;
 using HandySales.Application.Clientes.Interfaces;
 using HandySales.Application.Clientes.Services;
@@ -140,7 +144,8 @@ public static class ServiceRegistrationExtensions
             // No registrar DbContext aquí: los tests usarán Sqlite desde CustomWebApplicationFactory
             services.AddDbContext<HandySalesDbContext>(options =>
              options.UseNpgsql(
-                 config.GetConnectionString("DefaultConnection")
+                 config.GetConnectionString("DefaultConnection"),
+                 o => o.UseNetTopologySuite()
              ));
         }
         services.AddFluentValidationAutoValidation();
@@ -326,6 +331,14 @@ public static class ServiceRegistrationExtensions
         services.AddScoped<IAutomationHandler, CobroExitosoAvisoHandler>();
         services.AddScoped<IAutomationHandler, MetaNoCumplidaHandler>();
         services.AddScoped<IAutomationHandler, MetaAutoRenovacionHandler>();
+
+        services.AddScoped<IGeoQueryService, GeoQueryService>();
+        services.AddScoped<IReportAccessService, ReportAccessService>();
+
+        // AI Services
+        services.AddScoped<IAiCreditService, AiCreditService>();
+        services.AddScoped<IAiGatewayService, AiGatewayService>();
+        services.AddScoped<IAiSanitizer, AiSanitizer>();
 
         return services;
     }

@@ -31,7 +31,8 @@ export interface UpdatePreferencesRequest {
 }
 
 export interface ChangePasswordRequest {
-  password: string;
+  currentPassword: string;
+  newPassword: string;
 }
 
 export interface ApiResponse<T> {
@@ -154,10 +155,19 @@ class ProfileService {
     };
   }
 
-  async changePassword(userId: string, data: ChangePasswordRequest): Promise<ApiResponse<void>> {
-    return this.request<void>(`/api/usuarios/${userId}`, {
+  async changePassword(data: ChangePasswordRequest): Promise<ApiResponse<void>> {
+    // Backend PUT /api/profile requires Nombre (always updates it).
+    // Fetch current profile to preserve the existing name.
+    const profile = await this.getProfile('me');
+    const nombre = profile.data?.nombre || '';
+
+    return this.request<void>('/api/profile', {
       method: 'PUT',
-      data,
+      data: {
+        nombre,
+        currentPassword: data.currentPassword,
+        newPassword: data.newPassword,
+      },
     });
   }
 

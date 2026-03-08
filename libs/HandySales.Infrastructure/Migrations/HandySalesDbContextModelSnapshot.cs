@@ -4,6 +4,7 @@ using HandySales.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using NetTopologySuite.Geometries;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
@@ -20,6 +21,7 @@ namespace HandySales.Infrastructure.Migrations
                 .HasAnnotation("ProductVersion", "8.0.11")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
+            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "postgis");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("CategoriaCliente", b =>
@@ -36,7 +38,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
@@ -44,7 +46,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("actualizado_por");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
@@ -56,7 +58,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("descripcion");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
@@ -98,7 +100,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
@@ -106,7 +108,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("actualizado_por");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
@@ -118,7 +120,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("descripcion");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
@@ -203,7 +205,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("country_name");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("created_at");
 
                     b.Property<string>("Description")
@@ -316,6 +318,182 @@ namespace HandySales.Infrastructure.Migrations
                     b.ToTable("activity_logs");
                 });
 
+            modelBuilder.Entity("HandySales.Domain.Entities.AiCreditBalance", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("ActualizadoEn")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("actualizado_en");
+
+                    b.Property<int>("Anio")
+                        .HasColumnType("integer")
+                        .HasColumnName("anio");
+
+                    b.Property<DateTime>("CreadoEn")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("creado_en");
+
+                    b.Property<int>("CreditosAsignados")
+                        .HasColumnType("integer")
+                        .HasColumnName("creditos_asignados");
+
+                    b.Property<int>("CreditosExtras")
+                        .HasColumnType("integer")
+                        .HasColumnName("creditos_extras");
+
+                    b.Property<int>("CreditosUsados")
+                        .HasColumnType("integer")
+                        .HasColumnName("creditos_usados");
+
+                    b.Property<DateTime>("FechaReset")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("fecha_reset");
+
+                    b.Property<int>("Mes")
+                        .HasColumnType("integer")
+                        .HasColumnName("mes");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("integer")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("ai_credit_balances");
+                });
+
+            modelBuilder.Entity("HandySales.Domain.Entities.AiCreditPurchase", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("CompletadoEn")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("completado_en");
+
+                    b.Property<DateTime>("CreadoEn")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("creado_en");
+
+                    b.Property<int>("Creditos")
+                        .HasColumnType("integer")
+                        .HasColumnName("creditos");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("estado");
+
+                    b.Property<decimal>("PrecioMxn")
+                        .HasColumnType("decimal(10,2)")
+                        .HasColumnName("precio_mxn");
+
+                    b.Property<string>("StripePaymentIntentId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("stripe_payment_intent_id");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("integer")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("ai_credit_purchases");
+                });
+
+            modelBuilder.Entity("HandySales.Domain.Entities.AiUsageLog", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal>("CostoEstimadoUsd")
+                        .HasColumnType("decimal(8,4)")
+                        .HasColumnName("costo_estimado_usd");
+
+                    b.Property<DateTime>("CreadoEn")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("creado_en");
+
+                    b.Property<int>("CreditosCobrados")
+                        .HasColumnType("integer")
+                        .HasColumnName("creditos_cobrados");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("error_message");
+
+                    b.Property<bool>("Exitoso")
+                        .HasColumnType("boolean")
+                        .HasColumnName("exitoso");
+
+                    b.Property<int>("LatenciaMs")
+                        .HasColumnType("integer")
+                        .HasColumnName("latencia_ms");
+
+                    b.Property<string>("ModeloUsado")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("modelo_usado");
+
+                    b.Property<string>("Prompt")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("prompt");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("integer")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("TipoAccion")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("tipo_accion");
+
+                    b.Property<int>("TokensInput")
+                        .HasColumnType("integer")
+                        .HasColumnName("tokens_input");
+
+                    b.Property<int>("TokensOutput")
+                        .HasColumnType("integer")
+                        .HasColumnName("tokens_output");
+
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("integer")
+                        .HasColumnName("usuario_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("UsuarioId");
+
+                    b.ToTable("ai_usage_logs");
+                });
+
             modelBuilder.Entity("HandySales.Domain.Entities.Announcement", b =>
                 {
                     b.Property<int>("Id")
@@ -330,7 +508,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
@@ -338,7 +516,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("actualizado_por");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
@@ -354,7 +532,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("display_mode");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
@@ -362,7 +540,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("eliminado_por");
 
                     b.Property<DateTime?>("ExpiresAt")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("expires_at");
 
                     b.Property<bool>("IsDismissible")
@@ -383,7 +561,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("read_count");
 
                     b.Property<DateTime?>("ScheduledAt")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("scheduled_at");
 
                     b.Property<int>("SentCount")
@@ -443,7 +621,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("announcement_id");
 
                     b.Property<DateTime>("DismissedAt")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("dismissed_at");
 
                     b.Property<int>("UsuarioId")
@@ -480,7 +658,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("automation_id");
 
                     b.Property<DateTime>("EjecutadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("ejecutado_en");
 
                     b.Property<string>("ErrorMessage")
@@ -544,7 +722,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("categoria");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("created_at");
 
                     b.Property<string>("DefaultParamsJson")
@@ -625,7 +803,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
@@ -662,7 +840,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("correo");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
@@ -683,7 +861,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("direccion");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
@@ -767,6 +945,10 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("tipos_pago_permitidos");
 
+                    b.Property<Point>("Ubicacion")
+                        .HasColumnType("geometry(Point, 4326)")
+                        .HasColumnName("ubicacion");
+
                     b.Property<string>("UsoCFDIPredeterminado")
                         .HasColumnType("text")
                         .HasColumnName("uso_cfdi_predeterminado");
@@ -792,6 +974,10 @@ namespace HandySales.Infrastructure.Migrations
 
                     b.HasIndex("TenantId");
 
+                    b.HasIndex("Ubicacion");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Ubicacion"), "gist");
+
                     b.HasIndex("VendedorId");
 
                     b.ToTable("Clientes");
@@ -811,7 +997,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
@@ -823,7 +1009,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("cliente_id");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
@@ -839,7 +1025,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("duracion_minutos");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
@@ -847,15 +1033,15 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("eliminado_por");
 
                     b.Property<DateTime?>("FechaHoraFin")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("fecha_hora_fin");
 
                     b.Property<DateTime?>("FechaHoraInicio")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("fecha_hora_inicio");
 
                     b.Property<DateTime?>("FechaProgramada")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("fecha_programada");
 
                     b.Property<string>("Fotos")
@@ -902,6 +1088,10 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("tipo_visita");
 
+                    b.Property<Point>("UbicacionInicio")
+                        .HasColumnType("geometry(Point, 4326)")
+                        .HasColumnName("ubicacion_inicio");
+
                     b.Property<int>("UsuarioId")
                         .HasColumnType("integer")
                         .HasColumnName("usuario_id");
@@ -944,7 +1134,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
@@ -956,7 +1146,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("cliente_id");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
@@ -964,7 +1154,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("creado_por");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
@@ -972,7 +1162,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("eliminado_por");
 
                     b.Property<DateTime>("FechaCobro")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("fecha_cobro");
 
                     b.Property<int>("MetodoPago")
@@ -1068,7 +1258,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("Currency")
                         .IsRequired()
@@ -1096,7 +1286,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("SubscriptionExpiresAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("SubscriptionPlan")
                         .IsRequired()
@@ -1116,10 +1306,10 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("TrialEndsAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("UpdatedBy")
                         .HasColumnType("text");
@@ -1143,7 +1333,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
@@ -1164,7 +1354,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("company_name");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
@@ -1178,7 +1368,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("currency");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
@@ -1260,7 +1450,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("component_name");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("DeviceId")
@@ -1346,7 +1536,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
@@ -1369,7 +1559,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("contacto");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
@@ -1386,7 +1576,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("direccion");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
@@ -1463,7 +1653,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
@@ -1496,7 +1686,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnType("character varying(100)");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
@@ -1504,7 +1694,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("creado_por");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
@@ -1680,7 +1870,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
@@ -1692,7 +1882,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("cantidad_minima");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
@@ -1704,7 +1894,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("descuento_porcentaje");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
@@ -1752,7 +1942,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
@@ -1764,7 +1954,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("cantidad");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
@@ -1776,7 +1966,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("descuento");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
@@ -1843,7 +2033,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
@@ -1855,7 +2045,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("app_version");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
@@ -1884,7 +2074,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("device_type");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
@@ -1896,15 +2086,15 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("ip_address");
 
                     b.Property<DateTime>("LastActivity")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("last_activity");
 
                     b.Property<DateTime>("LoggedInAt")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("logged_in_at");
 
                     b.Property<DateTime?>("LoggedOutAt")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("logged_out_at");
 
                     b.Property<string>("LogoutReason")
@@ -1975,7 +2165,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
@@ -1983,7 +2173,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("actualizado_por");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
@@ -1996,7 +2186,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("descripcion");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
@@ -2036,7 +2226,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("DefaultLanguage")
                         .IsRequired()
@@ -2080,7 +2270,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("UpdatedBy")
                         .HasColumnType("text");
@@ -2109,11 +2299,11 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("actions_performed");
 
                     b.Property<DateTime?>("EndedAt")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("ended_at");
 
                     b.Property<DateTime>("ExpiresAt")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("expires_at");
 
                     b.Property<string>("IpAddress")
@@ -2127,7 +2317,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("notification_sent");
 
                     b.Property<DateTime?>("NotificationSentAt")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("notification_sent_at");
 
                     b.Property<string>("PagesVisited")
@@ -2142,7 +2332,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("reason");
 
                     b.Property<DateTime>("StartedAt")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("started_at");
 
                     b.Property<string>("Status")
@@ -2218,7 +2408,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
@@ -2230,7 +2420,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("cantidad_actual");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
@@ -2238,7 +2428,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("creado_por");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
@@ -2290,7 +2480,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
@@ -2298,7 +2488,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("actualizado_por");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
@@ -2311,7 +2501,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("descripcion");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
@@ -2353,7 +2543,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
@@ -2365,7 +2555,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("auto_renovar");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
@@ -2373,7 +2563,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("creado_por");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
@@ -2381,11 +2571,11 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("eliminado_por");
 
                     b.Property<DateTime>("FechaFin")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("fecha_fin");
 
                     b.Property<DateTime>("FechaInicio")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("fecha_inicio");
 
                     b.Property<decimal>("Monto")
@@ -2438,7 +2628,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
@@ -2462,7 +2652,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("comentario");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
@@ -2470,7 +2660,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("creado_por");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
@@ -2536,7 +2726,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
@@ -2544,7 +2734,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("actualizado_por");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
@@ -2560,7 +2750,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("device_session_id");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
@@ -2568,7 +2758,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("eliminado_por");
 
                     b.Property<DateTime?>("EnviadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("enviado_en");
 
                     b.Property<string>("ErrorMessage")
@@ -2580,7 +2770,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("fcm_message_id");
 
                     b.Property<DateTime?>("LeidoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("leido_en");
 
                     b.Property<string>("Mensaje")
@@ -2644,7 +2834,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
@@ -2652,7 +2842,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("actualizado_por");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
@@ -2663,7 +2853,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
@@ -2738,7 +2928,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
@@ -2750,7 +2940,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("cliente_id");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
@@ -2766,7 +2956,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("direccion_entrega");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
@@ -2778,15 +2968,15 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("estado");
 
                     b.Property<DateTime?>("FechaEntregaEstimada")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("fecha_entrega_estimada");
 
                     b.Property<DateTime?>("FechaEntregaReal")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("fecha_entrega_real");
 
                     b.Property<DateTime>("FechaPedido")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("fecha_pedido");
 
                     b.Property<decimal>("Impuestos")
@@ -2875,7 +3065,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
@@ -2883,7 +3073,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("actualizado_por");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
@@ -2891,7 +3081,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("creado_por");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
@@ -2944,7 +3134,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
@@ -2961,7 +3151,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("codigo_barra");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
@@ -2974,7 +3164,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("descripcion");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
@@ -3038,7 +3228,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
@@ -3046,7 +3236,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("actualizado_por");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
@@ -3063,7 +3253,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("descuento_porcentaje");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
@@ -3071,11 +3261,11 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("eliminado_por");
 
                     b.Property<DateTime>("FechaFin")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("fecha_fin");
 
                     b.Property<DateTime>("FechaInicio")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("fecha_inicio");
 
                     b.Property<string>("Nombre")
@@ -3109,7 +3299,7 @@ namespace HandySales.Infrastructure.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<int>("ProductoId")
@@ -3143,11 +3333,11 @@ namespace HandySales.Infrastructure.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("CreatedAt");
 
                     b.Property<DateTime>("ExpiresAt")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("ExpiresAt");
 
                     b.Property<bool>("IsRevoked")
@@ -3159,7 +3349,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("ReplacedByToken");
 
                     b.Property<DateTime?>("RevokedAt")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("RevokedAt");
 
                     b.Property<string>("Token")
@@ -3194,7 +3384,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
@@ -3202,7 +3392,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("actualizado_por");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
@@ -3210,7 +3400,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("creado_por");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("created_at");
 
                     b.Property<string>("Descripcion")
@@ -3218,7 +3408,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("descripcion");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
@@ -3232,7 +3422,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("nombre");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("updated_at");
 
                     b.Property<long>("Version")
@@ -3262,7 +3452,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
@@ -3282,7 +3472,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("cantidad_venta");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
@@ -3290,7 +3480,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("creado_por");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
@@ -3346,7 +3536,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
@@ -3358,7 +3548,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("cliente_id");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
@@ -3374,7 +3564,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("duracion_estimada_minutos");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
@@ -3390,11 +3580,11 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("hora_estimada_llegada");
 
                     b.Property<DateTime?>("HoraLlegadaReal")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("hora_llegada_real");
 
                     b.Property<DateTime?>("HoraSalidaReal")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("hora_salida_real");
 
                     b.Property<double?>("Latitud")
@@ -3424,6 +3614,10 @@ namespace HandySales.Infrastructure.Migrations
                     b.Property<int>("RutaId")
                         .HasColumnType("integer")
                         .HasColumnName("ruta_id");
+
+                    b.Property<Point>("Ubicacion")
+                        .HasColumnType("geometry(Point, 4326)")
+                        .HasColumnName("ubicacion");
 
                     b.Property<long>("Version")
                         .IsConcurrencyToken()
@@ -3465,11 +3659,11 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<int>("Estado")
@@ -3516,7 +3710,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<int>("CantidadInicial")
@@ -3528,7 +3722,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("carga_vehiculo");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<int>("Devueltos")
@@ -3599,7 +3793,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
@@ -3607,7 +3801,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("actualizado_por");
 
                     b.Property<DateTime?>("CerradoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("cerrado_en");
 
                     b.Property<string>("CerradoPor")
@@ -3619,7 +3813,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("comentarios_carga");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
@@ -3635,7 +3829,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("efectivo_inicial");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
@@ -3647,7 +3841,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("estado");
 
                     b.Property<DateTime>("Fecha")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("fecha");
 
                     b.Property<TimeSpan?>("HoraFinEstimada")
@@ -3655,7 +3849,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("hora_fin_estimada");
 
                     b.Property<DateTime?>("HoraFinReal")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("hora_fin_real");
 
                     b.Property<TimeSpan?>("HoraInicioEstimada")
@@ -3663,7 +3857,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("hora_inicio_estimada");
 
                     b.Property<DateTime?>("HoraInicioReal")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("hora_inicio_real");
 
                     b.Property<double?>("KilometrosEstimados")
@@ -3736,11 +3930,11 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("action_type");
 
                     b.Property<DateTime?>("CancelledAt")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("cancelled_at");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<int>("CreatedByUserId")
@@ -3748,7 +3942,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("created_by_user_id");
 
                     b.Property<DateTime?>("ExecutedAt")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("executed_at");
 
                     b.Property<string>("Notes")
@@ -3764,7 +3958,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("reason");
 
                     b.Property<DateTime>("ScheduledAt")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("scheduled_at");
 
                     b.Property<string>("Status")
@@ -3868,7 +4062,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
@@ -3880,7 +4074,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("cancellation_reason");
 
                     b.Property<DateTime?>("CancelledAt")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("cancelled_at");
 
                     b.Property<string>("CloudinaryFolder")
@@ -3888,7 +4082,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("cloudinary_folder");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
@@ -3896,7 +4090,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("creado_por");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
@@ -3904,15 +4098,15 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("eliminado_por");
 
                     b.Property<DateTime?>("FechaExpiracion")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("fecha_expiracion");
 
                     b.Property<DateTime?>("FechaSuscripcion")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("fecha_suscripcion");
 
                     b.Property<DateTime?>("GracePeriodEnd")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("grace_period_end");
 
                     b.Property<int>("MaxUsuarios")
@@ -3973,7 +4167,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
@@ -3981,7 +4175,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("actualizado_por");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
@@ -3989,7 +4183,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("creado_por");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
@@ -4001,7 +4195,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("execution_count");
 
                     b.Property<DateTime?>("LastExecutedAt")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("last_executed_at");
 
                     b.Property<string>("ParamsJson")
@@ -4048,11 +4242,11 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("code_hash");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<DateTime?>("UsedAt")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("used_at");
 
                     b.Property<int>("UsuarioId")
@@ -4080,7 +4274,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
@@ -4096,7 +4290,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("codigo_verificacion");
 
                     b.Property<DateTime?>("CodigoVerificacionExpiry")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("codigo_verificacion_expiry");
 
                     b.Property<int?>("CompanyId")
@@ -4104,7 +4298,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("CompanyId");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
@@ -4112,7 +4306,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("creado_por");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
@@ -4147,7 +4341,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("password_hash");
 
                     b.Property<DateTime?>("PasswordResetExpiry")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("password_reset_expiry");
 
                     b.Property<string>("PasswordResetToken")
@@ -4179,7 +4373,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("totp_enabled");
 
                     b.Property<DateTime?>("TotpEnabledAt")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("totp_enabled_at");
 
                     b.Property<string>("TotpSecretEncrypted")
@@ -4218,7 +4412,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
@@ -4234,7 +4428,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("centro_longitud");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
@@ -4246,7 +4440,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("descripcion");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
@@ -4296,7 +4490,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("activo");
 
                     b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("actualizado_en");
 
                     b.Property<string>("ActualizadoPor")
@@ -4304,7 +4498,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("actualizado_por");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("creado_en");
 
                     b.Property<string>("CreadoPor")
@@ -4312,7 +4506,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("creado_por");
 
                     b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("timestamp with time zone")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("eliminado_en");
 
                     b.Property<string>("EliminadoPor")
@@ -4373,6 +4567,47 @@ namespace HandySales.Infrastructure.Migrations
                     b.HasOne("HandySales.Domain.Entities.Usuario", "Usuario")
                         .WithMany()
                         .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Tenant");
+
+                    b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("HandySales.Domain.Entities.AiCreditBalance", b =>
+                {
+                    b.HasOne("HandySales.Domain.Entities.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Tenant");
+                });
+
+            modelBuilder.Entity("HandySales.Domain.Entities.AiCreditPurchase", b =>
+                {
+                    b.HasOne("HandySales.Domain.Entities.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Tenant");
+                });
+
+            modelBuilder.Entity("HandySales.Domain.Entities.AiUsageLog", b =>
+                {
+                    b.HasOne("HandySales.Domain.Entities.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HandySales.Domain.Entities.Usuario", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

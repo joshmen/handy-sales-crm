@@ -12,7 +12,18 @@ import {
   BarChart3,
   Boxes,
   LayoutDashboard,
+  Wallet,
+  Target,
+  GitCompare,
+  Lightbulb,
+  Activity,
+  DollarSign,
+  Crown,
+  Layers,
 } from 'lucide-react';
+import { getReportTierInfo, ReportTierInfo } from '@/services/api/reports';
+import { toast } from '@/hooks/useToast';
+import { Lock } from 'lucide-react';
 import { DashboardEjecutivoReport } from '@/components/reports/DashboardEjecutivoReport';
 import { VentasPeriodoReport } from '@/components/reports/VentasPeriodoReport';
 import { VentasVendedorReport } from '@/components/reports/VentasVendedorReport';
@@ -21,6 +32,14 @@ import { VentasZonaReport } from '@/components/reports/VentasZonaReport';
 import { ActividadClientesReport } from '@/components/reports/ActividadClientesReport';
 import { NuevosClientesReport } from '@/components/reports/NuevosClientesReport';
 import { InventarioReport } from '@/components/reports/InventarioReport';
+import { CarteraVencidaReport } from '@/components/reports/CarteraVencidaReport';
+import { CumplimientoMetasReport } from '@/components/reports/CumplimientoMetasReport';
+import { ComparativoPeriodosReport } from '@/components/reports/ComparativoPeriodosReport';
+import { AutoInsightsReport } from '@/components/reports/AutoInsightsReport';
+import { EfectividadVisitasReport } from '@/components/reports/EfectividadVisitasReport';
+import { ComisionesReport } from '@/components/reports/ComisionesReport';
+import { RentabilidadClienteReport } from '@/components/reports/RentabilidadClienteReport';
+import { AnalisisABCReport } from '@/components/reports/AnalisisABCReport';
 
 type ReportId =
   | 'ejecutivo'
@@ -30,7 +49,15 @@ type ReportId =
   | 'ventas-zona'
   | 'actividad-clientes'
   | 'nuevos-clientes'
-  | 'inventario';
+  | 'inventario'
+  | 'cartera-vencida'
+  | 'cumplimiento-metas'
+  | 'comparativo'
+  | 'insights'
+  | 'efectividad-visitas'
+  | 'comisiones'
+  | 'rentabilidad-cliente'
+  | 'analisis-abc';
 
 interface ReportCard {
   id: ReportId;
@@ -106,6 +133,38 @@ const reports: ReportCard[] = [
     color: 'red',
     section: 'Inventario',
   },
+  {
+    id: 'cartera-vencida',
+    label: 'Cartera Vencida',
+    description: 'Análisis de cuentas por cobrar agrupadas por antigüedad (0-30, 31-60, 61-90, 90+ días).',
+    icon: Wallet,
+    color: 'red',
+    section: 'Cobranza',
+  },
+  {
+    id: 'cumplimiento-metas',
+    label: 'Cumplimiento de Metas',
+    description: 'Progreso de vendedores vs sus metas de ventas, visitas y pedidos asignadas.',
+    icon: Target,
+    color: 'green',
+    section: 'Desempeño',
+  },
+  {
+    id: 'comparativo',
+    label: 'Comparativo de Períodos',
+    description: 'Compara métricas clave entre dos períodos personalizados con deltas y tendencias.',
+    icon: GitCompare,
+    color: 'blue',
+    section: 'Análisis',
+  },
+  {
+    id: 'insights',
+    label: 'Auto-Insights',
+    description: 'Análisis automático que detecta tendencias, oportunidades y alertas en tu negocio.',
+    icon: Lightbulb,
+    color: 'amber',
+    section: 'Análisis',
+  },
 ];
 
 const reportComponents: Record<ReportId, React.ComponentType> = {
@@ -117,6 +176,14 @@ const reportComponents: Record<ReportId, React.ComponentType> = {
   'actividad-clientes': ActividadClientesReport,
   'nuevos-clientes': NuevosClientesReport,
   'inventario': InventarioReport,
+  'cartera-vencida': CarteraVencidaReport,
+  'cumplimiento-metas': CumplimientoMetasReport,
+  'comparativo': ComparativoPeriodosReport,
+  'insights': AutoInsightsReport,
+  'efectividad-visitas': EfectividadVisitasReport,
+  'comisiones': ComisionesReport,
+  'rentabilidad-cliente': RentabilidadClienteReport,
+  'analisis-abc': AnalisisABCReport,
 };
 
 const colorStyles: Record<string, { bg: string; border: string; iconBg: string; iconText: string; badge: string }> = {
@@ -127,10 +194,29 @@ const colorStyles: Record<string, { bg: string; border: string; iconBg: string; 
   indigo: { bg: 'hover:bg-indigo-50', border: 'hover:border-indigo-200', iconBg: 'bg-indigo-100', iconText: 'text-indigo-600', badge: 'bg-indigo-100 text-indigo-700' },
   teal:   { bg: 'hover:bg-teal-50',   border: 'hover:border-teal-200',   iconBg: 'bg-teal-100',   iconText: 'text-teal-600',   badge: 'bg-teal-100 text-teal-700' },
   red:    { bg: 'hover:bg-red-50',    border: 'hover:border-red-200',    iconBg: 'bg-red-100',    iconText: 'text-red-600',    badge: 'bg-red-100 text-red-700' },
+  orange: { bg: 'hover:bg-orange-50', border: 'hover:border-orange-200', iconBg: 'bg-orange-100', iconText: 'text-orange-600', badge: 'bg-orange-100 text-orange-700' },
 };
 
 export default function ReportsPage() {
   const [activeReport, setActiveReport] = useState<ReportId | null>(null);
+  const [tierInfo, setTierInfo] = useState<ReportTierInfo | null>(null);
+
+  React.useEffect(() => {
+    getReportTierInfo().then(setTierInfo).catch(() => {});
+  }, []);
+
+  const isReportLocked = (reportId: string) => {
+    if (!tierInfo) return false; // Allow while loading
+    return !tierInfo.allowedReports.includes(reportId);
+  };
+
+  const handleReportClick = (reportId: ReportId) => {
+    if (isReportLocked(reportId)) {
+      toast.error(`Este reporte requiere un plan superior. Tu plan actual: ${tierInfo?.currentTier?.toUpperCase() || 'FREE'}`);
+      return;
+    }
+    setActiveReport(reportId);
+  };
 
   const activeCard = reports.find(r => r.id === activeReport);
   const ActiveComponent = activeReport ? reportComponents[activeReport] : null;
@@ -198,15 +284,18 @@ export default function ReportsPage() {
                     return (
                       <button
                         key={report.id}
-                        onClick={() => setActiveReport(report.id)}
-                        className={`text-left bg-white border border-gray-200 rounded-xl p-5 transition-all ${cs.bg} ${cs.border} hover:shadow-sm group`}
+                        onClick={() => handleReportClick(report.id)}
+                        className={`text-left bg-white border border-gray-200 rounded-xl p-5 transition-all ${cs.bg} ${cs.border} hover:shadow-sm group ${isReportLocked(report.id) ? 'opacity-60' : ''}`}
                       >
                         <div className="flex items-start gap-3 mb-3">
                           <div className={`flex items-center justify-center w-10 h-10 rounded-lg ${cs.iconBg}`}>
                             <Icon className={`w-5 h-5 ${cs.iconText}`} />
                           </div>
                         </div>
-                        <h3 className="text-sm font-semibold text-gray-900 mb-1">{report.label}</h3>
+                        <div className="flex items-center gap-1.5">
+                          <h3 className="text-sm font-semibold text-gray-900">{report.label}</h3>
+                          {isReportLocked(report.id) && <Lock className="w-3.5 h-3.5 text-gray-400" />}
+                        </div>
                         <p className="text-xs text-gray-500 leading-relaxed">{report.description}</p>
                       </button>
                     );

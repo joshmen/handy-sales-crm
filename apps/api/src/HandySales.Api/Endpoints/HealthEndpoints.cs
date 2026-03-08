@@ -27,7 +27,7 @@ public static class HealthEndpoints
         .Produces<object>(200);
 
         // Health check detallado (requiere autenticación)
-        healthGroup.MapGet("/detailed", [Authorize] async (
+        healthGroup.MapGet("/detailed", [Authorize(Roles = "SUPER_ADMIN")] async (
             HandySalesDbContext dbContext,
             IConfiguration configuration) =>
         {
@@ -50,12 +50,9 @@ public static class HealthEndpoints
 
                 system = new
                 {
-                    machineName = Environment.MachineName,
-                    osVersion = Environment.OSVersion.ToString(),
                     processorCount = Environment.ProcessorCount,
-                    workingSet = Environment.WorkingSet,
-                    gcMemory = GC.GetTotalMemory(false),
-                    uptime = Environment.TickCount64
+                    workingSetMb = Environment.WorkingSet / 1024 / 1024,
+                    gcMemoryMb = GC.GetTotalMemory(false) / 1024 / 1024
                 }
             };
 
@@ -89,7 +86,7 @@ public static class HealthEndpoints
             {
                 return Results.Problem(
                     title: "Service not ready",
-                    detail: $"Database connection failed: {ex.Message}",
+                    detail: "Database connection failed",
                     statusCode: 503
                 );
             }
@@ -143,7 +140,7 @@ public static class HealthEndpoints
             return new
             {
                 status = "unhealthy",
-                error = ex.Message,
+                error = "Database connection error",
                 canConnect = false,
                 canQuery = false
             };

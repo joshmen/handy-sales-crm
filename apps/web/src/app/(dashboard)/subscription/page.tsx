@@ -10,6 +10,7 @@ import { toast } from "@/hooks/useToast";
 import { useRequireAdmin } from "@/hooks/usePermissions";
 import { subscriptionService } from "@/services/api/subscriptions";
 import type { SubscriptionPlan, SubscriptionStatus } from "@/types/subscription";
+import { PageHeader } from "@/components/layout/PageHeader";
 import {
   Crown,
   Users,
@@ -22,20 +23,25 @@ import {
   Loader2,
   AlertTriangle,
   ExternalLink,
+  ArrowLeft,
 } from "lucide-react";
+import { loadStripe } from "@stripe/stripe-js";
+import { EmbeddedCheckoutProvider, EmbeddedCheckout } from "@stripe/react-stripe-js";
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "");
 
 const statusLabels: Record<string, { label: string; color: string }> = {
-  Trial: { label: "Prueba", color: "bg-blue-100 text-blue-800" },
-  Active: { label: "Activo", color: "bg-green-100 text-green-800" },
-  PastDue: { label: "Pago pendiente", color: "bg-amber-100 text-amber-800" },
-  Cancelled: { label: "Cancelado", color: "bg-gray-100 text-gray-800" },
-  Expired: { label: "Expirado", color: "bg-red-100 text-red-800" },
+  Trial: { label: "Prueba", color: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300" },
+  Active: { label: "Activo", color: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300" },
+  PastDue: { label: "Pago pendiente", color: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300" },
+  Cancelled: { label: "Cancelado", color: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300" },
+  Expired: { label: "Expirado", color: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300" },
 };
 
 const planColors: Record<string, string> = {
-  FREE: "border-gray-200",
-  BASIC: "border-blue-200",
-  PRO: "border-purple-300",
+  FREE: "border-gray-200 dark:border-gray-700",
+  BASIC: "border-blue-200 dark:border-blue-800",
+  PRO: "border-purple-300 dark:border-purple-800",
 };
 
 export default function SubscriptionPage() {
@@ -45,6 +51,8 @@ export default function SubscriptionPage() {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [billingInterval, setBillingInterval] = useState<"month" | "year">("month");
+  const [checkoutClientSecret, setCheckoutClientSecret] = useState<string | null>(null);
+  const [checkoutPlan, setCheckoutPlan] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -69,13 +77,13 @@ export default function SubscriptionPage() {
   const handleUpgrade = async (planCode: string) => {
     setProcessing(true);
     try {
-      const { url } = await subscriptionService.createCheckoutSession(
+      const { clientSecret } = await subscriptionService.createCheckoutSession(
         planCode,
         billingInterval,
-        `${window.location.origin}/subscription?success=true`,
-        `${window.location.origin}/subscription?cancelled=true`
+        `${window.location.origin}/subscription`
       );
-      window.location.href = url;
+      setCheckoutClientSecret(clientSecret);
+      setCheckoutPlan(planCode);
     } catch (err) {
       console.error("Error creating checkout:", err);
       toast.error("Error al iniciar el proceso de pago. Verifica la configuración de Stripe.");
@@ -124,6 +132,50 @@ export default function SubscriptionPage() {
 
   if (!subscription) return null;
 
+  // Embedded Checkout view
+  if (checkoutClientSecret) {
+    const selectedPlan = plans.find(p => p.codigo === checkoutPlan);
+    const checkoutSubtitle = selectedPlan
+      ? `Plan ${selectedPlan.nombre} — $${billingInterval === "year"
+          ? selectedPlan.precioAnual.toLocaleString("es-MX") + "/año"
+          : selectedPlan.precioMensual.toLocaleString("es-MX") + "/mes"}`
+      : "Ingresa tus datos de pago";
+    return (
+      <PageHeader
+        breadcrumbs={[
+          { label: "Inicio", href: "/dashboard" },
+          { label: "Suscripción", href: "/subscription" },
+          { label: "Pago" },
+        ]}
+        title="Completar suscripción"
+        subtitle={checkoutSubtitle}
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setCheckoutClientSecret(null);
+              setCheckoutPlan(null);
+              setProcessing(false);
+            }}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Volver a planes
+          </Button>
+        }
+      >
+        <div className="overflow-hidden">
+          <EmbeddedCheckoutProvider
+            stripe={stripePromise}
+            options={{ clientSecret: checkoutClientSecret }}
+          >
+            <EmbeddedCheckout className="min-h-[500px]" />
+          </EmbeddedCheckoutProvider>
+        </div>
+      </PageHeader>
+    );
+  }
+
   const currentPlan = plans.find(p => p.codigo === subscription.planTipo?.toUpperCase());
   const statusInfo = statusLabels[subscription.subscriptionStatus] || statusLabels.Trial;
   const daysLeft = subscription.fechaExpiracion
@@ -131,20 +183,22 @@ export default function SubscriptionPage() {
     : null;
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Suscripción</h1>
-        <p className="text-sm text-gray-500 mt-1">Administra tu plan y método de pago</p>
-      </div>
-
+    <PageHeader
+      breadcrumbs={[
+        { label: "Inicio", href: "/dashboard" },
+        { label: "Suscripción" },
+      ]}
+      title="Suscripción"
+      subtitle="Administra tu plan y método de pago"
+    >
+      <div className="space-y-6">
       {/* Warning banners */}
       {subscription.subscriptionStatus === "PastDue" && (
-        <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+        <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
           <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
           <div>
-            <p className="font-medium text-amber-800">Pago pendiente</p>
-            <p className="text-sm text-amber-700 mt-1">
+            <p className="font-medium text-amber-800 dark:text-amber-300">Pago pendiente</p>
+            <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
               No pudimos procesar tu último pago. Actualiza tu método de pago para evitar la suspensión del servicio.
               {subscription.gracePeriodEnd && (
                 <> Tienes hasta el <strong>{new Date(subscription.gracePeriodEnd).toLocaleDateString("es-MX")}</strong>.</>
@@ -155,11 +209,11 @@ export default function SubscriptionPage() {
       )}
 
       {subscription.subscriptionStatus === "Expired" && (
-        <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
+        <div className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg">
           <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
           <div>
             <p className="font-medium text-red-800">Suscripción expirada</p>
-            <p className="text-sm text-red-700 mt-1">
+            <p className="text-sm text-red-700 dark:text-red-400 mt-1">
               Tu suscripción ha expirado. Renueva para continuar usando todas las funciones.
             </p>
           </div>
@@ -171,7 +225,7 @@ export default function SubscriptionPage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-white rounded-lg shadow-sm">
+              <div className="p-3 bg-background rounded-lg shadow-sm">
                 <Crown className="h-6 w-6 text-green-600" />
               </div>
               <div>
@@ -189,12 +243,12 @@ export default function SubscriptionPage() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-1">
-              <p className="text-xs text-gray-500 uppercase font-medium">Usuarios</p>
+              <p className="text-xs text-muted-foreground uppercase font-medium">Usuarios</p>
               <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-gray-400" />
+                <Users className="h-4 w-4 text-muted-foreground" />
                 <span className="font-semibold">{subscription.activeUsuarios} / {subscription.maxUsuarios}</span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="w-full bg-muted rounded-full h-2">
                 <div
                   className="bg-green-500 h-2 rounded-full transition-all"
                   style={{ width: `${Math.min((subscription.activeUsuarios / subscription.maxUsuarios) * 100, 100)}%` }}
@@ -203,9 +257,9 @@ export default function SubscriptionPage() {
             </div>
 
             <div className="space-y-1">
-              <p className="text-xs text-gray-500 uppercase font-medium">Vencimiento</p>
+              <p className="text-xs text-muted-foreground uppercase font-medium">Vencimiento</p>
               <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-gray-400" />
+                <Calendar className="h-4 w-4 text-muted-foreground" />
                 <span className="font-semibold">
                   {subscription.fechaExpiracion
                     ? new Date(subscription.fechaExpiracion).toLocaleDateString("es-MX")
@@ -220,7 +274,7 @@ export default function SubscriptionPage() {
             </div>
 
             <div className="space-y-1">
-              <p className="text-xs text-gray-500 uppercase font-medium">Acciones</p>
+              <p className="text-xs text-muted-foreground uppercase font-medium">Acciones</p>
               {subscription.hasStripe ? (
                 <Button size="sm" variant="outline" onClick={handleManageBilling} disabled={processing}>
                   <CreditCard className="h-4 w-4 mr-2" />
@@ -228,7 +282,7 @@ export default function SubscriptionPage() {
                   <ExternalLink className="h-3 w-3 ml-1" />
                 </Button>
               ) : (
-                <p className="text-sm text-gray-500">Sin método de pago configurado</p>
+                <p className="text-sm text-muted-foreground">Sin método de pago configurado</p>
               )}
             </div>
           </div>
@@ -245,14 +299,14 @@ export default function SubscriptionPage() {
         <TabsContent value="plans" className="space-y-4">
           {/* Billing interval toggle */}
           <div className="flex items-center justify-center gap-3">
-            <span className={`text-sm ${billingInterval === "month" ? "font-semibold text-gray-900" : "text-gray-500"}`}>Mensual</span>
+            <span className={`text-sm ${billingInterval === "month" ? "font-semibold text-foreground" : "text-muted-foreground"}`}>Mensual</span>
             <button
               onClick={() => setBillingInterval(prev => prev === "month" ? "year" : "month")}
-              className={`relative w-12 h-6 rounded-full transition-colors ${billingInterval === "year" ? "bg-green-500" : "bg-gray-300"}`}
+              className={`relative w-12 h-6 rounded-full transition-colors ${billingInterval === "year" ? "bg-green-500" : "bg-muted-foreground/30"}`}
             >
               <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${billingInterval === "year" ? "translate-x-7" : "translate-x-1"}`} />
             </button>
-            <span className={`text-sm ${billingInterval === "year" ? "font-semibold text-gray-900" : "text-gray-500"}`}>
+            <span className={`text-sm ${billingInterval === "year" ? "font-semibold text-foreground" : "text-muted-foreground"}`}>
               Anual <Badge className="bg-green-100 text-green-800 ml-1">Ahorra 17%</Badge>
             </span>
           </div>
@@ -267,7 +321,7 @@ export default function SubscriptionPage() {
               return (
                 <Card
                   key={plan.id}
-                  className={`relative min-h-[420px] flex flex-col ${isPopular ? "border-2 border-green-500 shadow-lg" : planColors[plan.codigo] || ""} ${isCurrent ? "bg-green-50" : ""}`}
+                  className={`relative min-h-[420px] flex flex-col ${isPopular ? "border-2 border-green-500 shadow-lg" : planColors[plan.codigo] || ""} ${isCurrent ? "bg-green-50 dark:bg-green-950/20" : ""}`}
                 >
                   <CardHeader className="pb-3">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -290,7 +344,7 @@ export default function SubscriptionPage() {
                           <span className="text-3xl font-bold">${monthlyEquivalent.toLocaleString("es-MX")}</span>
                           <span className="text-gray-500 ml-1">/ mes</span>
                           {billingInterval === "year" && (
-                            <p className="text-xs text-gray-500 mt-1">Facturado ${price.toLocaleString("es-MX")} / año</p>
+                            <p className="text-xs text-muted-foreground mt-1">Facturado ${price.toLocaleString("es-MX")} / año</p>
                           )}
                         </>
                       )}
@@ -315,17 +369,17 @@ export default function SubscriptionPage() {
                         {plan.incluyeReportes ? (
                           <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
                         ) : (
-                          <X className="h-4 w-4 text-gray-300 flex-shrink-0" />
+                          <X className="h-4 w-4 text-muted-foreground/50 flex-shrink-0" />
                         )}
-                        <span className={`text-sm ${!plan.incluyeReportes ? "text-gray-400" : ""}`}>Reportes avanzados</span>
+                        <span className={`text-sm ${!plan.incluyeReportes ? "text-muted-foreground" : ""}`}>Reportes avanzados</span>
                       </li>
                       <li className="flex items-center gap-2">
                         {plan.incluyeSoportePrioritario ? (
                           <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
                         ) : (
-                          <X className="h-4 w-4 text-gray-300 flex-shrink-0" />
+                          <X className="h-4 w-4 text-muted-foreground/50 flex-shrink-0" />
                         )}
-                        <span className={`text-sm ${!plan.incluyeSoportePrioritario ? "text-gray-400" : ""}`}>Soporte prioritario</span>
+                        <span className={`text-sm ${!plan.incluyeSoportePrioritario ? "text-muted-foreground" : ""}`}>Soporte prioritario</span>
                       </li>
                     </ul>
 
@@ -366,10 +420,10 @@ export default function SubscriptionPage() {
                 <div className="space-y-4">
                   <div>
                     <div className="flex justify-between mb-2">
-                      <span className="text-sm text-gray-500">Uso actual</span>
+                      <span className="text-sm text-muted-foreground">Uso actual</span>
                       <span className="text-sm font-medium">{subscription.activeUsuarios} de {subscription.maxUsuarios}</span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-3">
+                    <div className="w-full bg-muted rounded-full h-3">
                       <div
                         className="bg-gradient-to-r from-green-400 to-green-600 h-3 rounded-full transition-all"
                         style={{ width: `${Math.min((subscription.activeUsuarios / subscription.maxUsuarios) * 100, 100)}%` }}
@@ -396,29 +450,29 @@ export default function SubscriptionPage() {
               <CardContent>
                 <div className="space-y-3">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Plan</span>
+                    <span className="text-muted-foreground">Plan</span>
                     <span className="font-medium">{currentPlan?.nombre || subscription.planTipo}</span>
                   </div>
                   <Separator />
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Estado</span>
+                    <span className="text-muted-foreground">Estado</span>
                     <Badge className={statusInfo.color}>{statusInfo.label}</Badge>
                   </div>
                   <Separator />
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Máx. usuarios</span>
+                    <span className="text-muted-foreground">Máx. usuarios</span>
                     <span className="font-medium">{subscription.maxUsuarios}</span>
                   </div>
                   {currentPlan && (
                     <>
                       <Separator />
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Máx. productos</span>
+                        <span className="text-muted-foreground">Máx. productos</span>
                         <span className="font-medium">{currentPlan.maxProductos.toLocaleString()}</span>
                       </div>
                       <Separator />
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Reportes</span>
+                        <span className="text-muted-foreground">Reportes</span>
                         <span className="font-medium">{currentPlan.incluyeReportes ? "Sí" : "No"}</span>
                       </div>
                     </>
@@ -430,12 +484,12 @@ export default function SubscriptionPage() {
 
           {/* Cancel subscription */}
           {subscription.hasStripe && subscription.subscriptionStatus !== "Cancelled" && (
-            <Card className="border-red-200 bg-red-50">
+            <Card className="border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium text-red-800">Cancelar suscripción</p>
-                    <p className="text-sm text-red-600">Se cancelará al final del período actual</p>
+                    <p className="font-medium text-red-800 dark:text-red-300">Cancelar suscripción</p>
+                    <p className="text-sm text-red-600 dark:text-red-400">Se cancelará al final del período actual</p>
                   </div>
                   <Button variant="destructive" size="sm" onClick={handleCancel} disabled={processing}>
                     Cancelar suscripción
@@ -446,6 +500,7 @@ export default function SubscriptionPage() {
           )}
         </TabsContent>
       </Tabs>
-    </div>
+      </div>
+    </PageHeader>
   );
 }

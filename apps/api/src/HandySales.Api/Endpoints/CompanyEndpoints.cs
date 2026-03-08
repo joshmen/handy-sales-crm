@@ -37,7 +37,7 @@ namespace HandySales.Api.Endpoints
                 }
                 catch (Exception ex)
                 {
-                    return Results.Problem($"Error interno del servidor: {ex.Message}");
+                    return Results.Problem("Error interno del servidor");
                 }
             })
             .WithName("GetCompanySettings")
@@ -77,7 +77,7 @@ namespace HandySales.Api.Endpoints
                 }
                 catch (Exception ex)
                 {
-                    return Results.Problem($"Error interno del servidor: {ex.Message}");
+                    return Results.Problem("Error interno del servidor");
                 }
             })
             .WithName("UpdateCompanySettings")
@@ -107,6 +107,12 @@ namespace HandySales.Api.Endpoints
                         return Results.BadRequest(new { error = "No se proporcionó ningún archivo" });
                     }
 
+                    // Limit file size to 5MB
+                    if (file.Length > 5 * 1024 * 1024)
+                    {
+                        return Results.BadRequest(new { error = "El archivo no debe superar 5MB" });
+                    }
+
                     var tenantId = currentTenant.TenantId;
                     var userIdClaim = context.User.FindFirst("userId")?.Value
                                      ?? context.User.FindFirst("sub")?.Value
@@ -125,7 +131,7 @@ namespace HandySales.Api.Endpoints
                 }
                 catch (Exception ex)
                 {
-                    return Results.Problem($"Error interno del servidor: {ex.Message}");
+                    return Results.Problem("Error interno del servidor");
                 }
             })
             .WithName("UploadCompanyLogo")
@@ -174,7 +180,7 @@ namespace HandySales.Api.Endpoints
                 }
                 catch (Exception ex)
                 {
-                    return Results.Problem($"Error interno del servidor: {ex.Message}");
+                    return Results.Problem("Error interno del servidor");
                 }
             })
             .WithName("DeleteCompanyLogo")
@@ -217,7 +223,7 @@ namespace HandySales.Api.Endpoints
                 }
                 catch (Exception ex)
                 {
-                    return Results.Problem($"Error interno del servidor: {ex.Message}");
+                    return Results.Problem("Error interno del servidor");
                 }
             })
             .WithName("InitializeCompanyFolder")
@@ -241,7 +247,7 @@ namespace HandySales.Api.Endpoints
                 }
                 catch (Exception ex)
                 {
-                    return Results.Problem($"Error interno del servidor: {ex.Message}");
+                    return Results.Problem("Error interno del servidor");
                 }
             })
             .WithName("GetBillingData")
@@ -279,7 +285,7 @@ namespace HandySales.Api.Endpoints
                 }
                 catch (Exception ex)
                 {
-                    return Results.Problem($"Error interno del servidor: {ex.Message}");
+                    return Results.Problem("Error interno del servidor");
                 }
             })
             .WithName("CreateBillingData")
@@ -318,7 +324,7 @@ namespace HandySales.Api.Endpoints
                 }
                 catch (Exception ex)
                 {
-                    return Results.Problem($"Error interno del servidor: {ex.Message}");
+                    return Results.Problem("Error interno del servidor");
                 }
             })
             .WithName("UpdateBillingData")
@@ -356,7 +362,7 @@ namespace HandySales.Api.Endpoints
                 }
                 catch (Exception ex)
                 {
-                    return Results.Problem($"Error interno del servidor: {ex.Message}");
+                    return Results.Problem("Error interno del servidor");
                 }
             })
             .WithName("DeleteBillingData")
@@ -387,7 +393,7 @@ namespace HandySales.Api.Endpoints
                 }
                 catch (Exception ex)
                 {
-                    return Results.Problem($"Error interno del servidor: {ex.Message}");
+                    return Results.Problem("Error interno del servidor");
                 }
             })
             .WithName("GetAllCompanies")
@@ -427,7 +433,7 @@ namespace HandySales.Api.Endpoints
                 }
                 catch (Exception ex)
                 {
-                    return Results.Problem($"Error interno del servidor: {ex.Message}");
+                    return Results.Problem("Error interno del servidor");
                 }
             })
             .WithName("GetCompanyById")
@@ -464,7 +470,7 @@ namespace HandySales.Api.Endpoints
                 }
                 catch (Exception ex)
                 {
-                    return Results.Problem($"Error interno del servidor: {ex.Message}");
+                    return Results.Problem("Error interno del servidor");
                 }
             })
             .WithName("CreateCompany")
@@ -519,7 +525,7 @@ namespace HandySales.Api.Endpoints
                 }
                 catch (Exception ex)
                 {
-                    return Results.Problem($"Error interno del servidor: {ex.Message}");
+                    return Results.Problem("Error interno del servidor");
                 }
             })
             .WithName("UpdateCompany")
@@ -550,7 +556,7 @@ namespace HandySales.Api.Endpoints
                 }
                 catch (Exception ex)
                 {
-                    return Results.Problem($"Error interno del servidor: {ex.Message}");
+                    return Results.Problem("Error interno del servidor");
                 }
             })
             .WithName("DeleteCompany")

@@ -60,7 +60,7 @@ public static class RoleEndpoints
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error obteniendo roles: {ex.Message}");
+            return Results.Problem("Error obteniendo roles");
         }
     }
 
@@ -74,7 +74,7 @@ public static class RoleEndpoints
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error obteniendo roles activos: {ex.Message}");
+            return Results.Problem("Error obteniendo roles activos");
         }
     }
 
@@ -93,7 +93,7 @@ public static class RoleEndpoints
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error obteniendo rol: {ex.Message}");
+            return Results.Problem("Error obteniendo rol");
         }
     }
 
@@ -112,7 +112,7 @@ public static class RoleEndpoints
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error creando rol: {ex.Message}");
+            return Results.Problem("Error creando rol");
         }
     }
 
@@ -136,7 +136,7 @@ public static class RoleEndpoints
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error actualizando rol: {ex.Message}");
+            return Results.Problem("Error actualizando rol");
         }
     }
 
@@ -159,7 +159,7 @@ public static class RoleEndpoints
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error eliminando rol: {ex.Message}");
+            return Results.Problem("Error eliminando rol");
         }
     }
 }

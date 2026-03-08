@@ -53,7 +53,7 @@ public static class CrashReportEndpoints
 
             return Results.Created($"/api/crash-reports/{report.Id}", new { id = report.Id });
         })
-        .AllowAnonymous()
+        .RequireAuthorization()
         .WithTags("CrashReports");
 
         // Endpoints de lectura/gestión — solo SuperAdmin

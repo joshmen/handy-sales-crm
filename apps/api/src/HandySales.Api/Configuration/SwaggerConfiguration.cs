@@ -75,7 +75,10 @@ public static class SwaggerConfiguration
 
     public static IApplicationBuilder UseSwaggerConfiguration(this IApplicationBuilder app, IWebHostEnvironment env)
     {
-        // Habilitar Swagger en todos los ambientes para facilitar el desarrollo
+        // Solo habilitar Swagger en desarrollo — no exponer API schema en producción
+        if (!env.IsDevelopment())
+            return app;
+
         app.UseSwagger(options =>
         {
             options.RouteTemplate = "swagger/{documentName}/swagger.json";
@@ -93,12 +96,7 @@ public static class SwaggerConfiguration
             options.EnableFilter();
             options.ShowExtensions();
             options.EnableValidator();
-            
-            // Tema oscuro opcional
-            if (env.IsDevelopment())
-            {
-                options.EnableTryItOutByDefault();
-            }
+            options.EnableTryItOutByDefault();
         });
 
         return app;

@@ -139,7 +139,11 @@ function LoginContent() {
     if (result?.ok) {
       setNavigating(true);
       const callbackUrl = searchParams.get('callbackUrl');
-      router.push(callbackUrl?.startsWith('/') ? callbackUrl : '/dashboard');
+      // Validate callback URL to prevent open redirect (reject protocol-relative URLs like //evil.com)
+      const safeCallback = callbackUrl && callbackUrl.startsWith('/') && !callbackUrl.startsWith('//')
+        ? callbackUrl
+        : '/dashboard';
+      router.push(safeCallback);
     } else {
       toast({
         title: 'Error de sesión',

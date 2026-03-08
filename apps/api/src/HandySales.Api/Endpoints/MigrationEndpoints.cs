@@ -107,7 +107,7 @@ public static class MigrationEndpoints
             }
             catch (Exception ex)
             {
-                return Results.Problem($"Error en la migración: {ex.Message}");
+                return Results.Problem("Error en la migración");
             }
         })
         .WithName("InitializeExistingTenants")

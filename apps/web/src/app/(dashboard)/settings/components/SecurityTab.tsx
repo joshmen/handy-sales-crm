@@ -79,7 +79,7 @@ export const SecurityTab: React.FC = () => {
 
     setChangingPassword(true);
     try {
-      const response = await profileService.changePassword('me', { password: newPassword });
+      const response = await profileService.changePassword({ currentPassword, newPassword });
       if (response.success) {
         toast.success('Contraseña actualizada exitosamente');
         setCurrentPassword('');

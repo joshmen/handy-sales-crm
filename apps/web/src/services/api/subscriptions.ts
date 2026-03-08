@@ -15,14 +15,12 @@ export const subscriptionService = {
   async createCheckoutSession(
     planCode: string,
     interval: 'month' | 'year',
-    successUrl: string,
-    cancelUrl: string
-  ): Promise<{ url: string }> {
-    const { data } = await api.post<{ url: string }>('/api/subscription/checkout', {
+    returnUrl: string
+  ): Promise<{ clientSecret: string; sessionId: string }> {
+    const { data } = await api.post<{ clientSecret: string; sessionId: string }>('/api/subscription/checkout', {
       planCode,
       interval,
-      successUrl,
-      cancelUrl,
+      returnUrl,
     });
     return data;
   },

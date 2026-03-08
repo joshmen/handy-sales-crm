@@ -73,7 +73,7 @@ public static class ListaPrecioEndpoints
 
         app.MapPatch("/listas-precios/batch-toggle", async (ListaPrecioBatchToggleRequest request, [FromServices] ListaPrecioService servicio) =>
         {
-            if (request.Ids == null || request.Ids.Count == 0)
+            if (request.Ids == null || request.Ids.Count == 0 || request.Ids.Count > 1000)
                 return Results.BadRequest(new { error = "Se requiere al menos un ID" });
 
             var count = await servicio.BatchToggleActivoAsync(request.Ids, request.Activo);

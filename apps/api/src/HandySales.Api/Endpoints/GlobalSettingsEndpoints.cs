@@ -55,7 +55,7 @@ namespace HandySales.Api.Endpoints
                 }
                 catch (Exception ex)
                 {
-                    return Results.Problem($"Error interno del servidor: {ex.Message}");
+                    return Results.Problem("Error interno del servidor");
                 }
             })
             .WithName("GetGlobalSettings")
@@ -94,7 +94,7 @@ namespace HandySales.Api.Endpoints
                 }
                 catch (Exception ex)
                 {
-                    return Results.Problem($"Error interno del servidor: {ex.Message}");
+                    return Results.Problem("Error interno del servidor");
                 }
             })
             .WithName("UpdateGlobalSettings")

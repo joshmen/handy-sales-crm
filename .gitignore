@@ -28,6 +28,8 @@ TestResult.xml
 .env.*
 !.env.production.template
 !.env.example
+**/vercel-env-vars.txt
+**/github-secrets-config.txt
 
 # ── Logs ──────────────────────────────────
 *.log

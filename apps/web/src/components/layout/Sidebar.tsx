@@ -34,6 +34,7 @@ import {
   Megaphone,
   DeviceMobile,
   Robot,
+  Brain,
   Target,
   Bug,
   ClockCounterClockwise,
@@ -286,6 +287,13 @@ const sidebarItems: SidebarItem[] = [
     label: 'Metas de Vendedor',
     icon: Target,
     href: '/metas',
+    permission: 'view_automations',
+  },
+  {
+    id: 'ai',
+    label: 'Asistente IA',
+    icon: Brain,
+    href: '/ai',
     permission: 'view_automations',
   },
 

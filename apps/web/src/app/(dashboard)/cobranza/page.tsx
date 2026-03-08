@@ -9,6 +9,7 @@ import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
 import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ExportButton } from '@/components/shared/ExportButton';
+import { Button } from '@/components/ui/Button';
 import { HelpTooltip } from '@/components/help/HelpTooltip';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
@@ -1283,22 +1284,14 @@ export default function CobranzaPage() {
         isDirty={isDirty}
         onSave={rhfSubmit(handleCreateCobro)}
         footer={
-          <div className="flex justify-end gap-3">
-            <button
-              onClick={() => drawerNewCobroRef.current?.requestClose()}
-              disabled={creating}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
-            >
+          <div className="flex items-center justify-end gap-3">
+            <Button type="button" variant="outline" onClick={() => drawerNewCobroRef.current?.requestClose()} disabled={creating}>
               Cancelar
-            </button>
-            <button
-              onClick={rhfSubmit(handleCreateCobro)}
-              disabled={creating}
-              className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
-            >
+            </Button>
+            <Button type="button" variant="success" onClick={rhfSubmit(handleCreateCobro)} disabled={creating} className="flex items-center gap-2">
               {creating && <Loader2 className="w-4 h-4 animate-spin" />}
-              {creating ? 'Guardando...' : 'Registrar Cobro'}
-            </button>
+              {creating ? 'Guardando...' : 'Crear Cobro'}
+            </Button>
           </div>
         }
       >

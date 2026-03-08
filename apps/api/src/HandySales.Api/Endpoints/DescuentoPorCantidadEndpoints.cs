@@ -80,7 +80,7 @@ public static class DescuentosEndpoints
         // Batch toggle - habilitar/deshabilitar múltiples descuentos
         app.MapPatch("/descuentos/batch-toggle", async (BatchToggleRequest request, [FromServices] DescuentoPorCantidadService servicio) =>
         {
-            if (request.Ids == null || request.Ids.Count == 0)
+            if (request.Ids == null || request.Ids.Count == 0 || request.Ids.Count > 1000)
                 return Results.BadRequest(new { error = "Se requiere al menos un ID" });
 
             var actualizados = await servicio.BatchToggleActivoAsync(request.Ids, request.Activo);

@@ -92,7 +92,7 @@ public static class UsuarioEndpoints
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error al obtener usuarios: {ex.Message}");
+            return Results.Problem("Error al obtener usuarios");
         }
     }
 
@@ -109,7 +109,7 @@ public static class UsuarioEndpoints
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error al obtener usuario: {ex.Message}");
+            return Results.Problem("Error al obtener usuario");
         }
     }
 
@@ -126,7 +126,7 @@ public static class UsuarioEndpoints
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error al buscar usuarios: {ex.Message}");
+            return Results.Problem("Error al buscar usuarios");
         }
     }
 
@@ -167,7 +167,7 @@ public static class UsuarioEndpoints
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error al actualizar usuario: {ex.Message}");
+            return Results.Problem("Error al actualizar usuario");
         }
     }
 
@@ -183,7 +183,7 @@ public static class UsuarioEndpoints
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error al eliminar usuario: {ex.Message}");
+            return Results.Problem("Error al eliminar usuario");
         }
     }
 
@@ -203,7 +203,7 @@ public static class UsuarioEndpoints
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error al activar usuario: {ex.Message}");
+            return Results.Problem("Error al activar usuario");
         }
     }
 
@@ -227,7 +227,7 @@ public static class UsuarioEndpoints
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error al desactivar usuario: {ex.Message}");
+            return Results.Problem("Error al desactivar usuario");
         }
     }
 
@@ -247,7 +247,7 @@ public static class UsuarioEndpoints
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error al asignar rol: {ex.Message}");
+            return Results.Problem("Error al asignar rol");
         }
     }
 
@@ -276,7 +276,7 @@ public static class UsuarioEndpoints
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error al subir avatar: {ex.Message}");
+            return Results.Problem("Error al subir avatar");
         }
     }
 
@@ -296,7 +296,7 @@ public static class UsuarioEndpoints
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error al eliminar avatar: {ex.Message}");
+            return Results.Problem("Error al eliminar avatar");
         }
     }
 
@@ -304,7 +304,7 @@ public static class UsuarioEndpoints
     {
         try
         {
-            if (request.Ids == null || request.Ids.Count == 0)
+            if (request.Ids == null || request.Ids.Count == 0 || request.Ids.Count > 1000)
                 return Results.BadRequest(new { error = "Se requiere al menos un ID" });
 
             var actualizados = await service.BatchToggleActivoAsync(request.Ids, request.Activo);
@@ -316,7 +316,7 @@ public static class UsuarioEndpoints
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error al cambiar estado de usuarios: {ex.Message}");
+            return Results.Problem("Error al cambiar estado de usuarios");
         }
     }
 
@@ -333,7 +333,7 @@ public static class UsuarioEndpoints
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error al obtener ubicaciones: {ex.Message}");
+            return Results.Problem("Error al obtener ubicaciones");
         }
     }
 

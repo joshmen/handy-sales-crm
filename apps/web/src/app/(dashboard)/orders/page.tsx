@@ -21,11 +21,11 @@ import {
   Trash2,
   Eye,
   ShoppingCart,
-  Check,
   Loader2,
 } from 'lucide-react';
 import { ListPagination } from '@/components/ui/ListPagination';
 import { ExportButton } from '@/components/shared/ExportButton';
+import { Button } from '@/components/ui/Button';
 import { ShoppingCart as ShoppingCartIcon } from '@phosphor-icons/react';
 import { SearchBar } from '@/components/common/SearchBar';
 import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
@@ -634,21 +634,12 @@ export default function OrdersPage() {
         onSave={() => orderFormRef.current?.submit()}
         footer={
           <div className="flex items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => drawerRef.current?.requestClose()}
-              className="px-5 py-2.5 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-            >
+            <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()}>
               Cancelar
-            </button>
-            <button
-              type="button"
-              onClick={() => orderFormRef.current?.submit()}
-              className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
-            >
-              <Check className="w-4 h-4" />
-              {editingOrder ? 'Actualizar Pedido' : 'Crear Pedido'}
-            </button>
+            </Button>
+            <Button type="button" variant="success" onClick={() => orderFormRef.current?.submit()} className="flex items-center gap-2">
+              {editingOrder ? 'Guardar Cambios' : 'Crear Pedido'}
+            </Button>
           </div>
         }
       >

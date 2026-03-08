@@ -11,7 +11,7 @@ namespace HandySales.Api.Payments;
 public interface IStripeService
 {
     Task<string> CreateCustomerAsync(Tenant tenant);
-    Task<string> CreateCheckoutSessionAsync(int tenantId, string planCode, string interval, string successUrl, string cancelUrl);
+    Task<(string ClientSecret, string SessionId)> CreateCheckoutSessionAsync(int tenantId, string planCode, string interval, string returnUrl);
     Task<string> CreatePortalSessionAsync(string stripeCustomerId, string returnUrl);
     Task HandleWebhookAsync(string json, string signature);
     Task CancelSubscriptionAsync(int tenantId);
@@ -75,9 +75,9 @@ public class StripeService : IStripeService
         return customer.Id;
     }
 
-    public async Task<string> CreateCheckoutSessionAsync(
+    public async Task<(string ClientSecret, string SessionId)> CreateCheckoutSessionAsync(
         int tenantId, string planCode, string interval,
-        string successUrl, string cancelUrl)
+        string returnUrl)
     {
         var tenant = await _db.Tenants.FirstOrDefaultAsync(t => t.Id == tenantId)
             ?? throw new InvalidOperationException("Tenant no encontrado");
@@ -101,13 +101,13 @@ public class StripeService : IStripeService
         var options = new SessionCreateOptions
         {
             Customer = tenant.StripeCustomerId,
+            UiMode = "embedded",
             Mode = "subscription",
             LineItems = new List<SessionLineItemOptions>
             {
                 new() { Price = priceId, Quantity = 1 }
             },
-            SuccessUrl = successUrl + "?session_id={CHECKOUT_SESSION_ID}",
-            CancelUrl = cancelUrl,
+            ReturnUrl = returnUrl + "?session_id={CHECKOUT_SESSION_ID}",
             Metadata = new Dictionary<string, string>
             {
                 { "tenant_id", tenantId.ToString() },
@@ -118,7 +118,7 @@ public class StripeService : IStripeService
         var service = new SessionService();
         var session = await service.CreateAsync(options);
 
-        return session.Url;
+        return (session.ClientSecret, session.Id);
     }
 
     public async Task<string> CreatePortalSessionAsync(string stripeCustomerId, string returnUrl)
@@ -137,7 +137,7 @@ public class StripeService : IStripeService
 
     public async Task HandleWebhookAsync(string json, string signature)
     {
-        var stripeEvent = EventUtility.ConstructEvent(json, signature, _webhookSecret);
+        var stripeEvent = EventUtility.ConstructEvent(json, signature, _webhookSecret, throwOnApiVersionMismatch: false);
 
         _logger.LogInformation("Stripe webhook received: {Type}", stripeEvent.Type);
 

@@ -111,7 +111,7 @@ public static class DashboardEndpoints
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error obteniendo métricas: {ex.Message}");
+            return Results.Problem("Error obteniendo métricas");
         }
     }
 
@@ -306,7 +306,7 @@ public static class DashboardEndpoints
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error obteniendo rendimiento: {ex.Message}");
+            return Results.Problem("Error obteniendo rendimiento");
         }
     }
 

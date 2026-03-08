@@ -41,8 +41,8 @@ body {
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 15%;
 
-    /* Primary colors - Google Blue */
-    --primary: 213 93% 57%;
+    /* Primary colors — company brand (default green #16A34A, overridden by CompanyContext) */
+    --primary: 142 71% 45%;
     --primary-foreground: 0 0% 100%;
 
     /* Secondary colors */
@@ -69,8 +69,8 @@ body {
     --border: 0 0% 90%;
     --input: 0 0% 90%;
 
-    /* Ring colors - Google Blue for focus */
-    --ring: 213 93% 57%;
+    /* Ring colors - company brand for focus */
+    --ring: 142 71% 45%;
 
     /* Chart colors - Google palette */
     --chart-1: 213 93% 57%;
@@ -94,8 +94,8 @@ body {
     --popover: 228 12% 14%;
     --popover-foreground: 210 15% 93%;
 
-    --primary: 213 90% 60%;
-    --primary-foreground: 228 12% 8%;
+    --primary: 142 64% 48%;
+    --primary-foreground: 0 0% 100%;
 
     --secondary: 228 10% 16%;
     --secondary-foreground: 210 15% 90%;
@@ -115,7 +115,7 @@ body {
     --border: 228 10% 19%;
     --input: 228 10% 19%;
 
-    --ring: 213 90% 60%;
+    --ring: 142 64% 48%;
 
     --chart-1: 213 85% 58%;
     --chart-2: 152 55% 50%;

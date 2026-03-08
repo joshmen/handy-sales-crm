@@ -84,7 +84,7 @@ public static class CategoriaClienteEndpoints
 
         app.MapPatch("/categorias-clientes/batch-toggle", async (CategoriaClienteBatchToggleRequest request, [FromServices] CategoriaClienteService servicio) =>
         {
-            if (request.Ids == null || request.Ids.Count == 0)
+            if (request.Ids == null || request.Ids.Count == 0 || request.Ids.Count > 1000)
                 return Results.BadRequest(new { error = "Se requiere al menos un ID" });
 
             var result = await servicio.BatchToggleActivoAsync(request.Ids, request.Activo);

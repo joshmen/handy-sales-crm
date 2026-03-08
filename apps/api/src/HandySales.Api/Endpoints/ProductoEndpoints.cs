@@ -80,7 +80,7 @@ public static class ProductoEndpoints
 
         app.MapPatch("/productos/batch-toggle", async (ProductoBatchToggleRequest request, [FromServices] ProductoService servicio) =>
         {
-            if (request.Ids == null || request.Ids.Count == 0)
+            if (request.Ids == null || request.Ids.Count == 0 || request.Ids.Count > 1000)
                 return Results.BadRequest(new { error = "Se requiere al menos un ID" });
 
             var actualizados = await servicio.BatchToggleActivoAsync(request.Ids, request.Activo);
@@ -128,7 +128,7 @@ public static class ProductoEndpoints
             }
             catch (Exception ex)
             {
-                return Results.Problem($"Error al subir imagen: {ex.Message}");
+                return Results.Problem("Error al subir imagen");
             }
         })
         .DisableAntiforgery()

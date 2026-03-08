@@ -108,7 +108,7 @@ public static class FamiliasProductosEndpoints
 
         app.MapPatch("/familias-productos/batch-toggle", async (FamiliaBatchToggleRequest request, [FromServices] FamiliaProductoService servicio) =>
         {
-            if (request.Ids == null || request.Ids.Count == 0)
+            if (request.Ids == null || request.Ids.Count == 0 || request.Ids.Count > 1000)
                 return Results.BadRequest(new { error = "Se requiere al menos un ID" });
 
             var result = await servicio.BatchToggleActivoAsync(request.Ids, request.Activo);

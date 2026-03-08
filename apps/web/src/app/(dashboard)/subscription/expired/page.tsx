@@ -47,13 +47,8 @@ export default function SubscriptionExpiredPage() {
 
     try {
       setCheckoutLoading(plan.codigo);
-      const { url } = await subscriptionService.createCheckoutSession(
-        plan.codigo,
-        'month',
-        `${window.location.origin}/subscription?success=true`,
-        `${window.location.origin}/subscription/expired`
-      );
-      window.location.href = url;
+      // Redirect to main subscription page which handles embedded checkout
+      router.push(`/subscription?upgrade=${plan.codigo}`);
     } catch {
       setCheckoutLoading(null);
     }

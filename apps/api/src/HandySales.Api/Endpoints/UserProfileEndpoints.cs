@@ -42,7 +42,7 @@ public static class UserProfileEndpoints
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error al obtener perfil: {ex.Message}");
+            return Results.Problem("Error al obtener perfil");
         }
     }
 
@@ -62,7 +62,7 @@ public static class UserProfileEndpoints
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error al actualizar perfil: {ex.Message}");
+            return Results.Problem("Error al actualizar perfil");
         }
     }
 
@@ -92,7 +92,7 @@ public static class UserProfileEndpoints
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error al subir avatar: {ex.Message}");
+            return Results.Problem("Error al subir avatar");
         }
     }
 
@@ -113,7 +113,7 @@ public static class UserProfileEndpoints
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error al eliminar avatar: {ex.Message}");
+            return Results.Problem("Error al eliminar avatar");
         }
     }
 }

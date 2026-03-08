@@ -5,6 +5,27 @@ import { useSession } from 'next-auth/react';
 import { CompanySettings, UpdateCompanyRequest, companyService } from '@/services/api/companyService';
 import { toast } from '@/hooks/useToast';
 import { useUIStore } from '@/stores/useUIStore';
+// Convert hex color to HSL string for CSS variables (e.g. "142 71% 45%")
+function hexToHsl(hex: string): string | null {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!result) return null;
+  const r = parseInt(result[1], 16) / 255;
+  const g = parseInt(result[2], 16) / 255;
+  const b = parseInt(result[3], 16) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h = 0, s = 0;
+  const l = (max + min) / 2;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+      case g: h = ((b - r) / d + 2) / 6; break;
+      case b: h = ((r - g) / d + 4) / 6; break;
+    }
+  }
+  return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
+}
 
 interface CompanyContextType {
   settings: CompanySettings | null;
@@ -53,6 +74,12 @@ export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) =>
         const SYSTEM_DEFAULT_SECONDARY = '#6c757d';
         if (response.data.companyPrimaryColor && response.data.companyPrimaryColor !== SYSTEM_DEFAULT_PRIMARY) {
           document.documentElement.style.setProperty('--company-primary-color', response.data.companyPrimaryColor);
+          // Update CSS design-system tokens so <Button>, focus rings, etc. use company color
+          const hsl = hexToHsl(response.data.companyPrimaryColor);
+          if (hsl) {
+            document.documentElement.style.setProperty('--primary', hsl);
+            document.documentElement.style.setProperty('--ring', hsl);
+          }
         }
         if (response.data.companySecondaryColor && response.data.companySecondaryColor !== SYSTEM_DEFAULT_SECONDARY) {
           document.documentElement.style.setProperty('--company-secondary-color', response.data.companySecondaryColor);
@@ -137,6 +164,11 @@ export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) =>
         const SYS_DEFAULT_SECONDARY = '#6c757d';
         if (response.data.companyPrimaryColor && response.data.companyPrimaryColor !== SYS_DEFAULT_PRIMARY) {
           document.documentElement.style.setProperty('--company-primary-color', response.data.companyPrimaryColor);
+          const hsl = hexToHsl(response.data.companyPrimaryColor);
+          if (hsl) {
+            document.documentElement.style.setProperty('--primary', hsl);
+            document.documentElement.style.setProperty('--ring', hsl);
+          }
         }
         if (response.data.companySecondaryColor && response.data.companySecondaryColor !== SYS_DEFAULT_SECONDARY) {
           document.documentElement.style.setProperty('--company-secondary-color', response.data.companySecondaryColor);

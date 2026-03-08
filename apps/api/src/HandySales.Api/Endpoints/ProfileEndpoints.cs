@@ -46,7 +46,7 @@ public static class ProfileEndpoints
             }
             catch (Exception ex)
             {
-                return Results.Problem($"Error interno del servidor: {ex.Message}");
+                return Results.Problem("Error interno del servidor");
             }
         })
         .WithName("UploadAvatar")
@@ -82,7 +82,7 @@ public static class ProfileEndpoints
             }
             catch (Exception ex)
             {
-                return Results.Problem($"Error interno del servidor: {ex.Message}");
+                return Results.Problem("Error interno del servidor");
             }
         })
         .WithName("DeleteAvatar")
@@ -114,7 +114,7 @@ public static class ProfileEndpoints
             }
             catch (Exception ex)
             {
-                return Results.Problem($"Error interno del servidor: {ex.Message}");
+                return Results.Problem("Error interno del servidor");
             }
         })
         .WithName("GetProfile")

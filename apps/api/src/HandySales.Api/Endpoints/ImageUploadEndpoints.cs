@@ -28,6 +28,10 @@ public static class ImageUploadEndpoints
                     return Results.BadRequest("Usuario no válido");
                 }
 
+                // Limit file size to 5MB
+                if (file.Length > 5 * 1024 * 1024)
+                    return Results.BadRequest(new { error = "El archivo no debe superar 5MB" });
+
                 var usuario = await dbContext.Usuarios
                     .Include(u => u.Tenant)
                     .FirstOrDefaultAsync(u => u.Id == userId);
@@ -68,7 +72,7 @@ public static class ImageUploadEndpoints
             }
             catch (Exception ex)
             {
-                return Results.Problem($"Error al subir imagen: {ex.Message}");
+                return Results.Problem("Error al subir imagen");
             }
         })
         .DisableAntiforgery();
@@ -132,7 +136,7 @@ public static class ImageUploadEndpoints
             }
             catch (Exception ex)
             {
-                return Results.Problem($"Error al subir logo: {ex.Message}");
+                return Results.Problem("Error al subir logo");
             }
         })
         .DisableAntiforgery();
@@ -211,7 +215,7 @@ public static class ImageUploadEndpoints
             }
             catch (Exception ex)
             {
-                return Results.Problem($"Error al subir imagen: {ex.Message}");
+                return Results.Problem("Error al subir imagen");
             }
         });
 

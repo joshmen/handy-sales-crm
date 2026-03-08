@@ -60,6 +60,19 @@ builder.Services.Configure<BrotliCompressionProviderOptions>(options =>
 builder.Services.Configure<GzipCompressionProviderOptions>(options =>
     options.Level = CompressionLevel.SmallestSize);
 
+// OpenAI HttpClient for AI Gateway
+var openAiKey = builder.Configuration["Ai:ApiKey"]
+    ?? Environment.GetEnvironmentVariable("OPENAI_API_KEY")
+    ?? "";
+builder.Services.AddHttpClient("OpenAI", client =>
+{
+    client.BaseAddress = new Uri("https://api.openai.com/");
+    if (!string.IsNullOrEmpty(openAiKey))
+        client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", openAiKey);
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+
 // Background workers
 builder.Services.AddHostedService<ScheduledActionProcessor>();
 builder.Services.AddHostedService<SubscriptionMonitor>();
@@ -86,9 +99,10 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
 
 app.UseResponseCompression();
 app.UseMiddleware<GlobalExceptionMiddleware>();
+app.UseMiddleware<SecurityHeadersMiddleware>();
 app.UseMiddleware<RequestLoggingMiddleware>();
 
-// Swagger configuration (habilitado en todos los ambientes)
+// Swagger configuration (solo desarrollo)
 app.UseSwaggerConfiguration(app.Environment);
 
 app.UseHttpsRedirection();
@@ -138,6 +152,7 @@ app.MapTenantImpersonationHistoryEndpoints();
 app.MapTenantEndpoints();
 app.MapImportExportEndpoints();
 app.MapReportEndpoints();
+app.MapGeoEndpoints();
 app.MapCobroEndpoints();
 app.MapTwoFactorEndpoints();
 app.MapAnnouncementEndpoints();
@@ -149,6 +164,7 @@ app.MapCrashReportEndpoints();
 app.MapActivityLogEndpoints();
 app.MapSupervisorEndpoints();
 app.MapAutomationEndpoints();
+app.MapAiEndpoints();
 
 // SignalR hub
 app.MapHub<NotificationHub>("/hubs/notifications");

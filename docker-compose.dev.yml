@@ -16,8 +16,9 @@ services:
       - handysales_dev_network
 
   # PostgreSQL Database (single instance with multiple databases)
+  # Using PostGIS image for spatial queries (ST_Distance, etc.) — same PostgreSQL 16, adds extensions
   postgres:
-    image: postgres:16-alpine
+    image: postgis/postgis:16-3.4-alpine
     container_name: handysales_postgres_dev
     restart: unless-stopped
     environment:
@@ -69,6 +70,9 @@ services:
       SENDGRID_API_KEY: "${SENDGRID_API_KEY}"
       SENDGRID_FROM_EMAIL: "${SENDGRID_FROM_EMAIL}"
       SENDGRID_FROM_NAME: "${SENDGRID_FROM_NAME}"
+      STRIPE_SECRET_KEY: "${STRIPE_SECRET_KEY}"
+      STRIPE_WEBHOOK_SECRET: "${STRIPE_WEBHOOK_SECRET}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY}"
     ports:
       - "1050:1050"
     depends_on:

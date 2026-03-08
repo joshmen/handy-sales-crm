@@ -86,7 +86,7 @@ public static class ClienteEndpoints
 
         app.MapPatch("/clientes/batch-toggle", async (ClienteBatchToggleRequest request, [FromServices] ClienteService servicio) =>
         {
-            if (request.Ids == null || request.Ids.Count == 0)
+            if (request.Ids == null || request.Ids.Count == 0 || request.Ids.Count > 1000)
                 return Results.BadRequest(new { error = "Se requiere al menos un ID" });
 
             var actualizados = await servicio.BatchToggleActivoAsync(request.Ids, request.Activo);

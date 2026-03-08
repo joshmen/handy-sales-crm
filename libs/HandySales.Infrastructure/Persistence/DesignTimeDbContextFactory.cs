@@ -11,11 +11,14 @@ public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<HandySales
 {
     public HandySalesDbContext CreateDbContext(string[] args)
     {
+        // Suppress timestamp type drift (keeps "timestamp with time zone" consistent with baseline)
+        AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
         var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
             ?? "Host=localhost;Port=5432;Database=handy_erp;Username=handy_user;Password=handy_pass";
 
         var optionsBuilder = new DbContextOptionsBuilder<HandySalesDbContext>();
-        optionsBuilder.UseNpgsql(connectionString);
+        optionsBuilder.UseNpgsql(connectionString, o => o.UseNetTopologySuite());
 
         return new HandySalesDbContext(optionsBuilder.Options);
     }

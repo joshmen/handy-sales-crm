@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using HandySales.Domain.Common;
+using NetTopologySuite.Geometries;
 
 namespace HandySales.Domain.Entities;
 
@@ -35,6 +36,9 @@ public class Cliente : AuditableEntity
 
     [Column("longitud")]
     public double? Longitud { get; set; }
+
+    [Column("ubicacion")]
+    public Point? Ubicacion { get; set; }
 
     // === Campos adicionales del formulario ===
     [Column("es_prospecto")]
