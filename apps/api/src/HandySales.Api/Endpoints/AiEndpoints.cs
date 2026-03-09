@@ -40,6 +40,9 @@ public static class AiEndpoints
         group.MapGet("/collections-priority", HandleCollectionsPriority);
         group.MapPost("/collections-message", HandleCollectionsMessage);
         group.MapGet("/orders/{pedidoId}/anomalies", HandleOrderAnomalies);
+        group.MapGet("/client/{clienteId}/smart-discount", HandleSmartDiscount);
+        group.MapGet("/recommendations/tomorrow", HandleRecommendationsTomorrow);
+        group.MapGet("/routes/{rutaId}/stop-durations", HandleStopDurations);
     }
 
     private static async Task<IResult> HandleQuery(
@@ -679,6 +682,337 @@ Reglas:
             totalAnomalias = anomalies.Count,
             tieneAnomalias = anomalies.Count > 0,
             items = anomalies
+        });
+    }
+
+    // ═══ P2-6: Smart Discount Suggestion ═══════════════════════════════
+
+    private static async Task<IResult> HandleSmartDiscount(
+        int clienteId,
+        HandySalesDbContext db,
+        ITenantContextService tenantContext,
+        [FromQuery] int? productoId = null,
+        [FromQuery] int cantidad = 1)
+    {
+        var tenantId = tenantContext.TenantId ?? 0;
+        if (tenantId == 0) return Results.Unauthorized();
+
+        var ninetyDaysAgo = DateTime.UtcNow.AddDays(-90);
+
+        // Client profile
+        var cliente = await db.Clientes
+            .AsNoTracking()
+            .Where(c => c.Id == clienteId && c.TenantId == tenantId && c.Activo)
+            .Select(c => new { c.Nombre, c.Saldo, c.LimiteCredito, c.Descuento })
+            .FirstOrDefaultAsync();
+
+        if (cliente == null)
+            return Results.NotFound(new { error = "Cliente no encontrado." });
+
+        // Client purchase history (last 90 days)
+        var historial = await db.Pedidos
+            .AsNoTracking()
+            .Where(p => p.ClienteId == clienteId && p.TenantId == tenantId && p.Activo
+                && p.FechaPedido >= ninetyDaysAgo && p.Estado != EstadoPedido.Cancelado)
+            .Select(p => new { p.Total, p.FechaPedido })
+            .ToListAsync();
+
+        var totalCompras90d = historial.Sum(h => h.Total);
+        var pedidosCount = historial.Count;
+        var promedioOrden = pedidosCount > 0 ? totalCompras90d / pedidosCount : 0;
+
+        // Volume discount tiers
+        var suggestions = new List<object>();
+
+        // 1. Loyalty discount (based on purchase frequency)
+        decimal loyaltyDiscount = 0;
+        string loyaltyReason;
+        if (pedidosCount >= 12) { loyaltyDiscount = 8; loyaltyReason = "Cliente frecuente (12+ pedidos/trimestre)"; }
+        else if (pedidosCount >= 8) { loyaltyDiscount = 5; loyaltyReason = "Cliente regular (8+ pedidos/trimestre)"; }
+        else if (pedidosCount >= 4) { loyaltyDiscount = 3; loyaltyReason = "Cliente activo (4+ pedidos/trimestre)"; }
+        else { loyaltyDiscount = 0; loyaltyReason = "Cliente nuevo/infrecuente"; }
+
+        if (loyaltyDiscount > 0)
+        {
+            suggestions.Add(new
+            {
+                tipo = "lealtad",
+                porcentaje = loyaltyDiscount,
+                razon = loyaltyReason,
+                basadoEn = $"{pedidosCount} pedidos en últimos 90 días, ${totalCompras90d:N2} MXN total"
+            });
+        }
+
+        // 2. Volume discount for specific product
+        if (productoId.HasValue)
+        {
+            // Check existing quantity-based discounts
+            var descuentosCantidad = await db.Set<DescuentoPorCantidad>()
+                .AsNoTracking()
+                .Where(d => d.TenantId == tenantId && d.Activo
+                    && (d.ProductoId == productoId || d.ProductoId == null)
+                    && d.CantidadMinima <= cantidad)
+                .OrderByDescending(d => d.CantidadMinima)
+                .FirstOrDefaultAsync();
+
+            if (descuentosCantidad != null)
+            {
+                suggestions.Add(new
+                {
+                    tipo = "volumen",
+                    porcentaje = descuentosCantidad.DescuentoPorcentaje,
+                    razon = $"Descuento por volumen ({cantidad}+ unidades)",
+                    basadoEn = $"Regla: {descuentosCantidad.CantidadMinima}+ unidades = {descuentosCantidad.DescuentoPorcentaje}%"
+                });
+            }
+
+            // Product-specific average discount given to this client
+            var avgProductDiscount = await db.DetallePedidos
+                .AsNoTracking()
+                .Where(d => d.Activo && d.ProductoId == productoId
+                    && d.Pedido.ClienteId == clienteId
+                    && d.Pedido.TenantId == tenantId
+                    && d.Pedido.Activo
+                    && d.Pedido.FechaPedido >= ninetyDaysAgo
+                    && d.PorcentajeDescuento > 0)
+                .AverageAsync(d => (double?)d.PorcentajeDescuento) ?? 0;
+
+            if (avgProductDiscount > 0)
+            {
+                suggestions.Add(new
+                {
+                    tipo = "historial_producto",
+                    porcentaje = Math.Round((decimal)avgProductDiscount, 1),
+                    razon = "Descuento promedio dado a este cliente en este producto",
+                    basadoEn = $"Promedio histórico: {avgProductDiscount:F1}%"
+                });
+            }
+        }
+
+        // 3. Credit risk adjustment — reduce discount if overdue
+        if (cliente.Saldo > 0 && cliente.LimiteCredito > 0)
+        {
+            var utilizacion = (double)(cliente.Saldo / cliente.LimiteCredito);
+            if (utilizacion > 0.7)
+            {
+                suggestions.Add(new
+                {
+                    tipo = "riesgo_credito",
+                    porcentaje = -2m,
+                    razon = $"Alerta: cliente usa {utilizacion:P0} de su crédito",
+                    basadoEn = $"Saldo ${cliente.Saldo:N2} de ${cliente.LimiteCredito:N2} límite"
+                });
+            }
+        }
+
+        // Calculate recommended total discount
+        var recommended = Math.Max(0, suggestions
+            .Where(s => ((dynamic)s).tipo.ToString() != "riesgo_credito")
+            .Max(s => (decimal)((dynamic)s).porcentaje));
+
+        // Apply credit risk penalty
+        var riesgo = suggestions.FirstOrDefault(s => ((dynamic)s).tipo.ToString() == "riesgo_credito");
+        if (riesgo != null)
+            recommended = Math.Max(0, recommended + (decimal)((dynamic)riesgo).porcentaje);
+
+        // Cap at existing client discount or 15% max
+        var maxDiscount = Math.Max(cliente.Descuento, 15m);
+        recommended = Math.Min(recommended, maxDiscount);
+
+        return Results.Ok(new
+        {
+            clienteId,
+            clienteNombre = cliente.Nombre,
+            descuentoActual = cliente.Descuento,
+            descuentoRecomendado = recommended,
+            maxDescuento = maxDiscount,
+            factores = suggestions
+        });
+    }
+
+    // ═══ P2-8: Recommendations for Tomorrow ═══════════════════════════
+
+    private static async Task<IResult> HandleRecommendationsTomorrow(
+        HandySalesDbContext db,
+        ITenantContextService tenantContext,
+        HttpContext ctx)
+    {
+        var tenantId = tenantContext.TenantId ?? 0;
+        var userIdStr = ctx.User.FindFirst("userId")?.Value
+            ?? ctx.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+            ?? ctx.User.FindFirst("sub")?.Value;
+        var userId = int.TryParse(userIdStr, out var uid) ? uid : 0;
+
+        if (tenantId == 0 || userId == 0)
+            return Results.Unauthorized();
+
+        var now = DateTime.UtcNow;
+        var sevenDaysAgo = now.AddDays(-7);
+        var recommendations = new List<object>();
+
+        // 1. Clients not visited in 7+ days
+        var clientesSinVisita = await db.Clientes
+            .AsNoTracking()
+            .Where(c => c.TenantId == tenantId && c.Activo && !c.EsProspecto)
+            .Where(c => !db.ClienteVisitas
+                .Any(v => v.ClienteId == c.Id && v.FechaHoraInicio >= sevenDaysAgo))
+            .OrderBy(c => c.Nombre)
+            .Take(5)
+            .Select(c => new { c.Id, c.Nombre })
+            .ToListAsync();
+
+        foreach (var c in clientesSinVisita)
+        {
+            var lastVisit = await db.ClienteVisitas
+                .Where(v => v.ClienteId == c.Id)
+                .OrderByDescending(v => v.FechaHoraInicio)
+                .Select(v => (DateTime?)v.FechaHoraInicio)
+                .FirstOrDefaultAsync();
+
+            var dias = lastVisit.HasValue ? (int)(now - lastVisit.Value).TotalDays : -1;
+            recommendations.Add(new
+            {
+                tipo = "visitar",
+                prioridad = "alta",
+                clienteId = c.Id,
+                mensaje = dias > 0
+                    ? $"Visitar a {c.Nombre} — {dias} días sin visita"
+                    : $"Visitar a {c.Nombre} — nunca visitado"
+            });
+        }
+
+        // 2. Clients with overdue balance
+        var clientesConSaldo = await db.Clientes
+            .AsNoTracking()
+            .Where(c => c.TenantId == tenantId && c.Activo && c.Saldo > 0)
+            .OrderByDescending(c => c.Saldo)
+            .Take(3)
+            .Select(c => new { c.Id, c.Nombre, c.Saldo })
+            .ToListAsync();
+
+        foreach (var c in clientesConSaldo)
+        {
+            recommendations.Add(new
+            {
+                tipo = "cobrar",
+                prioridad = c.Saldo > 5000 ? "alta" : "media",
+                clienteId = c.Id,
+                mensaje = $"Cobrar a {c.Nombre} — ${c.Saldo:N2} MXN pendiente"
+            });
+        }
+
+        // 3. Products that ran out today (sold but now zero stock)
+        var productosAgotados = await db.Productos
+            .AsNoTracking()
+            .Where(p => p.TenantId == tenantId && p.Activo
+                && p.Inventario != null && p.Inventario.CantidadActual <= 0)
+            .OrderBy(p => p.Nombre)
+            .Take(3)
+            .Select(p => new { p.Id, p.Nombre })
+            .ToListAsync();
+
+        foreach (var p in productosAgotados)
+        {
+            recommendations.Add(new
+            {
+                tipo = "reabastecer",
+                prioridad = "media",
+                productoId = p.Id,
+                mensaje = $"Llevar más {p.Nombre} — se agotó"
+            });
+        }
+
+        return Results.Ok(new
+        {
+            fecha = now.Date.AddDays(1).ToString("yyyy-MM-dd"),
+            total = recommendations.Count,
+            items = recommendations
+        });
+    }
+
+    // ═══ P2-9: Stop Duration Predictions ══════════════════════════════
+
+    private static async Task<IResult> HandleStopDurations(
+        int rutaId,
+        HandySalesDbContext db,
+        ITenantContextService tenantContext)
+    {
+        var tenantId = tenantContext.TenantId ?? 0;
+        if (tenantId == 0) return Results.Unauthorized();
+
+        // Get the route with its stops
+        var ruta = await db.RutasVendedor
+            .AsNoTracking()
+            .Include(r => r.Detalles).ThenInclude(d => d.Cliente)
+            .FirstOrDefaultAsync(r => r.Id == rutaId && r.TenantId == tenantId && r.Activo);
+
+        if (ruta == null)
+            return Results.NotFound(new { error = "Ruta no encontrada." });
+
+        var ninetyDaysAgo = DateTime.UtcNow.AddDays(-90);
+        var predictions = new List<object>();
+
+        foreach (var parada in ruta.Detalles.Where(d => d.Activo).OrderBy(d => d.OrdenVisita))
+        {
+            // Get historical visit durations for this client
+            var visitHistory = await db.ClienteVisitas
+                .AsNoTracking()
+                .Where(v => v.ClienteId == parada.ClienteId
+                    && v.FechaHoraInicio != null
+                    && v.FechaHoraInicio >= ninetyDaysAgo
+                    && v.FechaHoraFin != null)
+                .Select(v => new
+                {
+                    DuracionMinutos = (v.FechaHoraFin!.Value - v.FechaHoraInicio!.Value).TotalMinutes
+                })
+                .ToListAsync();
+
+            double avgMinutos;
+            double confidence;
+            string basadoEn;
+
+            if (visitHistory.Count >= 5)
+            {
+                avgMinutos = visitHistory.Average(v => v.DuracionMinutos);
+                confidence = 0.9;
+                basadoEn = $"{visitHistory.Count} visitas previas";
+            }
+            else if (visitHistory.Count >= 2)
+            {
+                avgMinutos = visitHistory.Average(v => v.DuracionMinutos);
+                confidence = 0.6;
+                basadoEn = $"{visitHistory.Count} visitas previas (pocos datos)";
+            }
+            else
+            {
+                avgMinutos = parada.DuracionEstimadaMinutos ?? 30;
+                confidence = 0.3;
+                basadoEn = "Estimado por defecto (sin historial)";
+            }
+
+            predictions.Add(new
+            {
+                paradaId = parada.Id,
+                clienteId = parada.ClienteId,
+                clienteNombre = parada.Cliente?.Nombre ?? "Desconocido",
+                ordenVisita = parada.OrdenVisita,
+                duracionEstimadaMinutos = (int)Math.Round(avgMinutos),
+                confianza = confidence,
+                basadoEn
+            });
+        }
+
+        var totalMinutos = predictions.Sum(p => ((dynamic)p).duracionEstimadaMinutos);
+
+        return Results.Ok(new
+        {
+            rutaId,
+            totalParadas = predictions.Count,
+            duracionTotalEstimadaMinutos = totalMinutos,
+            horaFinEstimada = ruta.HoraInicioEstimada.HasValue
+                ? (ruta.Fecha.Date + ruta.HoraInicioEstimada.Value).AddMinutes((double)(int)totalMinutos).ToString("HH:mm")
+                : null,
+            items = predictions
         });
     }
 }

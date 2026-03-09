@@ -223,3 +223,80 @@ export async function getOrderAnomalies(pedidoId: number): Promise<OrderAnomalie
   const { data } = await api.get<OrderAnomaliesResponse>(`/api/ai/orders/${pedidoId}/anomalies`);
   return data;
 }
+
+// ═══════════════════════════════════════════════════════
+// SMART DISCOUNT
+// ═══════════════════════════════════════════════════════
+
+export interface SmartDiscountFactor {
+  tipo: 'lealtad' | 'volumen' | 'historial_producto' | 'riesgo_credito';
+  porcentaje: number;
+  razon: string;
+  basadoEn: string;
+}
+
+export interface SmartDiscountResponse {
+  clienteId: number;
+  clienteNombre: string;
+  descuentoActual: number;
+  descuentoRecomendado: number;
+  maxDescuento: number;
+  factores: SmartDiscountFactor[];
+}
+
+export async function getSmartDiscount(clienteId: number, productoId?: number, cantidad = 1): Promise<SmartDiscountResponse> {
+  const { data } = await api.get<SmartDiscountResponse>(`/api/ai/client/${clienteId}/smart-discount`, {
+    params: { productoId, cantidad },
+  });
+  return data;
+}
+
+// ═══════════════════════════════════════════════════════
+// RECOMMENDATIONS FOR TOMORROW
+// ═══════════════════════════════════════════════════════
+
+export interface Recommendation {
+  tipo: 'visitar' | 'cobrar' | 'reabastecer';
+  prioridad: 'alta' | 'media' | 'baja';
+  clienteId?: number;
+  productoId?: number;
+  mensaje: string;
+}
+
+export interface RecommendationsResponse {
+  fecha: string;
+  total: number;
+  items: Recommendation[];
+}
+
+export async function getRecommendationsTomorrow(): Promise<RecommendationsResponse> {
+  const { data } = await api.get<RecommendationsResponse>('/api/ai/recommendations/tomorrow');
+  return data;
+}
+
+// ═══════════════════════════════════════════════════════
+// STOP DURATION PREDICTIONS
+// ═══════════════════════════════════════════════════════
+
+export interface StopDurationPrediction {
+  paradaId: number;
+  clienteId: number;
+  clienteNombre: string;
+  ordenVisita: number;
+  duracionEstimadaMinutos: number;
+  confianza: number;
+  basadoEn: string;
+}
+
+export interface StopDurationsResponse {
+  rutaId: number;
+  totalParadas: number;
+  duracionTotalEstimadaMinutos: number;
+  horaFinEstimada?: string;
+  items: StopDurationPrediction[];
+}
+
+export async function getStopDurations(rutaId: number): Promise<StopDurationsResponse> {
+  const { data } = await api.get<StopDurationsResponse>(`/api/ai/routes/${rutaId}/stop-durations`);
+  return data;
+}
