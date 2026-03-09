@@ -162,3 +162,17 @@ export async function getCollectionsPriority(limit = 20): Promise<CollectionsPri
   });
   return data;
 }
+
+// ═══════════════════════════════════════════════════════
+// ROUTE AI SUMMARY
+// ═══════════════════════════════════════════════════════
+
+export interface RouteAiSummaryResponse {
+  resumen: string | null;
+  mensaje?: string;
+}
+
+export async function getRouteAiSummary(rutaId: number): Promise<RouteAiSummaryResponse> {
+  const { data } = await api.get<RouteAiSummaryResponse>(`/rutas/${rutaId}/cierre/resumen-ai`);
+  return data;
+}

@@ -298,6 +298,16 @@ public static class RutaVendedorEndpoints
             return Results.Ok(new { mensaje = "Ruta cerrada exitosamente" });
         });
 
+        group.MapGet("/{id:int}/cierre/resumen-ai", async (
+            int id,
+            [FromServices] RutaVendedorService servicio) =>
+        {
+            var resumen = await servicio.GenerarResumenDiarioAsync(id);
+            return resumen != null
+                ? Results.Ok(new { resumen })
+                : Results.Ok(new { resumen = (string?)null, mensaje = "AI no disponible o sin créditos" });
+        });
+
         // Consulta de parada actual y siguiente
         group.MapGet("/{rutaId:int}/parada-actual", async (
             int rutaId,

@@ -1,7 +1,10 @@
+using HandySales.Application.Ai.DTOs;
+using HandySales.Application.Ai.Interfaces;
 using HandySales.Application.Rutas.DTOs;
 using HandySales.Application.Rutas.Interfaces;
 using HandySales.Domain.Entities;
 using HandySales.Shared.Multitenancy;
+using Microsoft.Extensions.Logging;
 
 namespace HandySales.Application.Rutas.Services;
 
@@ -9,11 +12,19 @@ public class RutaVendedorService
 {
     private readonly IRutaVendedorRepository _repo;
     private readonly ICurrentTenant _tenant;
+    private readonly IAiGatewayService? _aiGateway;
+    private readonly ILogger<RutaVendedorService>? _logger;
 
-    public RutaVendedorService(IRutaVendedorRepository repo, ICurrentTenant tenant)
+    public RutaVendedorService(
+        IRutaVendedorRepository repo,
+        ICurrentTenant tenant,
+        IAiGatewayService? aiGateway = null,
+        ILogger<RutaVendedorService>? logger = null)
     {
         _repo = repo;
         _tenant = tenant;
+        _aiGateway = aiGateway;
+        _logger = logger;
     }
 
     public async Task<int> CrearAsync(RutaVendedorCreateDto dto)
@@ -378,5 +389,47 @@ public class RutaVendedorService
         }
 
         await _repo.CerrarRutaAsync(rutaId, dto.MontoRecibido, _tenant.UserId, _tenant.TenantId);
+    }
+
+    /// <summary>
+    /// Generates an AI-powered natural language summary of a closed route.
+    /// Returns null if AI gateway is unavailable or credits are insufficient.
+    /// </summary>
+    public async Task<string?> GenerarResumenDiarioAsync(int rutaId)
+    {
+        if (_aiGateway == null) return null;
+
+        try
+        {
+            var resumen = await ObtenerResumenCierreAsync(rutaId);
+            var userId = int.TryParse(_tenant.UserId, out var uid) ? uid : 0;
+
+            var prompt = $@"Genera un resumen ejecutivo en español de la ruta de venta del día:
+- Ventas contado: {resumen.VentasContadoCount} pedidos por ${resumen.VentasContado:N2}
+- Entregas cobradas: {resumen.EntregasCobradasCount} por ${resumen.EntregasCobradas:N2}
+- Cobranza de adeudos: {resumen.CobranzaAdeudosCount} por ${resumen.CobranzaAdeudos:N2}
+- Ventas a crédito: {resumen.VentasCreditoCount} por ${resumen.VentasCredito:N2}
+- Entregas a crédito: {resumen.EntregasCreditoCount} por ${resumen.EntregasCredito:N2}
+- Preventas: {resumen.PedidosPreventaCount} por ${resumen.PedidosPreventa:N2}
+- Devoluciones: {resumen.DevolucionesCount} por ${resumen.Devoluciones:N2}
+- Valor de ruta: ${resumen.ValorRuta:N2}
+- Efectivo inicial: ${resumen.EfectivoInicial:N2}
+- A recibir: ${resumen.ARecibir:N2}
+- Recibido: ${resumen.Recibido:N2}
+- Diferencia: ${resumen.Diferencia:N2}
+Sé conciso (3-4 oraciones), destaca logros y puntos de atención.";
+
+            var response = await _aiGateway.ProcessRequestAsync(
+                new AiRequestDto("resumen", prompt),
+                _tenant.TenantId,
+                userId);
+
+            return response.Respuesta;
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning(ex, "Error generating AI route summary for ruta {RutaId}", rutaId);
+            return null;
+        }
     }
 }
