@@ -171,13 +171,21 @@ public class ClienteVisitaRepository : IClienteVisitaRepository
                 : $"{visita.Notas}\n[Check-in] {dto.Notas}";
         }
 
-        // Calcular distancia al cliente si tiene coordenadas
-        var cliente = await _db.Clientes.FindAsync(visita.ClienteId);
-        if (cliente?.Latitud != null && cliente?.Longitud != null)
+        // Calcular distancia al cliente via PostGIS ST_DistanceSphere (meters)
+        var distancia = await _db.Database
+            .SqlQueryRaw<double?>(@"
+                SELECT ST_DistanceSphere(
+                    ST_SetSRID(ST_MakePoint({0}, {1}), 4326),
+                    ubicacion
+                ) AS ""Value""
+                FROM ""Clientes""
+                WHERE id = {2} AND ubicacion IS NOT NULL",
+                dto.Longitud, dto.Latitud, visita.ClienteId)
+            .FirstOrDefaultAsync();
+
+        if (distancia.HasValue)
         {
-            visita.DistanciaCliente = CalcularDistancia(
-                dto.Latitud, dto.Longitud,
-                cliente.Latitud.Value, cliente.Longitud.Value);
+            visita.DistanciaCliente = Math.Round(distancia.Value, 1);
         }
 
         visita.ActualizadoEn = DateTime.UtcNow;
@@ -364,25 +372,4 @@ public class ClienteVisitaRepository : IClienteVisitaRepository
         return resumenes;
     }
 
-    // Calcular distancia usando formula Haversine
-    private static double CalcularDistancia(double lat1, double lon1, double lat2, double lon2)
-    {
-        const double R = 6371; // Radio de la Tierra en km
-
-        var dLat = ToRadians(lat2 - lat1);
-        var dLon = ToRadians(lon2 - lon1);
-
-        var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
-                Math.Cos(ToRadians(lat1)) * Math.Cos(ToRadians(lat2)) *
-                Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
-
-        var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
-
-        return R * c * 1000; // Retornar en metros
-    }
-
-    private static double ToRadians(double angle)
-    {
-        return Math.PI * angle / 180.0;
-    }
 }
