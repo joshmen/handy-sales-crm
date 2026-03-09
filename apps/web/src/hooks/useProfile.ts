@@ -142,7 +142,7 @@ export const useProfile = () => {
 
     setIsChangingPassword(true);
     try {
-      const response = await profileService.changePassword(session.user.id, data);
+      const response = await profileService.changePassword(data);
       if (response.success) {
         // Password changed successfully - no need to update profile since backend doesn't track this
 
