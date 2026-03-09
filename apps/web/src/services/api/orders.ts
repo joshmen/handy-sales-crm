@@ -67,6 +67,7 @@ export interface OrderDetailItem {
 
 export interface CreateOrderDto {
   clienteId: number;
+  tipoVenta?: number; // 0=Preventa (default), 1=VentaDirecta
   fechaEntregaEstimada?: string;
   notas?: string;
   notasInternas?: string;

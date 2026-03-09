@@ -17,7 +17,8 @@ public class PedidoRepository : IPedidoRepository
 
     public async Task<int> CrearAsync(PedidoCreateDto dto, int usuarioId, int tenantId)
     {
-        var numeroPedido = await GenerarNumeroPedidoAsync(tenantId);
+        var esVentaDirecta = dto.TipoVenta == TipoVenta.VentaDirecta;
+        var numeroPedido = await GenerarNumeroPedidoAsync(tenantId, esVentaDirecta ? "VD" : "PED");
 
         var pedido = new Pedido
         {
@@ -27,7 +28,8 @@ public class PedidoRepository : IPedidoRepository
             NumeroPedido = numeroPedido,
             FechaPedido = DateTime.UtcNow,
             FechaEntregaEstimada = dto.FechaEntregaEstimada,
-            Estado = EstadoPedido.Borrador,
+            Estado = esVentaDirecta ? EstadoPedido.Entregado : EstadoPedido.Borrador,
+            FechaEntregaReal = esVentaDirecta ? DateTime.UtcNow : null,
             TipoVenta = dto.TipoVenta,
             Notas = dto.Notas,
             DireccionEntrega = dto.DireccionEntrega,
@@ -479,10 +481,10 @@ public class PedidoRepository : IPedidoRepository
         return true;
     }
 
-    public async Task<string> GenerarNumeroPedidoAsync(int tenantId)
+    public async Task<string> GenerarNumeroPedidoAsync(int tenantId, string tipo = "PED")
     {
         var fecha = DateTime.UtcNow;
-        var prefijo = $"PED-{fecha:yyyyMMdd}";
+        var prefijo = $"{tipo}-{fecha:yyyyMMdd}";
 
         var ultimoNumero = await _db.Pedidos
             .AsNoTracking()

@@ -281,6 +281,7 @@ export default function OrdersPage() {
       } else {
         const createData = {
           clienteId: parseInt(orderData.clientId || '0'),
+          tipoVenta: orderData.tipoVenta ?? 0,
           fechaEntregaEstimada: orderData.deliveryDate?.toISOString(),
           notas: orderData.notes,
           detalles: orderData.items?.map(item => ({
@@ -291,7 +292,8 @@ export default function OrdersPage() {
           })) || [],
         };
         await orderService.createOrder(createData);
-        toast.success('Pedido creado correctamente');
+        const tipoMsg = orderData.tipoVenta === 1 ? 'Venta directa creada y entregada' : 'Pedido creado correctamente';
+        toast.success(tipoMsg);
       }
       await fetchOrders();
       setShowOrderForm(false);

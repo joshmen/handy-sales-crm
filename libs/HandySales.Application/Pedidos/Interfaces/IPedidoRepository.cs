@@ -17,6 +17,6 @@ public interface IPedidoRepository
     Task<bool> AgregarDetalleAsync(int pedidoId, DetallePedidoCreateDto dto, int tenantId);
     Task<bool> ActualizarDetalleAsync(int pedidoId, int detalleId, DetallePedidoCreateDto dto, int tenantId);
     Task<bool> EliminarDetalleAsync(int pedidoId, int detalleId, int tenantId);
-    Task<string> GenerarNumeroPedidoAsync(int tenantId);
+    Task<string> GenerarNumeroPedidoAsync(int tenantId, string tipo = "PED");
     Task<decimal> CalcularTotalAsync(int pedidoId, int tenantId);
 }

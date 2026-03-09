@@ -73,6 +73,7 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
   const [selectedProduct, setSelectedProduct] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [itemsError, setItemsError] = useState<string | null>(null);
+  const [tipoVenta, setTipoVenta] = useState<number>(order?.tipoVenta ?? 0);
 
   const itemsChanged = orderItems.length !== initialItemCount;
   const isDirty = formIsDirty || itemsChanged;
@@ -202,6 +203,7 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
       total,
       status: order?.status || 'draft',
       paymentStatus: 'pending',
+      tipoVenta,
     };
 
     onSave(orderData);
@@ -209,6 +211,42 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
 
   return (
     <form ref={formRef} onSubmit={handleSubmit(onFormSubmit)} className="flex flex-col gap-5 p-6" data-tour="order-form">
+      {/* Tipo de Venta */}
+      {!order && (
+        <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-gray-50 dark:bg-gray-800/50 dark:border-gray-700">
+          <span className="text-[13px] font-medium text-gray-700 dark:text-gray-300">Tipo de venta:</span>
+          <div className="flex rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
+            <button
+              type="button"
+              onClick={() => setTipoVenta(0)}
+              className={`px-3 py-1.5 text-[13px] font-medium transition-colors ${
+                tipoVenta === 0
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white text-gray-600 hover:bg-gray-100 dark:bg-gray-700 dark:text-gray-300'
+              }`}
+            >
+              Preventa
+            </button>
+            <button
+              type="button"
+              onClick={() => setTipoVenta(1)}
+              className={`px-3 py-1.5 text-[13px] font-medium transition-colors ${
+                tipoVenta === 1
+                  ? 'bg-green-600 text-white'
+                  : 'bg-white text-gray-600 hover:bg-gray-100 dark:bg-gray-700 dark:text-gray-300'
+              }`}
+            >
+              Venta Directa
+            </button>
+          </div>
+          {tipoVenta === 1 && (
+            <span className="text-[11px] text-green-600 dark:text-green-400">
+              Se entrega y descuenta inventario al crear
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Información del pedido */}
       <div className="space-y-4">
         <div data-tour="order-client-selector">

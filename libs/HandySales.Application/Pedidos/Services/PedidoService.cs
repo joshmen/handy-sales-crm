@@ -1,3 +1,5 @@
+using HandySales.Application.MovimientosInventario.DTOs;
+using HandySales.Application.MovimientosInventario.Services;
 using HandySales.Application.Pedidos.DTOs;
 using HandySales.Application.Pedidos.Interfaces;
 using HandySales.Application.Usuarios.Interfaces;
@@ -11,18 +13,42 @@ public class PedidoService
     private readonly IPedidoRepository _repository;
     private readonly ICurrentTenant _tenant;
     private readonly IUsuarioRepository _usuarioRepository;
+    private readonly MovimientoInventarioService _movimientoService;
 
-    public PedidoService(IPedidoRepository repository, ICurrentTenant tenant, IUsuarioRepository usuarioRepository)
+    public PedidoService(
+        IPedidoRepository repository,
+        ICurrentTenant tenant,
+        IUsuarioRepository usuarioRepository,
+        MovimientoInventarioService movimientoService)
     {
         _repository = repository;
         _tenant = tenant;
         _usuarioRepository = usuarioRepository;
+        _movimientoService = movimientoService;
     }
 
     public async Task<int> CrearAsync(PedidoCreateDto dto)
     {
         var usuarioId = int.Parse(_tenant.UserId);
-        return await _repository.CrearAsync(dto, usuarioId, _tenant.TenantId);
+        var pedidoId = await _repository.CrearAsync(dto, usuarioId, _tenant.TenantId);
+
+        // Venta Directa: crear movimientos de inventario SALIDA automáticos
+        if (dto.TipoVenta == TipoVenta.VentaDirecta)
+        {
+            foreach (var detalle in dto.Detalles)
+            {
+                await _movimientoService.CrearMovimientoAsync(new MovimientoInventarioCreateDto
+                {
+                    ProductoId = detalle.ProductoId,
+                    TipoMovimiento = "SALIDA",
+                    Cantidad = detalle.Cantidad,
+                    Motivo = "VENTA",
+                    Comentario = $"Venta directa - Pedido #{pedidoId}"
+                });
+            }
+        }
+
+        return pedidoId;
     }
 
     public async Task<PedidoDto?> ObtenerPorIdAsync(int id)
