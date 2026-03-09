@@ -20,11 +20,35 @@ export interface AiRequest {
   contexto?: string;
 }
 
+export interface AiSuggestedAction {
+  actionId: string;
+  actionType: string;
+  label: string;
+  description: string;
+  icon: string;
+  creditCost: number;
+  parameters: unknown;
+}
+
 export interface AiResponse {
   respuesta: string;
   creditosUsados: number;
   creditosRestantes: number;
   latenciaMs: number;
+  accionesSugeridas?: AiSuggestedAction[];
+}
+
+export interface AiActionExecuteRequest {
+  actionId: string;
+  actionType: string;
+}
+
+export interface AiActionExecuteResult {
+  success: boolean;
+  message: string;
+  creditosUsados: number;
+  creditosRestantes: number;
+  createdIds?: number[];
 }
 
 export interface AiUsageItem {
@@ -75,5 +99,10 @@ export async function getAiUsage(page = 1, pageSize = 20): Promise<AiUsageRespon
 
 export async function getAiUsageStats(): Promise<AiUsageStats> {
   const { data } = await api.get<AiUsageStats>('/api/ai/usage/stats');
+  return data;
+}
+
+export async function executeAiAction(request: AiActionExecuteRequest): Promise<AiActionExecuteResult> {
+  const { data } = await api.post<AiActionExecuteResult>('/api/ai/actions/execute', request);
   return data;
 }
