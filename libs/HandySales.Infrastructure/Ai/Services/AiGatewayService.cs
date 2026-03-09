@@ -16,6 +16,7 @@ public class AiGatewayService : IAiGatewayService
     private readonly HandySalesDbContext _db;
     private readonly IAiCreditService _creditService;
     private readonly IAiSanitizer _sanitizer;
+    private readonly IAiDataContextBuilder _contextBuilder;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IConfiguration _config;
     private readonly ILogger<AiGatewayService> _logger;
@@ -30,6 +31,7 @@ public class AiGatewayService : IAiGatewayService
         HandySalesDbContext db,
         IAiCreditService creditService,
         IAiSanitizer sanitizer,
+        IAiDataContextBuilder contextBuilder,
         IHttpClientFactory httpClientFactory,
         IConfiguration config,
         ILogger<AiGatewayService> logger)
@@ -37,6 +39,7 @@ public class AiGatewayService : IAiGatewayService
         _db = db;
         _creditService = creditService;
         _sanitizer = sanitizer;
+        _contextBuilder = contextBuilder;
         _httpClientFactory = httpClientFactory;
         _config = config;
         _logger = logger;
@@ -62,9 +65,20 @@ public class AiGatewayService : IAiGatewayService
             throw new InvalidOperationException("No tienes cr\u00e9ditos suficientes. Actualiza tu plan o compra cr\u00e9ditos adicionales.");
         }
 
-        // 3. Build messages
-        var systemPrompt = _config["Ai:SystemPrompt"]
-            ?? "Eres un asistente de negocios para HandySales, un CRM/ERP para PyMEs mexicanas. Solo respondes preguntas sobre ventas, inventario, clientes, cobros, rutas y operaciones del negocio. No proporcionas informaci\u00f3n personal, contrase\u00f1as ni datos t\u00e9cnicos del sistema. Responde siempre en espa\u00f1ol.";
+        // 3. Build data context from tenant's real business data
+        var dataContext = await _contextBuilder.BuildContextAsync(
+            request.Prompt, request.TipoAccion, tenantId, userId);
+
+        _logger.LogInformation("AI context: categories=[{Categories}], ~{Tokens} tokens",
+            string.Join(", ", dataContext.CategoriesUsed), dataContext.EstimatedTokens);
+
+        // 4. Build messages with data context injected into system prompt
+        var baseSystemPrompt = _config["Ai:SystemPrompt"]
+            ?? "Eres un asistente de negocios para HandySales, un CRM/ERP para PyMEs mexicanas. Solo respondes preguntas sobre ventas, inventario, clientes, cobros, rutas y operaciones del negocio. No proporcionas informaci\u00f3n personal, contrase\u00f1as ni datos t\u00e9cnicos del sistema. Responde siempre en espa\u00f1ol. S\u00e9 conciso y pr\u00e1ctico.";
+
+        var systemPrompt = string.IsNullOrWhiteSpace(dataContext.ContextMarkdown)
+            ? baseSystemPrompt
+            : $"{baseSystemPrompt}\n\n{dataContext.ContextMarkdown}";
 
         var model = _config["Ai:Model"] ?? "gpt-4o-mini";
         var maxTokens = int.TryParse(_config["Ai:MaxTokens"], out var mt) ? mt : 1000;
