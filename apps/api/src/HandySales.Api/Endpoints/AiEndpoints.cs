@@ -376,7 +376,7 @@ public static class AiEndpoints
                 .SqlQueryRaw<SuggestedProductRow>(
                     @"SELECT producto_id AS ""ProductoId"", producto_nombre AS ""Nombre"",
                       codigo_barra AS ""CodigoBarra"", precio_base AS ""PrecioBase"",
-                      imagen_url AS ""ImagenUrl"", frecuencia AS ""Frecuencia"",
+                      ""ImagenUrl"", frecuencia AS ""Frecuencia"",
                       cantidad_total AS ""CantidadTotal"", ultima_compra AS ""UltimaCompra""
                       FROM mv_suggested_products
                       WHERE tenant_id = {0} AND cliente_id = {1} AND ranking <= {2}

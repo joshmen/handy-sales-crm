@@ -25,30 +25,29 @@ $$ LANGUAGE sql IMMUTABLE PARALLEL SAFE;
 DROP MATERIALIZED VIEW IF EXISTS mv_suggested_products;
 CREATE MATERIALIZED VIEW mv_suggested_products AS
 SELECT
-    p.tenant_id,
+    ped.tenant_id,
     ped.cliente_id,
     d.producto_id,
     pr.nombre AS producto_nombre,
     pr.codigo_barra,
     pr.precio_base,
-    pr.imagen_url,
+    pr."ImagenUrl",
     COUNT(*)::int AS frecuencia,
     SUM(d.cantidad)::decimal AS cantidad_total,
     MAX(ped.fecha_pedido) AS ultima_compra,
     ROW_NUMBER() OVER (
-        PARTITION BY p.tenant_id, ped.cliente_id
+        PARTITION BY ped.tenant_id, ped.cliente_id
         ORDER BY COUNT(*) DESC, MAX(ped.fecha_pedido) DESC
     ) AS ranking
-FROM "DetallesPedido" d
+FROM "DetallePedidos" d
 INNER JOIN "Pedidos" ped ON ped.id = d.pedido_id
 INNER JOIN "Productos" pr ON pr.id = d.producto_id
-INNER JOIN "Tenants" p ON p.id = ped.tenant_id
 WHERE d.activo = true
   AND ped.activo = true
   AND ped.eliminado_en IS NULL
   AND d.eliminado_en IS NULL
   AND ped.fecha_pedido >= (NOW() - INTERVAL '90 days')
-GROUP BY p.tenant_id, ped.cliente_id, d.producto_id, pr.nombre, pr.codigo_barra, pr.precio_base, pr.imagen_url;
+GROUP BY ped.tenant_id, ped.cliente_id, d.producto_id, pr.nombre, pr.codigo_barra, pr.precio_base, pr."ImagenUrl";
 
 CREATE UNIQUE INDEX idx_mv_suggested_products_pk
     ON mv_suggested_products (tenant_id, cliente_id, producto_id);
@@ -163,7 +162,7 @@ SELECT
     MAX(d.cantidad) AS max_cantidad,
     AVG(d.precio_unitario::float) AS avg_precio,
     COUNT(*)::int AS compras
-FROM "DetallesPedido" d
+FROM "DetallePedidos" d
 INNER JOIN "Pedidos" ped ON ped.id = d.pedido_id
 WHERE d.activo = true
   AND ped.activo = true
@@ -211,7 +210,7 @@ WITH weekly_sales AS (
         DATE_TRUNC('week', ped.fecha_pedido) AS semana,
         SUM(d.cantidad)::float AS cantidad_semanal,
         COUNT(DISTINCT ped.cliente_id)::int AS clientes_unicos
-    FROM "DetallesPedido" d
+    FROM "DetallePedidos" d
     INNER JOIN "Pedidos" ped ON ped.id = d.pedido_id
     INNER JOIN "Productos" pr ON pr.id = d.producto_id
     WHERE d.activo = true
@@ -241,9 +240,9 @@ SELECT
     producto_nombre,
     -- Weighted moving average (semanas recientes pesan más)
     ROUND(
-        SUM(cantidad_semanal * peso) / NULLIF(SUM(peso), 0)
+        (SUM(cantidad_semanal * peso) / NULLIF(SUM(peso), 0))::numeric
     , 1) AS demanda_semanal_estimada,
-    ROUND(AVG(cantidad_semanal), 1) AS promedio_simple,
+    ROUND(AVG(cantidad_semanal)::numeric, 1) AS promedio_simple,
     MIN(cantidad_semanal) AS min_semanal,
     MAX(cantidad_semanal) AS max_semanal,
     -- Tendencia: comparar últimas 4 semanas vs anteriores 4
@@ -256,7 +255,7 @@ SELECT
                 (SELECT AVG(w3.cantidad_semanal) FROM weighted w3
                  WHERE w3.tenant_id = w.tenant_id AND w3.producto_id = w.producto_id
                  AND w3.peso <= w3.total_semanas - 4)
-            ), 1)
+            )::numeric, 1)
         ELSE NULL
     END AS tendencia_cambio,
     CASE
@@ -265,7 +264,7 @@ SELECT
         ELSE 'alta'
     END AS confianza,
     total_semanas AS semanas_con_datos,
-    ROUND(AVG(clientes_unicos), 1) AS avg_clientes_por_semana
+    ROUND(AVG(clientes_unicos)::numeric, 1) AS avg_clientes_por_semana
 FROM weighted w
 GROUP BY tenant_id, producto_id, producto_nombre, total_semanas;
 
@@ -278,25 +277,32 @@ CREATE UNIQUE INDEX idx_mv_demand_forecast_pk
 -- ─────────────────────────────────────────────
 DROP MATERIALIZED VIEW IF EXISTS mv_payment_risk;
 CREATE MATERIALIZED VIEW mv_payment_risk AS
-WITH cobro_stats AS (
+WITH cobro_intervalos AS (
+    -- Pre-compute intervals between consecutive payments per client
     SELECT
         co.tenant_id,
         co.cliente_id,
-        COUNT(*)::int AS total_cobros,
-        AVG(co.monto::float) AS avg_monto_cobro,
-        MAX(co.fecha_cobro) AS ultimo_cobro,
-        -- Pagos regulares: desviación estándar de intervalos entre cobros
-        STDDEV(EXTRACT(EPOCH FROM (co.fecha_cobro - LAG(co.fecha_cobro) OVER (
+        co.monto,
+        co.fecha_cobro,
+        EXTRACT(EPOCH FROM (co.fecha_cobro - LAG(co.fecha_cobro) OVER (
             PARTITION BY co.tenant_id, co.cliente_id ORDER BY co.fecha_cobro
-        ))) / 86400.0) AS stddev_dias_entre_cobros,
-        AVG(EXTRACT(EPOCH FROM (co.fecha_cobro - LAG(co.fecha_cobro) OVER (
-            PARTITION BY co.tenant_id, co.cliente_id ORDER BY co.fecha_cobro
-        ))) / 86400.0) AS avg_dias_entre_cobros
+        ))) / 86400.0 AS dias_desde_anterior
     FROM "Cobros" co
     WHERE co.activo = true
       AND co.eliminado_en IS NULL
       AND co.fecha_cobro >= (NOW() - INTERVAL '180 days')
-    GROUP BY co.tenant_id, co.cliente_id
+),
+cobro_stats AS (
+    SELECT
+        ci.tenant_id,
+        ci.cliente_id,
+        COUNT(*)::int AS total_cobros,
+        AVG(ci.monto::float) AS avg_monto_cobro,
+        MAX(ci.fecha_cobro) AS ultimo_cobro,
+        STDDEV(ci.dias_desde_anterior) AS stddev_dias_entre_cobros,
+        AVG(ci.dias_desde_anterior) AS avg_dias_entre_cobros
+    FROM cobro_intervalos ci
+    GROUP BY ci.tenant_id, ci.cliente_id
 ),
 pedido_stats AS (
     SELECT
@@ -401,7 +407,7 @@ $$ LANGUAGE plpgsql;
 
 -- Para suggested products: frecuencia por cliente
 CREATE INDEX IF NOT EXISTS idx_detallespedido_cliente_producto
-    ON "DetallesPedido" (producto_id)
+    ON "DetallePedidos" (producto_id)
     INCLUDE (cantidad, pedido_id)
     WHERE activo = true AND eliminado_en IS NULL;
 
