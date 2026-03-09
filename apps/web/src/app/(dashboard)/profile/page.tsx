@@ -384,7 +384,8 @@ export default function ProfilePage() {
     }
 
     const success = await changePassword({
-      password: passwordForm.newPassword,
+      currentPassword: passwordForm.currentPassword,
+      newPassword: passwordForm.newPassword,
     });
 
     if (success) {
