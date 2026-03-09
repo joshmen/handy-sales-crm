@@ -395,10 +395,6 @@ CREATE INDEX IF NOT EXISTS idx_detallespedido_cliente_producto
     INCLUDE (cantidad, pedido_id)
     WHERE activo = true AND eliminado_en IS NULL;
 
-CREATE INDEX IF NOT EXISTS idx_clientes_ubicacion_geo
-    ON ""Clientes"" USING GIST (ubicacion)
-    WHERE activo = true AND eliminado_en IS NULL;
-
 CREATE INDEX IF NOT EXISTS idx_pedidos_fecha_tenant
     ON ""Pedidos"" (tenant_id, fecha_pedido)
     INCLUDE (cliente_id, total, estado)
@@ -419,7 +415,7 @@ CREATE INDEX IF NOT EXISTS idx_pedidos_fecha_tenant
             migrationBuilder.Sql("DROP MATERIALIZED VIEW IF EXISTS mv_suggested_products;");
             migrationBuilder.Sql("DROP FUNCTION IF EXISTS haversine_km(double precision, double precision, double precision, double precision);");
             migrationBuilder.Sql("DROP INDEX IF EXISTS idx_detallespedido_cliente_producto;");
-            migrationBuilder.Sql("DROP INDEX IF EXISTS idx_clientes_ubicacion_geo;");
+
             migrationBuilder.Sql("DROP INDEX IF EXISTS idx_pedidos_fecha_tenant;");
         }
     }
