@@ -218,12 +218,14 @@ public static class AiEndpoints
                 return ($"Se creó meta de ventas por ${dto.Monto:N0} MXN.", new List<int> { id });
             }
             case "crear_ruta":
+            case "optimizar_ruta":
             {
                 var rutaService = services.GetRequiredService<RutaVendedorService>();
                 var dto = JsonSerializer.Deserialize<RutaVendedorCreateDto>(json, CamelCase)!;
                 var id = await rutaService.CrearAsync(dto);
                 var paradas = dto.Detalles?.Count ?? 0;
-                return ($"Se creó ruta con {paradas} paradas.", new List<int> { id });
+                var label = actionType == "optimizar_ruta" ? "ruta optimizada" : "ruta";
+                return ($"Se creó {label} con {paradas} paradas.", new List<int> { id });
             }
             case "desactivar_productos":
             {

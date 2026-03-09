@@ -49,6 +49,11 @@ public class AiActionDetector : IAiActionDetector
             if (categoriesUsed.Contains("Visitas") && ContainsAny(lower, "ruta", "rutas", "recorrido"))
                 await TryDetectRutaAction(actions, lower, userId);
 
+            // Optimizar ruta: triggered by optimization/route keywords with geo data
+            if (ContainsAny(lower, "optimizar", "optimiza", "mejor ruta", "ruta óptima", "ruta optima",
+                "eficiente", "ordenar ruta", "organizar ruta", "planificar ruta"))
+                await TryDetectOptimizarRutaAction(actions, lower, userId, tenantId);
+
             if (categoriesUsed.Contains("Inventario") || categoriesUsed.Contains("Productos"))
                 await TryDetectStockAction(actions, lower);
 
@@ -292,6 +297,135 @@ public class AiActionDetector : IAiActionDetector
             Parameters: new { Ids = ids, Activo = false }
         ));
     }
+
+    private async Task TryDetectOptimizarRutaAction(
+        List<AiSuggestedAction> actions, string prompt, int userId, int tenantId)
+    {
+        if (actions.Count >= MaxActions) return;
+
+        // Check if user already has a route for tomorrow
+        var tomorrow = DateTime.UtcNow.Date.AddDays(1);
+        var hasRouteTomorrow = await _db.RutasVendedor
+            .AnyAsync(r => r.UsuarioId == userId && r.Fecha >= tomorrow && r.Fecha < tomorrow.AddDays(1));
+
+        if (hasRouteTomorrow) return;
+
+        // Score clients by: days since last visit, pending balance, purchase frequency
+        var sevenDaysAgo = DateTime.UtcNow.AddDays(-7);
+        var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
+
+        // Get active clients with geo coordinates
+        var clientesConUbicacion = await _db.Clientes
+            .Where(c => c.Activo && !c.EsProspecto && c.Latitud != null && c.Longitud != null)
+            .Select(c => new
+            {
+                c.Id, c.Nombre, c.Latitud, c.Longitud,
+                c.Saldo, c.LimiteCredito,
+                UltimaVisita = _db.ClienteVisitas
+                    .Where(v => v.ClienteId == c.Id)
+                    .OrderByDescending(v => v.FechaHoraInicio)
+                    .Select(v => (DateTime?)v.FechaHoraInicio)
+                    .FirstOrDefault(),
+                PedidosUltimos30d = _db.Pedidos
+                    .Count(p => p.ClienteId == c.Id
+                        && p.FechaPedido >= thirtyDaysAgo
+                        && p.Estado != EstadoPedido.Cancelado)
+            })
+            .ToListAsync();
+
+        if (clientesConUbicacion.Count < 3) return;
+
+        // Score each client (higher = more urgent to visit)
+        var scored = clientesConUbicacion.Select(c =>
+        {
+            var diasSinVisita = c.UltimaVisita.HasValue
+                ? (DateTime.UtcNow - c.UltimaVisita.Value).TotalDays
+                : 30; // Never visited = max urgency
+            var scoreDias = Math.Min(diasSinVisita / 30.0, 1.0) * 40;        // 40% weight
+            var scoreSaldo = c.LimiteCredito > 0
+                ? Math.Min((double)c.Saldo / (double)c.LimiteCredito, 1.0) * 25  // 25% weight
+                : (c.Saldo > 0 ? 15 : 0);
+            var scoreFrecuencia = Math.Min(c.PedidosUltimos30d / 5.0, 1.0) * 20; // 20% weight
+            var scoreBase = c.Saldo > 0 ? 15 : 0;                              // 15% for pending balance
+
+            return new
+            {
+                c.Id, c.Nombre, c.Latitud, c.Longitud,
+                Score = scoreDias + scoreSaldo + scoreFrecuencia + scoreBase
+            };
+        })
+        .OrderByDescending(c => c.Score)
+        .Take(10) // Top 10 candidates
+        .ToList();
+
+        // Order geographically using nearest-neighbor heuristic
+        var ordered = new List<dynamic>();
+        var remaining = scored.Cast<dynamic>().ToList();
+
+        // Start from the southernmost client (typical start point)
+        var current = remaining.OrderBy(c => (double)c.Latitud!).First();
+        ordered.Add(current);
+        remaining.Remove(current);
+
+        while (remaining.Count > 0)
+        {
+            var nearest = remaining
+                .OrderBy(c => HaversineDistance(
+                    (double)current.Latitud!, (double)current.Longitud!,
+                    (double)c.Latitud!, (double)c.Longitud!))
+                .First();
+            ordered.Add(nearest);
+            remaining.Remove(nearest);
+            current = nearest;
+        }
+
+        var rutaDto = new
+        {
+            UsuarioId = userId,
+            Nombre = $"Ruta Optimizada IA — {tomorrow:dd MMM yyyy}",
+            Descripcion = "Ruta optimizada geográficamente por asistente IA",
+            Fecha = tomorrow,
+            HoraInicioEstimada = new TimeSpan(9, 0, 0),
+            HoraFinEstimada = new TimeSpan(17, 0, 0),
+            Detalles = ordered.Select((c, i) => new
+            {
+                ClienteId = (int)c.Id,
+                OrdenVisita = i + 1,
+                DuracionEstimadaMinutos = 30,
+                Notas = (string?)null
+            }).ToList()
+        };
+
+        var clientNames = string.Join(", ", ordered.Take(3).Select(c => (string)c.Nombre));
+        var extra = ordered.Count > 3 ? $" y {ordered.Count - 3} más" : "";
+
+        actions.Add(new AiSuggestedAction(
+            ActionId: Guid.NewGuid().ToString("N"),
+            ActionType: "optimizar_ruta",
+            Label: $"Crear ruta optimizada con {ordered.Count} paradas",
+            Description: $"Mañana, orden geográfico: {clientNames}{extra}",
+            Icon: "route",
+            CreditCost: ActionCreditCost,
+            Parameters: rutaDto
+        ));
+    }
+
+    /// <summary>
+    /// Haversine distance in km between two lat/lng points.
+    /// </summary>
+    private static double HaversineDistance(double lat1, double lon1, double lat2, double lon2)
+    {
+        const double R = 6371; // Earth radius in km
+        var dLat = ToRad(lat2 - lat1);
+        var dLon = ToRad(lon2 - lon1);
+        var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                Math.Cos(ToRad(lat1)) * Math.Cos(ToRad(lat2)) *
+                Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+        var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+        return R * c;
+    }
+
+    private static double ToRad(double deg) => deg * Math.PI / 180.0;
 
     // ─── Helpers ─────────────────────────────────────────────────────
 
