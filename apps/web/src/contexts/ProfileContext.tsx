@@ -39,19 +39,8 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   const loadProfile = useCallback(async () => {
-    if (!session?.user?.id) {
-      // Si no hay session, usar datos mock locales
-      const mockProfile: UserProfile = {
-        id: parseInt(session?.user?.id || '1'),
-        nombre: session?.user?.name || 'Usuario',
-        email: session?.user?.email || 'usuario@example.com',
-        tenantId: 1,
-        esAdmin: false,
-        esSuperAdmin: false,
-        avatarUrl: session?.user?.image || undefined,
-        role: session?.user?.role || 'VENDEDOR',
-      };
-      setProfile(mockProfile);
+    // Only load profile when session is fully authenticated
+    if (status !== 'authenticated' || !session?.user?.id) {
       setIsLoading(false);
       return;
     }
@@ -79,7 +68,7 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
     } finally {
       setIsLoading(false);
     }
-  }, [session?.user?.id, session?.user?.name, session?.user?.email, session?.user?.image, session?.user?.role]);
+  }, [status, session?.user?.id, session?.user?.name, session?.user?.email, session?.user?.image, session?.user?.role]);
 
   useEffect(() => {
     loadProfile();

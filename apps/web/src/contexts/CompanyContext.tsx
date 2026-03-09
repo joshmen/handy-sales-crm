@@ -58,8 +58,8 @@ export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) =>
   const [isUpdating, setIsUpdating] = useState(false);
 
   const loadSettings = useCallback(async () => {
-    // Solo cargar si hay una sesión activa
-    if (!session) {
+    // Solo cargar si hay una sesión autenticada confirmada
+    if (status !== 'authenticated' || !session) {
       setIsLoading(false);
       return;
     }
@@ -144,7 +144,7 @@ export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) =>
     } finally {
       setIsLoading(false);
     }
-  }, [session]);
+  }, [session, status]);
 
   useEffect(() => {
     loadSettings();

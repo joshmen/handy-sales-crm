@@ -23,19 +23,25 @@ export function setApiAccessToken(token: string | null) {
 apiInstance.interceptors.request.use(
   async config => {
     if (typeof window !== 'undefined') {
-      if (_cachedAccessToken) {
-        // Token en memoria (sincronizado por useAuthSession) — 0ms
-        config.headers.Authorization = `Bearer ${_cachedAccessToken}`;
-      } else {
-        // Fallback: primer request antes de que React monte useAuthSession
-        try {
-          const session = await getSession();
-          if (session?.accessToken) {
-            _cachedAccessToken = session.accessToken;
-            config.headers.Authorization = `Bearer ${session.accessToken}`;
+      // Skip auth token injection on public pages (no session available)
+      const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/verify-email'];
+      const isPublicPage = publicPaths.some(p => window.location.pathname.includes(p));
+
+      if (!isPublicPage) {
+        if (_cachedAccessToken) {
+          // Token en memoria (sincronizado por useAuthSession) — 0ms
+          config.headers.Authorization = `Bearer ${_cachedAccessToken}`;
+        } else {
+          // Fallback: primer request antes de que React monte useAuthSession
+          try {
+            const session = await getSession();
+            if (session?.accessToken) {
+              _cachedAccessToken = session.accessToken;
+              config.headers.Authorization = `Bearer ${session.accessToken}`;
+            }
+          } catch {
+            // Silently handle session retrieval errors
           }
-        } catch {
-          // Silently handle session retrieval errors
         }
       }
     }
@@ -68,14 +74,21 @@ export function resetAuthState() {
 }
 
 async function tryRefreshSession(): Promise<string | null> {
+  // Circuit breaker: stop trying after repeated failures
+  if (refreshFailCount >= MAX_REFRESH_FAILURES) {
+    return null;
+  }
   try {
     const session = await getSession();
     if (session?.accessToken && !session.error) {
       _cachedAccessToken = session.accessToken;
+      refreshFailCount = 0; // Reset on success
       return session.accessToken;
     }
+    refreshFailCount++;
     return null;
   } catch {
+    refreshFailCount++;
     return null;
   }
 }
@@ -118,6 +131,12 @@ apiInstance.interceptors.response.use(
     }
 
     if (status === 401 && typeof window !== 'undefined') {
+      // On login/register/public pages, never attempt refresh or redirect — just reject silently
+      const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/verify-email'];
+      if (publicPaths.some(p => window.location.pathname.includes(p))) {
+        return Promise.reject(error);
+      }
+
       const responseCode = error.response?.data?.code;
 
       // SESSION_REPLACED: another device took the session — immediate redirect, no refresh

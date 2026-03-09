@@ -1,33 +1,349 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { toast } from '@/hooks/useToast';
 import {
   Brain, Sparkle, FileText, ChartBar, TrendUp, ChatCircle,
-  PaperPlaneRight, Lightning, CreditCard, Clock,
+  Lightning, Question, PaperPlaneTilt,
+  User as UserIcon, Users, MagnifyingGlass, Target,
 } from '@phosphor-icons/react';
 import { Loader2 } from 'lucide-react';
 import { queryAi, getAiCredits, getAiUsageStats } from '@/services/api/ai';
-import type { AiCreditBalance, AiResponse, AiUsageStats } from '@/services/api/ai';
+import type { AiCreditBalance, AiUsageStats } from '@/services/api/ai';
 
+// ─── Action type config ──────────────────────────────────────────
 const ACTION_TYPES = [
-  { value: 'resumen', label: 'Resumen', icon: FileText, cost: 1, description: 'Resumir notas o historial' },
-  { value: 'insight', label: 'Insight', icon: ChartBar, cost: 2, description: 'Análisis inteligente de datos' },
-  { value: 'pregunta', label: 'Pregunta', icon: ChatCircle, cost: 3, description: 'Pregunta libre sobre tu negocio' },
-  { value: 'pronostico', label: 'Pronóstico', icon: TrendUp, cost: 5, description: 'Pronóstico de ventas o demanda' },
+  { value: 'resumen', label: 'Resumen', icon: FileText, cost: 1, color: 'emerald', description: 'Resume notas de visita, historial de ventas' },
+  { value: 'insight', label: 'Insight', icon: ChartBar, cost: 2, color: 'violet', description: 'Analiza datos y detecta tendencias' },
+  { value: 'pregunta', label: 'Pregunta', icon: ChatCircle, cost: 3, color: 'sky', description: 'Pregunta libre sobre tu negocio' },
+  { value: 'pronostico', label: 'Pronóstico', icon: TrendUp, cost: 5, color: 'amber', description: 'Predicciones de ventas o demanda' },
 ] as const;
 
+type ActionType = typeof ACTION_TYPES[number]['value'];
+
+// ─── Suggestion chips — grouped by category ─────────────────────
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const SUGGESTIONS: { text: string; action: ActionType; icon: any }[] = [
+  { text: '¿Cuáles son mis 5 clientes más rentables?', action: 'pregunta', icon: Users },
+  { text: 'Resume las ventas de esta semana', action: 'resumen', icon: ChartBar },
+  { text: '¿Qué productos tienen más margen?', action: 'insight', icon: Sparkle },
+  { text: 'Pronóstico de ventas para el próximo mes', action: 'pronostico', icon: TrendUp },
+  { text: '¿Qué clientes no han comprado en 30 días?', action: 'pregunta', icon: MagnifyingGlass },
+  { text: 'Analiza la efectividad de mis vendedores', action: 'insight', icon: Target },
+];
+
+// ─── Message types ───────────────────────────────────────────────
+interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  tipoAccion?: ActionType;
+  creditosUsados?: number;
+  latenciaMs?: number;
+  timestamp: Date;
+}
+
+// ─── Animated gradient orb (CSS only) ───────────────────────────
+function AnimatedOrb() {
+  return (
+    <div className="relative w-16 h-16 sm:w-24 sm:h-24 animate-ai-float">
+      {/* Glow ring */}
+      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-violet-500 via-blue-500 to-cyan-400 opacity-30 blur-xl animate-ai-glow" />
+      {/* Rotating gradient shell */}
+      <div className="absolute inset-0 rounded-full animate-ai-orb-rotate p-[2px]">
+        <div className="w-full h-full rounded-full bg-gradient-conic from-violet-600 via-blue-500 via-cyan-400 via-emerald-400 to-violet-600"
+          style={{ background: 'conic-gradient(from 0deg, #7c3aed, #3b82f6, #06b6d4, #10b981, #7c3aed)' }}
+        />
+      </div>
+      {/* Inner circle */}
+      <div className="absolute inset-[3px] rounded-full bg-white dark:bg-gray-900 flex items-center justify-center">
+        <Brain size={24} weight="duotone" className="text-violet-600 dark:text-violet-400 sm:hidden" />
+        <Brain size={36} weight="duotone" className="text-violet-600 dark:text-violet-400 hidden sm:block" />
+      </div>
+    </div>
+  );
+}
+
+// ─── Help tooltip ────────────────────────────────────────────────
+function HelpTooltip() {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    if (open) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [open]);
+
+  const colorMap: Record<string, string> = {
+    emerald: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10',
+    violet: 'text-violet-500 bg-violet-50 dark:bg-violet-500/10',
+    sky: 'text-sky-500 bg-sky-50 dark:bg-sky-500/10',
+    amber: 'text-amber-500 bg-amber-50 dark:bg-amber-500/10',
+  };
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center justify-center w-8 h-8 rounded-full border border-gray-200 dark:border-gray-700 text-gray-400 hover:text-violet-500 hover:border-violet-300 dark:hover:border-violet-600 transition-all duration-200 hover:shadow-sm"
+        aria-label="Ayuda sobre tipos de consulta"
+      >
+        <Question size={15} weight="bold" />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-10 z-50 w-80 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl shadow-2xl shadow-black/10 p-5 text-sm animate-ai-fade-up">
+          <p className="font-semibold text-gray-900 dark:text-white mb-4 text-base">Tipos de consulta</p>
+          <div className="space-y-3">
+            {ACTION_TYPES.map((a) => {
+              const Icon = a.icon;
+              return (
+                <div key={a.value} className="flex items-start gap-3">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${colorMap[a.color]}`}>
+                    <Icon size={16} weight="fill" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-gray-800 dark:text-gray-100">{a.label}</span>
+                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">{a.cost} cr</span>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{a.description}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Welcome state — hero with animated orb + smart suggestions ─
+function WelcomeState({
+  onSelectSuggestion,
+}: {
+  onSelectSuggestion: (text: string, action: ActionType) => void;
+}) {
+  const actionColorMap: Record<string, string> = {
+    resumen: 'group-hover:border-emerald-300 dark:group-hover:border-emerald-700 group-hover:shadow-emerald-500/5',
+    insight: 'group-hover:border-violet-300 dark:group-hover:border-violet-700 group-hover:shadow-violet-500/5',
+    pregunta: 'group-hover:border-sky-300 dark:group-hover:border-sky-700 group-hover:shadow-sky-500/5',
+    pronostico: 'group-hover:border-amber-300 dark:group-hover:border-amber-700 group-hover:shadow-amber-500/5',
+  };
+
+  const actionBadgeColor: Record<string, string> = {
+    resumen: 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
+    insight: 'bg-violet-100 dark:bg-violet-500/10 text-violet-700 dark:text-violet-400',
+    pregunta: 'bg-sky-100 dark:bg-sky-500/10 text-sky-700 dark:text-sky-400',
+    pronostico: 'bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400',
+  };
+
+  return (
+    <div className="flex-1 flex flex-col items-center justify-start sm:justify-center px-3 sm:px-4 py-4 sm:py-8 relative overflow-y-auto overflow-x-hidden">
+      {/* Subtle radial glow behind orb */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] sm:w-[500px] h-[300px] sm:h-[500px] bg-gradient-radial from-violet-500/5 via-blue-500/3 to-transparent rounded-full pointer-events-none" />
+
+      {/* Orb */}
+      <div className="mb-3 sm:mb-6 opacity-0 animate-ai-fade-up" style={{ animationDelay: '0ms', animationFillMode: 'forwards' }}>
+        <AnimatedOrb />
+      </div>
+
+      {/* Heading */}
+      <div className="text-center mb-4 sm:mb-8 opacity-0 animate-ai-fade-up" style={{ animationDelay: '100ms', animationFillMode: 'forwards' }}>
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-1 sm:mb-2">
+          ¿En qué puedo ayudarte?
+        </h2>
+        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto px-2">
+          Analizo tus datos de negocio en tiempo real. Pregunta lo que quieras sobre ventas, clientes, productos y más.
+        </p>
+      </div>
+
+      {/* Suggestion grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 max-w-3xl w-full">
+        {SUGGESTIONS.map((s, i) => {
+          const actionConfig = ACTION_TYPES.find(a => a.value === s.action)!;
+          return (
+            <button
+              key={s.text}
+              onClick={() => onSelectSuggestion(s.text, s.action)}
+              className={`group text-left p-3 sm:p-4 rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-800 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 opacity-0 animate-ai-fade-up ${actionColorMap[s.action]}`}
+              style={{ animationDelay: `${200 + i * 80}ms`, animationFillMode: 'forwards' }}
+            >
+              <div className="flex items-start gap-3">
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                  s.action === 'resumen' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' :
+                  s.action === 'insight' ? 'bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400' :
+                  s.action === 'pregunta' ? 'bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400' :
+                  'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                }`}>
+                  {React.createElement(s.icon, { size: 18, weight: 'duotone' })}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <span className="text-sm text-gray-700 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white transition-colors line-clamp-2 leading-snug">
+                    {s.text}
+                  </span>
+                  <div className="flex items-center gap-1.5 mt-2">
+                    <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${actionBadgeColor[s.action]}`}>
+                      {React.createElement(actionConfig.icon, { size: 10, weight: 'fill' as const })}
+                      {actionConfig.label}
+                    </span>
+                    <span className="text-[10px] text-gray-400">{actionConfig.cost} cr</span>
+                  </div>
+                </div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── No plan gate ────────────────────────────────────────────────
+function NoPlanGate() {
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center px-4 py-16 text-center">
+      <div className="relative mb-8 opacity-0 animate-ai-fade-up" style={{ animationFillMode: 'forwards' }}>
+        <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 flex items-center justify-center shadow-2xl shadow-orange-500/20 animate-ai-float">
+          <Lightning size={36} weight="fill" className="text-white" />
+        </div>
+      </div>
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3 opacity-0 animate-ai-fade-up" style={{ animationDelay: '100ms', animationFillMode: 'forwards' }}>
+        Asistente IA no disponible
+      </h2>
+      <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mb-8 opacity-0 animate-ai-fade-up" style={{ animationDelay: '200ms', animationFillMode: 'forwards' }}>
+        El Asistente IA está disponible a partir del plan <span className="font-semibold text-violet-600 dark:text-violet-400">Profesional</span>.
+        Obtén créditos mensuales de inteligencia artificial para analizar tu negocio.
+      </p>
+      <div className="opacity-0 animate-ai-fade-up" style={{ animationDelay: '300ms', animationFillMode: 'forwards' }}>
+        <Button
+          onClick={() => window.location.href = '/configuracion/suscripcion'}
+          className="!rounded-xl !px-6 !py-3 !bg-gradient-to-r !from-violet-600 !to-blue-600 hover:!from-violet-500 hover:!to-blue-500 !border-0 !shadow-lg !shadow-violet-500/20"
+        >
+          <Sparkle size={18} weight="fill" className="mr-2" />
+          Ver planes disponibles
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Chat message bubble ─────────────────────────────────────────
+function MessageBubble({ message, isLatest }: { message: ChatMessage; isLatest: boolean }) {
+  const isUser = message.role === 'user';
+  const actionConfig = message.tipoAccion
+    ? ACTION_TYPES.find((a) => a.value === message.tipoAccion)
+    : null;
+
+  const actionBadgeColor: Record<string, string> = {
+    resumen: 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
+    insight: 'bg-violet-100 dark:bg-violet-500/10 text-violet-700 dark:text-violet-400',
+    pregunta: 'bg-sky-100 dark:bg-sky-500/10 text-sky-700 dark:text-sky-400',
+    pronostico: 'bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400',
+  };
+
+  return (
+    <div className={`flex gap-3 ${isUser ? 'justify-end' : 'justify-start'} ${isLatest ? 'animate-ai-fade-up' : ''}`}>
+      {/* Assistant avatar */}
+      {!isUser && (
+        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600 to-blue-500 flex items-center justify-center shrink-0 mt-1 shadow-md shadow-violet-500/15">
+          <Brain size={15} weight="duotone" className="text-white" />
+        </div>
+      )}
+
+      <div className={`max-w-[85%] sm:max-w-[75%] min-w-0 ${isUser ? 'order-first' : ''}`}>
+        <div
+          className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+            isUser
+              ? 'bg-gradient-to-br from-violet-600 to-blue-600 text-white rounded-br-md shadow-md shadow-violet-500/10'
+              : 'bg-white dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700/60 text-gray-800 dark:text-gray-200 rounded-bl-md shadow-sm'
+          }`}
+        >
+          <div className="whitespace-pre-wrap break-words">{message.content}</div>
+        </div>
+
+        {/* Metadata line for assistant messages */}
+        {!isUser && (actionConfig || message.latenciaMs) && (
+          <div className="flex items-center gap-2 mt-1.5 px-1">
+            {actionConfig && message.tipoAccion && (
+              <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${actionBadgeColor[message.tipoAccion]}`}>
+                {React.createElement(actionConfig.icon, { size: 10, weight: 'fill' as const })}
+                {actionConfig.label}
+              </span>
+            )}
+            {message.creditosUsados != null && (
+              <span className="text-[10px] text-gray-400 font-medium">
+                {message.creditosUsados} cr
+              </span>
+            )}
+            {message.latenciaMs != null && (
+              <span className="text-[10px] text-gray-400">
+                {(message.latenciaMs / 1000).toFixed(1)}s
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Timestamp for user messages */}
+        {isUser && (
+          <div className="text-right mt-1 px-1">
+            <span className="text-[10px] text-gray-400">
+              {message.timestamp.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* User avatar */}
+      {isUser && (
+        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center shrink-0 mt-1 shadow-sm">
+          <UserIcon size={15} weight="fill" className="text-gray-500 dark:text-gray-300" />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Typing indicator ────────────────────────────────────────────
+function TypingIndicator() {
+  return (
+    <div className="flex gap-3 justify-start animate-ai-fade-up">
+      <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600 to-blue-500 flex items-center justify-center shrink-0 mt-1 shadow-md shadow-violet-500/15">
+        <Brain size={15} weight="duotone" className="text-white" />
+      </div>
+      <div className="bg-white dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700/60 rounded-2xl rounded-bl-md px-5 py-3.5 shadow-sm">
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-violet-400 dark:bg-violet-500 animate-ai-dot-pulse" style={{ animationDelay: '0ms' }} />
+          <span className="w-2 h-2 rounded-full bg-blue-400 dark:bg-blue-500 animate-ai-dot-pulse" style={{ animationDelay: '200ms' }} />
+          <span className="w-2 h-2 rounded-full bg-cyan-400 dark:bg-cyan-500 animate-ai-dot-pulse" style={{ animationDelay: '400ms' }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════
+// MAIN PAGE
+// ═════════════════════════════════════════════════════════════════
 export default function AiPage() {
   const [credits, setCredits] = useState<AiCreditBalance | null>(null);
-  const [stats, setStats] = useState<AiUsageStats | null>(null);
-  const [selectedAction, setSelectedAction] = useState<string>('pregunta');
+  const [, setStats] = useState<AiUsageStats | null>(null);
+  const [selectedAction, setSelectedAction] = useState<ActionType>('pregunta');
   const [prompt, setPrompt] = useState('');
-  const [response, setResponse] = useState<AiResponse | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingCredits, setLoadingCredits] = useState(true);
+  const [inputFocused, setInputFocused] = useState(false);
 
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // ── Load credits ───────────────────────────────────────────────
   const loadCredits = useCallback(async () => {
     try {
       const [balance, usageStats] = await Promise.all([getAiCredits(), getAiUsageStats()]);
@@ -39,26 +355,115 @@ export default function AiPage() {
 
   useEffect(() => { loadCredits(); }, [loadCredits]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!prompt.trim() || loading) return;
+  // ── Auto-scroll to bottom ─────────────────────────────────────
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, loading]);
+
+  // ── Auto-resize textarea ──────────────────────────────────────
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (el) {
+      el.style.height = 'auto';
+      el.style.height = `${Math.min(el.scrollHeight, 128)}px`;
+    }
+  }, [prompt]);
+
+  // ── Submit message ────────────────────────────────────────────
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    const text = prompt.trim();
+    if (!text || loading) return;
+
+    const userMsg: ChatMessage = {
+      id: crypto.randomUUID(),
+      role: 'user',
+      content: text,
+      tipoAccion: selectedAction,
+      timestamp: new Date(),
+    };
+
+    setMessages((prev) => [...prev, userMsg]);
+    setPrompt('');
     setLoading(true);
-    setResponse(null);
+
     try {
       const result = await queryAi({
-        tipoAccion: selectedAction as 'resumen' | 'insight' | 'pregunta' | 'pronostico',
-        prompt: prompt.trim(),
+        tipoAccion: selectedAction,
+        prompt: text,
       });
-      setResponse(result);
-      setCredits(prev => prev ? { ...prev, disponibles: result.creditosRestantes, usados: prev.usados + result.creditosUsados } : prev);
+
+      const assistantMsg: ChatMessage = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: result.respuesta,
+        tipoAccion: selectedAction,
+        creditosUsados: result.creditosUsados,
+        latenciaMs: result.latenciaMs,
+        timestamp: new Date(),
+      };
+
+      setMessages((prev) => [...prev, assistantMsg]);
+      setCredits((prev) =>
+        prev
+          ? { ...prev, disponibles: result.creditosRestantes, usados: prev.usados + result.creditosUsados }
+          : prev
+      );
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Error al procesar tu solicitud');
-    } finally { setLoading(false); }
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: 'Lo siento, ocurrio un error al procesar tu solicitud. Intenta de nuevo.',
+          timestamp: new Date(),
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const selectedActionConfig = ACTION_TYPES.find(a => a.value === selectedAction);
+  // ── Handle suggestion click ───────────────────────────────────
+  const handleSuggestion = (text: string, action: ActionType) => {
+    setSelectedAction(action);
+    setPrompt(text);
+    setTimeout(() => textareaRef.current?.focus(), 50);
+  };
+
+  // ── Handle keyboard shortcut ──────────────────────────────────
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
+    }
+  };
+
+  // ── Derived state ─────────────────────────────────────────────
+  const selectedActionConfig = ACTION_TYPES.find((a) => a.value === selectedAction)!;
   const hasCredits = credits && credits.disponibles > 0;
-  const noPlan = credits && (credits.plan === 'free' || credits.plan === 'basico');
+  const noPlan = !loadingCredits && credits && (credits.plan === 'free' || credits.plan === 'basico');
+  const hasMessages = messages.length > 0;
+
+  const actionPillColors: Record<string, { active: string; inactive: string }> = {
+    resumen: {
+      active: 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-300 dark:ring-emerald-700 shadow-sm shadow-emerald-500/10',
+      inactive: 'bg-gray-50 dark:bg-gray-800/80 text-gray-500 dark:text-gray-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/5 hover:text-emerald-600 dark:hover:text-emerald-400',
+    },
+    insight: {
+      active: 'bg-violet-100 dark:bg-violet-500/15 text-violet-700 dark:text-violet-300 ring-1 ring-violet-300 dark:ring-violet-700 shadow-sm shadow-violet-500/10',
+      inactive: 'bg-gray-50 dark:bg-gray-800/80 text-gray-500 dark:text-gray-400 hover:bg-violet-50 dark:hover:bg-violet-500/5 hover:text-violet-600 dark:hover:text-violet-400',
+    },
+    pregunta: {
+      active: 'bg-sky-100 dark:bg-sky-500/15 text-sky-700 dark:text-sky-300 ring-1 ring-sky-300 dark:ring-sky-700 shadow-sm shadow-sky-500/10',
+      inactive: 'bg-gray-50 dark:bg-gray-800/80 text-gray-500 dark:text-gray-400 hover:bg-sky-50 dark:hover:bg-sky-500/5 hover:text-sky-600 dark:hover:text-sky-400',
+    },
+    pronostico: {
+      active: 'bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 ring-1 ring-amber-300 dark:ring-amber-700 shadow-sm shadow-amber-500/10',
+      inactive: 'bg-gray-50 dark:bg-gray-800/80 text-gray-500 dark:text-gray-400 hover:bg-amber-50 dark:hover:bg-amber-500/5 hover:text-amber-600 dark:hover:text-amber-400',
+    },
+  };
 
   return (
     <PageHeader
@@ -69,123 +474,153 @@ export default function AiPage() {
       title="Asistente IA"
       subtitle="Usa inteligencia artificial para analizar tus datos de negocio"
     >
-      <div className="space-y-6">
+      {/* Container — full height chat layout */}
+      <div className="flex flex-col h-[calc(100vh-180px)] sm:h-[calc(100vh-220px)] min-h-[400px] sm:min-h-[500px]">
 
-      {/* Credit Balance Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-1">
-            <Lightning size={16} weight="fill" className="text-amber-500" />
-            Créditos disponibles
-          </div>
-          <div className="text-2xl font-bold text-gray-900 dark:text-white">{loadingCredits ? '...' : credits?.disponibles ?? 0}</div>
-          {credits && <div className="text-xs text-gray-400 mt-1">{credits.usados} / {credits.asignados + credits.extras} usados este mes</div>}
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-1">
-            <CreditCard size={16} weight="fill" className="text-blue-500" />
-            Plan
-          </div>
-          <div className="text-2xl font-bold text-gray-900 dark:text-white capitalize">{loadingCredits ? '...' : credits?.plan ?? 'free'}</div>
-          <div className="text-xs text-gray-400 mt-1">{credits?.asignados ?? 0} créditos/mes incluidos</div>
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-1">
-            <Sparkle size={16} weight="fill" className="text-purple-500" />
-            Consultas este mes
-          </div>
-          <div className="text-2xl font-bold text-gray-900 dark:text-white">{stats?.totalRequests ?? 0}</div>
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-1">
-            <Clock size={16} weight="fill" className="text-green-500" />
-            Último uso
-          </div>
-          <div className="text-sm font-medium text-gray-900 dark:text-white mt-1">
-            {stats?.ultimosUsos?.[0]?.creadoEn ? new Date(stats.ultimosUsos[0].creadoEn).toLocaleDateString('es-MX') : 'Sin uso aún'}
-          </div>
-        </div>
-      </div>
-
-      {/* No plan warning */}
-      {noPlan && !loadingCredits && (
-        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 flex items-start gap-3">
-          <Lightning size={20} weight="fill" className="text-amber-500 mt-0.5" />
-          <div>
-            <p className="text-sm font-medium text-amber-800 dark:text-amber-200">El Asistente IA está disponible a partir del plan Profesional</p>
-            <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">Actualiza tu plan para obtener 100 créditos mensuales de IA.</p>
-          </div>
-        </div>
-      )}
-
-      {/* Action Type Selector */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {ACTION_TYPES.map((action) => {
-          const Icon = action.icon;
-          const isSelected = selectedAction === action.value;
-          return (
-            <button key={action.value} onClick={() => setSelectedAction(action.value)}
-              className={`p-4 rounded-xl border-2 transition-all text-left ${isSelected ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600'}`}>
-              <Icon size={24} weight={isSelected ? 'fill' : 'regular'} className={isSelected ? 'text-blue-500' : 'text-gray-400'} />
-              <div className="mt-2">
-                <span className={`text-sm font-medium ${isSelected ? 'text-blue-700 dark:text-blue-300' : 'text-gray-900 dark:text-white'}`}>{action.label}</span>
-                <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">({action.cost} cr)</span>
+        {/* ── Top bar: Credit pill + Help ─────────────────────── */}
+        {!noPlan && (
+          <div className="flex items-center justify-end gap-2.5 pb-3">
+            {!loadingCredits && credits && (
+              <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/60 dark:border-gray-700/60 text-sm shadow-sm">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-5 h-5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 flex items-center justify-center">
+                    <Lightning size={11} weight="fill" className="text-white" />
+                  </div>
+                  <span className="font-bold text-gray-900 dark:text-white tabular-nums">
+                    {credits.disponibles}
+                  </span>
+                  <span className="text-gray-400 text-xs">créditos</span>
+                </div>
+                <div className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
+                <span className="text-xs font-medium text-violet-600 dark:text-violet-400 capitalize">{credits.plan}</span>
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{action.description}</p>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Prompt Input */}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="relative">
-          <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)}
-            placeholder={selectedAction === 'resumen' ? 'Pega las notas de visita o datos que quieras resumir...' : selectedAction === 'insight' ? 'Describe los datos que quieres analizar...' : selectedAction === 'pregunta' ? '¿Cuál es tu pregunta sobre el negocio?' : 'Describe qué pronóstico necesitas...'}
-            rows={4} maxLength={2000} disabled={!!noPlan}
-            className="w-full p-4 pr-24 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none disabled:opacity-50" />
-          <div className="absolute bottom-3 right-3 flex items-center gap-2">
-            <span className="text-xs text-gray-400">{prompt.length}/2000</span>
-            <Button type="submit" disabled={!prompt.trim() || loading || !!noPlan || !hasCredits} className="!rounded-lg !px-3 !py-2">
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <PaperPlaneRight size={18} weight="fill" />}
-            </Button>
+            )}
+            <HelpTooltip />
           </div>
-        </div>
-        {selectedActionConfig && !noPlan && (
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            Esta consulta costará <strong>{selectedActionConfig.cost} crédito{selectedActionConfig.cost > 1 ? 's' : ''}</strong>.
-            {credits && ` Te quedan ${credits.disponibles} créditos.`}
-          </p>
         )}
-      </form>
 
-      {/* Response */}
-      {response && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Brain size={20} weight="duotone" className="text-blue-500" />
-            <span className="text-sm font-medium text-gray-900 dark:text-white">Respuesta</span>
-            <span className="text-xs text-gray-400 ml-auto">{response.latenciaMs}ms · {response.creditosUsados} crédito{response.creditosUsados > 1 ? 's' : ''}</span>
+        {/* ── Main content area ───────────────────────────────── */}
+        {loadingCredits ? (
+          <div className="flex-1 flex flex-col items-center justify-center gap-4">
+            <div className="relative">
+              <div className="w-12 h-12 rounded-full border-2 border-violet-200 dark:border-violet-800 border-t-violet-500 animate-spin" />
+            </div>
+            <p className="text-sm text-gray-400">Cargando asistente...</p>
           </div>
-          <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap">{response.respuesta}</div>
-        </div>
-      )}
-
-      {/* Recent Usage */}
-      {stats && stats.ultimosUsos.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-          <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-4">Últimas consultas</h3>
-          <div className="space-y-3">
-            {stats.ultimosUsos.slice(0, 5).map((uso) => (
-              <div key={uso.id} className="flex items-center gap-3 text-sm">
-                <span className={`px-2 py-0.5 rounded text-xs font-medium ${uso.exitoso ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'}`}>{uso.tipoAccion}</span>
-                <span className="text-gray-600 dark:text-gray-400 truncate flex-1">{uso.promptResumen}</span>
-                <span className="text-xs text-gray-400 whitespace-nowrap">{uso.creditosCobrados} cr · {new Date(uso.creadoEn).toLocaleDateString('es-MX')}</span>
-              </div>
+        ) : noPlan ? (
+          <NoPlanGate />
+        ) : !hasMessages ? (
+          <WelcomeState onSelectSuggestion={handleSuggestion} />
+        ) : (
+          /* ── Chat messages ──────────────────────────────────── */
+          <div className="flex-1 overflow-y-auto px-1 pb-4 space-y-4 scroll-smooth">
+            {messages.map((msg, idx) => (
+              <MessageBubble key={msg.id} message={msg} isLatest={idx >= messages.length - 2} />
             ))}
+            {loading && <TypingIndicator />}
+            <div ref={messagesEndRef} />
           </div>
-        </div>
-      )}
+        )}
+
+        {/* ── Input bar ───────────────────────────────────────── */}
+        {!noPlan && !loadingCredits && (
+          <div className="mt-auto pt-3">
+            {/* Action type pills */}
+            <div className="flex items-center gap-1 sm:gap-1.5 mb-2 sm:mb-3 flex-wrap">
+              {ACTION_TYPES.map((action) => {
+                const Icon = action.icon;
+                const isSelected = selectedAction === action.value;
+                return (
+                  <button
+                    key={action.value}
+                    onClick={() => setSelectedAction(action.value)}
+                    className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-full text-[11px] sm:text-xs font-semibold transition-all duration-200 ${
+                      isSelected
+                        ? actionPillColors[action.value].active
+                        : actionPillColors[action.value].inactive
+                    }`}
+                  >
+                    <Icon size={13} weight={isSelected ? 'fill' : 'regular'} />
+                    {action.label}
+                    <span className="text-[10px] opacity-60">{action.cost}cr</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Input row with gradient border effect */}
+            <form onSubmit={handleSubmit} className="relative">
+              <div className={`relative rounded-2xl transition-all duration-300 ${
+                inputFocused
+                  ? 'shadow-lg shadow-violet-500/10 ring-2 ring-violet-400/30 dark:ring-violet-500/20'
+                  : 'shadow-sm'
+              }`}>
+                {/* Gradient border shimmer on focus */}
+                {inputFocused && (
+                  <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-r from-violet-500/20 via-blue-500/20 to-cyan-500/20 pointer-events-none animate-ai-gradient-shift" style={{ backgroundSize: '200% 200%' }} />
+                )}
+                <div className="relative flex items-end gap-1.5 sm:gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-1.5 sm:p-2 pl-3 sm:pl-4">
+                  <textarea
+                    ref={textareaRef}
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    onFocus={() => setInputFocused(true)}
+                    onBlur={() => setInputFocused(false)}
+                    placeholder={
+                      selectedAction === 'resumen'
+                        ? 'Pega las notas o datos que quieras resumir...'
+                        : selectedAction === 'insight'
+                          ? 'Describe los datos que quieres analizar...'
+                          : selectedAction === 'pregunta'
+                            ? 'Escribe tu pregunta sobre el negocio...'
+                            : 'Describe qué pronóstico necesitas...'
+                    }
+                    rows={1}
+                    maxLength={2000}
+                    className="flex-1 py-2 bg-transparent text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none resize-none text-sm leading-relaxed"
+                  />
+                  <Button
+                    type="submit"
+                    disabled={!prompt.trim() || loading || !hasCredits}
+                    className={`!rounded-xl !p-2.5 shrink-0 transition-all duration-200 ${
+                      prompt.trim() && !loading
+                        ? '!bg-gradient-to-r !from-violet-600 !to-blue-600 hover:!from-violet-500 hover:!to-blue-500 !border-0 !shadow-md !shadow-violet-500/20'
+                        : ''
+                    }`}
+                  >
+                    {loading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <PaperPlaneTilt size={18} weight="fill" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </form>
+
+            {/* Cost hint */}
+            <div className="flex items-center justify-between mt-1.5 sm:mt-2 px-1 sm:px-2">
+              <p className="text-[10px] sm:text-[11px] text-gray-400">
+                <span className="inline-flex items-center gap-1">
+                  {React.createElement(selectedActionConfig.icon, { size: 10, weight: 'fill' as const })}
+                  {selectedActionConfig.cost} cr
+                </span>
+                {credits && (
+                  <span className="ml-1">· {credits.disponibles} disp.</span>
+                )}
+              </p>
+              <p className="text-[10px] sm:text-[11px] text-gray-400 hidden sm:block">
+                <kbd className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-[10px] font-mono">Enter</kbd>
+                <span className="ml-1">enviar</span>
+                <span className="hidden lg:inline ml-2">
+                  <kbd className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-[10px] font-mono">Shift+Enter</kbd>
+                  <span className="ml-1">nueva línea</span>
+                </span>
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     </PageHeader>
   );

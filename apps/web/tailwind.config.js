@@ -120,6 +120,35 @@ module.exports = {
         sm: "calc(var(--radius) - 4px)",
       },
       keyframes: {
+        // AI Assistant page animations
+        "ai-orb-rotate": {
+          "0%": { transform: "rotate(0deg)" },
+          "100%": { transform: "rotate(360deg)" },
+        },
+        "ai-float": {
+          "0%, 100%": { transform: "translateY(0px)" },
+          "50%": { transform: "translateY(-8px)" },
+        },
+        "ai-glow": {
+          "0%, 100%": { opacity: "0.4", transform: "scale(1)" },
+          "50%": { opacity: "0.8", transform: "scale(1.05)" },
+        },
+        "ai-fade-up": {
+          "0%": { opacity: "0", transform: "translateY(16px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        "ai-gradient-shift": {
+          "0%, 100%": { backgroundPosition: "0% 50%" },
+          "50%": { backgroundPosition: "100% 50%" },
+        },
+        "ai-shimmer": {
+          "0%": { transform: "translateX(-100%)" },
+          "100%": { transform: "translateX(100%)" },
+        },
+        "ai-dot-pulse": {
+          "0%, 80%, 100%": { transform: "scale(0.6)", opacity: "0.4" },
+          "40%": { transform: "scale(1)", opacity: "1" },
+        },
         "accordion-down": {
           from: { height: "0" },
           to: { height: "var(--radix-accordion-content-height)" },
@@ -178,6 +207,13 @@ module.exports = {
         "slide-in-from-bottom": "slide-in-from-bottom 0.3s ease-out",
         "slide-in-from-left": "slide-in-from-left 0.3s ease-out",
         "slide-in-from-right": "slide-in-from-right 0.3s ease-out",
+        "ai-orb-rotate": "ai-orb-rotate 8s linear infinite",
+        "ai-float": "ai-float 4s ease-in-out infinite",
+        "ai-glow": "ai-glow 3s ease-in-out infinite",
+        "ai-fade-up": "ai-fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+        "ai-gradient-shift": "ai-gradient-shift 6s ease infinite",
+        "ai-shimmer": "ai-shimmer 2s ease-in-out infinite",
+        "ai-dot-pulse": "ai-dot-pulse 1.4s ease-in-out infinite",
         "banner-enter": "banner-enter 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards",
         "banner-exit": "banner-exit 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards",
         "banner-pulse-glow": "banner-pulse-glow 3s ease-in-out infinite",
