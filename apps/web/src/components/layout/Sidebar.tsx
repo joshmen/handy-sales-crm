@@ -296,6 +296,13 @@ const sidebarItems: SidebarItem[] = [
     href: '/ai',
     permission: 'view_automations',
   },
+  {
+    id: 'ayuda',
+    label: 'Ayuda',
+    icon: NavigationArrow,
+    href: '/ayuda',
+    permission: 'view_dashboard',
+  },
 
   // — ADMINISTRACIÓN —
   {
@@ -504,7 +511,7 @@ const itemGroupMap: Record<string, string> = {
   zones: 'operacion', visits: 'operacion',
   // Herramientas
   forms: 'herramientas', 'form-builder': 'herramientas', 'form-list': 'herramientas',
-  reports: 'herramientas', team: 'herramientas', devices: 'herramientas', automations: 'herramientas', metas: 'herramientas',
+  reports: 'herramientas', team: 'herramientas', devices: 'herramientas', automations: 'herramientas', metas: 'herramientas', ayuda: 'herramientas',
   // Administración
   administration: 'admin', tenants: 'admin', 'system-dashboard': 'admin',
   users: 'admin', roles: 'admin', 'global-settings': 'admin',
