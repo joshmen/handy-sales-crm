@@ -7,7 +7,6 @@ import { SearchBar } from '@/components/common/SearchBar';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { ListPagination } from '@/components/ui/ListPagination';
 import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
-import { Modal } from '@/components/ui/Modal';
 import { Drawer } from '@/components/ui/Drawer';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { VisitSummary } from '@/components/visits/VisitSummary';
@@ -21,14 +20,12 @@ import {
   ClienteVisitaCreateDto,
   ResultadoVisita,
   TipoVisita,
-  CheckInDto,
-  CheckOutDto,
 } from '@/types/visits';
 import { visitService } from '@/services/api/visits';
 import { clientService } from '@/services/api/clients';
 import { toast } from '@/hooks/useToast';
 import {
-  List, CalendarDays, Plus, RefreshCw, Eye, Play, CheckCircle,
+  List, CalendarDays, Plus, RefreshCw, Eye, CheckCircle,
   ShoppingCart, User, MapPin, Calendar, Clock, X,
 } from 'lucide-react';
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, subDays, subWeeks, subMonths } from 'date-fns';
@@ -148,10 +145,7 @@ function VisitsPageContent() {
 
   // Modals/Drawers
   const [showVisitForm, setShowVisitForm] = useState(false);
-  const [showCheckInModal, setShowCheckInModal] = useState(false);
-  const [showCheckOutModal, setShowCheckOutModal] = useState(false);
   const [showDetailDrawer, setShowDetailDrawer] = useState(false);
-  const [selectedVisitId, setSelectedVisitId] = useState<number | null>(null);
   const [visitDetail, setVisitDetail] = useState<ClienteVisitaDto | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [prefilledDate, setPrefilledDate] = useState<string | undefined>();
@@ -271,16 +265,6 @@ function VisitsPageContent() {
     }
   };
 
-  const handleCheckIn = (visitId: number) => {
-    setSelectedVisitId(visitId);
-    setShowCheckInModal(true);
-  };
-
-  const handleCheckOut = (visitId: number) => {
-    setSelectedVisitId(visitId);
-    setShowCheckOutModal(true);
-  };
-
   const handleSaveVisit = async (data: ClienteVisitaCreateDto) => {
     try {
       await visitService.createVisit(data);
@@ -294,61 +278,6 @@ function VisitsPageContent() {
       setShowVisitForm(false);
     } catch {
       toast.error('Error al programar la visita');
-    }
-  };
-
-  const getCurrentPosition = (): Promise<GeolocationPosition> => {
-    return new Promise((resolve, reject) => {
-      if (!navigator.geolocation) {
-        reject(new Error('Geolocalización no soportada'));
-        return;
-      }
-      navigator.geolocation.getCurrentPosition(resolve, reject, {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0,
-      });
-    });
-  };
-
-  const handleConfirmCheckIn = async () => {
-    if (!selectedVisitId) return;
-    try {
-      const position = await getCurrentPosition();
-      const checkInData: CheckInDto = {
-        latitud: position.coords.latitude,
-        longitud: position.coords.longitude,
-      };
-      await visitService.checkIn(selectedVisitId, checkInData);
-      toast.success('Check-in realizado correctamente');
-      await fetchVisits();
-      await fetchSummary();
-      setShowCheckInModal(false);
-      setSelectedVisitId(null);
-    } catch {
-      toast.error('Error al realizar el check-in');
-    }
-  };
-
-  const handleConfirmCheckOut = async (resultado: ResultadoVisita) => {
-    if (!selectedVisitId) return;
-    try {
-      let position: GeolocationPosition | null = null;
-      try { position = await getCurrentPosition(); } catch { /* ok */ }
-      const checkOutData: CheckOutDto = {
-        resultado,
-        latitud: position?.coords.latitude,
-        longitud: position?.coords.longitude,
-      };
-      await visitService.checkOut(selectedVisitId, checkOutData);
-      toast.success('Check-out realizado correctamente');
-      await fetchVisits();
-      await fetchSummary();
-      setShowCheckOutModal(false);
-      setShowDetailDrawer(false);
-      setSelectedVisitId(null);
-    } catch {
-      toast.error('Error al realizar el check-out');
     }
   };
 
@@ -533,8 +462,6 @@ function VisitsPageContent() {
               {!loading && filteredVisits.map(visit => {
                 const res = getResultado(visit.resultado);
                 const tipo = getTipo(visit.tipoVisita);
-                const isPending = !visit.fechaHoraInicio;
-                const isInProgress = visit.fechaHoraInicio && !visit.fechaHoraFin;
                 return (
                   <div key={visit.id} className="border border-gray-200 rounded-lg p-3 bg-white">
                     <div className="flex items-center justify-between mb-2">
@@ -571,22 +498,7 @@ function VisitsPageContent() {
                       >
                         <Eye className="w-3.5 h-3.5" /> Ver
                       </button>
-                      {isPending && (
-                        <button
-                          onClick={() => handleCheckIn(visit.id)}
-                          className="flex items-center gap-1 px-3 py-1.5 text-xs text-white bg-green-600 rounded-lg hover:bg-green-700"
-                        >
-                          <Play className="w-3.5 h-3.5" /> Iniciar
-                        </button>
-                      )}
-                      {isInProgress && (
-                        <button
-                          onClick={() => handleCheckOut(visit.id)}
-                          className="flex items-center gap-1 px-3 py-1.5 text-xs text-white bg-blue-600 rounded hover:bg-blue-700"
-                        >
-                          <CheckCircle className="w-3.5 h-3.5" /> Finalizar
-                        </button>
-                      )}
+                      {/* Iniciar/Finalizar solo disponible desde la app móvil */}
                     </div>
                   </div>
                 );
@@ -621,8 +533,6 @@ function VisitsPageContent() {
                 {filteredVisits.map(visit => {
                   const res = getResultado(visit.resultado);
                   const tipo = getTipo(visit.tipoVisita);
-                  const isPending = !visit.fechaHoraInicio;
-                  const isInProgress = visit.fechaHoraInicio && !visit.fechaHoraFin;
                   const isCompleted = !!visit.fechaHoraFin;
                   return (
                     <div key={visit.id} className="flex items-center gap-3 px-5 py-3.5 border-b border-gray-200 bg-white hover:bg-gray-50 transition-colors min-w-[850px]">
@@ -661,22 +571,6 @@ function VisitsPageContent() {
                         >
                           <Eye className="w-4 h-4" />
                         </button>
-                        {isPending && (
-                          <button
-                            onClick={() => handleCheckIn(visit.id)}
-                            className="flex items-center gap-1 px-2.5 py-1 text-xs text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
-                          >
-                            <Play className="w-3 h-3" /> Iniciar
-                          </button>
-                        )}
-                        {isInProgress && (
-                          <button
-                            onClick={() => handleCheckOut(visit.id)}
-                            className="flex items-center gap-1 px-2.5 py-1 text-xs text-white bg-blue-600 rounded hover:bg-blue-700 transition-colors"
-                          >
-                            <CheckCircle className="w-3 h-3" /> Finalizar
-                          </button>
-                        )}
                         {isCompleted && (
                           <span className="flex items-center gap-1 px-2 py-1 text-xs text-green-600">
                             <CheckCircle className="w-3.5 h-3.5" />
@@ -882,102 +776,12 @@ function VisitsPageContent() {
               );
             })()}
 
-            {/* Actions */}
-            {!visitDetail.fechaHoraInicio && (
-              <button
-                onClick={() => { setSelectedVisitId(visitDetail.id); setShowCheckInModal(true); }}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
-              >
-                <Play className="w-4 h-4" /> Iniciar Visita
-              </button>
-            )}
-            {visitDetail.fechaHoraInicio && !visitDetail.fechaHoraFin && (
-              <button
-                onClick={() => { setSelectedVisitId(visitDetail.id); setShowCheckOutModal(true); }}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
-              >
-                <CheckCircle className="w-4 h-4" /> Finalizar Visita
-              </button>
-            )}
+            {/* Check-in/out only available from mobile app */}
+            <p className="text-sm text-muted-foreground text-center py-3">Inicia y finaliza visitas desde la app móvil</p>
           </div>
         )}
       </Drawer>
 
-      {/* Modal: Check-In */}
-      {showCheckInModal && (
-        <Modal
-          isOpen={showCheckInModal}
-          onClose={() => { setShowCheckInModal(false); setSelectedVisitId(null); }}
-          title="Confirmar Check-In"
-          size="sm"
-        >
-          <div className="space-y-4">
-            <p className="text-gray-600">
-              ¿Deseas iniciar esta visita? Se registrará tu ubicación actual.
-            </p>
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => { setShowCheckInModal(false); setSelectedVisitId(null); }}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleConfirmCheckIn}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-              >
-                Iniciar Visita
-              </button>
-            </div>
-          </div>
-        </Modal>
-      )}
-
-      {/* Modal: Check-Out */}
-      {showCheckOutModal && (
-        <Modal
-          isOpen={showCheckOutModal}
-          onClose={() => { setShowCheckOutModal(false); setSelectedVisitId(null); }}
-          title="Finalizar Visita"
-          size="sm"
-        >
-          <div className="space-y-4">
-            <p className="text-gray-600">Selecciona el resultado de la visita:</p>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => handleConfirmCheckOut(ResultadoVisita.Venta)}
-                className="px-4 py-3 bg-green-100 text-green-800 rounded-lg hover:bg-green-200 font-medium"
-              >
-                Con Venta
-              </button>
-              <button
-                onClick={() => handleConfirmCheckOut(ResultadoVisita.SinVenta)}
-                className="px-4 py-3 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 font-medium"
-              >
-                Sin Venta
-              </button>
-              <button
-                onClick={() => handleConfirmCheckOut(ResultadoVisita.NoEncontrado)}
-                className="px-4 py-3 bg-orange-100 text-orange-800 rounded-lg hover:bg-orange-200 font-medium"
-              >
-                No Encontrado
-              </button>
-              <button
-                onClick={() => handleConfirmCheckOut(ResultadoVisita.Reprogramada)}
-                className="px-4 py-3 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 font-medium"
-              >
-                Reprogramar
-              </button>
-            </div>
-            <button
-              onClick={() => { setShowCheckOutModal(false); setSelectedVisitId(null); }}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 mt-2"
-            >
-              Cancelar
-            </button>
-          </div>
-        </Modal>
-      )}
     </PageHeader>
   );
 }
