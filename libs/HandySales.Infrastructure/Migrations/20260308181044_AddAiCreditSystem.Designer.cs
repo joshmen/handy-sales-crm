@@ -972,9 +972,7 @@ namespace HandySales.Infrastructure.Migrations
 
                     b.HasIndex("TenantId");
 
-                    b.HasIndex("Ubicacion");
 
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Ubicacion"), "gist");
 
                     b.HasIndex("VendedorId");
 
