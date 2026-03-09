@@ -176,3 +176,50 @@ export async function getRouteAiSummary(rutaId: number): Promise<RouteAiSummaryR
   const { data } = await api.get<RouteAiSummaryResponse>(`/rutas/${rutaId}/cierre/resumen-ai`);
   return data;
 }
+
+// ═══════════════════════════════════════════════════════
+// COLLECTIONS MESSAGE (WhatsApp)
+// ═══════════════════════════════════════════════════════
+
+export interface CollectionsMessageRequest {
+  clienteId: number;
+  tono?: 'amable' | 'firme' | 'urgente';
+}
+
+export interface CollectionsMessageResponse {
+  mensaje: string;
+  clienteNombre: string;
+  saldo: number;
+  telefono?: string;
+  creditosUsados: number;
+  creditosRestantes: number;
+}
+
+export async function generateCollectionsMessage(request: CollectionsMessageRequest): Promise<CollectionsMessageResponse> {
+  const { data } = await api.post<CollectionsMessageResponse>('/api/ai/collections-message', request);
+  return data;
+}
+
+// ═══════════════════════════════════════════════════════
+// ORDER ANOMALY DETECTION
+// ═══════════════════════════════════════════════════════
+
+export interface OrderAnomaly {
+  tipo: 'producto_nuevo' | 'cantidad_alta' | 'precio_anomalo' | 'total_alto';
+  severidad: 'info' | 'warning';
+  productoId?: number;
+  productoNombre?: string;
+  mensaje: string;
+}
+
+export interface OrderAnomaliesResponse {
+  pedidoId: number;
+  totalAnomalias: number;
+  tieneAnomalias: boolean;
+  items: OrderAnomaly[];
+}
+
+export async function getOrderAnomalies(pedidoId: number): Promise<OrderAnomaliesResponse> {
+  const { data } = await api.get<OrderAnomaliesResponse>(`/api/ai/orders/${pedidoId}/anomalies`);
+  return data;
+}

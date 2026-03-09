@@ -38,6 +38,8 @@ public static class AiEndpoints
         group.MapGet("/usage/stats", HandleGetUsageStats);
         group.MapGet("/client/{clienteId}/suggested-products", HandleSuggestedProducts);
         group.MapGet("/collections-priority", HandleCollectionsPriority);
+        group.MapPost("/collections-message", HandleCollectionsMessage);
+        group.MapGet("/orders/{pedidoId}/anomalies", HandleOrderAnomalies);
     }
 
     private static async Task<IResult> HandleQuery(
@@ -465,5 +467,218 @@ public static class AiEndpoints
         .ToList();
 
         return Results.Ok(new { total = prioridad.Count, items = prioridad });
+    }
+
+    private static async Task<IResult> HandleCollectionsMessage(
+        [FromBody] CollectionsMessageRequest request,
+        IAiGatewayService gateway,
+        IAiCreditService creditService,
+        ITenantContextService tenantContext,
+        HandySalesDbContext db,
+        HttpContext ctx)
+    {
+        var tenantId = tenantContext.TenantId ?? 0;
+        var userIdStr = ctx.User.FindFirst("userId")?.Value
+            ?? ctx.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+            ?? ctx.User.FindFirst("sub")?.Value;
+        var userId = int.TryParse(userIdStr, out var uid) ? uid : 0;
+
+        if (tenantId == 0 || userId == 0)
+            return Results.Unauthorized();
+
+        // Get client info
+        var cliente = await db.Clientes
+            .AsNoTracking()
+            .Where(c => c.Id == request.ClienteId && c.TenantId == tenantId && c.Activo)
+            .Select(c => new { c.Nombre, c.Saldo, c.Telefono })
+            .FirstOrDefaultAsync();
+
+        if (cliente == null)
+            return Results.NotFound(new { error = "Cliente no encontrado." });
+
+        if (cliente.Saldo <= 0)
+            return Results.BadRequest(new { error = "El cliente no tiene saldo pendiente." });
+
+        // Get vendor name for signature
+        var vendedor = await db.Usuarios
+            .AsNoTracking()
+            .Where(u => u.Id == userId)
+            .Select(u => u.Nombre)
+            .FirstOrDefaultAsync();
+
+        // Get company name for branding
+        var empresa = await db.DatosEmpresa
+            .AsNoTracking()
+            .Where(e => e.TenantId == tenantId)
+            .Select(e => e.RazonSocial)
+            .FirstOrDefaultAsync() ?? "nuestra empresa";
+
+        var tono = request.Tono ?? "amable";
+        var prompt = $@"Genera un mensaje corto de WhatsApp para recordar un cobro pendiente.
+Datos:
+- Cliente: {cliente.Nombre}
+- Monto pendiente: ${cliente.Saldo:N2} MXN
+- Empresa: {empresa}
+- Vendedor: {vendedor ?? "el equipo de ventas"}
+- Tono: {tono} (opciones: amable, firme, urgente)
+
+Reglas:
+- Máximo 3-4 líneas, formato WhatsApp (emojis permitidos)
+- No incluir números de cuenta bancaria
+- Personalizado con el nombre del cliente
+- Incluir monto exacto
+- Si el tono es 'urgente', mencionar que el crédito puede suspenderse
+- Firmar con el nombre del vendedor";
+
+        try
+        {
+            var response = await gateway.ProcessRequestAsync(
+                new AiRequestDto(tono == "urgente" ? "insight" : "pregunta", prompt),
+                tenantId, userId);
+
+            return Results.Ok(new
+            {
+                mensaje = response.Respuesta,
+                clienteNombre = cliente.Nombre,
+                saldo = cliente.Saldo,
+                telefono = cliente.Telefono,
+                creditosUsados = response.CreditosUsados,
+                creditosRestantes = response.CreditosRestantes
+            });
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("créditos") || ex.Message.Contains("Créditos"))
+        {
+            return Results.Json(new { error = ex.Message }, statusCode: 402);
+        }
+    }
+
+    private record CollectionsMessageRequest(int ClienteId, string? Tono);
+
+    private static async Task<IResult> HandleOrderAnomalies(
+        int pedidoId,
+        HandySalesDbContext db,
+        ITenantContextService tenantContext)
+    {
+        var tenantId = tenantContext.TenantId ?? 0;
+        if (tenantId == 0) return Results.Unauthorized();
+
+        // Get the order with details
+        var pedido = await db.Pedidos
+            .AsNoTracking()
+            .Include(p => p.Detalles).ThenInclude(d => d.Producto)
+            .FirstOrDefaultAsync(p => p.Id == pedidoId && p.TenantId == tenantId && p.Activo);
+
+        if (pedido == null)
+            return Results.NotFound(new { error = "Pedido no encontrado." });
+
+        var anomalies = new List<object>();
+        var ninetyDaysAgo = DateTime.UtcNow.AddDays(-90);
+
+        // Get historical averages for this client
+        var historialCliente = await db.DetallePedidos
+            .AsNoTracking()
+            .Where(d => d.Activo
+                && d.Pedido.ClienteId == pedido.ClienteId
+                && d.Pedido.TenantId == tenantId
+                && d.Pedido.Activo
+                && d.Pedido.Id != pedidoId
+                && d.Pedido.FechaPedido >= ninetyDaysAgo
+                && d.Pedido.Estado != EstadoPedido.Cancelado)
+            .GroupBy(d => d.ProductoId)
+            .Select(g => new
+            {
+                ProductoId = g.Key,
+                AvgCantidad = g.Average(d => (double)d.Cantidad),
+                MaxCantidad = g.Max(d => d.Cantidad),
+                AvgPrecio = g.Average(d => (double)d.PrecioUnitario),
+                Compras = g.Count()
+            })
+            .ToDictionaryAsync(x => x.ProductoId);
+
+        // Get products this client has NEVER bought
+        var productosComprados = historialCliente.Keys.ToHashSet();
+
+        foreach (var detalle in pedido.Detalles.Where(d => d.Activo))
+        {
+            // 1. Product never bought by this client
+            if (!productosComprados.Contains(detalle.ProductoId))
+            {
+                anomalies.Add(new
+                {
+                    tipo = "producto_nuevo",
+                    severidad = "info",
+                    productoId = detalle.ProductoId,
+                    productoNombre = detalle.Producto?.Nombre ?? "Desconocido",
+                    mensaje = $"{detalle.Producto?.Nombre} nunca comprado por este cliente"
+                });
+                continue;
+            }
+
+            var hist = historialCliente[detalle.ProductoId];
+
+            // 2. Quantity much higher than average (>3x)
+            if ((double)detalle.Cantidad > hist.AvgCantidad * 3 && detalle.Cantidad > hist.MaxCantidad)
+            {
+                var cantRatio = (double)detalle.Cantidad / hist.AvgCantidad;
+                anomalies.Add(new
+                {
+                    tipo = "cantidad_alta",
+                    severidad = "warning",
+                    productoId = detalle.ProductoId,
+                    productoNombre = detalle.Producto?.Nombre ?? "Desconocido",
+                    mensaje = $"{detalle.Producto?.Nombre}: cantidad {detalle.Cantidad} es {cantRatio:F1}x el promedio ({hist.AvgCantidad:F0})"
+                });
+            }
+
+            // 3. Price significantly different from average (>20% deviation)
+            if (hist.AvgPrecio > 0)
+            {
+                var desviacion = Math.Abs((double)detalle.PrecioUnitario - hist.AvgPrecio) / hist.AvgPrecio;
+                if (desviacion > 0.20)
+                {
+                    var direccion = (double)detalle.PrecioUnitario > hist.AvgPrecio ? "por encima" : "por debajo";
+                    anomalies.Add(new
+                    {
+                        tipo = "precio_anomalo",
+                        severidad = "warning",
+                        productoId = detalle.ProductoId,
+                        productoNombre = detalle.Producto?.Nombre ?? "Desconocido",
+                        mensaje = $"{detalle.Producto?.Nombre}: precio ${detalle.PrecioUnitario:N2} está {desviacion:P0} {direccion} del promedio (${hist.AvgPrecio:N2})"
+                    });
+                }
+            }
+        }
+
+        // 4. Order total much higher than client average
+        var avgTotal = await db.Pedidos
+            .AsNoTracking()
+            .Where(p => p.ClienteId == pedido.ClienteId
+                && p.TenantId == tenantId
+                && p.Activo
+                && p.Id != pedidoId
+                && p.FechaPedido >= ninetyDaysAgo
+                && p.Estado != EstadoPedido.Cancelado)
+            .AverageAsync(p => (double?)p.Total) ?? 0;
+
+        if (avgTotal > 0 && (double)pedido.Total > avgTotal * 2.5)
+        {
+            var ratio = (double)pedido.Total / avgTotal;
+            anomalies.Add(new
+            {
+                tipo = "total_alto",
+                severidad = "warning",
+                productoId = (int?)null,
+                productoNombre = (string?)null,
+                mensaje = $"Total ${pedido.Total:N2} es {ratio:F1}x el promedio del cliente (${avgTotal:N2})"
+            });
+        }
+
+        return Results.Ok(new
+        {
+            pedidoId,
+            totalAnomalias = anomalies.Count,
+            tieneAnomalias = anomalies.Count > 0,
+            items = anomalies
+        });
     }
 }
