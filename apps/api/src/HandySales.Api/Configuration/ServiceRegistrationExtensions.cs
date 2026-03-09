@@ -145,7 +145,7 @@ public static class ServiceRegistrationExtensions
             services.AddDbContext<HandySalesDbContext>(options =>
              options.UseNpgsql(
                  config.GetConnectionString("DefaultConnection"),
-                 o => o.UseNetTopologySuite()
+                 o => o.UseNetTopologySuite().UseVector()
              ));
         }
         services.AddFluentValidationAutoValidation();
@@ -341,6 +341,7 @@ public static class ServiceRegistrationExtensions
         services.AddScoped<IAiSanitizer, AiSanitizer>();
         services.AddScoped<IAiDataContextBuilder, AiDataContextBuilder>();
         services.AddScoped<IAiActionDetector, AiActionDetector>();
+        services.AddScoped<IAiEmbeddingService, AiEmbeddingService>();
 
         return services;
     }

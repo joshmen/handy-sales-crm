@@ -18,7 +18,9 @@ services:
   # PostgreSQL Database (single instance with multiple databases)
   # Using PostGIS image for spatial queries (ST_Distance, etc.) — same PostgreSQL 16, adds extensions
   postgres:
-    image: postgis/postgis:16-3.4-alpine
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.Postgres.Dev
     container_name: handysales_postgres_dev
     restart: unless-stopped
     environment:

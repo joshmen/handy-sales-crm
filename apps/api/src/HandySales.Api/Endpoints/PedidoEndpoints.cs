@@ -1,4 +1,5 @@
 using HandySales.Api.Hubs;
+using HandySales.Application.Ai.Interfaces;
 using Microsoft.AspNetCore.SignalR;
 using HandySales.Infrastructure.Persistence;
 using HandySales.Application.Pedidos.DTOs;
@@ -21,12 +22,17 @@ public static class PedidoEndpoints
             PedidoCreateDto dto,
             [FromServices] PedidoService servicio,
             [FromServices] ITenantContextService tenantContext,
-            [FromServices] IHubContext<NotificationHub> hubContext) =>
+            [FromServices] IHubContext<NotificationHub> hubContext,
+            [FromServices] IAiEmbeddingService embeddingService) =>
         {
             var id = await servicio.CrearAsync(dto);
             var tenantId = tenantContext.TenantId ?? 0;
             if (tenantId > 0)
                 await hubContext.Clients.Group($"tenant:{tenantId}").SendAsync("DashboardUpdate", new { tipo = "pedido", id });
+
+            if (!string.IsNullOrWhiteSpace(dto.Notas) && tenantId > 0)
+                _ = embeddingService.SafeUpsertAsync(tenantId, "Pedido", id, $"Pedido #{id} — {dto.Notas}");
+
             return Results.Created($"/pedidos/{id}", new { id });
         })
         .WithSummary("Crear nuevo pedido")

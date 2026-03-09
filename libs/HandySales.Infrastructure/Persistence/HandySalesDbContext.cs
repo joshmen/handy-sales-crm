@@ -82,6 +82,7 @@ public class HandySalesDbContext : DbContext
     public DbSet<AiCreditBalance> AiCreditBalances => Set<AiCreditBalance>();
     public DbSet<AiUsageLog> AiUsageLogs => Set<AiUsageLog>();
     public DbSet<AiCreditPurchase> AiCreditPurchases => Set<AiCreditPurchase>();
+    public DbSet<AiEmbedding> AiEmbeddings => Set<AiEmbedding>();
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
@@ -893,5 +894,22 @@ public class HandySalesDbContext : DbContext
 
         modelBuilder.Entity<MetaVendedor>()
             .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
+
+        // pgvector extension + AiEmbedding config (PostgreSQL only — skipped in SQLite tests)
+        if (Database.ProviderName?.Contains("Npgsql") == true)
+        {
+            modelBuilder.HasPostgresExtension("vector");
+
+            modelBuilder.Entity<AiEmbedding>(entity =>
+            {
+                entity.HasIndex(e => new { e.TenantId, e.SourceType, e.SourceId }).IsUnique();
+                entity.Property(e => e.Embedding).HasColumnType("vector(1536)");
+            });
+        }
+        else
+        {
+            // SQLite tests: ignore AiEmbedding entity (Vector type not supported)
+            modelBuilder.Ignore<AiEmbedding>();
+        }
     }
 }

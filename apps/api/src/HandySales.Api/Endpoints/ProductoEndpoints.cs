@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using FluentValidation;
+using HandySales.Application.Ai.Interfaces;
 using HandySales.Application.CompanySettings.Interfaces;
 using HandySales.Application.Productos.DTOs;
 using HandySales.Application.Productos.Services;
@@ -32,7 +33,8 @@ public static class ProductoEndpoints
             IValidator<ProductoCreateDto> validator,
             [FromServices] ProductoService servicio,
             [FromServices] ISubscriptionEnforcementService enforcement,
-            [FromServices] ICurrentTenant currentTenant) =>
+            [FromServices] ICurrentTenant currentTenant,
+            [FromServices] IAiEmbeddingService embeddingService) =>
         {
             var check = await enforcement.CanCreateProductoAsync(currentTenant.TenantId);
             if (!check.Allowed)
@@ -43,6 +45,10 @@ public static class ProductoEndpoints
                 return Results.BadRequest(validation.ToDictionary());
 
             var id = await servicio.CrearProductoAsync(dto);
+
+            var embeddingText = $"{dto.Nombre}: {dto.Descripcion}";
+            _ = embeddingService.SafeUpsertAsync(currentTenant.TenantId, "Producto", id, embeddingText);
+
             return Results.Created($"/productos/{id}", new { id });
         }).RequireAuthorization();
 
@@ -50,7 +56,9 @@ public static class ProductoEndpoints
             int id,
             ProductoCreateDto dto,
             IValidator<ProductoCreateDto> validator,
-            [FromServices] ProductoService servicio) =>
+            [FromServices] ProductoService servicio,
+            [FromServices] ICurrentTenant currentTenant,
+            [FromServices] IAiEmbeddingService embeddingService) =>
         {
             var exists = await servicio.ObtenerPorIdAsync(id);
             if (exists == null)
@@ -61,6 +69,11 @@ public static class ProductoEndpoints
                 return Results.BadRequest(validation.ToDictionary());
 
             var actualizado = await servicio.ActualizarProductoAsync(id, dto);
+            if (actualizado)
+            {
+                var embeddingText = $"{dto.Nombre}: {dto.Descripcion}";
+                _ = embeddingService.SafeUpsertAsync(currentTenant.TenantId, "Producto", id, embeddingText);
+            }
             return actualizado ? Results.NoContent() : Results.NotFound();
         }).RequireAuthorization();
 

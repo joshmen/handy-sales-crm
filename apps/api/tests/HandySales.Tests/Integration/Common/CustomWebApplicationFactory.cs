@@ -1,3 +1,4 @@
+using HandySales.Application.Ai.Interfaces;
 using HandySales.Application.Notifications.Interfaces;
 using HandySales.Domain.Entities;
 using HandySales.Infrastructure.Persistence;
@@ -92,6 +93,10 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             services.RemoveAll<IRealtimePushService>();
             services.AddScoped<IRealtimePushService, FakeRealtimePushService>();
 
+            // Stub IAiEmbeddingService — pgvector not available in SQLite tests
+            services.RemoveAll<IAiEmbeddingService>();
+            services.AddScoped<IAiEmbeddingService, FakeAiEmbeddingService>();
+
             // Crea base de datos
             var sp = services.BuildServiceProvider();
             using var scope = sp.CreateScope();
@@ -117,4 +122,16 @@ internal class FakeRealtimePushService : IRealtimePushService
 {
     public Task SendToUserAsync(int userId, object payload) => Task.CompletedTask;
     public Task SendToUsersAsync(IEnumerable<int> userIds, object payload) => Task.CompletedTask;
+}
+
+/// <summary>
+/// No-op embedding service for tests (pgvector not available in SQLite).
+/// </summary>
+internal class FakeAiEmbeddingService : IAiEmbeddingService
+{
+    public Task UpsertEmbeddingAsync(int tenantId, string sourceType, int sourceId, string contentText) => Task.CompletedTask;
+    public Task DeleteEmbeddingAsync(int tenantId, string sourceType, int sourceId) => Task.CompletedTask;
+    public Task<List<SemanticSearchResult>> SearchAsync(int tenantId, string query, int topK = 3, double minScore = 0.72)
+        => Task.FromResult(new List<SemanticSearchResult>());
+    public Task SafeUpsertAsync(int tenantId, string sourceType, int sourceId, string contentText) => Task.CompletedTask;
 }

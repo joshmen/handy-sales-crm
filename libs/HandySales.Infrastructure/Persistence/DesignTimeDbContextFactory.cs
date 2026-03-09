@@ -18,7 +18,7 @@ public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<HandySales
             ?? "Host=localhost;Port=5432;Database=handy_erp;Username=handy_user;Password=handy_pass";
 
         var optionsBuilder = new DbContextOptionsBuilder<HandySalesDbContext>();
-        optionsBuilder.UseNpgsql(connectionString, o => o.UseNetTopologySuite());
+        optionsBuilder.UseNpgsql(connectionString, o => o.UseNetTopologySuite().UseVector());
 
         return new HandySalesDbContext(optionsBuilder.Options);
     }

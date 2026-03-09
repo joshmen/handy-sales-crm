@@ -1,4 +1,5 @@
 using HandySales.Api.Hubs;
+using HandySales.Application.Ai.Interfaces;
 using Microsoft.AspNetCore.SignalR;
 using HandySales.Infrastructure.Persistence;
 using HandySales.Application.Visitas.DTOs;
@@ -93,9 +94,18 @@ public static class ClienteVisitaEndpoints
         group.MapPost("/{id:int}/check-out", async (
             int id,
             CheckOutDto dto,
-            [FromServices] ClienteVisitaService servicio) =>
+            [FromServices] ClienteVisitaService servicio,
+            [FromServices] ITenantContextService tenantContext,
+            [FromServices] IAiEmbeddingService embeddingService) =>
         {
             var resultado = await servicio.CheckOutAsync(id, dto);
+            if (resultado)
+            {
+                var tenantId = tenantContext.TenantId ?? 0;
+                var notas = $"{dto.Notas} {dto.NotasPrivadas}".Trim();
+                if (!string.IsNullOrWhiteSpace(notas) && tenantId > 0)
+                    _ = embeddingService.SafeUpsertAsync(tenantId, "Visita", id, $"Visita: {notas}");
+            }
             return resultado
                 ? Results.Ok(new { mensaje = "Check-out registrado exitosamente" })
                 : Results.BadRequest(new { error = "No se pudo registrar el check-out. Verifique que exista un check-in previo." });

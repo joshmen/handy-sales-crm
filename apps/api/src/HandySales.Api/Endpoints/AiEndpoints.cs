@@ -58,6 +58,9 @@ public static class AiEndpoints
 
         // Refresh materialized views
         group.MapPost("/admin/refresh-views", HandleRefreshViews);
+
+        // Backfill embeddings for existing data (one-time admin operation)
+        group.MapPost("/admin/backfill-embeddings", HandleBackfillEmbeddings);
     }
 
     // ═══════════════════════════════════════════════════════
@@ -1569,5 +1572,85 @@ Reglas:
         public int RiskScore { get; set; }
         public string NivelRiesgo { get; set; } = "";
         public string Razon { get; set; } = "";
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // BACKFILL EMBEDDINGS
+    // ═══════════════════════════════════════════════════════
+
+    private static async Task<IResult> HandleBackfillEmbeddings(
+        ITenantContextService tenantContext,
+        HttpContext ctx,
+        [FromServices] HandySalesDbContext db,
+        [FromServices] IAiEmbeddingService embeddingService)
+    {
+        var (tenantId, _) = ExtractIdentity(tenantContext, ctx);
+        if (tenantId == 0) return Results.Unauthorized();
+
+        // Check ADMIN role
+        var role = ctx.User.FindFirst("role")?.Value ?? "";
+        if (role != "ADMIN" && role != "SUPER_ADMIN")
+            return Results.Forbid();
+
+        var counts = new { clientes = 0, productos = 0, visitas = 0, pedidos = 0 };
+        var processed = new { clientes = 0, productos = 0, visitas = 0, pedidos = 0 };
+
+        // Clientes
+        var clientes = await db.Clientes
+            .Where(c => c.Activo && !string.IsNullOrEmpty(c.Nombre))
+            .Select(c => new { c.Id, c.Nombre, c.Comentarios })
+            .ToListAsync();
+
+        foreach (var c in clientes)
+        {
+            var text = string.IsNullOrWhiteSpace(c.Comentarios)
+                ? c.Nombre : $"{c.Nombre} — {c.Comentarios}";
+            await embeddingService.SafeUpsertAsync(tenantId, "Cliente", c.Id, text);
+        }
+
+        // Productos
+        var productos = await db.Productos
+            .Where(p => p.Activo && !string.IsNullOrEmpty(p.Nombre))
+            .Select(p => new { p.Id, p.Nombre, p.Descripcion })
+            .ToListAsync();
+
+        foreach (var p in productos)
+        {
+            var text = $"{p.Nombre}: {p.Descripcion}";
+            await embeddingService.SafeUpsertAsync(tenantId, "Producto", p.Id, text);
+        }
+
+        // Visitas with notes
+        var visitas = await db.ClienteVisitas
+            .Where(v => v.Activo && (!string.IsNullOrEmpty(v.Notas) || !string.IsNullOrEmpty(v.NotasPrivadas)))
+            .Select(v => new { v.Id, v.Notas, v.NotasPrivadas })
+            .ToListAsync();
+
+        foreach (var v in visitas)
+        {
+            var text = $"Visita: {v.Notas} {v.NotasPrivadas}".Trim();
+            if (!string.IsNullOrWhiteSpace(text) && text != "Visita:")
+                await embeddingService.SafeUpsertAsync(tenantId, "Visita", v.Id, text);
+        }
+
+        // Pedidos with notes
+        var pedidos = await db.Pedidos
+            .Where(p => !string.IsNullOrEmpty(p.Notas))
+            .Select(p => new { p.Id, p.NumeroPedido, p.Notas })
+            .ToListAsync();
+
+        foreach (var p in pedidos)
+        {
+            await embeddingService.SafeUpsertAsync(tenantId, "Pedido", p.Id, $"Pedido #{p.NumeroPedido} — {p.Notas}");
+        }
+
+        return Results.Ok(new
+        {
+            message = "Backfill completado",
+            clientes = clientes.Count,
+            productos = productos.Count,
+            visitas = visitas.Count,
+            pedidos = pedidos.Count,
+        });
     }
 }

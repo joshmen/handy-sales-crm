@@ -1,4 +1,5 @@
 using FluentValidation;
+using HandySales.Application.Ai.Interfaces;
 using HandySales.Application.Clientes.DTOs;
 using HandySales.Application.Clientes.Services;
 using HandySales.Application.SubscriptionPlans.Interfaces;
@@ -16,7 +17,8 @@ public static class ClienteEndpoints
             IValidator<ClienteCreateDto> validator,
             [FromServices] ClienteService servicio,
             [FromServices] ISubscriptionEnforcementService enforcement,
-            [FromServices] ICurrentTenant currentTenant) =>
+            [FromServices] ICurrentTenant currentTenant,
+            [FromServices] IAiEmbeddingService embeddingService) =>
         {
             var check = await enforcement.CanCreateClienteAsync(currentTenant.TenantId);
             if (!check.Allowed)
@@ -29,6 +31,10 @@ public static class ClienteEndpoints
             var result = await servicio.CrearClienteAsync(dto);
             if (!result.Success)
                 return Results.Conflict(new { message = result.Error });
+
+            var embeddingText = string.IsNullOrWhiteSpace(dto.Comentarios)
+                ? dto.Nombre : $"{dto.Nombre} — {dto.Comentarios}";
+            _ = embeddingService.SafeUpsertAsync(currentTenant.TenantId, "Cliente", result.Id, embeddingText);
 
             return Results.Created($"/clientes/{result.Id}", new { id = result.Id });
         }).RequireAuthorization();
@@ -51,7 +57,9 @@ public static class ClienteEndpoints
             int id,
             ClienteCreateDto dto,
             IValidator<ClienteCreateDto> validator,
-            [FromServices] ClienteService servicio) =>
+            [FromServices] ClienteService servicio,
+            [FromServices] ICurrentTenant currentTenant,
+            [FromServices] IAiEmbeddingService embeddingService) =>
         {
             var exists = await servicio.ObtenerPorIdAsync(id);
             if (exists == null)
@@ -68,6 +76,11 @@ public static class ClienteEndpoints
                     return Results.Conflict(new { message = result.Error });
                 return Results.NotFound(new { message = result.Error });
             }
+
+            var embeddingText = string.IsNullOrWhiteSpace(dto.Comentarios)
+                ? dto.Nombre : $"{dto.Nombre} — {dto.Comentarios}";
+            _ = embeddingService.SafeUpsertAsync(currentTenant.TenantId, "Cliente", id, embeddingText);
+
             return Results.NoContent();
         }).RequireAuthorization();
 

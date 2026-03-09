@@ -11,6 +11,7 @@ namespace HandySales.Infrastructure.Ai.Services;
 public class AiDataContextBuilder : IAiDataContextBuilder
 {
     private readonly HandySalesDbContext _db;
+    private readonly IAiEmbeddingService _embeddingService;
     private readonly ILogger<AiDataContextBuilder> _logger;
 
     // Keyword → DataCategory mappings (Spanish business terms)
@@ -101,9 +102,10 @@ public class AiDataContextBuilder : IAiDataContextBuilder
         ["pronostico"] = (2000, 90, 3),
     };
 
-    public AiDataContextBuilder(HandySalesDbContext db, ILogger<AiDataContextBuilder> logger)
+    public AiDataContextBuilder(HandySalesDbContext db, IAiEmbeddingService embeddingService, ILogger<AiDataContextBuilder> logger)
     {
         _db = db;
+        _embeddingService = embeddingService;
         _logger = logger;
     }
 
@@ -179,6 +181,9 @@ public class AiDataContextBuilder : IAiDataContextBuilder
                 _logger.LogWarning(ex, "Error building AI context for category {Category}", cat);
             }
         }
+
+        // Semantic search: append relevant embeddings for non-trivial prompts
+        await AppendSemanticContextAsync(sb, prompt, tenantId);
 
         var markdown = sb.ToString();
         var estimatedTokens = markdown.Length / 4;
@@ -655,6 +660,36 @@ public class AiDataContextBuilder : IAiDataContextBuilder
             sb.AppendLine($"| {Truncate(nombre, 20)} | {meta.Tipo} | {metaStr} | {actualStr} | {pct:F1}% |");
         }
         sb.AppendLine();
+    }
+
+    // ─── Semantic Search ───────────────────────────────────────────
+
+    private async Task AppendSemanticContextAsync(StringBuilder sb, string prompt, int tenantId)
+    {
+        // Skip trivial prompts (greetings, single words)
+        if (prompt.Length <= 10)
+            return;
+
+        try
+        {
+            var results = await _embeddingService.SearchAsync(tenantId, prompt, topK: 3, minScore: 0.72);
+            if (results.Count == 0)
+                return;
+
+            sb.AppendLine("### Contexto relevante (búsqueda semántica)");
+            foreach (var r in results)
+            {
+                var relevancia = (int)(r.Score * 100);
+                var texto = Truncate(r.ContentText, 200);
+                sb.AppendLine($"- **{r.SourceType}** (relevancia {relevancia}%): {texto}");
+            }
+            sb.AppendLine();
+        }
+        catch (Exception ex)
+        {
+            // Semantic search failure should never break keyword context
+            _logger.LogWarning(ex, "Semantic search failed for tenant {TenantId}, continuing with keyword context", tenantId);
+        }
     }
 
     // ─── Helpers ────────────────────────────────────────────────────
