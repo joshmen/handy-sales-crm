@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using HandySales.Domain.Common;
-using NetTopologySuite.Geometries;
 
 namespace HandySales.Domain.Entities;
 
@@ -62,9 +61,6 @@ public class ClienteVisita : AuditableEntity
 
     [Column("longitud_inicio")]
     public double? LongitudInicio { get; set; }
-
-    [Column("ubicacion_inicio")]
-    public Point? UbicacionInicio { get; set; }
 
     [Column("latitud_fin")]
     public double? LatitudFin { get; set; }

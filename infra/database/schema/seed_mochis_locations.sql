@@ -17,8 +17,7 @@ UPDATE "Clientes" SET
   colonia = 'Centro',
   codigo_postal = '81200',
   latitud = 25.79050,
-  longitud = -108.98630,
-  ubicacion = ST_SetSRID(ST_MakePoint(-108.98630, 25.79050), 4326)
+  longitud = -108.98630
 WHERE tenant_id = 1 AND nombre = 'Tienda Don Jose';
 
 -- Cliente 2: Abarrotes La Esquina → Cerca del mercado municipal
@@ -28,8 +27,7 @@ UPDATE "Clientes" SET
   colonia = 'Centro',
   codigo_postal = '81200',
   latitud = 25.79270,
-  longitud = -108.99120,
-  ubicacion = ST_SetSRID(ST_MakePoint(-108.99120, 25.79270), 4326)
+  longitud = -108.99120
 WHERE tenant_id = 1 AND nombre = 'Abarrotes La Esquina';
 
 -- Cliente 3: Mini Super El Sol → Blvd Rosales (zona norte)
@@ -39,8 +37,7 @@ UPDATE "Clientes" SET
   colonia = 'Centro',
   codigo_postal = '81240',
   latitud = 25.79680,
-  longitud = -108.99580,
-  ubicacion = ST_SetSRID(ST_MakePoint(-108.99580, 25.79680), 4326)
+  longitud = -108.99580
 WHERE tenant_id = 1 AND nombre = 'Mini Super El Sol';
 
 -- Cliente 4: Tienda Lupita → Fuentes de Poseidón (norte)
@@ -50,8 +47,7 @@ UPDATE "Clientes" SET
   colonia = 'Las Fuentes',
   codigo_postal = '81210',
   latitud = 25.81470,
-  longitud = -108.98140,
-  ubicacion = ST_SetSRID(ST_MakePoint(-108.98140, 25.81470), 4326)
+  longitud = -108.98140
 WHERE tenant_id = 1 AND nombre = 'Tienda Lupita';
 
 -- 3. Agregar 8 clientes nuevos con ubicaciones reales en Los Mochis
@@ -59,63 +55,63 @@ INSERT INTO "Clientes" (
   tenant_id, nombre, rfc, correo, telefono, direccion, ciudad, colonia, codigo_postal,
   id_zona, categoria_cliente_id, vendedor_id, es_prospecto, facturable, descuento,
   saldo, limite_credito, venta_minima_efectiva, tipos_pago_permitidos, tipo_pago_predeterminado,
-  dias_credito, latitud, longitud, ubicacion, activo, creado_en, version
+  dias_credito, latitud, longitud, activo, creado_en, version
 ) VALUES
 -- OXXO Blvd Rosales (centro-norte)
 (1, 'OXXO Blvd Rosales', 'OXX920101AAA', 'oxxo.rosales@email.com', '6688121001',
  'Blvd Antonio Rosales 580, Centro', 'Los Mochis', 'Centro', '81200',
  1, 1, (SELECT id FROM "Usuarios" WHERE email='vendedor1@jeyma.com'),
  false, true, 0, 0, 15000, 0, 'EFECTIVO,TRANSFERENCIA', 'TRANSFERENCIA', 15,
- 25.79880, -108.99250, ST_SetSRID(ST_MakePoint(-108.99250, 25.79880), 4326), true, NOW(), 1),
+ 25.79880, -108.99250, true, NOW(), 1),
 
 -- Abarrotes Doña María (centro sur)
 (1, 'Abarrotes Doña María', 'MARM850505BBB', 'maria.abarrotes@email.com', '6688122002',
  'Calle Degollado 320, Centro', 'Los Mochis', 'Centro', '81200',
  1, 1, (SELECT id FROM "Usuarios" WHERE email='vendedor1@jeyma.com'),
  false, false, 0, 1500, 8000, 0, 'EFECTIVO', 'EFECTIVO', 0,
- 25.78920, -108.98850, ST_SetSRID(ST_MakePoint(-108.98850, 25.78920), 4326), true, NOW(), 1),
+ 25.78920, -108.98850, true, NOW(), 1),
 
 -- Super Ávila (cadena local importante)
 (1, 'Super Ávila Centro', 'SAV900101CCC', 'superavila@email.com', '6688123003',
  'Blvd Rosendo G. Castro 250 Pte', 'Los Mochis', 'Centro', '81200',
  1, 1, (SELECT id FROM "Usuarios" WHERE email='vendedor1@jeyma.com'),
  false, true, 5, 0, 25000, 500, 'EFECTIVO,TRANSFERENCIA,CHEQUE', 'TRANSFERENCIA', 30,
- 25.79350, -108.99700, ST_SetSRID(ST_MakePoint(-108.99700, 25.79350), 4326), true, NOW(), 1),
+ 25.79350, -108.99700, true, NOW(), 1),
 
 -- Tienda EP Teresita (cadena local)
 (1, 'EP Teresita Mochis 1', 'EPT880101DDD', 'teresita1@email.com', '6688127142',
  'Blvd Rosendo G. Castro 250 Pte', 'Los Mochis', 'Centro', '81200',
  1, 1, (SELECT id FROM "Usuarios" WHERE email='vendedor2@jeyma.com'),
  false, true, 3, 0, 20000, 300, 'EFECTIVO,TRANSFERENCIA', 'TRANSFERENCIA', 15,
- 25.79150, -109.00100, ST_SetSRID(ST_MakePoint(-109.00100, 25.79150), 4326), true, NOW(), 1),
+ 25.79150, -109.00100, true, NOW(), 1),
 
 -- Mini Super Los Álamos (zona residencial norte)
 (1, 'Mini Super Los Álamos', 'MSLA870303EEE', 'alamos@email.com', '6688124004',
  'Blvd Diagonal Sur 2268, Álamos Country', 'Los Mochis', 'Álamos Country', '81230',
  2, 1, (SELECT id FROM "Usuarios" WHERE email='vendedor2@jeyma.com'),
  false, false, 0, 800, 6000, 0, 'EFECTIVO', 'EFECTIVO', 0,
- 25.80650, -108.97800, ST_SetSRID(ST_MakePoint(-108.97800, 25.80650), 4326), true, NOW(), 1),
+ 25.80650, -108.97800, true, NOW(), 1),
 
 -- Depósito El Güero (cerveza/refrescos, zona industrial sur)
 (1, 'Depósito El Güero', 'GUEH780606FFF', 'elguero@email.com', '6688125005',
  'Calle Ignacio Ramírez 879, Los Tabachines', 'Los Mochis', 'Los Tabachines', '81220',
  3, 1, (SELECT id FROM "Usuarios" WHERE email='vendedor1@jeyma.com'),
  false, false, 0, 3200, 12000, 0, 'EFECTIVO,TRANSFERENCIA', 'EFECTIVO', 0,
- 25.78200, -108.98100, ST_SetSRID(ST_MakePoint(-108.98100, 25.78200), 4326), true, NOW(), 1),
+ 25.78200, -108.98100, true, NOW(), 1),
 
 -- OXXO Fuentes de Poseidón (norte)
 (1, 'OXXO Fuentes Poseidón', 'OXX920102GGG', 'oxxo.poseidon@email.com', '6688126006',
  'Calle Fuentes de Poseidón, Las Fuentes', 'Los Mochis', 'Las Fuentes', '81210',
  2, 1, (SELECT id FROM "Usuarios" WHERE email='vendedor2@jeyma.com'),
  false, true, 0, 0, 15000, 0, 'EFECTIVO,TRANSFERENCIA', 'TRANSFERENCIA', 15,
- 25.81470, -108.98140, ST_SetSRID(ST_MakePoint(-108.98140, 25.81470), 4326), true, NOW(), 1),
+ 25.81470, -108.98140, true, NOW(), 1),
 
 -- Abarrotes Don Pancho (zona sur, cerca del estadio)
 (1, 'Abarrotes Don Pancho', 'PANF830707HHH', 'donpancho@email.com', '6688127007',
  'Av Álvaro Obregón 1050, Centro', 'Los Mochis', 'Centro', '81200',
  1, 1, (SELECT id FROM "Usuarios" WHERE email='vendedor1@jeyma.com'),
  false, false, 0, 2100, 7000, 0, 'EFECTIVO', 'EFECTIVO', 0,
- 25.78550, -108.99350, ST_SetSRID(ST_MakePoint(-108.99350, 25.78550), 4326), true, NOW(), 1);
+ 25.78550, -108.99350, true, NOW(), 1);
 
 -- 4. Actualizar zonas con centro geográfico y radio
 UPDATE "Zonas" SET
@@ -137,7 +133,6 @@ UPDATE "Zonas" SET
 WHERE tenant_id = 1 AND nombre = 'Sur Mochis';
 
 -- Verificar
-SELECT c.id, c.nombre, c.direccion, c.ciudad, c.latitud, c.longitud,
-       ST_AsText(c.ubicacion) as ubicacion_wkt
+SELECT c.id, c.nombre, c.direccion, c.ciudad, c.latitud, c.longitud
 FROM "Clientes" c WHERE c.tenant_id = 1 AND c.eliminado_en IS NULL
 ORDER BY c.id;

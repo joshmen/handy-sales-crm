@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using NetTopologySuite.Geometries;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
@@ -24,7 +23,7 @@ namespace HandySales.Infrastructure.Migrations
                 .HasAnnotation("ProductVersion", "8.0.11")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
-            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "postgis");
+            
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("CategoriaCliente", b =>
@@ -948,10 +947,6 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("tipos_pago_permitidos");
 
-                    b.Property<Point>("Ubicacion")
-                        .HasColumnType("geometry(Point, 4326)")
-                        .HasColumnName("ubicacion");
-
                     b.Property<string>("UsoCFDIPredeterminado")
                         .HasColumnType("text")
                         .HasColumnName("uso_cfdi_predeterminado");
@@ -1090,10 +1085,6 @@ namespace HandySales.Infrastructure.Migrations
                     b.Property<int>("TipoVisita")
                         .HasColumnType("integer")
                         .HasColumnName("tipo_visita");
-
-                    b.Property<Point>("UbicacionInicio")
-                        .HasColumnType("geometry(Point, 4326)")
-                        .HasColumnName("ubicacion_inicio");
 
                     b.Property<int>("UsuarioId")
                         .HasColumnType("integer")
@@ -3617,10 +3608,6 @@ namespace HandySales.Infrastructure.Migrations
                     b.Property<int>("RutaId")
                         .HasColumnType("integer")
                         .HasColumnName("ruta_id");
-
-                    b.Property<Point>("Ubicacion")
-                        .HasColumnType("geometry(Point, 4326)")
-                        .HasColumnName("ubicacion");
 
                     b.Property<long>("Version")
                         .IsConcurrencyToken()

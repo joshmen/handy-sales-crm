@@ -3,8 +3,6 @@ using HandySales.Domain.Common;
 using HandySales.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
-using NetTopologySuite.Geometries;
-
 namespace HandySales.Infrastructure.Persistence;
 
 public class HandySalesDbContext : DbContext
@@ -98,45 +96,7 @@ public class HandySalesDbContext : DbContext
             }
         }
 
-        // Sync Point columns from lat/lng before saving
-        SyncSpatialColumns();
-
         return await base.SaveChangesAsync(cancellationToken);
-    }
-
-    private void SyncSpatialColumns()
-    {
-        var geometryFactory = NetTopologySuite.NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
-
-        foreach (var entry in ChangeTracker.Entries<Cliente>()
-            .Where(e => e.State is EntityState.Added or EntityState.Modified))
-        {
-            var c = entry.Entity;
-            if (c.Latitud.HasValue && c.Longitud.HasValue)
-                c.Ubicacion = geometryFactory.CreatePoint(new Coordinate(c.Longitud.Value, c.Latitud.Value));
-            else
-                c.Ubicacion = null;
-        }
-
-        foreach (var entry in ChangeTracker.Entries<ClienteVisita>()
-            .Where(e => e.State is EntityState.Added or EntityState.Modified))
-        {
-            var v = entry.Entity;
-            if (v.LatitudInicio.HasValue && v.LongitudInicio.HasValue)
-                v.UbicacionInicio = geometryFactory.CreatePoint(new Coordinate(v.LongitudInicio.Value, v.LatitudInicio.Value));
-            else
-                v.UbicacionInicio = null;
-        }
-
-        foreach (var entry in ChangeTracker.Entries<RutaDetalle>()
-            .Where(e => e.State is EntityState.Added or EntityState.Modified))
-        {
-            var rd = entry.Entity;
-            if (rd.Latitud.HasValue && rd.Longitud.HasValue)
-                rd.Ubicacion = geometryFactory.CreatePoint(new Coordinate(rd.Longitud.Value, rd.Latitud.Value));
-            else
-                rd.Ubicacion = null;
-        }
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -366,11 +326,6 @@ public class HandySalesDbContext : DbContext
             entity.HasIndex(cv => new { cv.TenantId, cv.FechaProgramada });
             entity.HasIndex(cv => new { cv.TenantId, cv.FechaHoraInicio });
 
-            // PostGIS spatial column (skip for SQLite tests)
-            if (Database.IsNpgsql())
-                entity.Property(cv => cv.UbicacionInicio).HasColumnType("geometry(Point, 4326)");
-            else
-                entity.Ignore(cv => cv.UbicacionInicio);
         });
 
         // Configure DeviceSession entity
@@ -470,11 +425,6 @@ public class HandySalesDbContext : DbContext
             entity.HasIndex(rd => new { rd.RutaId, rd.ClienteId });
             entity.HasIndex(rd => rd.Estado);
 
-            // PostGIS spatial column (skip for SQLite tests)
-            if (Database.IsNpgsql())
-                entity.Property(rd => rd.Ubicacion).HasColumnType("geometry(Point, 4326)");
-            else
-                entity.Ignore(rd => rd.Ubicacion);
         });
 
         // Configure RutaCarga entity
@@ -763,19 +713,8 @@ public class HandySalesDbContext : DbContext
         // =====================================================
 
         // Entidades principales con TenantId + Soft Delete
-        modelBuilder.Entity<Cliente>(entity =>
-        {
-            entity.HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
-            if (Database.IsNpgsql())
-            {
-                entity.Property(e => e.Ubicacion).HasColumnType("geometry(Point, 4326)");
-                entity.HasIndex(e => e.Ubicacion).HasMethod("gist");
-            }
-            else
-            {
-                entity.Ignore(e => e.Ubicacion);
-            }
-        });
+        modelBuilder.Entity<Cliente>()
+            .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
 
         modelBuilder.Entity<Producto>()
             .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);

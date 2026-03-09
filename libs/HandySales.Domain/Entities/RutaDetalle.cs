@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using HandySales.Domain.Common;
-using NetTopologySuite.Geometries;
 
 namespace HandySales.Domain.Entities;
 
@@ -59,9 +58,6 @@ public class RutaDetalle : AuditableEntity
 
     [Column("longitud")]
     public double? Longitud { get; set; }
-
-    [Column("ubicacion")]
-    public Point? Ubicacion { get; set; }
 
     [Column("distancia_desde_anterior")]
     public double? DistanciaDesdeAnterior { get; set; }

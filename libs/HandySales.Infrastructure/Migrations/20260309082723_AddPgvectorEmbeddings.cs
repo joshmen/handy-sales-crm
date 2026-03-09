@@ -14,9 +14,7 @@ namespace HandySales.Infrastructure.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AlterDatabase()
-                .Annotation("Npgsql:PostgresExtension:postgis", ",,")
-                .Annotation("Npgsql:PostgresExtension:vector", ",,")
-                .OldAnnotation("Npgsql:PostgresExtension:postgis", ",,");
+                .Annotation("Npgsql:PostgresExtension:vector", ",,");
 
             migrationBuilder.CreateTable(
                 name: "ai_embeddings",
@@ -60,8 +58,6 @@ namespace HandySales.Infrastructure.Migrations
                 name: "ai_embeddings");
 
             migrationBuilder.AlterDatabase()
-                .Annotation("Npgsql:PostgresExtension:postgis", ",,")
-                .OldAnnotation("Npgsql:PostgresExtension:postgis", ",,")
                 .OldAnnotation("Npgsql:PostgresExtension:vector", ",,");
         }
     }

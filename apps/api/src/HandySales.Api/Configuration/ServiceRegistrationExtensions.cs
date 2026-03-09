@@ -145,7 +145,7 @@ public static class ServiceRegistrationExtensions
             services.AddDbContext<HandySalesDbContext>(options =>
              options.UseNpgsql(
                  config.GetConnectionString("DefaultConnection"),
-                 o => o.UseNetTopologySuite().UseVector()
+                 o => o.UseVector()
              ));
         }
         services.AddFluentValidationAutoValidation();
