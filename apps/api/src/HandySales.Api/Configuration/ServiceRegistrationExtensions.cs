@@ -340,6 +340,7 @@ public static class ServiceRegistrationExtensions
         services.AddScoped<IAiGatewayService, AiGatewayService>();
         services.AddScoped<IAiSanitizer, AiSanitizer>();
         services.AddScoped<IAiDataContextBuilder, AiDataContextBuilder>();
+        services.AddScoped<IAiActionDetector, AiActionDetector>();
 
         return services;
     }

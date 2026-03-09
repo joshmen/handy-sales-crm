@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text;
-using System.Text.RegularExpressions;
 using HandySales.Application.Ai.Interfaces;
+using HandySales.Domain.Entities;
 using HandySales.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -109,18 +109,20 @@ public class AiDataContextBuilder : IAiDataContextBuilder
 
     public async Task<DataContextResult> BuildContextAsync(string prompt, string tipoAccion, int tenantId, int userId)
     {
-        var categories = DetectCategories(prompt, tipoAccion);
-        if (categories == DataCategory.None)
+        var (keywordCategories, defaultCategories) = DetectCategories(prompt, tipoAccion);
+        var allCategories = keywordCategories | defaultCategories;
+        if (allCategories == DataCategory.None)
         {
             // Default: at least ventas for any query
-            categories = DataCategory.Ventas;
+            allCategories = DataCategory.Ventas;
+            defaultCategories = DataCategory.Ventas;
         }
 
         var budget = ActionBudgets.TryGetValue(tipoAccion.ToLower(), out var b) ? b : (MaxTokens: 1200, HistoryDays: 30, MaxCategories: 3);
         var since = DateTime.UtcNow.AddDays(-budget.HistoryDays);
 
-        // Limit number of categories to budget
-        var activeCategories = GetActiveCategories(categories, budget.MaxCategories);
+        // Keyword-detected categories get priority over action-type defaults
+        var activeCategories = GetActiveCategories(keywordCategories, defaultCategories, budget.MaxCategories);
 
         var sb = new StringBuilder();
         sb.AppendLine($"## Datos del negocio (últimos {budget.HistoryDays} días)");
@@ -189,32 +191,32 @@ public class AiDataContextBuilder : IAiDataContextBuilder
 
     // ─── Intent Detection ───────────────────────────────────────────
 
-    private static DataCategory DetectCategories(string prompt, string tipoAccion)
+    private static (DataCategory Keywords, DataCategory Defaults) DetectCategories(string prompt, string tipoAccion)
     {
-        // Start with action-type defaults
-        var categories = tipoAccion.ToLower() switch
+        // Action-type defaults (lower priority)
+        var defaults = tipoAccion.ToLower() switch
         {
             "resumen"    => DataCategory.Ventas | DataCategory.Visitas,
             "insight"    => DataCategory.Ventas | DataCategory.Clientes | DataCategory.Productos,
             "pronostico" => DataCategory.Ventas,
-            _            => DataCategory.None, // "pregunta" — detect from keywords only
+            _            => DataCategory.None,
         };
 
-        // Scan prompt for keywords
+        // Scan prompt for keywords (higher priority — user explicitly asked)
+        var keywords = DataCategory.None;
         var lower = prompt.ToLower();
         foreach (var (keyword, category) in KeywordMap)
         {
             if (lower.Contains(keyword))
-                categories |= category;
+                keywords |= category;
         }
 
-        return categories;
+        return (keywords, defaults);
     }
 
-    private static List<DataCategory> GetActiveCategories(DataCategory flags, int maxCount)
+    private static List<DataCategory> GetActiveCategories(DataCategory keywordFlags, DataCategory defaultFlags, int maxCount)
     {
-        // Priority order: Ventas first (most commonly needed), then others
-        var priority = new[]
+        var allFlags = new[]
         {
             DataCategory.Ventas, DataCategory.Clientes, DataCategory.Productos,
             DataCategory.Cobros, DataCategory.Visitas, DataCategory.Vendedores,
@@ -222,15 +224,29 @@ public class AiDataContextBuilder : IAiDataContextBuilder
         };
 
         var result = new List<DataCategory>();
-        foreach (var cat in priority)
+
+        // 1. Keyword-detected categories FIRST (user explicitly asked for these)
+        foreach (var cat in allFlags)
         {
-            if (flags.HasFlag(cat))
+            if (keywordFlags.HasFlag(cat))
             {
                 result.Add(cat);
                 if (result.Count >= maxCount)
-                    break;
+                    return result;
             }
         }
+
+        // 2. Fill remaining with action-type defaults
+        foreach (var cat in allFlags)
+        {
+            if (defaultFlags.HasFlag(cat) && !result.Contains(cat))
+            {
+                result.Add(cat);
+                if (result.Count >= maxCount)
+                    return result;
+            }
+        }
+
         return result;
     }
 
@@ -254,7 +270,7 @@ public class AiDataContextBuilder : IAiDataContextBuilder
         var total = pedidos.Sum(p => p.Total);
         var count = pedidos.Count;
         var avgTicket = count > 0 ? total / count : 0;
-        var cancelados = pedidos.Count(p => p.Estado.ToString() == "Cancelado");
+        var cancelados = pedidos.Count(p => p.Estado == EstadoPedido.Cancelado);
 
         sb.AppendLine("### Ventas");
         sb.AppendLine("| Métrica | Valor |");
@@ -268,7 +284,7 @@ public class AiDataContextBuilder : IAiDataContextBuilder
 
         // Weekly breakdown
         var weekly = pedidos
-            .Where(p => p.Estado.ToString() != "Cancelado")
+            .Where(p => p.Estado != EstadoPedido.Cancelado)
             .GroupBy(p => CultureInfo.InvariantCulture.Calendar.GetWeekOfYear(p.FechaPedido, CalendarWeekRule.FirstDay, DayOfWeek.Monday))
             .OrderByDescending(g => g.Key)
             .Take(4)
@@ -287,7 +303,7 @@ public class AiDataContextBuilder : IAiDataContextBuilder
 
         // Top 5 clients by sales
         var topClients = pedidos
-            .Where(p => p.Estado.ToString() != "Cancelado")
+            .Where(p => p.Estado != EstadoPedido.Cancelado)
             .GroupBy(p => p.ClienteId)
             .Select(g => new { ClienteId = g.Key, Total = g.Sum(x => x.Total), Count = g.Count() })
             .OrderByDescending(g => g.Total)
@@ -534,7 +550,9 @@ public class AiDataContextBuilder : IAiDataContextBuilder
     private async Task AppendVendedoresContextAsync(StringBuilder sb, DateTime since)
     {
         var vendedores = await _db.Usuarios
-            .Where(u => u.Activo && !u.EsSuperAdmin && u.Rol != "VIEWER")
+            .Where(u => u.Activo && !u.EsSuperAdmin
+                        && u.RolExplicito != "VIEWER"
+                        && !u.Email.Contains("e2e"))
             .Select(u => new { u.Id, u.Nombre })
             .ToListAsync();
 
@@ -549,7 +567,7 @@ public class AiDataContextBuilder : IAiDataContextBuilder
         var vendedorIds = vendedores.Select(v => v.Id).ToList();
 
         var ventasPorVendedor = await _db.Pedidos
-            .Where(p => p.FechaPedido >= since && p.Estado.ToString() != "Cancelado" && vendedorIds.Contains(p.UsuarioId))
+            .Where(p => p.FechaPedido >= since && p.Estado != EstadoPedido.Cancelado && vendedorIds.Contains(p.UsuarioId))
             .GroupBy(p => p.UsuarioId)
             .Select(g => new { UsuarioId = g.Key, Total = g.Sum(x => x.Total), Count = g.Count() })
             .ToListAsync();
@@ -614,12 +632,12 @@ public class AiDataContextBuilder : IAiDataContextBuilder
             {
                 case "ventas":
                     actual = await _db.Pedidos
-                        .Where(p => p.UsuarioId == meta.UsuarioId && p.FechaPedido >= meta.FechaInicio && p.FechaPedido <= meta.FechaFin && p.Estado.ToString() != "Cancelado")
+                        .Where(p => p.UsuarioId == meta.UsuarioId && p.FechaPedido >= meta.FechaInicio && p.FechaPedido <= meta.FechaFin && p.Estado != EstadoPedido.Cancelado)
                         .SumAsync(p => p.Total);
                     break;
                 case "pedidos":
                     actual = await _db.Pedidos
-                        .Where(p => p.UsuarioId == meta.UsuarioId && p.FechaPedido >= meta.FechaInicio && p.FechaPedido <= meta.FechaFin && p.Estado.ToString() != "Cancelado")
+                        .Where(p => p.UsuarioId == meta.UsuarioId && p.FechaPedido >= meta.FechaInicio && p.FechaPedido <= meta.FechaFin && p.Estado != EstadoPedido.Cancelado)
                         .CountAsync();
                     break;
                 case "visitas":

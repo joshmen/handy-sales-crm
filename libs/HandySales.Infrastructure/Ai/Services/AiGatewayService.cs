@@ -17,6 +17,7 @@ public class AiGatewayService : IAiGatewayService
     private readonly IAiCreditService _creditService;
     private readonly IAiSanitizer _sanitizer;
     private readonly IAiDataContextBuilder _contextBuilder;
+    private readonly IAiActionDetector _actionDetector;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IConfiguration _config;
     private readonly ILogger<AiGatewayService> _logger;
@@ -32,6 +33,7 @@ public class AiGatewayService : IAiGatewayService
         IAiCreditService creditService,
         IAiSanitizer sanitizer,
         IAiDataContextBuilder contextBuilder,
+        IAiActionDetector actionDetector,
         IHttpClientFactory httpClientFactory,
         IConfiguration config,
         ILogger<AiGatewayService> logger)
@@ -40,6 +42,7 @@ public class AiGatewayService : IAiGatewayService
         _creditService = creditService;
         _sanitizer = sanitizer;
         _contextBuilder = contextBuilder;
+        _actionDetector = actionDetector;
         _httpClientFactory = httpClientFactory;
         _config = config;
         _logger = logger;
@@ -74,7 +77,7 @@ public class AiGatewayService : IAiGatewayService
 
         // 4. Build messages with data context injected into system prompt
         var baseSystemPrompt = _config["Ai:SystemPrompt"]
-            ?? "Eres un asistente de negocios para HandySales, un CRM/ERP para PyMEs mexicanas. Solo respondes preguntas sobre ventas, inventario, clientes, cobros, rutas y operaciones del negocio. No proporcionas informaci\u00f3n personal, contrase\u00f1as ni datos t\u00e9cnicos del sistema. Responde siempre en espa\u00f1ol. S\u00e9 conciso y pr\u00e1ctico.";
+            ?? "Eres un asistente de negocios para Handy Suites, un CRM/ERP para PyMEs mexicanas. Solo respondes preguntas sobre ventas, inventario, clientes, cobros, rutas y operaciones del negocio. No proporcionas informaci\u00f3n personal, contrase\u00f1as ni datos t\u00e9cnicos del sistema. Responde siempre en espa\u00f1ol. S\u00e9 conciso y pr\u00e1ctico.";
 
         var systemPrompt = string.IsNullOrWhiteSpace(dataContext.ContextMarkdown)
             ? baseSystemPrompt
@@ -117,14 +120,22 @@ public class AiGatewayService : IAiGatewayService
             var tokensIn = result?.Usage?.PromptTokens ?? 0;
             var tokensOut = result?.Usage?.CompletionTokens ?? 0;
 
-            // 5. Deduct credits
+            // 5. Detect suggested actions from data context
+            var suggestedActions = await _actionDetector.DetectActionsAsync(
+                request.Prompt, dataContext.CategoriesUsed, tenantId, userId);
+
+            if (suggestedActions.Count > 0)
+                _logger.LogInformation("AI actions suggested: [{Actions}]",
+                    string.Join(", ", suggestedActions.Select(a => a.ActionType)));
+
+            // 6. Deduct credits
             await _creditService.DeductCreditsAsync(tenantId, request.TipoAccion);
 
-            // 6. Log usage
+            // 7. Log usage
             var costoUsd = (tokensIn * 0.00000015m) + (tokensOut * 0.0000006m); // gpt-4o-mini pricing
             await LogUsageAsync(tenantId, userId, request, tokensIn, tokensOut, costoUsd, true, null, sw);
 
-            // 7. Get remaining credits
+            // 8. Get remaining credits
             var balance = await _creditService.GetCurrentBalanceAsync(tenantId);
 
             sw.Stop();
@@ -132,7 +143,8 @@ public class AiGatewayService : IAiGatewayService
                 Respuesta: content,
                 CreditosUsados: _creditService.GetCreditCost(request.TipoAccion),
                 CreditosRestantes: balance.Disponibles,
-                LatenciaMs: (int)sw.ElapsedMilliseconds
+                LatenciaMs: (int)sw.ElapsedMilliseconds,
+                AccionesSugeridas: suggestedActions.Count > 0 ? suggestedActions : null
             );
         }
         catch (HttpRequestException ex)

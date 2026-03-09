@@ -1,5 +1,16 @@
+using System.Text.Json;
 using HandySales.Application.Ai.DTOs;
 using HandySales.Application.Ai.Interfaces;
+using HandySales.Application.Cobranza.DTOs;
+using HandySales.Application.Cobranza.Services;
+using HandySales.Application.Metas.DTOs;
+using HandySales.Application.Metas.Services;
+using HandySales.Application.Productos.Services;
+using HandySales.Application.Rutas.DTOs;
+using HandySales.Application.Rutas.Services;
+using HandySales.Application.Visitas.DTOs;
+using HandySales.Application.Visitas.Services;
+using HandySales.Domain.Entities;
 using HandySales.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +20,11 @@ namespace HandySales.Api.Endpoints;
 
 public static class AiEndpoints
 {
+    private static readonly JsonSerializerOptions CamelCase = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
     public static void MapAiEndpoints(this WebApplication app)
     {
         var group = app.MapGroup("/api/ai")
@@ -16,6 +32,7 @@ public static class AiEndpoints
             .WithTags("AI");
 
         group.MapPost("/query", HandleQuery);
+        group.MapPost("/actions/execute", HandleExecuteAction);
         group.MapGet("/credits", HandleGetCredits);
         group.MapGet("/usage", HandleGetUsage);
         group.MapGet("/usage/stats", HandleGetUsageStats);
@@ -69,6 +86,156 @@ public static class AiEndpoints
             return Results.BadRequest(new { error = ex.Message });
         }
     }
+
+    private static async Task<IResult> HandleExecuteAction(
+        [FromBody] AiActionExecuteRequest request,
+        IAiActionDetector actionDetector,
+        IAiCreditService creditService,
+        ITenantContextService tenantContext,
+        IMemoryCache cache,
+        HandySalesDbContext db,
+        IServiceProvider services,
+        HttpContext ctx)
+    {
+        var tenantId = tenantContext.TenantId ?? 0;
+        var userIdStr = ctx.User.FindFirst("userId")?.Value
+            ?? ctx.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+            ?? ctx.User.FindFirst("sub")?.Value;
+        var userId = int.TryParse(userIdStr, out var uid) ? uid : 0;
+
+        if (tenantId == 0 || userId == 0)
+            return Results.Unauthorized();
+
+        // Rate limiting: 5 req/min per tenant for actions
+        var rateLimitKey = $"ai_action_rate_{tenantId}";
+        var requestCount = cache.GetOrCreate(rateLimitKey, entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
+            return 0;
+        });
+
+        if (requestCount >= 5)
+            return Results.StatusCode(429);
+
+        cache.Set(rateLimitKey, requestCount + 1, TimeSpan.FromMinutes(1));
+
+        // Validate action ID from cache
+        var cached = actionDetector.ValidateActionId(request.ActionId, tenantId);
+        if (cached == null)
+            return Results.BadRequest(new { error = "Acción expirada o inválida. Intenta de nuevo." });
+
+        var (actionType, parameters) = cached.Value;
+        if (actionType != request.ActionType)
+            return Results.BadRequest(new { error = "Tipo de acción no coincide." });
+
+        // Check credits
+        var hasCredits = await creditService.HasSufficientCreditsAsync(tenantId, "accion");
+        if (!hasCredits)
+            return Results.Json(new { error = "No tienes créditos suficientes para ejecutar esta acción." }, statusCode: 402);
+
+        try
+        {
+            var (message, createdIds) = await ExecuteActionAsync(actionType, parameters, userId, services);
+
+            // Deduct credits
+            await creditService.DeductCreditsAsync(tenantId, "accion");
+
+            // Log usage
+            var log = new AiUsageLog
+            {
+                TenantId = tenantId,
+                UsuarioId = userId,
+                TipoAccion = "accion",
+                CreditosCobrados = creditService.GetCreditCost("accion"),
+                Prompt = $"[ACTION] {actionType}: {message}",
+                ModeloUsado = "n/a",
+                TokensInput = 0,
+                TokensOutput = 0,
+                CostoEstimadoUsd = 0,
+                LatenciaMs = 0,
+                Exitoso = true,
+                CreadoEn = DateTime.UtcNow
+            };
+            db.AiUsageLogs.Add(log);
+            await db.SaveChangesAsync();
+
+            var balance = await creditService.GetCurrentBalanceAsync(tenantId);
+
+            return Results.Ok(new AiActionExecuteResult(
+                Success: true,
+                Message: message,
+                CreditosUsados: creditService.GetCreditCost("accion"),
+                CreditosRestantes: balance.Disponibles,
+                CreatedIds: createdIds
+            ));
+        }
+        catch (Exception ex)
+        {
+            return Results.BadRequest(new AiActionExecuteResult(
+                Success: false,
+                Message: $"Error al ejecutar la acción: {ex.Message}",
+                CreditosUsados: 0,
+                CreditosRestantes: 0
+            ));
+        }
+    }
+
+    private static async Task<(string Message, List<int>? CreatedIds)> ExecuteActionAsync(
+        string actionType, object parameters, int userId, IServiceProvider services)
+    {
+        var json = parameters is JsonElement je
+            ? je.GetRawText()
+            : JsonSerializer.Serialize(parameters);
+
+        switch (actionType)
+        {
+            case "programar_visitas":
+            {
+                var visitaService = services.GetRequiredService<ClienteVisitaService>();
+                var dtos = JsonSerializer.Deserialize<List<ClienteVisitaCreateDto>>(json, CamelCase)!;
+                var ids = new List<int>();
+                foreach (var dto in dtos)
+                    ids.Add(await visitaService.CrearAsync(dto));
+                return ($"Se programaron {ids.Count} visitas exitosamente.", ids);
+            }
+            case "registrar_cobros":
+            {
+                var cobroService = services.GetRequiredService<CobroService>();
+                var dtos = JsonSerializer.Deserialize<List<CobroCreateDto>>(json, CamelCase)!;
+                var ids = new List<int>();
+                foreach (var dto in dtos)
+                    ids.Add(await cobroService.CrearAsync(dto));
+                var total = dtos.Sum(d => d.Monto);
+                return ($"Se registraron {ids.Count} cobros por ${total:N2} MXN.", ids);
+            }
+            case "crear_meta":
+            {
+                var metaService = services.GetRequiredService<MetaVendedorService>();
+                var dto = JsonSerializer.Deserialize<CreateMetaVendedorDto>(json, CamelCase)!;
+                var id = await metaService.CreateAsync(dto, userId.ToString());
+                return ($"Se creó meta de ventas por ${dto.Monto:N0} MXN.", new List<int> { id });
+            }
+            case "crear_ruta":
+            {
+                var rutaService = services.GetRequiredService<RutaVendedorService>();
+                var dto = JsonSerializer.Deserialize<RutaVendedorCreateDto>(json, CamelCase)!;
+                var id = await rutaService.CrearAsync(dto);
+                var paradas = dto.Detalles?.Count ?? 0;
+                return ($"Se creó ruta con {paradas} paradas.", new List<int> { id });
+            }
+            case "desactivar_productos":
+            {
+                var productoService = services.GetRequiredService<ProductoService>();
+                var data = JsonSerializer.Deserialize<BatchToggleParams>(json, CamelCase)!;
+                var count = await productoService.BatchToggleActivoAsync(data.Ids, data.Activo);
+                return ($"Se desactivaron {count} productos sin stock.", null);
+            }
+            default:
+                throw new InvalidOperationException($"Tipo de acción desconocido: {actionType}");
+        }
+    }
+
+    private record BatchToggleParams(List<int> Ids, bool Activo);
 
     private static async Task<IResult> HandleGetCredits(
         IAiCreditService creditService,

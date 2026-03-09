@@ -14,7 +14,8 @@ public class AiCreditService : IAiCreditService
         ["resumen"] = 1,
         ["insight"] = 2,
         ["pregunta"] = 3,
-        ["pronostico"] = 5
+        ["pronostico"] = 5,
+        ["accion"] = 2
     };
 
     private static readonly Dictionary<string, int> MonthlyAllocations = new()
