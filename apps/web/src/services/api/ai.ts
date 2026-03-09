@@ -300,3 +300,101 @@ export async function getStopDurations(rutaId: number): Promise<StopDurationsRes
   const { data } = await api.get<StopDurationsResponse>(`/api/ai/routes/${rutaId}/stop-durations`);
   return data;
 }
+
+// ═══════════════════════════════════════════════════════
+// DEMAND FORECAST (P3-11)
+// ═══════════════════════════════════════════════════════
+
+export interface DemandForecastItem {
+  productoId: number;
+  productoNombre: string;
+  demandaSemanalEstimada: number;
+  promedioSimple: number;
+  rangoSemanal: { min: number; max: number };
+  tendencia: 'creciente' | 'decreciente' | 'estable' | 'sin datos';
+  tendenciaCambio: number | null;
+  confianza: 'alta' | 'media' | 'baja';
+  semanasConDatos: number;
+  avgClientesPorSemana: number;
+}
+
+export interface DemandForecastResponse {
+  total: number;
+  items: DemandForecastItem[];
+}
+
+export async function getDemandForecast(productoId?: number, limit = 20): Promise<DemandForecastResponse> {
+  const { data } = await api.get<DemandForecastResponse>('/api/ai/demand-forecast', {
+    params: { productoId, limit },
+  });
+  return data;
+}
+
+// ═══════════════════════════════════════════════════════
+// PAYMENT RISK (P3-12)
+// ═══════════════════════════════════════════════════════
+
+export interface PaymentRiskMetrics {
+  cobros6Meses: number;
+  pedidos6Meses: number;
+  avgDiasEntreCobros: number;
+  ratioPagoPct: number;
+}
+
+export interface PaymentRiskResponse {
+  clienteId: number;
+  clienteNombre: string;
+  saldoActual: number;
+  limiteCredito: number;
+  metricas: PaymentRiskMetrics;
+  riskScore: number;
+  nivelRiesgo: 'critico' | 'alto' | 'sin_historial' | 'irregular' | 'bajo';
+  razon: string;
+}
+
+export async function getPaymentRisk(clienteId: number): Promise<PaymentRiskResponse> {
+  const { data } = await api.get<PaymentRiskResponse>(`/api/ai/client/${clienteId}/payment-risk`);
+  return data;
+}
+
+// ═══════════════════════════════════════════════════════
+// GPS ANOMALY DETECTION (P3-13)
+// ═══════════════════════════════════════════════════════
+
+export interface GpsAnomaly {
+  tipo: 'ubicacion_lejana' | 'sin_gps' | 'visita_corta' | 'visita_larga';
+  severidad: 'info' | 'warning' | 'critico';
+  distanciaMetros?: number;
+  mensaje: string;
+  ubicacionVisita?: { lat: number; lng: number } | null;
+  ubicacionCliente?: { lat: number; lng: number } | null;
+}
+
+export interface GpsAnomalyResponse {
+  visitaId: number;
+  clienteId: number;
+  clienteNombre: string;
+  clienteDireccion: string;
+  totalAnomalias: number;
+  tieneAnomalias: boolean;
+  items: GpsAnomaly[];
+}
+
+export async function getGpsAnomaly(visitaId: number): Promise<GpsAnomalyResponse> {
+  const { data } = await api.get<GpsAnomalyResponse>(`/api/ai/visits/${visitaId}/gps-anomaly`);
+  return data;
+}
+
+// ═══════════════════════════════════════════════════════
+// ADMIN: REFRESH MATERIALIZED VIEWS
+// ═══════════════════════════════════════════════════════
+
+export interface RefreshViewsResponse {
+  message: string;
+  refreshedAt: string;
+}
+
+export async function refreshAiViews(): Promise<RefreshViewsResponse> {
+  const { data } = await api.post<RefreshViewsResponse>('/api/ai/admin/refresh-views');
+  return data;
+}
