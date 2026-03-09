@@ -374,10 +374,46 @@ export default function ProfilePage() {
   };
 
   const handleChangePassword = async () => {
+    if (!passwordForm.currentPassword) {
+      toast({
+        title: 'Error',
+        description: 'Ingresa tu contraseña actual',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (passwordForm.newPassword.length < 6) {
+      toast({
+        title: 'Error',
+        description: 'La nueva contraseña debe tener al menos 6 caracteres',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(passwordForm.newPassword)) {
+      toast({
+        title: 'Error',
+        description: 'La contraseña debe contener al menos una minúscula, una mayúscula y un número',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       toast({
         title: 'Error',
         description: 'Las contraseñas no coinciden',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (passwordForm.newPassword === passwordForm.currentPassword) {
+      toast({
+        title: 'Error',
+        description: 'La nueva contraseña debe ser diferente a la actual',
         variant: 'destructive',
       });
       return;

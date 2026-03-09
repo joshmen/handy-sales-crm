@@ -140,7 +140,7 @@ app.MapRoleEndpoints();
 app.MapCompanyEndpoints(app.Services.GetRequiredService<ILogger<Program>>());
 app.MapDatosEmpresaEndpoints();
 app.MapGlobalSettingsEndpoints();
-app.MapProfileEndpoints();
+app.MapUserProfileEndpoints();
 app.MapImageUploadEndpoints();
 app.MapNotificationPreferencesEndpoints();
 app.MapMigrationEndpoints();

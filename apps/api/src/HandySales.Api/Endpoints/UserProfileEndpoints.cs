@@ -1,6 +1,8 @@
+using FluentValidation;
 using HandySales.Application.Usuarios.Services;
 using HandySales.Application.Usuarios.DTOs;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace HandySales.Api.Endpoints;
 
@@ -46,8 +48,32 @@ public static class UserProfileEndpoints
         }
     }
 
-    private static async Task<IResult> UpdateMyProfile(UsuarioProfileUpdateDto dto, UsuarioService service)
+    private static async Task<IResult> UpdateMyProfile(
+        UsuarioProfileUpdateDto dto,
+        IValidator<UsuarioProfileUpdateDto> validator,
+        UsuarioService service,
+        IMemoryCache cache,
+        HttpContext httpContext)
     {
+        // Rate limit password change attempts: max 5 per minute per user
+        if (!string.IsNullOrWhiteSpace(dto.NewPassword))
+        {
+            var userId = httpContext.User.FindFirst("sub")?.Value ?? "unknown";
+            var rateLimitKey = $"pwd_change_{userId}";
+            var count = cache.GetOrCreate(rateLimitKey, entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
+                return 0;
+            });
+            if (count >= 5)
+                return Results.Problem("Demasiados intentos de cambio de contraseña. Intenta en 1 minuto.", statusCode: 429);
+            cache.Set(rateLimitKey, count + 1, TimeSpan.FromMinutes(1));
+        }
+
+        var validationResult = await validator.ValidateAsync(dto);
+        if (!validationResult.IsValid)
+            return Results.ValidationProblem(validationResult.ToDictionary());
+
         try
         {
             var success = await service.ActualizarMiPerfilAsync(dto);
