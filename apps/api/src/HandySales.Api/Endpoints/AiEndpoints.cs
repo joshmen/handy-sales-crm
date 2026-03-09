@@ -36,6 +36,7 @@ public static class AiEndpoints
         group.MapGet("/credits", HandleGetCredits);
         group.MapGet("/usage", HandleGetUsage);
         group.MapGet("/usage/stats", HandleGetUsageStats);
+        group.MapGet("/client/{clienteId}/suggested-products", HandleSuggestedProducts);
     }
 
     private static async Task<IResult> HandleQuery(
@@ -319,5 +320,44 @@ public static class AiEndpoints
             PorTipoAccion: porTipoAccion,
             UltimosUsos: ultimos
         ));
+    }
+
+    private static async Task<IResult> HandleSuggestedProducts(
+        int clienteId,
+        HandySalesDbContext db,
+        ITenantContextService tenantContext,
+        [FromQuery] int limit = 10,
+        [FromQuery] int days = 90)
+    {
+        var tenantId = tenantContext.TenantId ?? 0;
+        if (tenantId == 0) return Results.Unauthorized();
+
+        var desde = DateTime.UtcNow.AddDays(-days);
+
+        var sugeridos = await db.DetallePedidos
+            .AsNoTracking()
+            .Where(d => d.Activo
+                && d.Pedido.ClienteId == clienteId
+                && d.Pedido.TenantId == tenantId
+                && d.Pedido.Activo
+                && d.Pedido.FechaPedido >= desde)
+            .GroupBy(d => new { d.ProductoId, d.Producto.Nombre, d.Producto.CodigoBarra, d.Producto.PrecioBase, d.Producto.ImagenUrl })
+            .Select(g => new
+            {
+                ProductoId = g.Key.ProductoId,
+                Nombre = g.Key.Nombre,
+                CodigoBarra = g.Key.CodigoBarra,
+                PrecioBase = g.Key.PrecioBase,
+                ImagenUrl = g.Key.ImagenUrl,
+                Frecuencia = g.Count(),
+                CantidadTotal = g.Sum(d => d.Cantidad),
+                UltimaCompra = g.Max(d => d.Pedido.FechaPedido)
+            })
+            .OrderByDescending(x => x.Frecuencia)
+            .ThenByDescending(x => x.UltimaCompra)
+            .Take(limit)
+            .ToListAsync();
+
+        return Results.Ok(new { clienteId, total = sugeridos.Count, items = sugeridos });
     }
 }

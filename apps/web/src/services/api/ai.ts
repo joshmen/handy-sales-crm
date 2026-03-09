@@ -106,3 +106,31 @@ export async function executeAiAction(request: AiActionExecuteRequest): Promise<
   const { data } = await api.post<AiActionExecuteResult>('/api/ai/actions/execute', request);
   return data;
 }
+
+// ═══════════════════════════════════════════════════════
+// SUGGESTED PRODUCTS
+// ═══════════════════════════════════════════════════════
+
+export interface SuggestedProduct {
+  productoId: number;
+  nombre: string;
+  codigoBarra: string;
+  precioBase: number;
+  imagenUrl?: string;
+  frecuencia: number;
+  cantidadTotal: number;
+  ultimaCompra: string;
+}
+
+export interface SuggestedProductsResponse {
+  clienteId: number;
+  total: number;
+  items: SuggestedProduct[];
+}
+
+export async function getSuggestedProducts(clienteId: number, limit = 10, days = 90): Promise<SuggestedProductsResponse> {
+  const { data } = await api.get<SuggestedProductsResponse>(`/api/ai/client/${clienteId}/suggested-products`, {
+    params: { limit, days },
+  });
+  return data;
+}
