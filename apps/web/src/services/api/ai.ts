@@ -134,3 +134,31 @@ export async function getSuggestedProducts(clienteId: number, limit = 10, days =
   });
   return data;
 }
+
+// ═══════════════════════════════════════════════════════
+// COLLECTIONS PRIORITY
+// ═══════════════════════════════════════════════════════
+
+export interface CollectionPriorityItem {
+  clienteId: number;
+  clienteNombre: string;
+  saldoPendiente: number;
+  limiteCredito: number;
+  diasVencido: number;
+  diasSinCobro: number;
+  pedidosPendientes: number;
+  urgencyScore: number;
+  razon: string;
+}
+
+export interface CollectionsPriorityResponse {
+  total: number;
+  items: CollectionPriorityItem[];
+}
+
+export async function getCollectionsPriority(limit = 20): Promise<CollectionsPriorityResponse> {
+  const { data } = await api.get<CollectionsPriorityResponse>('/api/ai/collections-priority', {
+    params: { limit },
+  });
+  return data;
+}

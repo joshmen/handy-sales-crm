@@ -37,6 +37,7 @@ public static class AiEndpoints
         group.MapGet("/usage", HandleGetUsage);
         group.MapGet("/usage/stats", HandleGetUsageStats);
         group.MapGet("/client/{clienteId}/suggested-products", HandleSuggestedProducts);
+        group.MapGet("/collections-priority", HandleCollectionsPriority);
     }
 
     private static async Task<IResult> HandleQuery(
@@ -359,5 +360,108 @@ public static class AiEndpoints
             .ToListAsync();
 
         return Results.Ok(new { clienteId, total = sugeridos.Count, items = sugeridos });
+    }
+
+    private static async Task<IResult> HandleCollectionsPriority(
+        HandySalesDbContext db,
+        ITenantContextService tenantContext,
+        [FromQuery] int limit = 20)
+    {
+        var tenantId = tenantContext.TenantId ?? 0;
+        if (tenantId == 0) return Results.Unauthorized();
+
+        var now = DateTime.UtcNow;
+        var estadosConDeuda = new[] { EstadoPedido.Entregado, EstadoPedido.Confirmado, EstadoPedido.EnRuta, EstadoPedido.EnProceso };
+
+        // Get clients with pending balance
+        var clientes = await db.Clientes
+            .AsNoTracking()
+            .Where(c => c.TenantId == tenantId && c.Activo && c.Saldo > 0)
+            .Select(c => new { c.Id, c.Nombre, c.Saldo, c.LimiteCredito })
+            .ToListAsync();
+
+        if (clientes.Count == 0)
+            return Results.Ok(new { total = 0, items = Array.Empty<object>() });
+
+        var clienteIds = clientes.Select(c => c.Id).ToList();
+
+        // Oldest unpaid order per client + count
+        var pedidoStats = await db.Pedidos
+            .AsNoTracking()
+            .Where(p => p.TenantId == tenantId && p.Activo
+                && clienteIds.Contains(p.ClienteId)
+                && estadosConDeuda.Contains(p.Estado))
+            .GroupBy(p => p.ClienteId)
+            .Select(g => new
+            {
+                ClienteId = g.Key,
+                PedidoMasAntiguo = g.Min(p => p.FechaPedido),
+                PedidosPendientes = g.Count()
+            })
+            .ToDictionaryAsync(x => x.ClienteId);
+
+        // Last payment per client
+        var ultimoCobros = await db.Cobros
+            .AsNoTracking()
+            .Where(co => co.TenantId == tenantId && co.Activo && clienteIds.Contains(co.ClienteId))
+            .GroupBy(co => co.ClienteId)
+            .Select(g => new { ClienteId = g.Key, UltimoCobro = g.Max(co => co.FechaCobro) })
+            .ToDictionaryAsync(x => x.ClienteId);
+
+        // Merge into enriched list
+        var clientesConSaldo = clientes.Select(c =>
+        {
+            pedidoStats.TryGetValue(c.Id, out var ps);
+            ultimoCobros.TryGetValue(c.Id, out var uc);
+            return new
+            {
+                c.Id, c.Nombre, c.Saldo, c.LimiteCredito,
+                PedidoMasAntiguo = ps?.PedidoMasAntiguo,
+                PedidosPendientes = ps?.PedidosPendientes ?? 0,
+                UltimoCobro = uc?.UltimoCobro
+            };
+        }).ToList();
+
+        // Calculate urgency score in memory
+        var prioridad = clientesConSaldo.Select(c =>
+        {
+            var diasVencido = c.PedidoMasAntiguo.HasValue
+                ? (int)(now - c.PedidoMasAntiguo.Value).TotalDays
+                : 0;
+            var utilizacionCredito = c.LimiteCredito > 0
+                ? (double)(c.Saldo / c.LimiteCredito)
+                : 1.0; // sin límite = máxima urgencia
+            var diasSinCobro = c.UltimoCobro.HasValue
+                ? (int)(now - c.UltimoCobro.Value).TotalDays
+                : 999;
+
+            // Score: 40% monto normalizado + 30% días vencido + 20% utilización crédito + 10% días sin cobro
+            var scoreMontoNorm = Math.Min((double)c.Saldo / 10000.0, 1.0);
+            var scoreDiasVencido = Math.Min(diasVencido / 30.0, 1.0);
+            var scoreCredito = Math.Min(utilizacionCredito, 1.0);
+            var scoreSinCobro = Math.Min(diasSinCobro / 30.0, 1.0);
+
+            var urgencyScore = (int)((scoreMontoNorm * 40 + scoreDiasVencido * 30 + scoreCredito * 20 + scoreSinCobro * 10));
+
+            return new
+            {
+                ClienteId = c.Id,
+                ClienteNombre = c.Nombre,
+                SaldoPendiente = c.Saldo,
+                LimiteCredito = c.LimiteCredito,
+                DiasVencido = diasVencido,
+                DiasSinCobro = diasSinCobro,
+                PedidosPendientes = c.PedidosPendientes,
+                UrgencyScore = Math.Min(urgencyScore, 100),
+                Razon = diasVencido > 14 ? "Vencido" :
+                        utilizacionCredito > 0.8 ? "Límite crédito" :
+                        (double)c.Saldo > 5000 ? "Monto alto" : "Seguimiento"
+            };
+        })
+        .OrderByDescending(x => x.UrgencyScore)
+        .Take(limit)
+        .ToList();
+
+        return Results.Ok(new { total = prioridad.Count, items = prioridad });
     }
 }
