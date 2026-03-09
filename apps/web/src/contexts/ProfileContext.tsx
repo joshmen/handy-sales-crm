@@ -113,7 +113,7 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
 
     setIsChangingPassword(true);
     try {
-      const response = await profileService.changePassword(session.user.id, data);
+      const response = await profileService.changePassword(data);
       if (response.success) {
         toast({
           title: 'Contraseña actualizada',
