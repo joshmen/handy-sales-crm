@@ -33,7 +33,7 @@ export function BrandedLoadingScreen({ message = 'Cargando...' }: BrandedLoading
             <span className="text-[#16A34A] font-bold text-xl">H</span>
           </div>
           <span className="text-white text-4xl font-bold">
-            Handy Suites
+            Handy Suites<sup className="text-lg font-normal ml-0.5">®</sup>
           </span>
         </div>
         <div className="flex items-center gap-3">

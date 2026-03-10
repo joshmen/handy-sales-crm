@@ -257,7 +257,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
               />
             )}
             <span className="hidden sm:block text-xl font-semibold text-foreground">
-              {companyConfig.name}
+              {companyConfig.name}<sup className="text-[10px] font-normal ml-0.5">®</sup>
             </span>
             {/* Indicador de configuración para SUPER_ADMIN */}
             {companyConfig.hasGlobalCustomization && (
