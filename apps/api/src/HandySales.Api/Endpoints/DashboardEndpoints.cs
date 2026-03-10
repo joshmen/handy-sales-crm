@@ -41,6 +41,16 @@ public static class DashboardEndpoints
         group.MapGet("/system-metrics", GetSystemMetrics)
             .WithName("GetSystemMetrics")
             .WithSummary("Obtiene métricas globales del sistema (solo SuperAdmin)");
+
+        // Tendencias del sistema para SuperAdmin (charts)
+        group.MapGet("/system-trends", GetSystemTrends)
+            .WithName("GetSystemTrends")
+            .WithSummary("Obtiene tendencias del sistema para gráficos (solo SuperAdmin)");
+
+        // Gestión global de usuarios para SuperAdmin
+        group.MapGet("/global-users", GetGlobalUsers)
+            .WithName("GetGlobalUsers")
+            .WithSummary("Lista usuarios de todos los tenants (solo SuperAdmin)");
     }
 
     private static async Task<IResult> GetDashboardMetrics(
@@ -384,6 +394,175 @@ public static class DashboardEndpoints
         );
 
         return Results.Ok(result);
+    }
+
+    private static async Task<IResult> GetSystemTrends(
+        [FromServices] HandySalesDbContext context,
+        [FromServices] ICurrentTenant currentTenant,
+        [FromQuery] int days = 30)
+    {
+        if (!currentTenant.IsSuperAdmin)
+            return Results.Forbid();
+
+        if (days < 1) days = 7;
+        if (days > 365) days = 365;
+
+        var startDate = DateTime.UtcNow.Date.AddDays(-days);
+
+        // EF Core DbContext is NOT thread-safe — all queries must be sequential
+
+        // 1. Tenant growth by day
+        var tenantsByDay = await context.Tenants.AsNoTracking()
+            .Where(t => t.CreadoEn >= startDate)
+            .GroupBy(t => t.CreadoEn.Date)
+            .Select(g => new { Date = g.Key, Count = g.Count() })
+            .OrderBy(x => x.Date)
+            .ToListAsync();
+
+        var totalTenantsBefore = await context.Tenants.AsNoTracking()
+            .CountAsync(t => t.CreadoEn < startDate);
+
+        var tenantGrowth = new List<DailyMetricDto>();
+        var cumulative = (decimal)totalTenantsBefore;
+        for (var d = startDate; d <= DateTime.UtcNow.Date; d = d.AddDays(1))
+        {
+            var dayCount = tenantsByDay.FirstOrDefault(x => x.Date == d)?.Count ?? 0;
+            cumulative += dayCount;
+            tenantGrowth.Add(new DailyMetricDto(d.ToString("yyyy-MM-dd"), cumulative));
+        }
+
+        // 2. Revenue by day (Pedidos entregados) — fetch raw then group in memory
+        var rawRevenue = await context.Pedidos.IgnoreQueryFilters().AsNoTracking()
+            .Where(p => p.Estado == EstadoPedido.Entregado && p.FechaPedido >= startDate)
+            .Select(p => new { p.FechaPedido, p.Total })
+            .ToListAsync();
+
+        var revenueByDay = rawRevenue
+            .GroupBy(p => p.FechaPedido.Date)
+            .Select(g => new DailyMetricDto(g.Key.ToString("yyyy-MM-dd"), g.Sum(p => p.Total)))
+            .OrderBy(x => x.Date)
+            .ToList();
+
+        // 3. User growth by day
+        var usersByDay = await context.Usuarios.IgnoreQueryFilters().AsNoTracking()
+            .Where(u => u.CreadoEn >= startDate)
+            .GroupBy(u => u.CreadoEn.Date)
+            .Select(g => new { Date = g.Key, Count = g.Count() })
+            .OrderBy(x => x.Date)
+            .ToListAsync();
+
+        var totalUsersBefore = await context.Usuarios.IgnoreQueryFilters().AsNoTracking()
+            .CountAsync(u => u.CreadoEn < startDate);
+
+        var userGrowth = new List<DailyMetricDto>();
+        var userCumulative = (decimal)totalUsersBefore;
+        for (var d = startDate; d <= DateTime.UtcNow.Date; d = d.AddDays(1))
+        {
+            var dayCount = usersByDay.FirstOrDefault(x => x.Date == d)?.Count ?? 0;
+            userCumulative += dayCount;
+            userGrowth.Add(new DailyMetricDto(d.ToString("yyyy-MM-dd"), userCumulative));
+        }
+
+        // 4. Subscription plan distribution
+        var planGroups = await context.Tenants.AsNoTracking()
+            .Where(t => t.Activo)
+            .GroupBy(t => t.PlanTipo ?? "Sin Plan")
+            .Select(g => new { Plan = g.Key, Count = g.Count() })
+            .ToListAsync();
+
+        var totalActive = planGroups.Sum(x => x.Count);
+        var planBreakdown = planGroups.Select(x => new PlanDistributionDto(
+            x.Plan,
+            x.Count,
+            totalActive > 0 ? Math.Round((decimal)x.Count / totalActive * 100, 1) : 0
+        )).ToList();
+
+        return Results.Ok(new SystemTrendsDto(tenantGrowth, revenueByDay, userGrowth, planBreakdown));
+    }
+
+    private static async Task<IResult> GetGlobalUsers(
+        [FromServices] HandySalesDbContext context,
+        [FromServices] ICurrentTenant currentTenant,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? search = null,
+        [FromQuery] int? tenantId = null,
+        [FromQuery] string? rol = null,
+        [FromQuery] bool? activo = null)
+    {
+        if (!currentTenant.IsSuperAdmin)
+            return Results.Forbid();
+
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 20;
+        if (pageSize > 100) pageSize = 100;
+
+        var query = context.Usuarios.IgnoreQueryFilters().AsNoTracking()
+            .Include(u => u.Tenant)
+            .Where(u => u.EliminadoEn == null); // respect soft deletes
+
+        if (tenantId.HasValue)
+            query = query.Where(u => u.TenantId == tenantId.Value);
+
+        if (!string.IsNullOrEmpty(rol))
+        {
+            if (rol == "SUPER_ADMIN")
+                query = query.Where(u => u.EsSuperAdmin);
+            else if (rol == "ADMIN")
+                query = query.Where(u => u.EsAdmin && !u.EsSuperAdmin);
+            else
+                query = query.Where(u => u.RolExplicito == rol);
+        }
+
+        if (activo.HasValue)
+            query = query.Where(u => u.Activo == activo.Value);
+
+        if (!string.IsNullOrEmpty(search))
+            query = query.Where(u =>
+                u.Nombre.Contains(search) ||
+                u.Email.Contains(search));
+
+        var totalCount = await query.CountAsync();
+
+        var items = await query
+            .OrderBy(u => u.Tenant.NombreEmpresa)
+            .ThenBy(u => u.Nombre)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(u => new
+            {
+                u.Id,
+                u.Nombre,
+                u.Email,
+                u.RolExplicito,
+                u.EsSuperAdmin,
+                u.EsAdmin,
+                u.Activo,
+                u.TenantId,
+                TenantNombre = u.Tenant.NombreEmpresa,
+                u.CreadoEn
+            })
+            .ToListAsync();
+
+        var dtos = items.Select(u => new GlobalUserDto(
+            u.Id,
+            u.Nombre,
+            u.Email,
+            u.RolExplicito ?? (u.EsSuperAdmin ? "SUPER_ADMIN" : u.EsAdmin ? "ADMIN" : "VENDEDOR"),
+            u.Activo,
+            u.TenantId,
+            u.TenantNombre,
+            u.CreadoEn
+        )).ToList();
+
+        return Results.Ok(new
+        {
+            items = dtos,
+            totalCount,
+            page,
+            pageSize,
+            totalPages = (int)Math.Ceiling((double)totalCount / pageSize)
+        });
     }
 
     private static string GetTimeAgo(DateTime dateTime)

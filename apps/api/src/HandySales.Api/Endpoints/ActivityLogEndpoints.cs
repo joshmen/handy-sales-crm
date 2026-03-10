@@ -33,13 +33,18 @@ public static class ActivityLogEndpoints
         [FromQuery] string? entityType = null,
         [FromQuery] string? dateFrom = null,
         [FromQuery] string? dateTo = null,
-        [FromQuery] string? search = null)
+        [FromQuery] string? search = null,
+        [FromQuery] int? tenantId = null)
     {
         // Only Admin and SuperAdmin can see activity logs
         if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
             return Results.Forbid();
 
-        var tenantId = currentTenant.TenantId;
+        // SuperAdmin: cross-tenant (null) or specific tenant filter
+        // Admin: always scoped to own tenant
+        int? effectiveTenantId = currentTenant.IsSuperAdmin
+            ? tenantId   // null = all tenants, or specific tenantId
+            : currentTenant.TenantId;
 
         DateTime? parsedDateFrom = null;
         DateTime? parsedDateTo = null;
@@ -49,7 +54,7 @@ public static class ActivityLogEndpoints
             parsedDateTo = dt.Date.AddDays(1).AddTicks(-1); // End of day
 
         var (items, totalCount) = await repository.GetActivityLogsPaginatedAsync(
-            tenantId,
+            effectiveTenantId,
             page,
             pageSize,
             activityType,
@@ -80,6 +85,8 @@ public static class ActivityLogEndpoints
                 a.City,
                 a.CountryName,
                 a.CreatedAt,
+                a.TenantId,
+                tenantName = a.Tenant?.NombreEmpresa,
                 userId = a.UserId,
                 userName = a.Usuario?.Nombre ?? "Sistema",
             }),

@@ -38,6 +38,7 @@ import {
   Target,
   Bug,
   ClockCounterClockwise,
+  UsersThree,
   IconContext,
 } from '@phosphor-icons/react';
 import { useSidebar } from '@/stores/useUIStore';
@@ -385,6 +386,12 @@ const superAdminItems: SidebarItem[] = [
     label: 'Empresas',
     icon: Buildings,
     href: '/admin/tenants',
+  },
+  {
+    id: 'sa-global-users',
+    label: 'Usuarios Global',
+    icon: UsersThree,
+    href: '/admin/global-users',
   },
   {
     id: 'sa-announcements',

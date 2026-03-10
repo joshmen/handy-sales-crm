@@ -103,3 +103,53 @@ export interface SystemMetrics {
   tenantsRecientes: Tenant[];
   topTenants: TopTenant[];
 }
+
+// --- SuperAdmin: Global User Management ---
+
+export interface GlobalUser {
+  id: number;
+  nombre: string;
+  email: string;
+  rol: string;
+  activo: boolean;
+  tenantId: number;
+  tenantNombre: string;
+  creadoEn: string;
+}
+
+export interface GlobalUserPaginatedResponse {
+  items: GlobalUser[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export interface GlobalUserFilters {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  tenantId?: number;
+  rol?: string;
+  activo?: boolean;
+}
+
+// --- SuperAdmin: System Trends ---
+
+export interface DailyMetric {
+  date: string;
+  value: number;
+}
+
+export interface PlanDistribution {
+  plan: string;
+  count: number;
+  percentage: number;
+}
+
+export interface SystemTrends {
+  tenantGrowth: DailyMetric[];
+  revenueByDay: DailyMetric[];
+  userGrowth: DailyMetric[];
+  planBreakdown: PlanDistribution[];
+}

@@ -16,6 +16,8 @@ export interface ActivityLogDto {
   city: string | null;
   countryName: string | null;
   createdAt: string;
+  tenantId?: number;
+  tenantName?: string | null;
   userId: number;
   userName: string;
 }
@@ -39,6 +41,7 @@ export interface ActivityLogFilters {
   dateFrom?: string;
   dateTo?: string;
   search?: string;
+  tenantId?: number;
 }
 
 class ActivityLogService {
@@ -57,6 +60,7 @@ class ActivityLogService {
       if (params.dateFrom) queryParams.set('dateFrom', params.dateFrom);
       if (params.dateTo) queryParams.set('dateTo', params.dateTo);
       if (params.search) queryParams.set('search', params.search);
+      if (params.tenantId) queryParams.set('tenantId', params.tenantId.toString());
 
       const query = queryParams.toString();
       const url = query ? `${this.basePath}?${query}` : this.basePath;

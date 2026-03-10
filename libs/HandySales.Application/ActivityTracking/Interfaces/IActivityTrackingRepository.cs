@@ -7,7 +7,7 @@ public interface IActivityTrackingRepository
     Task<ActivityLog> CreateActivityLogAsync(ActivityLog activityLog);
     Task<IEnumerable<ActivityLog>> GetActivityLogsAsync(int tenantId, int? userId = null, int limit = 50);
     Task<(IEnumerable<ActivityLog> Items, int TotalCount)> GetActivityLogsPaginatedAsync(
-        int tenantId,
+        int? tenantId,
         int page = 1,
         int pageSize = 20,
         string? activityType = null,

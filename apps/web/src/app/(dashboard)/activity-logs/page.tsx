@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSession } from 'next-auth/react';
 import { toast } from '@/hooks/useToast';
 import {
   Download,
@@ -11,8 +12,10 @@ import {
 } from 'lucide-react';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { activityLogService, type ActivityLogDto } from '@/services/api/activityLogs';
+import { tenantService } from '@/services/api/tenants';
 import { getInitials } from '@/lib/utils';
 import { useFormatters } from '@/hooks/useFormatters';
+import type { Tenant } from '@/types/tenant';
 
 const actionLabels: Record<string, string> = {
   create: 'Crear',
@@ -87,8 +90,11 @@ function getDateRange(filter: string): { dateFrom?: string; dateTo?: string } {
 }
 
 export default function ActivityLogsPage() {
+  const { data: session } = useSession();
+  const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN';
   const { formatDate, formatNumber } = useFormatters();
   const [logs, setLogs] = useState<ActivityLogDto[]>([]);
+  const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -96,8 +102,16 @@ export default function ActivityLogsPage() {
   const [filterAction, setFilterAction] = useState('all');
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterDate, setFilterDate] = useState('7days');
+  const [filterTenant, setFilterTenant] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
+
+  // Load tenants for SuperAdmin filter
+  useEffect(() => {
+    if (isSuperAdmin) {
+      tenantService.getAll().then(setTenants).catch(() => {});
+    }
+  }, [isSuperAdmin]);
 
   const fetchLogs = useCallback(async () => {
     setLoading(true);
@@ -109,6 +123,7 @@ export default function ActivityLogsPage() {
         activityType: filterAction !== 'all' ? filterAction : undefined,
         activityCategory: filterCategory !== 'all' ? filterCategory : undefined,
         search: searchTerm || undefined,
+        tenantId: isSuperAdmin && filterTenant !== 'all' ? Number(filterTenant) : undefined,
         ...dateRange,
       });
       setLogs(result.items);
@@ -122,7 +137,7 @@ export default function ActivityLogsPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, filterAction, filterCategory, filterDate, searchTerm]);
+  }, [currentPage, filterAction, filterCategory, filterDate, filterTenant, searchTerm, isSuperAdmin]);
 
   useEffect(() => {
     fetchLogs();
@@ -131,7 +146,7 @@ export default function ActivityLogsPage() {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [filterAction, filterCategory, filterDate, searchTerm]);
+  }, [filterAction, filterCategory, filterDate, filterTenant, searchTerm]);
 
   const handleExport = () => {
     if (logs.length === 0) {
@@ -269,6 +284,21 @@ export default function ActivityLogsPage() {
                 placeholder="Últimos 7 días"
               />
             </div>
+
+            {/* Tenant Filter (SuperAdmin only) */}
+            {isSuperAdmin && (
+              <div className="min-w-[200px]">
+                <SearchableSelect
+                  options={[
+                    { value: 'all', label: 'Todas las empresas' },
+                    ...tenants.map((t) => ({ value: String(t.id), label: t.nombreEmpresa })),
+                  ]}
+                  value={filterTenant}
+                  onChange={(val) => setFilterTenant(val ? String(val) : 'all')}
+                  placeholder="Todas las empresas"
+                />
+              </div>
+            )}
           </div>
         </div>
 
@@ -296,6 +326,9 @@ export default function ActivityLogsPage() {
                     {/* Table Header */}
                     <div className="flex items-center bg-gray-50 px-4 h-10 border-b border-gray-200">
                       <div className="w-[160px] text-xs font-semibold text-gray-600">Usuario</div>
+                      {isSuperAdmin && (
+                        <div className="w-[140px] text-xs font-semibold text-gray-600">Empresa</div>
+                      )}
                       <div className="w-[100px] text-xs font-semibold text-gray-600">Acción</div>
                       <div className="w-[110px] text-xs font-semibold text-gray-600">Categoría</div>
                       <div className="w-[80px] text-xs font-semibold text-gray-600">Estado</div>
@@ -316,6 +349,12 @@ export default function ActivityLogsPage() {
                           </div>
                           <span className="text-[13px] text-gray-900 truncate">{log.userName}</span>
                         </div>
+
+                        {isSuperAdmin && (
+                          <div className="w-[140px] text-[13px] text-gray-600 truncate">
+                            {log.tenantName || '-'}
+                          </div>
+                        )}
 
                         <div className="w-[100px]">
                           <span className={`px-2 py-0.5 text-[11px] font-medium rounded ${actionColors[log.activityType] || 'bg-gray-100 text-gray-700'}`}>

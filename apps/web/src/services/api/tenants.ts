@@ -7,6 +7,9 @@ import type {
   TenantUpdateRequest,
   TenantCreateUserRequest,
   SystemMetrics,
+  SystemTrends,
+  GlobalUserPaginatedResponse,
+  GlobalUserFilters,
 } from '@/types/tenant';
 
 class TenantService {
@@ -84,6 +87,34 @@ class TenantService {
   async createTenantUser(tenantId: number, data: TenantCreateUserRequest): Promise<{ id: number }> {
     try {
       const response = await api.post<{ id: number }>(`${this.basePath}/${tenantId}/users`, data);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  }
+
+  async getSystemTrends(days = 30): Promise<SystemTrends> {
+    try {
+      const response = await api.get<SystemTrends>(`/api/dashboard/system-trends?days=${days}`);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  }
+
+  async getGlobalUsers(params: GlobalUserFilters = {}): Promise<GlobalUserPaginatedResponse> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params.page) queryParams.set('page', params.page.toString());
+      if (params.pageSize) queryParams.set('pageSize', params.pageSize.toString());
+      if (params.search) queryParams.set('search', params.search);
+      if (params.tenantId) queryParams.set('tenantId', params.tenantId.toString());
+      if (params.rol) queryParams.set('rol', params.rol);
+      if (params.activo !== undefined) queryParams.set('activo', params.activo.toString());
+
+      const query = queryParams.toString();
+      const url = query ? `/api/dashboard/global-users?${query}` : '/api/dashboard/global-users';
+      const response = await api.get<GlobalUserPaginatedResponse>(url);
       return response.data;
     } catch (error) {
       throw handleApiError(error);

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { SystemMetrics } from '@/types/tenant';
+import { SystemMetrics, SystemTrends } from '@/types/tenant';
 import { tenantService } from '@/services/api/tenants';
 import { toast } from '@/hooks/useToast';
 import {
@@ -17,26 +17,65 @@ import {
   Crown
 } from 'lucide-react';
 import { useFormatters } from '@/hooks/useFormatters';
+import {
+  AreaChart,
+  Area,
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+} from 'recharts';
+
+const CHART_COLORS = ['#3b82f6', '#8b5cf6', '#06b6d4', '#f59e0b', '#10b981', '#ef4444'];
+
+const PERIOD_OPTIONS = [
+  { value: 7, label: '7 dias' },
+  { value: 15, label: '15 dias' },
+  { value: 30, label: '30 dias' },
+  { value: 90, label: '90 dias' },
+];
+
+function formatChartDate(dateStr: string): string {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
+}
+
+function formatShortCurrency(value: number): string {
+  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `$${(value / 1_000).toFixed(0)}K`;
+  return `$${value.toFixed(0)}`;
+}
 
 export default function SystemDashboardPage() {
   const { formatCurrency: _fmtCur, formatNumber: _fmtNum } = useFormatters();
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
+  const [trends, setTrends] = useState<SystemTrends | null>(null);
   const [loading, setLoading] = useState(true);
+  const [trendDays, setTrendDays] = useState(30);
 
   useEffect(() => {
     loadMetrics();
   }, []);
+
+  useEffect(() => {
+    loadTrends();
+  }, [trendDays]);
 
   const loadMetrics = async () => {
     try {
       setLoading(true);
       const data = await tenantService.getSystemMetrics();
       setMetrics(data);
-    } catch (error) {
-      console.error('Error loading system metrics:', error);
+    } catch {
       toast({
         title: 'Error',
-        description: 'No se pudieron cargar las métricas del sistema',
+        description: 'No se pudieron cargar las metricas del sistema',
         variant: 'destructive',
       });
     } finally {
@@ -44,27 +83,27 @@ export default function SystemDashboardPage() {
     }
   };
 
-  const formatCurrency = (value: number) => {
-    return _fmtCur(value);
+  const loadTrends = async () => {
+    try {
+      const data = await tenantService.getSystemTrends(trendDays);
+      setTrends(data);
+    } catch {
+      // Trends are optional — don't block the page
+      console.error('Error loading trends');
+    }
   };
 
-  const formatNumber = (value: number) => {
-    return _fmtNum(value);
-  };
+  const formatCurrency = (value: number) => _fmtCur(value);
+  const formatNumber = (value: number) => _fmtNum(value);
 
   if (loading) {
     return (
       <div className="space-y-6">
-        {/* Breadcrumb Skeleton */}
         <div className="h-6 w-64 bg-gray-200 rounded-md animate-pulse" />
-
-        {/* Header Skeleton */}
         <div>
           <div className="h-8 w-48 bg-gray-200 rounded-md animate-pulse mb-2" />
           <div className="h-5 w-96 bg-gray-200 rounded-md animate-pulse" />
         </div>
-
-        {/* KPI Cards Skeleton */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
@@ -78,25 +117,10 @@ export default function SystemDashboardPage() {
             </div>
           ))}
         </div>
-
-        {/* Sections Skeleton */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <div className="h-6 w-32 bg-gray-200 rounded-md animate-pulse mb-4" />
-            <div className="space-y-3">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="h-16 bg-gray-100 rounded-md animate-pulse" />
-              ))}
-            </div>
-          </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <div className="h-6 w-40 bg-gray-200 rounded-md animate-pulse mb-4" />
-            <div className="space-y-3">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="h-16 bg-gray-100 rounded-md animate-pulse" />
-              ))}
-            </div>
-          </div>
+          {[1, 2].map((i) => (
+            <div key={i} className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm h-80 animate-pulse" />
+          ))}
         </div>
       </div>
     );
@@ -105,7 +129,7 @@ export default function SystemDashboardPage() {
   if (!metrics) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-gray-500">No se pudieron cargar las métricas</p>
+        <p className="text-gray-500">No se pudieron cargar las metricas</p>
       </div>
     );
   }
@@ -114,7 +138,7 @@ export default function SystemDashboardPage() {
     <div className="space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center space-x-2 text-sm text-gray-500">
-        <span>Administración</span>
+        <span>Administracion</span>
         <ChevronRight className="h-4 w-4" />
         <span className="text-gray-900 font-medium">Dashboard Sistema</span>
       </nav>
@@ -123,13 +147,12 @@ export default function SystemDashboardPage() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Dashboard del Sistema</h1>
         <p className="text-gray-500 mt-1">
-          Vista general del sistema y métricas de todas las empresas
+          Vista general del sistema y metricas de todas las empresas
         </p>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Total Empresas */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
@@ -148,7 +171,6 @@ export default function SystemDashboardPage() {
           </div>
         </div>
 
-        {/* Usuarios Activos */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
@@ -166,7 +188,6 @@ export default function SystemDashboardPage() {
           </div>
         </div>
 
-        {/* Pedidos Totales */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
@@ -185,7 +206,6 @@ export default function SystemDashboardPage() {
           </div>
         </div>
 
-        {/* Ventas Totales */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
@@ -205,7 +225,165 @@ export default function SystemDashboardPage() {
         </div>
       </div>
 
-      {/* Bottom Sections */}
+      {/* Trends Section */}
+      {trends && (
+        <>
+          {/* Period Selector */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-500">Periodo:</span>
+            <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+              {PERIOD_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setTrendDays(opt.value)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                    trendDays === opt.value
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Revenue Chart (full width) */}
+          {trends.revenueByDay.length > 0 && (
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+              <h3 className="text-base font-semibold text-gray-900 mb-4">
+                Ingresos por Dia
+              </h3>
+              <ResponsiveContainer width="100%" height={280}>
+                <AreaChart data={trends.revenueByDay}>
+                  <defs>
+                    <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis
+                    dataKey="date"
+                    tickFormatter={formatChartDate}
+                    tick={{ fontSize: 11, fill: '#9ca3af' }}
+                    interval="preserveStartEnd"
+                  />
+                  <YAxis
+                    tickFormatter={formatShortCurrency}
+                    tick={{ fontSize: 11, fill: '#9ca3af' }}
+                    width={60}
+                  />
+                  <Tooltip
+                    formatter={(value) => [formatCurrency(Number(value)), 'Ingresos']}
+                    labelFormatter={(label) => formatChartDate(String(label))}
+                    contentStyle={{ borderRadius: 8, border: '1px solid #e5e7eb', fontSize: 13 }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="value"
+                    stroke="#10b981"
+                    strokeWidth={2}
+                    fill="url(#revenueGrad)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {/* Growth + Plan Distribution */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Tenant & User Growth */}
+            {(trends.tenantGrowth.length > 0 || trends.userGrowth.length > 0) && (
+              <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+                <h3 className="text-base font-semibold text-gray-900 mb-4">
+                  Crecimiento
+                </h3>
+                <ResponsiveContainer width="100%" height={250}>
+                  <LineChart>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis
+                      dataKey="date"
+                      tickFormatter={formatChartDate}
+                      tick={{ fontSize: 11, fill: '#9ca3af' }}
+                      allowDuplicatedCategory={false}
+                      interval="preserveStartEnd"
+                    />
+                    <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} width={45} />
+                    <Tooltip
+                      labelFormatter={(label) => formatChartDate(String(label))}
+                      contentStyle={{ borderRadius: 8, border: '1px solid #e5e7eb', fontSize: 13 }}
+                    />
+                    <Line
+                      data={trends.tenantGrowth}
+                      type="monotone"
+                      dataKey="value"
+                      name="Empresas"
+                      stroke="#3b82f6"
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                    <Line
+                      data={trends.userGrowth}
+                      type="monotone"
+                      dataKey="value"
+                      name="Usuarios"
+                      stroke="#8b5cf6"
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+                <div className="flex items-center gap-4 mt-2 justify-center">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-0.5 bg-blue-500 rounded-full" />
+                    <span className="text-xs text-gray-500">Empresas</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-0.5 bg-purple-500 rounded-full" />
+                    <span className="text-xs text-gray-500">Usuarios</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Plan Distribution */}
+            {trends.planBreakdown.length > 0 && (
+              <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+                <h3 className="text-base font-semibold text-gray-900 mb-4">
+                  Distribucion de Planes
+                </h3>
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={trends.planBreakdown} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
+                    <XAxis type="number" tick={{ fontSize: 11, fill: '#9ca3af' }} />
+                    <YAxis
+                      type="category"
+                      dataKey="plan"
+                      tick={{ fontSize: 12, fill: '#374151' }}
+                      width={100}
+                    />
+                    <Tooltip
+                      formatter={(value, _name, props) => [
+                        `${Number(value)} empresas (${((props as unknown as { payload: { percentage: number } }).payload.percentage)}%)`,
+                        'Cantidad',
+                      ]}
+                      contentStyle={{ borderRadius: 8, border: '1px solid #e5e7eb', fontSize: 13 }}
+                    />
+                    <Bar dataKey="count" radius={[0, 4, 4, 0]} maxBarSize={32}>
+                      {trends.planBreakdown.map((_entry, index) => (
+                        <Cell key={index} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Bottom Sections — Top Tenants + Recent Tenants */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Tenants */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
@@ -261,11 +439,11 @@ export default function SystemDashboardPage() {
           )}
         </div>
 
-        {/* Últimas Empresas Registradas */}
+        {/* Recent Tenants */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
             <Clock className="h-5 w-5 text-blue-500" />
-            <h2 className="text-lg font-semibold text-gray-900">Últimas Empresas Registradas</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Ultimas Empresas Registradas</h2>
           </div>
 
           {metrics.tenantsRecientes.length === 0 ? (
@@ -307,11 +485,11 @@ export default function SystemDashboardPage() {
                   {tenant.suscripcionActiva ? (
                     <div className="flex items-center gap-1 text-green-600 text-sm font-medium">
                       <TrendingUp className="h-4 w-4" />
-                      Suscripción activa
+                      Suscripcion activa
                     </div>
                   ) : (
                     <div className="text-gray-400 text-sm">
-                      Sin suscripción
+                      Sin suscripcion
                     </div>
                   )}
                 </div>

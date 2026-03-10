@@ -39,7 +39,7 @@ public class ActivityTrackingRepository : IActivityTrackingRepository
     }
 
     public async Task<(IEnumerable<ActivityLog> Items, int TotalCount)> GetActivityLogsPaginatedAsync(
-        int tenantId,
+        int? tenantId,
         int page = 1,
         int pageSize = 20,
         string? activityType = null,
@@ -51,10 +51,25 @@ public class ActivityTrackingRepository : IActivityTrackingRepository
         DateTime? dateTo = null,
         string? search = null)
     {
-        var query = _context.ActivityLogs
-            .AsNoTracking()
-            .Include(a => a.Usuario)
-            .Where(a => a.TenantId == tenantId);
+        IQueryable<ActivityLog> query;
+
+        if (tenantId.HasValue)
+        {
+            // Tenant-scoped query (Admin or SuperAdmin filtering by specific tenant)
+            query = _context.ActivityLogs
+                .AsNoTracking()
+                .Include(a => a.Usuario)
+                .Where(a => a.TenantId == tenantId.Value);
+        }
+        else
+        {
+            // Cross-tenant query (SuperAdmin sees all tenants)
+            query = _context.ActivityLogs
+                .IgnoreQueryFilters()
+                .AsNoTracking()
+                .Include(a => a.Usuario)
+                .Include(a => a.Tenant);
+        }
 
         if (!string.IsNullOrEmpty(activityType))
             query = query.Where(a => a.ActivityType == activityType);

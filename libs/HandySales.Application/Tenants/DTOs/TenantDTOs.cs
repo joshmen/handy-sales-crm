@@ -95,3 +95,29 @@ public record TenantCreateUserDto(
     string Password,
     string Rol
 );
+
+// --- SuperAdmin: Global User Management ---
+
+public record GlobalUserDto(
+    int Id,
+    string Nombre,
+    string Email,
+    string Rol,
+    bool Activo,
+    int TenantId,
+    string TenantNombre,
+    DateTime CreadoEn
+);
+
+// --- SuperAdmin: System Trends ---
+
+public record SystemTrendsDto(
+    List<DailyMetricDto> TenantGrowth,
+    List<DailyMetricDto> RevenueByDay,
+    List<DailyMetricDto> UserGrowth,
+    List<PlanDistributionDto> PlanBreakdown
+);
+
+public record DailyMetricDto(string Date, decimal Value);
+
+public record PlanDistributionDto(string Plan, int Count, decimal Percentage);
