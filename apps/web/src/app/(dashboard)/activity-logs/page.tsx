@@ -310,9 +310,7 @@ export default function ActivityLogsPage() {
               {loading ? (
                 <div className="flex flex-col items-center justify-center h-64 gap-4">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-[#16A34A] rounded-lg flex items-center justify-center">
-                      <span className="text-white font-bold text-sm">H</span>
-                    </div>
+                    <img src="/logo-icon.svg" alt="Handy Suites" className="w-8 h-8" />
                     <span className="text-lg font-semibold text-gray-700">Handy Suites<sup className="text-[8px] font-normal">®</sup></span>
                   </div>
                   <div className="flex items-center gap-2">
