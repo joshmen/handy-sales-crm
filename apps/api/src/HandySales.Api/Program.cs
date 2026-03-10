@@ -218,6 +218,7 @@ app.MapActivityLogEndpoints();
 app.MapSupervisorEndpoints();
 app.MapAutomationEndpoints();
 app.MapAiEndpoints();
+app.MapSecurityConfigEndpoints();
 
 // SignalR hub
 app.MapHub<NotificationHub>("/hubs/notifications");

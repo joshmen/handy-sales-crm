@@ -411,6 +411,12 @@ const superAdminItems: SidebarItem[] = [
     href: '/admin/crash-reports',
   },
   {
+    id: 'sa-security',
+    label: 'Seguridad',
+    icon: ShieldCheck,
+    href: '/admin/security',
+  },
+  {
     id: 'sa-settings',
     label: 'Configuración',
     icon: GearSix,

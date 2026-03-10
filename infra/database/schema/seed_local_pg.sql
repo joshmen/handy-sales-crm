@@ -89,7 +89,7 @@ INSERT INTO company_settings (tenant_id, company_name, primary_color, secondary_
 
 INSERT INTO "Usuarios" (tenant_id, email, password_hash, nombre, es_admin, es_super_admin, rol, activo, session_version, totp_enabled, email_verificado, creado_en, version) VALUES
 -- Super Admin (plataforma)
-(1, 'superadmin@handysales.com', '$2a$11$eTUvJkg3sBW3jEhrBpz3DeeoKTOwQb8fEhwBO1SVFhlGu0OA.vHnO', 'Super Administrador', true, true, 'ADMIN', true, 0, false, true, NOW(), 1),
+(1, 'superadmin@handysales.com', '$2a$11$eTUvJkg3sBW3jEhrBpz3DeeoKTOwQb8fEhwBO1SVFhlGu0OA.vHnO', 'Super Administrador', true, true, 'SUPER_ADMIN', true, 0, false, true, NOW(), 1),
 -- Admins (1 per tenant)
 (1, 'admin@jeyma.com', '$2a$11$eTUvJkg3sBW3jEhrBpz3DeeoKTOwQb8fEhwBO1SVFhlGu0OA.vHnO', 'Administrador Jeyma', true, false, 'ADMIN', true, 0, false, true, NOW(), 1),
 (2, 'admin@huichol.com', '$2a$11$eTUvJkg3sBW3jEhrBpz3DeeoKTOwQb8fEhwBO1SVFhlGu0OA.vHnO', 'Administrador Huichol', true, false, 'ADMIN', true, 0, false, true, NOW(), 1),

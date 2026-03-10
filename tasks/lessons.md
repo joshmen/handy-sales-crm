@@ -10,6 +10,12 @@
 - **All RequireRole() must match**: never use PascalCase (`"Admin"`) — always `"ADMIN"`
 - **All HasClaim(Role, ...) must match**: same rule applies in middleware and CurrentTenant
 
+## EF Core DbContext — Thread Safety
+- **NEVER use Task.WhenAll with parallel queries on the same DbContext** — EF Core is NOT thread-safe
+- Always `await` each query sequentially, or use separate DbContext instances via IServiceScopeFactory
+- Docs: "Entity Framework Core does not support multiple parallel operations being run on the same DbContext instance"
+- The `InvalidOperationException: A second operation was started on this context` error is the symptom
+
 ## DB Schema vs EF Core Snapshot
 - SQL seed scripts may create tables with fewer columns than the EF model expects
 - Always verify actual DB schema matches EF model after adding AuditableEntity inheritance
