@@ -549,11 +549,12 @@ public class AuthService
         // Increment session version to invalidate all JWTs
         usuario.SessionVersion++;
 
-        // Revoke the specific refresh token
+        // Revoke the specific refresh token (hash to compare with stored hash)
         if (!string.IsNullOrEmpty(refreshToken))
         {
+            var tokenHash = HashToken(refreshToken);
             var tokenEntity = await _db.RefreshTokens
-                .FirstOrDefaultAsync(rt => rt.Token == refreshToken && rt.UserId == userId && !rt.IsRevoked);
+                .FirstOrDefaultAsync(rt => rt.Token == tokenHash && rt.UserId == userId && !rt.IsRevoked);
             if (tokenEntity != null)
             {
                 tokenEntity.IsRevoked = true;
@@ -641,7 +642,7 @@ public class AuthService
             usuario.Id.ToString(), usuario.TenantId,
             usuario.Rol, usuario.SessionVersion);
 
-        var refreshToken = await CreateRefreshTokenAsync(usuario.Id);
+        var (_, plainRefreshToken) = await CreateRefreshTokenAsync(usuario.Id);
 
         await LogActivityAsync(usuario.TenantId, usuario.Id, "login", "auth",
             $"Usuario {usuario.Email} inició sesión exitosamente");
@@ -656,7 +657,7 @@ public class AuthService
                 role = usuario.Rol
             },
             token = token,
-            refreshToken = refreshToken.Token
+            refreshToken = plainRefreshToken
         };
     }
 
@@ -693,11 +694,12 @@ public class AuthService
         if (string.IsNullOrEmpty(refreshToken))
             return null;
 
-        // Buscar el refresh token en la base de datos
+        // Hash the incoming token to compare with stored hash
+        var tokenHash = HashToken(refreshToken);
         var tokenEntity = await _db.RefreshTokens
             .Include(rt => rt.Usuario)
-            .FirstOrDefaultAsync(rt => rt.Token == refreshToken && 
-                                     !rt.IsRevoked && 
+            .FirstOrDefaultAsync(rt => rt.Token == tokenHash &&
+                                     !rt.IsRevoked &&
                                      rt.ExpiresAt > DateTime.UtcNow);
 
         if (tokenEntity == null)
@@ -721,9 +723,9 @@ public class AuthService
             tokenEntity.Usuario.Id.ToString(), tokenEntity.Usuario.TenantId,
             tokenEntity.Usuario.Rol, tokenEntity.Usuario.SessionVersion);
 
-        // Crear nuevo refresh token
-        var newRefreshToken = await CreateRefreshTokenAsync(tokenEntity.UserId);
-        tokenEntity.ReplacedByToken = newRefreshToken.Token;
+        // Crear nuevo refresh token (returns hash in entity, plain for client)
+        var (newTokenEntity, newPlainToken) = await CreateRefreshTokenAsync(tokenEntity.UserId);
+        tokenEntity.ReplacedByToken = newTokenEntity.Token; // Store hash reference
 
         await _db.SaveChangesAsync();
 
@@ -737,11 +739,14 @@ public class AuthService
                 role = tokenEntity.Usuario.Rol
             },
             token = newAccessToken,
-            refreshToken = newRefreshToken.Token
+            refreshToken = newPlainToken
         };
     }
 
-    private async Task<RefreshToken> CreateRefreshTokenAsync(int userId)
+    /// <summary>
+    /// Creates a refresh token. Stores SHA-256 hash in DB, returns plain token for the client.
+    /// </summary>
+    private async Task<(RefreshToken Entity, string PlainToken)> CreateRefreshTokenAsync(int userId)
     {
         // Revocar tokens activos anteriores del usuario
         var existingTokens = await _db.RefreshTokens
@@ -754,19 +759,26 @@ public class AuthService
             token.RevokedAt = DateTime.UtcNow;
         }
 
-        // Crear nuevo refresh token
+        // Generar token plano, almacenar hash SHA-256
+        var plainToken = Convert.ToBase64String(Guid.NewGuid().ToByteArray()) + Convert.ToBase64String(Guid.NewGuid().ToByteArray());
         var refreshToken = new RefreshToken
         {
-            Token = Convert.ToBase64String(Guid.NewGuid().ToByteArray()) + Convert.ToBase64String(Guid.NewGuid().ToByteArray()),
+            Token = HashToken(plainToken),
             UserId = userId,
-            ExpiresAt = DateTime.UtcNow.AddDays(30), // Expira en 30 días
+            ExpiresAt = DateTime.UtcNow.AddDays(30),
             CreatedAt = DateTime.UtcNow
         };
 
         _db.RefreshTokens.Add(refreshToken);
         await _db.SaveChangesAsync();
 
-        return refreshToken;
+        return (refreshToken, plainToken);
+    }
+
+    private static string HashToken(string token)
+    {
+        var hash = SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(token));
+        return Convert.ToBase64String(hash);
     }
 
     private async Task LogActivityAsync(int tenantId, int userId, string activityType, string category, string description, string status = "success")

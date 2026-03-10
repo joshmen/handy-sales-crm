@@ -227,8 +227,11 @@ public class MobileAuthEndpointsTests : IDisposable
         // Act
         await _authService.RefreshTokenAsync(originalRefreshToken!);
 
-        // Assert
-        var oldToken = await _db.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == originalRefreshToken);
+        // Assert — token stored as SHA-256 hash
+        var tokenHash = Convert.ToBase64String(
+            System.Security.Cryptography.SHA256.HashData(
+                System.Text.Encoding.UTF8.GetBytes(originalRefreshToken!)));
+        var oldToken = await _db.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == tokenHash);
         oldToken.Should().NotBeNull();
         oldToken!.IsRevoked.Should().BeTrue();
         oldToken.RevokedAt.Should().NotBeNull();

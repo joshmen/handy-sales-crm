@@ -1,8 +1,10 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Threading.RateLimiting;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 
 namespace HandySales.Api.Endpoints;
@@ -28,7 +30,7 @@ public static class AuthEndpoints
             {
                 return Results.BadRequest(new { error = ex.Message });
             }
-        });
+        }).RequireRateLimiting("anonymous");
 
         app.MapPost("/auth/login", async (UsuarioLoginDto dto, IValidator<UsuarioLoginDto> validator, [FromServices] AuthService auth) =>
         {
@@ -58,7 +60,7 @@ public static class AuthEndpoints
                 return Results.Ok(result);
 
             return Results.Ok(result);
-        });
+        }).RequireRateLimiting("anonymous");
 
         app.MapPost("/auth/verify-2fa", async (
             [FromBody] Verify2FADto dto,
@@ -84,7 +86,7 @@ public static class AuthEndpoints
                 return Results.BadRequest(result);
 
             return Results.Ok(result);
-        });
+        }).RequireRateLimiting("anonymous");
 
         app.MapPost("/auth/force-login", async (UsuarioLoginDto dto, IValidator<UsuarioLoginDto> validator, [FromServices] AuthService auth) =>
         {
@@ -103,7 +105,7 @@ public static class AuthEndpoints
                 return Results.BadRequest(result);
 
             return Results.Ok(result);
-        });
+        }).RequireRateLimiting("anonymous");
 
         app.MapPost("/auth/refresh", async (RefreshTokenDto dto, [FromServices] AuthService auth) =>
         {
@@ -197,7 +199,7 @@ public static class AuthEndpoints
                 return Results.BadRequest(result);
 
             return Results.Ok(result);
-        });
+        }).RequireRateLimiting("anonymous");
 
         // Resend verification code
         app.MapPost("/auth/resend-verification", async (
@@ -209,24 +211,22 @@ public static class AuthEndpoints
 
             var result = await auth.ResendVerificationAsync(dto.Email.Trim().ToLowerInvariant());
             return Results.Ok(result);
-        });
+        }).RequireRateLimiting("anonymous");
 
         app.MapPost("/auth/forgot-password", async (
             [FromBody] ForgotPasswordDto dto,
             [FromServices] AuthService auth,
-            HttpContext context) =>
+            [FromServices] IConfiguration config) =>
         {
             if (string.IsNullOrWhiteSpace(dto.Email))
                 return Results.BadRequest(new { error = "Se requiere email" });
 
-            // Build base URL from request origin or referer
-            var origin = context.Request.Headers["Origin"].FirstOrDefault()
-                         ?? context.Request.Headers["Referer"].FirstOrDefault()?.TrimEnd('/')
-                         ?? "http://localhost:1083";
+            // Use configured frontend URL — never trust Origin/Referer headers
+            var baseUrl = config["App:FrontendUrl"] ?? "http://localhost:1083";
 
-            var result = await auth.ForgotPasswordAsync(dto.Email.Trim().ToLowerInvariant(), origin);
+            var result = await auth.ForgotPasswordAsync(dto.Email.Trim().ToLowerInvariant(), baseUrl);
             return Results.Ok(result);
-        });
+        }).RequireRateLimiting("anonymous");
 
         app.MapPost("/auth/reset-password", async (
             [FromBody] ResetPasswordDto dto,
@@ -249,7 +249,7 @@ public static class AuthEndpoints
                 return Results.BadRequest(result);
 
             return Results.Ok(result);
-        });
+        }).RequireRateLimiting("anonymous");
     }
 
     /// <summary>

@@ -85,7 +85,9 @@ public class SessionValidationMiddleware
 
         if (string.IsNullOrEmpty(sessionVersionClaim) || string.IsNullOrEmpty(userIdClaim))
         {
-            // Old tokens without session_version — allow through (backward compatible)
+            // Tokens without session_version: allow through but skip version check.
+            // Security is enforced when session_version IS present (mismatch → 401).
+            // Old tokens without the claim expire naturally via JWT expiration.
             await _next(context);
             return;
         }

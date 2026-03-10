@@ -5,6 +5,7 @@ using HandySales.Shared.Multitenancy;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using HandySales.Application.Common.DTOs;
+using FluentValidation;
 
 namespace HandySales.Api.Endpoints;
 
@@ -134,10 +135,15 @@ public static class UsuarioEndpoints
         CrearUsuarioDto dto,
         UsuarioService service,
         [FromServices] ISubscriptionEnforcementService enforcement,
-        [FromServices] ICurrentTenant currentTenant)
+        [FromServices] ICurrentTenant currentTenant,
+        [FromServices] IValidator<CrearUsuarioDto> validator)
     {
         try
         {
+            var validation = await validator.ValidateAsync(dto);
+            if (!validation.IsValid)
+                return Results.BadRequest(new { errors = validation.Errors.Select(e => e.ErrorMessage).ToList() });
+
             var check = await enforcement.CanCreateUsuarioAsync(currentTenant.TenantId);
             if (!check.Allowed)
                 return Results.Json(new { error = check.Message, current = check.Current, limit = check.Limit }, statusCode: 402);
@@ -155,10 +161,18 @@ public static class UsuarioEndpoints
         }
     }
 
-    private static async Task<IResult> UpdateUsuario(int id, UsuarioUpdateDto dto, UsuarioService service)
+    private static async Task<IResult> UpdateUsuario(
+        int id,
+        UsuarioUpdateDto dto,
+        UsuarioService service,
+        [FromServices] IValidator<UsuarioUpdateDto> validator)
     {
         try
         {
+            var validation = await validator.ValidateAsync(dto);
+            if (!validation.IsValid)
+                return Results.BadRequest(new { errors = validation.Errors.Select(e => e.ErrorMessage).ToList() });
+
             var success = await service.ActualizarUsuarioAsync(id, dto);
             if (!success)
                 return Results.NotFound($"Usuario con ID {id} no encontrado");

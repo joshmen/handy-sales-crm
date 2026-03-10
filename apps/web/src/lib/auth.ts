@@ -4,6 +4,7 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
 import { jwtVerify } from 'jose';
 import { serverApiCall, serverApiInstance } from '@/lib/server-api';
+import { storeTempToken } from '@/lib/temp-token-store';
 
 // Backend JWT secret — same key the .NET API uses to sign tokens
 const BACKEND_JWT_SECRET = new TextEncoder().encode(
@@ -316,10 +317,10 @@ export const authOptions: NextAuthOptions = {
             return true;
           }
 
-          // 2FA required — store temp token in a short-lived cookie (not URL params)
-          // sessionStorage is not available server-side, so we use a cookie instead
+          // 2FA required — store temp token server-side, pass only opaque ref in URL
           if (data.requires2FA) {
-            return `/login?requires2FA=true&provider=${account.provider}&t2fa=${data.tempToken}`;
+            const ref = storeTempToken(data.tempToken);
+            return `/login?requires2FA=true&provider=${account.provider}&t2fa_ref=${ref}`;
           }
 
           return false; // User deactivated or other error

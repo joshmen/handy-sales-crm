@@ -150,6 +150,9 @@ public static class ImageUploadEndpoints
         {
             try
             {
+                if (string.IsNullOrEmpty(request.Base64Image) || request.Base64Image.Length > 7_000_000) // ~5MB decoded
+                    return Results.BadRequest(new { error = "La imagen no debe superar 5MB" });
+
                 var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
                 {

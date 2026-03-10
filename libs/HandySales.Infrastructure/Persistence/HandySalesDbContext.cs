@@ -834,6 +834,13 @@ public class HandySalesDbContext : DbContext
         modelBuilder.Entity<MetaVendedor>()
             .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
 
+        // Child entities (no TenantId) — soft delete filter only
+        modelBuilder.Entity<DetallePedido>()
+            .HasQueryFilter(e => e.EliminadoEn == null);
+
+        modelBuilder.Entity<RutaDetalle>()
+            .HasQueryFilter(e => e.EliminadoEn == null);
+
         // pgvector extension + AiEmbedding config (PostgreSQL only — skipped in SQLite tests)
         if (Database.ProviderName?.Contains("Npgsql") == true)
         {

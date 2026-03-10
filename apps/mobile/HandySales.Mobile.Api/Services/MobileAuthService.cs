@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using HandySales.Domain.Entities;
 using HandySales.Infrastructure.Persistence;
 using HandySales.Shared.Security;
@@ -89,7 +90,7 @@ public class MobileAuthService
 
         var token = _jwt.GenerateTokenWithRoles(usuario.Id.ToString(), usuario.TenantId, usuario.Rol);
 
-        var refreshToken = await CreateRefreshTokenAsync(usuario.Id);
+        var (_, plainRefreshToken) = await CreateRefreshTokenAsync(usuario.Id);
 
         // Fetch company logo for the tenant (nullable)
         var companyLogo = await _db.CompanySettings
@@ -112,7 +113,7 @@ public class MobileAuthService
                     tenantLogo = companyLogo
                 },
                 token = token,
-                refreshToken = refreshToken.Token
+                refreshToken = plainRefreshToken
             }
         };
     }
@@ -122,9 +123,11 @@ public class MobileAuthService
         if (string.IsNullOrEmpty(refreshToken))
             return null;
 
+        // Hash incoming token to compare with stored hash
+        var tokenHash = HashToken(refreshToken);
         var tokenEntity = await _db.RefreshTokens
             .Include(rt => rt.Usuario)
-            .FirstOrDefaultAsync(rt => rt.Token == refreshToken &&
+            .FirstOrDefaultAsync(rt => rt.Token == tokenHash &&
                                      !rt.IsRevoked &&
                                      rt.ExpiresAt > DateTime.UtcNow);
 
@@ -138,8 +141,8 @@ public class MobileAuthService
             tokenEntity.Usuario.Id.ToString(), tokenEntity.Usuario.TenantId,
             tokenEntity.Usuario.Rol);
 
-        var newRefreshToken = await CreateRefreshTokenAsync(tokenEntity.UserId);
-        tokenEntity.ReplacedByToken = newRefreshToken.Token;
+        var (newTokenEntity, newPlainToken) = await CreateRefreshTokenAsync(tokenEntity.UserId);
+        tokenEntity.ReplacedByToken = newTokenEntity.Token;
 
         await _db.SaveChangesAsync();
 
@@ -161,7 +164,7 @@ public class MobileAuthService
                 tenantLogo = companyLogo
             },
             token = newAccessToken,
-            refreshToken = newRefreshToken.Token
+            refreshToken = newPlainToken
         };
     }
 
@@ -249,7 +252,7 @@ public class MobileAuthService
         await _db.SaveChangesAsync();
     }
 
-    private async Task<RefreshToken> CreateRefreshTokenAsync(int userId)
+    private async Task<(RefreshToken Entity, string PlainToken)> CreateRefreshTokenAsync(int userId)
     {
         var existingTokens = await _db.RefreshTokens
             .Where(rt => rt.UserId == userId && !rt.IsRevoked && rt.ExpiresAt > DateTime.UtcNow)
@@ -261,9 +264,10 @@ public class MobileAuthService
             token.RevokedAt = DateTime.UtcNow;
         }
 
+        var plainToken = Convert.ToBase64String(Guid.NewGuid().ToByteArray()) + Convert.ToBase64String(Guid.NewGuid().ToByteArray());
         var refreshToken = new RefreshToken
         {
-            Token = Convert.ToBase64String(Guid.NewGuid().ToByteArray()) + Convert.ToBase64String(Guid.NewGuid().ToByteArray()),
+            Token = HashToken(plainToken),
             UserId = userId,
             ExpiresAt = DateTime.UtcNow.AddDays(30),
             CreatedAt = DateTime.UtcNow
@@ -272,6 +276,12 @@ public class MobileAuthService
         _db.RefreshTokens.Add(refreshToken);
         await _db.SaveChangesAsync();
 
-        return refreshToken;
+        return (refreshToken, plainToken);
+    }
+
+    private static string HashToken(string token)
+    {
+        var hash = SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(token));
+        return Convert.ToBase64String(hash);
     }
 }

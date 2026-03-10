@@ -564,6 +564,9 @@ public static class ImportExportEndpoints
             if (archivo == null || archivo.Length == 0)
                 return Results.BadRequest(new { error = "No se proporcionó un archivo" });
 
+            if (archivo.Length > 10 * 1024 * 1024) // 10 MB
+                return Results.BadRequest(new { error = "El archivo no debe superar 10MB" });
+
             if (!archivo.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
                 return Results.BadRequest(new { error = "El archivo debe ser CSV" });
 
@@ -691,6 +694,9 @@ public static class ImportExportEndpoints
         {
             if (archivo == null || archivo.Length == 0)
                 return Results.BadRequest(new { error = "No se proporcionó un archivo" });
+
+            if (archivo.Length > 10 * 1024 * 1024) // 10 MB
+                return Results.BadRequest(new { error = "El archivo no debe superar 10MB" });
 
             if (!archivo.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
                 return Results.BadRequest(new { error = "El archivo debe ser CSV" });
@@ -826,6 +832,9 @@ public static class ImportExportEndpoints
             if (archivo == null || archivo.Length == 0)
                 return Results.BadRequest(new { error = "No se proporcionó un archivo" });
 
+            if (archivo.Length > 10 * 1024 * 1024) // 10 MB
+                return Results.BadRequest(new { error = "El archivo no debe superar 10MB" });
+
             if (!archivo.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
                 return Results.BadRequest(new { error = "El archivo debe ser CSV" });
 
@@ -897,6 +906,9 @@ public static class ImportExportEndpoints
         {
             if (archivo == null || archivo.Length == 0)
                 return Results.BadRequest(new { error = "No se proporcionó un archivo" });
+
+            if (archivo.Length > 10 * 1024 * 1024) // 10 MB
+                return Results.BadRequest(new { error = "El archivo no debe superar 10MB" });
 
             if (!archivo.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
                 return Results.BadRequest(new { error = "El archivo debe ser CSV" });
@@ -970,6 +982,9 @@ public static class ImportExportEndpoints
             if (archivo == null || archivo.Length == 0)
                 return Results.BadRequest(new { error = "No se proporcionó un archivo" });
 
+            if (archivo.Length > 10 * 1024 * 1024) // 10 MB
+                return Results.BadRequest(new { error = "El archivo no debe superar 10MB" });
+
             if (!archivo.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
                 return Results.BadRequest(new { error = "El archivo debe ser CSV" });
 
@@ -1041,6 +1056,9 @@ public static class ImportExportEndpoints
         {
             if (archivo == null || archivo.Length == 0)
                 return Results.BadRequest(new { error = "No se proporcionó un archivo" });
+
+            if (archivo.Length > 10 * 1024 * 1024) // 10 MB
+                return Results.BadRequest(new { error = "El archivo no debe superar 10MB" });
 
             if (!archivo.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
                 return Results.BadRequest(new { error = "El archivo debe ser CSV" });
@@ -1114,6 +1132,9 @@ public static class ImportExportEndpoints
             if (archivo == null || archivo.Length == 0)
                 return Results.BadRequest(new { error = "No se proporcionó un archivo" });
 
+            if (archivo.Length > 10 * 1024 * 1024) // 10 MB
+                return Results.BadRequest(new { error = "El archivo no debe superar 10MB" });
+
             if (!archivo.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
                 return Results.BadRequest(new { error = "El archivo debe ser CSV" });
 
@@ -1186,6 +1207,9 @@ public static class ImportExportEndpoints
         {
             if (archivo == null || archivo.Length == 0)
                 return Results.BadRequest(new { error = "No se proporcionó un archivo" });
+
+            if (archivo.Length > 10 * 1024 * 1024) // 10 MB
+                return Results.BadRequest(new { error = "El archivo no debe superar 10MB" });
 
             if (!archivo.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
                 return Results.BadRequest(new { error = "El archivo debe ser CSV" });
@@ -1353,6 +1377,9 @@ public static class ImportExportEndpoints
         {
             if (archivo == null || archivo.Length == 0)
                 return Results.BadRequest(new { error = "No se proporcionó un archivo" });
+
+            if (archivo.Length > 10 * 1024 * 1024) // 10 MB
+                return Results.BadRequest(new { error = "El archivo no debe superar 10MB" });
 
             if (!archivo.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
                 return Results.BadRequest(new { error = "El archivo debe ser CSV" });
@@ -1601,6 +1628,9 @@ public static class ImportExportEndpoints
         {
             if (archivo == null || archivo.Length == 0)
                 return Results.BadRequest(new { error = "No se proporcionó un archivo" });
+
+            if (archivo.Length > 10 * 1024 * 1024) // 10 MB
+                return Results.BadRequest(new { error = "El archivo no debe superar 10MB" });
 
             if (!archivo.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
                 return Results.BadRequest(new { error = "El archivo debe ser CSV" });

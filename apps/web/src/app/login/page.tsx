@@ -89,16 +89,33 @@ function LoginContent() {
       }
     } catch { /* ignore */ }
 
-    // Handle OAuth 2FA redirect
+    // Handle OAuth 2FA redirect — exchange opaque ref for actual temp token
     const requires2FA = searchParams.get('requires2FA');
-    const t2fa = searchParams.get('t2fa');
-    if (requires2FA === 'true' && t2fa) {
-      setTempToken(t2fa);
-      setLoginStep('totp');
-      // Clean sensitive token from URL without triggering navigation
+    const t2faRef = searchParams.get('t2fa_ref');
+    if (requires2FA === 'true' && t2faRef) {
+      // Clean ref from URL immediately
       const cleanUrl = new URL(window.location.href);
-      cleanUrl.searchParams.delete('t2fa');
+      cleanUrl.searchParams.delete('t2fa_ref');
+      cleanUrl.searchParams.delete('requires2FA');
+      cleanUrl.searchParams.delete('provider');
       window.history.replaceState({}, '', cleanUrl.toString());
+
+      // Exchange ref for actual temp token (one-time use, server-side)
+      fetch('/api/auth/exchange-2fa-ref', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ref: t2faRef }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.tempToken) {
+            setTempToken(data.tempToken);
+            setLoginStep('totp');
+          }
+        })
+        .catch(() => {
+          // Ref expired or invalid — user must retry OAuth
+        });
     }
 
     // Handle OAuth error

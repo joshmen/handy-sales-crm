@@ -9,19 +9,28 @@ public static class CrashReportEndpoints
 {
     public static void MapCrashReportEndpoints(this IEndpointRouteBuilder app)
     {
-        // POST es AllowAnonymous — el crash puede ocurrir sin token válido
+        // POST requiere auth — extraer tenant/user del JWT en lugar del body
         app.MapPost("/api/crash-reports", async (
             CrashReportCreateDto dto,
             ICrashReportRepository repo,
-            IHubContext<NotificationHub> hubContext) =>
+            IHubContext<NotificationHub> hubContext,
+            HttpContext context) =>
         {
             if (string.IsNullOrWhiteSpace(dto.ErrorMessage))
                 return Results.BadRequest(new { message = "ErrorMessage es requerido" });
 
+            // Use JWT claims for tenant/user identity instead of trusting the DTO body
+            var tenantIdClaim = context.User.FindFirst("tenant_id")?.Value;
+            var userIdClaim = context.User.FindFirst("userId")?.Value
+                ?? context.User.FindFirst("sub")?.Value;
+
+            var tenantId = int.TryParse(tenantIdClaim, out var tid) ? tid : dto.TenantId;
+            var userId = int.TryParse(userIdClaim, out var uid) ? uid : dto.UserId;
+
             var report = new CrashReport
             {
-                TenantId = dto.TenantId,
-                UserId = dto.UserId,
+                TenantId = tenantId,
+                UserId = userId,
                 DeviceId = dto.DeviceId ?? string.Empty,
                 DeviceName = dto.DeviceName ?? string.Empty,
                 AppVersion = dto.AppVersion ?? string.Empty,

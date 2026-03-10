@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using System.Threading.RateLimiting;
 using HandySales.Api.Configuration;
 using HandySales.Api.Endpoints;
 using HandySales.Api.Hubs;
@@ -28,6 +29,57 @@ builder.Services.AddCustomCors(builder.Configuration);
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddCustomServices(builder.Configuration);
 builder.Services.AddAuthorization();
+
+// Global rate limiting — protects all endpoints from abuse/DDoS
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    // Anonymous endpoints (login, register, forgot-password): by IP
+    options.AddPolicy("anonymous", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 15,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+
+    // Authenticated endpoints: by user ID (more generous)
+    options.AddPolicy("authenticated", context =>
+    {
+        var userId = context.User?.FindFirst("sub")?.Value
+                     ?? context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                     ?? context.Connection.RemoteIpAddress?.ToString()
+                     ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter(userId, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 120,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0
+        });
+    });
+
+    // Global fallback: by IP — catches anything not tagged with a specific policy
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 200,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.ContentType = "application/json";
+        await context.HttpContext.Response.WriteAsJsonAsync(
+            new { error = "Demasiadas solicitudes. Intenta de nuevo en un momento." },
+            cancellationToken);
+    };
+});
 
 // SignalR real-time hub (self-hosted, no Azure dependency)
 builder.Services.AddSignalR(options =>
@@ -109,6 +161,7 @@ app.UseHttpsRedirection();
 app.UseCors("HandySalesPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 app.UseMiddleware<SessionValidationMiddleware>();
 app.UseMiddleware<ViewerReadOnlyMiddleware>();
 app.UseMiddleware<MaintenanceMiddleware>();

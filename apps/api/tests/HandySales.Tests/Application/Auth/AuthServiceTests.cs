@@ -199,8 +199,11 @@ namespace HandySales.Tests.Integration.Auth
             // Assert
             refreshResult.Should().NotBeNull();
 
-            // Verificar que el token anterior fue revocado
-            var oldToken = await _db.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == refreshToken);
+            // Verificar que el token anterior fue revocado (stored as SHA-256 hash)
+            var tokenHash = Convert.ToBase64String(
+                System.Security.Cryptography.SHA256.HashData(
+                    System.Text.Encoding.UTF8.GetBytes(refreshToken)));
+            var oldToken = await _db.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == tokenHash);
             oldToken.Should().NotBeNull();
             oldToken.IsRevoked.Should().BeTrue();
         }

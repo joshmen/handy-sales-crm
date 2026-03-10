@@ -1,3 +1,4 @@
+using System.Threading.RateLimiting;
 using HandySales.Mobile.Api.Configuration;
 using HandySales.Mobile.Api.Endpoints;
 using HandySales.Mobile.Api.Middleware;
@@ -20,6 +21,28 @@ builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddMobileServices(builder.Configuration);
 builder.Services.AddAuthorization();
 builder.Services.AddMemoryCache();
+
+// Global rate limiting
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 120,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.ContentType = "application/json";
+        await context.HttpContext.Response.WriteAsJsonAsync(
+            new { error = "Demasiadas solicitudes. Intenta de nuevo en un momento." },
+            cancellationToken);
+    };
+});
 
 var app = builder.Build();
 
@@ -44,6 +67,7 @@ app.UseStaticFiles(new StaticFileOptions
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 app.UseMiddleware<MobileSessionValidationMiddleware>();
 
 // MOBILE-SPECIFIC ENDPOINTS

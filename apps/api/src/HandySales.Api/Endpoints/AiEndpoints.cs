@@ -1463,7 +1463,7 @@ Reglas:
 
         // Only admin/superadmin can refresh
         var role = ctx.User.FindFirst("role")?.Value ?? ctx.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
-        if (role != "ADMIN" && role != "SUPERADMIN")
+        if (role != "ADMIN" && role != "SUPER_ADMIN")
             return Results.Forbid();
 
         try
