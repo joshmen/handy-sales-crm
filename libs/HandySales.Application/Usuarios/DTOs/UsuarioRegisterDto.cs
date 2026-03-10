@@ -9,4 +9,5 @@ public class UsuarioRegisterDto
     public string? IdentificadorFiscal { get; set; }
     public string? TipoIdentificadorFiscal { get; set; }
     public string? Contacto { get; set; }
+    public string? RecaptchaToken { get; set; }
 }

@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
 using FluentValidation;
+using HandySales.Shared.Security;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
@@ -13,8 +14,11 @@ public static class AuthEndpoints
 {
     public static void MapAuthEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapPost("/auth/register", async (UsuarioRegisterDto dto, IValidator<UsuarioRegisterDto> validator, [FromServices] AuthService auth) =>
+        app.MapPost("/auth/register", async (UsuarioRegisterDto dto, IValidator<UsuarioRegisterDto> validator, [FromServices] AuthService auth, [FromServices] RecaptchaService recaptcha) =>
         {
+            if (!await recaptcha.ValidateAsync(dto.RecaptchaToken, "register"))
+                return Results.BadRequest(new { error = "Verificación de seguridad fallida. Intenta de nuevo." });
+
             var validation = await validator.ValidateAsync(dto);
             if (!validation.IsValid)
                 return Results.BadRequest(validation.ToDictionary());
@@ -37,8 +41,11 @@ public static class AuthEndpoints
             }
         }).RequireRateLimiting("anonymous");
 
-        app.MapPost("/auth/login", async (UsuarioLoginDto dto, IValidator<UsuarioLoginDto> validator, [FromServices] AuthService auth) =>
+        app.MapPost("/auth/login", async (UsuarioLoginDto dto, IValidator<UsuarioLoginDto> validator, [FromServices] AuthService auth, [FromServices] RecaptchaService recaptcha) =>
         {
+            if (!await recaptcha.ValidateAsync(dto.recaptchaToken, "login"))
+                return Results.BadRequest(new { error = "Verificación de seguridad fallida. Intenta de nuevo." });
+
             var validation = await validator.ValidateAsync(dto);
             if (!validation.IsValid)
                 return Results.BadRequest(validation.ToDictionary());
@@ -238,6 +245,29 @@ public static class AuthEndpoints
             return Results.Ok(result);
         }).RequireRateLimiting("anonymous");
 
+        // Set password — for invited users (via invitation token)
+        app.MapPost("/auth/set-password", async (
+            [FromBody] SetPasswordDto dto,
+            [FromServices] AuthService auth) =>
+        {
+            if (string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Token) || string.IsNullOrWhiteSpace(dto.Password))
+                return Results.BadRequest(new { error = "Se requiere email, token y contraseña" });
+
+            if (dto.Password.Length < 8)
+                return Results.BadRequest(new { error = "La contraseña debe tener al menos 8 caracteres" });
+
+            var result = await auth.SetPasswordFromInvitationAsync(dto.Email.Trim().ToLowerInvariant(), dto.Token, dto.Password);
+            if (result == null)
+                return Results.BadRequest(new { error = "El enlace de invitación es inválido o ha expirado." });
+
+            var resultType = result.GetType();
+            var errorProp = resultType.GetProperty("error");
+            if (errorProp != null)
+                return Results.BadRequest(result);
+
+            return Results.Ok(result);
+        }).RequireRateLimiting("anonymous");
+
         app.MapPost("/auth/reset-password", async (
             [FromBody] ResetPasswordDto dto,
             [FromServices] AuthService auth) =>
@@ -312,3 +342,4 @@ public record ForgotPasswordDto(string Email);
 public record ResetPasswordDto(string Email, string Token, string NewPassword);
 public record VerifyEmailDto(string Email, string Code);
 public record ResendVerificationDto(string Email);
+public record SetPasswordDto(string Email, string Token, string Password);

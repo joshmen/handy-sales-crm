@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { toast } from '@/hooks/useToast';
 import { Eye, EyeOff } from 'lucide-react';
 import { AuthLayout } from '@/components/auth/AuthLayout';
+import { GoogleReCaptchaProvider, useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 import { API_CONFIG } from '@/lib/constants';
 import axios from 'axios';
 import { Suspense } from 'react';
@@ -45,6 +46,7 @@ type GoogleRegisterFormData = z.infer<typeof googleRegisterSchema>;
 function RegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { executeRecaptcha } = useGoogleReCaptcha();
 
   // Check if coming from Google OAuth redirect
   const googleEmail = searchParams.get('email');
@@ -94,6 +96,7 @@ function RegisterContent() {
   const onManualSubmit = async (data: RegisterFormData) => {
     setSubmitting(true);
     try {
+      const recaptchaToken = executeRecaptcha ? await executeRecaptcha('register') : undefined;
       const response = await axios.post(
         `${API_CONFIG.BASE_URL}/auth/register`,
         {
@@ -103,6 +106,7 @@ function RegisterContent() {
           nombreEmpresa: data.nombreEmpresa,
           identificadorFiscal: data.identificadorFiscal || undefined,
           contacto: data.contacto || undefined,
+          recaptchaToken,
         },
         { timeout: API_CONFIG.TIMEOUT, validateStatus: () => true }
       );
@@ -467,8 +471,10 @@ function RegisterContent() {
 
 export default function RegisterPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600" /></div>}>
-      <RegisterContent />
-    </Suspense>
+    <GoogleReCaptchaProvider reCaptchaKey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY ?? ''}>
+      <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600" /></div>}>
+        <RegisterContent />
+      </Suspense>
+    </GoogleReCaptchaProvider>
   );
 }

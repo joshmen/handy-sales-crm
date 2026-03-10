@@ -304,6 +304,9 @@ public static class ServiceRegistrationExtensions
         // Pwned Password Check (HIBP k-anonymity)
         services.AddHttpClient<PwnedPasswordService>();
 
+        // reCAPTCHA v3 validation
+        services.AddSingleton<RecaptchaService>();
+
         // Email Service (SendGrid)
         services.AddSingleton<IEmailService, SendGridEmailService>();
 

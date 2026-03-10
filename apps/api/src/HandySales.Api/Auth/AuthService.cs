@@ -925,4 +925,77 @@ public class AuthService
 
         return new { message = "Contraseña restablecida exitosamente. Ya puede iniciar sesión." };
     }
+
+    /// <summary>
+    /// Generates an invitation token for a newly created user and sends an invitation email.
+    /// Called from UsuarioService after user creation.
+    /// </summary>
+    public async Task SendInvitationEmailAsync(int userId, string baseUrl)
+    {
+        var usuario = await _db.Usuarios.IgnoreQueryFilters()
+            .Include(u => u.Tenant)
+            .FirstOrDefaultAsync(u => u.Id == userId);
+
+        if (usuario == null) return;
+
+        // Generate invitation token (reuses PasswordResetToken fields)
+        var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+        usuario.PasswordResetToken = BCrypt.Net.BCrypt.HashPassword(token);
+        usuario.PasswordResetExpiry = DateTime.UtcNow.AddHours(24);
+        await _db.SaveChangesAsync();
+
+        var setPasswordUrl = $"{baseUrl}/set-password?token={token}&email={Uri.EscapeDataString(usuario.Email)}";
+        var tenantName = usuario.Tenant?.NombreEmpresa ?? "Handy Suites";
+
+        var html = EmailTemplates.TeamInvitation(usuario.Nombre, tenantName, setPasswordUrl);
+        try
+        {
+            await _emailService.SendAsync(usuario.Email, $"Te han invitado a {tenantName} — Handy Suites", html);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send invitation email to {Email}", usuario.Email);
+        }
+
+        await LogActivityAsync(usuario.TenantId, usuario.Id, "user_invited", "auth",
+            $"Invitación enviada a {usuario.Email} para {tenantName}", "success");
+    }
+
+    /// <summary>
+    /// Sets password for an invited user using their invitation token.
+    /// </summary>
+    public async Task<object?> SetPasswordFromInvitationAsync(string email, string token, string password)
+    {
+        var usuario = await _db.Usuarios.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Email == email);
+
+        if (usuario == null)
+            return null;
+
+        // Validate token and expiry (same fields as password reset)
+        if (string.IsNullOrEmpty(usuario.PasswordResetToken) ||
+            usuario.PasswordResetExpiry == null ||
+            usuario.PasswordResetExpiry < DateTime.UtcNow)
+            return null;
+
+        if (!BCrypt.Net.BCrypt.Verify(token, usuario.PasswordResetToken))
+            return null;
+
+        // Check password against known breaches
+        if (await _pwnedPasswords.IsCompromisedAsync(password))
+            return new { error = "COMPROMISED_PASSWORD", message = "Esta contraseña fue encontrada en filtraciones de datos. Por favor elige una diferente." };
+
+        // Set password, activate user, mark email verified, clear token
+        usuario.PasswordHash = BCrypt.Net.BCrypt.HashPassword(password);
+        usuario.PasswordResetToken = null;
+        usuario.PasswordResetExpiry = null;
+        usuario.Activo = true;
+        usuario.EmailVerificado = true;
+        await _db.SaveChangesAsync();
+
+        await LogActivityAsync(usuario.TenantId, usuario.Id, "invitation_accepted", "auth",
+            $"Usuario {email} aceptó invitación y estableció contraseña", "success");
+
+        return new { message = "Contraseña establecida exitosamente. Ya puedes iniciar sesión." };
+    }
 }

@@ -73,6 +73,16 @@ public static class EmailTemplates
       <a href=""https://app.handysales.com/dashboard"" style=""display:inline-block;padding:12px 32px;background:#16A34A;color:#fff;text-decoration:none;border-radius:6px;font-weight:600"">Ir al Dashboard</a>
     </div>");
 
+    public static string TeamInvitation(string userName, string companyName, string setPasswordUrl)
+        => Wrap($"Te han invitado a {companyName}", $@"
+    <p style=""color:#374151;line-height:1.6"">Hola <strong>{userName}</strong>,</p>
+    <p style=""color:#374151;line-height:1.6"">Has sido invitado a unirte al equipo de <strong>{companyName}</strong> en HandySales.</p>
+    <p style=""color:#374151;line-height:1.6"">Para comenzar, haz clic en el botón para crear tu contraseña. Este enlace expira en <strong>24 horas</strong>.</p>
+    <div style=""margin:24px 0;text-align:center"">
+      <a href=""{setPasswordUrl}"" style=""display:inline-block;padding:12px 32px;background:#16A34A;color:#fff;text-decoration:none;border-radius:6px;font-weight:600"">Crear mi contraseña</a>
+    </div>
+    <p style=""color:#9ca3af;font-size:13px;line-height:1.6"">Si no esperabas esta invitación, puedes ignorar este correo.</p>");
+
     public static string PasswordReset(string userName, string resetUrl)
         => Wrap("Restablecer Contraseña", $@"
     <p style=""color:#374151;line-height:1.6"">Hola <strong>{userName}</strong>,</p>

@@ -136,7 +136,9 @@ public static class UsuarioEndpoints
         UsuarioService service,
         [FromServices] ISubscriptionEnforcementService enforcement,
         [FromServices] ICurrentTenant currentTenant,
-        [FromServices] IValidator<CrearUsuarioDto> validator)
+        [FromServices] IValidator<CrearUsuarioDto> validator,
+        [FromServices] AuthService authService,
+        [FromServices] IConfiguration config)
     {
         try
         {
@@ -149,6 +151,12 @@ public static class UsuarioEndpoints
                 return Results.Json(new { error = check.Message, current = check.Current, limit = check.Limit }, statusCode: 402);
 
             var usuarioId = await service.CrearUsuarioAsync(dto);
+
+            // Send invitation email so the new user can set their password
+            var baseUrl = config["App:FrontendUrl"] ?? "http://localhost:1083";
+            try { await authService.SendInvitationEmailAsync(usuarioId, baseUrl); }
+            catch { /* logged inside SendInvitationEmailAsync */ }
+
             return Results.Created($"/api/usuarios/{usuarioId}", new { id = usuarioId });
         }
         catch (UnauthorizedAccessException)

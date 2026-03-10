@@ -11,6 +11,7 @@ import { toast } from '@/hooks/useToast';
 import { Eye, EyeOff, Monitor, Shield, AlertTriangle } from 'lucide-react';
 import { BrandedLoadingScreen } from '@/components/ui/BrandedLoadingScreen';
 import { AuthLayout } from '@/components/auth/AuthLayout';
+import { GoogleReCaptchaProvider, useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 import axios from 'axios';
 import { API_CONFIG } from '@/lib/constants';
 
@@ -52,6 +53,7 @@ function sanitizeErrorMessage(msg: string | undefined, fallback: string): string
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { executeRecaptcha } = useGoogleReCaptcha();
 
   const [showPassword, setShowPassword] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
@@ -146,10 +148,10 @@ function LoginContent() {
   }, [loginStep]);
 
   // Direct API call to backend (bypasses NextAuth for initial check)
-  const callLoginApi = async (email: string, password: string) => {
+  const callLoginApi = async (email: string, password: string, recaptchaToken?: string) => {
     const response = await axios.post(
       `${API_CONFIG.BASE_URL}/auth/login`,
-      { email, password },
+      { email, password, recaptchaToken },
       { timeout: API_CONFIG.TIMEOUT, validateStatus: () => true }
     );
     return { status: response.status, data: response.data };
@@ -182,7 +184,8 @@ function LoginContent() {
   const onSubmit = async (data: LoginFormData) => {
     setSigningIn(true);
     try {
-      const { status, data: responseData } = await callLoginApi(data.email, data.password);
+      const recaptchaToken = executeRecaptcha ? await executeRecaptcha('login') : undefined;
+      const { status, data: responseData } = await callLoginApi(data.email, data.password, recaptchaToken);
 
       // Email verification required
       if (status === 200 && responseData.requiresVerification) {
@@ -672,8 +675,10 @@ function LoginContent() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600" /></div>}>
-      <LoginContent />
-    </Suspense>
+    <GoogleReCaptchaProvider reCaptchaKey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY ?? ''}>
+      <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600" /></div>}>
+        <LoginContent />
+      </Suspense>
+    </GoogleReCaptchaProvider>
   );
 }

@@ -72,6 +72,7 @@
     "react": "19.1.0",
     "react-big-calendar": "^1.19.4",
     "react-dom": "19.1.0",
+    "react-google-recaptcha-v3": "^1.11.0",
     "react-hook-form": "^7.62.0",
     "recharts": "^3.7.0",
     "sonner": "^2.0.7",
