@@ -49,6 +49,7 @@ export default withAuth(
       pathname === '/tenant-suspended' ||
       pathname === '/forgot-password' ||
       pathname === '/reset-password' ||
+      pathname === '/set-password' ||
       pathname === '/register' ||
       pathname === '/verify-email' ||
       pathname === '/privacidad' ||

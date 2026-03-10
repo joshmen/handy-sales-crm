@@ -204,7 +204,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
   };
 
   const formatTime = (date: Date) =>
-    formatDate(date, { hour: '2-digit', minute: '2-digit' });
+    formatDate(date, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
   if (!mounted || !isClient) {
     return (

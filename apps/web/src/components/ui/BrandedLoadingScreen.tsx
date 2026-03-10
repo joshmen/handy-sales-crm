@@ -29,7 +29,7 @@ export function BrandedLoadingScreen({ message = 'Cargando...' }: BrandedLoading
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#16A34A]">
       <div className="flex flex-col items-center gap-6">
         <div className="flex items-center gap-3">
-          <img src="/logo-icon.svg" alt="Handy Suites" className="w-12 h-12" />
+          <img src="/logo-icon.svg" alt="Handy Suites" className="w-20 h-20" />
           <span className="text-white text-4xl font-bold">
             Handy Suites<sup className="text-lg font-normal ml-0.5">®</sup>
           </span>

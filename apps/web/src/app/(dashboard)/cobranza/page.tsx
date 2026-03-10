@@ -962,26 +962,47 @@ export default function CobranzaPage() {
         icon={<FileText className="w-5 h-5 text-violet-500" />}
         width="lg"
         footer={
-          <div className="flex items-center justify-between">
-            <div className="text-xs text-gray-400">
-              {estadoCuenta ? `${estadoCuenta.pedidos.length} pedido${estadoCuenta.pedidos.length !== 1 ? 's' : ''}` : ''}
+          estadoCuenta ? (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div>
+                  <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Pendiente</p>
+                  <p className={`text-sm font-bold tabular-nums ${estadoCuenta.saldoPendiente > 0 ? 'text-amber-500' : 'text-emerald-500'}`}>
+                    {formatCurrency(estadoCuenta.saldoPendiente)}
+                  </p>
+                </div>
+                <div className="w-px h-8 bg-border" />
+                <div>
+                  <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Cobrado</p>
+                  <p className="text-sm font-bold tabular-nums text-emerald-500">{formatCurrency(estadoCuenta.totalCobrado)}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => drawerEstadoCuentaRef.current?.requestClose()}
+                className="px-4 py-2 text-sm font-medium text-muted-foreground bg-accent border border-border rounded-lg hover:bg-accent/80 transition-colors"
+              >
+                Cerrar
+              </button>
             </div>
-            <button
-              onClick={() => drawerEstadoCuentaRef.current?.requestClose()}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-            >
-              Cerrar
-            </button>
-          </div>
+          ) : (
+            <div className="flex justify-end">
+              <button
+                onClick={() => drawerEstadoCuentaRef.current?.requestClose()}
+                className="px-4 py-2 text-sm font-medium text-muted-foreground bg-accent border border-border rounded-lg hover:bg-accent/80 transition-colors"
+              >
+                Cerrar
+              </button>
+            </div>
+          )
         }
       >
         <div className="p-0">
           {estadoCuentaLoading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-3">
-              <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-950 flex items-center justify-center">
                 <Loader2 className="h-5 w-5 animate-spin text-green-600" />
               </div>
-              <p className="text-sm text-gray-400">Cargando estado de cuenta...</p>
+              <p className="text-sm text-muted-foreground">Cargando estado de cuenta...</p>
             </div>
           ) : estadoCuenta ? (
             <>
@@ -1036,13 +1057,13 @@ export default function CobranzaPage() {
 
               {/* ── Period toggle ── */}
               <div className="mx-6 mt-4 flex items-center justify-between">
-                <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
+                <div className="flex items-center gap-1 bg-accent rounded-lg p-0.5">
                   <button
                     onClick={!estadoCuentaHistorico ? undefined : toggleEstadoCuentaPeriodo}
                     className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
                       !estadoCuentaHistorico
-                        ? 'bg-white text-gray-900 shadow-sm'
-                        : 'text-gray-500 hover:text-gray-700'
+                        ? 'bg-card text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
                     }`}
                   >
                     Último año
@@ -1051,14 +1072,14 @@ export default function CobranzaPage() {
                     onClick={estadoCuentaHistorico ? undefined : toggleEstadoCuentaPeriodo}
                     className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
                       estadoCuentaHistorico
-                        ? 'bg-white text-gray-900 shadow-sm'
-                        : 'text-gray-500 hover:text-gray-700'
+                        ? 'bg-card text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
                     }`}
                   >
                     Todo el historial
                   </button>
                 </div>
-                <span className="text-[11px] text-gray-400">
+                <span className="text-[11px] text-muted-foreground">
                   {estadoCuentaHistorico ? 'Historial completo' : 'Últimos 12 meses'}
                 </span>
               </div>
