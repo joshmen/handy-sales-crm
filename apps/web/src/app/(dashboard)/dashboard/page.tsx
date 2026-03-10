@@ -17,6 +17,9 @@ import {
   Truck,
   MapPin,
   Loader2,
+  Zap,
+  ArrowRight,
+  X,
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -796,15 +799,7 @@ function WelcomeBanner({ userName }: { userName?: string | null }) {
       setDismissed(false);
       return;
     }
-    // Auto-hide after 7 days
-    const dismissDate = new Date(dismissedAt).getTime();
-    const sevenDays = 7 * 24 * 60 * 60 * 1000;
-    if (Date.now() - dismissDate < sevenDays) {
-      setDismissed(true);
-    } else {
-      // After 7 days since dismiss, just keep it hidden
-      setDismissed(true);
-    }
+    setDismissed(true);
   }, []);
 
   const handleDismiss = () => {
@@ -817,32 +812,38 @@ function WelcomeBanner({ userName }: { userName?: string | null }) {
   const firstName = userName?.split(' ')[0] || '';
 
   return (
-    <div className="relative rounded-xl border border-green-200 dark:border-green-900/50 bg-green-50 dark:bg-green-950/20 p-4 sm:p-5 page-animate">
+    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-green-600 via-green-600 to-emerald-500 dark:from-green-700 dark:via-green-800 dark:to-emerald-700 p-5 sm:p-6 page-animate">
+      {/* Decorative background shapes */}
+      <div className="absolute top-0 right-0 w-48 h-48 bg-white/[0.07] rounded-full -translate-y-1/2 translate-x-1/4" />
+      <div className="absolute bottom-0 left-1/2 w-32 h-32 bg-white/[0.05] rounded-full translate-y-1/2" />
+
       <button
         onClick={handleDismiss}
-        className="absolute top-3 right-3 text-green-400 hover:text-green-600 dark:text-green-600 dark:hover:text-green-400 transition-colors"
+        className="absolute top-3 right-3 p-1 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors"
         aria-label="Cerrar banner"
       >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-        </svg>
+        <X className="w-4 h-4" />
       </button>
-      <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center flex-shrink-0">
-          <span className="text-lg">👋</span>
+
+      <div className="relative flex flex-col sm:flex-row sm:items-center gap-4">
+        <div className="w-11 h-11 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center flex-shrink-0 ring-1 ring-white/20">
+          <Zap className="w-5 h-5 text-white" />
         </div>
-        <div>
-          <h3 className="text-sm font-semibold text-green-800 dark:text-green-300">
-            ¡Bienvenido{firstName ? `, ${firstName}` : ''}!
+        <div className="flex-1 min-w-0">
+          <h3 className="text-base font-bold text-white tracking-tight">
+            {firstName ? `${firstName}, tu espacio está listo` : 'Tu espacio está listo'}
           </h3>
-          <p className="text-sm text-green-700 dark:text-green-400/80 mt-0.5">
-            Tu espacio de trabajo está listo. Visita la{' '}
-            <a href="/getting-started" className="underline font-medium hover:text-green-900 dark:hover:text-green-300">
-              guía de configuración
-            </a>{' '}
-            para completar los pasos restantes.
+          <p className="text-sm text-white/75 mt-0.5">
+            Completa la configuración inicial para sacar el máximo provecho de Handy Suites.
           </p>
         </div>
+        <a
+          href="/getting-started"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white text-green-700 text-sm font-semibold hover:bg-white/90 transition-colors shadow-sm flex-shrink-0 w-fit"
+        >
+          Comenzar
+          <ArrowRight className="w-3.5 h-3.5" />
+        </a>
       </div>
     </div>
   );
