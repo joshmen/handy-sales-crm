@@ -59,7 +59,8 @@ namespace HandySales.Api.Endpoints
                 }
                 catch (Exception ex)
                 {
-                    return Results.Problem(new { 
+                    // Safe: dev-only endpoint (guarded by IsDevelopment() check above)
+                    return Results.Problem(new {
                         success = false,
                         message = "Cloudinary connection failed",
                         error = ex.Message,
@@ -162,6 +163,7 @@ namespace HandySales.Api.Endpoints
                 }
                 catch (Exception ex)
                 {
+                    // Safe: dev-only endpoint (guarded by IsDevelopment() check above)
                     return Results.Ok(new
                     {
                         success = false,

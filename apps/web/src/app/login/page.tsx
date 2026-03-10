@@ -40,6 +40,15 @@ interface SessionConflictResponse {
 
 type LoginStep = 'credentials' | 'totp' | 'session-conflict';
 
+/** Sanitize backend error messages — never show technical details to the user */
+function sanitizeErrorMessage(msg: string | undefined, fallback: string): string {
+  if (!msg) return fallback;
+  // Block messages that look technical (exception names, stack traces, etc.)
+  const technicalPatterns = /Exception|Stack[Tt]race|at\s+\w+\.\w+|NullReference|InvalidOperation|Npgsql|System\.|Microsoft\./;
+  if (technicalPatterns.test(msg)) return fallback;
+  return msg;
+}
+
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -214,7 +223,7 @@ function LoginContent() {
       if (responseData.code === 'TENANT_DEACTIVATED') {
         toast({
           title: 'Cuenta desactivada',
-          description: responseData.message || 'Su empresa ha sido desactivada. Contacte al administrador del sistema.',
+          description: sanitizeErrorMessage(responseData.message, 'Su empresa ha sido desactivada. Contacte al administrador del sistema.'),
           variant: 'destructive',
         });
         setSigningIn(false);
@@ -233,7 +242,7 @@ function LoginContent() {
       // Authentication failure
       toast({
         title: 'Error de autenticación',
-        description: responseData.message || 'Email o contraseña incorrectos.',
+        description: sanitizeErrorMessage(responseData.message, 'Email o contraseña incorrectos.'),
         variant: 'destructive',
       });
       setValue('password', '');
@@ -289,7 +298,7 @@ function LoginContent() {
       } else if (response.status === 200 && response.data.user && response.data.token) {
         await establishSession(response.data as LoginSuccessResponse);
       } else {
-        toast.error(response.data.error || 'Código inválido. Intenta nuevamente.');
+        toast.error(sanitizeErrorMessage(response.data.error, 'Código inválido. Intenta nuevamente.'));
         setTotpCode('');
         totpInputRef.current?.focus();
       }
@@ -323,7 +332,7 @@ function LoginContent() {
       } else if (response.data.error === '2FA_REQUIRED') {
         toast.error('Este usuario tiene 2FA activado. Usa tu código de autenticación.');
       } else {
-        toast.error(response.data.message || 'Error al forzar inicio de sesión');
+        toast.error(sanitizeErrorMessage(response.data.message, 'Error al forzar inicio de sesión'));
       }
     } catch {
       toast.error('Error de conexión');

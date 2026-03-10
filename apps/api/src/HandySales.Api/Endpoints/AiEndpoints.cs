@@ -126,11 +126,13 @@ public static class AiEndpoints
             var response = await gateway.ProcessRequestAsync(request, tenantId, userId);
             return Results.Ok(response);
         }
-        catch (InvalidOperationException ex)
+        catch (InvalidOperationException ex) when (ex.Message.Contains("créditos", StringComparison.OrdinalIgnoreCase))
         {
-            if (ex.Message.Contains("créditos") || ex.Message.Contains("Créditos"))
-                return Results.Json(new { error = ex.Message }, statusCode: 402);
-            return Results.BadRequest(new { error = ex.Message });
+            return Results.Json(new { error = ex.Message }, statusCode: 402);
+        }
+        catch (Exception)
+        {
+            return Results.BadRequest(new { error = "Error al procesar la consulta de IA." });
         }
     }
 
@@ -200,7 +202,7 @@ public static class AiEndpoints
         {
             return Results.BadRequest(new AiActionExecuteResult(
                 Success: false,
-                Message: $"Error al ejecutar la acción: {ex.Message}",
+                Message: "Error al ejecutar la acción automática.",
                 CreditosUsados: 0,
                 CreditosRestantes: 0
             ));
@@ -591,9 +593,13 @@ Reglas:
                 creditosRestantes = response.CreditosRestantes
             });
         }
-        catch (InvalidOperationException ex) when (ex.Message.Contains("créditos") || ex.Message.Contains("Créditos"))
+        catch (InvalidOperationException ex) when (ex.Message.Contains("créditos", StringComparison.OrdinalIgnoreCase))
         {
             return Results.Json(new { error = ex.Message }, statusCode: 402);
+        }
+        catch (Exception)
+        {
+            return Results.BadRequest(new { error = "Error al procesar la consulta de IA." });
         }
     }
 
@@ -1473,7 +1479,7 @@ Reglas:
         }
         catch (Exception ex)
         {
-            return Results.BadRequest(new { error = $"Error al refrescar vistas: {ex.Message}" });
+            return Results.BadRequest(new { error = "Error al refrescar las vistas materializadas." });
         }
     }
 

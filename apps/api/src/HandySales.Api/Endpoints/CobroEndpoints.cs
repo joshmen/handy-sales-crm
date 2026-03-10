@@ -64,7 +64,7 @@ public static class CobroEndpoints
             }
             catch (InvalidOperationException ex)
             {
-                return Results.BadRequest(new { error = ex.Message });
+                return Results.BadRequest(new { error = "Error al procesar el cobro." });
             }
         })
         .WithSummary("Registrar nuevo cobro");

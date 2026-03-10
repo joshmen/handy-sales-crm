@@ -264,6 +264,14 @@ export const handleApiResponse = <T>(response: AxiosResponse<ApiResponse<T>>): T
   }
 };
 
+/** Sanitize backend error messages — never show technical details to the user */
+const sanitizeMessage = (msg: string | undefined, fallback: string): string => {
+  if (!msg || typeof msg !== 'string') return fallback;
+  const technicalPatterns = /Exception|Stack[Tt]race|at\s+\w+\.\w+|NullReference|Npgsql|System\.|Microsoft\.|BCrypt|Salt/i;
+  if (technicalPatterns.test(msg)) return fallback;
+  return msg;
+};
+
 // Helper function to handle API errors
 export const handleApiError = (error: unknown): ApiError => {
   if (axios.isAxiosError(error)) {
@@ -286,16 +294,17 @@ export const handleApiError = (error: unknown): ApiError => {
       }
     }
 
+    const rawMessage = responseData?.message || responseData?.error;
     return {
-      message: responseData?.message || 'Error de validación',
+      message: sanitizeMessage(rawMessage, 'Ocurrió un error. Intenta nuevamente.'),
       status: error.response?.status || 0,
       errors: responseData?.errors || [],
-      validationErrors, // Nuevo campo para errores de FluentValidation
+      validationErrors,
     };
   }
 
   return {
-    message: error instanceof Error ? error.message : 'An unexpected error occurred',
+    message: 'Ocurrió un error inesperado. Intenta nuevamente.',
     status: 0,
   };
 };

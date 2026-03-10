@@ -90,7 +90,7 @@ public static class MigrationEndpoints
                             tenantId = tenant.Id,
                             tenantName = tenant.NombreEmpresa,
                             status = "error",
-                            message = ex.Message
+                            message = "Error durante la migración de datos."
                         });
                     }
                 }

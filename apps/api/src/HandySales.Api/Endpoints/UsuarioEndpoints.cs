@@ -155,9 +155,9 @@ public static class UsuarioEndpoints
         {
             return Results.Forbid();
         }
-        catch (InvalidOperationException ex)
+        catch (InvalidOperationException)
         {
-            return Results.BadRequest(new { error = ex.Message });
+            return Results.BadRequest(new { error = "No se pudo completar la operación." });
         }
     }
 
@@ -235,11 +235,11 @@ public static class UsuarioEndpoints
         {
             return Results.Forbid();
         }
-        catch (InvalidOperationException ex)
+        catch (InvalidOperationException)
         {
-            return Results.BadRequest(ex.Message);
+            return Results.BadRequest(new { error = "No se pudo completar la operación." });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return Results.Problem("Error al desactivar usuario");
         }

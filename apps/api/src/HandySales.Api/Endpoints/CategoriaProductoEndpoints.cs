@@ -32,9 +32,9 @@ public static class CategoriaProductoEndpoints
                 var id = await servicio.CrearCategoriaAsync(dto);
                 return Results.Created($"/categorias-productos/{id}", new { id });
             }
-            catch (InvalidOperationException ex)
+            catch (InvalidOperationException)
             {
-                return Results.Conflict(new { message = ex.Message });
+                return Results.Conflict(new { message = "Ya existe un registro con ese nombre." });
             }
         }).RequireAuthorization();
 
@@ -53,9 +53,9 @@ public static class CategoriaProductoEndpoints
                 var actualizado = await servicio.ActualizarCategoriaAsync(id, dto);
                 return actualizado ? Results.NoContent() : Results.NotFound();
             }
-            catch (InvalidOperationException ex)
+            catch (InvalidOperationException)
             {
-                return Results.Conflict(new { message = ex.Message });
+                return Results.Conflict(new { message = "Ya existe un registro con ese nombre." });
             }
         }).RequireAuthorization();
 

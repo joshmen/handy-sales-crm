@@ -112,7 +112,7 @@ public static class SubscriptionEndpoints
         }
         catch (Exception ex)
         {
-            return Results.BadRequest(new { message = ex.Message });
+            return Results.BadRequest(new { message = "No se pudo completar la operación de suscripción." });
         }
     }
 
@@ -141,7 +141,7 @@ public static class SubscriptionEndpoints
         }
         catch (Exception ex)
         {
-            return Results.BadRequest(new { message = ex.Message });
+            return Results.BadRequest(new { message = "No se pudo completar la operación de suscripción." });
         }
     }
 
@@ -159,7 +159,7 @@ public static class SubscriptionEndpoints
         }
         catch (Exception ex)
         {
-            return Results.BadRequest(new { message = ex.Message });
+            return Results.BadRequest(new { message = "No se pudo completar la operación de suscripción." });
         }
     }
 }

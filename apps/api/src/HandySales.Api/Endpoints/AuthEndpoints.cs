@@ -28,7 +28,12 @@ public static class AuthEndpoints
             }
             catch (InvalidOperationException ex)
             {
+                // Domain validation messages (email exists, etc.) — safe to show
                 return Results.BadRequest(new { error = ex.Message });
+            }
+            catch (Exception)
+            {
+                return Results.BadRequest(new { error = "Error al procesar el registro." });
             }
         }).RequireRateLimiting("anonymous");
 
@@ -177,7 +182,12 @@ public static class AuthEndpoints
             }
             catch (InvalidOperationException ex)
             {
+                // Domain validation messages (email exists, etc.) — safe to show
                 return Results.BadRequest(new { error = ex.Message });
+            }
+            catch (Exception)
+            {
+                return Results.BadRequest(new { error = "Error al procesar el registro." });
             }
         });
 
