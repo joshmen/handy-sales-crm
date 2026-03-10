@@ -5,11 +5,11 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import {
   Building2,
+  ChevronLeft,
+  ChevronRight,
   Plus,
   Pencil,
   Users,
-  ChevronRight,
-  X,
   Mail,
   Phone,
   MapPin,
@@ -26,6 +26,8 @@ import { SearchBar } from '@/components/common/SearchBar';
 import { InactiveToggle } from '@/components/ui/InactiveToggle';
 import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
 import { ActiveToggle } from '@/components/ui/ActiveToggle';
+import { Drawer } from '@/components/ui/Drawer';
+import { PageHeader } from '@/components/layout/PageHeader';
 import {
   Tenant,
   TenantDetail,
@@ -73,6 +75,10 @@ export default function TenantsPage() {
 
   const [togglingId, setTogglingId] = useState<number | null>(null);
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 20;
+
   // Forms
   const {
     register,
@@ -105,7 +111,14 @@ export default function TenantsPage() {
       filtered = filtered.filter((t) => t.planTipo === planFilter);
     }
     setFilteredTenants(filtered);
+    setCurrentPage(1);
   }, [tenants, searchTerm, showInactive, planFilter]);
+
+  // Pagination computed values
+  const totalPages = Math.max(1, Math.ceil(filteredTenants.length / pageSize));
+  const startItem = filteredTenants.length > 0 ? (currentPage - 1) * pageSize + 1 : 0;
+  const endItem = Math.min(currentPage * pageSize, filteredTenants.length);
+  const paginatedTenants = filteredTenants.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const loadTenants = async () => {
     try {
@@ -348,334 +361,64 @@ export default function TenantsPage() {
 
   // --- Drawer rendering ---
 
-  const renderFormDrawer = () => (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      <div className="fixed inset-0 bg-black/50" onClick={handleCloseDrawer} />
-      <div className="relative w-full max-w-lg bg-white shadow-xl flex flex-col h-full animate-slide-in-right">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Building2 className="h-5 w-5 text-blue-600" />
-            {drawerMode === 'edit' ? 'Editar Empresa' : 'Nueva Empresa'}
-          </h2>
-          <button
-            onClick={handleCloseDrawer}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        {/* Form */}
-        <form
-          onSubmit={handleSubmit(onSubmitTenant)}
-          className="flex-1 flex flex-col overflow-hidden"
-        >
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {/* Nombre Empresa */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nombre de la Empresa <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                {...register('nombreEmpresa', {
-                  required: 'El nombre es requerido',
-                  minLength: { value: 2, message: 'Mínimo 2 caracteres' },
-                })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Ej: Mi Empresa SA de CV"
-              />
-              {errors.nombreEmpresa && (
-                <p className="text-sm text-red-600 mt-1">
-                  {errors.nombreEmpresa.message}
-                </p>
-              )}
-            </div>
-
-            {/* DatosEmpresa fields - Only on create */}
-            {drawerMode === 'create' && (
-              <>
-                {/* Identificador Fiscal */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    ID Fiscal
-                  </label>
-                  <div className="relative">
-                    <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <input
-                      type="text"
-                      {...register('identificadorFiscal', {
-                        maxLength: { value: 20, message: 'Máximo 20 caracteres' },
-                        setValueAs: (v: string) => typeof v === 'string' ? v.toUpperCase() : v,
-                      })}
-                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
-                      placeholder="Ej: XAXX010101000"
-                      maxLength={20}
-                    />
-                  </div>
-                  {errors.identificadorFiscal && (
-                    <p className="text-sm text-red-600 mt-1">{errors.identificadorFiscal.message}</p>
-                  )}
-                </div>
-
-                {/* Contacto */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Contacto
-                  </label>
-                  <input
-                    type="text"
-                    {...register('contacto')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Nombre del contacto principal"
-                  />
-                </div>
-
-                {/* Email */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <input
-                      type="email"
-                      {...register('email', {
-                        pattern: {
-                          value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                          message: 'Email inválido',
-                        },
-                      })}
-                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="contacto@empresa.com"
-                    />
-                  </div>
-                  {errors.email && (
-                    <p className="text-sm text-red-600 mt-1">{errors.email.message}</p>
-                  )}
-                </div>
-
-                {/* Teléfono */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Teléfono
-                  </label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <input
-                      type="tel"
-                      {...register('telefono')}
-                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Ej: 3331234567"
-                    />
-                  </div>
-                </div>
-
-                {/* Dirección */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Dirección
-                  </label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <textarea
-                      {...register('direccion')}
-                      rows={3}
-                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                      placeholder="Dirección completa"
-                    />
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* Plan Tipo */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Plan
-              </label>
-              <select
-                {...register('planTipo')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="free">Gratis</option>
-                <option value="basic">Básico</option>
-                <option value="pro">Pro</option>
-              </select>
-            </div>
-
-            {/* Max Usuarios */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Máximo de Usuarios <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="number"
-                  {...register('maxUsuarios', {
-                    required: 'El máximo de usuarios es requerido',
-                    min: { value: 1, message: 'Mínimo 1 usuario' },
-                    max: { value: 1000, message: 'Máximo 1000 usuarios' },
-                  })}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="10"
-                  min={1}
-                  max={1000}
-                />
-              </div>
-              {errors.maxUsuarios && (
-                <p className="text-sm text-red-600 mt-1">
-                  {errors.maxUsuarios.message}
-                </p>
-              )}
-            </div>
-
-            {/* Admin Section - Only on create */}
-            {drawerMode === 'create' && (
-              <>
-                <div className="border-t border-gray-200 pt-4 mt-4">
-                  <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-3">
-                    Administrador del Tenant
-                  </h3>
-                  <p className="text-xs text-gray-500 mb-4">
-                    Opcionalmente crea el usuario administrador de esta empresa
-                  </p>
-                </div>
-
-                {/* Admin Nombre */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Nombre del Administrador
-                  </label>
-                  <input
-                    type="text"
-                    {...register('adminNombre')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Nombre completo"
-                  />
-                </div>
-
-                {/* Admin Email */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email del Administrador
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <input
-                      type="email"
-                      {...register('adminEmail', {
-                        pattern: {
-                          value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                          message: 'Email inválido',
-                        },
-                      })}
-                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="admin@empresa.com"
-                    />
-                  </div>
-                  {errors.adminEmail && (
-                    <p className="text-sm text-red-600 mt-1">
-                      {errors.adminEmail.message}
-                    </p>
-                  )}
-                </div>
-
-                {/* Admin Password */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Contraseña Temporal
-                  </label>
-                  <input
-                    type="text"
-                    {...register('adminPassword', {
-                      minLength: { value: 6, message: 'Mínimo 6 caracteres' },
-                    })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Contraseña temporal"
-                  />
-                  {errors.adminPassword && (
-                    <p className="text-sm text-red-600 mt-1">
-                      {errors.adminPassword.message}
-                    </p>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Footer */}
-          <div className="border-t p-4 flex gap-3 justify-end">
-            <button
-              type="button"
-              onClick={handleCloseDrawer}
-              className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              disabled={submitting}
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {submitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Guardando...
-                </>
-              ) : (
-                'Guardar'
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
+  const drawerFooter = (
+    <div className="flex gap-3 justify-end">
+      <button
+        type="button"
+        onClick={handleCloseDrawer}
+        className="px-4 py-2 text-muted-foreground bg-card border border-border rounded-lg hover:bg-accent transition-colors"
+        disabled={submitting}
+      >
+        Cancelar
+      </button>
+      <button
+        type="submit"
+        form="tenant-form"
+        disabled={submitting}
+        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+      >
+        {submitting ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Guardando...
+          </>
+        ) : (
+          'Guardar'
+        )}
+      </button>
     </div>
   );
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-gray-600">
-        <span>Administración</span>
-        <ChevronRight className="h-4 w-4" />
-        <span className="text-gray-900 font-medium">Gestión de Empresas</span>
-      </div>
-
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Building2 className="h-7 w-7 text-blue-600" />
-            Gestión de Empresas
-          </h1>
-          <p className="text-sm text-gray-600 mt-1">
-            Administra las empresas registradas en el sistema
-          </p>
-        </div>
+    <PageHeader
+      breadcrumbs={[
+        { label: 'Administración' },
+        { label: 'Gestión de Empresas' },
+      ]}
+      title="Gestión de Empresas"
+      subtitle="Administra las empresas registradas en el sistema"
+      actions={
         <button
           onClick={handleOpenCreate}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
         >
           <Plus className="h-4 w-4" />
           Nueva Empresa
         </button>
-      </div>
-
+      }
+    >
+      <div className="space-y-4">
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <SearchBar
           value={searchTerm}
           onChange={(v) => { setSearchTerm(v); }}
-          placeholder="Buscar tenant..."
+          placeholder="Buscar empresa..."
         />
         <select
           value={planFilter}
           onChange={(e) => setPlanFilter(e.target.value as 'todos' | 'free' | 'basic' | 'pro')}
-          className="px-3 py-2 text-xs border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="px-3 py-2 text-xs border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
         >
           <option value="todos">Todos los planes</option>
           <option value="free">Gratis</option>
@@ -737,9 +480,9 @@ export default function TenantsPage() {
 
           {/* Empty State */}
           {!loading && filteredTenants.length === 0 ? (
-            <div className="flex items-center justify-center h-64 bg-white text-gray-400">
+            <div className="flex items-center justify-center h-64 bg-card text-muted-foreground">
               <div className="text-center">
-                <Building2 className="h-12 w-12 text-gray-300 mx-auto mb-2" />
+                <Building2 className="h-12 w-12 text-muted-foreground/50 mx-auto mb-2" />
                 <p className="text-lg font-medium">No hay empresas</p>
                 <p className="text-sm">
                   {searchTerm || planFilter !== 'todos'
@@ -749,7 +492,7 @@ export default function TenantsPage() {
                 {!searchTerm && planFilter === 'todos' && (
                   <button
                     onClick={handleOpenCreate}
-                    className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+                    className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
                   >
                     <Plus className="w-4 h-4" />
                     Nueva Empresa
@@ -759,11 +502,11 @@ export default function TenantsPage() {
             </div>
           ) : (
             <div className={`transition-opacity duration-200 ${loading ? 'opacity-50' : 'opacity-100'}`}>
-              {filteredTenants.map((tenant) => (
+              {paginatedTenants.map((tenant) => (
                 <div
                   key={tenant.id}
-                  className={`flex items-center gap-3 px-5 py-3.5 border-b border-gray-200 bg-white hover:bg-gray-50 transition-colors cursor-pointer ${
-                    !tenant.activo ? 'bg-gray-50 opacity-60' : ''
+                  className={`flex items-center gap-3 px-5 py-3.5 border-b border-border bg-card hover:bg-accent/50 transition-colors cursor-pointer ${
+                    !tenant.activo ? 'opacity-60' : ''
                   }`}
                   onClick={() => navigateToDetail(tenant.id)}
                 >
@@ -856,26 +599,75 @@ export default function TenantsPage() {
         </div>
       </div>
 
-      {/* Results count */}
-      <div className="hidden md:block text-sm text-gray-500">
-        Mostrando {filteredTenants.length} de {tenants.length} empresas
-      </div>
+      {/* Pagination */}
+      {!loading && filteredTenants.length > 0 && (
+        <div className="hidden md:flex items-center justify-between pt-4">
+          <span className="text-sm text-muted-foreground">
+            Mostrando {startItem}-{endItem} de {filteredTenants.length} empresas
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-muted-foreground border border-border rounded-md hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              <span>Anterior</span>
+            </button>
+
+            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+              let page: number;
+              if (totalPages <= 5) {
+                page = i + 1;
+              } else if (currentPage <= 3) {
+                page = i + 1;
+              } else if (currentPage >= totalPages - 2) {
+                page = totalPages - 4 + i;
+              } else {
+                page = currentPage - 2 + i;
+              }
+              return (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`min-w-[32px] px-2 py-1 text-sm rounded-md transition-colors ${
+                    page === currentPage
+                      ? 'bg-green-600 text-white'
+                      : 'text-muted-foreground hover:bg-accent'
+                  }`}
+                >
+                  {page}
+                </button>
+              );
+            })}
+
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-muted-foreground border border-border rounded-md hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <span>Siguiente</span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Mobile Cards */}
       <div className="md:hidden space-y-3">
         {/* Loading State */}
         {loading && (
           <div className="flex flex-col items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-            <span className="text-sm text-gray-500 mt-2">Cargando...</span>
+            <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+            <span className="text-sm text-muted-foreground mt-2">Cargando...</span>
           </div>
         )}
 
         {/* Empty State */}
         {!loading && filteredTenants.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
             <div className="text-center">
-              <Building2 className="h-12 w-12 text-gray-300 mx-auto mb-2" />
+              <Building2 className="h-12 w-12 text-muted-foreground/50 mx-auto mb-2" />
               <p className="text-lg font-medium">No hay empresas</p>
               <p className="text-sm mt-1">
                 {searchTerm || planFilter !== 'todos'
@@ -885,7 +677,7 @@ export default function TenantsPage() {
               {!searchTerm && planFilter === 'todos' && (
                 <button
                   onClick={handleOpenCreate}
-                  className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+                  className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
                 >
                   <Plus className="w-4 h-4" />
                   Nueva Empresa
@@ -896,10 +688,10 @@ export default function TenantsPage() {
         )}
 
         {/* Tenant Cards */}
-        {!loading && filteredTenants.map((tenant) => (
+        {!loading && paginatedTenants.map((tenant) => (
           <div
             key={tenant.id}
-            className={`border border-gray-200 rounded-lg p-3 bg-white ${
+            className={`border border-border rounded-lg p-3 bg-card ${
               !tenant.activo ? 'opacity-60' : ''
             }`}
           >
@@ -956,14 +748,14 @@ export default function TenantsPage() {
             <div className="flex justify-end gap-1">
               <button
                 onClick={() => navigateToDetail(tenant.id)}
-                className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-green-600 hover:bg-green-50 dark:hover:bg-green-950 rounded-md transition-colors"
               >
                 <Eye className="w-3.5 h-3.5" />
                 <span>Detalle</span>
               </button>
               <button
                 onClick={() => handleOpenEdit(tenant)}
-                className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+                className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-accent rounded-md transition-colors"
               >
                 <Pencil className="w-3.5 h-3.5 text-amber-400" />
                 <span>Editar</span>
@@ -972,16 +764,299 @@ export default function TenantsPage() {
           </div>
         ))}
 
-        {/* Mobile results count */}
+        {/* Mobile Pagination */}
         {!loading && filteredTenants.length > 0 && (
-          <div className="text-center text-sm text-gray-500">
-            Mostrando {filteredTenants.length} de {tenants.length} empresas
+          <div className="flex flex-col items-center gap-3 pt-2">
+            <span className="text-sm text-muted-foreground">
+              Mostrando {startItem}-{endItem} de {filteredTenants.length} empresas
+            </span>
+            {totalPages > 1 && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-muted-foreground border border-border rounded-md hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>Anterior</span>
+                </button>
+
+                {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                  let page: number;
+                  if (totalPages <= 5) {
+                    page = i + 1;
+                  } else if (currentPage <= 3) {
+                    page = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    page = totalPages - 4 + i;
+                  } else {
+                    page = currentPage - 2 + i;
+                  }
+                  return (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`min-w-[32px] px-2 py-1 text-sm rounded-md transition-colors ${
+                        page === currentPage
+                          ? 'bg-green-600 text-white'
+                          : 'text-muted-foreground hover:bg-accent'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  );
+                })}
+
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-muted-foreground border border-border rounded-md hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <span>Siguiente</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      {/* Drawers */}
-      {(drawerMode === 'create' || drawerMode === 'edit') && renderFormDrawer()}
+      {/* Drawer */}
+      <Drawer
+        isOpen={drawerMode !== 'none'}
+        onClose={handleCloseDrawer}
+        title={drawerMode === 'edit' ? 'Editar Empresa' : 'Nueva Empresa'}
+        icon={<Building2 className="h-5 w-5 text-green-600" />}
+        width="md"
+        footer={drawerFooter}
+      >
+        <form id="tenant-form" onSubmit={handleSubmit(onSubmitTenant)} className="p-6 space-y-4">
+          {/* Nombre Empresa */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              Nombre de la Empresa <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              {...register('nombreEmpresa', {
+                required: 'El nombre es requerido',
+                minLength: { value: 2, message: 'Mínimo 2 caracteres' },
+              })}
+              className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              placeholder="Ej: Mi Empresa SA de CV"
+            />
+            {errors.nombreEmpresa && (
+              <p className="text-sm text-red-600 mt-1">{errors.nombreEmpresa.message}</p>
+            )}
+          </div>
+
+          {/* DatosEmpresa fields - Only on create */}
+          {drawerMode === 'create' && (
+            <>
+              {/* Identificador Fiscal */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  ID Fiscal
+                </label>
+                <div className="relative">
+                  <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <input
+                    type="text"
+                    {...register('identificadorFiscal', {
+                      maxLength: { value: 20, message: 'Máximo 20 caracteres' },
+                      setValueAs: (v: string) => typeof v === 'string' ? v.toUpperCase() : v,
+                    })}
+                    className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-green-500 focus:border-transparent uppercase"
+                    placeholder="Ej: XAXX010101000"
+                    maxLength={20}
+                  />
+                </div>
+                {errors.identificadorFiscal && (
+                  <p className="text-sm text-red-600 mt-1">{errors.identificadorFiscal.message}</p>
+                )}
+              </div>
+
+              {/* Contacto */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  Contacto
+                </label>
+                <input
+                  type="text"
+                  {...register('contacto')}
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  placeholder="Nombre del contacto principal"
+                />
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  Email
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <input
+                    type="email"
+                    {...register('email', {
+                      pattern: {
+                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                        message: 'Email inválido',
+                      },
+                    })}
+                    className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="contacto@empresa.com"
+                  />
+                </div>
+                {errors.email && (
+                  <p className="text-sm text-red-600 mt-1">{errors.email.message}</p>
+                )}
+              </div>
+
+              {/* Teléfono */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  Teléfono
+                </label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <input
+                    type="tel"
+                    {...register('telefono')}
+                    className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="Ej: 3331234567"
+                  />
+                </div>
+              </div>
+
+              {/* Dirección */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  Dirección
+                </label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <textarea
+                    {...register('direccion')}
+                    rows={3}
+                    className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+                    placeholder="Dirección completa"
+                  />
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Plan Tipo */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              Plan
+            </label>
+            <select
+              {...register('planTipo')}
+              className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            >
+              <option value="free">Gratis</option>
+              <option value="basic">Básico</option>
+              <option value="pro">Pro</option>
+            </select>
+          </div>
+
+          {/* Max Usuarios */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              Máximo de Usuarios <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <input
+                type="number"
+                {...register('maxUsuarios', {
+                  required: 'El máximo de usuarios es requerido',
+                  min: { value: 1, message: 'Mínimo 1 usuario' },
+                  max: { value: 1000, message: 'Máximo 1000 usuarios' },
+                })}
+                className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                placeholder="10"
+                min={1}
+                max={1000}
+              />
+            </div>
+            {errors.maxUsuarios && (
+              <p className="text-sm text-red-600 mt-1">{errors.maxUsuarios.message}</p>
+            )}
+          </div>
+
+          {/* Admin Section - Only on create */}
+          {drawerMode === 'create' && (
+            <>
+              <div className="border-t border-border pt-4 mt-4">
+                <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide mb-3">
+                  Administrador del Tenant
+                </h3>
+                <p className="text-xs text-muted-foreground mb-4">
+                  Opcionalmente crea el usuario administrador de esta empresa
+                </p>
+              </div>
+
+              {/* Admin Nombre */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  Nombre del Administrador
+                </label>
+                <input
+                  type="text"
+                  {...register('adminNombre')}
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  placeholder="Nombre completo"
+                />
+              </div>
+
+              {/* Admin Email */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  Email del Administrador
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <input
+                    type="email"
+                    {...register('adminEmail', {
+                      pattern: {
+                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                        message: 'Email inválido',
+                      },
+                    })}
+                    className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="admin@empresa.com"
+                  />
+                </div>
+                {errors.adminEmail && (
+                  <p className="text-sm text-red-600 mt-1">{errors.adminEmail.message}</p>
+                )}
+              </div>
+
+              {/* Admin Password */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  Contraseña Temporal
+                </label>
+                <input
+                  type="text"
+                  {...register('adminPassword', {
+                    minLength: { value: 6, message: 'Mínimo 6 caracteres' },
+                  })}
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  placeholder="Contraseña temporal"
+                />
+                {errors.adminPassword && (
+                  <p className="text-sm text-red-600 mt-1">{errors.adminPassword.message}</p>
+                )}
+              </div>
+            </>
+          )}
+        </form>
+      </Drawer>
 
       {/* Batch Confirm Modal */}
       <BatchConfirmModal
@@ -996,5 +1071,6 @@ export default function TenantsPage() {
         consequenceActivate="Los usuarios de las empresas activadas podrán acceder nuevamente."
       />
     </div>
+    </PageHeader>
   );
 }

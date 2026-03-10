@@ -237,7 +237,7 @@ export default function GlobalSettingsPage() {
                       <button
                         onClick={handleLogoUpload}
                         disabled={isUpdating}
-                        className="absolute bottom-0 right-0 p-1.5 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors disabled:opacity-50 shadow-lg"
+                        className="absolute bottom-0 right-0 p-1.5 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors disabled:opacity-50 shadow-lg"
                         title={settings.platformLogo ? 'Cambiar logo' : 'Subir logo'}
                       >
                         {settings.platformLogo ? (

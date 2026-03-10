@@ -543,7 +543,7 @@ export default function ProfilePage() {
                 <button
                   onClick={handleAvatarUpload}
                   disabled={isUpdating}
-                  className="absolute bottom-0 right-0 p-1.5 bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition-colors disabled:opacity-50"
+                  className="absolute bottom-0 right-0 p-1.5 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors disabled:opacity-50 shadow-lg"
                   title={profile.avatarUrl ? 'Cambiar foto' : 'Subir foto'}
                 >
                   {profile.avatarUrl ? (
@@ -564,6 +564,7 @@ export default function ProfilePage() {
                     <Trash2 className="h-3 w-3" />
                   </button>
                 )}
+              <p className="text-xs text-muted-foreground mt-1">PNG, JPG hasta 2MB.</p>
               </div>
 
               <div className="flex-1 text-center md:text-left">

@@ -17,6 +17,7 @@ import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { exportToCsv } from '@/services/api/importExport';
 import { CsvImportModal } from '@/components/shared/CsvImportModal';
 import {
+  Camera,
   Download,
   Plus,
   Pencil,
@@ -55,6 +56,7 @@ const ALERTA_LABELS: Record<AlertaInventario, string> = {
 export default function InventoryPage() {
   const router = useRouter();
   const drawerRef = useRef<DrawerHandle>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -640,41 +642,50 @@ export default function InventoryPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Imagen del producto
                 </label>
-                <div className="flex items-start gap-4">
-                  {/* Preview */}
-                  <div className="w-20 h-20 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden bg-gray-50 flex-shrink-0">
-                    {imagePreview ? (
-                      <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
-                    ) : currentImageUrl ? (
-                      <img src={currentImageUrl} alt="Producto" className="w-full h-full object-cover" />
-                    ) : (
-                      <Package className="w-8 h-8 text-gray-300" />
-                    )}
-                  </div>
-                  <div className="flex-1 space-y-2">
-                    <label className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 cursor-pointer transition-colors w-fit">
-                      <Upload className="w-3.5 h-3.5 text-emerald-500" />
-                      <span>{currentImageUrl || imagePreview ? 'Cambiar imagen' : 'Subir imagen'}</span>
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        onChange={handleImageSelect}
-                        className="hidden"
-                      />
-                    </label>
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <div className="w-16 h-16 rounded-lg border border-gray-200 flex items-center justify-center overflow-hidden bg-gray-50">
+                      {imagePreview ? (
+                        <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                      ) : currentImageUrl ? (
+                        <img src={currentImageUrl} alt="Producto" className="w-full h-full object-cover" />
+                      ) : (
+                        <Package className="w-8 h-8 text-gray-300" />
+                      )}
+                    </div>
+                    <input
+                      ref={imageInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={handleImageSelect}
+                      style={{ display: 'none' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => imageInputRef.current?.click()}
+                      disabled={uploadingImage}
+                      className="absolute bottom-0 right-0 p-1.5 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors disabled:opacity-50 shadow-lg"
+                      title={currentImageUrl || imagePreview ? 'Cambiar imagen' : 'Subir imagen'}
+                    >
+                      {currentImageUrl || imagePreview ? (
+                        <Camera className="h-3.5 w-3.5" />
+                      ) : (
+                        <Upload className="h-3.5 w-3.5" />
+                      )}
+                    </button>
                     {(currentImageUrl || imagePreview) && (
                       <button
                         type="button"
                         onClick={handleDeleteImage}
                         disabled={uploadingImage}
-                        className="flex items-center gap-1 px-2 py-1 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
+                        className="absolute -bottom-1 -left-1 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors disabled:opacity-50"
+                        title="Eliminar imagen"
                       >
-                        <Trash2 className="w-3 h-3 text-red-400 hover:text-red-600" />
-                        {uploadingImage ? 'Eliminando...' : 'Eliminar imagen'}
+                        <Trash2 className="h-3 w-3" />
                       </button>
                     )}
-                    <p className="text-xs text-gray-400">JPEG, PNG o WebP. Maximo 5 MB.</p>
                   </div>
+                  <p className="text-xs text-muted-foreground">JPEG, PNG o WebP. Max 5 MB.</p>
                 </div>
               </div>
             )}
