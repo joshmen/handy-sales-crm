@@ -58,9 +58,9 @@ public class AuthService
         if (DisposableEmailService.IsDisposable(dto.Email))
             throw new InvalidOperationException("No se permiten correos electrónicos temporales o desechables.");
 
-        // Check password against known breaches (k-anonymity, safe)
+        // Check password against known breaches (k-anonymity, safe — fails open if API unreachable)
         if (await _pwnedPasswords.IsCompromisedAsync(dto.Password))
-            throw new InvalidOperationException("Esta contraseña fue encontrada en filtraciones de datos. Por favor elige una contraseña diferente.");
+            throw new InvalidOperationException("Esta contraseña es muy común y aparece en filtraciones conocidas. Por tu seguridad, elige una contraseña más larga y única.");
 
         // Verifica si ya existe ese email
         if (await _db.Usuarios.IgnoreQueryFilters().AnyAsync(u => u.Email == dto.Email))
@@ -192,6 +192,19 @@ public class AuthService
         try { await _tenantSeedService.SeedDemoDataAsync(tenant.Id); }
         catch (Exception ex) { _logger.LogWarning(ex, "Error seeding demo data"); }
 
+        // Send welcome email (OAuth users skip verification, so send welcome directly)
+        try
+        {
+            await _emailService.SendAsync(
+                dto.Email,
+                "Bienvenido a Handy Suites",
+                EmailTemplates.WelcomeNewTenant(tenant.NombreEmpresa, dto.Nombre));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to send welcome email to {Email}", dto.Email);
+        }
+
         await LogActivityAsync(tenant.Id, usuario.Id, "social_register", "auth",
             $"Nuevo usuario {dto.Email} se registró con {dto.Provider}");
 
@@ -222,6 +235,24 @@ public class AuthService
         usuario.CodigoVerificacion = null;
         usuario.CodigoVerificacionExpiry = null;
         await _db.SaveChangesAsync();
+
+        // Send welcome email
+        try
+        {
+            var tenant = await _db.Tenants.AsNoTracking()
+                .FirstOrDefaultAsync(t => t.Id == usuario.TenantId);
+            if (tenant != null)
+            {
+                await _emailService.SendAsync(
+                    email,
+                    "Bienvenido a Handy Suites",
+                    EmailTemplates.WelcomeNewTenant(tenant.NombreEmpresa, usuario.Nombre));
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to send welcome email to {Email}", email);
+        }
 
         await LogActivityAsync(usuario.TenantId, usuario.Id, "email_verified", "auth",
             $"Email verificado para {email}");

@@ -31,14 +31,15 @@ public class PwnedPasswordService
             var prefix = hash[..5];
             var suffix = hash[5..];
 
-            var response = await _http.GetStringAsync($"range/{prefix}");
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+            var response = await _http.GetStringAsync($"range/{prefix}", cts.Token);
 
             // API returns lines like "SUFFIX:COUNT"
             return response.Contains(suffix, StringComparison.OrdinalIgnoreCase);
         }
         catch
         {
-            // If the API is unreachable, don't block the user — fail open
+            // If the API is unreachable or times out, don't block registration — fail open
             return false;
         }
     }

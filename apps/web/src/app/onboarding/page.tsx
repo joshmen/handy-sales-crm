@@ -395,7 +395,10 @@ export default function OnboardingPage() {
       await updateSession({ onboardingCompleted: true });
 
       toast({ title: '¡Configuración completada!' });
-      router.replace('/dashboard');
+
+      // Full page navigation to ensure the fresh session is loaded
+      // (router.replace can race with useSession's stale cache in Layout)
+      window.location.href = '/dashboard';
     } catch (error) {
       console.error('Error completing onboarding:', error);
       toast({ title: 'Error al guardar. Intenta de nuevo.', variant: 'destructive' });
