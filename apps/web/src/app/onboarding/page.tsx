@@ -192,7 +192,7 @@ const ESTADOS_MEXICO = [
 ];
 
 export default function OnboardingPage() {
-  const { data: session } = useSession();
+  const { data: session, update: updateSession } = useSession();
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [saving, setSaving] = useState(false);
@@ -228,6 +228,11 @@ export default function OnboardingPage() {
       router.replace('/dashboard');
     }
   }, [session?.onboardingCompleted, router]);
+
+  // Prevent back-button from going to login — replace history entry
+  useEffect(() => {
+    window.history.replaceState(null, '', '/onboarding');
+  }, []);
 
   const updateData = useCallback((updates: Partial<WizardData>) => {
     setData(prev => ({ ...prev, ...updates }));
@@ -281,17 +286,40 @@ export default function OnboardingPage() {
   // ─── Navigation ───
 
   const goNext = () => {
-    // Validate Step 2 before advancing
+    // Validate Step 1: Profile — phone is required
+    if (currentStep === 1) {
+      if (!data.telefono || data.telefono.replace(/[^\d]/g, '').length < 7) {
+        toast({ title: 'Ingresa tu número de teléfono', variant: 'destructive' });
+        return;
+      }
+    }
+
+    // Validate Step 2: Company — nombre comercial required + fiscal fields if filled
     if (currentStep === 2) {
+      if (!data.nombreComercial.trim()) {
+        toast({ title: 'El nombre comercial es obligatorio', variant: 'destructive' });
+        return;
+      }
       const isMx = data.paisEmpresa === 'MX';
-      const rfcError = isMx ? validateRFC(data.identificadorFiscal) : null;
-      const cpError = isMx ? validateCP(data.codigoPostal) : null;
-      const emailError = validateEmail(data.emailEmpresa);
+      const rfcError = isMx && data.identificadorFiscal ? validateRFC(data.identificadorFiscal) : null;
+      const cpError = isMx && data.codigoPostal ? validateCP(data.codigoPostal) : null;
+      const emailError = data.emailEmpresa ? validateEmail(data.emailEmpresa) : null;
       if (rfcError || cpError || emailError) {
         toast({ title: rfcError || cpError || emailError || 'Revisa los campos', variant: 'destructive' });
         return;
       }
     }
+
+    // Validate Step 3: Team — validate emails if any are filled
+    if (currentStep === 3) {
+      for (const invite of data.invites) {
+        if (invite.email.trim() && !invite.email.includes('@')) {
+          toast({ title: `Correo inválido: ${invite.email}`, variant: 'destructive' });
+          return;
+        }
+      }
+    }
+
     if (currentStep < TOTAL_STEPS) setCurrentStep(currentStep + 1);
   };
 
@@ -342,14 +370,15 @@ export default function OnboardingPage() {
         await datosEmpresaService.update(empresaData);
       }
 
-      // 5. Send team invites (create users with temp passwords)
+      // 5. Send team invites — backend creates user + sends invitation email with "set password" link
       const validInvites = data.invites.filter(inv => inv.email.trim() && inv.email.includes('@'));
       for (const invite of validInvites) {
         try {
-          const tempPassword = `Handy${Math.random().toString(36).slice(2, 10)}!`;
+          // Random placeholder password — user will set their own via invitation email link
+          const placeholder = crypto.randomUUID().replace(/-/g, '') + '!A1';
           await usersService.createUser({
             email: invite.email.trim(),
-            password: tempPassword,
+            password: placeholder,
             nombre: invite.email.split('@')[0],
             rol: invite.rol,
           });
@@ -362,8 +391,11 @@ export default function OnboardingPage() {
       // 6. Mark onboarding as completed
       await tenantService.completeOnboarding();
 
+      // 7. Update NextAuth session so Layout doesn't redirect back to onboarding
+      await updateSession({ onboardingCompleted: true });
+
       toast({ title: '¡Configuración completada!' });
-      router.push('/dashboard');
+      router.replace('/dashboard');
     } catch (error) {
       console.error('Error completing onboarding:', error);
       toast({ title: 'Error al guardar. Intenta de nuevo.', variant: 'destructive' });

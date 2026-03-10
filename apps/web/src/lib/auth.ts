@@ -360,7 +360,7 @@ export const authOptions: NextAuthOptions = {
         return token;
       }
 
-      // Client-side session update (e.g. impersonation start/stop)
+      // Client-side session update (e.g. impersonation start/stop, onboarding completion)
       if (trigger === 'update' && updateData) {
         if (typeof updateData.isImpersonating === 'boolean') {
           token.isImpersonating = updateData.isImpersonating;
@@ -379,6 +379,12 @@ export const authOptions: NextAuthOptions = {
             token.originalAccessToken = undefined;
           }
         }
+
+        // Onboarding completed: update the flag in the token
+        if (typeof updateData.onboardingCompleted === 'boolean') {
+          token.onboardingCompleted = updateData.onboardingCompleted;
+        }
+
         return token;
       }
 
