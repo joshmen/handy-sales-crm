@@ -838,6 +838,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
             </nav>
           </IconContext.Provider>
 
+          {/* Getting Started Progress (non-SuperAdmin, non-collapsed) */}
+          {!sidebarCollapsed && session?.user && session.user.role !== 'SUPER_ADMIN' && !isImpersonating && (
+            <Link
+              href="/getting-started"
+              className="mx-3 mb-2 flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors group"
+            >
+              <ClipboardText size={16} className="text-muted-foreground group-hover:text-green-600 flex-shrink-0" />
+              <span className="truncate">Guía de configuración</span>
+            </Link>
+          )}
+
           {/* Bottom User Section */}
           {!sidebarCollapsed && session?.user && (
             <div className="border-t border-border p-4">

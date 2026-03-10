@@ -59,6 +59,7 @@ interface ApiUser {
   email: string;
   name?: string;
   role?: string;
+  onboardingCompleted?: boolean;
 }
 
 type ApiLoginSuccessWrapped = {
@@ -171,6 +172,7 @@ export const authOptions: NextAuthOptions = {
                 accessToken: data.token,
                 refreshToken: data.refreshToken,
                 rememberMe: data.rememberMe === true,
+                onboardingCompleted: data.user.onboardingCompleted,
               };
             }
           } catch {
@@ -203,6 +205,7 @@ export const authOptions: NextAuthOptions = {
               role: user.role,
               accessToken: token,
               refreshToken,
+              onboardingCompleted: user.onboardingCompleted,
             };
           }
 
@@ -216,6 +219,7 @@ export const authOptions: NextAuthOptions = {
               role: user.role,
               accessToken: token,
               refreshToken,
+              onboardingCompleted: user.onboardingCompleted,
             };
           }
 
@@ -314,6 +318,7 @@ export const authOptions: NextAuthOptions = {
             user.role = data.user.role;
             user.accessToken = data.token;
             user.refreshToken = data.refreshToken;
+            user.onboardingCompleted = data.user.onboardingCompleted;
             return true;
           }
 
@@ -344,6 +349,7 @@ export const authOptions: NextAuthOptions = {
         token.companyId = user.companyId;
         token.isImpersonating = false;
         token.rememberMe = user.rememberMe === true;
+        token.onboardingCompleted = user.onboardingCompleted;
         token.accessTokenExpires = user.accessToken
           ? getTokenExpiry(user.accessToken)
           : 0;
@@ -410,6 +416,7 @@ export const authOptions: NextAuthOptions = {
       session.tenantId = token.tenantId;
       session.companyId = token.companyId;
       session.isImpersonating = token.isImpersonating;
+      session.onboardingCompleted = token.onboardingCompleted;
       session.error = token.error;
       return session;
     },

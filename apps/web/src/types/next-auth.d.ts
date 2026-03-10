@@ -9,6 +9,7 @@ declare module 'next-auth' {
     accessToken?: string;
     refreshToken?: string;
     rememberMe?: boolean;
+    onboardingCompleted?: boolean;
   }
 
   interface Session {
@@ -26,6 +27,7 @@ declare module 'next-auth' {
     tenantId?: number;
     companyId?: number;
     isImpersonating?: boolean;
+    onboardingCompleted?: boolean;
     error?: string;
   }
 }
@@ -44,6 +46,7 @@ declare module 'next-auth/jwt' {
     originalAccessToken?: string;
     rememberMe?: boolean;
     sessionExpires?: number;
+    onboardingCompleted?: boolean;
     error?: string;
   }
 }

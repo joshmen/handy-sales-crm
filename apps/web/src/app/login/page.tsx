@@ -16,7 +16,7 @@ import { API_CONFIG } from '@/lib/constants';
 
 // Types for login API responses
 interface LoginSuccessResponse {
-  user: { id: string; email: string; name: string; role: string };
+  user: { id: string; email: string; name: string; role: string; onboardingCompleted?: boolean };
   token: string;
   refreshToken: string;
 }

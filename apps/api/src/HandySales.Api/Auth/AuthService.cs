@@ -647,6 +647,15 @@ public class AuthService
         await LogActivityAsync(usuario.TenantId, usuario.Id, "login", "auth",
             $"Usuario {usuario.Email} inició sesión exitosamente");
 
+        // Check if tenant has completed onboarding
+        var onboardingCompleted = true; // default for SuperAdmin or edge cases
+        if (!usuario.EsSuperAdmin)
+        {
+            var tenant = await _db.Tenants.AsNoTracking()
+                .FirstOrDefaultAsync(t => t.Id == usuario.TenantId);
+            onboardingCompleted = tenant?.OnboardingCompleted ?? true;
+        }
+
         return new
         {
             user = new
@@ -654,7 +663,8 @@ public class AuthService
                 id = usuario.Id.ToString(),
                 email = usuario.Email,
                 name = usuario.Nombre,
-                role = usuario.Rol
+                role = usuario.Rol,
+                onboardingCompleted
             },
             token = token,
             refreshToken = plainRefreshToken

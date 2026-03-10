@@ -102,6 +102,14 @@ class TenantService {
     }
   }
 
+  async completeOnboarding(): Promise<void> {
+    try {
+      await api.patch(`${this.basePath}/complete-onboarding`);
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  }
+
   async getGlobalUsers(params: GlobalUserFilters = {}): Promise<GlobalUserPaginatedResponse> {
     try {
       const queryParams = new URLSearchParams();

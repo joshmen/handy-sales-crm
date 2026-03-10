@@ -101,7 +101,7 @@ function VerifyEmailContent() {
 
         if (signInResult?.ok) {
           setNavigating(true);
-          router.push('/dashboard');
+          router.push('/onboarding');
           return;
         }
 

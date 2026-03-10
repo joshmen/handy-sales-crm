@@ -158,7 +158,7 @@ function RegisterContent() {
         });
 
         if (signInResult?.ok) {
-          router.push('/dashboard');
+          router.push('/onboarding');
           return;
         }
       }

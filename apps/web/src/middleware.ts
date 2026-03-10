@@ -77,6 +77,11 @@ export default withAuth(
       return NextResponse.next();
     }
 
+    // Onboarding page: requires auth but no role checks
+    if (pathname === '/onboarding') {
+      return NextResponse.next();
+    }
+
     // Si no está autenticado, redirigir a login
     if (!isAuth) {
       let from = pathname;

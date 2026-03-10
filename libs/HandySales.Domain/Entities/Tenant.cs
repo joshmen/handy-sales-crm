@@ -41,6 +41,10 @@ public class Tenant : AuditableEntity
     [Column("cancellation_reason")]
     public string? CancellationReason { get; set; }
 
+    // Onboarding
+    [Column("onboarding_completed")]
+    public bool OnboardingCompleted { get; set; } = false;
+
     // Relaciones
     public DatosEmpresa? DatosEmpresa { get; set; }
     public ICollection<Usuario> Usuarios { get; set; } = new List<Usuario>();

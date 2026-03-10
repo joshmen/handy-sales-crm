@@ -1,8 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { RocketLaunch } from '@phosphor-icons/react';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { HelpPanel } from '@/components/help/HelpPanel';
@@ -19,17 +18,21 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   const { open, collapsed, setCollapsed, setOpen } = useSidebar();
   const [helpPanelOpen, setHelpPanelOpen] = useState(false);
   const { isImpersonating } = useImpersonationStore();
-  const pathname = usePathname();
-  const [showOnboarding, setShowOnboarding] = useState(false);
+  const router = useRouter();
+  const { data: session } = useSession();
   const [tourActive, setTourActive] = useState(false);
 
+  // Redirect to onboarding if not completed (skip for SuperAdmin and impersonation)
   useEffect(() => {
-    const dismissed = localStorage.getItem('onboarding-completed') === 'true';
-    setShowOnboarding(!dismissed);
-    const onComplete = () => setShowOnboarding(false);
-    window.addEventListener('onboarding-completed', onComplete);
-    return () => window.removeEventListener('onboarding-completed', onComplete);
-  }, []);
+    if (
+      session &&
+      session.onboardingCompleted === false &&
+      !session.isImpersonating &&
+      session.user?.role !== 'SUPER_ADMIN'
+    ) {
+      router.replace('/onboarding');
+    }
+  }, [session, router]);
 
   // Hide floating widgets while a tour is running
   useEffect(() => {
@@ -53,7 +56,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     apply();
     mq.addEventListener('change', apply);
     return () => mq.removeEventListener('change', apply);
-  }, [setCollapsed, setOpen]); // <- no depende de `collapsed`/`open`
+  }, [setCollapsed, setOpen]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -69,13 +72,10 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         <main
           className={cn(
             'flex-1 transition-[margin-left] duration-300 ease-in-out',
-            // pt y min-h ajustados cuando el banner está activo (+2.5rem = 40px)
             isImpersonating
               ? 'min-h-[calc(100vh-4rem-2.5rem)] pt-[calc(4rem+2.5rem)]'
               : 'min-h-[calc(100vh-4rem)] pt-16',
-            // En móvil SIEMPRE sin margen
             'ml-0',
-            // En desktop: si el sidebar está abierto, aplica margen según colapsado
             open ? (collapsed ? 'lg:ml-20' : 'lg:ml-72') : 'ml-0'
           )}
         >
@@ -92,19 +92,6 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       <div className={tourActive ? 'hidden' : ''}>
         <TourPrompt />
       </div>
-
-      {/* Floating onboarding button — right side, above TourPrompt */}
-      {showOnboarding && !tourActive && pathname !== '/getting-started' && (
-        <Link
-          href="/getting-started"
-          className="fixed bottom-24 right-6 z-40 flex items-center gap-2 px-5 py-3 rounded-full shadow-xl text-white font-medium transition-all hover:scale-105 hover:shadow-2xl active:scale-95 animate-bounce-once"
-          style={{ background: 'linear-gradient(135deg, #FB7185, #E11D48)' }}
-          title="Primeros Pasos"
-        >
-          <RocketLaunch size={20} weight="fill" />
-          <span className="text-sm">Primeros Pasos</span>
-        </Link>
-      )}
     </div>
   );
 };

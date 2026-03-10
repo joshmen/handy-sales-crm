@@ -53,6 +53,10 @@ public static class TenantEndpoints
         group.MapPost("/{id:int}/users", CreateTenantUser)
             .WithName("CreateTenantUser")
             .WithSummary("Crea un usuario en un tenant (solo SuperAdmin)");
+
+        group.MapPatch("/complete-onboarding", CompleteOnboarding)
+            .WithName("CompleteOnboarding")
+            .WithSummary("Marca el onboarding como completado para el tenant actual");
     }
 
     private static async Task<IResult> GetAll(
@@ -485,5 +489,22 @@ public static class TenantEndpoints
         await context.SaveChangesAsync();
 
         return Results.Created($"/api/tenants/{id}/users/{usuario.Id}", new { id = usuario.Id });
+    }
+
+    private static async Task<IResult> CompleteOnboarding(
+        [FromServices] ICurrentTenant currentTenant,
+        [FromServices] HandySalesDbContext context)
+    {
+        if (currentTenant.TenantId <= 0)
+            return Results.BadRequest(new { message = "Tenant no identificado" });
+
+        var tenant = await context.Tenants.FirstOrDefaultAsync(t => t.Id == currentTenant.TenantId);
+        if (tenant == null)
+            return Results.NotFound(new { message = "Tenant no encontrado" });
+
+        tenant.OnboardingCompleted = true;
+        await context.SaveChangesAsync();
+
+        return Results.Ok(new { message = "Onboarding completado" });
     }
 }
