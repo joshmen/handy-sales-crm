@@ -30,7 +30,16 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       !session.isImpersonating &&
       session.user?.role !== 'SUPER_ADMIN'
     ) {
+      // Skip redirect if user just completed onboarding (session cache may be stale)
+      // Don't remove the flag — effect may re-run before session refreshes
+      if (sessionStorage.getItem('onboarding-completed')) {
+        return;
+      }
       router.replace('/onboarding');
+    }
+    // Once session confirms onboarding is done, clean up the flag
+    if (session?.onboardingCompleted === true) {
+      sessionStorage.removeItem('onboarding-completed');
     }
   }, [session, router]);
 
@@ -59,7 +68,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   }, [setCollapsed, setOpen]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background" data-dashboard>
       {/* Banner de impersonación (arriba del header) */}
       {isImpersonating && <ImpersonationBanner />}
 

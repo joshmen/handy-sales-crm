@@ -236,7 +236,7 @@ export async function GET(_request: NextRequest) {
       },
       subscription: {
         status: 'active', // En producción, verificar el estado real de la suscripción
-        plan: 'PROFESSIONAL',
+        plan: 'PRO',
         validUntil: new Date('2025-02-15'),
       },
     });

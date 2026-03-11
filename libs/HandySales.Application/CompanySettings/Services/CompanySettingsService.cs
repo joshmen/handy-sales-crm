@@ -37,8 +37,11 @@ namespace HandySales.Application.CompanySettings.Services
                 
                 if (settings == null)
                 {
-                    // Crear configuración por defecto si no existe
-                    var defaultCompanyName = "Handy Suites";
+                    // Crear configuración por defecto si no existe — usar nombre del tenant si disponible
+                    var tenantForName = await _repository.GetTenantAsync(tenantId);
+                    var defaultCompanyName = !string.IsNullOrWhiteSpace(tenantForName?.NombreEmpresa)
+                        ? tenantForName.NombreEmpresa
+                        : "Mi Empresa";
                     var cloudinaryFolder = _folderService.GenerateCompanyFolderName(tenantId, defaultCompanyName);
                     
                     settings = new CompanySetting
@@ -56,6 +59,10 @@ namespace HandySales.Application.CompanySettings.Services
                     settings = await _repository.CreateAsync(settings);
                 }
 
+                // Fetch tenant data for subscription info
+                var tenant = await _repository.GetTenantAsync(tenantId);
+                var activeUsers = await _repository.CountActiveUsersAsync(tenantId);
+
                 return new CompanySettingsDto
                 {
                     Id = settings.Id,
@@ -68,6 +75,11 @@ namespace HandySales.Application.CompanySettings.Services
                     Currency = settings.Currency,
                     Language = settings.Language,
                     Theme = settings.Theme,
+                    SubscriptionPlan = tenant?.PlanTipo ?? "Trial",
+                    SubscriptionStatus = tenant?.SubscriptionStatus ?? "Trial",
+                    MaxUsers = tenant?.MaxUsuarios,
+                    CurrentUsers = activeUsers,
+                    IsActive = tenant?.Activo ?? true,
                     UpdatedAt = settings.ActualizadoEn ?? settings.CreadoEn,
                     UpdatedBy = settings.ActualizadoPor
                 };

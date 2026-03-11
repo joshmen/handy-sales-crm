@@ -2,25 +2,33 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  DollarSign,
-  ShoppingCart,
-  Users,
-  Package,
   TrendingUp,
   TrendingDown,
-  Calendar,
   Download,
   ChevronDown,
-  CheckCircle2,
-  Clock,
   AlertCircle,
-  Truck,
-  MapPin,
   Loader2,
-  Zap,
   ArrowRight,
   X,
+  Zap,
+  LogIn,
+  CheckCircle2,
+  Package,
+  Trash2,
+  Clock,
+  FileDown,
+  Eye,
 } from 'lucide-react';
+import {
+  SbDollarSign,
+  SbShoppingCart,
+  SbClients,
+  SbProducts,
+  SbTruck,
+  SbCheckCircle,
+  SbClock,
+  SbTrendingUp,
+} from '@/components/layout/DashboardIcons';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import {
@@ -49,21 +57,19 @@ interface MetricCardData {
   value: string;
   change: number;
   changeLabel: string;
-  icon: React.ElementType;
-  iconBg: string;
-  iconColor: string;
+  icon3d: React.ComponentType<{ size?: number; className?: string }>;
 }
 
-// Icon mapping for activity types
+// Activity feed: flat Lucide icons + status-colored circles for data-dense rows
 const activityIcons: Record<string, React.ElementType> = {
-  login: Users,
-  logout: Users,
+  login: LogIn,
+  logout: LogIn,
   create: CheckCircle2,
   update: Package,
-  delete: AlertCircle,
+  delete: Trash2,
   error: AlertCircle,
-  view: Clock,
-  export: Download,
+  view: Eye,
+  export: FileDown,
 };
 
 function getDateRange(periodo: 'semana' | 'mes' | 'trimestre') {
@@ -143,36 +149,28 @@ export default function DashboardPage() {
       value: `${formatCurrency(ejecutivo.ventas.total)}`,
       change: ejecutivo.ventas.crecimientoPct,
       changeLabel: `vs ${periodo === 'semana' ? 'semana' : periodo === 'mes' ? 'mes' : 'trimestre'} anterior`,
-      icon: DollarSign,
-      iconBg: 'bg-blue-100',
-      iconColor: 'text-blue-600',
+      icon3d: SbDollarSign,
     },
     {
       title: 'Pedidos',
       value: formatNumber(ejecutivo.ventas.pedidos),
       change: 0,
       changeLabel: periodo === 'semana' ? 'esta semana' : periodo === 'mes' ? 'este mes' : 'este trimestre',
-      icon: ShoppingCart,
-      iconBg: 'bg-emerald-100',
-      iconColor: 'text-emerald-600',
+      icon3d: SbShoppingCart,
     },
     {
       title: 'Visitas',
       value: formatNumber(ejecutivo.visitas.total),
       change: ejecutivo.visitas.efectividadPct,
       changeLabel: 'efectividad',
-      icon: Users,
-      iconBg: 'bg-violet-100',
-      iconColor: 'text-violet-600',
+      icon3d: SbClients,
     },
     {
       title: 'Clientes Activos',
       value: formatNumber(ejecutivo.clientesActivos),
       change: 0,
       changeLabel: `${ejecutivo.nuevosClientes} nuevos`,
-      icon: Package,
-      iconBg: 'bg-amber-100',
-      iconColor: 'text-amber-600',
+      icon3d: SbProducts,
     },
   ] : [];
 
@@ -310,36 +308,28 @@ export default function DashboardPage() {
         value: `${formatCurrency(vendedorPerf.totalVentas)}`,
         change: 0,
         changeLabel: 'últimos 30 días',
-        icon: DollarSign,
-        iconBg: 'bg-blue-100',
-        iconColor: 'text-blue-600',
+        icon3d: SbDollarSign,
       },
       {
         title: 'Mis Pedidos',
         value: String(vendedorPerf.pedidosCount),
         change: 0,
         changeLabel: `${vendedorPerf.pedidosEntregados} entregados`,
-        icon: ShoppingCart,
-        iconBg: 'bg-emerald-100',
-        iconColor: 'text-emerald-600',
+        icon3d: SbShoppingCart,
       },
       {
         title: 'Mis Visitas',
         value: String(vendedorPerf.visitasTotal),
         change: vendedorPerf.efectividadVisitas,
         changeLabel: 'efectividad',
-        icon: Users,
-        iconBg: 'bg-violet-100',
-        iconColor: 'text-violet-600',
+        icon3d: SbClients,
       },
       {
         title: 'Mis Clientes',
         value: String(vendedorPerf.clientesAsignados),
         change: 0,
         changeLabel: 'asignados',
-        icon: Package,
-        iconBg: 'bg-amber-100',
-        iconColor: 'text-amber-600',
+        icon3d: SbProducts,
       },
     ];
 
@@ -362,9 +352,7 @@ export default function DashboardPage() {
             <div key={index} className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-sm text-gray-500">{card.title}</span>
-                <div className={`w-8 h-8 ${card.iconBg} rounded-lg flex items-center justify-center`}>
-                  <card.icon className={`w-4 h-4 ${card.iconColor}`} />
-                </div>
+                <card.icon3d size={30} />
               </div>
               <div className="text-3xl font-semibold text-gray-900 mb-2">{card.value}</div>
               <div className="flex items-center gap-2">
@@ -521,9 +509,7 @@ export default function DashboardPage() {
             >
               <div className="flex items-center justify-between mb-4">
                 <span className="text-sm text-gray-500">{card.title}</span>
-                <div className={`w-8 h-8 ${card.iconBg} rounded-lg flex items-center justify-center`}>
-                  <card.icon className={`w-4 h-4 ${card.iconColor}`} />
-                </div>
+                <card.icon3d size={30} />
               </div>
               <div className={`text-3xl font-semibold text-gray-900 mb-2 ${isRefreshing ? 'animate-pulse' : ''}`}>{card.value}</div>
               <div className="flex items-center gap-2">
@@ -602,12 +588,12 @@ export default function DashboardPage() {
                 return (
                   <div key={a.id} className="flex items-start gap-3 p-4 hover:bg-gray-50 transition-colors">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                      a.status === 'success' ? 'bg-green-100' :
-                      a.status === 'failed' ? 'bg-yellow-100' : 'bg-blue-100'
+                      a.status === 'success' ? 'bg-emerald-50' :
+                      a.status === 'failed' ? 'bg-amber-50' : 'bg-blue-50'
                     }`}>
                       <IconComp className={`w-4 h-4 ${
-                        a.status === 'success' ? 'text-green-600' :
-                        a.status === 'failed' ? 'text-yellow-600' : 'text-blue-600'
+                        a.status === 'success' ? 'text-emerald-600' :
+                        a.status === 'failed' ? 'text-amber-600' : 'text-blue-600'
                       }`} />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -747,36 +733,28 @@ export default function DashboardPage() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className="bg-white border border-gray-200 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="w-7 h-7 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <Truck className="w-3.5 h-3.5 text-blue-600" />
-                  </div>
+                  <SbTruck size={24} />
                   <span className="text-xs text-gray-500">En Ruta</span>
                 </div>
                 <p className="text-2xl font-semibold text-gray-900">{deliveryStats.totalEnRuta}</p>
               </div>
               <div className="bg-white border border-gray-200 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="w-7 h-7 bg-green-100 rounded-lg flex items-center justify-center">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
-                  </div>
+                  <SbCheckCircle size={24} />
                   <span className="text-xs text-gray-500">Completadas</span>
                 </div>
                 <p className="text-2xl font-semibold text-gray-900">{deliveryStats.totalCompletadas}</p>
               </div>
               <div className="bg-white border border-gray-200 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="w-7 h-7 bg-amber-100 rounded-lg flex items-center justify-center">
-                    <Clock className="w-3.5 h-3.5 text-amber-600" />
-                  </div>
+                  <SbClock size={24} />
                   <span className="text-xs text-gray-500">Pendientes</span>
                 </div>
                 <p className="text-2xl font-semibold text-gray-900">{deliveryStats.totalPendientes}</p>
               </div>
               <div className="bg-white border border-gray-200 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="w-7 h-7 bg-violet-100 rounded-lg flex items-center justify-center">
-                    <TrendingUp className="w-3.5 h-3.5 text-violet-600" />
-                  </div>
+                  <SbTrendingUp size={24} />
                   <span className="text-xs text-gray-500">% Completado</span>
                 </div>
                 <p className="text-2xl font-semibold text-gray-900">{deliveryStats.porcentajeCompletado}%</p>

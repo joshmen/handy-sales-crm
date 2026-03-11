@@ -11,6 +11,9 @@ import {
   CalendarPlus, CurrencyDollar, MapPin, Package, CheckCircle, Warning,
 } from '@phosphor-icons/react';
 import { Loader2 } from 'lucide-react';
+import {
+  SbClients, SbBarChart, SbLightbulb, SbTrendingUp, SbSearch, SbGoals,
+} from '@/components/layout/DashboardIcons';
 import { queryAi, getAiCredits, getAiUsageStats, executeAiAction } from '@/services/api/ai';
 import type { AiCreditBalance, AiUsageStats, AiSuggestedAction } from '@/services/api/ai';
 
@@ -26,13 +29,13 @@ type ActionType = typeof ACTION_TYPES[number]['value'];
 
 // ─── Suggestion chips — grouped by category ─────────────────────
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const SUGGESTIONS: { text: string; action: ActionType; icon: any }[] = [
-  { text: '¿Cuáles son mis 5 clientes más rentables?', action: 'pregunta', icon: Users },
-  { text: 'Resume las ventas de esta semana', action: 'resumen', icon: ChartBar },
-  { text: '¿Qué productos tienen más margen?', action: 'insight', icon: Sparkle },
-  { text: 'Pronóstico de ventas para el próximo mes', action: 'pronostico', icon: TrendUp },
-  { text: '¿Qué clientes no han comprado en 30 días?', action: 'pregunta', icon: MagnifyingGlass },
-  { text: 'Analiza la efectividad de mis vendedores', action: 'insight', icon: Target },
+const SUGGESTIONS: { text: string; action: ActionType; icon3d: any }[] = [
+  { text: '¿Cuáles son mis 5 clientes más rentables?', action: 'pregunta', icon3d: SbClients },
+  { text: 'Resume las ventas de esta semana', action: 'resumen', icon3d: SbBarChart },
+  { text: '¿Qué productos tienen más margen?', action: 'insight', icon3d: SbLightbulb },
+  { text: 'Pronóstico de ventas para el próximo mes', action: 'pronostico', icon3d: SbTrendingUp },
+  { text: '¿Qué clientes no han comprado en 30 días?', action: 'pregunta', icon3d: SbSearch },
+  { text: 'Analiza la efectividad de mis vendedores', action: 'insight', icon3d: SbGoals },
 ];
 
 // ─── Message types ───────────────────────────────────────────────
@@ -47,23 +50,34 @@ interface ChatMessage {
   accionesSugeridas?: AiSuggestedAction[];
 }
 
-// ─── Animated gradient orb (CSS only) ───────────────────────────
-function AnimatedOrb() {
+// ─── AI Hero — Crystalline Diamond (pure CSS, no SVG rendering issues) ──
+function AiHeroGem() {
   return (
     <div className="relative w-16 h-16 sm:w-24 sm:h-24 animate-ai-float">
-      {/* Glow ring */}
-      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-violet-500 via-blue-500 to-cyan-400 opacity-30 blur-xl animate-ai-glow" />
-      {/* Rotating gradient shell */}
-      <div className="absolute inset-0 rounded-full animate-ai-orb-rotate p-[2px]">
-        <div className="w-full h-full rounded-full bg-gradient-conic from-violet-600 via-blue-500 via-cyan-400 via-emerald-400 to-violet-600"
-          style={{ background: 'conic-gradient(from 0deg, #7c3aed, #3b82f6, #06b6d4, #10b981, #7c3aed)' }}
-        />
+      {/* Outer rotated diamond — teal accent */}
+      <div className="absolute inset-0 rotate-45 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-cyan-400/30 to-violet-400/30 dark:from-cyan-500/20 dark:to-violet-500/20 scale-110 animate-[spin_12s_linear_infinite]" />
+      {/* Main diamond body */}
+      <div className="absolute inset-1 sm:inset-1.5 rotate-45 rounded-xl sm:rounded-2xl bg-gradient-to-br from-violet-500 via-blue-500 to-cyan-400 shadow-lg shadow-violet-500/25">
+        {/* Glass highlight facet */}
+        <div className="absolute inset-0 rounded-xl sm:rounded-2xl bg-gradient-to-br from-white/30 via-transparent to-transparent" />
+        {/* Inner facet line */}
+        <div className="absolute top-1/2 left-0 right-0 h-px bg-white/15" />
+        <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white/15" />
       </div>
-      {/* Inner circle */}
-      <div className="absolute inset-[3px] rounded-full bg-white dark:bg-gray-900 flex items-center justify-center">
-        <Brain size={24} weight="duotone" className="text-violet-600 dark:text-violet-400 sm:hidden" />
-        <Brain size={36} weight="duotone" className="text-violet-600 dark:text-violet-400 hidden sm:block" />
+      {/* Center sparkle icon (un-rotated so it reads correctly) */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <Sparkle size={20} weight="fill" className="text-white drop-shadow-sm sm:hidden" />
+        <Sparkle size={28} weight="fill" className="text-white drop-shadow-sm hidden sm:block" />
       </div>
+    </div>
+  );
+}
+
+// ─── Small AI avatar for chat bubbles ────────────────────────────
+function AiChatAvatar() {
+  return (
+    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 via-blue-500 to-cyan-400 flex items-center justify-center shrink-0 mt-1 shadow-md shadow-violet-500/15">
+      <Sparkle size={14} weight="fill" className="text-white" />
     </div>
   );
 }
@@ -146,13 +160,13 @@ function WelcomeState({
   };
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-start sm:justify-center px-3 sm:px-4 py-4 sm:py-8 relative overflow-y-auto overflow-x-hidden">
+    <div className="flex-1 flex flex-col items-center justify-start px-3 sm:px-4 py-4 sm:py-6 relative overflow-y-auto overflow-x-hidden">
       {/* Subtle radial glow behind orb */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] sm:w-[500px] h-[300px] sm:h-[500px] bg-gradient-radial from-violet-500/5 via-blue-500/3 to-transparent rounded-full pointer-events-none" />
 
-      {/* Orb */}
-      <div className="mb-3 sm:mb-6 opacity-0 animate-ai-fade-up" style={{ animationDelay: '0ms', animationFillMode: 'forwards' }}>
-        <AnimatedOrb />
+      {/* Hero gem */}
+      <div className="mb-3 sm:mb-4 opacity-0 animate-ai-fade-up" style={{ animationDelay: '0ms', animationFillMode: 'forwards' }}>
+        <AiHeroGem />
       </div>
 
       {/* Heading */}
@@ -177,13 +191,8 @@ function WelcomeState({
               style={{ animationDelay: `${200 + i * 80}ms`, animationFillMode: 'forwards' }}
             >
               <div className="flex items-start gap-3">
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                  s.action === 'resumen' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' :
-                  s.action === 'insight' ? 'bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400' :
-                  s.action === 'pregunta' ? 'bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400' :
-                  'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400'
-                }`}>
-                  {React.createElement(s.icon, { size: 18, weight: 'duotone' })}
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 overflow-visible">
+                  {React.createElement(s.icon3d, { size: 24 })}
                 </div>
                 <div className="flex-1 min-w-0">
                   <span className="text-sm text-gray-700 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white transition-colors line-clamp-2 leading-snug">
@@ -364,11 +373,7 @@ function MessageBubble({ message, isLatest, onActionExecute, executingAction }: 
   return (
     <div className={`flex gap-3 ${isUser ? 'justify-end' : 'justify-start'} ${isLatest ? 'animate-ai-fade-up' : ''}`}>
       {/* Assistant avatar */}
-      {!isUser && (
-        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600 to-blue-500 flex items-center justify-center shrink-0 mt-1 shadow-md shadow-violet-500/15">
-          <Brain size={15} weight="duotone" className="text-white" />
-        </div>
-      )}
+      {!isUser && <AiChatAvatar />}
 
       <div className={`max-w-[85%] sm:max-w-[75%] min-w-0 ${isUser ? 'order-first' : ''}`}>
         <div
@@ -436,9 +441,7 @@ function MessageBubble({ message, isLatest, onActionExecute, executingAction }: 
 function TypingIndicator() {
   return (
     <div className="flex gap-3 justify-start animate-ai-fade-up">
-      <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600 to-blue-500 flex items-center justify-center shrink-0 mt-1 shadow-md shadow-violet-500/15">
-        <Brain size={15} weight="duotone" className="text-white" />
-      </div>
+      <AiChatAvatar />
       <div className="bg-white dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700/60 rounded-2xl rounded-bl-md px-5 py-3.5 shadow-sm">
         <div className="flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-violet-400 dark:bg-violet-500 animate-ai-dot-pulse" style={{ animationDelay: '0ms' }} />

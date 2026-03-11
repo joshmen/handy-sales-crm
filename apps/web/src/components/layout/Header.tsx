@@ -20,6 +20,7 @@ import {
   ArrowRight,
   Sun,
   Moon,
+  LayoutGrid,
 } from 'lucide-react';
 import { useSidebar, useTheme } from '@/stores/useUIStore';
 import { cn, getInitials } from '@/lib/utils';
@@ -35,6 +36,7 @@ import {
 import { getRoleDisplayName, getRoleColor } from '@/lib/roles';
 import { ImpersonationModal } from '@/components/impersonation';
 import { useNotifications } from '@/hooks/useNotifications';
+import { CommandPalette } from '@/components/layout/CommandPalette';
 import type { DefaultSession } from 'next-auth';
 import { useFormatters } from '@/hooks/useFormatters';
 
@@ -105,11 +107,10 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
     markAllAsRead,
   } = useNotifications();
 
-  const [, setIsSearchOpen] = useState(false);
+  const [isCommandOpen, setIsCommandOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isImpersonationOpen, setIsImpersonationOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [expandedNotifId, setExpandedNotifId] = useState<number | null>(null);
 
@@ -181,14 +182,6 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
   const unread = unreadCount;
   const unreadDisplay = unread > 99 ? '99+' : String(unread);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
-    toast({ title: 'Búsqueda', description: `Buscando: ${searchQuery}` });
-    setIsSearchOpen(false);
-    setSearchQuery('');
-  };
-
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
@@ -253,7 +246,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
               <img
                 src="/logo-icon.svg"
                 alt="Handy Suites"
-                className="w-9 h-9"
+                className="w-10 h-10 sm:w-9 sm:h-9"
               />
             )}
             <span className="hidden sm:block text-xl font-semibold text-foreground">
@@ -268,41 +261,52 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
           </div>
         </div>
 
-        {/* Center: Search Bar (Google style) */}
-        <div className="flex-1 flex justify-center px-6 lg:px-12">
-          <div className="relative w-full max-w-md" data-tour="header-search">
+        {/* Center: Search Bar (opens command palette) */}
+        {/* Mobile: just a search icon button */}
+        <div className="flex-1 flex justify-center md:px-6 lg:px-12">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden rounded-full hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors duration-200"
+            onClick={() => setIsCommandOpen(true)}
+            data-tour="header-search"
+          >
+            <Search className="h-[18px] w-[18px] text-blue-400" strokeWidth={2} />
+          </Button>
+          {/* Desktop: full search bar */}
+          <div
+            className="hidden md:flex relative w-full max-w-md cursor-pointer group"
+            data-tour="header-search-desktop"
+            onClick={() => setIsCommandOpen(true)}
+          >
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-blue-400" />
-            <input
-              type="text"
-              placeholder="Buscar clientes, productos, pedidos..."
-              className="w-full h-10 pl-11 pr-4 text-foreground bg-muted border border-border rounded-full focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent hover:shadow-md transition-all duration-200 text-sm"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) =>
-                e.key === 'Enter' && handleSearch(e)
-              }
-            />
+            <div className="w-full h-10 pl-11 pr-20 flex items-center text-muted-foreground bg-muted border border-border rounded-full group-hover:shadow-md transition-all duration-200 text-sm">
+              Buscar clientes, productos, pedidos...
+            </div>
+            <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden sm:inline-flex h-5 items-center gap-1 rounded border border-border bg-background px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+              {typeof navigator !== 'undefined' && /Mac/i.test(navigator.userAgent) ? '⌘K' : 'Ctrl K'}
+            </kbd>
           </div>
         </div>
 
         {/* Right: User controls */}
-        <div className="flex items-center space-x-1">
+        <div className="flex items-center gap-0.5">
           {/* Notifications */}
           <Button
             data-tour="header-notifications"
             variant="ghost"
             size="icon"
-            className="relative text-muted-foreground hover:bg-accent rounded-full"
+            className="relative rounded-full hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors duration-200"
             onClick={() => {
               fetchNotifications();
               setIsNotificationsOpen(true);
             }}
           >
-            <Bell className="h-5 w-5 text-amber-500" />
+            <Bell className="h-[18px] w-[18px] text-amber-500" strokeWidth={2} />
             {unread > 0 && (
-              <div className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 bg-red-500 rounded-full flex items-center justify-center">
-                <span className="text-[10px] text-white font-semibold leading-none">{unreadDisplay}</span>
-              </div>
+              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full flex items-center justify-center ring-2 ring-white dark:ring-gray-900">
+                <span className="text-[9px] text-white font-bold leading-none">{unreadDisplay}</span>
+              </span>
             )}
           </Button>
 
@@ -311,54 +315,53 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
             data-tour="header-help"
             variant="ghost"
             size="icon"
-            className="text-muted-foreground hover:bg-accent rounded-full"
+            className="rounded-full hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors duration-200"
             onClick={onHelpClick}
             aria-label="Ayuda"
           >
-            <Info className="h-5 w-5 text-blue-400" />
+            <Info className="h-[18px] w-[18px] text-blue-500" strokeWidth={2} />
           </Button>
 
           {/* Theme toggle */}
           <Button
             variant="ghost"
             size="icon"
-            className="text-muted-foreground hover:bg-accent rounded-full"
+            className="rounded-full hover:bg-amber-50 dark:hover:bg-slate-800 transition-colors duration-200"
             onClick={toggleTheme}
             aria-label={theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
           >
             {theme === 'dark' ? (
-              <Sun className="h-5 w-5 text-amber-400" />
+              <Sun className="h-[18px] w-[18px] text-amber-400" strokeWidth={2} />
             ) : (
-              <Moon className="h-5 w-5 text-slate-500" />
+              <Moon className="h-[18px] w-[18px] text-slate-400" strokeWidth={2} />
             )}
           </Button>
 
-          {/* Apps menu */}
+          {/* Apps grid */}
           <Button
             variant="ghost"
             size="icon"
-            className="text-muted-foreground hover:bg-accent rounded-full"
+            className="rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
           >
-            <div className="grid grid-cols-3 gap-0.5 w-4 h-4">
-              {[...Array(9)].map((_, i) => (
-                <div key={i} className="w-1 h-1 bg-current rounded-full" />
-              ))}
-            </div>
+            <LayoutGrid className="h-[18px] w-[18px] text-gray-400" strokeWidth={2} />
           </Button>
+
+          {/* Divider */}
+          <div className="hidden md:block w-px h-6 bg-border mx-1" />
 
           {/* User menu */}
           <Button
             data-tour="header-user-menu"
             variant="ghost"
-            className="flex items-center space-x-2 px-2 py-1.5 hover:bg-accent rounded-full h-auto"
+            className="flex items-center gap-2 px-2 py-1.5 hover:bg-accent rounded-full h-auto transition-colors duration-200"
             onClick={() => setIsUserMenuOpen(true)}
           >
-            <div className="hidden md:block text-right mr-1">
+            <div className="hidden md:block text-right">
               <p className="text-sm font-medium text-foreground leading-none">{currentUser.name}</p>
             </div>
-            <Avatar className="h-8 w-8">
+            <Avatar className="h-8 w-8 ring-2 ring-gray-100 dark:ring-gray-800">
               <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
-              <AvatarFallback className="bg-primary/15 text-primary font-semibold text-sm font-medium">
+              <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
                 {getInitials(currentUser.name)}
               </AvatarFallback>
             </Avatar>
@@ -476,6 +479,9 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
           tenant={null}
         />
       )}
+
+      {/* Command Palette (Ctrl+K) */}
+      <CommandPalette open={isCommandOpen} onOpenChange={setIsCommandOpen} />
 
       {/* User Menu Dialog */}
       <Dialog open={isUserMenuOpen} onOpenChange={setIsUserMenuOpen}>

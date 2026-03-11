@@ -21,6 +21,7 @@ public class AiCreditService : IAiCreditService
     private static readonly Dictionary<string, int> MonthlyAllocations = new()
     {
         ["free"] = 0,
+        ["trial"] = 50,
         ["basico"] = 0,
         ["profesional"] = 100,
         ["enterprise"] = 500
@@ -149,6 +150,7 @@ public class AiCreditService : IAiCreditService
         return planTipo.ToLower() switch
         {
             "free" or "gratis" => "free",
+            "trial" => "trial",
             "basico" or "basic" => "basico",
             "profesional" or "professional" or "pro" => "profesional",
             "enterprise" or "empresa" => "enterprise",

@@ -17,6 +17,8 @@ export interface SubscriptionStatus {
   subscriptionStatus: string;
   maxUsuarios: number;
   activeUsuarios: number;
+  activeProductos: number;
+  activeClientes: number;
   fechaSuscripcion: string | null;
   fechaExpiracion: string | null;
   gracePeriodEnd: string | null;

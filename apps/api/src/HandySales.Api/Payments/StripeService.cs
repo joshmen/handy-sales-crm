@@ -88,11 +88,45 @@ public class StripeService : IStripeService
             await CreateCustomerAsync(tenant);
         }
 
-        // Find the plan
+        // Find the target plan
         var plan = await _db.SubscriptionPlans
             .AsNoTracking()
             .FirstOrDefaultAsync(p => p.Codigo == planCode && p.Activo)
             ?? throw new InvalidOperationException($"Plan '{planCode}' no encontrado");
+
+        // Downgrade validation: check if tenant exceeds target plan limits
+        var currentPlanCode = NormalizePlanCode(tenant.PlanTipo);
+        var currentPlan = currentPlanCode != "FREE"
+            ? await _db.SubscriptionPlans.AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Codigo == currentPlanCode && p.Activo)
+            : null;
+
+        if (currentPlan != null && plan.Orden < currentPlan.Orden)
+        {
+            // This is a downgrade — validate limits
+            var activeUsers = await _db.Usuarios.IgnoreQueryFilters().AsNoTracking()
+                .CountAsync(u => u.TenantId == tenantId && u.Activo);
+            var activeProducts = await _db.Productos.IgnoreQueryFilters().AsNoTracking()
+                .CountAsync(p => p.TenantId == tenantId && p.Activo);
+            var activeClients = await _db.Clientes.IgnoreQueryFilters().AsNoTracking()
+                .CountAsync(c => c.TenantId == tenantId && c.Activo);
+
+            var violations = new List<string>();
+            if (activeUsers > plan.MaxUsuarios)
+                violations.Add($"usuarios ({activeUsers}/{plan.MaxUsuarios})");
+            if (activeProducts > plan.MaxProductos)
+                violations.Add($"productos ({activeProducts}/{plan.MaxProductos})");
+            if (activeClients > plan.MaxClientesPorMes)
+                violations.Add($"clientes ({activeClients}/{plan.MaxClientesPorMes})");
+
+            if (violations.Count > 0)
+                throw new InvalidOperationException(
+                    $"No puedes bajar al plan {plan.Nombre}. Excedes los límites de: {string.Join(", ", violations)}. Desactiva registros antes de cambiar.");
+        }
+
+        // Block FREE plan for tenants that have had paid subscriptions
+        if (planCode == "FREE" && !string.IsNullOrEmpty(tenant.StripeCustomerId))
+            throw new InvalidOperationException("El plan gratuito no está disponible para cuentas con historial de pago.");
 
         var priceId = interval == "year" ? plan.StripePriceIdAnual : plan.StripePriceIdMensual;
         if (string.IsNullOrEmpty(priceId))
@@ -323,5 +357,18 @@ public class StripeService : IStripeService
 
         _logger.LogInformation("Subscription updated for tenant {TenantId}, status: {Status}",
             tenant.Id, subscription.Status);
+    }
+
+    /// <summary>Maps legacy plan codes (PROFESIONAL, BASICO, STARTER) to canonical codes (PRO, BASIC).</summary>
+    private static string NormalizePlanCode(string? planTipo)
+    {
+        if (string.IsNullOrEmpty(planTipo)) return "FREE";
+        return planTipo.ToUpperInvariant() switch
+        {
+            "TRIAL" => "FREE",
+            "PROFESIONAL" or "PROFESSIONAL" => "PRO",
+            "BASICO" or "STARTER" => "BASIC",
+            _ => planTipo.ToUpperInvariant()
+        };
     }
 }

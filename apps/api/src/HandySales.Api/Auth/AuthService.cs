@@ -71,6 +71,7 @@ public class AuthService
         {
             NombreEmpresa = dto.NombreEmpresa,
             PlanTipo = "Trial",
+            MaxUsuarios = 2,
             FechaSuscripcion = DateTime.UtcNow,
             FechaExpiracion = DateTime.UtcNow.AddDays(14),
             SubscriptionStatus = "Trial"
@@ -108,6 +109,7 @@ public class AuthService
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
             Nombre = dto.Nombre,
             EsAdmin = true,
+            RolExplicito = "ADMIN",
             Activo = true,
             TenantId = tenant.Id,
             EmailVerificado = false,
@@ -143,6 +145,7 @@ public class AuthService
         {
             NombreEmpresa = dto.NombreEmpresa,
             PlanTipo = "Trial",
+            MaxUsuarios = 2,
             FechaSuscripcion = DateTime.UtcNow,
             FechaExpiracion = DateTime.UtcNow.AddDays(14),
             SubscriptionStatus = "Trial"
@@ -180,6 +183,7 @@ public class AuthService
             Nombre = dto.Nombre,
             AvatarUrl = dto.AvatarUrl,
             EsAdmin = true,
+            RolExplicito = "ADMIN",
             Activo = true,
             TenantId = tenant.Id,
             EmailVerificado = true // Google ya lo verificó

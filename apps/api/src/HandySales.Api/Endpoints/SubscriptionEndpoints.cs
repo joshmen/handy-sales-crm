@@ -77,12 +77,24 @@ public static class SubscriptionEndpoints
             .AsNoTracking()
             .CountAsync(u => u.TenantId == tenant.Id && u.Activo);
 
+        var activeProductos = await db.Productos
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .CountAsync(p => p.TenantId == tenant.Id && p.Activo);
+
+        var activeClientes = await db.Clientes
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .CountAsync(c => c.TenantId == tenant.Id && c.Activo);
+
         return Results.Ok(new
         {
             planTipo = tenant.PlanTipo,
             subscriptionStatus = tenant.SubscriptionStatus,
             maxUsuarios = tenant.MaxUsuarios,
             activeUsuarios = activeUsers,
+            activeProductos,
+            activeClientes,
             fechaSuscripcion = tenant.FechaSuscripcion,
             fechaExpiracion = tenant.FechaExpiracion,
             gracePeriodEnd = tenant.GracePeriodEnd,

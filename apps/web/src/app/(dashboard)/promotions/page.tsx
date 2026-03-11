@@ -302,7 +302,7 @@ export default function PromotionsPage() {
           <button
             data-tour="promotions-create-btn"
             onClick={handleOpenCreate}
-            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-success rounded-lg hover:bg-success/90 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>Nueva promoción</span>
@@ -323,7 +323,7 @@ export default function PromotionsPage() {
           <button
             onClick={handleRefresh}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-success rounded-lg hover:bg-success/90 transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             <span className="hidden sm:inline">Actualizar</span>
@@ -595,7 +595,7 @@ export default function PromotionsPage() {
             <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()} disabled={actionLoading}>
               Cancelar
             </Button>
-            <Button type="button" variant="success" onClick={handleSubmit} disabled={actionLoading} className="flex items-center gap-2">
+            <Button type="button" variant="default" onClick={handleSubmit} disabled={actionLoading} className="flex items-center gap-2">
               {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
               {editingPromotion ? 'Guardar Cambios' : 'Crear Promoción'}
             </Button>

@@ -149,8 +149,8 @@ INSERT INTO "Clientes" (tenant_id, nombre, rfc, correo, telefono, direccion, id_
 (1, 'Mini Super El Sol', 'RATP850303GHI', 'elsol@email.com', '3331003003', 'Blvd Tlaquepaque 789', 3, 1, (SELECT id FROM "Usuarios" WHERE email='vendedor2@jeyma.com'), false, false, 0, 0, 8000, 0, 'EFECTIVO,TRANSFERENCIA', 'EFECTIVO', 0, 'Tlaquepaque', true, NOW(), 1),
 (1, 'Tienda Lupita', 'MAGL880404JKL', 'lupita@email.com', '3331004004', 'Av Patria 234', 2, 1, (SELECT id FROM "Usuarios" WHERE email='vendedor2@jeyma.com'), false, false, 0, 0, 5000, 0, 'EFECTIVO,TRANSFERENCIA', 'EFECTIVO', 0, 'Zapopan', true, NOW(), 1);
 
--- Set Jeyma tenant to PROFESIONAL plan (for AI credits)
-UPDATE "Tenants" SET plan_tipo = 'PROFESIONAL' WHERE id = 1 AND plan_tipo IN ('BASIC', 'FREE', 'basico', 'free');
+-- Set Jeyma tenant to PRO plan (for AI credits)
+UPDATE "Tenants" SET plan_tipo = 'PRO' WHERE id = 1 AND plan_tipo IN ('BASIC', 'FREE', 'PROFESIONAL', 'basico', 'free');
 
 -- AI Credit Balances (for Jeyma tenant = id 1, PRO plan)
 INSERT INTO ai_credit_balances (tenant_id, anio, mes, creditos_asignados, creditos_usados, creditos_extras, fecha_reset, creado_en) VALUES

@@ -32,6 +32,7 @@ import { companyService } from '@/services/api/companyService';
 import { datosEmpresaService } from '@/services/api/datosEmpresa';
 import { tenantService } from '@/services/api/tenants';
 import { usersService } from '@/services/api/users';
+import { subscriptionService } from '@/services/api/subscriptions';
 import { toast } from '@/hooks/useToast';
 
 // ─── Types ───
@@ -196,6 +197,7 @@ export default function OnboardingPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [saving, setSaving] = useState(false);
+  const [maxInvites, setMaxInvites] = useState(1); // default conservative (Trial/FREE = 2 users, admin = 1, so 1 invite)
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
@@ -234,6 +236,17 @@ export default function OnboardingPage() {
     window.history.replaceState(null, '', '/onboarding');
   }, []);
 
+  // Fetch plan limit for team invites
+  useEffect(() => {
+    subscriptionService.getCurrentSubscription()
+      .then(sub => {
+        // maxUsuarios includes the admin, so invites = maxUsuarios - 1
+        const limit = Math.max(1, (sub.maxUsuarios || 2) - 1);
+        setMaxInvites(limit);
+      })
+      .catch(() => {}); // Keep default of 1 if fetch fails
+  }, []);
+
   const updateData = useCallback((updates: Partial<WizardData>) => {
     setData(prev => ({ ...prev, ...updates }));
   }, []);
@@ -269,7 +282,7 @@ export default function OnboardingPage() {
   // ─── Team Invite Handlers ───
 
   const addInvite = () => {
-    if (data.invites.length >= 5) return;
+    if (data.invites.length >= maxInvites) return;
     updateData({ invites: [...data.invites, { email: '', rol: 'VENDEDOR' }] });
   };
 
@@ -334,17 +347,29 @@ export default function OnboardingPage() {
     try {
       // 1. Upload avatar if provided
       if (data.avatarFile && session?.user?.id) {
-        await profileService.uploadAvatar(session.user.id, data.avatarFile);
+        try {
+          await profileService.uploadAvatar(session.user.id, data.avatarFile);
+        } catch (e) {
+          console.warn('Onboarding: avatar upload failed', e);
+        }
       }
 
       // 2. Upload company logo if provided
       if (data.logoFile) {
-        await companyService.uploadLogo(data.logoFile);
+        try {
+          await companyService.uploadLogo(data.logoFile);
+        } catch (e) {
+          console.warn('Onboarding: logo upload failed', e);
+        }
       }
 
-      // 3. Update company name
+      // 3. Update company name (always attempt, even if other steps failed)
       if (data.nombreComercial) {
-        await companyService.updateCompanySettings({ companyName: data.nombreComercial });
+        try {
+          await companyService.updateCompanySettings({ companyName: data.nombreComercial });
+        } catch (e) {
+          console.warn('Onboarding: company name update failed', e);
+        }
       }
 
       // 4. Update DatosEmpresa (business data)
@@ -367,7 +392,11 @@ export default function OnboardingPage() {
       if (data.codigoPostal) empresaData.codigoPostal = data.codigoPostal;
 
       if (Object.keys(empresaData).length > 0) {
-        await datosEmpresaService.update(empresaData);
+        try {
+          await datosEmpresaService.update(empresaData);
+        } catch (e) {
+          console.warn('Onboarding: datos empresa update failed', e);
+        }
       }
 
       // 5. Send team invites — backend creates user + sends invitation email with "set password" link
@@ -396,8 +425,10 @@ export default function OnboardingPage() {
 
       toast({ title: '¡Configuración completada!' });
 
+      // Flag so Layout.tsx won't redirect back while session refreshes
+      sessionStorage.setItem('onboarding-completed', '1');
+
       // Full page navigation to ensure the fresh session is loaded
-      // (router.replace can race with useSession's stale cache in Layout)
       window.location.href = '/dashboard';
     } catch (error) {
       console.error('Error completing onboarding:', error);
@@ -504,6 +535,7 @@ export default function OnboardingPage() {
           {currentStep === 3 && (
             <StepTeam
               invites={data.invites}
+              maxInvites={maxInvites}
               onAddInvite={addInvite}
               onRemoveInvite={removeInvite}
               onUpdateInvite={updateInvite}
@@ -960,11 +992,13 @@ function StepCompany({
 
 function StepTeam({
   invites,
+  maxInvites,
   onAddInvite,
   onRemoveInvite,
   onUpdateInvite,
 }: {
   invites: TeamInvite[];
+  maxInvites: number;
   onAddInvite: () => void;
   onRemoveInvite: (index: number) => void;
   onUpdateInvite: (index: number, field: keyof TeamInvite, value: string) => void;
@@ -993,9 +1027,8 @@ function StepTeam({
               onChange={e => onUpdateInvite(index, 'rol', e.target.value)}
               className="w-36 shrink-0 px-3 py-2.5 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-green-600/50 focus:border-green-600"
             >
-              <option value="ADMIN">Admin</option>
-              <option value="SUPERVISOR">Supervisor</option>
               <option value="VENDEDOR">Vendedor</option>
+              <option value="SUPERVISOR">Supervisor</option>
             </select>
             {invites.length > 1 && (
               <button
@@ -1009,7 +1042,7 @@ function StepTeam({
         ))}
       </div>
 
-      {invites.length < 5 && (
+      {invites.length < maxInvites && (
         <button
           onClick={onAddInvite}
           className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-green-600 hover:bg-green-50 dark:hover:bg-green-950/20 rounded-lg transition-colors"
@@ -1019,9 +1052,12 @@ function StepTeam({
         </button>
       )}
 
-      <div className="rounded-lg bg-muted/50 border border-border p-4">
+      <div className="rounded-lg bg-muted/50 border border-border p-4 space-y-1">
         <p className="text-sm text-muted-foreground">
           Los usuarios invitados recibirán credenciales temporales. Podrán cambiar su contraseña al iniciar sesión.
+        </p>
+        <p className="text-xs text-muted-foreground/70">
+          Tu plan permite hasta {maxInvites + 1} usuarios en total (tú + {maxInvites} colaborador{maxInvites !== 1 ? 'es' : ''}).
         </p>
       </div>
     </div>

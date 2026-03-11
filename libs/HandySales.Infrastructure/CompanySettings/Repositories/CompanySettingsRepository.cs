@@ -20,6 +20,22 @@ namespace HandySales.Infrastructure.CompanySettings.Repositories
                 .FirstOrDefaultAsync(c => c.TenantId == tenantId);
         }
 
+        public async Task<Tenant?> GetTenantAsync(int tenantId)
+        {
+            return await _context.Tenants
+                .IgnoreQueryFilters()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(t => t.Id == tenantId);
+        }
+
+        public async Task<int> CountActiveUsersAsync(int tenantId)
+        {
+            return await _context.Usuarios
+                .IgnoreQueryFilters()
+                .AsNoTracking()
+                .CountAsync(u => u.TenantId == tenantId && u.Activo);
+        }
+
         public async Task<CompanySetting> CreateAsync(CompanySetting companySettings)
         {
             _context.CompanySettings.Add(companySettings);

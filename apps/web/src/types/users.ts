@@ -18,9 +18,9 @@ export enum UserStatus {
 
 // Plan de membresía
 export enum MembershipPlan {
-  TRIAL = 'TRIAL', // 14 días gratis
+  FREE = 'FREE', // Plan gratuito / trial
   BASIC = 'BASIC', // Hasta 5 vendedores
-  PROFESSIONAL = 'PROFESSIONAL', // Hasta 20 vendedores
+  PRO = 'PRO', // Hasta 20 vendedores
   ENTERPRISE = 'ENTERPRISE', // Vendedores ilimitados
 }
 

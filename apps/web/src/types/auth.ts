@@ -76,10 +76,10 @@ export interface Subscription {
 }
 
 export enum SubscriptionPlan {
+  FREE = 'FREE', // Plan gratuito
   BASIC = 'BASIC', // 1-5 vendedores
-  PROFESSIONAL = 'PROFESSIONAL', // 6-20 vendedores
+  PRO = 'PRO', // 6-20 vendedores
   ENTERPRISE = 'ENTERPRISE', // 21+ vendedores
-  CUSTOM = 'CUSTOM', // Plan personalizado
 }
 
 export enum SubscriptionStatus {

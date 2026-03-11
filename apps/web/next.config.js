@@ -95,6 +95,21 @@ const nextConfig = {
             key: "Referrer-Policy",
             value: "origin-when-cross-origin",
           },
+          {
+            key: "Content-Security-Policy-Report-Only",
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://www.google.com https://www.gstatic.com",
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://lh3.googleusercontent.com",
+              "font-src 'self' data:",
+              "connect-src 'self' http://localhost:* https://*.railway.app https://accounts.google.com https://res.cloudinary.com wss: ws:",
+              "frame-src 'self' https://accounts.google.com https://www.google.com",
+              "frame-ancestors 'self'",
+              "base-uri 'self'",
+              "form-action 'self'",
+            ].join("; "),
+          },
         ],
       },
       // CORS para el API

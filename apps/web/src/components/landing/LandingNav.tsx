@@ -64,10 +64,10 @@ export function LandingNav() {
             Iniciar sesión
           </Link>
           <Link
-            href="/login"
+            href="/register"
             className="text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg transition-colors"
           >
-            Comienza gratis
+            Crear cuenta
           </Link>
         </div>
 
@@ -103,10 +103,10 @@ export function LandingNav() {
               Iniciar sesión
             </Link>
             <Link
-              href="/login"
+              href="/register"
               className="block text-center text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 rounded-lg transition-colors"
             >
-              Comienza gratis
+              Crear cuenta
             </Link>
           </div>
         </div>

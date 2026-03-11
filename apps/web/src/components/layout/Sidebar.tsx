@@ -10,37 +10,41 @@ import {
   X,
 } from 'lucide-react';
 import {
-  SquaresFour,
-  Buildings,
-  Package,
-  Archive,
-  MapPin,
-  CalendarDots,
-  ClipboardText,
-  Bag,
-  GearSix,
-  CreditCard,
-  Percent,
-  TrendUp,
-  FolderOpen,
-  Lightning,
-  NavigationArrow,
-  ShieldCheck,
-  Users,
-  Tag,
-  Ruler,
-  ArrowsLeftRight,
-  ChartBar,
-  Megaphone,
-  DeviceMobile,
-  Robot,
-  Brain,
-  Target,
-  Bug,
-  ClockCounterClockwise,
-  UsersThree,
-  IconContext,
-} from '@phosphor-icons/react';
+  SbDashboard,
+  SbOrders,
+  SbPayments,
+  SbClients,
+  SbProducts,
+  SbPriceLists,
+  SbDiscounts,
+  SbPromotions,
+  SbRoutes,
+  SbInventory,
+  SbZones,
+  SbVisits,
+  SbForms,
+  SbReports,
+  SbTeam,
+  SbDevices,
+  SbAutomations,
+  SbGoals,
+  SbAI,
+  SbSettings,
+  SbAdmin,
+  SbUsers,
+  SbSubscription,
+  SbActivityLog,
+  SbHelp,
+  SbAnnouncements,
+  SbBuildings,
+  SbBug,
+  SbSecurity,
+  SbCategory,
+  SbFolders,
+  SbUnits,
+  SbMovements,
+  SbUsersGlobal,
+} from '@/components/layout/DashboardIcons';
 import { useSidebar } from '@/stores/useUIStore';
 import { cn, getInitials } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar';
@@ -65,7 +69,7 @@ const sidebarItems: SidebarItem[] = [
   {
     id: 'dashboard',
     label: 'Tablero',
-    icon: SquaresFour,
+    icon: SbDashboard,
     href: '/dashboard',
     permission: 'view_dashboard',
   },
@@ -74,7 +78,7 @@ const sidebarItems: SidebarItem[] = [
   {
     id: 'orders',
     label: 'Pedidos',
-    icon: Bag,
+    icon: SbOrders,
     href: '/orders',
     permission: 'view_orders',
     badge: '3',
@@ -83,7 +87,7 @@ const sidebarItems: SidebarItem[] = [
   {
     id: 'cobranza',
     label: 'Cobranza',
-    icon: CreditCard,
+    icon: SbPayments,
     href: '/cobranza',
     permission: 'view_orders',
   },
@@ -92,21 +96,21 @@ const sidebarItems: SidebarItem[] = [
   {
     id: 'clients',
     label: 'Clientes',
-    icon: Buildings,
+    icon: SbClients,
     permission: 'view_clients',
     section: 'Catálogo',
     submenu: [
       {
         id: 'clients-list',
         label: 'Lista de clientes',
-        icon: Buildings,
+        icon: SbClients,
         href: '/clients',
         permission: 'view_clients',
       },
       {
         id: 'client-categories',
         label: 'Categorías de clientes',
-        icon: Tag,
+        icon: SbCategory,
         href: '/client-categories',
         permission: 'manage_catalogs',
       },
@@ -115,34 +119,34 @@ const sidebarItems: SidebarItem[] = [
   {
     id: 'products',
     label: 'Productos',
-    icon: Package,
+    icon: SbProducts,
     permission: 'view_products',
     submenu: [
       {
         id: 'products-list',
         label: 'Lista de productos',
-        icon: Package,
+        icon: SbProducts,
         href: '/products',
         permission: 'view_products',
       },
       {
         id: 'product-families',
         label: 'Familias de productos',
-        icon: FolderOpen,
+        icon: SbFolders,
         href: '/product-families',
         permission: 'view_products',
       },
       {
         id: 'product-categories',
         label: 'Categorías de productos',
-        icon: Tag,
+        icon: SbCategory,
         href: '/product-categories',
         permission: 'manage_catalogs',
       },
       {
         id: 'units',
         label: 'Unidades de medida',
-        icon: Ruler,
+        icon: SbUnits,
         href: '/units',
         permission: 'manage_catalogs',
       },
@@ -151,21 +155,21 @@ const sidebarItems: SidebarItem[] = [
   {
     id: 'price-lists',
     label: 'Listas de precios',
-    icon: TrendUp,
+    icon: SbPriceLists,
     href: '/price-lists',
     permission: 'view_products',
   },
   {
     id: 'discounts',
     label: 'Descuentos',
-    icon: Percent,
+    icon: SbDiscounts,
     href: '/discounts',
     permission: 'view_discounts',
   },
   {
     id: 'promotions',
     label: 'Promociones',
-    icon: Lightning,
+    icon: SbPromotions,
     href: '/promotions',
     permission: 'view_promotions',
   },
@@ -174,21 +178,21 @@ const sidebarItems: SidebarItem[] = [
   {
     id: 'routes',
     label: 'Rutas',
-    icon: NavigationArrow,
+    icon: SbRoutes,
     permission: 'view_routes',
     section: 'Operación',
     submenu: [
       {
         id: 'routes-list',
         label: 'Listado de rutas',
-        icon: NavigationArrow,
+        icon: SbRoutes,
         href: '/routes',
         permission: 'view_routes',
       },
       {
         id: 'routes-manage',
         label: 'Administrar rutas',
-        icon: ClipboardText,
+        icon: SbForms,
         href: '/routes/manage',
         permission: 'view_routes',
       },
@@ -197,20 +201,20 @@ const sidebarItems: SidebarItem[] = [
   {
     id: 'inventory',
     label: 'Inventarios',
-    icon: Archive,
+    icon: SbInventory,
     permission: 'view_inventory',
     submenu: [
       {
         id: 'inventory-warehouse',
         label: 'Inventario de almacén',
-        icon: Archive,
+        icon: SbInventory,
         href: '/inventory',
         permission: 'view_inventory',
       },
       {
         id: 'inventory-movements',
         label: 'Movimientos de inventario',
-        icon: ArrowsLeftRight,
+        icon: SbMovements,
         href: '/inventory/movements',
         permission: 'view_inventory',
       },
@@ -219,14 +223,14 @@ const sidebarItems: SidebarItem[] = [
   {
     id: 'zones',
     label: 'Zonas',
-    icon: MapPin,
+    icon: SbZones,
     href: '/zones',
     permission: 'view_zones',
   },
   {
     id: 'visits',
     label: 'Visitas',
-    icon: CalendarDots,
+    icon: SbVisits,
     href: '/visits',
     permission: 'view_visits',
   },
@@ -235,21 +239,21 @@ const sidebarItems: SidebarItem[] = [
   {
     id: 'forms',
     label: 'Formularios',
-    icon: ClipboardText,
+    icon: SbForms,
     permission: 'view_dashboard',
     section: 'Herramientas',
     submenu: [
       {
         id: 'form-builder',
         label: 'Constructor',
-        icon: ClipboardText,
+        icon: SbForms,
         href: '/forms/builder',
         permission: 'view_dashboard',
       },
       {
         id: 'form-list',
         label: 'Mis formularios',
-        icon: ClipboardText,
+        icon: SbForms,
         href: '/forms',
         permission: 'view_dashboard',
       },
@@ -258,49 +262,49 @@ const sidebarItems: SidebarItem[] = [
   {
     id: 'reports',
     label: 'Reportes',
-    icon: ChartBar,
+    icon: SbReports,
     href: '/reports',
     permission: 'view_dashboard',
   },
   {
     id: 'team',
     label: 'Mi Equipo',
-    icon: Users,
+    icon: SbTeam,
     href: '/team',
     permission: 'view_team',
   },
   {
     id: 'devices',
     label: 'Dispositivos',
-    icon: DeviceMobile,
+    icon: SbDevices,
     href: '/devices',
     permission: 'manage_devices',
   },
   {
     id: 'automations',
     label: 'Automatizaciones',
-    icon: Robot,
+    icon: SbAutomations,
     href: '/automations',
     permission: 'view_automations',
   },
   {
     id: 'metas',
     label: 'Metas de Vendedor',
-    icon: Target,
+    icon: SbGoals,
     href: '/metas',
     permission: 'view_automations',
   },
   {
     id: 'ai',
     label: 'Asistente IA',
-    icon: Brain,
+    icon: SbAI,
     href: '/ai',
     permission: 'view_automations',
   },
   {
     id: 'ayuda',
     label: 'Ayuda',
-    icon: NavigationArrow,
+    icon: SbHelp,
     href: '/ayuda',
     permission: 'view_dashboard',
   },
@@ -309,56 +313,56 @@ const sidebarItems: SidebarItem[] = [
   {
     id: 'administration',
     label: 'Administración',
-    icon: ShieldCheck,
+    icon: SbAdmin,
     permission: ['view_users', 'manage_roles', 'manage_global_settings'],
     section: 'Administración',
     submenu: [
       {
         id: 'tenants',
         label: 'Gestión de Empresas',
-        icon: Buildings,
+        icon: SbBuildings,
         href: '/admin/tenants',
         permission: 'manage_tenants',
       },
       {
         id: 'system-dashboard',
         label: 'Dashboard Sistema',
-        icon: ChartBar,
+        icon: SbReports,
         href: '/admin/system-dashboard',
         permission: 'manage_global_settings',
       },
       {
         id: 'users',
         label: 'Usuarios',
-        icon: Users,
+        icon: SbUsers,
         href: '/users',
         permission: 'view_users',
       },
       {
         id: 'roles',
         label: 'Roles',
-        icon: ShieldCheck,
+        icon: SbAdmin,
         href: '/roles',
         permission: 'manage_roles',
       },
       {
         id: 'global-settings',
         label: 'Configuración Global',
-        icon: GearSix,
+        icon: SbSettings,
         href: '/global-settings',
         permission: 'manage_global_settings',
       },
       {
         id: 'activity-logs',
         label: 'Registro de actividad',
-        icon: ClockCounterClockwise,
+        icon: SbActivityLog,
         href: '/activity-logs',
         permission: 'view_activity_logs',
       },
       {
         id: 'company-settings',
         label: 'Configuración',
-        icon: Buildings,
+        icon: SbSettings,
         href: '/settings',
         permission: 'view_company_settings',
       },
@@ -367,7 +371,7 @@ const sidebarItems: SidebarItem[] = [
   {
     id: 'subscription',
     label: 'Suscripción',
-    icon: CreditCard,
+    icon: SbSubscription,
     href: '/subscription',
     permission: 'view_settings',
   },
@@ -378,55 +382,55 @@ const superAdminItems: SidebarItem[] = [
   {
     id: 'sa-dashboard',
     label: 'Dashboard',
-    icon: SquaresFour,
+    icon: SbDashboard,
     href: '/admin/system-dashboard',
   },
   {
     id: 'sa-tenants',
     label: 'Empresas',
-    icon: Buildings,
+    icon: SbBuildings,
     href: '/admin/tenants',
   },
   {
     id: 'sa-global-users',
     label: 'Usuarios Global',
-    icon: UsersThree,
+    icon: SbUsersGlobal,
     href: '/admin/global-users',
   },
   {
     id: 'sa-announcements',
     label: 'Anuncios',
-    icon: Megaphone,
+    icon: SbAnnouncements,
     href: '/admin/announcements',
   },
   {
     id: 'sa-plans',
     label: 'Planes',
-    icon: CreditCard,
+    icon: SbSubscription,
     href: '/admin/subscription-plans',
   },
   {
     id: 'sa-activity-logs',
     label: 'Registro de actividad',
-    icon: ClockCounterClockwise,
+    icon: SbActivityLog,
     href: '/activity-logs',
   },
   {
     id: 'sa-crash-reports',
     label: 'Crash Reports',
-    icon: Bug,
+    icon: SbBug,
     href: '/admin/crash-reports',
   },
   {
     id: 'sa-security',
     label: 'Seguridad',
-    icon: ShieldCheck,
+    icon: SbSecurity,
     href: '/admin/security',
   },
   {
     id: 'sa-settings',
     label: 'Configuración',
-    icon: GearSix,
+    icon: SbSettings,
     href: '/global-settings',
   },
 ];
@@ -508,43 +512,6 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
 
 // Group-based icon color palette — 6 families by section
 // Defined at module level so they are not recreated on every render
-const itemGroupMap: Record<string, string> = {
-  // Dashboard
-  dashboard: 'dashboard',
-  // Ventas
-  orders: 'ventas', cobranza: 'ventas',
-  // Catálogo
-  clients: 'catalogo', 'clients-list': 'catalogo', 'client-categories': 'catalogo',
-  products: 'catalogo', 'products-list': 'catalogo', 'product-families': 'catalogo',
-  'product-categories': 'catalogo', units: 'catalogo',
-  'price-lists': 'catalogo', discounts: 'catalogo', promotions: 'catalogo',
-  // Operación
-  routes: 'operacion', 'routes-list': 'operacion', 'routes-manage': 'operacion',
-  inventory: 'operacion', 'inventory-warehouse': 'operacion', 'inventory-movements': 'operacion',
-  zones: 'operacion', visits: 'operacion',
-  // Herramientas
-  forms: 'herramientas', 'form-builder': 'herramientas', 'form-list': 'herramientas',
-  reports: 'herramientas', team: 'herramientas', devices: 'herramientas', automations: 'herramientas', metas: 'herramientas', ayuda: 'herramientas',
-  // Administración
-  administration: 'admin', tenants: 'admin', 'system-dashboard': 'admin',
-  users: 'admin', roles: 'admin', 'global-settings': 'admin',
-  'activity-logs': 'admin', 'company-settings': 'admin', settings: 'admin',
-  subscription: 'admin',
-  // SuperAdmin items
-  'sa-dashboard': 'admin', 'sa-tenants': 'admin', 'sa-announcements': 'admin',
-  'sa-plans': 'admin', 'sa-activity-logs': 'admin', 'sa-crash-reports': 'admin',
-  'sa-settings': 'admin',
-};
-
-const groupColors: Record<string, { active: string; inactive: string }> = {
-  dashboard:    { active: 'text-blue-600',    inactive: 'text-blue-500 group-hover:text-blue-600' },
-  ventas:       { active: 'text-indigo-600',  inactive: 'text-indigo-500 group-hover:text-indigo-600' },
-  catalogo:     { active: 'text-emerald-600', inactive: 'text-emerald-500 group-hover:text-emerald-600' },
-  operacion:    { active: 'text-cyan-600',    inactive: 'text-cyan-500 group-hover:text-cyan-600' },
-  herramientas: { active: 'text-amber-600',   inactive: 'text-amber-500 group-hover:text-amber-600' },
-  admin:        { active: 'text-slate-600',   inactive: 'text-slate-500 group-hover:text-slate-600' },
-};
-
 interface SidebarProps {
   /** Cuando el banner de impersonación está activo, desplazar sidebar 40px */
   isImpersonating?: boolean;
@@ -642,12 +609,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
     return userPermissions.includes(permission);
   };
 
-  const getIconColor = (itemId: string, isActive: boolean) => {
-    const group = itemGroupMap[itemId] || 'dashboard';
-    const colors = groupColors[group];
-    return isActive ? colors.active : colors.inactive;
-  };
-
   const showLabels = (sidebarOpen && !sidebarCollapsed) || !isDesktop;
 
   const renderSidebarItem = (item: SidebarItem, level = 0) => {
@@ -667,12 +628,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
       <>
         <div
           className={cn(
-            'flex items-center justify-center rounded-lg transition-colors',
-            getIconColor(item.id, activeState),
-            showLabels ? 'w-6 h-6' : 'w-8 h-8'
+            'flex items-center justify-center rounded-lg transition-all',
+            activeState ? 'opacity-100' : 'opacity-60 group-hover:opacity-100',
+            showLabels ? 'w-7 h-7' : 'w-9 h-9'
           )}
         >
-          <item.icon size={showLabels ? 18 : 20} />
+          <item.icon size={showLabels ? 22 : 26} />
         </div>
 
         {showLabels && (
@@ -815,8 +776,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
           </div>
 
           {/* Navigation Items */}
-          <IconContext.Provider value={{ weight: 'duotone' }}>
-            <nav data-tour="sidebar-nav" className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
+          <nav data-tour="sidebar-nav" className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
               {activeItems.map(item => {
                 if (!hasPermission(item.permission)) return null;
                 return (
@@ -836,7 +796,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
                 );
               })}
             </nav>
-          </IconContext.Provider>
 
           {/* Getting Started Progress (non-SuperAdmin, non-collapsed) */}
           {!sidebarCollapsed && session?.user && session.user.role !== 'SUPER_ADMIN' && !isImpersonating && (
@@ -844,7 +803,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
               href="/getting-started"
               className="mx-3 mb-2 flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors group"
             >
-              <ClipboardText size={16} className="text-muted-foreground group-hover:text-green-600 flex-shrink-0" />
+              <SbForms size={16} className="text-muted-foreground group-hover:text-green-600 flex-shrink-0" />
               <span className="truncate">Guía de configuración</span>
             </Link>
           )}
@@ -910,7 +869,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
                       </span>
                       {companySettings?.subscriptionPlan && (
                         <span className="text-[10px] text-muted-foreground/70 mt-0.5">
-                          {({'BASIC': 'Plan Basico', 'PRO': 'Plan Profesional', 'ENTERPRISE': 'Plan Empresarial'} as Record<string, string>)[companySettings.subscriptionPlan.toUpperCase()] || companySettings.subscriptionPlan}
+                          {({'TRIAL': 'Plan Prueba', 'FREE': 'Plan Gratis', 'GRATIS': 'Plan Gratis', 'BASICO': 'Plan Básico', 'BASIC': 'Plan Básico', 'PROFESIONAL': 'Plan Profesional', 'PRO': 'Plan Profesional', 'ENTERPRISE': 'Plan Empresarial'} as Record<string, string>)[companySettings.subscriptionPlan.toUpperCase()] || `Plan ${companySettings.subscriptionPlan}`}
                         </span>
                       )}
                     </div>

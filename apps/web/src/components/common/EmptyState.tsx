@@ -1,20 +1,20 @@
 import React from 'react'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
+import { AlertCircle } from 'lucide-react'
 import {
-  Package,
-  Users,
-  ShoppingCart,
-  FileText,
-  Search,
-  AlertCircle,
-  Inbox,
-  Calendar,
-  Truck
-} from 'lucide-react'
+  SbClients,
+  SbProducts,
+  SbShoppingCart,
+  SbForms,
+  SbSearch,
+  SbInbox,
+  SbVisits,
+  SbTruck,
+} from '@/components/layout/DashboardIcons'
 
 interface EmptyStateProps {
-  icon?: React.ComponentType<{ className?: string }>
+  icon?: React.ComponentType<{ className?: string; size?: number }>
   title: string
   description?: string
   action?: {
@@ -34,25 +34,28 @@ const sizeClasses = {
   sm: {
     container: 'py-8',
     icon: 'h-8 w-8',
+    iconSize: 32,
     title: 'text-lg',
     description: 'text-sm'
   },
   md: {
     container: 'py-12',
     icon: 'h-12 w-12',
+    iconSize: 48,
     title: 'text-xl',
     description: 'text-base'
   },
   lg: {
     container: 'py-16',
     icon: 'h-16 w-16',
+    iconSize: 64,
     title: 'text-2xl',
     description: 'text-lg'
   }
 }
 
 export const EmptyState: React.FC<EmptyStateProps> = ({
-  icon: Icon = Inbox,
+  icon: Icon = SbInbox,
   title,
   description,
   action,
@@ -61,7 +64,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   size = 'md'
 }) => {
   const classes = sizeClasses[size]
-  
+
   return (
     <div className={cn(
       'flex flex-col items-center justify-center text-center',
@@ -72,7 +75,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         <Icon className={cn(
           'text-muted-foreground',
           classes.icon
-        )} />
+        )} size={classes.iconSize} />
       </div>
       
       <h3 className={cn(
@@ -122,7 +125,7 @@ export const EmptyClients: React.FC<{
 }> = ({ onCreateClient, onImportClients }) => {
   return (
     <EmptyState
-      icon={Users}
+      icon={SbClients}
       title="No hay clientes registrados"
       description="Comienza agregando tu primer cliente para gestionar las ventas y rutas."
       action={onCreateClient ? {
@@ -143,7 +146,7 @@ export const EmptyProducts: React.FC<{
 }> = ({ onCreateProduct, onImportProducts }) => {
   return (
     <EmptyState
-      icon={Package}
+      icon={SbProducts}
       title="No hay productos en el catálogo"
       description="Agrega productos para comenzar a crear pedidos y gestionar el inventario."
       action={onCreateProduct ? {
@@ -163,7 +166,7 @@ export const EmptyOrders: React.FC<{
 }> = ({ onCreateOrder }) => {
   return (
     <EmptyState
-      icon={ShoppingCart}
+      icon={SbShoppingCart}
       title="No hay pedidos registrados"
       description="Los pedidos aparecerán aquí una vez que comiences a registrar ventas."
       action={onCreateOrder ? {
@@ -179,7 +182,7 @@ export const EmptyVisits: React.FC<{
 }> = ({ onScheduleVisit }) => {
   return (
     <EmptyState
-      icon={Calendar}
+      icon={SbVisits}
       title="No hay visitas programadas"
       description="Programa visitas a tus clientes para mantener un seguimiento efectivo."
       action={onScheduleVisit ? {
@@ -195,7 +198,7 @@ export const EmptyDeliveries: React.FC<{
 }> = ({ onCreateDelivery }) => {
   return (
     <EmptyState
-      icon={Truck}
+      icon={SbTruck}
       title="No hay entregas programadas"
       description="Las entregas aparecerán aquí cuando los pedidos estén listos para envío."
       action={onCreateDelivery ? {
@@ -212,7 +215,7 @@ export const EmptySearchResults: React.FC<{
 }> = ({ searchTerm, onClearSearch }) => {
   return (
     <EmptyState
-      icon={Search}
+      icon={SbSearch}
       title="No se encontraron resultados"
       description={
         searchTerm 
@@ -234,7 +237,7 @@ export const EmptyForms: React.FC<{
 }> = ({ onCreateForm }) => {
   return (
     <EmptyState
-      icon={FileText}
+      icon={SbForms}
       title="No hay formularios creados"
       description="Crea formularios personalizados para recopilar información específica de tus clientes."
       action={onCreateForm ? {
@@ -269,7 +272,7 @@ export const ErrorState: React.FC<{
 
 // Card variant for smaller spaces
 interface EmptyCardProps {
-  icon?: React.ComponentType<{ className?: string }>
+  icon?: React.ComponentType<{ className?: string; size?: number }>
   title: string
   description?: string
   action?: {
@@ -280,7 +283,7 @@ interface EmptyCardProps {
 }
 
 export const EmptyCard: React.FC<EmptyCardProps> = ({
-  icon: Icon = Inbox,
+  icon: Icon = SbInbox,
   title,
   description,
   action,
@@ -292,7 +295,7 @@ export const EmptyCard: React.FC<EmptyCardProps> = ({
       className
     )}>
       <div className="mx-auto mb-3">
-        <Icon className="h-8 w-8 text-muted-foreground" />
+        <Icon className="h-8 w-8 text-muted-foreground" size={32} />
       </div>
       
       <h4 className="font-medium text-foreground mb-1">

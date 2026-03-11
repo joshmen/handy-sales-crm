@@ -83,8 +83,23 @@ public class SubscriptionEnforcementService : ISubscriptionEnforcementService
         if (tenant == null || string.IsNullOrEmpty(tenant.PlanTipo))
             return null;
 
+        // Normalize legacy plan codes (PROFESIONAL→PRO, BASICO→BASIC, Trial→FREE)
+        var planCode = NormalizePlanCode(tenant.PlanTipo);
+
         return await _db.SubscriptionPlans
             .AsNoTracking()
-            .FirstOrDefaultAsync(p => p.Codigo == tenant.PlanTipo && p.Activo);
+            .FirstOrDefaultAsync(p => p.Codigo == planCode && p.Activo);
+    }
+
+    private static string NormalizePlanCode(string? planTipo)
+    {
+        if (string.IsNullOrEmpty(planTipo)) return "FREE";
+        return planTipo.ToUpperInvariant() switch
+        {
+            "TRIAL" => "FREE",
+            "PROFESIONAL" or "PROFESSIONAL" => "PRO",
+            "BASICO" or "STARTER" => "BASIC",
+            _ => planTipo.ToUpperInvariant()
+        };
     }
 }

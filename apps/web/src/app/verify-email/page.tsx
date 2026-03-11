@@ -21,6 +21,7 @@ function VerifyEmailContent() {
   const [countdown, setCountdown] = useState(0);
   const [navigating, setNavigating] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const handleVerifyRef = useRef<(() => void) | null>(null);
 
   // Redirect if no email param
   useEffect(() => {
@@ -52,6 +53,15 @@ function VerifyEmailContent() {
     if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
+
+    // Auto-submit when all 6 digits are filled
+    if (value && index === 5) {
+      const fullCode = newCode.join('');
+      if (fullCode.length === 6) {
+        // Defer to let state update complete
+        setTimeout(() => handleVerifyRef.current?.(), 0);
+      }
+    }
   };
 
   const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
@@ -77,6 +87,11 @@ function VerifyEmailContent() {
     // Focus the next empty input or the last one
     const nextEmpty = newCode.findIndex((c) => !c);
     inputRefs.current[nextEmpty === -1 ? 5 : nextEmpty]?.focus();
+
+    // Auto-submit if all 6 digits pasted
+    if (pasted.length === 6) {
+      setTimeout(() => handleVerifyRef.current?.(), 0);
+    }
   };
 
   const fullCode = code.join('');
@@ -119,6 +134,9 @@ function VerifyEmailContent() {
     }
   }, [fullCode, verifying, email, router]);
 
+  // Keep ref in sync for auto-submit from handleChange
+  handleVerifyRef.current = handleVerify;
+
   const handleResend = async () => {
     if (resending || countdown > 0) return;
 
@@ -132,7 +150,7 @@ function VerifyEmailContent() {
 
       if (response.status === 200) {
         toast({ title: 'Código reenviado', description: 'Revisa tu bandeja de entrada.' });
-        setCountdown(60);
+        setCountdown(900);
         setCode(['', '', '', '', '', '']);
         inputRefs.current[0]?.focus();
       } else {
@@ -170,7 +188,7 @@ function VerifyEmailContent() {
             <p className="text-[15px] text-[#64748B]">
               Enviamos un código de 6 dígitos a
             </p>
-            <p className="text-[15px] font-medium text-[#0F172A]">{email}</p>
+            <p className="text-[15px] font-medium text-[#0F172A] break-all">{email}</p>
           </div>
 
           {/* OTP Input - 6 individual boxes */}
@@ -209,7 +227,7 @@ function VerifyEmailContent() {
               className="text-[14px] font-medium text-indigo-600 hover:text-indigo-700 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
             >
               {countdown > 0
-                ? `Reenviar código en ${countdown}s`
+                ? `Reenviar código en ${Math.floor(countdown / 60)}:${String(countdown % 60).padStart(2, '0')}`
                 : resending
                   ? 'Reenviando...'
                   : 'Reenviar código'}
