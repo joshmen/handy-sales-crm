@@ -100,8 +100,11 @@ public static class AuthEndpoints
             return Results.Ok(result);
         }).RequireRateLimiting("anonymous");
 
-        app.MapPost("/auth/force-login", async (UsuarioLoginDto dto, IValidator<UsuarioLoginDto> validator, [FromServices] AuthService auth) =>
+        app.MapPost("/auth/force-login", async (UsuarioLoginDto dto, IValidator<UsuarioLoginDto> validator, [FromServices] AuthService auth, [FromServices] RecaptchaService recaptcha) =>
         {
+            if (!await recaptcha.ValidateAsync(dto.recaptchaToken, "force_login"))
+                return Results.BadRequest(new { error = "Verificación de seguridad fallida. Intenta de nuevo." });
+
             var validation = await validator.ValidateAsync(dto);
             if (!validation.IsValid)
                 return Results.BadRequest(validation.ToDictionary());
@@ -123,7 +126,7 @@ public static class AuthEndpoints
         {
             var result = await auth.RefreshTokenAsync(dto.RefreshToken);
             return result is null ? Results.Unauthorized() : Results.Ok(result);
-        });
+        }).RequireRateLimiting("anonymous");
 
         app.MapPost("/auth/logout", async (HttpContext context, [FromServices] AuthService auth, [FromBody] LogoutDto? dto) =>
         {
@@ -147,7 +150,9 @@ public static class AuthEndpoints
             HttpContext context) =>
         {
             // Verify shared secret (NextAuth server-side → backend)
-            var expectedSecret = config["SocialLogin:SharedSecret"] ?? config["Jwt:Secret"];
+            var expectedSecret = config["SocialLogin:SharedSecret"];
+            if (string.IsNullOrEmpty(expectedSecret))
+                return Results.Problem("SocialLogin:SharedSecret is not configured", statusCode: 500);
             var providedSecret = context.Request.Headers["X-Social-Login-Secret"].FirstOrDefault();
             if (string.IsNullOrEmpty(providedSecret) || providedSecret != expectedSecret)
                 return Results.Unauthorized();
@@ -171,7 +176,9 @@ public static class AuthEndpoints
             HttpContext context) =>
         {
             // Verify shared secret
-            var expectedSecret = config["SocialLogin:SharedSecret"] ?? config["Jwt:Secret"];
+            var expectedSecret = config["SocialLogin:SharedSecret"];
+            if (string.IsNullOrEmpty(expectedSecret))
+                return Results.Problem("SocialLogin:SharedSecret is not configured", statusCode: 500);
             var providedSecret = context.Request.Headers["X-Social-Login-Secret"].FirstOrDefault();
             if (string.IsNullOrEmpty(providedSecret) || providedSecret != expectedSecret)
                 return Results.Unauthorized();
@@ -196,7 +203,7 @@ public static class AuthEndpoints
             {
                 return Results.BadRequest(new { error = "Error al procesar el registro." });
             }
-        });
+        }).RequireRateLimiting("anonymous");
 
         // Email verification
         app.MapPost("/auth/verify-email", async (

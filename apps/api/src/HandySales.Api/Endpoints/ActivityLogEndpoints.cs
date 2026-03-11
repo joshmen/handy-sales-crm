@@ -40,6 +40,8 @@ public static class ActivityLogEndpoints
         if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
             return Results.Forbid();
 
+        pageSize = Math.Clamp(pageSize, 1, 100);
+
         // SuperAdmin: cross-tenant (null) or specific tenant filter
         // Admin: always scoped to own tenant
         int? effectiveTenantId = currentTenant.IsSuperAdmin

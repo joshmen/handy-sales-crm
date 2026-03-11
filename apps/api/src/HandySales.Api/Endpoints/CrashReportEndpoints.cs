@@ -46,8 +46,8 @@ public static class CrashReportEndpoints
 
             await repo.CreateAsync(report);
 
-            // Broadcast to all connected clients (SuperAdmin will see it in real-time)
-            await hubContext.Clients.All.SendAsync("CrashReportCreated", new
+            // Broadcast to superadmin group only
+            await hubContext.Clients.Group("superadmin").SendAsync("CrashReportCreated", new
             {
                 id = report.Id,
                 severity = report.Severity,
@@ -123,8 +123,8 @@ public static class CrashReportEndpoints
             if (!ok)
                 return Results.NotFound(new { message = "Crash report no encontrado" });
 
-            // Broadcast resolution to all connected clients
-            await hubContext.Clients.All.SendAsync("CrashReportResolved", new
+            // Broadcast resolution to superadmin group only
+            await hubContext.Clients.Group("superadmin").SendAsync("CrashReportResolved", new
             {
                 id,
                 resuelto = true,

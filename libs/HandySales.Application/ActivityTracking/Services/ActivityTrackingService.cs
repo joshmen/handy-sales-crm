@@ -1,6 +1,7 @@
 using HandySales.Domain.Entities;
 using HandySales.Application.ActivityTracking.Interfaces;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 
 namespace HandySales.Application.ActivityTracking.Services;
 
@@ -14,10 +15,12 @@ public interface IActivityTrackingService
 public class ActivityTrackingService : IActivityTrackingService
 {
     private readonly IActivityTrackingRepository _repository;
+    private readonly ILogger<ActivityTrackingService> _logger;
 
-    public ActivityTrackingService(IActivityTrackingRepository repository)
+    public ActivityTrackingService(IActivityTrackingRepository repository, ILogger<ActivityTrackingService> logger)
     {
         _repository = repository;
+        _logger = logger;
     }
 
     public async Task LogActivityAsync(int tenantId, int userId, string activityType, string activityCategory, string description, string status = "success", string? ipAddress = null, string? userAgent = null, string? requestMethod = null, string? requestUrl = null)
@@ -54,55 +57,69 @@ public class ActivityTrackingService : IActivityTrackingService
         catch (Exception ex)
         {
             // Log error but don't fail the main process
-            Console.WriteLine($"Error logging activity: {ex.Message}");
+            _logger.LogWarning(ex, "Error logging activity: {Message}", ex.Message);
         }
     }
 
     public async Task LogEntityChangeAsync(int tenantId, int userId, string entityType, int entityId, string changeType, object? oldValues = null, object? newValues = null)
     {
-        var additionalData = new Dictionary<string, object>();
-        if (oldValues != null)
+        try
         {
-            additionalData["oldValues"] = oldValues;
-        }
-        if (newValues != null)
-        {
-            additionalData["newValues"] = newValues;
-        }
+            var additionalData = new Dictionary<string, object>();
+            if (oldValues != null)
+            {
+                additionalData["oldValues"] = oldValues;
+            }
+            if (newValues != null)
+            {
+                additionalData["newValues"] = newValues;
+            }
 
-        var activity = new ActivityLog
-        {
-            TenantId = tenantId,
-            UserId = userId,
-            ActivityType = changeType.ToLower(),
-            ActivityCategory = GetCategoryFromEntityType(entityType),
-            ActivityStatus = "success",
-            Description = $"{changeType} {entityType} #{entityId}",
-            EntityType = entityType,
-            EntityId = entityId,
-            AdditionalData = additionalData.Any() ? JsonSerializer.Serialize(additionalData) : null,
-            CreatedAt = DateTime.UtcNow
-        };
+            var activity = new ActivityLog
+            {
+                TenantId = tenantId,
+                UserId = userId,
+                ActivityType = changeType.ToLower(),
+                ActivityCategory = GetCategoryFromEntityType(entityType),
+                ActivityStatus = "success",
+                Description = $"{changeType} {entityType} #{entityId}",
+                EntityType = entityType,
+                EntityId = entityId,
+                AdditionalData = additionalData.Any() ? JsonSerializer.Serialize(additionalData) : null,
+                CreatedAt = DateTime.UtcNow
+            };
 
-        await _repository.CreateActivityLogAsync(activity);
+            await _repository.CreateActivityLogAsync(activity);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error logging entity change: {Message}", ex.Message);
+        }
     }
 
     public async Task LogSecurityEventAsync(int tenantId, int? userId, string eventType, string description, string? ipAddress = null, string riskLevel = "medium")
     {
-        var activity = new ActivityLog
+        try
         {
-            TenantId = tenantId,
-            UserId = userId ?? 0,
-            ActivityType = eventType,
-            ActivityCategory = "security",
-            ActivityStatus = riskLevel == "high" ? "warning" : "info",
-            Description = description,
-            IpAddress = ipAddress,
-            CreatedAt = DateTime.UtcNow,
-            AdditionalData = JsonSerializer.Serialize(new { riskLevel })
-        };
+            var activity = new ActivityLog
+            {
+                TenantId = tenantId,
+                UserId = userId ?? 0,
+                ActivityType = eventType,
+                ActivityCategory = "security",
+                ActivityStatus = riskLevel == "high" ? "warning" : "info",
+                Description = description,
+                IpAddress = ipAddress,
+                CreatedAt = DateTime.UtcNow,
+                AdditionalData = JsonSerializer.Serialize(new { riskLevel })
+            };
 
-        await _repository.CreateActivityLogAsync(activity);
+            await _repository.CreateActivityLogAsync(activity);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error logging security event: {Message}", ex.Message);
+        }
     }
 
     private void ParseUserAgent(string userAgent, out string browser, out string browserVersion, out string os, out string deviceType)

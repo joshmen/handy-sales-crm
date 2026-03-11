@@ -41,7 +41,7 @@ public static class ImportExportEndpoints
                 .ToListAsync();
 
             return GenerateCsvResult(clientes, "clientes.csv");
-        }).RequireAuthorization();
+        }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapGet("/api/export/productos", async (
             [FromServices] HandySalesDbContext db,
@@ -68,7 +68,7 @@ public static class ImportExportEndpoints
                 .ToListAsync();
 
             return GenerateCsvResult(productos, "productos.csv");
-        }).RequireAuthorization();
+        }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapGet("/api/export/inventario", async (
             [FromServices] HandySalesDbContext db,
@@ -90,7 +90,7 @@ public static class ImportExportEndpoints
                 .ToListAsync();
 
             return GenerateCsvResult(inventario, "inventario.csv");
-        }).RequireAuthorization();
+        }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapGet("/api/export/pedidos", async (
             [FromQuery] string? desde,
@@ -129,7 +129,7 @@ public static class ImportExportEndpoints
                 .ToListAsync();
 
             return GenerateCsvResult(pedidos, "pedidos.csv");
-        }).RequireAuthorization();
+        }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapGet("/api/export/cobros", async (
             [FromQuery] string? desde,
@@ -167,7 +167,7 @@ public static class ImportExportEndpoints
                 .ToListAsync();
 
             return GenerateCsvResult(cobros, "cobros.csv");
-        }).RequireAuthorization();
+        }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapGet("/api/export/categorias-clientes", async (
             [FromServices] HandySalesDbContext db,
@@ -185,7 +185,7 @@ public static class ImportExportEndpoints
                 .ToListAsync();
 
             return GenerateCsvResult(categorias, "categorias_clientes.csv");
-        }).RequireAuthorization();
+        }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapGet("/api/export/unidades-medida", async (
             [FromServices] HandySalesDbContext db,
@@ -204,7 +204,7 @@ public static class ImportExportEndpoints
                 .ToListAsync();
 
             return GenerateCsvResult(unidades, "unidades_medida.csv");
-        }).RequireAuthorization();
+        }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapGet("/api/export/categorias-productos", async (
             [FromServices] HandySalesDbContext db,
@@ -223,7 +223,7 @@ public static class ImportExportEndpoints
                 .ToListAsync();
 
             return GenerateCsvResult(categorias, "categorias_productos.csv");
-        }).RequireAuthorization();
+        }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapGet("/api/export/familias-productos", async (
             [FromServices] HandySalesDbContext db,
@@ -242,7 +242,7 @@ public static class ImportExportEndpoints
                 .ToListAsync();
 
             return GenerateCsvResult(familias, "familias_productos.csv");
-        }).RequireAuthorization();
+        }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapGet("/api/export/listas-precios", async (
             [FromServices] HandySalesDbContext db,
@@ -261,7 +261,7 @@ public static class ImportExportEndpoints
                 .ToListAsync();
 
             return GenerateCsvResult(listas, "listas_precios.csv");
-        }).RequireAuthorization();
+        }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapGet("/api/export/descuentos", async (
             [FromServices] HandySalesDbContext db,
@@ -283,7 +283,7 @@ public static class ImportExportEndpoints
                 .ToListAsync();
 
             return GenerateCsvResult(descuentos, "descuentos.csv");
-        }).RequireAuthorization();
+        }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapGet("/api/export/promociones", async (
             [FromServices] HandySalesDbContext db,
@@ -308,7 +308,7 @@ public static class ImportExportEndpoints
                 .ToListAsync();
 
             return GenerateCsvResult(promos, "promociones.csv");
-        }).RequireAuthorization();
+        }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapGet("/api/export/rutas", async (
             [FromQuery] string? desde,
@@ -350,7 +350,7 @@ public static class ImportExportEndpoints
                 .ToListAsync();
 
             return GenerateCsvResult(rutas, "rutas.csv");
-        }).RequireAuthorization();
+        }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapGet("/api/export/zonas", async (
             [FromServices] HandySalesDbContext db,
@@ -372,7 +372,7 @@ public static class ImportExportEndpoints
                 .ToListAsync();
 
             return GenerateCsvResult(zonas, "zonas.csv");
-        }).RequireAuthorization();
+        }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         // ═══════════════════════════════════════════════════════
         // TEMPLATE ENDPOINTS (CSV vacío con headers)
@@ -392,7 +392,7 @@ public static class ImportExportEndpoints
                 }
             };
             return GenerateCsvResult(template, "template_zonas.csv");
-        }).RequireAuthorization();
+        }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapGet("/api/import/template/clientes", () =>
         {
@@ -412,7 +412,7 @@ public static class ImportExportEndpoints
                 }
             };
             return GenerateCsvResult(template, "template_clientes.csv");
-        }).RequireAuthorization();
+        }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapGet("/api/import/template/categorias-clientes", () =>
         {
@@ -425,7 +425,7 @@ public static class ImportExportEndpoints
                 }
             };
             return GenerateCsvResult(template, "template_categorias_clientes.csv");
-        }).RequireAuthorization();
+        }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapGet("/api/import/template/unidades-medida", () =>
         {
@@ -438,7 +438,7 @@ public static class ImportExportEndpoints
                 }
             };
             return GenerateCsvResult(template, "template_unidades_medida.csv");
-        }).RequireAuthorization();
+        }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapGet("/api/import/template/categorias-productos", () =>
         {
@@ -451,7 +451,7 @@ public static class ImportExportEndpoints
                 }
             };
             return GenerateCsvResult(template, "template_categorias_productos.csv");
-        }).RequireAuthorization();
+        }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapGet("/api/import/template/familias-productos", () =>
         {
@@ -464,7 +464,7 @@ public static class ImportExportEndpoints
                 }
             };
             return GenerateCsvResult(template, "template_familias_productos.csv");
-        }).RequireAuthorization();
+        }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapGet("/api/import/template/listas-precios", () =>
         {
@@ -477,7 +477,7 @@ public static class ImportExportEndpoints
                 }
             };
             return GenerateCsvResult(template, "template_listas_precios.csv");
-        }).RequireAuthorization();
+        }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapGet("/api/import/template/descuentos", () =>
         {
@@ -499,7 +499,7 @@ public static class ImportExportEndpoints
                 }
             };
             return GenerateCsvResult(template, "template_descuentos.csv");
-        }).RequireAuthorization();
+        }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapGet("/api/import/template/inventario", () =>
         {
@@ -515,7 +515,7 @@ public static class ImportExportEndpoints
                 }
             };
             return GenerateCsvResult(template, "template_inventario.csv");
-        }).RequireAuthorization();
+        }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapGet("/api/import/template/promociones", () =>
         {
@@ -532,7 +532,7 @@ public static class ImportExportEndpoints
                 }
             };
             return GenerateCsvResult(template, "template_promociones.csv");
-        }).RequireAuthorization();
+        }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapGet("/api/import/template/productos", () =>
         {
@@ -550,7 +550,7 @@ public static class ImportExportEndpoints
                 }
             };
             return GenerateCsvResult(template, "template_productos.csv");
-        }).RequireAuthorization();
+        }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         // ═══════════════════════════════════════════════════════
         // IMPORT ENDPOINTS
@@ -685,7 +685,7 @@ public static class ImportExportEndpoints
                 await db.SaveChangesAsync();
 
             return Results.Ok(new ImportResult(importados, errores.Count, rows.Count, errores));
-        }).RequireAuthorization().DisableAntiforgery();
+        }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN")).DisableAntiforgery();
 
         app.MapPost("/api/import/productos", async (
             IFormFile archivo,
@@ -821,7 +821,7 @@ public static class ImportExportEndpoints
                 await db.SaveChangesAsync();
 
             return Results.Ok(new ImportResult(importados, errores.Count, rows.Count, errores));
-        }).RequireAuthorization().DisableAntiforgery();
+        }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN")).DisableAntiforgery();
 
         // ─── Import Categorías de Clientes ───
         app.MapPost("/api/import/categorias-clientes", async (
@@ -896,7 +896,7 @@ public static class ImportExportEndpoints
                 await db.SaveChangesAsync();
 
             return Results.Ok(new ImportResult(importados, errores.Count, rows.Count, errores));
-        }).RequireAuthorization().DisableAntiforgery();
+        }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN")).DisableAntiforgery();
 
         // ─── Import Unidades de Medida ───
         app.MapPost("/api/import/unidades-medida", async (
@@ -971,7 +971,7 @@ public static class ImportExportEndpoints
                 await db.SaveChangesAsync();
 
             return Results.Ok(new ImportResult(importados, errores.Count, rows.Count, errores));
-        }).RequireAuthorization().DisableAntiforgery();
+        }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN")).DisableAntiforgery();
 
         // ─── Import Categorías de Productos ───
         app.MapPost("/api/import/categorias-productos", async (
@@ -1046,7 +1046,7 @@ public static class ImportExportEndpoints
                 await db.SaveChangesAsync();
 
             return Results.Ok(new ImportResult(importados, errores.Count, rows.Count, errores));
-        }).RequireAuthorization().DisableAntiforgery();
+        }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN")).DisableAntiforgery();
 
         // ─── Import Familias de Productos ───
         app.MapPost("/api/import/familias-productos", async (
@@ -1121,7 +1121,7 @@ public static class ImportExportEndpoints
                 await db.SaveChangesAsync();
 
             return Results.Ok(new ImportResult(importados, errores.Count, rows.Count, errores));
-        }).RequireAuthorization().DisableAntiforgery();
+        }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN")).DisableAntiforgery();
 
         // ─── Import Listas de Precios ───
         app.MapPost("/api/import/listas-precios", async (
@@ -1197,7 +1197,7 @@ public static class ImportExportEndpoints
                 await db.SaveChangesAsync();
 
             return Results.Ok(new ImportResult(importados, errores.Count, rows.Count, errores));
-        }).RequireAuthorization().DisableAntiforgery();
+        }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN")).DisableAntiforgery();
 
         // ─── Import Descuentos ───
         app.MapPost("/api/import/descuentos", async (
@@ -1367,7 +1367,7 @@ public static class ImportExportEndpoints
                 await db.SaveChangesAsync();
 
             return Results.Ok(new ImportResult(importados, errores.Count, rows.Count, errores));
-        }).RequireAuthorization().DisableAntiforgery();
+        }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN")).DisableAntiforgery();
 
         // ─── Import Promociones ───
         app.MapPost("/api/import/promociones", async (
@@ -1505,7 +1505,7 @@ public static class ImportExportEndpoints
                 await db.SaveChangesAsync();
 
             return Results.Ok(new ImportResult(importados, errores.Count, rows.Count, errores));
-        }).RequireAuthorization().DisableAntiforgery();
+        }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN")).DisableAntiforgery();
 
         // ── IMPORT INVENTARIO ────────────────────────────────
         app.MapPost("/api/import/inventario", async (
@@ -1618,7 +1618,7 @@ public static class ImportExportEndpoints
                 await db.SaveChangesAsync();
 
             return Results.Ok(new ImportResult(importados, errores.Count, rows.Count, errores));
-        }).RequireAuthorization().DisableAntiforgery();
+        }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN")).DisableAntiforgery();
 
         // ─── Import Zonas ───
         app.MapPost("/api/import/zonas", async (
@@ -1696,7 +1696,7 @@ public static class ImportExportEndpoints
                 await db.SaveChangesAsync();
 
             return Results.Ok(new ImportResult(importados, errores.Count, rows.Count, errores));
-        }).RequireAuthorization().DisableAntiforgery();
+        }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN")).DisableAntiforgery();
     }
 
     // ═══════════════════════════════════════════════════════

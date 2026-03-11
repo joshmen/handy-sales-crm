@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import { CompanySettings, UpdateCompanyRequest, companyService } from '@/services/api/companyService';
 import { toast } from '@/hooks/useToast';
@@ -284,7 +284,7 @@ export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) =>
     await loadSettings();
   };
 
-  const value: CompanyContextType = {
+  const value = useMemo<CompanyContextType>(() => ({
     settings,
     isLoading,
     isUpdating,
@@ -292,7 +292,7 @@ export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) =>
     uploadLogo,
     deleteLogo,
     refreshSettings,
-  };
+  }), [settings, isLoading, isUpdating, updateSettings, uploadLogo, deleteLogo, refreshSettings]);
 
   return <CompanyContext.Provider value={value}>{children}</CompanyContext.Provider>;
 };

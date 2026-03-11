@@ -153,6 +153,24 @@ public static class ImageUploadEndpoints
                 if (string.IsNullOrEmpty(request.Base64Image) || request.Base64Image.Length > 7_000_000) // ~5MB decoded
                     return Results.BadRequest(new { error = "La imagen no debe superar 5MB" });
 
+                // Validate MIME type from data URI
+                var allowedTypes = new[] { "image/jpeg", "image/png", "image/gif", "image/webp" };
+                if (!string.IsNullOrEmpty(request.Base64Image) && request.Base64Image.StartsWith("data:"))
+                {
+                    var mimeEnd = request.Base64Image.IndexOf(';');
+                    if (mimeEnd > 5)
+                    {
+                        var mime = request.Base64Image.Substring(5, mimeEnd - 5);
+                        if (!allowedTypes.Contains(mime))
+                            return Results.BadRequest(new { error = "Tipo de imagen no permitido. Use JPEG, PNG, GIF o WebP." });
+                    }
+                }
+
+                // Validate upload type
+                var allowedUploadTypes = new[] { "avatar", "logo", "product", "company" };
+                if (!string.IsNullOrEmpty(request.Type) && !allowedUploadTypes.Contains(request.Type.ToLower()))
+                    return Results.BadRequest(new { error = "Tipo de carga no válido." });
+
                 var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
                 {

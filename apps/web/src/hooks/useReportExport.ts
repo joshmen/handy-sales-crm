@@ -78,9 +78,6 @@ async function loadImageBase64(url: string): Promise<string | null> {
 
 // ─── Cache ──────────────────────────────────────────────────────
 
-let _datos: DatosEmpresa | null = null;
-let _logo64: string | null = null;
-let _cacheAt = 0;
 const TTL = 5 * 60_000;
 
 // ─── Hook ───────────────────────────────────────────────────────
@@ -92,6 +89,10 @@ export function useReportExport(config: ReportExportConfig) {
   const cfgRef = useRef(config);
   cfgRef.current = config;
 
+  const datosRef = useRef<DatosEmpresa | null>(null);
+  const logo64Ref = useRef<string | null>(null);
+  const cacheAtRef = useRef(0);
+
   const exportPDF = useCallback(async () => {
     setExporting(true);
     const cfg = cfgRef.current;
@@ -99,17 +100,17 @@ export function useReportExport(config: ReportExportConfig) {
     try {
       // ── Fetch company data ────────────────────────────────
       const now = Date.now();
-      if (!_datos || now - _cacheAt > TTL) {
-        try { _datos = await datosEmpresaService.get(); _cacheAt = now; } catch { /* noop */ }
+      if (!datosRef.current || now - cacheAtRef.current > TTL) {
+        try { datosRef.current = await datosEmpresaService.get(); cacheAtRef.current = now; } catch { /* noop */ }
       }
       const logoUrl = settings?.companyLogo;
-      if (logoUrl && (!_logo64 || now - _cacheAt > TTL)) {
-        _logo64 = await loadImageBase64(logoUrl);
+      if (logoUrl && (!logo64Ref.current || now - cacheAtRef.current > TTL)) {
+        logo64Ref.current = await loadImageBase64(logoUrl);
       }
 
       const primary = settings?.companyPrimaryColor || DEFAULT_PRIMARY;
       const [pr, pg, pb] = hexToRgb(primary);
-      const name = _datos?.razonSocial || settings?.companyName || '';
+      const name = datosRef.current?.razonSocial || settings?.companyName || '';
 
       // ── Create PDF (Landscape A4) ─────────────────────────
       const pdf = new jsPDF('l', 'mm', 'a4');
@@ -122,8 +123,8 @@ export function useReportExport(config: ReportExportConfig) {
       const drawHeader = () => {
         let lx = MARGIN;
 
-        if (_logo64) {
-          try { pdf.addImage(_logo64, 'PNG', MARGIN, MARGIN, 18, 18); lx = MARGIN + 22; } catch { /* noop */ }
+        if (logo64Ref.current) {
+          try { pdf.addImage(logo64Ref.current, 'PNG', MARGIN, MARGIN, 18, 18); lx = MARGIN + 22; } catch { /* noop */ }
         }
 
         // Company name
@@ -134,12 +135,12 @@ export function useReportExport(config: ReportExportConfig) {
         pdf.setFont('helvetica', 'normal').setFontSize(7.5).setTextColor(110, 110, 110);
         let sy = MARGIN + 11;
 
-        if (_datos?.identificadorFiscal) { pdf.text(`ID Fiscal: ${_datos.identificadorFiscal}`, lx, sy); sy += 3.5; }
+        if (datosRef.current?.identificadorFiscal) { pdf.text(`ID Fiscal: ${datosRef.current.identificadorFiscal}`, lx, sy); sy += 3.5; }
 
-        const addr = [_datos?.direccion, _datos?.ciudad, _datos?.estado, _datos?.codigoPostal].filter(Boolean);
+        const addr = [datosRef.current?.direccion, datosRef.current?.ciudad, datosRef.current?.estado, datosRef.current?.codigoPostal].filter(Boolean);
         if (addr.length) { pdf.text(addr.join(', '), lx, sy); sy += 3.5; }
 
-        const contact = [_datos?.telefono ? `Tel: ${_datos.telefono}` : null, _datos?.email].filter(Boolean);
+        const contact = [datosRef.current?.telefono ? `Tel: ${datosRef.current.telefono}` : null, datosRef.current?.email].filter(Boolean);
         if (contact.length) { pdf.text(contact.join(' · '), lx, sy); }
 
         // Colored divider

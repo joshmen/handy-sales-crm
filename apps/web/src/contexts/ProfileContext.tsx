@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { UserProfile, UpdateProfileRequest, ChangePasswordRequest, profileService } from '@/services/api/profileService';
 import { useSession } from 'next-auth/react';
 import { toast } from '@/hooks/useToast';
@@ -221,7 +221,7 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
     await loadProfile();
   };
 
-  const value: ProfileContextType = {
+  const value = useMemo<ProfileContextType>(() => ({
     profile,
     isLoading,
     isUpdating,
@@ -231,7 +231,7 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
     uploadAvatar,
     deleteAvatar,
     refreshProfile,
-  };
+  }), [profile, isLoading, isUpdating, isChangingPassword, updateProfile, changePassword, uploadAvatar, deleteAvatar, refreshProfile]);
 
   return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>;
 };

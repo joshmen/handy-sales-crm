@@ -110,4 +110,3 @@ docs/design/pencil/images/
 # ── Windows reserved names ────────────────
 **/nul
 c:tmp*
-package-lock.json

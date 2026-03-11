@@ -19,7 +19,7 @@ public static class AnnouncementEndpoints
         // SuperAdmin CRUD endpoints
         // ═══════════════════════════════════════
         var superadmin = app.MapGroup("/api/superadmin/announcements")
-            .RequireAuthorization()
+            .RequireAuthorization(policy => policy.RequireRole("SUPER_ADMIN"))
             .WithTags("Announcements (SuperAdmin)");
 
         // GET all announcements (with stats)
@@ -31,6 +31,8 @@ public static class AnnouncementEndpoints
         {
             if (!tenant.IsSuperAdmin)
                 return Results.Forbid();
+
+            pageSize = Math.Clamp(pageSize, 1, 100);
 
             var query = db.Announcements
                 .AsNoTracking()
@@ -325,7 +327,7 @@ public static class AnnouncementEndpoints
         // Maintenance mode shortcuts
         // ═══════════════════════════════════════
         var maintenance = app.MapGroup("/api/superadmin/maintenance")
-            .RequireAuthorization()
+            .RequireAuthorization(policy => policy.RequireRole("SUPER_ADMIN"))
             .WithTags("Maintenance (SuperAdmin)");
 
         // POST activate maintenance mode

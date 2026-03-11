@@ -50,6 +50,10 @@ export function useApiQuery<T = unknown>(
   }, [enabled, api.execute, isStale]);
 
   useEffect(() => {
+    lastFetchTime.current = 0;
+  }, [queryKey]);
+
+  useEffect(() => {
     if (enabled) {
       fetchData();
     }

@@ -157,16 +157,12 @@ export const GlobalSettingsProvider: React.FC<GlobalSettingsProviderProps> = ({ 
         });
         return true;
       } else {
-        // Fallback: update locally if API fails
-        const updatedSettings = { ...globalSettings, ...data, updatedAt: new Date() };
-        setGlobalSettings(updatedSettings);
-        localStorage.setItem('global_settings', JSON.stringify(updatedSettings));
-        
         toast({
-          title: 'Configuración guardada localmente',
-          description: 'Los cambios se han aplicado temporalmente',
+          title: 'Error',
+          description: 'No se pudo actualizar la configuración global',
+          variant: 'destructive',
         });
-        return true;
+        return false;
       }
     } catch (_error) {
       toast({

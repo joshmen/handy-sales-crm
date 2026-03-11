@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useSignalR } from '@/contexts/SignalRContext';
 import { getActiveBanners, dismissBanner, AnnouncementBanner } from '@/services/api/announcements';
@@ -13,7 +13,6 @@ export function useAnnouncements() {
   const { isConnected, on, off } = useSignalR();
   const [banners, setBanners] = useState<AnnouncementBanner[]>([]);
   const [loading, setLoading] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const pollInterval = isConnected ? POLL_WS : POLL_NORMAL;
 
@@ -107,11 +106,9 @@ export function useAnnouncements() {
 
     fetchBanners();
 
-    intervalRef.current = setInterval(fetchBanners, pollInterval);
+    const id = setInterval(fetchBanners, pollInterval);
 
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
+    return () => clearInterval(id);
   }, [status, fetchBanners, pollInterval]);
 
   const handleDismiss = useCallback(async (id: number) => {

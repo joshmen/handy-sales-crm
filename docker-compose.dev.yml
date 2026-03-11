@@ -1,7 +1,7 @@
 services:
   # Seq - Centralized Logging (Development)
   seq:
-    image: datalust/seq:latest
+    image: datalust/seq:2024.3
     container_name: handysales_seq_dev
     restart: unless-stopped
     environment:
@@ -67,7 +67,7 @@ services:
       Jwt__ExpirationMinutes: 60
       Multitenancy__DefaultTenantId: "00000000-0000-0000-0000-000000000001"
       Multitenancy__DefaultTenantName: "Default"
-      Cloudinary__Url: "cloudinary://899432929937183:Pxxn5PaFCujbBMJ7ut38v4f2g78@dq0o1nbyh"
+      Cloudinary__Url: "${CLOUDINARY_URL:-cloudinary://placeholder:placeholder@placeholder}"
       Seq__ServerUrl: "http://seq:5341"
       SENDGRID_API_KEY: "${SENDGRID_API_KEY}"
       SENDGRID_FROM_EMAIL: "${SENDGRID_FROM_EMAIL}"
@@ -224,7 +224,7 @@ services:
 
   # pgAdmin (database administration tool, optional)
   pgadmin:
-    image: dpage/pgadmin4:latest
+    image: dpage/pgadmin4:8.14
     container_name: handysales_pgadmin_dev
     restart: unless-stopped
     environment:

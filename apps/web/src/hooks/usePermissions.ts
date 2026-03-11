@@ -24,7 +24,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
   'ADMIN': [
     'view_dashboard',
     'view_clients',
-    'view_products', 
+    'view_products',
     'view_discounts',
     'view_promotions',
     'view_inventory',
@@ -33,6 +33,19 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'view_orders',
     'view_deliveries',
     'view_users',
+    'view_settings'
+  ],
+  'SUPERVISOR': [
+    'view_dashboard',
+    'view_clients',
+    'view_products',
+    'view_discounts',
+    'view_promotions',
+    'view_inventory',
+    'view_routes',
+    'view_zones',
+    'view_orders',
+    'view_deliveries',
     'view_settings'
   ],
   'VENDEDOR': [

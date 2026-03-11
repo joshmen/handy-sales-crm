@@ -30,16 +30,19 @@ export function useApi<T = unknown>(
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
 
   const execute = useCallback(
     async (data?: Record<string, unknown>): Promise<T | undefined> => {
+      const opts = optionsRef.current;
       const finalUrl = typeof url === 'function' ? url(data) : url;
       const cacheKey = `${config?.method || 'GET'}-${finalUrl}-${JSON.stringify(config?.params)}`;
 
-      if (options?.cache && cache.has(cacheKey)) {
+      if (opts?.cache && cache.has(cacheKey)) {
         const cached = cache.get(cacheKey);
         const cacheExpired =
-          cached && Date.now() - cached.timestamp > (options.cacheTime || 5 * 60 * 1000);
+          cached && Date.now() - cached.timestamp > (opts.cacheTime || 5 * 60 * 1000);
 
         if (cached && !cacheExpired) {
           setData(cached.data as T);
@@ -66,12 +69,12 @@ export function useApi<T = unknown>(
 
         const responseData = response.data;
 
-        if (options?.cache) {
+        if (opts?.cache) {
           cache.set(cacheKey, { data: responseData, timestamp: Date.now() });
         }
 
         setData(responseData);
-        options?.onSuccess?.(responseData);
+        opts?.onSuccess?.(responseData);
 
         return responseData;
       } catch (err) {
@@ -81,7 +84,7 @@ export function useApi<T = unknown>(
 
         const apiError = handleApiError(err);
         setError(apiError);
-        options?.onError?.(apiError);
+        opts?.onError?.(apiError);
 
         return undefined;
       } finally {
@@ -89,7 +92,7 @@ export function useApi<T = unknown>(
         abortControllerRef.current = null;
       }
     },
-    [url, config, options]
+    [url, config]
   );
 
   const reset = useCallback(() => {

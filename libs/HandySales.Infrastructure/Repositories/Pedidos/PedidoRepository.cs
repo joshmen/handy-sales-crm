@@ -372,9 +372,8 @@ public class PedidoRepository : IPedidoRepository
 
         if (pedido == null) return false;
 
-        // Soft delete
-        pedido.Activo = false;
-        pedido.ActualizadoEn = DateTime.UtcNow;
+        // Soft delete via SaveChangesAsync override
+        _db.Pedidos.Remove(pedido);
 
         await _db.SaveChangesAsync();
         return true;
@@ -388,7 +387,7 @@ public class PedidoRepository : IPedidoRepository
         if (pedido == null || pedido.Estado != EstadoPedido.Borrador)
             return false;
 
-        var producto = await _db.Productos.FindAsync(dto.ProductoId);
+        var producto = await _db.Productos.FirstOrDefaultAsync(p => p.Id == dto.ProductoId);
         if (producto == null) return false;
 
         var precioUnitario = dto.PrecioUnitario ?? producto.PrecioBase;
@@ -433,7 +432,7 @@ public class PedidoRepository : IPedidoRepository
 
         if (detalle == null) return false;
 
-        var producto = await _db.Productos.FindAsync(dto.ProductoId);
+        var producto = await _db.Productos.FirstOrDefaultAsync(p => p.Id == dto.ProductoId);
         if (producto == null) return false;
 
         var precioUnitario = dto.PrecioUnitario ?? producto.PrecioBase;
@@ -472,8 +471,8 @@ public class PedidoRepository : IPedidoRepository
 
         if (detalle == null) return false;
 
-        detalle.Activo = false;
-        detalle.ActualizadoEn = DateTime.UtcNow;
+        // Soft delete via SaveChangesAsync override
+        _db.DetallePedidos.Remove(detalle);
 
         await _db.SaveChangesAsync();
         await RecalcularTotalesAsync(pedidoId);
