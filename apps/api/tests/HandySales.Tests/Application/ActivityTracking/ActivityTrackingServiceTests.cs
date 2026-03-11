@@ -3,6 +3,7 @@ using HandySales.Application.ActivityTracking.Services;
 using HandySales.Application.ActivityTracking.Interfaces;
 using HandySales.Domain.Entities;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 using System.Text.Json;
@@ -12,12 +13,14 @@ namespace HandySales.Tests.Application.ActivityTracking
     public class ActivityTrackingServiceTests
     {
         private readonly Mock<IActivityTrackingRepository> _mockRepository;
+        private readonly Mock<ILogger<ActivityTrackingService>> _mockLogger;
         private readonly ActivityTrackingService _service;
 
         public ActivityTrackingServiceTests()
         {
             _mockRepository = new Mock<IActivityTrackingRepository>();
-            _service = new ActivityTrackingService(_mockRepository.Object);
+            _mockLogger = new Mock<ILogger<ActivityTrackingService>>();
+            _service = new ActivityTrackingService(_mockRepository.Object, _mockLogger.Object);
         }
 
         [Fact]
