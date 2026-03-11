@@ -62,6 +62,7 @@ services:
       ASPNETCORE_URLS: http://+:1050
       ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=handy_erp;Username=handy_user;Password=handy_pass;Pooling=true;Minimum Pool Size=5;Maximum Pool Size=50;Connection Lifetime=300;"
       Jwt__Secret: "DevelopmentSecretKeyThatIsAtLeast256BitsLong_1234567890123456789012345678901234567890"
+      SocialLogin__SharedSecret: "DevelopmentSecretKeyThatIsAtLeast256BitsLong_1234567890123456789012345678901234567890"
       Jwt__Issuer: "HandySales"
       Jwt__Audience: "HandySalesUsers"
       Jwt__ExpirationMinutes: 60
