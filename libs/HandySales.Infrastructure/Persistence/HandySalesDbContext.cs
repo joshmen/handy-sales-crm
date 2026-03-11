@@ -841,6 +841,16 @@ public class HandySalesDbContext : DbContext
         modelBuilder.Entity<RutaDetalle>()
             .HasQueryFilter(e => e.EliminadoEn == null);
 
+        // AI Credit System: no AuditableEntity — tenant filter only
+        modelBuilder.Entity<AiCreditBalance>()
+            .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
+
+        modelBuilder.Entity<AiUsageLog>()
+            .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
+
+        modelBuilder.Entity<AiCreditPurchase>()
+            .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
+
         // pgvector extension + AiEmbedding config (PostgreSQL only — skipped in SQLite tests)
         if (Database.ProviderName?.Contains("Npgsql") == true)
         {

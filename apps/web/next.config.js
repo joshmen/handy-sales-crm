@@ -96,10 +96,12 @@ const nextConfig = {
             value: "origin-when-cross-origin",
           },
           {
-            key: "Content-Security-Policy-Report-Only",
+            key: process.env.NODE_ENV === "development"
+              ? "Content-Security-Policy-Report-Only"
+              : "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://www.google.com https://www.gstatic.com",
+              `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""} https://accounts.google.com https://www.google.com https://www.gstatic.com`,
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://lh3.googleusercontent.com",
               "font-src 'self' data:",
@@ -134,10 +136,10 @@ const nextConfig = {
 
   // Configuración de imágenes
   images: {
-    domains: [
-      "localhost",
-      "res.cloudinary.com",
-      "images.unsplash.com", // Para imágenes de prueba
+    remotePatterns: [
+      { protocol: "http", hostname: "localhost" },
+      { protocol: "https", hostname: "res.cloudinary.com" },
+      { protocol: "https", hostname: "images.unsplash.com" },
     ],
     formats: ["image/avif", "image/webp"],
   },
@@ -178,11 +180,6 @@ const nextConfig = {
         tls: false,
         fs: false,
       };
-    }
-
-    // Para desarrollo, ignorar advertencias de certificados SSL autofirmados
-    if (dev) {
-      process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
     }
 
     return config;

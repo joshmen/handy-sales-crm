@@ -1,6 +1,5 @@
 using HandySales.Application.CompanySettings.Interfaces;
 using HandySales.Infrastructure.Persistence;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 
 namespace HandySales.Api.Endpoints;
@@ -10,11 +9,11 @@ public static class MigrationEndpoints
     public static void MapMigrationEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/migration")
-            .RequireAuthorization()
+            .RequireAuthorization(policy => policy.RequireRole("SUPER_ADMIN"))
             .WithTags("Migration");
 
         // POST /api/migration/initialize-existing-tenants
-        group.MapPost("/initialize-existing-tenants", [Authorize(Roles = "SUPER_ADMIN")] async (
+        group.MapPost("/initialize-existing-tenants", async (
             HandySalesDbContext dbContext,
             ICloudinaryService cloudinaryService) =>
         {
@@ -115,7 +114,7 @@ public static class MigrationEndpoints
         .Produces<object>();
 
         // GET /api/migration/tenants-status
-        group.MapGet("/tenants-status", [Authorize(Roles = "SUPER_ADMIN")] async (
+        group.MapGet("/tenants-status", async (
             HandySalesDbContext dbContext) =>
         {
             var tenants = await dbContext.Tenants

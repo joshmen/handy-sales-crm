@@ -46,8 +46,6 @@ type AppSessionUser = DefaultSession['user'] & {
   role?: string;
 };
 
-type Breadcrumb = { label: string; href: string; isLast: boolean };
-
 // Mapeo de breadcrumbs
 const routeLabels: Record<string, string> = {
   '/dashboard': 'Dashboard',
@@ -166,19 +164,6 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
     }
   }, [theme, mounted]);
 
-  const generateBreadcrumbs = (): Breadcrumb[] => {
-    const segments = pathname.split('/').filter(Boolean);
-    const crumbs: Breadcrumb[] = [];
-    let currentPath = '';
-    segments.forEach((segment, index) => {
-      currentPath += `/${segment}`;
-      const label = routeLabels[currentPath] || segment.charAt(0).toUpperCase() + segment.slice(1);
-      crumbs.push({ label, href: currentPath, isLast: index === segments.length - 1 });
-    });
-    return crumbs;
-  };
-
-  generateBreadcrumbs();
   const unread = unreadCount;
   const unreadDisplay = unread > 99 ? '99+' : String(unread);
 

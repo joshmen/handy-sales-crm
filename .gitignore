@@ -98,13 +98,16 @@ apps/web/public/swe-worker-*.js
 docs/design/pencil/images/
 
 # ── Temp/artifacts at root ───────────────
-baseline.sql
-efbundle
-response.json
-tmpswagger.json
+/*.png
+/*.jpg
+/*.sql
+/efbundle*
+/response.json
+/tmpswagger.json
+/.playwright-mcp/
+/test-results/
 
 # ── Windows reserved names ────────────────
 **/nul
-c*tmp*
-emulator_screen*.png
+c:tmp*
 package-lock.json

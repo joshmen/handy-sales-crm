@@ -2,6 +2,7 @@ using HandySales.Application.CompanySettings.DTOs;
 using HandySales.Application.CompanySettings.Interfaces;
 using HandySales.Domain.Entities;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 
 namespace HandySales.Application.CompanySettings.Services
 {
@@ -18,15 +19,18 @@ namespace HandySales.Application.CompanySettings.Services
         private readonly ICompanySettingsRepository _repository;
         private readonly ICloudinaryService _cloudinaryService;
         private readonly ICloudinaryFolderService _folderService;
+        private readonly ILogger<CompanySettingsService> _logger;
 
         public CompanySettingsService(
             ICompanySettingsRepository repository,
             ICloudinaryService cloudinaryService,
-            ICloudinaryFolderService folderService)
+            ICloudinaryFolderService folderService,
+            ILogger<CompanySettingsService> logger)
         {
             _repository = repository;
             _cloudinaryService = cloudinaryService;
             _folderService = folderService;
+            _logger = logger;
         }
 
         public async Task<CompanySettingsDto?> GetSettingsAsync(int tenantId)
@@ -86,7 +90,7 @@ namespace HandySales.Application.CompanySettings.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error al obtener configuración: {ex.Message}");
+                _logger.LogError(ex, "Error al obtener configuración para tenant {TenantId}", tenantId);
                 return null;
             }
         }
@@ -154,7 +158,7 @@ namespace HandySales.Application.CompanySettings.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error al actualizar configuración: {ex.Message}");
+                _logger.LogError(ex, "Error al actualizar configuración para tenant {TenantId}", tenantId);
                 return null;
             }
         }
@@ -202,7 +206,7 @@ namespace HandySales.Application.CompanySettings.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error al subir logo: {ex.Message}");
+                _logger.LogError(ex, "Error al subir logo para tenant {TenantId}", tenantId);
                 return null;
             }
         }
@@ -235,7 +239,7 @@ namespace HandySales.Application.CompanySettings.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error al eliminar logo: {ex.Message}");
+                _logger.LogError(ex, "Error al eliminar logo para tenant {TenantId}", tenantId);
                 return false;
             }
         }

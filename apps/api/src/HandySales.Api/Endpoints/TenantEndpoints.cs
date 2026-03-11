@@ -479,6 +479,7 @@ public static class TenantEndpoints
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
             EsAdmin = isAdmin,
             EsSuperAdmin = false,
+            EmailVerificado = false,
             RoleId = roleId,
             Activo = true,
             CreadoEn = DateTime.UtcNow,

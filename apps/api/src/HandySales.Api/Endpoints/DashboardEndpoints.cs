@@ -132,7 +132,9 @@ public static class DashboardEndpoints
     {
         try
         {
-            IQueryable<ActivityLog> query = context.ActivityLogs.Include(a => a.Usuario);
+            limit = Math.Min(limit, 200);
+
+            IQueryable<ActivityLog> query = context.ActivityLogs.AsNoTracking().Include(a => a.Usuario);
 
             if (currentTenant.IsSuperAdmin)
             {

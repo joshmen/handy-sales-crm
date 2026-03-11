@@ -192,7 +192,7 @@ export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) =>
           title: 'Configuración guardada localmente',
           description: 'Los cambios se han aplicado temporalmente',
         });
-        return true;
+        return false;
       }
     } catch (_error) {
       toast({

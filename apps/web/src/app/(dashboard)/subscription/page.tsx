@@ -269,18 +269,6 @@ function PlanCard({
         className="absolute -bottom-2 left-6 right-6 h-6 rounded-full blur-xl transition-all duration-500 -z-10"
         style={{ backgroundColor: isHovered ? (isPopular ? "rgba(22, 163, 74, 0.12)" : "rgba(99, 102, 241, 0.08)") : "transparent" }}
       />
-
-      <style jsx global>{`
-        @keyframes subPricePop {
-          0% { opacity: 0; transform: translateY(12px) scale(0.95); }
-          60% { opacity: 1; transform: translateY(-2px) scale(1.02); }
-          100% { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        @keyframes subFadeIn {
-          from { opacity: 0; transform: translateX(-6px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-      `}</style>
     </div>
   );
 }
@@ -351,6 +339,7 @@ export default function SubscriptionPage() {
     } catch (err) {
       console.error("Error creating portal:", err);
       toast.error("Error al abrir el portal de pagos");
+    } finally {
       setProcessing(false);
     }
   };
