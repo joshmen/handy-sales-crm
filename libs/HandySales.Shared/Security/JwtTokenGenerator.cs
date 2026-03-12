@@ -33,7 +33,7 @@ public class JwtTokenGenerator
             new Claim("es_admin", isAdmin.ToString()),
             new Claim("es_super_admin", isSuperAdmin.ToString()),
             new Claim("session_version", sessionVersion.ToString()),
-            new Claim(ClaimTypes.Role, role),
+            new Claim("role", role),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 
@@ -101,7 +101,7 @@ public class JwtTokenGenerator
             new Claim("tenant_id", targetTenantId.ToString()),
             new Claim("es_admin", "true"),
             new Claim("es_super_admin", "true"),
-            new Claim(ClaimTypes.Role, "SUPER_ADMIN"),
+            new Claim("role", "SUPER_ADMIN"),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             // Claims de impersonación
             new Claim("impersonation_session_id", impersonationSessionId.ToString()),
