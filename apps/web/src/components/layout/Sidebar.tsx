@@ -452,82 +452,8 @@ const superAdminItems: SidebarItem[] = [
   },
 ];
 
-// Mapeo de permisos por rol
-const ROLE_PERMISSIONS: Record<string, string[]> = {
-  SUPER_ADMIN: [
-    'view_dashboard',
-    'view_clients',
-    'view_products',
-    'view_discounts',
-    'view_promotions',
-    'view_inventory',
-    'view_routes',
-    'view_zones',
-    'view_visits',
-    'view_orders',
-    'view_deliveries',
-    'view_users',
-    'manage_roles',
-    'manage_global_settings', // Solo SUPER_ADMIN tiene acceso a configuración global
-    'manage_tenants',
-    'manage_all_users',
-    'view_all_data',
-    'manage_catalogs', // Gestión de categorías y unidades
-    'manage_devices', // Gestión de dispositivos móviles
-    'view_activity_logs', // Registro de actividad
-    'view_automations', // Automatizaciones
-  ],
-  ADMIN: [
-    'view_dashboard',
-    'view_clients',
-    'view_products',
-    'view_discounts',
-    'view_promotions',
-    'view_inventory',
-    'view_routes',
-    'view_zones',
-    'view_visits',
-    'view_orders',
-    'view_deliveries',
-    'view_users',
-    'view_settings',
-    'view_company_settings', // Solo ADMIN tiene acceso a configuración de empresa
-    'manage_catalogs', // Gestión de categorías y unidades
-    'manage_devices', // Gestión de dispositivos móviles
-    'view_activity_logs', // Registro de actividad
-    'view_automations', // Automatizaciones
-    'view_metas', // Metas de vendedor
-  ],
-  SUPERVISOR: [
-    'view_dashboard',
-    'view_clients',
-    'view_products',
-    'view_orders',
-    'view_deliveries',
-    'view_routes',
-    'view_zones',
-    'view_visits',
-    'view_team',
-    'view_reports',
-    'view_metas', // Metas de vendedor
-  ],
-  VENDEDOR: [
-    'view_dashboard',
-    'view_clients',
-    'view_products',
-    'view_orders',
-    'view_deliveries',
-    'view_routes',
-    'view_visits',
-  ],
-  VIEWER: [
-    'view_dashboard',
-    'view_clients',
-    'view_products',
-    'view_orders',
-    'view_routes',
-  ],
-};
+// Permisos por rol — fuente única en lib/permissions.ts
+import { ROLE_PERMISSIONS } from '@/lib/permissions';
 
 // Group-based icon color palette — 6 families by section
 // Defined at module level so they are not recreated on every render
