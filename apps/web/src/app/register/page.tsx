@@ -190,7 +190,7 @@ function RegisterContent() {
           <p className="text-[15px] text-[#64748B]">
             {isGoogleMode
               ? 'Solo necesitamos los datos de tu empresa'
-              : 'Registra tu empresa y comienza gratis'}
+              : 'Prueba gratis por 14 dias — acceso PRO completo'}
           </p>
         </div>
 

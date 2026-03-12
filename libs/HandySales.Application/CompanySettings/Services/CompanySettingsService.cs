@@ -85,7 +85,11 @@ namespace HandySales.Application.CompanySettings.Services
                     CurrentUsers = activeUsers,
                     IsActive = tenant?.Activo ?? true,
                     UpdatedAt = settings.ActualizadoEn ?? settings.CreadoEn,
-                    UpdatedBy = settings.ActualizadoPor
+                    UpdatedBy = settings.ActualizadoPor,
+                    TrialEndsAt = tenant?.TrialEndsAt,
+                    DaysRemaining = tenant?.TrialEndsAt.HasValue == true
+                        ? Math.Max(0, (int)(tenant.TrialEndsAt!.Value - DateTime.UtcNow).TotalDays)
+                        : null,
                 };
             }
             catch (Exception ex)

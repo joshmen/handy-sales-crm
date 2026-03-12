@@ -82,6 +82,11 @@ public class HandySalesDbContext : DbContext
     public DbSet<AiCreditPurchase> AiCreditPurchases => Set<AiCreditPurchase>();
     public DbSet<AiEmbedding> AiEmbeddings => Set<AiEmbedding>();
 
+    // Integration Marketplace
+    public DbSet<Integration> Integrations => Set<Integration>();
+    public DbSet<TenantIntegration> TenantIntegrations => Set<TenantIntegration>();
+    public DbSet<IntegrationLog> IntegrationLogs => Set<IntegrationLog>();
+
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         var currentUser = _tenantContext?.CurrentUserEmail;
@@ -849,6 +854,24 @@ public class HandySalesDbContext : DbContext
             .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
 
         modelBuilder.Entity<AiCreditPurchase>()
+            .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
+
+        // Integration Marketplace
+        // Integration: global catalog (no tenant) — only soft delete filter
+        modelBuilder.Entity<Integration>()
+            .HasQueryFilter(e => e.EliminadoEn == null);
+        modelBuilder.Entity<Integration>()
+            .HasIndex(e => e.Slug).IsUnique();
+
+        // TenantIntegration: tenant-scoped + soft delete
+        modelBuilder.Entity<TenantIntegration>(entity =>
+        {
+            entity.HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
+            entity.HasIndex(e => new { e.TenantId, e.IntegrationId }).IsUnique();
+        });
+
+        // IntegrationLog: tenant-scoped, no AuditableEntity
+        modelBuilder.Entity<IntegrationLog>()
             .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
 
         // pgvector extension + AiEmbedding config (PostgreSQL only — skipped in SQLite tests)

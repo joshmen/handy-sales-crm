@@ -32,6 +32,19 @@ export const subscriptionService = {
     return data;
   },
 
+  async createTrialCheckoutSession(
+    planCode: string,
+    interval: 'month' | 'year',
+    returnUrl: string
+  ): Promise<{ clientSecret: string; sessionId: string }> {
+    const { data } = await api.post<{ clientSecret: string; sessionId: string }>('/api/subscription/trial-checkout', {
+      planCode,
+      interval,
+      returnUrl,
+    });
+    return data;
+  },
+
   async cancelSubscription(): Promise<void> {
     await api.post('/api/subscription/cancel');
   },

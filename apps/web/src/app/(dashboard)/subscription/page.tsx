@@ -293,6 +293,7 @@ export default function SubscriptionPage() {
   const [billingInterval, setBillingInterval] = useState<"month" | "year">("month");
   const [checkoutClientSecret, setCheckoutClientSecret] = useState<string | null>(null);
   const [checkoutPlan, setCheckoutPlan] = useState<string | null>(null);
+  const [trialCheckoutLoading, setTrialCheckoutLoading] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -328,6 +329,24 @@ export default function SubscriptionPage() {
       console.error("Error creating checkout:", err);
       toast.error("Error al iniciar el proceso de pago. Verifica la configuración de Stripe.");
       setProcessing(false);
+    }
+  };
+
+  const handleTrialCheckout = async () => {
+    setTrialCheckoutLoading(true);
+    try {
+      const { clientSecret } = await subscriptionService.createTrialCheckoutSession(
+        "PRO",
+        billingInterval,
+        `${window.location.origin}/subscription`
+      );
+      setCheckoutClientSecret(clientSecret);
+      setCheckoutPlan("PRO");
+    } catch (err) {
+      console.error("Error creating trial checkout:", err);
+      toast.error("Error al iniciar la captura de tarjeta");
+    } finally {
+      setTrialCheckoutLoading(false);
     }
   };
 
@@ -458,6 +477,72 @@ export default function SubscriptionPage() {
               Tu suscripción ha expirado. Renueva para continuar usando todas las funciones.
             </p>
           </div>
+        </div>
+      )}
+
+      {/* Trial countdown banner */}
+      {subscription.subscriptionStatus === "Trial" && subscription.daysRemaining !== null && (
+        <div className={`flex items-start gap-3 p-4 rounded-lg border ${
+          subscription.trialCardCollected
+            ? "bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800"
+            : subscription.daysRemaining > 7
+              ? "bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800"
+              : subscription.daysRemaining > 3
+                ? "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800"
+                : "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800"
+        }`}>
+          <div className={`p-1.5 rounded-lg ${
+            subscription.trialCardCollected
+              ? "bg-green-100 dark:bg-green-900/40"
+              : subscription.daysRemaining > 7
+                ? "bg-blue-100 dark:bg-blue-900/40"
+                : subscription.daysRemaining > 3
+                  ? "bg-amber-100 dark:bg-amber-900/40"
+                  : "bg-red-100 dark:bg-red-900/40"
+          }`}>
+            {subscription.trialCardCollected ? (
+              <CreditCard className="h-5 w-5 text-green-600" />
+            ) : (
+              <Sparkles className="h-5 w-5 text-blue-600" />
+            )}
+          </div>
+          <div className="flex-1">
+            <p className={`font-semibold ${
+              subscription.trialCardCollected
+                ? "text-green-800 dark:text-green-300"
+                : subscription.daysRemaining > 7
+                  ? "text-blue-800 dark:text-blue-300"
+                  : subscription.daysRemaining > 3
+                    ? "text-amber-800 dark:text-amber-300"
+                    : "text-red-800 dark:text-red-300"
+            }`}>
+              {subscription.trialCardCollected
+                ? "Tarjeta registrada — tu trial continúa"
+                : `Tu periodo de prueba termina en ${subscription.daysRemaining} día${subscription.daysRemaining !== 1 ? "s" : ""}`}
+            </p>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {subscription.trialCardCollected
+                ? `Se cobrará automáticamente cuando termine tu trial${subscription.trialEndsAt ? ` el ${new Date(subscription.trialEndsAt).toLocaleDateString("es-MX")}` : ""}.`
+                : "Agrega un método de pago para no perder acceso a las funciones PRO."}
+            </p>
+          </div>
+          {!subscription.trialCardCollected && (
+            <Button
+              size="sm"
+              onClick={handleTrialCheckout}
+              disabled={trialCheckoutLoading}
+              className="bg-green-600 hover:bg-green-700 text-white flex-shrink-0"
+            >
+              {trialCheckoutLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  <CreditCard className="h-4 w-4 mr-1.5" />
+                  Agregar método de pago
+                </>
+              )}
+            </Button>
+          )}
         </div>
       )}
 

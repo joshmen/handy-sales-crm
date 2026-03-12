@@ -1,137 +1,108 @@
-# Current Task — Onboarding Wizard Redesign
+# Current Task — Stripe Trial Hibrido + Marketplace Integraciones
 
-> **Fecha**: 9 de marzo de 2026
-> **Objetivo**: Reemplazar el botón flotante "Primeros Pasos" con un wizard de onboarding estilo Attio
-> **Design proposal**: Aprobado por el usuario (ver conversación)
-
----
-
-## Phase 1: Backend — OnboardingCompleted on Tenant [PENDING]
-
-### Files to modify:
-- `libs/HandySales.Domain/Entities/Tenant.cs` — Add `bool OnboardingCompleted = false`
-- `libs/HandySales.Infrastructure/Migrations/` — New migration
-- `apps/api/src/HandySales.Api/Endpoints/TenantEndpoints.cs` — Add `PATCH /api/tenants/complete-onboarding`
-
-### Steps:
-- [ ] Add `OnboardingCompleted` property to Tenant entity
-- [ ] Generate EF Core migration `AddOnboardingCompletedToTenant`
-- [ ] New endpoint: `PATCH /api/tenants/complete-onboarding` (current tenant only)
-- [ ] Include `onboardingCompleted` in `/api/auth/me` or login response so frontend can check
-- [ ] `dotnet test` passes
-- [ ] Rebuild API container
+> **Fecha**: 11 de marzo de 2026
+> **Plan**: `C:\Users\AW AREA 51M R2\.claude\plans\merry-gathering-toucan.md`
 
 ---
 
-## Phase 2: Frontend — Types + API Service [PENDING]
+## PART 1: Stripe Trial Hibrido
 
-### Steps:
-- [ ] Add `onboardingCompleted: boolean` to Tenant type
-- [ ] Add `completeOnboarding()` API method
-- [ ] Add `updateDatosEmpresa(data)` API method (if not exists)
+### Backend
+- [x] Step 1: Add TrialEndsAt + TrialCardCollectedAt to Tenant entity + migration
+- [x] Step 2: Update registration (RegisterAsync + SocialRegisterAsync) — PlanTipo=PRO, MaxUsuarios=10, TrialEndsAt=+14d
+- [x] Step 3: Trial checkout endpoint (POST /api/subscription/trial-checkout) with Stripe embedded checkout + TrialEnd
+- [x] Step 4: Webhook handling — is_trial_checkout metadata, TrialCardCollectedAt, keep Trial status
+- [x] Step 5: SubscriptionMonitor — trial expiration logic (3-day grace, skip tenants with card)
+- [ ] Step 6: Trial email sequence (7 emails) — DEFERRED, lower priority
+- [x] Step 7: /subscription/current returns trialEndsAt, trialCardCollected, daysRemaining
 
----
-
-## Phase 3: Frontend — Onboarding Wizard Page [PENDING]
-
-### New files:
-- `apps/web/src/app/onboarding/page.tsx` — OUTSIDE (dashboard) layout
-- `apps/web/src/app/onboarding/layout.tsx` — Minimal layout
-
-### 5 Steps:
-1. **Tu Perfil** — foto, nombre (pre-filled), apellido, teléfono
-2. **Tu Empresa** — logo, nombre comercial, RFC, razón social, giro, dirección
-3. **Tu Equipo** — invite email + role (skippable)
-4. **Personaliza** — module chips toggle (skippable)
-5. **¡Listo!** — summary + CTA "Ir al Tablero"
-
-### Layout:
-- Desktop: Left 55% form + Right 45% live sidebar preview (always dark)
-- Mobile: Single column, no preview, sticky bottom CTAs
+### Frontend
+- [x] Step 8: Trial countdown banner on subscription page (color-coded, CTA for card capture)
+- [x] Step 9: Trial badge in header ("Trial: Xd" with color coding, links to /subscription)
+- [x] Step 10: Register page copy update ("Prueba gratis por 14 dias — acceso PRO completo")
 
 ---
 
-## Phase 4: Frontend — Redirect Logic [PENDING]
+## PART 2: Marketplace Integraciones
 
-### Files to modify:
-- `apps/web/src/app/verify-email/page.tsx` — Redirect to `/onboarding` after verification
-- `apps/web/src/app/register/page.tsx` — Google OAuth → redirect to `/onboarding`
-- `apps/web/src/middleware.ts` — Add `/onboarding` as protected route
-- `apps/web/src/app/(dashboard)/layout.tsx` — Redirect if onboarding not completed
+### Phase 1: Backend
+- [x] Step 1: Domain entities (Integration, TenantIntegration, IntegrationLog)
+- [x] Step 2: DbContext + Migration (3 DbSets, query filters, unique index)
+- [x] Step 3: Application layer (DTOs, IIntegrationRepository, IntegrationService)
+- [x] Step 4: Repository implementation
+- [x] Step 5: REST endpoints (5 endpoints in IntegrationEndpoints.cs)
+- [x] Step 6: Seed data SQL (seed_integrations.sql — 4 integrations)
 
-### Edge cases:
-- Existing users: auto-mark completed if they have data
-- SuperAdmin: skip (no business to configure)
-- Invited users (non-admin): skip
-- Users coming from invite link: skip
-
----
-
-## Phase 5: Frontend — Remove Floating Button + Polish [PENDING]
-
-### Steps:
-- [ ] Delete floating "Primeros Pasos" link from Layout.tsx
-- [ ] Move TourPrompt to only show inside `/getting-started`
-- [ ] Fix all hardcoded colors in getting-started page for dark mode
+### Phase 2: Frontend
+- [x] Step 7: TypeScript types (integration.ts) + API service (integrations.ts)
+- [x] Step 8: Sidebar item ("Integraciones", Admin/SuperAdmin only)
+- [x] Step 9: Marketplace page (cards, filter tabs, activate/deactivate)
+- [ ] Step 10: IntegrationsContext (load active integrations, hasIntegration helper) — DEFERRED
 
 ---
 
-## Phase 6: Frontend — Sidebar Progress Indicator [PENDING]
+## Verification Status
 
-### Files to modify:
-- `apps/web/src/components/layout/Sidebar.tsx`
-
-### Design:
-- Thin progress bar + "Configuración 3/14" text
-- Click → `/getting-started`
-- Disappears when all 14 steps complete
-- Refactor detection logic into shared hook
-
----
-
-## Phase 7: Frontend — Dashboard Welcome Banner [PENDING]
-
-### Files to modify:
-- `apps/web/src/app/(dashboard)/dashboard/page.tsx`
-
-### Design:
-- Dismissible card at top: "Bienvenido, [nombre]. Tu negocio está al [X]%."
-- Auto-hide after 7 days
-- Theme-aware
+| Check | Status |
+|-------|--------|
+| `dotnet build` | PASS (warnings only) |
+| `dotnet test` | 391/391 PASS |
+| `npm run type-check` | 0 errors |
+| Backend builds | OK |
+| Frontend compiles | OK |
 
 ---
 
-## Implementation Order
+## Files Created/Modified This Session
 
-| Step | Phase | Effort | Depends On |
-|------|-------|--------|------------|
-| 1 | Phase 1: Backend | Small | — |
-| 2 | Phase 2: Types + API | Small | Step 1 |
-| 3 | Phase 3: Wizard page | **Large** | Step 2 |
-| 4 | Phase 4: Redirect logic | Medium | Step 3 |
-| 5 | Phase 5: Remove floating + polish | Small | Independent |
-| 6 | Phase 6: Sidebar indicator | Medium | Step 5 |
-| 7 | Phase 7: Dashboard banner | Small | Step 2 |
+### New Files
+- `libs/HandySales.Domain/Entities/Integration.cs`
+- `libs/HandySales.Domain/Entities/TenantIntegration.cs`
+- `libs/HandySales.Domain/Entities/IntegrationLog.cs`
+- `libs/HandySales.Application/Integrations/DTOs/IntegrationDtos.cs`
+- `libs/HandySales.Application/Integrations/Interfaces/IIntegrationRepository.cs`
+- `libs/HandySales.Application/Integrations/Services/IntegrationService.cs`
+- `libs/HandySales.Infrastructure/Repositories/Integrations/IntegrationRepository.cs`
+- `apps/api/src/HandySales.Api/Endpoints/IntegrationEndpoints.cs`
+- `apps/web/src/types/integration.ts`
+- `apps/web/src/services/api/integrations.ts`
+- `apps/web/src/app/(dashboard)/integrations/page.tsx`
+- `infra/database/schema/seed_integrations.sql`
+- EF Core migrations: AddTrialFieldsToTenant, AddIntegrationsMarketplace
+
+### Modified Files
+- `libs/HandySales.Domain/Entities/Tenant.cs` — TrialEndsAt, TrialCardCollectedAt
+- `apps/api/src/HandySales.Api/Auth/AuthService.cs` — Trial registration
+- `apps/api/src/HandySales.Api/Payments/StripeService.cs` — Trial checkout + webhook
+- `apps/api/src/HandySales.Api/Endpoints/SubscriptionEndpoints.cs` — Trial checkout endpoint + trial info
+- `apps/api/src/HandySales.Api/Workers/SubscriptionMonitor.cs` — Trial expiration
+- `apps/api/src/HandySales.Api/Configuration/ServiceRegistrationExtensions.cs` — DI for integrations
+- `apps/api/src/HandySales.Api/Program.cs` — MapIntegrationEndpoints
+- `libs/HandySales.Infrastructure/Persistence/HandySalesDbContext.cs` — 3 new DbSets
+- `libs/HandySales.Application/CompanySettings/DTOs/CompanySettingsDto.cs` — TrialEndsAt, DaysRemaining
+- `libs/HandySales.Application/CompanySettings/Services/CompanySettingsService.cs` — Map trial fields
+- `apps/web/src/services/api/companyService.ts` — Trial fields in type
+- `apps/web/src/services/api/subscriptions.ts` — createTrialCheckoutSession
+- `apps/web/src/types/subscription.ts` — Trial fields
+- `apps/web/src/app/(dashboard)/subscription/page.tsx` — Trial countdown banner
+- `apps/web/src/components/layout/Header.tsx` — Trial badge
+- `apps/web/src/components/layout/Sidebar.tsx` — Integraciones sidebar item
+- `apps/web/src/app/register/page.tsx` — Updated copy
 
 ---
 
-## Verification
-1. `dotnet test` — 0 regressions
-2. `docker-compose up -d --build api_main` — API starts
-3. `npm run type-check` — 0 errors
-4. Register new account → wizard → complete → dashboard
-5. Existing user login → no wizard
-6. Sidebar shows progress → click → getting-started
-7. Dark mode works everywhere
+## Deferred Items
+- **Trial email sequence** (Step 6): 7 drip emails over 14 days. Needs ScheduledActions + email templates.
+- **IntegrationsContext** (Step 10): Global context for `hasIntegration(slug)`. Build when integrations affect other UI.
+- **Billing Portal connection**: After PAC is connected for real SAT invoicing.
 
 ---
 
 ## Previous Tasks (Archived)
 
-### Auditoría Integral (Fases 0-6)
-See `tasks/audit-remediation-plan.md` for the full audit backlog.
+### Onboarding Wizard (completado — session anterior)
+See previous todo.md in git history.
 
 ### Sprint 4 (completado — commit 7b3c7da)
 - [x] C4: SubscriptionPlan CRUD + enforcement service
-- [x] C5: Aviso de privacidad + Términos de servicio
-- [x] 207 E2E passing, TypeScript 0 errores nuevos
+- [x] C5: Aviso de privacidad + Terminos de servicio

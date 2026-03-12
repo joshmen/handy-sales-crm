@@ -48,6 +48,9 @@ using HandySales.Application.CategoriasProductos.Services;
 using HandySales.Application.UnidadesMedida.Interfaces;
 using HandySales.Infrastructure.UnidadesMedida.Repositories;
 using HandySales.Application.UnidadesMedida.Services;
+using HandySales.Application.Integrations.Interfaces;
+using HandySales.Application.Integrations.Services;
+using HandySales.Infrastructure.Repositories.Integrations;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using HandySales.Application.CategoriasClientes.Validators;
@@ -337,6 +340,10 @@ public static class ServiceRegistrationExtensions
 
         services.AddScoped<IGeoQueryService, GeoQueryService>();
         services.AddScoped<IReportAccessService, ReportAccessService>();
+
+        // Integration Marketplace
+        services.AddScoped<IIntegrationRepository, IntegrationRepository>();
+        services.AddScoped<IntegrationService>();
 
         // AI Services
         services.AddScoped<IAiCreditService, AiCreditService>();

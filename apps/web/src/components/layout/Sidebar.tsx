@@ -369,6 +369,13 @@ const sidebarItems: SidebarItem[] = [
     ],
   },
   {
+    id: 'integrations',
+    label: 'Integraciones',
+    icon: SbAutomations,
+    href: '/integrations',
+    permission: 'view_settings',
+  },
+  {
     id: 'subscription',
     label: 'Suscripción',
     icon: SbSubscription,

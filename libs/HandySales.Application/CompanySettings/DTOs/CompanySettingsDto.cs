@@ -57,6 +57,12 @@ namespace HandySales.Application.CompanySettings.DTOs
 
         [JsonPropertyName("updatedBy")]
         public string? UpdatedBy { get; set; }
+
+        [JsonPropertyName("trialEndsAt")]
+        public DateTime? TrialEndsAt { get; set; }
+
+        [JsonPropertyName("daysRemaining")]
+        public int? DaysRemaining { get; set; }
     }
 
     public class UpdateCompanySettingsRequest

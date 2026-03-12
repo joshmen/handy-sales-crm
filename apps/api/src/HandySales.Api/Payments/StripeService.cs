@@ -12,6 +12,7 @@ public interface IStripeService
 {
     Task<string> CreateCustomerAsync(Tenant tenant);
     Task<(string ClientSecret, string SessionId)> CreateCheckoutSessionAsync(int tenantId, string planCode, string interval, string returnUrl);
+    Task<(string ClientSecret, string SessionId)> CreateTrialCheckoutSessionAsync(int tenantId, string planCode, string interval, string returnUrl);
     Task<string> CreatePortalSessionAsync(string stripeCustomerId, string returnUrl);
     Task HandleWebhookAsync(string json, string signature);
     Task CancelSubscriptionAsync(int tenantId);
@@ -155,6 +156,56 @@ public class StripeService : IStripeService
         return (session.ClientSecret, session.Id);
     }
 
+    public async Task<(string ClientSecret, string SessionId)> CreateTrialCheckoutSessionAsync(
+        int tenantId, string planCode, string interval, string returnUrl)
+    {
+        var tenant = await _db.Tenants.FirstOrDefaultAsync(t => t.Id == tenantId)
+            ?? throw new InvalidOperationException("Tenant no encontrado");
+
+        if (tenant.TrialEndsAt == null)
+            throw new InvalidOperationException("Tenant no está en periodo de prueba");
+
+        // Ensure Stripe customer exists
+        if (string.IsNullOrEmpty(tenant.StripeCustomerId))
+            await CreateCustomerAsync(tenant);
+
+        var plan = await _db.SubscriptionPlans
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Codigo == planCode && p.Activo)
+            ?? throw new InvalidOperationException($"Plan '{planCode}' no encontrado");
+
+        var priceId = interval == "year" ? plan.StripePriceIdAnual : plan.StripePriceIdMensual;
+        if (string.IsNullOrEmpty(priceId))
+            throw new InvalidOperationException($"Stripe Price ID no configurado para plan {planCode} ({interval})");
+
+        var options = new SessionCreateOptions
+        {
+            Customer = tenant.StripeCustomerId,
+            UiMode = "embedded",
+            Mode = "subscription",
+            LineItems = new List<SessionLineItemOptions>
+            {
+                new() { Price = priceId, Quantity = 1 }
+            },
+            SubscriptionData = new SessionSubscriptionDataOptions
+            {
+                TrialEnd = tenant.TrialEndsAt.Value,
+            },
+            ReturnUrl = returnUrl + "?session_id={CHECKOUT_SESSION_ID}",
+            Metadata = new Dictionary<string, string>
+            {
+                { "tenant_id", tenantId.ToString() },
+                { "plan_code", planCode },
+                { "is_trial_checkout", "true" }
+            }
+        };
+
+        var service = new SessionService();
+        var session = await service.CreateAsync(options);
+
+        return (session.ClientSecret, session.Id);
+    }
+
     public async Task<string> CreatePortalSessionAsync(string stripeCustomerId, string returnUrl)
     {
         var options = new Stripe.BillingPortal.SessionCreateOptions
@@ -229,15 +280,27 @@ public class StripeService : IStripeService
         if (tenant == null) return;
 
         session.Metadata.TryGetValue("plan_code", out var planCode);
+        session.Metadata.TryGetValue("is_trial_checkout", out var isTrialCheckout);
 
         tenant.StripeSubscriptionId = session.Subscription?.ToString();
         tenant.PlanTipo = planCode ?? tenant.PlanTipo;
-        tenant.SubscriptionStatus = "Active";
-        tenant.FechaSuscripcion = DateTime.UtcNow;
-        tenant.FechaExpiracion = DateTime.UtcNow.AddMonths(1); // Will be updated by invoice.paid
         tenant.Activo = true;
         tenant.CancelledAt = null;
         tenant.CancellationReason = null;
+
+        if (isTrialCheckout == "true")
+        {
+            // Trial card capture: keep Trial status, record card collection
+            tenant.TrialCardCollectedAt = DateTime.UtcNow;
+            // Don't change SubscriptionStatus — stays "Trial" until trial ends and Stripe charges
+        }
+        else
+        {
+            // Regular checkout: activate immediately
+            tenant.SubscriptionStatus = "Active";
+            tenant.FechaSuscripcion = DateTime.UtcNow;
+            tenant.FechaExpiracion = DateTime.UtcNow.AddMonths(1); // Will be updated by invoice.paid
+        }
 
         // Update max users from plan
         if (!string.IsNullOrEmpty(planCode))
@@ -263,8 +326,9 @@ public class StripeService : IStripeService
             .FirstOrDefaultAsync(t => t.StripeCustomerId == invoice.Customer.Id);
         if (tenant == null) return;
 
-        // Extend subscription
+        // Extend subscription (also handles trial → paid conversion)
         tenant.SubscriptionStatus = "Active";
+        tenant.FechaSuscripcion ??= DateTime.UtcNow;
         tenant.FechaExpiracion = invoice.PeriodEnd;
         tenant.GracePeriodEnd = null;
         tenant.Activo = true;

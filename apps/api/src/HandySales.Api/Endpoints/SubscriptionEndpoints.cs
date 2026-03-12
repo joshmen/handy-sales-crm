@@ -26,6 +26,10 @@ public static class SubscriptionEndpoints
             .WithName("CreateCheckoutSession")
             .WithSummary("Crea una sesión de Stripe Checkout");
 
+        group.MapPost("/trial-checkout", CreateTrialCheckout)
+            .WithName("CreateTrialCheckoutSession")
+            .WithSummary("Crea una sesión de Stripe Checkout para captura de tarjeta durante trial");
+
         group.MapPost("/portal", CreatePortal)
             .WithName("CreatePortalSession")
             .WithSummary("Crea una sesión del portal de pagos de Stripe");
@@ -100,7 +104,12 @@ public static class SubscriptionEndpoints
             gracePeriodEnd = tenant.GracePeriodEnd,
             cancelledAt = tenant.CancelledAt,
             hasStripe = !string.IsNullOrEmpty(tenant.StripeCustomerId),
-            nombreEmpresa = tenant.NombreEmpresa
+            nombreEmpresa = tenant.NombreEmpresa,
+            trialEndsAt = tenant.TrialEndsAt,
+            trialCardCollected = tenant.TrialCardCollectedAt != null,
+            daysRemaining = tenant.TrialEndsAt.HasValue
+                ? Math.Max(0, (int)(tenant.TrialEndsAt.Value - DateTime.UtcNow).TotalDays)
+                : (int?)null
         });
     }
 
@@ -172,6 +181,30 @@ public static class SubscriptionEndpoints
         catch (Exception ex)
         {
             return Results.BadRequest(new { message = "No se pudo completar la operación de suscripción." });
+        }
+    }
+
+    private static async Task<IResult> CreateTrialCheckout(
+        [FromBody] CheckoutRequest dto,
+        [FromServices] ICurrentTenant currentTenant,
+        [FromServices] IStripeService stripeService)
+    {
+        if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
+            return Results.Forbid();
+
+        try
+        {
+            var (clientSecret, sessionId) = await stripeService.CreateTrialCheckoutSessionAsync(
+                currentTenant.TenantId,
+                dto.PlanCode,
+                dto.Interval,
+                dto.ReturnUrl);
+
+            return Results.Ok(new { clientSecret, sessionId });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Results.BadRequest(new { message = ex.Message });
         }
     }
 }

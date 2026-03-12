@@ -41,6 +41,12 @@ public class Tenant : AuditableEntity
     [Column("cancellation_reason")]
     public string? CancellationReason { get; set; }
 
+    // Trial
+    [Column("trial_ends_at")]
+    public DateTime? TrialEndsAt { get; set; }
+    [Column("trial_card_collected_at")]
+    public DateTime? TrialCardCollectedAt { get; set; }
+
     // Onboarding
     [Column("onboarding_completed")]
     public bool OnboardingCompleted { get; set; } = false;

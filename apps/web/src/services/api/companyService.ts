@@ -40,6 +40,8 @@ export interface CompanySettings {
   isActive: boolean;
   updatedAt: Date;
   updatedBy?: string;
+  trialEndsAt?: string | null;
+  daysRemaining?: number | null;
 }
 
 export interface UpdateGlobalSettingsRequest {

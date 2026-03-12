@@ -25,6 +25,9 @@ export interface SubscriptionStatus {
   cancelledAt: string | null;
   hasStripe: boolean;
   nombreEmpresa: string;
+  trialEndsAt: string | null;
+  trialCardCollected: boolean;
+  daysRemaining: number | null;
 }
 
 export interface ScheduledAction {

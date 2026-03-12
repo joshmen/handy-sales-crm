@@ -22,6 +22,7 @@ public class SubscriptionMonitor : BackgroundService
 
     private static readonly int[] WarningDays = [7, 3, 1];
     private const int GracePeriodDays = 7;
+    private const int TrialGracePeriodDays = 3;
 
     public SubscriptionMonitor(IServiceProvider services, ILogger<SubscriptionMonitor> logger)
     {
@@ -153,8 +154,23 @@ public class SubscriptionMonitor : BackgroundService
 
         foreach (var tenant in expiredTenants)
         {
+            // Trial expiration with card collected: Stripe will auto-charge via invoice.paid webhook.
+            // Don't mark as expired — let Stripe handle the transition.
+            if (tenant.SubscriptionStatus == "Trial"
+                && tenant.TrialCardCollectedAt != null
+                && !string.IsNullOrEmpty(tenant.StripeSubscriptionId))
+            {
+                _logger.LogInformation(
+                    "Trial ended for tenant {TenantId} ({Name}) — card on file, waiting for Stripe invoice",
+                    tenant.Id, tenant.NombreEmpresa);
+                continue;
+            }
+
+            // Trial expired without card: shorter grace period (3 days)
+            var graceDays = tenant.SubscriptionStatus == "Trial" ? TrialGracePeriodDays : GracePeriodDays;
+
             tenant.SubscriptionStatus = "Expired";
-            tenant.GracePeriodEnd = now.AddDays(GracePeriodDays);
+            tenant.GracePeriodEnd = now.AddDays(graceDays);
 
             // Send expiration email
             var adminEmails = await db.Usuarios
@@ -164,11 +180,14 @@ public class SubscriptionMonitor : BackgroundService
                 .Select(u => u.Email)
                 .ToListAsync(ct);
 
+            var subject = tenant.TrialEndsAt != null
+                ? "Tu periodo de prueba ha terminado - HandySales"
+                : "Su suscripción ha expirado - HandySales";
             var emailBody = EmailTemplates.SubscriptionExpired(tenant.NombreEmpresa);
-            await emailService.SendBulkAsync(adminEmails!, "Su suscripción ha expirado - HandySales", emailBody);
+            await emailService.SendBulkAsync(adminEmails!, subject, emailBody);
 
-            _logger.LogInformation("Tenant {TenantId} ({Name}) subscription expired. Grace period until {GraceEnd}",
-                tenant.Id, tenant.NombreEmpresa, tenant.GracePeriodEnd);
+            _logger.LogInformation("Tenant {TenantId} ({Name}) expired (was {Status}). Grace period: {Days} days until {GraceEnd}",
+                tenant.Id, tenant.NombreEmpresa, tenant.SubscriptionStatus, graceDays, tenant.GracePeriodEnd);
         }
 
         if (expiredTenants.Count > 0)

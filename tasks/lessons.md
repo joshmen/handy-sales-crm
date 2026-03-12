@@ -74,3 +74,20 @@
 - **Problema**: En viewport mobile (Pixel 5), botones de acción muestran solo `<img>` sin texto. `getByRole('button', { name: /texto/i })` no encuentra nada.
 - **Fix**: Skip con `if (testInfo.project.name === 'Mobile Chrome') { test.skip(); return; }` para tests que verifican texto de botones.
 - **Alternativa**: Usar `locator('button').filter({ has: page.locator('img[alt*="texto"]') })` si los íconos tienen alt text.
+
+## EF Core — Snake_case column names in PostgreSQL (Mar 2026)
+- **Problema**: EF Core genera columnas snake_case (`tipo_precio`, `precio_mxn`) pero yo escribí SQL seed con PascalCase (`"TipoPrecio"`, `"PrecioMXN"`)
+- **Fix**: Siempre verificar esquema real con `\d "TableName"` antes de escribir SQL seed
+- **Regla**: Table names = PascalCase con quotes (`"Integrations"`), column names = snake_case sin quotes (`tipo_precio`)
+
+## E2E — OAuth users have no password (Mar 2026)
+- **Problema**: `xjoshmenx@gmail.com` fue creado via Google OAuth → PasswordHash es NULL
+- BCrypt.Verify con hash NULL lanza `ArgumentException: Invalid salt`
+- GlobalExceptionMiddleware lo captura como 400 "Parametros de solicitud invalidos"
+- **Fix**: Cambiar E2E desktop user a `admin@jeyma.com` que tiene password hash
+- **Regla**: Nunca usar usuarios OAuth en E2E login tests que llenan el form de password
+
+## E2E — Cookie consent banner (Mar 2026)
+- **Problema**: Banner de cookies cubre el boton de login
+- `page.keyboard.press('Escape')` no lo cierra — necesita click en "Aceptar"
+- **Fix**: Antes del fill del form, verificar si el banner es visible y hacer click en "Aceptar"

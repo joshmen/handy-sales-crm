@@ -276,6 +276,23 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
 
         {/* Right: User controls */}
         <div className="flex items-center gap-0.5">
+          {/* Trial badge */}
+          {companySettings?.subscriptionStatus === 'Trial' && companySettings?.daysRemaining != null && (
+            <button
+              onClick={() => router.push('/subscription')}
+              className={cn(
+                'hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold transition-colors cursor-pointer mr-1',
+                (companySettings.daysRemaining ?? 0) > 7
+                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/60'
+                  : (companySettings.daysRemaining ?? 0) > 3
+                    ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/60'
+                    : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/60'
+              )}
+            >
+              Trial: {companySettings.daysRemaining}d
+            </button>
+          )}
+
           {/* Notifications */}
           <Button
             data-tour="header-notifications"

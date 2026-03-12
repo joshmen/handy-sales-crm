@@ -3,6 +3,7 @@ using System;
 using HandySales.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Pgvector;
@@ -12,9 +13,11 @@ using Pgvector;
 namespace HandySales.Infrastructure.Migrations
 {
     [DbContext(typeof(HandySalesDbContext))]
-    partial class HandySalesDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260311225026_AddTrialFieldsToTenant")]
+    partial class AddTrialFieldsToTenant
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2431,134 +2434,6 @@ namespace HandySales.Infrastructure.Migrations
                     b.ToTable("ImpersonationSessions", (string)null);
                 });
 
-            modelBuilder.Entity("HandySales.Domain.Entities.Integration", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<bool>("Activo")
-                        .HasColumnType("boolean")
-                        .HasColumnName("activo");
-
-                    b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("actualizado_en");
-
-                    b.Property<string>("ActualizadoPor")
-                        .HasColumnType("text")
-                        .HasColumnName("actualizado_por");
-
-                    b.Property<string>("Categoria")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("categoria");
-
-                    b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("creado_en");
-
-                    b.Property<string>("CreadoPor")
-                        .HasColumnType("text")
-                        .HasColumnName("creado_por");
-
-                    b.Property<string>("Descripcion")
-                        .HasColumnType("text")
-                        .HasColumnName("descripcion");
-
-                    b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("eliminado_en");
-
-                    b.Property<string>("EliminadoPor")
-                        .HasColumnType("text")
-                        .HasColumnName("eliminado_por");
-
-                    b.Property<string>("Estado")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("estado");
-
-                    b.Property<string>("Icono")
-                        .HasColumnType("text")
-                        .HasColumnName("icono");
-
-                    b.Property<string>("Nombre")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("nombre");
-
-                    b.Property<decimal>("PrecioMXN")
-                        .HasColumnType("numeric")
-                        .HasColumnName("precio_mxn");
-
-                    b.Property<string>("Slug")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("slug");
-
-                    b.Property<string>("TipoPrecio")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("tipo_precio");
-
-                    b.Property<long>("Version")
-                        .IsConcurrencyToken()
-                        .HasColumnType("bigint")
-                        .HasColumnName("version");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Slug")
-                        .IsUnique();
-
-                    b.ToTable("Integrations");
-                });
-
-            modelBuilder.Entity("HandySales.Domain.Entities.IntegrationLog", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Accion")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("accion");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("Descripcion")
-                        .HasColumnType("text")
-                        .HasColumnName("descripcion");
-
-                    b.Property<int>("IntegrationId")
-                        .HasColumnType("integer")
-                        .HasColumnName("integration_id");
-
-                    b.Property<int>("TenantId")
-                        .HasColumnType("integer")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<int>("UsuarioId")
-                        .HasColumnType("integer")
-                        .HasColumnName("usuario_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("IntegrationId");
-
-                    b.ToTable("IntegrationLogs");
-                });
-
             modelBuilder.Entity("HandySales.Domain.Entities.Inventario", b =>
                 {
                     b.Property<int>("Id")
@@ -4400,83 +4275,6 @@ namespace HandySales.Infrastructure.Migrations
                     b.ToTable("TenantAutomations");
                 });
 
-            modelBuilder.Entity("HandySales.Domain.Entities.TenantIntegration", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int?>("ActivadoPorUsuarioId")
-                        .HasColumnType("integer")
-                        .HasColumnName("activado_por");
-
-                    b.Property<bool>("Activo")
-                        .HasColumnType("boolean")
-                        .HasColumnName("activo");
-
-                    b.Property<DateTime?>("ActualizadoEn")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("actualizado_en");
-
-                    b.Property<string>("ActualizadoPor")
-                        .HasColumnType("text")
-                        .HasColumnName("actualizado_por");
-
-                    b.Property<string>("Configuracion")
-                        .HasColumnType("text")
-                        .HasColumnName("configuracion");
-
-                    b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("creado_en");
-
-                    b.Property<string>("CreadoPor")
-                        .HasColumnType("text")
-                        .HasColumnName("creado_por");
-
-                    b.Property<DateTime?>("EliminadoEn")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("eliminado_en");
-
-                    b.Property<string>("EliminadoPor")
-                        .HasColumnType("text")
-                        .HasColumnName("eliminado_por");
-
-                    b.Property<string>("Estado")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("estado");
-
-                    b.Property<DateTime>("FechaActivacion")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("fecha_activacion");
-
-                    b.Property<int>("IntegrationId")
-                        .HasColumnType("integer")
-                        .HasColumnName("integration_id");
-
-                    b.Property<int>("TenantId")
-                        .HasColumnType("integer")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<long>("Version")
-                        .IsConcurrencyToken()
-                        .HasColumnType("bigint")
-                        .HasColumnName("version");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("IntegrationId");
-
-                    b.HasIndex("TenantId", "IntegrationId")
-                        .IsUnique();
-
-                    b.ToTable("TenantIntegrations");
-                });
-
             modelBuilder.Entity("HandySales.Domain.Entities.TwoFactorRecoveryCode", b =>
                 {
                     b.Property<int>("Id")
@@ -5156,17 +4954,6 @@ namespace HandySales.Infrastructure.Migrations
                     b.Navigation("TargetTenant");
                 });
 
-            modelBuilder.Entity("HandySales.Domain.Entities.IntegrationLog", b =>
-                {
-                    b.HasOne("HandySales.Domain.Entities.Integration", "Integration")
-                        .WithMany()
-                        .HasForeignKey("IntegrationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Integration");
-                });
-
             modelBuilder.Entity("HandySales.Domain.Entities.Inventario", b =>
                 {
                     b.HasOne("HandySales.Domain.Entities.Producto", "Producto")
@@ -5591,25 +5378,6 @@ namespace HandySales.Infrastructure.Migrations
                     b.Navigation("Tenant");
                 });
 
-            modelBuilder.Entity("HandySales.Domain.Entities.TenantIntegration", b =>
-                {
-                    b.HasOne("HandySales.Domain.Entities.Integration", "Integration")
-                        .WithMany("TenantIntegrations")
-                        .HasForeignKey("IntegrationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("HandySales.Domain.Entities.Tenant", "Tenant")
-                        .WithMany()
-                        .HasForeignKey("TenantId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Integration");
-
-                    b.Navigation("Tenant");
-                });
-
             modelBuilder.Entity("HandySales.Domain.Entities.TwoFactorRecoveryCode", b =>
                 {
                     b.HasOne("HandySales.Domain.Entities.Usuario", "Usuario")
@@ -5697,11 +5465,6 @@ namespace HandySales.Infrastructure.Migrations
                     b.Navigation("CompanySettings");
 
                     b.Navigation("Usuarios");
-                });
-
-            modelBuilder.Entity("HandySales.Domain.Entities.Integration", b =>
-                {
-                    b.Navigation("TenantIntegrations");
                 });
 
             modelBuilder.Entity("HandySales.Domain.Entities.Pedido", b =>

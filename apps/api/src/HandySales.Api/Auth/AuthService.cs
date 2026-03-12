@@ -67,14 +67,17 @@ public class AuthService
             return null; // Email ya existe
 
         // Crea el Tenant
+        // Trial híbrido: full PRO access for 14 days, then card capture required
+        var trialEnd = DateTime.UtcNow.AddDays(14);
         var tenant = new Tenant
         {
             NombreEmpresa = dto.NombreEmpresa,
-            PlanTipo = "Trial",
-            MaxUsuarios = 2,
+            PlanTipo = "PRO",
+            MaxUsuarios = 10,
             FechaSuscripcion = DateTime.UtcNow,
-            FechaExpiracion = DateTime.UtcNow.AddDays(14),
-            SubscriptionStatus = "Trial"
+            FechaExpiracion = trialEnd,
+            SubscriptionStatus = "Trial",
+            TrialEndsAt = trialEnd
         };
 
         // Stage both Tenant + DatosEmpresa before single SaveChanges (atomic)
@@ -140,15 +143,17 @@ public class AuthService
         if (await _db.Usuarios.IgnoreQueryFilters().AnyAsync(u => u.Email == dto.Email))
             return null; // Email ya existe
 
-        // Crea el Tenant
+        // Trial híbrido: full PRO access for 14 days
+        var trialEnd = DateTime.UtcNow.AddDays(14);
         var tenant = new Tenant
         {
             NombreEmpresa = dto.NombreEmpresa,
-            PlanTipo = "Trial",
-            MaxUsuarios = 2,
+            PlanTipo = "PRO",
+            MaxUsuarios = 10,
             FechaSuscripcion = DateTime.UtcNow,
-            FechaExpiracion = DateTime.UtcNow.AddDays(14),
-            SubscriptionStatus = "Trial"
+            FechaExpiracion = trialEnd,
+            SubscriptionStatus = "Trial",
+            TrialEndsAt = trialEnd
         };
 
         // Stage both Tenant + DatosEmpresa before single SaveChanges (atomic)

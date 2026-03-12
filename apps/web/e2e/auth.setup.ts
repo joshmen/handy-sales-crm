@@ -16,15 +16,24 @@ import { test as setup, expect } from '@playwright/test';
 
 setup('authenticate as admin', async ({ page }, testInfo) => {
   const isMobile = testInfo.project.name.includes('mobile');
-  const email = isMobile ? 'e2e-mobile-admin@jeyma.com' : 'xjoshmenx@gmail.com';
+  const email = isMobile ? 'e2e-mobile-admin@jeyma.com' : 'admin@jeyma.com';
   const statePath = isMobile ? 'e2e/.auth/admin-mobile.json' : 'e2e/.auth/admin-desktop.json';
 
   await page.goto('/login');
-  await page.keyboard.press('Escape');
   await page.waitForTimeout(500);
 
+  // Dismiss cookie consent banner if present
+  const acceptCookies = page.getByRole('button', { name: /Aceptar/i });
+  if (await acceptCookies.isVisible({ timeout: 2000 }).catch(() => false)) {
+    await acceptCookies.click();
+    await page.waitForTimeout(300);
+  }
+
   await page.locator('#email').first().fill(email);
+  await page.waitForTimeout(200);
+  await page.locator('#password').first().click();
   await page.locator('#password').first().fill('test123');
+  await page.waitForTimeout(200);
   await page.getByRole('button', { name: /Iniciar Sesión/i }).first().click({ force: true });
 
   // Handle session conflict (409) — click "Cerrar sesión anterior" if it appears
