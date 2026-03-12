@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useRef, useMemo } from 'react';
 import { Upload, FileText, X, AlertCircle, CheckCircle2, Download, Loader2, Check, Minus, Info, Search } from 'lucide-react';
+import { SbAlert, SbDownload } from '@/components/layout/DashboardIcons';
 import Papa from 'papaparse';
 import { importFilteredCsv, downloadTemplate, ImportResult, ImportEntity } from '@/services/api/importExport';
 import { toast } from '@/hooks/useToast';
@@ -425,20 +426,20 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
           <>
             {/* Info note */}
             {infoNote && (
-              <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                <Info className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                <span className="text-sm text-amber-800">{infoNote}</span>
+              <div className="flex items-start gap-2 p-3 bg-muted/50 border border-border rounded-lg">
+                <SbAlert size={16} className="flex-shrink-0 mt-0.5" />
+                <span className="text-sm text-muted-foreground">{infoNote}</span>
               </div>
             )}
 
             {/* Template download */}
-            <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <span className="text-sm text-blue-800">
+            <div className="flex items-center justify-between p-3 bg-muted/50 border border-border rounded-lg">
+              <span className="text-sm text-muted-foreground">
                 Descarga el template CSV para ver el formato requerido
               </span>
               <button
                 onClick={handleDownloadTemplate}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-white border border-blue-300 rounded hover:bg-blue-50"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-foreground bg-background border border-border rounded hover:bg-muted"
               >
                 <Download className="w-3.5 h-3.5" />
                 Template
@@ -461,7 +462,7 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
                 dragOver ? 'border-green-400 bg-green-50' : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
               }`}
             >
-              <Upload className="w-10 h-10 text-gray-400 mb-3" />
+              <SbDownload size={40} className="mb-3" />
               <p className="text-sm font-medium text-gray-700">
                 Arrastra un archivo CSV aquí o haz clic para seleccionar
               </p>

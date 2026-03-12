@@ -9,11 +9,12 @@ using Microsoft.Extensions.Caching.Memory;
 namespace HandySales.Api.Workers;
 
 /// <summary>
-/// Background worker that monitors subscription expiration.
+/// Background worker that monitors subscription expiration and trial drip emails.
 /// Runs every hour to:
-/// 1. Send expiration warnings (7 days, 3 days, 1 day before)
-/// 2. Mark expired subscriptions
-/// 3. Deactivate tenants after grace period
+/// 1. Send trial drip emails (day 3, 7, 10, 12)
+/// 2. Send expiration warnings (7 days, 3 days, 1 day before)
+/// 3. Mark expired subscriptions
+/// 4. Deactivate tenants after grace period
 /// </summary>
 public class SubscriptionMonitor : BackgroundService
 {
@@ -21,6 +22,7 @@ public class SubscriptionMonitor : BackgroundService
     private readonly ILogger<SubscriptionMonitor> _logger;
 
     private static readonly int[] WarningDays = [7, 3, 1];
+    private static readonly int[] TrialDripDays = [3, 7, 10, 12];
     private const int GracePeriodDays = 7;
     private const int TrialGracePeriodDays = 3;
 
@@ -62,14 +64,96 @@ public class SubscriptionMonitor : BackgroundService
 
         var now = DateTime.UtcNow;
 
-        // 1. Send expiration warnings for active tenants approaching expiration
+        // 1. Send trial drip emails (value + urgency)
+        await SendTrialDripEmailsAsync(db, emailService, now, ct);
+
+        // 2. Send expiration warnings for active tenants approaching expiration
         await SendExpirationWarningsAsync(db, emailService, now, ct);
 
-        // 2. Mark expired subscriptions + set grace period
+        // 3. Mark expired subscriptions + set grace period
         await MarkExpiredSubscriptionsAsync(db, emailService, now, ct);
 
-        // 3. Deactivate tenants past grace period
+        // 4. Deactivate tenants past grace period
         await DeactivateExpiredTenantsAsync(db, cache, hubContext, emailService, now, ct);
+    }
+
+    private async Task SendTrialDripEmailsAsync(
+        HandySalesDbContext db, IEmailService emailService,
+        DateTime now, CancellationToken ct)
+    {
+        // Find active trial tenants that haven't collected a card yet
+        var trialTenants = await db.Tenants
+            .Where(t => t.Activo
+                && t.SubscriptionStatus == "Trial"
+                && t.TrialEndsAt != null
+                && t.TrialCardCollectedAt == null)
+            .ToListAsync(ct);
+
+        foreach (var tenant in trialTenants)
+        {
+            var trialStarted = tenant.TrialEndsAt!.Value.AddDays(-14);
+            var daysSinceStart = (int)(now - trialStarted).TotalDays;
+
+            foreach (var dripDay in TrialDripDays)
+            {
+                if (daysSinceStart < dripDay) continue;
+
+                // Check if already sent
+                var alreadySent = await db.ScheduledActions
+                    .AnyAsync(a => a.ActionType == "SendTrialDrip"
+                        && a.TargetId == tenant.Id
+                        && a.Status == "Executed"
+                        && a.Notes == $"day:{dripDay}", ct);
+
+                if (alreadySent) continue;
+
+                var adminEmails = await db.Usuarios
+                    .IgnoreQueryFilters()
+                    .AsNoTracking()
+                    .Where(u => u.TenantId == tenant.Id && u.EsAdmin && u.Activo)
+                    .Select(u => u.Email)
+                    .ToListAsync(ct);
+
+                if (adminEmails.Count == 0) continue;
+
+                var daysLeft = Math.Max(0, (int)(tenant.TrialEndsAt.Value - now).TotalDays);
+                var (subject, body) = dripDay switch
+                {
+                    3 => ("Tip: Configura tu catálogo - HandySales",
+                          EmailTemplates.TrialValueDay3(tenant.NombreEmpresa)),
+                    7 => ("Tip: Crea tu primera ruta - HandySales",
+                          EmailTemplates.TrialValueDay7(tenant.NombreEmpresa)),
+                    10 => ($"Te quedan {daysLeft} días de prueba - HandySales",
+                           EmailTemplates.TrialUrgencyDay10(tenant.NombreEmpresa, daysLeft)),
+                    12 => ($"Solo {daysLeft} días para que termine tu prueba - HandySales",
+                           EmailTemplates.TrialUrgencyDay12(tenant.NombreEmpresa, daysLeft)),
+                    _ => (string.Empty, string.Empty)
+                };
+
+                if (string.IsNullOrEmpty(subject)) continue;
+
+                await emailService.SendBulkAsync(adminEmails!, subject, body);
+
+                db.ScheduledActions.Add(new ScheduledAction
+                {
+                    ActionType = "SendTrialDrip",
+                    TargetId = tenant.Id,
+                    ScheduledAt = now,
+                    ExecutedAt = now,
+                    Status = "Executed",
+                    NotificationSent = true,
+                    Notes = $"day:{dripDay}",
+                    CreatedByUserId = 0,
+                    CreadoEn = now
+                });
+
+                _logger.LogInformation("Sent trial drip day {Day} to tenant {TenantId} ({Name})",
+                    dripDay, tenant.Id, tenant.NombreEmpresa);
+            }
+        }
+
+        if (trialTenants.Count > 0)
+            await db.SaveChangesAsync(ct);
     }
 
     private async Task SendExpirationWarningsAsync(

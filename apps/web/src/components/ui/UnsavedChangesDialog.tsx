@@ -8,7 +8,8 @@ import {
   DialogTitle,
 } from '@/components/ui/Dialog';
 import { Button } from '@/components/ui/Button';
-import { AlertTriangle, Save } from 'lucide-react';
+import { Save } from 'lucide-react';
+import { SbAlert } from '@/components/layout/DashboardIcons';
 
 interface UnsavedChangesDialogProps {
   open: boolean;
@@ -38,7 +39,7 @@ export function UnsavedChangesDialog({
       <DialogContent className="sm:max-w-2xl w-full max-w-[95vw] mx-4">
         <DialogHeader>
           <div className="flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
+            <SbAlert size={20} className="mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <DialogTitle className="text-left break-words">{title}</DialogTitle>
               <DialogDescription className="mt-1.5 text-left break-words whitespace-normal">

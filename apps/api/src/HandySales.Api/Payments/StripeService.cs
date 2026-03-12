@@ -16,6 +16,7 @@ public interface IStripeService
     Task<string> CreatePortalSessionAsync(string stripeCustomerId, string returnUrl);
     Task HandleWebhookAsync(string json, string signature);
     Task CancelSubscriptionAsync(int tenantId);
+    Task ReactivateSubscriptionAsync(int tenantId);
 }
 
 public class StripeService : IStripeService
@@ -258,12 +259,65 @@ public class StripeService : IStripeService
         if (string.IsNullOrEmpty(tenant.StripeSubscriptionId))
             throw new InvalidOperationException("No hay suscripción activa de Stripe");
 
+        // Cancel at end of billing period (not immediately)
         var service = new SubscriptionService();
-        await service.CancelAsync(tenant.StripeSubscriptionId);
+        var sub = await service.UpdateAsync(tenant.StripeSubscriptionId, new SubscriptionUpdateOptions
+        {
+            CancelAtPeriodEnd = true
+        });
 
-        tenant.SubscriptionStatus = "Cancelled";
-        tenant.CancelledAt = DateTime.UtcNow;
+        tenant.CancellationScheduledFor = sub.CurrentPeriodEnd;
         await _db.SaveChangesAsync();
+
+        // Send cancellation confirmation email
+        var adminEmails = await _db.Usuarios
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(u => u.TenantId == tenant.Id && u.EsAdmin && u.Activo)
+            .Select(u => u.Email)
+            .ToListAsync();
+
+        var emailBody = EmailTemplates.SubscriptionCancellationScheduled(
+            tenant.NombreEmpresa, sub.CurrentPeriodEnd);
+        await _emailService.SendBulkAsync(adminEmails!, "Cancelación programada - HandySales", emailBody);
+
+        _logger.LogInformation("Subscription cancel scheduled for tenant {TenantId}, ends {EndDate}",
+            tenantId, sub.CurrentPeriodEnd);
+    }
+
+    public async Task ReactivateSubscriptionAsync(int tenantId)
+    {
+        var tenant = await _db.Tenants.FirstOrDefaultAsync(t => t.Id == tenantId)
+            ?? throw new InvalidOperationException("Tenant no encontrado");
+
+        if (string.IsNullOrEmpty(tenant.StripeSubscriptionId))
+            throw new InvalidOperationException("No hay suscripción activa de Stripe");
+
+        if (tenant.CancellationScheduledFor == null)
+            throw new InvalidOperationException("La suscripción no está programada para cancelarse");
+
+        // Revert cancel_at_period_end
+        var service = new SubscriptionService();
+        await service.UpdateAsync(tenant.StripeSubscriptionId, new SubscriptionUpdateOptions
+        {
+            CancelAtPeriodEnd = false
+        });
+
+        tenant.CancellationScheduledFor = null;
+        await _db.SaveChangesAsync();
+
+        // Send reactivation confirmation email
+        var adminEmails = await _db.Usuarios
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(u => u.TenantId == tenant.Id && u.EsAdmin && u.Activo)
+            .Select(u => u.Email)
+            .ToListAsync();
+
+        var emailBody = EmailTemplates.SubscriptionReactivated(tenant.NombreEmpresa);
+        await _emailService.SendBulkAsync(adminEmails!, "Suscripción reactivada - HandySales", emailBody);
+
+        _logger.LogInformation("Subscription reactivated for tenant {TenantId}", tenantId);
     }
 
     // --- Webhook Handlers ---
@@ -287,6 +341,7 @@ public class StripeService : IStripeService
         tenant.Activo = true;
         tenant.CancelledAt = null;
         tenant.CancellationReason = null;
+        tenant.CancellationScheduledFor = null;
 
         if (isTrialCheckout == "true")
         {
@@ -395,6 +450,7 @@ public class StripeService : IStripeService
         tenant.SubscriptionStatus = "Cancelled";
         tenant.CancelledAt = DateTime.UtcNow;
         tenant.StripeSubscriptionId = null;
+        tenant.CancellationScheduledFor = null;
 
         await _db.SaveChangesAsync();
 
@@ -412,6 +468,17 @@ public class StripeService : IStripeService
 
         tenant.StripeSubscriptionId = subscription.Id;
 
+        // Track cancel_at_period_end state from Stripe
+        if (subscription.CancelAtPeriodEnd)
+        {
+            tenant.CancellationScheduledFor = subscription.CurrentPeriodEnd;
+        }
+        else
+        {
+            // Reactivated (cancel_at_period_end reverted)
+            tenant.CancellationScheduledFor = null;
+        }
+
         if (subscription.Status == "active")
             tenant.SubscriptionStatus = "Active";
         else if (subscription.Status == "past_due")
@@ -419,8 +486,8 @@ public class StripeService : IStripeService
 
         await _db.SaveChangesAsync();
 
-        _logger.LogInformation("Subscription updated for tenant {TenantId}, status: {Status}",
-            tenant.Id, subscription.Status);
+        _logger.LogInformation("Subscription updated for tenant {TenantId}, status: {Status}, cancelAtPeriodEnd: {CancelAtPeriodEnd}",
+            tenant.Id, subscription.Status, subscription.CancelAtPeriodEnd);
     }
 
     /// <summary>Maps legacy plan codes (PROFESIONAL, BASICO, STARTER) to canonical codes (PRO, BASIC).</summary>

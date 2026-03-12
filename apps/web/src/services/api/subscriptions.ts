@@ -48,4 +48,8 @@ export const subscriptionService = {
   async cancelSubscription(): Promise<void> {
     await api.post('/api/subscription/cancel');
   },
+
+  async reactivateSubscription(): Promise<void> {
+    await api.post('/api/subscription/reactivate');
+  },
 };

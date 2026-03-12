@@ -4,14 +4,21 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { Separator } from "@/components/ui/Separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/Dialog";
 import { toast } from "@/hooks/useToast";
 import { useRequireAdmin } from "@/hooks/usePermissions";
 import { subscriptionService } from "@/services/api/subscriptions";
 import type { SubscriptionPlan, SubscriptionStatus } from "@/types/subscription";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { SbSubscription } from "@/components/layout/DashboardIcons";
+import { SbSubscription, SbAlert } from "@/components/layout/DashboardIcons";
 import {
   Users,
   Check,
@@ -24,6 +31,13 @@ import {
   AlertTriangle,
   ExternalLink,
   ArrowLeft,
+  RotateCcw,
+  Package,
+  UserCheck,
+  BarChart3,
+  Headphones,
+  ShieldAlert,
+  ArrowUpRight,
 } from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
 import { EmbeddedCheckoutProvider, EmbeddedCheckout } from "@stripe/react-stripe-js";
@@ -77,204 +91,6 @@ function getDowngradeInfo(
   return { isDowngrade, violations, isFreeBlocked };
 }
 
-// ─── Premium Plan Card (matching landing page effects) ──────────
-function PlanCard({
-  plan, isCurrent, isPopular, price, monthlyEquivalent, billingInterval, processing, onUpgrade, subscription,
-}: {
-  plan: SubscriptionPlan;
-  isCurrent: boolean;
-  isPopular: boolean;
-  price: number;
-  monthlyEquivalent: number;
-  billingInterval: "month" | "year";
-  processing: boolean;
-  onUpgrade: () => void;
-  subscription: SubscriptionStatus | null;
-}) {
-  const cardRef = useRef<HTMLDivElement>(null);
-  const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
-  const [isHovered, setIsHovered] = useState(false);
-
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current) return;
-    const rect = cardRef.current.getBoundingClientRect();
-    setMousePos({
-      x: ((e.clientX - rect.left) / rect.width) * 100,
-      y: ((e.clientY - rect.top) / rect.height) * 100,
-    });
-  }, []);
-
-  const downgrade = getDowngradeInfo(plan, subscription?.planTipo ?? null, subscription);
-  const isBlocked = downgrade.isFreeBlocked || downgrade.violations.length > 0;
-  const isDisabled = isCurrent || processing || plan.codigo === "FREE" || isBlocked;
-
-  return (
-    <div className="relative">
-      <div
-        ref={cardRef}
-        onMouseMove={handleMouseMove}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => { setIsHovered(false); setMousePos({ x: 50, y: 50 }); }}
-        className={`group relative rounded-2xl transition-all duration-500 ease-out ${
-          isPopular
-            ? "border-2 border-green-500 dark:border-green-400 shadow-xl shadow-green-600/10"
-            : "border border-gray-200 dark:border-gray-700 shadow-md hover:shadow-lg hover:border-gray-300 dark:hover:border-gray-600"
-        } ${isCurrent ? "ring-2 ring-green-500/30" : ""}`}
-        style={{
-          transform: isHovered
-            ? `perspective(800px) rotateY(${(mousePos.x - 50) * 0.04}deg) rotateX(${(mousePos.y - 50) * -0.04}deg) translateY(-4px) scale(1.01)`
-            : "perspective(800px) rotateY(0deg) rotateX(0deg) translateY(0px) scale(1)",
-        }}
-      >
-        {/* Mouse-follow glow */}
-        <div
-          className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-          style={{
-            background: `radial-gradient(circle at ${mousePos.x}% ${mousePos.y}%, ${isPopular ? "rgba(22, 163, 74, 0.08)" : "rgba(99, 102, 241, 0.06)"} 0%, transparent 50%)`,
-          }}
-        />
-
-        <div className="relative bg-white dark:bg-gray-900 rounded-2xl p-6 h-full flex flex-col min-h-[420px]">
-          {/* Popular floating tag */}
-          {isPopular && (
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
-              <span className="bg-green-600 text-white text-[11px] font-semibold uppercase tracking-wider px-4 py-1 rounded-full shadow-md shadow-green-600/20 flex items-center gap-1">
-                <Sparkles className="h-3 w-3" />
-                Más popular
-              </span>
-            </div>
-          )}
-
-          {/* Plan name + current badge */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white">{plan.nombre}</h3>
-            {isCurrent && (
-              <span className="text-[11px] font-semibold uppercase tracking-wider px-3 py-0.5 rounded-full bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400">
-                Plan actual
-              </span>
-            )}
-          </div>
-
-          {/* Price */}
-          <div className="mt-4 mb-4 pb-4 border-b border-gray-100 dark:border-gray-800">
-            <div className="flex items-baseline gap-1">
-              <span
-                key={`${plan.codigo}-${billingInterval}`}
-                className="text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight animate-[subPricePop_0.4s_cubic-bezier(0.34,1.56,0.64,1)]"
-              >
-                {price === 0 ? "Gratis" : `$${monthlyEquivalent.toLocaleString("es-MX")}`}
-              </span>
-              {price > 0 && (
-                <span className="text-sm text-gray-400 dark:text-gray-500 font-medium">MXN/mes</span>
-              )}
-            </div>
-            {price > 0 && billingInterval === "year" && (
-              <p className="text-xs text-green-600 dark:text-green-400 font-medium mt-1.5 animate-[subFadeIn_0.3s_ease-out]">
-                Facturado ${price.toLocaleString("es-MX")} MXN/año
-              </p>
-            )}
-          </div>
-
-          {/* Features */}
-          <ul className="space-y-2.5 flex-1">
-            <li className="flex items-center gap-2.5 text-sm text-gray-600 dark:text-gray-300">
-              <Check className="h-4 w-4 text-green-500 flex-shrink-0" strokeWidth={2.5} />
-              {plan.maxUsuarios} usuarios
-            </li>
-            <li className="flex items-center gap-2.5 text-sm text-gray-600 dark:text-gray-300">
-              <Check className="h-4 w-4 text-green-500 flex-shrink-0" strokeWidth={2.5} />
-              {plan.maxProductos.toLocaleString()} productos
-            </li>
-            <li className="flex items-center gap-2.5 text-sm text-gray-600 dark:text-gray-300">
-              <Check className="h-4 w-4 text-green-500 flex-shrink-0" strokeWidth={2.5} />
-              {plan.maxClientesPorMes} clientes/mes
-            </li>
-            <li className={`flex items-center gap-2.5 text-sm ${plan.incluyeReportes ? "text-gray-600 dark:text-gray-300" : "text-gray-400 dark:text-gray-600"}`}>
-              {plan.incluyeReportes ? (
-                <Check className="h-4 w-4 text-green-500 flex-shrink-0" strokeWidth={2.5} />
-              ) : (
-                <X className="h-4 w-4 text-gray-300 dark:text-gray-700 flex-shrink-0" />
-              )}
-              Reportes avanzados
-            </li>
-            <li className={`flex items-center gap-2.5 text-sm ${plan.incluyeSoportePrioritario ? "text-gray-600 dark:text-gray-300" : "text-gray-400 dark:text-gray-600"}`}>
-              {plan.incluyeSoportePrioritario ? (
-                <Check className="h-4 w-4 text-green-500 flex-shrink-0" strokeWidth={2.5} />
-              ) : (
-                <X className="h-4 w-4 text-gray-300 dark:text-gray-700 flex-shrink-0" />
-              )}
-              Soporte prioritario
-            </li>
-          </ul>
-
-          {/* Compact downgrade notice */}
-          {isBlocked && !isCurrent && (
-            <div className={`flex items-center gap-2 px-3 py-2 rounded-lg mt-auto ${
-              downgrade.isFreeBlocked
-                ? "bg-gray-100 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700"
-                : "bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40"
-            }`}>
-              <AlertTriangle className={`h-3.5 w-3.5 flex-shrink-0 ${
-                downgrade.isFreeBlocked ? "text-gray-400" : "text-amber-500"
-              }`} />
-              <span className={`text-[11px] font-medium leading-tight ${
-                downgrade.isFreeBlocked
-                  ? "text-gray-500 dark:text-gray-400"
-                  : "text-amber-700 dark:text-amber-400"
-              }`}>
-                {downgrade.isFreeBlocked
-                  ? "No disponible con historial de pago"
-                  : `Excedes límites: ${downgrade.violations.map(v => v.split(" (")[0]).join(", ")}`}
-              </span>
-            </div>
-          )}
-
-          {/* CTA */}
-          <button
-            className={`group/btn flex items-center justify-center gap-2 w-full py-3 rounded-xl font-semibold text-sm transition-all duration-300 ${isBlocked || isCurrent ? "mt-3" : "mt-5"} ${
-              isCurrent
-                ? "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-default"
-                : isDisabled
-                  ? "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed opacity-60"
-                  : downgrade.isDowngrade
-                    ? "bg-amber-500 text-white hover:bg-amber-600 shadow-md shadow-amber-500/20"
-                    : isPopular
-                      ? "bg-green-600 text-white hover:bg-green-700 shadow-md shadow-green-600/20"
-                      : "bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100"
-            }`}
-            disabled={isDisabled}
-            onClick={onUpgrade}
-          >
-            {processing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : isCurrent ? (
-              "Plan actual"
-            ) : isBlocked ? (
-              downgrade.isFreeBlocked ? "No disponible" : "Límites excedidos"
-            ) : downgrade.isDowngrade ? (
-              <>
-                Cambiar plan
-                <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover/btn:translate-x-1" />
-              </>
-            ) : (
-              <>
-                Actualizar
-                <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover/btn:translate-x-1" />
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* Hover shadow underneath */}
-      <div
-        className="absolute -bottom-2 left-6 right-6 h-6 rounded-full blur-xl transition-all duration-500 -z-10"
-        style={{ backgroundColor: isHovered ? (isPopular ? "rgba(22, 163, 74, 0.12)" : "rgba(99, 102, 241, 0.08)") : "transparent" }}
-      />
-    </div>
-  );
-}
-
 const statusLabels: Record<string, { label: string; color: string }> = {
   Trial: { label: "Prueba", color: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300" },
   Active: { label: "Activo", color: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300" },
@@ -294,6 +110,8 @@ export default function SubscriptionPage() {
   const [checkoutClientSecret, setCheckoutClientSecret] = useState<string | null>(null);
   const [checkoutPlan, setCheckoutPlan] = useState<string | null>(null);
   const [trialCheckoutLoading, setTrialCheckoutLoading] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [showPlans, setShowPlans] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -366,17 +184,29 @@ export default function SubscriptionPage() {
   };
 
   const handleCancel = async () => {
-    if (!confirm("¿Estás seguro de que deseas cancelar tu suscripción? Se cancelará al final del período actual."))
-      return;
-
     setProcessing(true);
     try {
       await subscriptionService.cancelSubscription();
-      toast({ title: "Suscripción cancelada", description: "Tu suscripción se cancelará al final del período actual." });
+      toast({ title: "Cancelación programada", description: "Tu suscripción se cancelará al final del período actual. Puedes reactivarla en cualquier momento." });
+      setShowCancelDialog(false);
       await fetchData();
     } catch (err) {
       console.error("Error cancelling:", err);
       toast.error("Error al cancelar la suscripción");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleReactivate = async () => {
+    setProcessing(true);
+    try {
+      await subscriptionService.reactivateSubscription();
+      toast({ title: "Suscripción reactivada", description: "Tu suscripción continuará renovándose normalmente." });
+      await fetchData();
+    } catch (err) {
+      console.error("Error reactivating:", err);
+      toast.error("Error al reactivar la suscripción");
     } finally {
       setProcessing(false);
     }
@@ -420,7 +250,7 @@ export default function SubscriptionPage() {
             }}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Volver a planes
+            Volver
           </Button>
         }
       >
@@ -436,11 +266,90 @@ export default function SubscriptionPage() {
     );
   }
 
+  // Plan comparison expanded view
+  if (showPlans) {
+    return (
+      <PageHeader
+        breadcrumbs={[
+          { label: "Inicio", href: "/dashboard" },
+          { label: "Suscripción", href: "/subscription" },
+          { label: "Cambiar plan" },
+        ]}
+        title="Cambiar plan"
+        subtitle="Compara planes y elige el que mejor se adapte a tu negocio"
+        actions={
+          <Button variant="outline" size="sm" onClick={() => setShowPlans(false)}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Volver
+          </Button>
+        }
+      >
+        <div className="space-y-6">
+          {/* Billing interval toggle */}
+          <div className="flex items-center justify-center gap-3">
+            <span className={`text-sm font-medium transition-colors duration-300 ${billingInterval === "month" ? "text-foreground" : "text-muted-foreground"}`}>Mensual</span>
+            <button
+              onClick={() => setBillingInterval(prev => prev === "month" ? "year" : "month")}
+              className="relative w-14 h-7 rounded-full transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
+              style={{ backgroundColor: billingInterval === "year" ? "#16A34A" : "hsl(var(--muted-foreground) / 0.3)" }}
+            >
+              <div
+                className="absolute top-[3px] w-[22px] h-[22px] bg-white rounded-full shadow-md transition-all duration-300"
+                style={{ left: billingInterval === "year" ? "calc(100% - 25px)" : "3px" }}
+              />
+            </button>
+            <span className={`text-sm font-medium transition-colors duration-300 ${billingInterval === "year" ? "text-foreground" : "text-muted-foreground"}`}>
+              Anual
+            </span>
+            {billingInterval === "year" && (
+              <span className="text-xs font-bold text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/40 px-2.5 py-0.5 rounded-full animate-[subFadeIn_0.3s_ease-out]">
+                -17%
+              </span>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {plans.map((plan) => {
+              const effectivePlan = normalizePlanCode(subscription.planTipo);
+              const isCurrent = normalizePlanCode(plan.codigo) === effectivePlan;
+              const isPopular = plan.codigo === "PRO";
+              const price = billingInterval === "year" ? plan.precioAnual : plan.precioMensual;
+              const monthlyEquivalent = billingInterval === "year" ? Math.round(plan.precioAnual / 12) : plan.precioMensual;
+              const downgrade = getDowngradeInfo(plan, subscription.planTipo ?? null, subscription);
+              const isBlocked = downgrade.isFreeBlocked || downgrade.violations.length > 0;
+              const isDisabled = isCurrent || processing || plan.codigo === "FREE" || isBlocked;
+
+              return (
+                <PlanCard
+                  key={plan.id}
+                  plan={plan}
+                  isCurrent={isCurrent}
+                  isPopular={isPopular}
+                  price={price}
+                  monthlyEquivalent={monthlyEquivalent}
+                  billingInterval={billingInterval}
+                  processing={processing}
+                  isBlocked={isBlocked}
+                  isDisabled={isDisabled}
+                  downgrade={downgrade}
+                  onUpgrade={() => handleUpgrade(plan.codigo)}
+                />
+              );
+            })}
+          </div>
+        </div>
+      </PageHeader>
+    );
+  }
+
   const currentPlan = plans.find(p => p.codigo === subscription.planTipo?.toUpperCase());
   const statusInfo = statusLabels[subscription.subscriptionStatus] || statusLabels.Trial;
   const daysLeft = subscription.fechaExpiracion
     ? Math.max(0, Math.ceil((new Date(subscription.fechaExpiracion).getTime() - Date.now()) / 86400000))
     : null;
+
+  const usersPercent = Math.min((subscription.activeUsuarios / subscription.maxUsuarios) * 100, 100);
+  const usersOver = subscription.activeUsuarios > subscription.maxUsuarios;
 
   return (
     <PageHeader
@@ -451,8 +360,10 @@ export default function SubscriptionPage() {
       title="Suscripción"
       subtitle="Administra tu plan y método de pago"
     >
-      <div className="space-y-6">
-      {/* Warning banners */}
+      <div className="space-y-6 page-animate">
+
+      {/* ── Alert banners ─────────────────────────── */}
+
       {subscription.subscriptionStatus === "PastDue" && (
         <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
           <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
@@ -480,7 +391,34 @@ export default function SubscriptionPage() {
         </div>
       )}
 
-      {/* Trial countdown banner */}
+      {subscription.cancellationScheduledFor && subscription.subscriptionStatus !== "Cancelled" && (
+        <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+          <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="font-medium text-amber-800 dark:text-amber-300">Cancelación programada</p>
+            <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
+              Tu suscripción se cancelará el <strong>{new Date(subscription.cancellationScheduledFor).toLocaleDateString("es-MX")}</strong>. Mantendrás acceso completo hasta esa fecha.
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleReactivate}
+            disabled={processing}
+            className="border-amber-300 text-amber-700 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-900/40 flex-shrink-0"
+          >
+            {processing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <>
+                <RotateCcw className="h-4 w-4 mr-1.5" />
+                Reanudar suscripción
+              </>
+            )}
+          </Button>
+        </div>
+      )}
+
       {subscription.subscriptionStatus === "Trial" && subscription.daysRemaining !== null && (
         <div className={`flex items-start gap-3 p-4 rounded-lg border ${
           subscription.trialCardCollected
@@ -546,224 +484,479 @@ export default function SubscriptionPage() {
         </div>
       )}
 
-      {/* Current Plan Overview */}
-      <Card className="border-2 border-green-200 dark:border-green-800/40 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-background rounded-lg shadow-sm">
-                <SbSubscription size={28} />
+      {/* ── Current plan hero ─────────────────────── */}
+      <Card className="border-2 border-green-200 dark:border-green-800/40 bg-gradient-to-br from-green-50/80 via-emerald-50/50 to-white dark:from-green-950/30 dark:via-emerald-950/20 dark:to-background overflow-hidden">
+        <CardContent className="p-6">
+          <div className="flex items-start justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <div className="p-2.5 bg-background rounded-xl shadow-sm border border-green-100 dark:border-green-900">
+                <SbSubscription size={32} />
               </div>
               <div>
-                <CardTitle className="text-lg">
-                  Plan {currentPlan?.nombre || subscription.planTipo || "Sin plan"}
-                </CardTitle>
-                <p className="text-sm text-gray-500">
-                  {subscription.nombreEmpresa}
-                </p>
-              </div>
-            </div>
-            <Badge className={statusInfo.color}>{statusInfo.label}</Badge>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground uppercase font-medium">Usuarios</p>
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-muted-foreground" />
-                <span className="font-semibold">{subscription.activeUsuarios} / {subscription.maxUsuarios}</span>
-              </div>
-              <div className="w-full bg-muted rounded-full h-2">
-                <div
-                  className={`h-2 rounded-full transition-all ${subscription.activeUsuarios > subscription.maxUsuarios ? "bg-red-500" : "bg-green-500"}`}
-                  style={{ width: `${Math.min((subscription.activeUsuarios / subscription.maxUsuarios) * 100, 100)}%` }}
-                />
+                <div className="flex items-center gap-2.5">
+                  <h2 className="text-xl font-bold text-foreground">
+                    Plan {currentPlan?.nombre || subscription.planTipo || "Sin plan"}
+                  </h2>
+                  <Badge className={statusInfo.color}>{statusInfo.label}</Badge>
+                </div>
+                <p className="text-sm text-muted-foreground mt-0.5">{subscription.nombreEmpresa}</p>
               </div>
             </div>
 
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground uppercase font-medium">Vencimiento</p>
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span className="font-semibold">
-                  {subscription.fechaExpiracion
-                    ? new Date(subscription.fechaExpiracion).toLocaleDateString("es-MX")
-                    : "Sin fecha"}
+            <div className="flex items-center gap-2">
+              {subscription.hasStripe && (
+                <Button size="sm" variant="outline" onClick={handleManageBilling} disabled={processing}>
+                  <CreditCard className="h-4 w-4 mr-1.5" />
+                  Pagos
+                  <ExternalLink className="h-3 w-3 ml-1 opacity-50" />
+                </Button>
+              )}
+              <Button size="sm" onClick={() => setShowPlans(true)} className="bg-green-600 hover:bg-green-700 text-white">
+                <ArrowUpRight className="h-4 w-4 mr-1.5" />
+                Cambiar plan
+              </Button>
+            </div>
+          </div>
+
+          {/* Usage grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Users */}
+            <div className="bg-background/80 backdrop-blur-sm rounded-xl p-4 border border-border/50">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Usuarios</span>
+                </div>
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                  usersOver
+                    ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+                    : usersPercent >= 80
+                      ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+                      : "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
+                }`}>
+                  {subscription.activeUsuarios}/{subscription.maxUsuarios}
                 </span>
               </div>
+              <div className="w-full bg-muted rounded-full h-2">
+                <div
+                  className={`h-2 rounded-full transition-all duration-500 ${
+                    usersOver ? "bg-red-500" : usersPercent >= 80 ? "bg-amber-500" : "bg-green-500"
+                  }`}
+                  style={{ width: `${usersPercent}%` }}
+                />
+              </div>
+              {usersOver && (
+                <p className="text-[11px] text-red-600 dark:text-red-400 mt-2 font-medium">Límite excedido</p>
+              )}
+            </div>
+
+            {/* Expiration */}
+            <div className="bg-background/80 backdrop-blur-sm rounded-xl p-4 border border-border/50">
+              <div className="flex items-center gap-2 mb-3">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Vencimiento</span>
+              </div>
+              <p className="text-lg font-bold text-foreground">
+                {subscription.fechaExpiracion
+                  ? new Date(subscription.fechaExpiracion).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" })
+                  : "Sin fecha"}
+              </p>
               {daysLeft !== null && daysLeft <= 30 && (
-                <p className={`text-xs ${daysLeft <= 7 ? "text-red-600 font-medium" : "text-amber-600"}`}>
+                <p className={`text-[11px] mt-1 font-medium ${daysLeft <= 7 ? "text-red-600" : daysLeft <= 14 ? "text-amber-600" : "text-muted-foreground"}`}>
                   {daysLeft === 0 ? "Vence hoy" : `${daysLeft} día${daysLeft !== 1 ? "s" : ""} restante${daysLeft !== 1 ? "s" : ""}`}
                 </p>
               )}
             </div>
 
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground uppercase font-medium">Acciones</p>
-              {subscription.hasStripe ? (
-                <Button size="sm" variant="outline" onClick={handleManageBilling} disabled={processing}>
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  Gestionar pagos
-                  <ExternalLink className="h-3 w-3 ml-1" />
-                </Button>
-              ) : (
-                <p className="text-sm text-muted-foreground">Sin método de pago configurado</p>
-              )}
-            </div>
+            {/* Products */}
+            {currentPlan && (
+              <div className="bg-background/80 backdrop-blur-sm rounded-xl p-4 border border-border/50">
+                <div className="flex items-center gap-2 mb-3">
+                  <Package className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Productos</span>
+                </div>
+                <p className="text-lg font-bold text-foreground">
+                  {currentPlan.maxProductos.toLocaleString()}
+                </p>
+                <p className="text-[11px] text-muted-foreground mt-1">máximo permitido</p>
+              </div>
+            )}
+
+            {/* Features */}
+            {currentPlan && (
+              <div className="bg-background/80 backdrop-blur-sm rounded-xl p-4 border border-border/50">
+                <div className="flex items-center gap-2 mb-3">
+                  <Sparkles className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Funciones</span>
+                </div>
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-1.5">
+                    {currentPlan.incluyeReportes ? (
+                      <Check className="h-3.5 w-3.5 text-green-500" strokeWidth={2.5} />
+                    ) : (
+                      <X className="h-3.5 w-3.5 text-gray-300 dark:text-gray-600" />
+                    )}
+                    <span className={`text-xs ${currentPlan.incluyeReportes ? "text-foreground" : "text-muted-foreground"}`}>Reportes</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    {currentPlan.incluyeSoportePrioritario ? (
+                      <Check className="h-3.5 w-3.5 text-green-500" strokeWidth={2.5} />
+                    ) : (
+                      <X className="h-3.5 w-3.5 text-gray-300 dark:text-gray-600" />
+                    )}
+                    <span className={`text-xs ${currentPlan.incluyeSoportePrioritario ? "text-foreground" : "text-muted-foreground"}`}>Soporte prioritario</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="plans" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="plans">Planes disponibles</TabsTrigger>
-          <TabsTrigger value="usage">Uso actual</TabsTrigger>
-        </TabsList>
+      {/* ── Quick plan comparison ─────────────────── */}
+      {plans.length > 0 && !showPlans && (
+        <div className="page-animate-delay-1">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Planes disponibles</h3>
+            <Button variant="ghost" size="sm" onClick={() => setShowPlans(true)} className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950/30">
+              Ver comparativa completa
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {plans.map((plan) => {
+              const effectivePlan = normalizePlanCode(subscription.planTipo);
+              const isCurrent = normalizePlanCode(plan.codigo) === effectivePlan;
+              const price = plan.precioMensual;
+              const downgrade = getDowngradeInfo(plan, subscription.planTipo ?? null, subscription);
+              const isBlocked = downgrade.isFreeBlocked || downgrade.violations.length > 0;
 
-        {/* Plans Tab */}
-        <TabsContent value="plans" className="space-y-6">
-          {/* Billing interval toggle — polished */}
-          <div className="flex items-center justify-center gap-3">
-            <span className={`text-sm font-medium transition-colors duration-300 ${billingInterval === "month" ? "text-foreground" : "text-muted-foreground"}`}>Mensual</span>
-            <button
-              onClick={() => setBillingInterval(prev => prev === "month" ? "year" : "month")}
-              className="relative w-14 h-7 rounded-full transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
-              style={{ backgroundColor: billingInterval === "year" ? "#16A34A" : "hsl(var(--muted-foreground) / 0.3)" }}
+              return (
+                <div
+                  key={plan.id}
+                  className={`flex items-center justify-between p-4 rounded-xl border transition-all ${
+                    isCurrent
+                      ? "border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20"
+                      : "border-border hover:border-green-200 dark:hover:border-green-800 hover:bg-accent/50"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-foreground">{plan.nombre}</span>
+                        {isCurrent && (
+                          <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400">
+                            Actual
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-sm text-muted-foreground">
+                        {price === 0 ? "Gratis" : `$${price.toLocaleString("es-MX")} MXN/mes`}
+                        {" · "}{plan.maxUsuarios} usuarios · {plan.maxProductos.toLocaleString()} productos
+                      </span>
+                    </div>
+                  </div>
+                  {!isCurrent && !isBlocked && plan.codigo !== "FREE" && (
+                    <Button
+                      size="sm"
+                      variant={downgrade.isDowngrade ? "outline" : "default"}
+                      onClick={() => handleUpgrade(plan.codigo)}
+                      disabled={processing}
+                      className={downgrade.isDowngrade ? "" : "bg-green-600 hover:bg-green-700 text-white"}
+                    >
+                      {downgrade.isDowngrade ? "Cambiar" : "Actualizar"}
+                    </Button>
+                  )}
+                  {isBlocked && !isCurrent && (
+                    <span className="text-xs text-muted-foreground">No disponible</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── Danger zone ───────────────────────────── */}
+      {subscription.hasStripe && subscription.subscriptionStatus !== "Cancelled" && !subscription.cancellationScheduledFor && (
+        <div className="page-animate-delay-2 pt-4">
+          <Separator className="mb-6" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <ShieldAlert className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Cancelar suscripción</p>
+                <p className="text-xs text-muted-foreground/70">Mantendrás acceso hasta el final del período pagado</p>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowCancelDialog(true)}
+              className="text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
             >
-              <div
-                className="absolute top-[3px] w-[22px] h-[22px] bg-white rounded-full shadow-md transition-all duration-300"
-                style={{ left: billingInterval === "year" ? "calc(100% - 25px)" : "3px" }}
-              />
-            </button>
-            <span className={`text-sm font-medium transition-colors duration-300 ${billingInterval === "year" ? "text-foreground" : "text-muted-foreground"}`}>
-              Anual
-            </span>
-            {billingInterval === "year" && (
-              <span className="text-xs font-bold text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/40 px-2.5 py-0.5 rounded-full animate-[subFadeIn_0.3s_ease-out]">
-                -17%
+              Cancelar plan
+            </Button>
+          </div>
+        </div>
+      )}
+
+      </div>
+
+      {/* ── Cancellation confirmation dialog ──────── */}
+      <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="mx-auto mb-2">
+              <SbAlert size={48} />
+            </div>
+            <DialogTitle className="text-center">Cancelar suscripción</DialogTitle>
+            <DialogDescription className="text-center">
+              Tu suscripción seguirá activa hasta el final del período actual
+              {subscription.fechaExpiracion && (
+                <> (<strong>{new Date(subscription.fechaExpiracion).toLocaleDateString("es-MX")}</strong>)</>
+              )}.
+              Después de esa fecha perderás acceso a las funciones de tu plan.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="rounded-lg border border-border bg-muted/50 p-3 text-sm">
+            <p className="font-medium mb-2 text-foreground">Lo que perderás:</p>
+            <ul className="space-y-1.5 text-muted-foreground">
+              {currentPlan && currentPlan.maxUsuarios > 2 && (
+                <li className="flex items-center gap-2">
+                  <X className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
+                  Hasta {currentPlan.maxUsuarios} usuarios (baja a 2)
+                </li>
+              )}
+              {currentPlan?.incluyeReportes && (
+                <li className="flex items-center gap-2">
+                  <X className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
+                  Reportes avanzados
+                </li>
+              )}
+              {currentPlan?.incluyeSoportePrioritario && (
+                <li className="flex items-center gap-2">
+                  <X className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
+                  Soporte prioritario
+                </li>
+              )}
+            </ul>
+          </div>
+
+          <DialogFooter className="flex-col sm:flex-row gap-2 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowCancelDialog(false)}
+              className="sm:flex-1"
+            >
+              Conservar mi plan
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleCancel}
+              disabled={processing}
+              className="sm:flex-1"
+            >
+              {processing ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : null}
+              Confirmar cancelación
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+    </PageHeader>
+  );
+}
+
+
+// ─── Plan Card (full comparison view) ──────────────────────
+function PlanCard({
+  plan, isCurrent, isPopular, price, monthlyEquivalent, billingInterval, processing, isBlocked, isDisabled, downgrade, onUpgrade,
+}: {
+  plan: SubscriptionPlan;
+  isCurrent: boolean;
+  isPopular: boolean;
+  price: number;
+  monthlyEquivalent: number;
+  billingInterval: "month" | "year";
+  processing: boolean;
+  isBlocked: boolean;
+  isDisabled: boolean;
+  downgrade: DowngradeWarning;
+  onUpgrade: () => void;
+}) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
+  const [isHovered, setIsHovered] = useState(false);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    setMousePos({
+      x: ((e.clientX - rect.left) / rect.width) * 100,
+      y: ((e.clientY - rect.top) / rect.height) * 100,
+    });
+  }, []);
+
+  return (
+    <div className="relative">
+      <div
+        ref={cardRef}
+        onMouseMove={handleMouseMove}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => { setIsHovered(false); setMousePos({ x: 50, y: 50 }); }}
+        className={`group relative rounded-2xl transition-all duration-500 ease-out ${
+          isPopular
+            ? "border-2 border-green-500 dark:border-green-400 shadow-xl shadow-green-600/10"
+            : "border border-gray-200 dark:border-gray-700 shadow-md hover:shadow-lg hover:border-gray-300 dark:hover:border-gray-600"
+        } ${isCurrent ? "ring-2 ring-green-500/30" : ""}`}
+        style={{
+          transform: isHovered
+            ? `perspective(800px) rotateY(${(mousePos.x - 50) * 0.04}deg) rotateX(${(mousePos.y - 50) * -0.04}deg) translateY(-4px) scale(1.01)`
+            : "perspective(800px) rotateY(0deg) rotateX(0deg) translateY(0px) scale(1)",
+        }}
+      >
+        {/* Mouse-follow glow */}
+        <div
+          className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+          style={{
+            background: `radial-gradient(circle at ${mousePos.x}% ${mousePos.y}%, ${isPopular ? "rgba(22, 163, 74, 0.08)" : "rgba(99, 102, 241, 0.06)"} 0%, transparent 50%)`,
+          }}
+        />
+
+        <div className="relative bg-white dark:bg-gray-900 rounded-2xl p-6 h-full flex flex-col min-h-[420px]">
+          {isPopular && (
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
+              <span className="bg-green-600 text-white text-[11px] font-semibold uppercase tracking-wider px-4 py-1 rounded-full shadow-md shadow-green-600/20 flex items-center gap-1">
+                <Sparkles className="h-3 w-3" />
+                Más popular
+              </span>
+            </div>
+          )}
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white">{plan.nombre}</h3>
+            {isCurrent && (
+              <span className="text-[11px] font-semibold uppercase tracking-wider px-3 py-0.5 rounded-full bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400">
+                Plan actual
               </span>
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {plans.map((plan) => {
-              const effectivePlan = normalizePlanCode(subscription.planTipo);
-              const isCurrent = normalizePlanCode(plan.codigo) === effectivePlan;
-              const isPopular = plan.codigo === "PRO";
-              const price = billingInterval === "year" ? plan.precioAnual : plan.precioMensual;
-              const monthlyEquivalent = billingInterval === "year" ? Math.round(plan.precioAnual / 12) : plan.precioMensual;
-
-              return (
-                <PlanCard
-                  key={plan.id}
-                  plan={plan}
-                  isCurrent={isCurrent}
-                  isPopular={isPopular}
-                  price={price}
-                  monthlyEquivalent={monthlyEquivalent}
-                  billingInterval={billingInterval}
-                  processing={processing}
-                  onUpgrade={() => handleUpgrade(plan.codigo)}
-                  subscription={subscription}
-                />
-              );
-            })}
-          </div>
-        </TabsContent>
-
-        {/* Usage Tab */}
-        <TabsContent value="usage" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Usuarios activos</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex justify-between mb-2">
-                      <span className="text-sm text-muted-foreground">Uso actual</span>
-                      <span className="text-sm font-medium">{subscription.activeUsuarios} de {subscription.maxUsuarios}</span>
-                    </div>
-                    <div className="w-full bg-muted rounded-full h-3">
-                      <div
-                        className="bg-gradient-to-r from-green-400 to-green-600 h-3 rounded-full transition-all"
-                        style={{ width: `${Math.min((subscription.activeUsuarios / subscription.maxUsuarios) * 100, 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                  {subscription.activeUsuarios >= subscription.maxUsuarios && (
-                    <>
-                      <Separator />
-                      <div className="flex items-center gap-2 text-amber-600 text-sm">
-                        <AlertTriangle className="h-4 w-4" />
-                        <span>Has alcanzado el límite de usuarios. Considera actualizar tu plan.</span>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Detalles del plan</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Plan</span>
-                    <span className="font-medium">{currentPlan?.nombre || subscription.planTipo}</span>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Estado</span>
-                    <Badge className={statusInfo.color}>{statusInfo.label}</Badge>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Máx. usuarios</span>
-                    <span className="font-medium">{subscription.maxUsuarios}</span>
-                  </div>
-                  {currentPlan && (
-                    <>
-                      <Separator />
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Máx. productos</span>
-                        <span className="font-medium">{currentPlan.maxProductos.toLocaleString()}</span>
-                      </div>
-                      <Separator />
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Reportes</span>
-                        <span className="font-medium">{currentPlan.incluyeReportes ? "Sí" : "No"}</span>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+          <div className="mt-4 mb-4 pb-4 border-b border-gray-100 dark:border-gray-800">
+            <div className="flex items-baseline gap-1">
+              <span
+                key={`${plan.codigo}-${billingInterval}`}
+                className="text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight animate-[subPricePop_0.4s_cubic-bezier(0.34,1.56,0.64,1)]"
+              >
+                {price === 0 ? "Gratis" : `$${monthlyEquivalent.toLocaleString("es-MX")}`}
+              </span>
+              {price > 0 && (
+                <span className="text-sm text-gray-400 dark:text-gray-500 font-medium">MXN/mes</span>
+              )}
+            </div>
+            {price > 0 && billingInterval === "year" && (
+              <p className="text-xs text-green-600 dark:text-green-400 font-medium mt-1.5 animate-[subFadeIn_0.3s_ease-out]">
+                Facturado ${price.toLocaleString("es-MX")} MXN/año
+              </p>
+            )}
           </div>
 
-          {/* Cancel subscription */}
-          {subscription.hasStripe && subscription.subscriptionStatus !== "Cancelled" && (
-            <Card className="border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-red-800 dark:text-red-300">Cancelar suscripción</p>
-                    <p className="text-sm text-red-600 dark:text-red-400">Se cancelará al final del período actual</p>
-                  </div>
-                  <Button variant="destructive" size="sm" onClick={handleCancel} disabled={processing}>
-                    Cancelar suscripción
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+          <ul className="space-y-2.5 flex-1">
+            <li className="flex items-center gap-2.5 text-sm text-gray-600 dark:text-gray-300">
+              <Check className="h-4 w-4 text-green-500 flex-shrink-0" strokeWidth={2.5} />
+              {plan.maxUsuarios} usuarios
+            </li>
+            <li className="flex items-center gap-2.5 text-sm text-gray-600 dark:text-gray-300">
+              <Check className="h-4 w-4 text-green-500 flex-shrink-0" strokeWidth={2.5} />
+              {plan.maxProductos.toLocaleString()} productos
+            </li>
+            <li className="flex items-center gap-2.5 text-sm text-gray-600 dark:text-gray-300">
+              <Check className="h-4 w-4 text-green-500 flex-shrink-0" strokeWidth={2.5} />
+              {plan.maxClientesPorMes} clientes/mes
+            </li>
+            <li className={`flex items-center gap-2.5 text-sm ${plan.incluyeReportes ? "text-gray-600 dark:text-gray-300" : "text-gray-400 dark:text-gray-600"}`}>
+              {plan.incluyeReportes ? (
+                <Check className="h-4 w-4 text-green-500 flex-shrink-0" strokeWidth={2.5} />
+              ) : (
+                <X className="h-4 w-4 text-gray-300 dark:text-gray-700 flex-shrink-0" />
+              )}
+              Reportes avanzados
+            </li>
+            <li className={`flex items-center gap-2.5 text-sm ${plan.incluyeSoportePrioritario ? "text-gray-600 dark:text-gray-300" : "text-gray-400 dark:text-gray-600"}`}>
+              {plan.incluyeSoportePrioritario ? (
+                <Check className="h-4 w-4 text-green-500 flex-shrink-0" strokeWidth={2.5} />
+              ) : (
+                <X className="h-4 w-4 text-gray-300 dark:text-gray-700 flex-shrink-0" />
+              )}
+              Soporte prioritario
+            </li>
+          </ul>
+
+          {isBlocked && !isCurrent && (
+            <div className={`flex items-center gap-2 px-3 py-2 rounded-lg mt-auto ${
+              downgrade.isFreeBlocked
+                ? "bg-gray-100 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700"
+                : "bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40"
+            }`}>
+              <AlertTriangle className={`h-3.5 w-3.5 flex-shrink-0 ${
+                downgrade.isFreeBlocked ? "text-gray-400" : "text-amber-500"
+              }`} />
+              <span className={`text-[11px] font-medium leading-tight ${
+                downgrade.isFreeBlocked
+                  ? "text-gray-500 dark:text-gray-400"
+                  : "text-amber-700 dark:text-amber-400"
+              }`}>
+                {downgrade.isFreeBlocked
+                  ? "No disponible con historial de pago"
+                  : `Excedes límites: ${downgrade.violations.map(v => v.split(" (")[0]).join(", ")}`}
+              </span>
+            </div>
           )}
-        </TabsContent>
-      </Tabs>
+
+          <button
+            className={`group/btn flex items-center justify-center gap-2 w-full py-3 rounded-xl font-semibold text-sm transition-all duration-300 ${isBlocked || isCurrent ? "mt-3" : "mt-5"} ${
+              isCurrent
+                ? "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-default"
+                : isDisabled
+                  ? "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed opacity-60"
+                  : downgrade.isDowngrade
+                    ? "bg-amber-500 text-white hover:bg-amber-600 shadow-md shadow-amber-500/20"
+                    : isPopular
+                      ? "bg-green-600 text-white hover:bg-green-700 shadow-md shadow-green-600/20"
+                      : "bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100"
+            }`}
+            disabled={isDisabled}
+            onClick={onUpgrade}
+          >
+            {processing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : isCurrent ? (
+              "Plan actual"
+            ) : isBlocked ? (
+              downgrade.isFreeBlocked ? "No disponible" : "Límites excedidos"
+            ) : downgrade.isDowngrade ? (
+              <>
+                Cambiar plan
+                <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover/btn:translate-x-1" />
+              </>
+            ) : (
+              <>
+                Actualizar
+                <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover/btn:translate-x-1" />
+              </>
+            )}
+          </button>
+        </div>
       </div>
-    </PageHeader>
+
+      <div
+        className="absolute -bottom-2 left-6 right-6 h-6 rounded-full blur-xl transition-all duration-500 -z-10"
+        style={{ backgroundColor: isHovered ? (isPopular ? "rgba(22, 163, 74, 0.12)" : "rgba(99, 102, 241, 0.08)") : "transparent" }}
+      />
+    </div>
   );
 }

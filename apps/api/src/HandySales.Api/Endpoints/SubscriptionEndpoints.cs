@@ -36,7 +36,11 @@ public static class SubscriptionEndpoints
 
         group.MapPost("/cancel", CancelSubscription)
             .WithName("CancelSubscription")
-            .WithSummary("Cancela la suscripción activa");
+            .WithSummary("Programa la cancelación al final del período actual");
+
+        group.MapPost("/reactivate", ReactivateSubscription)
+            .WithName("ReactivateSubscription")
+            .WithSummary("Revierte una cancelación programada");
     }
 
     private static async Task<IResult> GetPlans(
@@ -103,6 +107,7 @@ public static class SubscriptionEndpoints
             fechaExpiracion = tenant.FechaExpiracion,
             gracePeriodEnd = tenant.GracePeriodEnd,
             cancelledAt = tenant.CancelledAt,
+            cancellationScheduledFor = tenant.CancellationScheduledFor,
             hasStripe = !string.IsNullOrEmpty(tenant.StripeCustomerId),
             nombreEmpresa = tenant.NombreEmpresa,
             trialEndsAt = tenant.TrialEndsAt,
@@ -176,11 +181,29 @@ public static class SubscriptionEndpoints
         try
         {
             await stripeService.CancelSubscriptionAsync(currentTenant.TenantId);
-            return Results.Ok(new { message = "Suscripción cancelada" });
+            return Results.Ok(new { message = "Cancelación programada al final del período actual" });
         }
-        catch (Exception ex)
+        catch (InvalidOperationException ex)
         {
-            return Results.BadRequest(new { message = "No se pudo completar la operación de suscripción." });
+            return Results.BadRequest(new { message = ex.Message });
+        }
+    }
+
+    private static async Task<IResult> ReactivateSubscription(
+        [FromServices] ICurrentTenant currentTenant,
+        [FromServices] IStripeService stripeService)
+    {
+        if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
+            return Results.Forbid();
+
+        try
+        {
+            await stripeService.ReactivateSubscriptionAsync(currentTenant.TenantId);
+            return Results.Ok(new { message = "Suscripción reactivada" });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Results.BadRequest(new { message = ex.Message });
         }
     }
 

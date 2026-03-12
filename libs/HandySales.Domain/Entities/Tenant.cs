@@ -40,6 +40,8 @@ public class Tenant : AuditableEntity
     public DateTime? CancelledAt { get; set; }
     [Column("cancellation_reason")]
     public string? CancellationReason { get; set; }
+    [Column("cancellation_scheduled_for")]
+    public DateTime? CancellationScheduledFor { get; set; }
 
     // Trial
     [Column("trial_ends_at")]

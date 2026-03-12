@@ -23,6 +23,7 @@ export interface SubscriptionStatus {
   fechaExpiracion: string | null;
   gracePeriodEnd: string | null;
   cancelledAt: string | null;
+  cancellationScheduledFor: string | null;
   hasStripe: boolean;
   nombreEmpresa: string;
   trialEndsAt: string | null;

@@ -18,18 +18,16 @@ import { useImpersonationStore } from '@/stores/useImpersonationStore';
 import { toast } from '@/hooks/useToast';
 import { CurrentImpersonationState } from '@/types/impersonation';
 import {
-  AlertTriangle,
-  Building2,
   Eye,
   Edit,
   Loader2,
-  Shield,
   FileText,
   Clock,
   XCircle,
   Search,
   ChevronRight,
 } from 'lucide-react';
+import { SbAlert, SbSecurity, SbBuildings } from '@/components/layout/DashboardIcons';
 
 interface Tenant {
   id: number;
@@ -238,7 +236,7 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Building2 className="h-5 w-5 text-purple-500" />
+              <SbBuildings size={20} />
               Seleccionar Empresa
             </DialogTitle>
             <DialogDescription>
@@ -276,8 +274,8 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
                     className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
                     onClick={() => setSelectedTenant({ id: t.id, nombre: t.nombre })}
                   >
-                    <div className="h-9 w-9 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Building2 className="h-4 w-4 text-blue-600" />
+                    <div className="h-9 w-9 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <SbBuildings size={20} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-gray-900 text-sm truncate">{t.nombre}</p>
@@ -307,7 +305,7 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              <SbAlert size={20} />
               Sesión Activa Existente
             </DialogTitle>
             <DialogDescription>
@@ -317,11 +315,11 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
 
           <div className="space-y-4 py-4">
             {/* Info de la sesión existente */}
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-3">
+            <div className="bg-muted/50 border border-border rounded-lg p-4 space-y-3">
               {existingSession.tenant && (
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 bg-amber-100 rounded-lg flex items-center justify-center">
-                    <Building2 className="h-5 w-5 text-amber-600" />
+                  <div className="h-10 w-10 rounded-lg flex items-center justify-center">
+                    <SbBuildings size={24} />
                   </div>
                   <div>
                     <p className="font-medium text-gray-900">{existingSession.tenant.name}</p>
@@ -330,7 +328,7 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
                 </div>
               )}
 
-              <div className="flex items-center gap-4 text-sm text-amber-800">
+              <div className="flex items-center gap-4 text-sm text-muted-foreground">
                 {existingSession.minutesRemaining != null && (
                   <div className="flex items-center gap-1.5">
                     <Clock className="h-4 w-4" />
@@ -386,7 +384,7 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-amber-500" />
+            <SbSecurity size={20} />
             Iniciar Sesión de Soporte
           </DialogTitle>
           <DialogDescription>
@@ -396,12 +394,12 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
 
         <div className="space-y-4 py-4">
           {/* Advertencia */}
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+          <div className="bg-muted/50 border border-border rounded-lg p-4">
             <div className="flex gap-3">
-              <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-amber-800">
-                <p className="font-medium mb-1">Importante:</p>
-                <ul className="list-disc list-inside space-y-1 text-amber-700">
+              <SbAlert size={20} className="flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-muted-foreground">
+                <p className="font-medium mb-1 text-foreground">Importante:</p>
+                <ul className="list-disc list-inside space-y-1">
                   <li>Todas las acciones serán registradas</li>
                   <li>El cliente será notificado de este acceso</li>
                   <li>La sesión expira en 60 minutos</li>
@@ -413,9 +411,9 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
 
           {/* Info del tenant */}
           {tenant && (
-            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-              <div className="h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Building2 className="h-5 w-5 text-blue-600" />
+            <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+              <div className="h-10 w-10 rounded-lg flex items-center justify-center">
+                <SbBuildings size={24} />
               </div>
               <div className="flex-1">
                 <p className="font-medium text-gray-900">{tenant.nombre}</p>

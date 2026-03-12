@@ -12,7 +12,6 @@ import {
   DialogFooter,
 } from '@/components/ui/Dialog';
 import {
-  Shield,
   QrCode,
   KeyRound,
   CheckCircle2,
@@ -21,9 +20,9 @@ import {
   ChevronRight,
   Eye,
   EyeOff,
-  AlertTriangle,
   Loader2,
 } from 'lucide-react';
+import { SbCheckCircle, SbAlert } from '@/components/layout/DashboardIcons';
 import { profileService, TwoFactorSetupResponse } from '@/services/api/profileService';
 import { toast } from '@/hooks/useToast';
 import { useFormatters } from '@/hooks/useFormatters';
@@ -330,7 +329,7 @@ export const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5 text-green-600" />
+                <SbCheckCircle size={20} />
                 2FA activado exitosamente
               </DialogTitle>
               <DialogDescription>
@@ -340,8 +339,8 @@ export const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
 
             <div className="space-y-4">
               {/* Warning */}
-              <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
-                <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+              <div className="flex items-start gap-2 p-3 bg-muted/50 border border-border rounded-lg text-sm text-muted-foreground">
+                <SbAlert size={16} className="mt-0.5 flex-shrink-0" />
                 <span>Cada código solo puede usarse una vez. No podrás ver estos códigos de nuevo.</span>
               </div>
 

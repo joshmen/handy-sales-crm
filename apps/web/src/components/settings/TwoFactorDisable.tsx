@@ -11,7 +11,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/Dialog';
-import { ShieldOff, AlertTriangle } from 'lucide-react';
+import { SbSecurity, SbAlert } from '@/components/layout/DashboardIcons';
 import { profileService } from '@/services/api/profileService';
 import { toast } from '@/hooks/useToast';
 
@@ -74,7 +74,7 @@ export const TwoFactorDisable: React.FC<TwoFactorDisableProps> = ({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <ShieldOff className="h-5 w-5 text-destructive" />
+            <SbSecurity size={20} />
             Desactivar 2FA
           </DialogTitle>
           <DialogDescription>
@@ -83,8 +83,8 @@ export const TwoFactorDisable: React.FC<TwoFactorDisableProps> = ({
         </DialogHeader>
 
         <div className="space-y-4 py-2">
-          <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
-            <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+          <div className="flex items-start gap-2 p-3 bg-muted/50 border border-border rounded-lg text-sm text-muted-foreground">
+            <SbAlert size={16} className="mt-0.5 flex-shrink-0" />
             <span>Tu cuenta será menos segura sin 2FA. Cualquiera con tu contraseña podrá acceder.</span>
           </div>
 

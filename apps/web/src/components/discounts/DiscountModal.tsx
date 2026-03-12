@@ -4,16 +4,14 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import {
-  AlertTriangle,
-  Eye,
   Edit,
   Trash2,
   FileDown,
-  FileUp,
   Calendar,
   Users,
   DollarSign,
 } from 'lucide-react';
+import { SbAlert, SbDiscounts, SbDownload } from '@/components/layout/DashboardIcons';
 import { Discount, DiscountType, DiscountMethod, DiscountStatus } from '@/types/discounts';
 
 interface DiscountModalProps {
@@ -62,8 +60,8 @@ export function DiscountModal({
           <>
             <div className="flex items-start justify-between mb-6">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Eye className="w-5 h-5 text-blue-600" />
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center">
+                  <SbDiscounts size={28} />
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold">{discount?.name}</h3>
@@ -224,8 +222,8 @@ export function DiscountModal({
         return (
           <>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                <AlertTriangle className="w-5 h-5 text-red-600" />
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center">
+                <SbAlert size={28} />
               </div>
               <div>
                 <h3 className="text-lg font-semibold">Eliminar descuento</h3>
@@ -233,12 +231,12 @@ export function DiscountModal({
               </div>
             </div>
 
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-              <p className="text-red-800">
+            <div className="bg-muted/50 border border-border rounded-lg p-4 mb-6">
+              <p className="text-foreground">
                 ¿Estás seguro de que quieres eliminar el descuento{' '}
                 <strong>&quot;{discount?.name}&quot;</strong>?
               </p>
-              <div className="mt-2 text-sm text-red-600">
+              <div className="mt-2 text-sm text-muted-foreground">
                 • Se perderán todas las estadísticas de uso • Los pedidos existentes que usen este
                 descuento no se verán afectados • Esta acción es permanente e irreversible
               </div>
@@ -265,8 +263,8 @@ export function DiscountModal({
         return (
           <>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <FileUp className="w-5 h-5 text-blue-600" />
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center">
+                <SbDownload size={28} />
               </div>
               <div>
                 <h3 className="text-lg font-semibold">Importar descuentos</h3>
@@ -276,15 +274,15 @@ export function DiscountModal({
 
             <div className="space-y-4">
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                <FileUp className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <SbDownload size={48} className="mx-auto mb-4" />
                 <p className="text-lg font-medium text-gray-700 mb-2">Arrastra tu archivo aquí</p>
                 <p className="text-gray-500 mb-4">o haz clic para seleccionar</p>
                 <Button variant="outline">Seleccionar archivo</Button>
               </div>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 className="font-medium text-blue-800 mb-2">Formato requerido:</h4>
-                <ul className="text-sm text-blue-700 space-y-1">
+              <div className="bg-muted/50 border border-border rounded-lg p-4">
+                <h4 className="font-medium text-foreground mb-2">Formato requerido:</h4>
+                <ul className="text-sm text-muted-foreground space-y-1">
                   <li>• Archivo CSV o Excel (.xlsx)</li>
                   <li>• Columnas: nombre, descripción, tipo, método, rangos</li>
                   <li>• Máximo 1000 registros por archivo</li>
@@ -305,8 +303,8 @@ export function DiscountModal({
         return (
           <>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                <FileDown className="w-5 h-5 text-green-600" />
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center">
+                <SbDownload size={28} />
               </div>
               <div>
                 <h3 className="text-lg font-semibold">Exportar descuentos</h3>

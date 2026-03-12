@@ -92,4 +92,62 @@ public static class EmailTemplates
       <a href=""{resetUrl}"" style=""display:inline-block;padding:12px 32px;background:#16A34A;color:#fff;text-decoration:none;border-radius:6px;font-weight:600"">Restablecer Contraseña</a>
     </div>
     <p style=""color:#9ca3af;font-size:13px;line-height:1.6"">Si no solicitó este cambio, ignore este correo. Su contraseña no será modificada.</p>");
+
+    // --- Subscription Cancellation / Reactivation ---
+
+    public static string SubscriptionCancellationScheduled(string companyName, DateTime cancelDate)
+        => Wrap("Cancelación programada", $@"
+    <p style=""color:#374151;line-height:1.6"">Hola, equipo de <strong>{companyName}</strong>,</p>
+    <p style=""color:#374151;line-height:1.6"">Hemos recibido tu solicitud de cancelación. Tu suscripción seguirá activa hasta el <strong>{cancelDate:dd/MM/yyyy}</strong>.</p>
+    <p style=""color:#374151;line-height:1.6"">Después de esa fecha, perderás acceso a las funciones de tu plan actual.</p>
+    <p style=""color:#374151;line-height:1.6"">Si cambias de opinión, puedes reactivar tu suscripción en cualquier momento antes de esa fecha.</p>
+    <div style=""margin:24px 0;text-align:center"">
+      <a href=""https://app.handysales.com/subscription"" style=""display:inline-block;padding:12px 32px;background:#16A34A;color:#fff;text-decoration:none;border-radius:6px;font-weight:600"">Reactivar Suscripción</a>
+    </div>");
+
+    public static string SubscriptionReactivated(string companyName)
+        => Wrap("Suscripción reactivada", $@"
+    <p style=""color:#374151;line-height:1.6"">Hola, equipo de <strong>{companyName}</strong>,</p>
+    <p style=""color:#374151;line-height:1.6"">Tu suscripción ha sido <strong>reactivada</strong> exitosamente. La cancelación programada ha sido revertida.</p>
+    <p style=""color:#374151;line-height:1.6"">Tu plan continuará renovándose normalmente. Gracias por seguir con nosotros.</p>");
+
+    // --- Trial Drip Emails ---
+
+    public static string TrialValueDay3(string companyName)
+        => Wrap("Tip: Configura tu catálogo de productos", $@"
+    <p style=""color:#374151;line-height:1.6"">Hola, equipo de <strong>{companyName}</strong>,</p>
+    <p style=""color:#374151;line-height:1.6"">Llevas 3 días en HandySales. Un buen primer paso es <strong>configurar tu catálogo de productos</strong> con precios, categorías y familias.</p>
+    <p style=""color:#374151;line-height:1.6"">Un catálogo bien organizado hace que tus vendedores levanten pedidos más rápido en campo.</p>
+    <div style=""margin:24px 0;text-align:center"">
+      <a href=""https://app.handysales.com/products"" style=""display:inline-block;padding:12px 32px;background:#16A34A;color:#fff;text-decoration:none;border-radius:6px;font-weight:600"">Ir a Productos</a>
+    </div>
+    <p style=""color:#9ca3af;font-size:13px;line-height:1.6"">Te quedan 11 días de prueba PRO.</p>");
+
+    public static string TrialValueDay7(string companyName)
+        => Wrap("Tip: Crea tu primera ruta de ventas", $@"
+    <p style=""color:#374151;line-height:1.6"">Hola, equipo de <strong>{companyName}</strong>,</p>
+    <p style=""color:#374151;line-height:1.6"">Ya llevas una semana con HandySales. Es momento de <strong>crear tu primera ruta de ventas</strong> y asignar clientes a tus vendedores.</p>
+    <p style=""color:#374151;line-height:1.6"">Las rutas optimizadas ahorran tiempo y combustible — y te permiten ver el avance de cada vendedor en tiempo real.</p>
+    <div style=""margin:24px 0;text-align:center"">
+      <a href=""https://app.handysales.com/routes"" style=""display:inline-block;padding:12px 32px;background:#16A34A;color:#fff;text-decoration:none;border-radius:6px;font-weight:600"">Crear Ruta</a>
+    </div>
+    <p style=""color:#9ca3af;font-size:13px;line-height:1.6"">Te quedan 7 días de prueba PRO.</p>");
+
+    public static string TrialUrgencyDay10(string companyName, int daysLeft)
+        => Wrap($"Te quedan {daysLeft} días de prueba", $@"
+    <p style=""color:#374151;line-height:1.6"">Hola, equipo de <strong>{companyName}</strong>,</p>
+    <p style=""color:#374151;line-height:1.6"">Tu periodo de prueba PRO termina en <strong>{daysLeft} días</strong>.</p>
+    <p style=""color:#374151;line-height:1.6"">Agrega tu método de pago ahora para que tu equipo no pierda acceso a reportes avanzados, rutas optimizadas y todas las funciones PRO.</p>
+    <div style=""margin:24px 0;text-align:center"">
+      <a href=""https://app.handysales.com/subscription"" style=""display:inline-block;padding:12px 32px;background:#f59e0b;color:#fff;text-decoration:none;border-radius:6px;font-weight:600"">Agregar Método de Pago</a>
+    </div>
+    <p style=""color:#9ca3af;font-size:13px;line-height:1.6"">Si no agregas un método de pago, tu cuenta pasará al plan gratuito con funciones limitadas.</p>");
+
+    public static string TrialUrgencyDay12(string companyName, int daysLeft)
+        => Wrap($"Solo {daysLeft} días para que termine tu prueba", $@"
+    <p style=""color:#374151;line-height:1.6"">Hola, equipo de <strong>{companyName}</strong>,</p>
+    <p style=""color:#374151;line-height:1.6"">Tu periodo de prueba PRO termina en <strong>{daysLeft} días</strong>. Sin un método de pago, tu cuenta será pausada y tu equipo perderá acceso.</p>
+    <div style=""margin:24px 0;text-align:center"">
+      <a href=""https://app.handysales.com/subscription"" style=""display:inline-block;padding:12px 32px;background:#dc2626;color:#fff;text-decoration:none;border-radius:6px;font-weight:600"">Agregar Método de Pago Ahora</a>
+    </div>");
 }

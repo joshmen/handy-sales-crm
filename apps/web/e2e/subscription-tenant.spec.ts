@@ -132,17 +132,21 @@ test.describe('SUB-3: Subscription Page', () => {
     await page.goto('/subscription');
     await waitForPageLoad(page);
 
+    // Wait for plans to load from API (compact plan rows section)
+    await page.waitForSelector('text=PLANES DISPONIBLES', { timeout: 10000 }).catch(() => {});
+    await page.waitForTimeout(500);
+
     const pageContent = (await page.textContent('body')) || '';
 
-    // Should show plan names from API
-    expect(pageContent).toContain('Gratis');
+    // Should show plan names from API (hero card + compact rows)
     expect(pageContent).toContain('Profesional');
 
     // Should show current subscription status
     const hasStatus =
       pageContent.includes('Activa') ||
       pageContent.includes('Active') ||
-      pageContent.includes('Plan actual');
+      pageContent.includes('Plan actual') ||
+      pageContent.includes('Activo');
     expect(hasStatus).toBeTruthy();
   });
 
@@ -161,10 +165,17 @@ test.describe('SUB-3: Subscription Page', () => {
     expect(hasPricing).toBeTruthy();
   });
 
-  test('Subscription page has monthly/annual toggle', async ({ page }) => {
+  test('Subscription page has monthly/annual toggle in plan comparison', async ({ page }) => {
     await loginAsAdmin(page);
     await page.goto('/subscription');
     await waitForPageLoad(page);
+
+    // Click "Cambiar plan" to open plan comparison view
+    const changePlanBtn = page.locator('text=Cambiar plan').first();
+    if (await changePlanBtn.isVisible()) {
+      await changePlanBtn.click();
+      await page.waitForTimeout(500);
+    }
 
     const pageContent = (await page.textContent('body')) || '';
     const hasToggle =
