@@ -534,7 +534,7 @@ export function SbDevices({ size = 22, className }: IconProps) {
 }
 
 /* ============================================================
-   AUTOMATIONS — ORANGE robot + green eyes + indigo antenna
+   AUTOMATIONS — ORANGE gear + green wrench
    ============================================================ */
 
 export function SbAutomations({ size = 22, className }: IconProps) {
@@ -553,23 +553,13 @@ export function SbAutomations({ size = 22, className }: IconProps) {
           <feDropShadow dx="0" dy="1" stdDeviation="1" floodColor="#c2410c" floodOpacity="0.3" />
         </filter>
       </defs>
-      {/* Indigo antenna */}
-      <line x1="12" y1="2" x2="12" y2="6" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" />
-      <circle cx="12" cy="2" r="1.5" fill="#818cf8" />
-      {/* Orange robot head */}
-      <rect x="5" y="6" width="14" height="10" rx="3" fill="url(#sa-a)" filter="url(#sa-s)" />
-      {/* Green eyes */}
-      <circle cx="9" cy="11" r="2" fill="url(#sa-b)" />
-      <circle cx="15" cy="11" r="2" fill="url(#sa-b)" />
-      <circle cx="9" cy="10.5" r="0.8" fill="white" opacity="0.5" />
-      <circle cx="15" cy="10.5" r="0.8" fill="white" opacity="0.5" />
-      {/* Mouth */}
-      <rect x="9" y="14" width="6" height="1" rx="0.5" fill="white" opacity="0.3" />
-      {/* Orange body */}
-      <rect x="7" y="17" width="10" height="5" rx="2" fill="url(#sa-a)" opacity="0.8" />
-      {/* Arms */}
-      <rect x="2" y="8" width="3" height="6" rx="1.5" fill="#fb923c" opacity="0.6" />
-      <rect x="19" y="8" width="3" height="6" rx="1.5" fill="#fb923c" opacity="0.6" />
+      {/* Orange gear */}
+      <path d="M12 1.5l.8 2.4a7 7 0 012.4 1.4l2.4-1 1.6 1.6-1 2.4a7 7 0 011.4 2.4l2.4.8v2.2l-2.4.8a7 7 0 01-1.4 2.4l1 2.4-1.6 1.6-2.4-1a7 7 0 01-2.4 1.4l-.8 2.4H9.8l-.8-2.4a7 7 0 01-2.4-1.4l-2.4 1-1.6-1.6 1-2.4a7 7 0 01-1.4-2.4L0 13.1v-2.2l2.2-.8a7 7 0 011.4-2.4l-1-2.4L4.2 3.7l2.4 1a7 7 0 012.4-1.4L9.8 1h2.2z" fill="url(#sa-a)" filter="url(#sa-s)" transform="translate(1 0.5) scale(0.7)" />
+      <circle cx="8.7" cy="8.8" r="2.2" fill="white" opacity="0.25" />
+      {/* Green wrench */}
+      <path d="M19 5.5a3.5 3.5 0 00-4.8.8l-5.4 7.8a2 2 0 00.3 2.6l1.2 1.2a2 2 0 002.6.3l7.8-5.4a3.5 3.5 0 00.8-4.8" stroke="url(#sa-b)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="url(#sa-b)" fillOpacity="0.3" />
+      {/* Wrench highlight */}
+      <circle cx="17.5" cy="7" r="1" fill="white" opacity="0.4" />
     </svg>
   );
 }
@@ -1625,6 +1615,40 @@ export function SbLogin({ size = 22, className }: IconProps) {
 
 /* ============================================================
    DOWNLOAD/EXPORT — Purple box + cyan arrow down
+   ============================================================ */
+
+/* ============================================================
+   INTEGRATIONS — Fuchsia large gear + teal small gear
+   ============================================================ */
+
+export function SbIntegrations({ size = 22, className }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+      <defs>
+        <linearGradient id="sin-a" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#e879f9" />
+          <stop offset="100%" stopColor="#a21caf" />
+        </linearGradient>
+        <linearGradient id="sin-b" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#22d3ee" />
+          <stop offset="100%" stopColor="#0891b2" />
+        </linearGradient>
+        <filter id="sin-s" x="-15%" y="-15%" width="130%" height="140%">
+          <feDropShadow dx="0" dy="1" stdDeviation="1" floodColor="#86198f" floodOpacity="0.3" />
+        </filter>
+      </defs>
+      {/* Large gear */}
+      <path d="M9.4 2l.6 2.1a6 6 0 012 1.2l2-.9 1.4 1.4-.9 2a6 6 0 011.2 2l2.1.6v2l-2.1.6a6 6 0 01-1.2 2l.9 2-1.4 1.4-2-.9a6 6 0 01-2 1.2L9.4 18H7.4l-.6-2.1a6 6 0 01-2-1.2l-2 .9L1.4 14.2l.9-2a6 6 0 01-1.2-2L1 9.6v-2l1.1-.6a6 6 0 011.2-2l-.9-2L3.8 1.6l2 .9a6 6 0 012-1.2L8.4 0h2z" fill="url(#sin-a)" filter="url(#sin-s)" transform="translate(0.5 2) scale(0.88)" />
+      <circle cx="8.3" cy="10.8" r="2.5" fill="white" opacity="0.25" />
+      {/* Small gear */}
+      <path d="M9.4 2l.6 2.1a6 6 0 012 1.2l2-.9 1.4 1.4-.9 2a6 6 0 011.2 2l2.1.6v2l-2.1.6a6 6 0 01-1.2 2l.9 2-1.4 1.4-2-.9a6 6 0 01-2 1.2L9.4 18H7.4l-.6-2.1a6 6 0 01-2-1.2l-2 .9L1.4 14.2l.9-2a6 6 0 01-1.2-2L1 9.6v-2l1.1-.6a6 6 0 011.2-2l-.9-2L3.8 1.6l2 .9a6 6 0 012-1.2L8.4 0h2z" fill="url(#sin-b)" transform="translate(12 10) scale(0.55)" />
+      <circle cx="16.9" cy="14.9" r="1.5" fill="white" opacity="0.25" />
+    </svg>
+  );
+}
+
+/* ============================================================
+   DOWNLOAD — Purple arrow + cyan tray
    ============================================================ */
 
 export function SbDownload({ size = 22, className }: IconProps) {

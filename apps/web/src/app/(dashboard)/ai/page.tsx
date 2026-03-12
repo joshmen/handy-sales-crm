@@ -5,7 +5,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { toast } from '@/hooks/useToast';
 import {
-  Brain, Sparkle, FileText, ChartBar, TrendUp, ChatCircle,
+  Atom, Sparkle, FileText, ChartBar, TrendUp, ChatCircle,
   Lightning, Question, PaperPlaneTilt,
   User as UserIcon, Users, MagnifyingGlass, Target,
   CalendarPlus, CurrencyDollar, MapPin, Package, CheckCircle, Warning,
@@ -50,25 +50,12 @@ interface ChatMessage {
   accionesSugeridas?: AiSuggestedAction[];
 }
 
-// ─── AI Hero — Crystalline Diamond (pure CSS, no SVG rendering issues) ──
+// ─── AI Hero icon ──
 function AiHeroGem() {
   return (
-    <div className="relative w-16 h-16 sm:w-24 sm:h-24 animate-ai-float">
-      {/* Outer rotated diamond — teal accent */}
-      <div className="absolute inset-0 rotate-45 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-cyan-400/30 to-violet-400/30 dark:from-cyan-500/20 dark:to-violet-500/20 scale-110 animate-[spin_12s_linear_infinite]" />
-      {/* Main diamond body */}
-      <div className="absolute inset-1 sm:inset-1.5 rotate-45 rounded-xl sm:rounded-2xl bg-gradient-to-br from-violet-500 via-blue-500 to-cyan-400 shadow-lg shadow-violet-500/25">
-        {/* Glass highlight facet */}
-        <div className="absolute inset-0 rounded-xl sm:rounded-2xl bg-gradient-to-br from-white/30 via-transparent to-transparent" />
-        {/* Inner facet line */}
-        <div className="absolute top-1/2 left-0 right-0 h-px bg-white/15" />
-        <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white/15" />
-      </div>
-      {/* Center sparkle icon (un-rotated so it reads correctly) */}
-      <div className="absolute inset-0 flex items-center justify-center">
-        <Sparkle size={20} weight="fill" className="text-white drop-shadow-sm sm:hidden" />
-        <Sparkle size={28} weight="fill" className="text-white drop-shadow-sm hidden sm:block" />
-      </div>
+    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-violet-600 dark:bg-violet-700 flex items-center justify-center">
+      <Atom size={28} weight="duotone" className="text-white sm:hidden" />
+      <Atom size={32} weight="duotone" className="text-white hidden sm:block" />
     </div>
   );
 }
@@ -76,7 +63,7 @@ function AiHeroGem() {
 // ─── Small AI avatar for chat bubbles ────────────────────────────
 function AiChatAvatar() {
   return (
-    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 via-blue-500 to-cyan-400 flex items-center justify-center shrink-0 mt-1 shadow-md shadow-violet-500/15">
+    <div className="w-8 h-8 rounded-lg bg-violet-600 dark:bg-violet-700 flex items-center justify-center shrink-0 mt-1">
       <Sparkle size={14} weight="fill" className="text-white" />
     </div>
   );
@@ -161,10 +148,7 @@ function WelcomeState({
 
   return (
     <div className="flex-1 flex flex-col items-center justify-start px-3 sm:px-4 py-4 sm:py-6 relative overflow-y-auto overflow-x-hidden">
-      {/* Subtle radial glow behind orb */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] sm:w-[500px] h-[300px] sm:h-[500px] bg-gradient-radial from-violet-500/5 via-blue-500/3 to-transparent rounded-full pointer-events-none" />
-
-      {/* Hero gem */}
+      {/* Hero icon */}
       <div className="mb-3 sm:mb-4 opacity-0 animate-ai-fade-up" style={{ animationDelay: '0ms', animationFillMode: 'forwards' }}>
         <AiHeroGem />
       </div>
@@ -220,8 +204,8 @@ function NoPlanGate() {
   return (
     <div className="flex-1 flex flex-col items-center justify-center px-4 py-16 text-center">
       <div className="relative mb-8 opacity-0 animate-ai-fade-up" style={{ animationFillMode: 'forwards' }}>
-        <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 flex items-center justify-center shadow-2xl shadow-orange-500/20 animate-ai-float">
-          <Lightning size={36} weight="fill" className="text-white" />
+        <div className="w-16 h-16 rounded-2xl bg-amber-500 dark:bg-amber-600 flex items-center justify-center">
+          <Lightning size={32} weight="fill" className="text-white" />
         </div>
       </div>
       <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3 opacity-0 animate-ai-fade-up" style={{ animationDelay: '100ms', animationFillMode: 'forwards' }}>
@@ -234,7 +218,7 @@ function NoPlanGate() {
       <div className="opacity-0 animate-ai-fade-up" style={{ animationDelay: '300ms', animationFillMode: 'forwards' }}>
         <Button
           onClick={() => window.location.href = '/configuracion/suscripcion'}
-          className="!rounded-xl !px-6 !py-3 !bg-gradient-to-r !from-violet-600 !to-blue-600 hover:!from-violet-500 hover:!to-blue-500 !border-0 !shadow-lg !shadow-violet-500/20"
+          className="!rounded-xl !px-6 !py-3 !bg-violet-600 hover:!bg-violet-700 !border-0"
         >
           <Sparkle size={18} weight="fill" className="mr-2" />
           Ver planes disponibles
@@ -291,7 +275,7 @@ function ActionButtons({
 
   return (
     <div className="flex flex-col gap-2 mt-3">
-      <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones sugeridas</p>
+      <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Acciones sugeridas</p>
       {actions.map((action) => {
         const Icon = ACTION_ICON_MAP[action.icon] || Lightning;
         const isConfirming = confirming === action.actionId;
@@ -379,7 +363,7 @@ function MessageBubble({ message, isLatest, onActionExecute, executingAction }: 
         <div
           className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${
             isUser
-              ? 'bg-gradient-to-br from-violet-600 to-blue-600 text-white rounded-br-md shadow-md shadow-violet-500/10'
+              ? 'bg-violet-600 text-white rounded-br-md shadow-sm'
               : 'bg-white dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700/60 text-gray-800 dark:text-gray-200 rounded-bl-md shadow-sm'
           }`}
         >
@@ -722,10 +706,7 @@ export default function AiPage() {
                   ? 'shadow-lg shadow-violet-500/10 ring-2 ring-violet-400/30 dark:ring-violet-500/20'
                   : 'shadow-sm'
               }`}>
-                {/* Gradient border shimmer on focus */}
-                {inputFocused && (
-                  <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-r from-violet-500/20 via-blue-500/20 to-cyan-500/20 pointer-events-none animate-ai-gradient-shift" style={{ backgroundSize: '200% 200%' }} />
-                )}
+                {/* (focus ring handled by parent shadow) */}
                 <div className="relative flex items-end gap-1.5 sm:gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-1.5 sm:p-2 pl-3 sm:pl-4">
                   <textarea
                     ref={textareaRef}
@@ -752,7 +733,7 @@ export default function AiPage() {
                     disabled={!prompt.trim() || loading || !hasCredits}
                     className={`!rounded-xl !p-2.5 shrink-0 transition-all duration-200 ${
                       prompt.trim() && !loading
-                        ? '!bg-gradient-to-r !from-violet-600 !to-blue-600 hover:!from-violet-500 hover:!to-blue-500 !border-0 !shadow-md !shadow-violet-500/20'
+                        ? '!bg-violet-600 hover:!bg-violet-700 !border-0 !shadow-sm'
                         : ''
                     }`}
                   >

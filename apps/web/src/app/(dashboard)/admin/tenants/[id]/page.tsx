@@ -461,7 +461,7 @@ export default function TenantDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Company Info Card */}
           <div className="lg:col-span-2 bg-card border border-border rounded-lg p-5">
-            <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide mb-4">
+            <h3 className="text-sm font-semibold text-foreground mb-4">
               Información de la Empresa
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
@@ -552,7 +552,7 @@ export default function TenantDetailPage() {
 
           {/* Stats Grid */}
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+            <h3 className="text-sm font-semibold text-foreground">
               Estadísticas
             </h3>
             <div className="grid grid-cols-2 lg:grid-cols-1 gap-3">
@@ -599,7 +599,7 @@ export default function TenantDetailPage() {
         {/* Users Table */}
         <div className="bg-card border border-border rounded-lg">
           <div className="flex items-center justify-between p-4 border-b border-border">
-            <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+            <h3 className="text-sm font-semibold text-foreground">
               Usuarios del Tenant
             </h3>
             <button
@@ -632,16 +632,16 @@ export default function TenantDetailPage() {
               <table className="w-full text-sm">
                 <thead className="bg-accent">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
                       Nombre
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
                       Email
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
                       Rol
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase">
+                    <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">
                       Estado
                     </th>
                   </tr>

@@ -401,13 +401,13 @@ export default function SystemDashboardPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider pb-3">
+                    <th className="text-left text-xs font-medium text-gray-500 pb-3">
                       Empresa
                     </th>
-                    <th className="text-right text-xs font-medium text-gray-500 uppercase tracking-wider pb-3">
+                    <th className="text-right text-xs font-medium text-gray-500 pb-3">
                       Pedidos
                     </th>
-                    <th className="text-right text-xs font-medium text-gray-500 uppercase tracking-wider pb-3">
+                    <th className="text-right text-xs font-medium text-gray-500 pb-3">
                       Ventas
                     </th>
                   </tr>

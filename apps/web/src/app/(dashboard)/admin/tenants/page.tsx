@@ -466,11 +466,11 @@ export default function TenantsPage() {
               ) : null}
             </button>
           </div>
-          <div className="flex-1 min-w-[200px] text-[11px] font-medium text-gray-500 uppercase">Empresa</div>
-          <div className="w-[90px] text-[11px] font-medium text-gray-500 uppercase">Plan</div>
-          <div className="w-[80px] text-[11px] font-medium text-gray-500 uppercase">Usuarios</div>
-          <div className="w-[50px] text-[11px] font-medium text-gray-500 uppercase text-center">Activo</div>
-          <div className="w-[100px] text-[11px] font-medium text-gray-500 uppercase hidden lg:block">Expiración</div>
+          <div className="flex-1 min-w-[200px] text-[11px] font-medium text-gray-500">Empresa</div>
+          <div className="w-[90px] text-[11px] font-medium text-gray-500">Plan</div>
+          <div className="w-[80px] text-[11px] font-medium text-gray-500">Usuarios</div>
+          <div className="w-[50px] text-[11px] font-medium text-gray-500 text-center">Activo</div>
+          <div className="w-[100px] text-[11px] font-medium text-gray-500 hidden lg:block">Expiración</div>
           <div className="w-[80px]"></div>
         </div>
 
@@ -991,7 +991,7 @@ export default function TenantsPage() {
           {drawerMode === 'create' && (
             <>
               <div className="border-t border-border pt-4 mt-4">
-                <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide mb-3">
+                <h3 className="text-sm font-semibold text-foreground mb-3">
                   Administrador del Tenant
                 </h3>
                 <p className="text-xs text-muted-foreground mb-4">

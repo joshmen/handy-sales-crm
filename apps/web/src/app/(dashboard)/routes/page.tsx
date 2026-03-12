@@ -523,13 +523,13 @@ export default function RoutesPage() {
                 ) : null}
               </button>
             </div>
-            <div className="flex-1 min-w-[160px] text-[11px] font-medium text-gray-500 uppercase">Nombre</div>
-            <div className="w-[120px] text-[11px] font-medium text-gray-500 uppercase">Zona</div>
-            <div className="w-[140px] text-[11px] font-medium text-gray-500 uppercase">Usuario</div>
-            <div className="w-[100px] text-[11px] font-medium text-gray-500 uppercase">Fecha</div>
-            <div className="w-[110px] text-[11px] font-medium text-gray-500 uppercase text-center">Estado</div>
-            <div className="w-[80px] text-[11px] font-medium text-gray-500 uppercase text-center">Paradas</div>
-            <div className="w-[50px] text-[11px] font-medium text-gray-500 uppercase text-center">Activo</div>
+            <div className="flex-1 min-w-[160px] text-[11px] font-medium text-gray-500">Nombre</div>
+            <div className="w-[120px] text-[11px] font-medium text-gray-500">Zona</div>
+            <div className="w-[140px] text-[11px] font-medium text-gray-500">Usuario</div>
+            <div className="w-[100px] text-[11px] font-medium text-gray-500">Fecha</div>
+            <div className="w-[110px] text-[11px] font-medium text-gray-500 text-center">Estado</div>
+            <div className="w-[80px] text-[11px] font-medium text-gray-500 text-center">Paradas</div>
+            <div className="w-[50px] text-[11px] font-medium text-gray-500 text-center">Activo</div>
             <div className="w-8"></div>
           </div>
 
@@ -706,7 +706,7 @@ export default function RoutesPage() {
         <form onSubmit={rhfSubmit(handleSubmit)} className="p-6 space-y-5">
           {/* ── Información general ── */}
           <div className="space-y-4">
-            <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Información general</h4>
+            <h4 className="text-xs font-semibold text-gray-400">Información general</h4>
 
             {/* Nombre */}
             <div data-tour="routes-drawer-nombre">
@@ -762,7 +762,7 @@ export default function RoutesPage() {
 
           {/* ── Programación ── */}
           <div className="space-y-4">
-            <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Programación</h4>
+            <h4 className="text-xs font-semibold text-gray-400">Programación</h4>
 
             {/* Fecha */}
             <div data-tour="routes-drawer-fecha">
@@ -809,7 +809,7 @@ export default function RoutesPage() {
 
           {/* ── Detalles adicionales ── */}
           <div className="space-y-4">
-            <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Detalles adicionales</h4>
+            <h4 className="text-xs font-semibold text-gray-400">Detalles adicionales</h4>
 
             {/* Descripción */}
             <div data-tour="routes-drawer-descripcion">

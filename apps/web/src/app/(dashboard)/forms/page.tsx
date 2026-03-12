@@ -182,7 +182,7 @@ export default function FormsPage() {
                 </div>
               ) : paginatedForms.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-64 py-20">
-                  <FileText className="w-16 h-16 text-gray-300 mb-4" />
+                  <FileText className="w-10 h-10 text-muted-foreground mb-4" />
                   <h3 className="text-lg font-semibold text-gray-700 mb-2">No hay formularios</h3>
                   <p className="text-sm text-gray-500 text-center">
                     Crea tu primer formulario para comenzar

@@ -465,11 +465,11 @@ export default function InventoryPage() {
             {/* Desktop Table */}
             <div className="hidden sm:block">
               <div className="flex items-center bg-gray-50 px-5 h-10 border-b border-gray-200 min-w-[750px]">
-                <div className="flex-1 text-[11px] font-medium text-gray-500 uppercase">Producto</div>
-                <div className="w-[120px] text-[11px] font-medium text-gray-500 uppercase">Unidad</div>
-                <div className="w-[120px] text-[11px] font-medium text-gray-500 uppercase text-center flex items-center justify-center gap-1">Existencias <HelpTooltip tooltipKey="total-quantity" /></div>
-                <div data-tour="inventory-stock-columns" className="w-[100px] text-[11px] font-medium text-gray-500 uppercase text-center flex items-center justify-center gap-1">Stock mín. <HelpTooltip tooltipKey="min-stock" /></div>
-                <div className="w-[100px] text-[11px] font-medium text-gray-500 uppercase text-center flex items-center justify-center gap-1">Stock máx. <HelpTooltip tooltipKey="max-stock" /></div>
+                <div className="flex-1 text-[11px] font-medium text-gray-500">Producto</div>
+                <div className="w-[120px] text-[11px] font-medium text-gray-500">Unidad</div>
+                <div className="w-[120px] text-[11px] font-medium text-gray-500 text-center flex items-center justify-center gap-1">Existencias <HelpTooltip tooltipKey="total-quantity" /></div>
+                <div data-tour="inventory-stock-columns" className="w-[100px] text-[11px] font-medium text-gray-500 text-center flex items-center justify-center gap-1">Stock mín. <HelpTooltip tooltipKey="min-stock" /></div>
+                <div className="w-[100px] text-[11px] font-medium text-gray-500 text-center flex items-center justify-center gap-1">Stock máx. <HelpTooltip tooltipKey="max-stock" /></div>
                 <div className="w-8"></div>
               </div>
 

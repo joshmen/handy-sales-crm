@@ -129,7 +129,7 @@ export const PerfilEmpresaTab: React.FC = () => {
       <CardContent className="space-y-6">
         {/* Datos fiscales */}
         <div className="space-y-4">
-          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h3 className="text-sm font-medium text-muted-foreground">
             Datos Fiscales
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -178,7 +178,7 @@ export const PerfilEmpresaTab: React.FC = () => {
 
         {/* Contacto */}
         <div className="space-y-4">
-          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h3 className="text-sm font-medium text-muted-foreground">
             Contacto
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -226,7 +226,7 @@ export const PerfilEmpresaTab: React.FC = () => {
 
         {/* Dirección */}
         <div className="space-y-4">
-          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h3 className="text-sm font-medium text-muted-foreground">
             Dirección
           </h3>
           <div className="space-y-4">

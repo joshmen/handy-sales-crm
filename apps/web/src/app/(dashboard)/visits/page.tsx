@@ -509,13 +509,13 @@ function VisitsPageContent() {
             <div className="hidden sm:block border border-gray-200 rounded-lg overflow-hidden overflow-x-auto">
               {/* Table Header */}
               <div className="flex items-center gap-3 bg-gray-50 px-5 h-10 border-b border-gray-200 min-w-[850px]">
-                <div className="flex-1 min-w-[200px] text-[11px] font-medium text-gray-500 uppercase">Cliente</div>
-                <div className="w-[100px] text-[11px] font-medium text-gray-500 uppercase">Tipo</div>
-                <div className="w-[110px] text-[11px] font-medium text-gray-500 uppercase">Fecha</div>
-                <div className="w-[120px] text-[11px] font-medium text-gray-500 uppercase">Resultado</div>
-                <div className="w-[70px] text-[11px] font-medium text-gray-500 uppercase text-center">Duración</div>
+                <div className="flex-1 min-w-[200px] text-[11px] font-medium text-gray-500">Cliente</div>
+                <div className="w-[100px] text-[11px] font-medium text-gray-500">Tipo</div>
+                <div className="w-[110px] text-[11px] font-medium text-gray-500">Fecha</div>
+                <div className="w-[120px] text-[11px] font-medium text-gray-500">Resultado</div>
+                <div className="w-[70px] text-[11px] font-medium text-gray-500 text-center">Duración</div>
                 <div className="w-[30px]" />
-                <div className="w-[130px] text-[11px] font-medium text-gray-500 uppercase text-right">Acciones</div>
+                <div className="w-[130px] text-[11px] font-medium text-gray-500 text-right">Acciones</div>
               </div>
 
               {/* Table Body */}
@@ -716,7 +716,7 @@ function VisitsPageContent() {
             {/* Notas */}
             {visitDetail.notas && (
               <div>
-                <p className="text-xs font-medium text-gray-500 uppercase mb-1">Notas</p>
+                <p className="text-xs font-medium text-gray-500 mb-1">Notas</p>
                 <p className="text-sm text-gray-700 bg-gray-50 rounded p-3">{visitDetail.notas}</p>
               </div>
             )}
@@ -746,7 +746,7 @@ function VisitsPageContent() {
               }
               return (
                 <div className="space-y-2">
-                  <p className="text-xs font-medium text-gray-500 uppercase">Ubicación</p>
+                  <p className="text-xs font-medium text-gray-500">Ubicación</p>
                   <GoogleMapWrapper
                     markers={markers}
                     zoom={15}

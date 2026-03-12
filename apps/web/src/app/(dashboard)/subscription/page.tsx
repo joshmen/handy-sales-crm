@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
-import { Separator } from "@/components/ui/Separator";
 import {
   Dialog,
   DialogContent,
@@ -16,9 +15,9 @@ import {
 import { toast } from "@/hooks/useToast";
 import { useRequireAdmin } from "@/hooks/usePermissions";
 import { subscriptionService } from "@/services/api/subscriptions";
-import type { SubscriptionPlan, SubscriptionStatus } from "@/types/subscription";
+import type { SubscriptionPlan, SubscriptionStatus, StripeInvoice, StripePaymentMethod } from "@/types/subscription";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { SbSubscription, SbAlert } from "@/components/layout/DashboardIcons";
+import { SbSubscription, SbAlert, SbPayments, SbWallet } from "@/components/layout/DashboardIcons";
 import {
   Users,
   Check,
@@ -29,16 +28,44 @@ import {
   Sparkles,
   Loader2,
   AlertTriangle,
-  ExternalLink,
   ArrowLeft,
   RotateCcw,
   Package,
-  UserCheck,
-  BarChart3,
-  Headphones,
   ShieldAlert,
   ArrowUpRight,
+  FileText,
+  Download,
+  Receipt,
+  ExternalLink,
 } from "lucide-react";
+
+// ── Card brand SVG icons ──────────────────────────────────
+function CardBrandIcon({ brand, className }: { brand: string | null; className?: string }) {
+  const b = (brand || "").toLowerCase();
+  if (b === "visa") return (
+    <svg viewBox="0 0 60 40" className={className} fill="none">
+      <rect width="60" height="40" rx="6" fill="#1A1F71" />
+      <text x="30" y="25" textAnchor="middle" fill="#FFFFFF" fontFamily="Arial, Helvetica, sans-serif" fontSize="16" fontWeight="bold" fontStyle="italic" letterSpacing="1">VISA</text>
+    </svg>
+  );
+  if (b === "mastercard") return (
+    <svg viewBox="0 0 60 40" className={className} fill="none">
+      <rect width="60" height="40" rx="6" fill="#1A1A2E" />
+      <circle cx="23" cy="20" r="10" fill="#EB001B" />
+      <circle cx="37" cy="20" r="10" fill="#F79E1B" />
+      <path d="M30 12.7a10 10 0 010 14.6 10 10 0 000-14.6z" fill="#FF5F00" />
+    </svg>
+  );
+  if (b === "amex" || b === "american_express") return (
+    <svg viewBox="0 0 60 40" className={className} fill="none">
+      <rect width="60" height="40" rx="6" fill="#2E77BC" />
+      <text x="30" y="24" textAnchor="middle" fill="#FFFFFF" fontFamily="Arial, Helvetica, sans-serif" fontSize="11" fontWeight="bold" letterSpacing="0.5">AMEX</text>
+    </svg>
+  );
+  // Default card icon for unknown brands
+  return <CreditCard className={className} />;
+}
+
 import { loadStripe } from "@stripe/stripe-js";
 import { EmbeddedCheckoutProvider, EmbeddedCheckout } from "@stripe/react-stripe-js";
 
@@ -112,6 +139,9 @@ export default function SubscriptionPage() {
   const [trialCheckoutLoading, setTrialCheckoutLoading] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showPlans, setShowPlans] = useState(false);
+  const [invoices, setInvoices] = useState<StripeInvoice[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<StripePaymentMethod[]>([]);
+  const [billingLoading, setBillingLoading] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -121,6 +151,20 @@ export default function SubscriptionPage() {
       ]);
       setPlans(plansData);
       setSubscription(subData);
+
+      // Fetch billing data in background if has Stripe
+      if (subData.hasStripe) {
+        setBillingLoading(true);
+        Promise.all([
+          subscriptionService.getInvoices(),
+          subscriptionService.getPaymentMethods(),
+        ]).then(([inv, pm]) => {
+          setInvoices(inv);
+          setPaymentMethods(pm);
+        }).catch(() => {
+          // Silently fail — billing section just stays empty
+        }).finally(() => setBillingLoading(false));
+      }
     } catch (err) {
       console.error("Error loading subscription data:", err);
       toast.error("Error al cargar datos de suscripción");
@@ -503,19 +547,10 @@ export default function SubscriptionPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              {subscription.hasStripe && (
-                <Button size="sm" variant="outline" onClick={handleManageBilling} disabled={processing}>
-                  <CreditCard className="h-4 w-4 mr-1.5" />
-                  Pagos
-                  <ExternalLink className="h-3 w-3 ml-1 opacity-50" />
-                </Button>
-              )}
-              <Button size="sm" onClick={() => setShowPlans(true)} className="bg-green-600 hover:bg-green-700 text-white">
-                <ArrowUpRight className="h-4 w-4 mr-1.5" />
-                Cambiar plan
-              </Button>
-            </div>
+            <Button size="sm" onClick={() => setShowPlans(true)} className="bg-green-600 hover:bg-green-700 text-white">
+              <ArrowUpRight className="h-4 w-4 mr-1.5" />
+              Cambiar plan
+            </Button>
           </div>
 
           {/* Usage grid */}
@@ -525,7 +560,7 @@ export default function SubscriptionPage() {
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Users className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Usuarios</span>
+                  <span className="text-xs font-medium text-muted-foreground">Usuarios</span>
                 </div>
                 <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
                   usersOver
@@ -554,7 +589,7 @@ export default function SubscriptionPage() {
             <div className="bg-background/80 backdrop-blur-sm rounded-xl p-4 border border-border/50">
               <div className="flex items-center gap-2 mb-3">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Vencimiento</span>
+                <span className="text-xs font-medium text-muted-foreground">Vencimiento</span>
               </div>
               <p className="text-lg font-bold text-foreground">
                 {subscription.fechaExpiracion
@@ -573,7 +608,7 @@ export default function SubscriptionPage() {
               <div className="bg-background/80 backdrop-blur-sm rounded-xl p-4 border border-border/50">
                 <div className="flex items-center gap-2 mb-3">
                   <Package className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Productos</span>
+                  <span className="text-xs font-medium text-muted-foreground">Productos</span>
                 </div>
                 <p className="text-lg font-bold text-foreground">
                   {currentPlan.maxProductos.toLocaleString()}
@@ -587,7 +622,7 @@ export default function SubscriptionPage() {
               <div className="bg-background/80 backdrop-blur-sm rounded-xl p-4 border border-border/50">
                 <div className="flex items-center gap-2 mb-3">
                   <Sparkles className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Funciones</span>
+                  <span className="text-xs font-medium text-muted-foreground">Funciones</span>
                 </div>
                 <div className="space-y-1.5">
                   <div className="flex items-center gap-1.5">
@@ -615,9 +650,10 @@ export default function SubscriptionPage() {
 
       {/* ── Quick plan comparison ─────────────────── */}
       {plans.length > 0 && !showPlans && (
-        <div className="page-animate-delay-1">
+        <Card className="page-animate-delay-1">
+          <CardContent className="p-5">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Planes disponibles</h3>
+            <h3 className="text-sm font-semibold text-muted-foreground">Planes disponibles</h3>
             <Button variant="ghost" size="sm" onClick={() => setShowPlans(true)} className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950/30">
               Ver comparativa completa
               <ChevronRight className="h-4 w-4 ml-1" />
@@ -674,26 +710,230 @@ export default function SubscriptionPage() {
               );
             })}
           </div>
-        </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Payment Method ──────────────────────────── */}
+      {subscription.hasStripe && (
+        <Card className="page-animate-delay-1">
+          <CardContent className="p-5">
+          <div className="flex items-center gap-2.5 mb-3">
+            <SbPayments size={20} />
+            <h3 className="text-sm font-semibold text-foreground">Método de pago</h3>
+          </div>
+          {billingLoading ? (
+            <div className="flex items-center gap-2 p-4 border border-border rounded-xl">
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Cargando...</span>
+            </div>
+          ) : paymentMethods.length > 0 ? (
+            <div className="space-y-2">
+              {paymentMethods.map((pm) => (
+                <div
+                  key={pm.id}
+                  className="flex items-center justify-between p-4 border border-border rounded-xl bg-gradient-to-r from-background to-muted/20 hover:shadow-sm transition-all"
+                >
+                  <div className="flex items-center gap-3.5">
+                    <CardBrandIcon brand={pm.cardBrand} className="h-8 w-12 rounded" />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-foreground capitalize">
+                          {pm.cardBrand || "Tarjeta"}
+                        </span>
+                        <span className="text-muted-foreground font-mono">
+                          •••• {pm.cardLast4}
+                        </span>
+                        {pm.isDefault && (
+                          <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400">
+                            Principal
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        Vence {pm.cardExpMonth?.toString().padStart(2, "0")}/{pm.cardExpYear}
+                      </span>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleManageBilling}
+                    disabled={processing}
+                  >
+                    Actualizar
+                    <ExternalLink className="h-3 w-3 ml-1 opacity-50" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 p-4 border border-dashed border-border rounded-xl">
+              <CreditCard className="h-5 w-5 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">No hay métodos de pago registrados</span>
+            </div>
+          )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Billing History ────────────────────────── */}
+      {subscription.hasStripe && (
+        <Card className="page-animate-delay-2">
+          <CardContent className="p-5">
+          <div className="flex items-center gap-2.5 mb-3">
+            <SbWallet size={20} />
+            <h3 className="text-sm font-semibold text-foreground">Historial de facturación</h3>
+          </div>
+          {billingLoading ? (
+            <div className="flex items-center gap-2 p-4 border border-border rounded-xl">
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Cargando historial...</span>
+            </div>
+          ) : invoices.length > 0 ? (
+            <div className="border border-border rounded-xl overflow-hidden">
+              {/* Desktop table */}
+              <div className="hidden md:block">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/30">
+                      <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-3">Fecha</th>
+                      <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-3">No. Factura</th>
+                      <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-3">Período</th>
+                      <th className="text-right text-xs font-semibold text-muted-foreground px-4 py-3">Monto</th>
+                      <th className="text-center text-xs font-semibold text-muted-foreground px-4 py-3">Estado</th>
+                      <th className="text-right text-xs font-semibold text-muted-foreground px-4 py-3">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {invoices.map((inv, i) => (
+                      <tr key={inv.id} className={`border-b border-border/50 last:border-0 hover:bg-accent/30 transition-colors ${i % 2 === 0 ? "" : "bg-muted/10"}`}>
+                        <td className="px-4 py-3 text-sm text-foreground">
+                          {new Date(inv.created).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" })}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-muted-foreground font-mono">
+                          {inv.number || "—"}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-muted-foreground">
+                          {new Date(inv.periodStart).toLocaleDateString("es-MX", { day: "numeric", month: "short" })}
+                          {" — "}
+                          {new Date(inv.periodEnd).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" })}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-foreground text-right font-medium">
+                          ${(inv.amountPaid / 100).toLocaleString("es-MX", { minimumFractionDigits: 2 })} {inv.currency.toUpperCase()}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <InvoiceStatusBadge status={inv.status} />
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            {inv.hostedInvoiceUrl && (
+                              <a
+                                href={inv.hostedInvoiceUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-md bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800 dark:hover:bg-blue-900/50 transition-colors"
+                                title="Ver factura"
+                              >
+                                <FileText className="h-3.5 w-3.5" />
+                                Ver
+                              </a>
+                            )}
+                            {inv.invoicePdfUrl && (
+                              <a
+                                href={inv.invoicePdfUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-md bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800 dark:hover:bg-red-900/50 transition-colors"
+                                title="Descargar PDF"
+                              >
+                                <Download className="h-3.5 w-3.5" />
+                                PDF
+                              </a>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile cards */}
+              <div className="md:hidden divide-y divide-border">
+                {invoices.map((inv) => (
+                  <div key={inv.id} className="p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-foreground">
+                        {new Date(inv.created).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" })}
+                      </span>
+                      <InvoiceStatusBadge status={inv.status} />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground font-mono">{inv.number || "Sin número"}</span>
+                      <span className="text-sm font-semibold text-foreground">
+                        ${(inv.amountPaid / 100).toLocaleString("es-MX", { minimumFractionDigits: 2 })} {inv.currency.toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {new Date(inv.periodStart).toLocaleDateString("es-MX", { day: "numeric", month: "short" })}
+                      {" — "}
+                      {new Date(inv.periodEnd).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" })}
+                    </div>
+                    <div className="flex gap-2 pt-1">
+                      {inv.hostedInvoiceUrl && (
+                        <a
+                          href={inv.hostedInvoiceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800 dark:hover:bg-blue-900/50 transition-colors"
+                        >
+                          <FileText className="h-3.5 w-3.5" />
+                          Ver factura
+                        </a>
+                      )}
+                      {inv.invoicePdfUrl && (
+                        <a
+                          href={inv.invoicePdfUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800 dark:hover:bg-red-900/50 transition-colors"
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                          PDF
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 p-4 border border-dashed border-border rounded-xl">
+              <Receipt className="h-5 w-5 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">No hay facturas todavía</span>
+            </div>
+          )}
+          </CardContent>
+        </Card>
       )}
 
       {/* ── Danger zone ───────────────────────────── */}
       {subscription.hasStripe && subscription.subscriptionStatus !== "Cancelled" && !subscription.cancellationScheduledFor && (
-        <div className="page-animate-delay-2 pt-4">
-          <Separator className="mb-6" />
-          <div className="flex items-center justify-between">
+        <div className="page-animate-delay-2">
+          <div className="flex items-center justify-between p-4 border border-red-200 dark:border-red-900/50 rounded-xl bg-red-50/50 dark:bg-red-950/20">
             <div className="flex items-center gap-3">
-              <ShieldAlert className="h-4 w-4 text-muted-foreground" />
+              <ShieldAlert className="h-4 w-4 text-red-500 dark:text-red-400" />
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Cancelar suscripción</p>
-                <p className="text-xs text-muted-foreground/70">Mantendrás acceso hasta el final del período pagado</p>
+                <p className="text-sm font-medium text-red-700 dark:text-red-300">Cancelar suscripción</p>
+                <p className="text-xs text-red-600/70 dark:text-red-400/60">Mantendrás acceso hasta el final del período pagado</p>
               </div>
             </div>
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               onClick={() => setShowCancelDialog(true)}
-              className="text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+              className="border-red-300 text-red-600 hover:text-red-700 hover:bg-red-100 hover:border-red-400 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/50 dark:hover:border-red-700"
             >
               Cancelar plan
             </Button>
@@ -788,49 +1028,20 @@ function PlanCard({
   downgrade: DowngradeWarning;
   onUpgrade: () => void;
 }) {
-  const cardRef = useRef<HTMLDivElement>(null);
-  const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
-  const [isHovered, setIsHovered] = useState(false);
-
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current) return;
-    const rect = cardRef.current.getBoundingClientRect();
-    setMousePos({
-      x: ((e.clientX - rect.left) / rect.width) * 100,
-      y: ((e.clientY - rect.top) / rect.height) * 100,
-    });
-  }, []);
-
   return (
     <div className="relative">
       <div
-        ref={cardRef}
-        onMouseMove={handleMouseMove}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => { setIsHovered(false); setMousePos({ x: 50, y: 50 }); }}
-        className={`group relative rounded-2xl transition-all duration-500 ease-out ${
+        className={`group relative rounded-2xl transition-all duration-300 ease-out hover:-translate-y-1 ${
           isPopular
-            ? "border-2 border-green-500 dark:border-green-400 shadow-xl shadow-green-600/10"
-            : "border border-gray-200 dark:border-gray-700 shadow-md hover:shadow-lg hover:border-gray-300 dark:hover:border-gray-600"
+            ? "border-2 border-green-500 dark:border-green-400 shadow-lg"
+            : "border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600"
         } ${isCurrent ? "ring-2 ring-green-500/30" : ""}`}
-        style={{
-          transform: isHovered
-            ? `perspective(800px) rotateY(${(mousePos.x - 50) * 0.04}deg) rotateX(${(mousePos.y - 50) * -0.04}deg) translateY(-4px) scale(1.01)`
-            : "perspective(800px) rotateY(0deg) rotateX(0deg) translateY(0px) scale(1)",
-        }}
       >
-        {/* Mouse-follow glow */}
-        <div
-          className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-          style={{
-            background: `radial-gradient(circle at ${mousePos.x}% ${mousePos.y}%, ${isPopular ? "rgba(22, 163, 74, 0.08)" : "rgba(99, 102, 241, 0.06)"} 0%, transparent 50%)`,
-          }}
-        />
 
         <div className="relative bg-white dark:bg-gray-900 rounded-2xl p-6 h-full flex flex-col min-h-[420px]">
           {isPopular && (
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
-              <span className="bg-green-600 text-white text-[11px] font-semibold uppercase tracking-wider px-4 py-1 rounded-full shadow-md shadow-green-600/20 flex items-center gap-1">
+              <span className="bg-green-600 text-white text-[11px] font-semibold px-4 py-1 rounded-full shadow-sm flex items-center gap-1">
                 <Sparkles className="h-3 w-3" />
                 Más popular
               </span>
@@ -924,9 +1135,9 @@ function PlanCard({
                 : isDisabled
                   ? "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed opacity-60"
                   : downgrade.isDowngrade
-                    ? "bg-amber-500 text-white hover:bg-amber-600 shadow-md shadow-amber-500/20"
+                    ? "bg-amber-500 text-white hover:bg-amber-600 shadow-md"
                     : isPopular
-                      ? "bg-green-600 text-white hover:bg-green-700 shadow-md shadow-green-600/20"
+                      ? "bg-green-600 text-white hover:bg-green-700 shadow-md"
                       : "bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100"
             }`}
             disabled={isDisabled}
@@ -953,10 +1164,25 @@ function PlanCard({
         </div>
       </div>
 
-      <div
-        className="absolute -bottom-2 left-6 right-6 h-6 rounded-full blur-xl transition-all duration-500 -z-10"
-        style={{ backgroundColor: isHovered ? (isPopular ? "rgba(22, 163, 74, 0.12)" : "rgba(99, 102, 241, 0.08)") : "transparent" }}
-      />
     </div>
+  );
+}
+
+
+// ─── Invoice Status Badge ──────────────────────────────────
+const invoiceStatusMap: Record<string, { label: string; className: string }> = {
+  paid: { label: "Pagado", className: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300" },
+  open: { label: "Pendiente", className: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300" },
+  draft: { label: "Borrador", className: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300" },
+  uncollectible: { label: "Incobrable", className: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300" },
+  void: { label: "Anulado", className: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400" },
+};
+
+function InvoiceStatusBadge({ status }: { status: string }) {
+  const info = invoiceStatusMap[status] || { label: status, className: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300" };
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${info.className}`}>
+      {info.label}
+    </span>
   );
 }

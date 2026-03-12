@@ -440,10 +440,10 @@ export default function ProductFamiliesPage() {
                 ) : null}
               </button>
             </div>
-            <div className="w-[60px] text-[11px] font-medium text-gray-500 uppercase">ID</div>
-            <div className="flex-1 text-[11px] font-medium text-gray-500 uppercase">Nombre</div>
-            <div className="flex-1 text-[11px] font-medium text-gray-500 uppercase">Descripción</div>
-            <div className="w-[50px] text-[11px] font-medium text-gray-500 uppercase text-center">Activo</div>
+            <div className="w-[60px] text-[11px] font-medium text-gray-500">ID</div>
+            <div className="flex-1 text-[11px] font-medium text-gray-500">Nombre</div>
+            <div className="flex-1 text-[11px] font-medium text-gray-500">Descripción</div>
+            <div className="w-[50px] text-[11px] font-medium text-gray-500 text-center">Activo</div>
             <div className="w-8"></div>
           </div>
 

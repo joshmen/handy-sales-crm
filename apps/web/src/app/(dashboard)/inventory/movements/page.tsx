@@ -450,14 +450,14 @@ export default function InventoryMovementsPage() {
             <div className="hidden sm:block">
               {/* Table Header */}
               <div className="flex items-center bg-gray-50 px-5 h-10 border-b border-gray-200 min-w-[1100px]">
-                <div className="w-[130px] text-[11px] font-medium text-gray-500 uppercase">Fecha</div>
-                <div className="flex-1 min-w-[180px] text-[11px] font-medium text-gray-500 uppercase">Producto</div>
-                <div className="w-[90px] text-[11px] font-medium text-gray-500 uppercase text-center">Tipo</div>
-                <div className="w-[80px] text-[11px] font-medium text-gray-500 uppercase text-right">Cantidad</div>
-                <div className="w-[80px] text-[11px] font-medium text-gray-500 uppercase text-right hidden md:block">Anterior</div>
-                <div className="w-[80px] text-[11px] font-medium text-gray-500 uppercase text-right hidden md:block">Nuevo</div>
-                <div className="w-[140px] text-[11px] font-medium text-gray-500 uppercase pl-4">Motivo</div>
-                <div className="w-[150px] text-[11px] font-medium text-gray-500 uppercase hidden lg:block">Usuario</div>
+                <div className="w-[130px] text-[11px] font-medium text-gray-500">Fecha</div>
+                <div className="flex-1 min-w-[180px] text-[11px] font-medium text-gray-500">Producto</div>
+                <div className="w-[90px] text-[11px] font-medium text-gray-500 text-center">Tipo</div>
+                <div className="w-[80px] text-[11px] font-medium text-gray-500 text-right">Cantidad</div>
+                <div className="w-[80px] text-[11px] font-medium text-gray-500 text-right hidden md:block">Anterior</div>
+                <div className="w-[80px] text-[11px] font-medium text-gray-500 text-right hidden md:block">Nuevo</div>
+                <div className="w-[140px] text-[11px] font-medium text-gray-500 pl-4">Motivo</div>
+                <div className="w-[150px] text-[11px] font-medium text-gray-500 hidden lg:block">Usuario</div>
               </div>
 
               {/* Table Rows */}

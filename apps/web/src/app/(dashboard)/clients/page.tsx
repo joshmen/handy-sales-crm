@@ -282,7 +282,7 @@ export default function ClientsPage() {
           {/* Empty State */}
           {!loading && clients.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-              <Users className="w-12 h-12 text-gray-300 mb-3" />
+              <Users className="w-8 h-8 text-muted-foreground mb-3" />
               <div className="text-center">
                 <p className="text-lg font-medium">No hay clientes</p>
                 <p className="text-sm mt-1">
@@ -387,12 +387,12 @@ export default function ClientsPage() {
                 ) : null}
               </button>
             </div>
-            <div className="flex-1 min-w-[250px] text-[11px] font-medium text-gray-500 uppercase">Cliente</div>
-            <div className="w-[100px] text-[11px] font-medium text-gray-500 uppercase">Zona</div>
-            <div className="w-[130px] text-[11px] font-medium text-gray-500 uppercase">Categoría</div>
-            <div className="w-[90px] text-[11px] font-medium text-gray-500 uppercase hidden md:block">Saldo</div>
-            <div className="w-[110px] text-[11px] font-medium text-gray-500 uppercase hidden lg:block">Lim. crédito</div>
-            <div className="w-[50px] text-[11px] font-medium text-gray-500 uppercase text-center">Activo</div>
+            <div className="flex-1 min-w-[250px] text-[11px] font-medium text-gray-500">Cliente</div>
+            <div className="w-[100px] text-[11px] font-medium text-gray-500">Zona</div>
+            <div className="w-[130px] text-[11px] font-medium text-gray-500">Categoría</div>
+            <div className="w-[90px] text-[11px] font-medium text-gray-500 hidden md:block">Saldo</div>
+            <div className="w-[110px] text-[11px] font-medium text-gray-500 hidden lg:block">Lim. crédito</div>
+            <div className="w-[50px] text-[11px] font-medium text-gray-500 text-center">Activo</div>
             <div className="w-8"></div>
           </div>
 
@@ -403,7 +403,7 @@ export default function ClientsPage() {
             {/* Empty State */}
             {!loading && clients.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 bg-white text-gray-400">
-                <Users className="w-16 h-16 text-gray-300 mb-4" />
+                <Users className="w-10 h-10 text-muted-foreground mb-4" />
                 <div className="text-center">
                   <p className="text-lg font-medium">No hay clientes</p>
                   <p className="text-sm">

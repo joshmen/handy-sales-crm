@@ -281,7 +281,7 @@ export default function SubscriptionPlansAdminPage() {
 
           {/* Límites */}
           <div className="border-t border-gray-200 pt-4 mt-4">
-            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-3">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">
               Límites del Plan
             </h3>
           </div>
@@ -349,7 +349,7 @@ export default function SubscriptionPlansAdminPage() {
 
           {/* Características */}
           <div className="border-t border-gray-200 pt-4 mt-4">
-            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-1">
+            <h3 className="text-sm font-semibold text-gray-900 mb-1">
               Características incluidas
             </h3>
             <p className="text-xs text-gray-500 mb-3">
@@ -386,7 +386,7 @@ export default function SubscriptionPlansAdminPage() {
 
           {/* Configuración */}
           <div className="border-t border-gray-200 pt-4 mt-4">
-            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-3">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">
               Configuración
             </h3>
           </div>

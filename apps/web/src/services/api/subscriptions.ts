@@ -1,5 +1,5 @@
 import { api } from '@/lib/api';
-import type { SubscriptionPlan, SubscriptionStatus } from '@/types/subscription';
+import type { SubscriptionPlan, SubscriptionStatus, StripeInvoice, StripePaymentMethod } from '@/types/subscription';
 
 export const subscriptionService = {
   async getPlans(): Promise<SubscriptionPlan[]> {
@@ -51,5 +51,20 @@ export const subscriptionService = {
 
   async reactivateSubscription(): Promise<void> {
     await api.post('/api/subscription/reactivate');
+  },
+
+  async getInvoices(): Promise<StripeInvoice[]> {
+    const { data } = await api.get<StripeInvoice[]>('/api/subscription/invoices');
+    return data;
+  },
+
+  async getPaymentMethods(): Promise<StripePaymentMethod[]> {
+    const { data } = await api.get<StripePaymentMethod[]>('/api/subscription/payment-methods');
+    return data;
+  },
+
+  async createSetupIntent(): Promise<{ clientSecret: string }> {
+    const { data } = await api.post<{ clientSecret: string }>('/api/subscription/setup-intent');
+    return data;
   },
 };

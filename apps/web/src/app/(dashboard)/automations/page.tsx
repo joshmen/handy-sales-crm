@@ -325,8 +325,8 @@ export default function AutomationsPage() {
             </div>
           ) : filtered.length === 0 ? (
             <div className="text-center py-16">
-              <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <Robot size={32} className="text-gray-300" />
+              <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <Robot size={20} className="text-muted-foreground" />
               </div>
               <p className="font-semibold text-gray-700 mb-1">Sin automatizaciones en esta categoría</p>
               <p className="text-sm text-gray-400 max-w-sm mx-auto">

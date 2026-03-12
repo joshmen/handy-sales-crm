@@ -528,22 +528,22 @@ export default function CrashReportsPage() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">
                   Fecha
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">
                   Severidad
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">
                   Error
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">
                   Dispositivo
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">
                   Version
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">
                   Estado
                 </th>
               </tr>
@@ -797,7 +797,7 @@ export default function CrashReportsPage() {
 
             {/* Error Message */}
             <div>
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <h3 className="text-xs font-semibold text-gray-500 mb-2 flex items-center gap-1.5">
                 <Warning size={14} className="text-orange-500" />
                 Mensaje de error
               </h3>
@@ -809,7 +809,7 @@ export default function CrashReportsPage() {
             {/* Component */}
             {selectedReport.componentName && (
               <div>
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <h3 className="text-xs font-semibold text-gray-500 mb-2 flex items-center gap-1.5">
                   <Code size={14} className="text-purple-500" />
                   Componente
                 </h3>
@@ -822,7 +822,7 @@ export default function CrashReportsPage() {
             {/* Stack Trace */}
             {selectedReport.stackTrace && (
               <div>
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <h3 className="text-xs font-semibold text-gray-500 mb-2 flex items-center gap-1.5">
                   <Code size={14} className="text-indigo-500" />
                   Stack Trace
                 </h3>
@@ -834,7 +834,7 @@ export default function CrashReportsPage() {
 
             {/* Device Info */}
             <div>
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+              <h3 className="text-xs font-semibold text-gray-500 mb-3 flex items-center gap-1.5">
                 <DeviceMobile size={14} className="text-cyan-500" />
                 Dispositivo
               </h3>
@@ -868,7 +868,7 @@ export default function CrashReportsPage() {
 
             {/* Tenant & User */}
             <div>
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+              <h3 className="text-xs font-semibold text-gray-500 mb-3 flex items-center gap-1.5">
                 <User size={14} className="text-emerald-500" />
                 Contexto
               </h3>
@@ -896,7 +896,7 @@ export default function CrashReportsPage() {
 
             {/* Timestamp */}
             <div>
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <h3 className="text-xs font-semibold text-gray-500 mb-2 flex items-center gap-1.5">
                 <CalendarDots size={14} className="text-blue-500" />
                 Fecha de reporte
               </h3>
@@ -908,7 +908,7 @@ export default function CrashReportsPage() {
             {/* Resolution note */}
             {selectedReport.resuelto && selectedReport.notaResolucion && (
               <div>
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <h3 className="text-xs font-semibold text-gray-500 mb-2 flex items-center gap-1.5">
                   <CheckCircle size={14} className="text-green-500" />
                   Nota de resolucion
                 </h3>

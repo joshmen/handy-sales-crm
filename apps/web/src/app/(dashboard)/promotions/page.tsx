@@ -430,11 +430,11 @@ export default function PromotionsPage() {
                 ) : null}
               </button>
             </div>
-            <div className="flex-1 min-w-[150px] text-[11px] font-medium text-gray-500 uppercase">Nombre</div>
-            <div className="w-[200px] text-[11px] font-medium text-gray-500 uppercase">Productos</div>
-            <div className="w-[80px] text-[11px] font-medium text-gray-500 uppercase text-center">Descuento</div>
-            <div className="w-[200px] text-[11px] font-medium text-gray-500 uppercase">Vigencia</div>
-            <div className="w-[50px] text-[11px] font-medium text-gray-500 uppercase text-center">Activo</div>
+            <div className="flex-1 min-w-[150px] text-[11px] font-medium text-gray-500">Nombre</div>
+            <div className="w-[200px] text-[11px] font-medium text-gray-500">Productos</div>
+            <div className="w-[80px] text-[11px] font-medium text-gray-500 text-center">Descuento</div>
+            <div className="w-[200px] text-[11px] font-medium text-gray-500">Vigencia</div>
+            <div className="w-[50px] text-[11px] font-medium text-gray-500 text-center">Activo</div>
             <div className="w-8"></div>
           </div>
 

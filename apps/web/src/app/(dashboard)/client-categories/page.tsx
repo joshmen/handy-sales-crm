@@ -245,7 +245,7 @@ export default function ClientCategoriesPage() {
               )}
               {!loading && paginatedCategories.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12">
-                  <UsersThree className="w-12 h-12 text-gray-300 mb-3" weight="duotone" />
+                  <UsersThree className="w-8 h-8 text-muted-foreground mb-3" weight="duotone" />
                   <p className="text-sm text-gray-500">
                     {searchTerm ? 'No se encontraron categorías' : 'No hay categorías'}
                   </p>
@@ -294,10 +294,10 @@ export default function ClientCategoriesPage() {
             <div data-tour="client-categories-table" className="hidden sm:block bg-white border border-gray-200 rounded-lg overflow-x-auto">
               {/* Table Header - Always visible */}
               <div className="min-w-[600px] flex items-center gap-3 bg-gray-50 px-5 h-10 border-b border-gray-200">
-                <div className="w-[80px] text-[11px] font-medium text-gray-500 uppercase">ID</div>
-                <div className="flex-1 text-[11px] font-medium text-gray-500 uppercase">Nombre</div>
-                <div className="flex-1 text-[11px] font-medium text-gray-500 uppercase">Descripción</div>
-                <div className="w-[50px] text-[11px] font-medium text-gray-500 uppercase text-center">Activo</div>
+                <div className="w-[80px] text-[11px] font-medium text-gray-500">ID</div>
+                <div className="flex-1 text-[11px] font-medium text-gray-500">Nombre</div>
+                <div className="flex-1 text-[11px] font-medium text-gray-500">Descripción</div>
+                <div className="w-[50px] text-[11px] font-medium text-gray-500 text-center">Activo</div>
                 <div className="w-8"></div>
               </div>
 
@@ -308,7 +308,7 @@ export default function ClientCategoriesPage() {
                 {/* Empty State */}
                 {!loading && paginatedCategories.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-64 py-20">
-                    <UsersThree className="w-16 h-16 text-gray-300 mb-4" weight="duotone" />
+                    <UsersThree className="w-10 h-10 text-muted-foreground mb-4" weight="duotone" />
                     <h3 className="text-lg font-semibold text-gray-700 mb-2">No hay categorías</h3>
                     <p className="text-sm text-gray-500 text-center">
                       {searchTerm

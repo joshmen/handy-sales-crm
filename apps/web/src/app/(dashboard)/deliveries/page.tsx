@@ -313,7 +313,7 @@ export default function DeliveriesPage() {
           )}
           {!loading && filteredRoutes.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12">
-              <Route className="w-12 h-12 text-gray-300 mb-3" />
+              <Route className="w-8 h-8 text-muted-foreground mb-3" />
               <p className="text-sm text-gray-500 mb-1">No hay rutas</p>
               <p className="text-xs text-gray-400 text-center px-4">
                 {searchTerm || selectedStatus !== 'all'
@@ -403,7 +403,7 @@ export default function DeliveriesPage() {
 
             {!loading && filteredRoutes.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20">
-                <Route className="w-16 h-16 text-gray-300 mb-4" />
+                <Route className="w-10 h-10 text-muted-foreground mb-4" />
                 <h3 className="text-lg font-semibold text-gray-700 mb-2">No se encontraron rutas</h3>
                 <p className="text-sm text-gray-500 text-center">
                   {searchTerm || selectedStatus !== 'all'

@@ -379,13 +379,13 @@ export default function MetasPage() {
         >
           {/* Table Header */}
           <div className="bg-gray-50 border-b border-gray-200 grid" style={{ gridTemplateColumns: 'repeat(' + (isAdmin ? '7' : '6') + ', minmax(0, 1fr))' }}>
-            <div className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Vendedor</div>
-            <div className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Tipo</div>
-            <div className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Período</div>
-            <div className="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase">Meta</div>
-            <div className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Vigencia</div>
-            <div className="text-center px-4 py-3 text-xs font-medium text-gray-500 uppercase">Estado</div>
-            {isAdmin && <div className="text-center px-4 py-3 text-xs font-medium text-gray-500 uppercase">Acciones</div>}
+            <div className="text-left px-4 py-3 text-xs font-medium text-gray-500">Vendedor</div>
+            <div className="text-left px-4 py-3 text-xs font-medium text-gray-500">Tipo</div>
+            <div className="text-left px-4 py-3 text-xs font-medium text-gray-500">Período</div>
+            <div className="text-right px-4 py-3 text-xs font-medium text-gray-500">Meta</div>
+            <div className="text-left px-4 py-3 text-xs font-medium text-gray-500">Vigencia</div>
+            <div className="text-center px-4 py-3 text-xs font-medium text-gray-500">Estado</div>
+            {isAdmin && <div className="text-center px-4 py-3 text-xs font-medium text-gray-500">Acciones</div>}
           </div>
 
           {/* Table Body */}

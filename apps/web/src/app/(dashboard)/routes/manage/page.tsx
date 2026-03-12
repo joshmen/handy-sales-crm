@@ -317,12 +317,12 @@ export default function ManageRoutesPage() {
         <div data-tour="routes-manage-table" className="hidden sm:block bg-white border border-gray-200 rounded-lg overflow-hidden">
           {/* Table Header */}
           <div className="flex items-center gap-3 bg-gray-50 px-5 h-10 border-b border-gray-200">
-            <div className="flex-1 min-w-[160px] text-[11px] font-medium text-gray-500 uppercase">Nombre</div>
-            <div className="w-[140px] text-[11px] font-medium text-gray-500 uppercase">Usuario</div>
-            <div className="w-[120px] text-[11px] font-medium text-gray-500 uppercase">Zona</div>
-            <div className="w-[100px] text-[11px] font-medium text-gray-500 uppercase">Fecha</div>
-            <div className="w-[120px] text-[11px] font-medium text-gray-500 uppercase text-center">Estado</div>
-            <div className="w-[100px] text-[11px] font-medium text-gray-500 uppercase text-center">Progreso</div>
+            <div className="flex-1 min-w-[160px] text-[11px] font-medium text-gray-500">Nombre</div>
+            <div className="w-[140px] text-[11px] font-medium text-gray-500">Usuario</div>
+            <div className="w-[120px] text-[11px] font-medium text-gray-500">Zona</div>
+            <div className="w-[100px] text-[11px] font-medium text-gray-500">Fecha</div>
+            <div className="w-[120px] text-[11px] font-medium text-gray-500 text-center">Estado</div>
+            <div className="w-[100px] text-[11px] font-medium text-gray-500 text-center">Progreso</div>
             <div className="w-8"></div>
           </div>
 

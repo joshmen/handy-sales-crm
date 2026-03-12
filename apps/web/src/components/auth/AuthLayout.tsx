@@ -31,9 +31,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
       {/* ===== Panel izquierdo — Vendedor de ruta (hidden en mobile) ===== */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
         {/* Gradient fallback — visible si la imagen no carga */}
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900" />
-        {/* Noise texture overlay for depth */}
-        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'1\'/%3E%3C/svg%3E")', backgroundRepeat: 'repeat' }} />
+        <div className="absolute inset-0 bg-slate-900" />
 
         {/* Imagen de fondo — vendedor de ruta */}
         <Image
@@ -45,7 +43,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
           sizes="50vw"
         />
         {/* Overlay gradiente — claro arriba (cara), oscuro abajo (texto) */}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/85 via-slate-900/40 to-slate-900/25" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/15" />
 
         {/* Contenido sobre la imagen */}
         <div className="relative z-10 flex flex-col justify-between p-12 text-white w-full">

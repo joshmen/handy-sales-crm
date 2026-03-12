@@ -82,7 +82,7 @@ function IntegrationCard({
               {integration.descripcion}
             </p>
             <div className="flex items-center gap-3 mt-3">
-              <span className="text-xs text-muted-foreground uppercase font-medium">
+              <span className="text-xs text-muted-foreground font-medium">
                 {categoryLabels[integration.categoria] || integration.categoria}
               </span>
               {integration.precioMXN > 0 && (
