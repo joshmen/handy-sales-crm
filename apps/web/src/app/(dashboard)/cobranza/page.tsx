@@ -581,7 +581,7 @@ export default function CobranzaPage() {
                   )}
                   {!cobrosLoading && filteredCobros.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-12">
-                      <CreditCard className="w-12 h-12 text-emerald-300 mb-3" />
+                      <CreditCard className="w-8 h-8 text-muted-foreground mb-3" />
                       <p className="text-sm text-gray-500">{searchCobros ? 'Sin resultados' : 'No hay cobros'}</p>
                     </div>
                   ) : (
@@ -673,7 +673,7 @@ export default function CobranzaPage() {
                   {/* Empty State */}
                   {!cobrosLoading && filteredCobros.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-20">
-                      <CreditCard className="w-16 h-16 text-emerald-300 mb-4" />
+                      <CreditCard className="w-10 h-10 text-muted-foreground mb-4" />
                       <h3 className="text-lg font-semibold text-gray-700 mb-2">
                         {searchCobros ? 'Sin resultados' : 'No hay cobros en este período'}
                       </h3>
@@ -966,14 +966,14 @@ export default function CobranzaPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div>
-                  <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Pendiente</p>
+                  <p className="text-[10px] font-medium text-muted-foreground">Pendiente</p>
                   <p className={`text-sm font-bold tabular-nums ${estadoCuenta.saldoPendiente > 0 ? 'text-amber-500' : 'text-emerald-500'}`}>
                     {formatCurrency(estadoCuenta.saldoPendiente)}
                   </p>
                 </div>
                 <div className="w-px h-8 bg-border" />
                 <div>
-                  <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Cobrado</p>
+                  <p className="text-[10px] font-medium text-muted-foreground">Cobrado</p>
                   <p className="text-sm font-bold tabular-nums text-emerald-500">{formatCurrency(estadoCuenta.totalCobrado)}</p>
                 </div>
               </div>
@@ -1006,54 +1006,43 @@ export default function CobranzaPage() {
             </div>
           ) : estadoCuenta ? (
             <>
-              {/* ── Hero summary card ── */}
-              <div className="mx-6 mt-6 rounded-xl bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 p-5 text-white relative overflow-hidden">
-                {/* Subtle pattern */}
-                <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '20px 20px' }} />
-                <div className="relative">
-                  {/* Progress bar */}
-                  {(() => {
-                    const pct = estadoCuenta.totalFacturado > 0
-                      ? Math.round((estadoCuenta.totalCobrado / estadoCuenta.totalFacturado) * 100)
-                      : 0;
-                    return (
-                      <>
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Avance de cobro</span>
-                          </div>
-                          <span className={`text-2xl font-bold tabular-nums ${pct === 100 ? 'text-emerald-400' : 'text-white'}`}>{pct}%</span>
-                        </div>
-                        <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden mb-5">
-                          <div
-                            className={`h-full rounded-full transition-all duration-700 ease-out ${
-                              pct === 100 ? 'bg-emerald-400' : pct >= 50 ? 'bg-green-400' : 'bg-amber-400'
-                            }`}
-                            style={{ width: `${pct}%` }}
-                          />
-                        </div>
-                      </>
-                    );
-                  })()}
-                  {/* KPIs */}
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <p className="text-[11px] text-slate-400 mb-0.5">Total facturado</p>
-                      <p className="text-lg font-bold tabular-nums">{formatCurrency(estadoCuenta.totalFacturado)}</p>
+              {/* ── Collection progress ── */}
+              {(() => {
+                const pct = estadoCuenta.totalFacturado > 0
+                  ? Math.round((estadoCuenta.totalCobrado / estadoCuenta.totalFacturado) * 100)
+                  : 0;
+                return (
+                  <div className="mx-6 mt-6 rounded-xl border border-border bg-card p-5">
+                    {/* Top row: label + percentage */}
+                    <div className="flex items-baseline justify-between mb-3">
+                      <p className="text-xs text-muted-foreground">Avance de cobro</p>
+                      <p className="text-2xl font-bold tabular-nums text-foreground leading-none">{pct}<span className="text-sm font-medium text-muted-foreground ml-0.5">%</span></p>
                     </div>
-                    <div>
-                      <p className="text-[11px] text-slate-400 mb-0.5">Cobrado</p>
-                      <p className="text-lg font-bold tabular-nums text-emerald-400">{formatCurrency(estadoCuenta.totalCobrado)}</p>
+                    {/* Stacked bar — cobrado fills green, remainder stays as track */}
+                    <div className="h-2 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-700 ease-out ${pct === 100 ? 'bg-green-500' : pct >= 50 ? 'bg-green-500' : 'bg-amber-500'}`}
+                        style={{ width: `${Math.max(pct, 2)}%` }}
+                      />
                     </div>
-                    <div>
-                      <p className="text-[11px] text-slate-400 mb-0.5">Pendiente</p>
-                      <p className={`text-lg font-bold tabular-nums ${estadoCuenta.saldoPendiente > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
-                        {formatCurrency(estadoCuenta.saldoPendiente)}
-                      </p>
+                    {/* KPI row */}
+                    <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-border">
+                      <div>
+                        <p className="text-[11px] text-muted-foreground mb-0.5">Facturado</p>
+                        <p className="text-sm font-semibold tabular-nums text-foreground">{formatCurrency(estadoCuenta.totalFacturado)}</p>
+                      </div>
+                      <div>
+                        <p className="text-[11px] text-muted-foreground mb-0.5">Cobrado</p>
+                        <p className="text-sm font-semibold tabular-nums text-green-600 dark:text-green-400">{formatCurrency(estadoCuenta.totalCobrado)}</p>
+                      </div>
+                      <div>
+                        <p className="text-[11px] text-muted-foreground mb-0.5">Pendiente</p>
+                        <p className={`text-sm font-semibold tabular-nums ${estadoCuenta.saldoPendiente > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-green-600 dark:text-green-400'}`}>{formatCurrency(estadoCuenta.saldoPendiente)}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
+                );
+              })()}
 
               {/* ── Period toggle ── */}
               <div className="mx-6 mt-4 flex items-center justify-between">
@@ -1086,7 +1075,7 @@ export default function CobranzaPage() {
 
               {/* ── Pedidos list ── */}
               <div className="px-6 pt-4 pb-6">
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Pedidos</h3>
+                <h3 className="text-xs font-semibold text-gray-400 mb-3">Pedidos</h3>
                 {estadoCuenta.pedidos.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12">
                     <Receipt className="w-10 h-10 text-gray-300 mb-3" />
