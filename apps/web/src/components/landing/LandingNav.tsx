@@ -33,7 +33,7 @@ export function LandingNav() {
       <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-16">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5">
-          <Image src="/logo-icon.svg" alt="" width={32} height={32} />
+          <Image src="/logo-icon.svg" alt="Handy Suites" width={32} height={32} />
           <div className="flex items-baseline gap-1">
             <span className="text-lg font-black text-gray-900 tracking-tight">Handy</span>
             <span className="text-lg font-normal text-gray-500 tracking-tight">

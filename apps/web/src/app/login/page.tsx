@@ -125,7 +125,7 @@ function LoginContent() {
           }
         })
         .catch(() => {
-          // Ref expired or invalid — user must retry OAuth
+          toast({ title: 'Sesión expirada', description: 'El enlace de verificación 2FA ha expirado. Intenta iniciar sesión de nuevo.', variant: 'destructive' });
         });
     }
 

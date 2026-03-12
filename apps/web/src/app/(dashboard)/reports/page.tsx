@@ -245,7 +245,7 @@ export default function ReportsPage() {
           <div className="p-6 space-y-6" data-tour="reports-cards">
             {Object.entries(sections).map(([sectionName, sectionReports]) => (
               <div key={sectionName}>
-                <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-1">
+                <h2 className="text-xs font-semibold text-gray-400 mb-3 px-1">
                   {sectionName}
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -255,14 +255,14 @@ export default function ReportsPage() {
                       <button
                         key={report.id}
                         onClick={() => handleReportClick(report.id)}
-                        className={`text-left bg-white border border-gray-200 rounded-xl p-5 transition-all hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm group ${isReportLocked(report.id) ? 'opacity-60' : ''}`}
+                        className={`text-left bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5 transition-all hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-300 hover:shadow-sm group ${isReportLocked(report.id) ? 'opacity-60' : ''}`}
                       >
                         <div className="flex items-start gap-3 mb-3">
                           <Icon size={36} />
                         </div>
                         <div className="flex items-center gap-1.5">
-                          <h3 className="text-sm font-semibold text-gray-900">{report.label}</h3>
-                          {isReportLocked(report.id) && <Lock className="w-3.5 h-3.5 text-gray-400" />}
+                          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{report.label}</h3>
+                          {isReportLocked(report.id) && <Lock className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />}
                         </div>
                         <p className="text-xs text-gray-500 leading-relaxed">{report.description}</p>
                       </button>

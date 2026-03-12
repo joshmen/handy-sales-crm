@@ -22,7 +22,7 @@ const registerSchema = z.object({
   password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
   confirmPassword: z.string(),
   nombreEmpresa: z.string().min(1, 'El nombre de la empresa es obligatorio'),
-  identificadorFiscal: z.string().max(20, 'El identificador fiscal no debe exceder 20 caracteres').optional().or(z.literal('')),
+  identificadorFiscal: z.string().max(13).regex(/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/, 'RFC inválido').optional().or(z.literal('')),
   contacto: z.string().max(100).optional().or(z.literal('')),
   aceptaTerminos: z.literal(true, { errorMap: () => ({ message: 'Debes aceptar los términos y el aviso de privacidad' }) }),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -35,7 +35,7 @@ const googleRegisterSchema = z.object({
   nombre: z.string().min(1, 'El nombre es obligatorio'),
   email: z.string().email('Formato de correo inválido'),
   nombreEmpresa: z.string().min(1, 'El nombre de la empresa es obligatorio'),
-  identificadorFiscal: z.string().max(20, 'El identificador fiscal no debe exceder 20 caracteres').optional().or(z.literal('')),
+  identificadorFiscal: z.string().max(13).regex(/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/, 'RFC inválido').optional().or(z.literal('')),
   contacto: z.string().max(100).optional().or(z.literal('')),
   aceptaTerminos: z.literal(true, { errorMap: () => ({ message: 'Debes aceptar los términos y el aviso de privacidad' }) }),
 });

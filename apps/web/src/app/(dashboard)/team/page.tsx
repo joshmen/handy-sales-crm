@@ -20,10 +20,6 @@ import {
 import { getInitials } from '@/lib/utils';
 import { useFormatters } from '@/hooks/useFormatters';
 
-function formatCurrency(amount: number): string {
-  return formatCurrency(amount);
-}
-
 export default function TeamPage() {
   const { formatCurrency } = useFormatters();
   const { data: session } = useSession();
@@ -50,9 +46,9 @@ export default function TeamPage() {
         ]);
         setVendedores(v);
         setDashboard(d);
-      } else if (isAdmin && userId) {
-        // Admin viewing a supervisor's team — load all supervisors' teams
-        const v = await supervisorService.getVendedoresDeSupervisor(Number(userId));
+      } else if (isAdmin) {
+        // Admin sees all vendedores available for assignment
+        const v = await supervisorService.getVendedoresDisponibles();
         setVendedores(v);
       }
     } catch {

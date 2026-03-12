@@ -1,4 +1,4 @@
-import { api } from '@/lib/api';
+import { api, handleApiError } from '@/lib/api';
 
 // ═══════════════════════════════════════════════════════
 // TYPES
@@ -107,47 +107,79 @@ export async function getCobros(params?: {
   hasta?: string;
   usuarioId?: number;
 }): Promise<Cobro[]> {
-  const searchParams = new URLSearchParams();
-  if (params?.clienteId) searchParams.append('clienteId', String(params.clienteId));
-  if (params?.desde) searchParams.append('desde', params.desde);
-  if (params?.hasta) searchParams.append('hasta', params.hasta);
-  if (params?.usuarioId) searchParams.append('usuarioId', String(params.usuarioId));
-  const qs = searchParams.toString();
-  const res = await api.get<Cobro[]>(`/cobros${qs ? `?${qs}` : ''}`);
-  return res.data;
+  try {
+    const searchParams = new URLSearchParams();
+    if (params?.clienteId) searchParams.append('clienteId', String(params.clienteId));
+    if (params?.desde) searchParams.append('desde', params.desde);
+    if (params?.hasta) searchParams.append('hasta', params.hasta);
+    if (params?.usuarioId) searchParams.append('usuarioId', String(params.usuarioId));
+    const qs = searchParams.toString();
+    const res = await api.get<Cobro[]>(`/cobros${qs ? `?${qs}` : ''}`);
+    return res.data;
+  } catch (error) {
+    throw handleApiError(error);
+  }
 }
 
 export async function getCobroById(id: number): Promise<Cobro> {
-  const res = await api.get<Cobro>(`/cobros/${id}`);
-  return res.data;
+  try {
+    const res = await api.get<Cobro>(`/cobros/${id}`);
+    return res.data;
+  } catch (error) {
+    throw handleApiError(error);
+  }
 }
 
 export async function createCobro(dto: CobroCreateDto): Promise<{ id: number }> {
-  const res = await api.post<{ id: number }>('/cobros', dto);
-  return res.data;
+  try {
+    const res = await api.post<{ id: number }>('/cobros', dto);
+    return res.data;
+  } catch (error) {
+    throw handleApiError(error);
+  }
 }
 
 export async function updateCobro(id: number, dto: CobroUpdateDto): Promise<void> {
-  await api.put(`/cobros/${id}`, dto);
+  try {
+    await api.put(`/cobros/${id}`, dto);
+  } catch (error) {
+    throw handleApiError(error);
+  }
 }
 
 export async function deleteCobro(id: number): Promise<void> {
-  await api.delete(`/cobros/${id}`);
+  try {
+    await api.delete(`/cobros/${id}`);
+  } catch (error) {
+    throw handleApiError(error);
+  }
 }
 
 export async function getSaldos(clienteId?: number): Promise<SaldoCliente[]> {
-  const qs = clienteId ? `?clienteId=${clienteId}` : '';
-  const res = await api.get<SaldoCliente[]>(`/cobros/saldos${qs}`);
-  return res.data;
+  try {
+    const qs = clienteId ? `?clienteId=${clienteId}` : '';
+    const res = await api.get<SaldoCliente[]>(`/cobros/saldos${qs}`);
+    return res.data;
+  } catch (error) {
+    throw handleApiError(error);
+  }
 }
 
 export async function getResumenCartera(): Promise<ResumenCartera> {
-  const res = await api.get<ResumenCartera>('/cobros/saldos/resumen');
-  return res.data;
+  try {
+    const res = await api.get<ResumenCartera>('/cobros/saldos/resumen');
+    return res.data;
+  } catch (error) {
+    throw handleApiError(error);
+  }
 }
 
 export async function getEstadoCuenta(clienteId: number, historico = false): Promise<EstadoCuenta> {
-  const qs = historico ? '?historico=true' : '';
-  const res = await api.get<EstadoCuenta>(`/cobros/cliente/${clienteId}/estado-cuenta${qs}`);
-  return res.data;
+  try {
+    const qs = historico ? '?historico=true' : '';
+    const res = await api.get<EstadoCuenta>(`/cobros/cliente/${clienteId}/estado-cuenta${qs}`);
+    return res.data;
+  } catch (error) {
+    throw handleApiError(error);
+  }
 }

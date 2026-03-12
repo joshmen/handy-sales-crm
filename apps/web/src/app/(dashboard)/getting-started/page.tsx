@@ -592,7 +592,7 @@ export default function GettingStartedPage() {
                   <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${phaseCompleted ? 'bg-green-500' : phase.colorDot}`} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <h3 className={`font-semibold text-sm ${phaseCompleted ? 'text-gray-500' : phase.colorText}`}>
+                      <h3 className={`font-semibold text-sm ${phaseCompleted ? 'text-gray-500 dark:text-gray-400' : phase.colorText}`}>
                         {phase.title}
                       </h3>
                       {phaseCompleted && (

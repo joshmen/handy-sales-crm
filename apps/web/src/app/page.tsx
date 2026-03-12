@@ -104,14 +104,14 @@ export default function LandingPage() {
       <LandingNav />
 
       {/* ===== HERO ===== */}
-      <section className="pt-28 pb-20 bg-zinc-50">
+      <section className="pt-28 pb-20 bg-zinc-50 dark:bg-zinc-900/50">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             {/* Left: Text */}
             <div>
               <h1 className={`text-4xl lg:text-[52px] font-extrabold tracking-tight text-gray-900 leading-[1.08] ${plusJakarta.className} page-animate page-animate-delay-2`}>
                 La plataforma{' '}
-                <span className="bg-gradient-to-r from-indigo-600 to-emerald-500 bg-clip-text text-transparent">
+                <span className="text-green-600">
                   todo-en-uno
                 </span>{' '}
                 para tu negocio
@@ -185,7 +185,7 @@ export default function LandingPage() {
       {/* ===== SOCIAL PROOF STRIP ===== */}
       <section className="py-10 bg-white border-y border-gray-100">
         <ScrollReveal className="max-w-7xl mx-auto px-6">
-          <p className="text-xs text-gray-400 text-center uppercase tracking-wider mb-6">
+          <p className="text-xs text-gray-400 text-center mb-6">
             Empresas que confían en Handy Suites
           </p>
           <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-5">
@@ -268,7 +268,7 @@ export default function LandingPage() {
       </section>
 
       {/* ===== HOW IT WORKS — 3 steps ===== */}
-      <section className="py-16 bg-zinc-50">
+      <section className="py-16 bg-zinc-50 dark:bg-zinc-900/50">
         <div className="max-w-4xl mx-auto px-6">
           <ScrollReveal className="text-center mb-14">
             <p className="text-sm font-medium text-indigo-600 mb-2">Simple y rápido</p>
@@ -301,7 +301,7 @@ export default function LandingPage() {
       </section>
 
       {/* ===== FEATURE GRID ===== */}
-      <section id="caracteristicas" className="py-16 bg-zinc-50">
+      <section id="caracteristicas" className="py-16 bg-zinc-50 dark:bg-zinc-900/50">
         <div className="max-w-7xl mx-auto px-6">
           <ScrollReveal className="text-center mb-16">
             <p className="text-sm font-medium text-indigo-600 mb-2">Todo lo que necesitas</p>
@@ -359,7 +359,7 @@ export default function LandingPage() {
               <div>
                 <div className="flex items-center gap-2.5 mb-4">
                   <div className="w-6 h-[3px] rounded-full bg-gradient-to-r from-rose-400 to-rose-500" />
-                  <span className="text-[11px] font-mono font-medium text-gray-400 uppercase tracking-[0.15em]">CRM</span>
+                  <span className="text-[11px] font-medium text-gray-400">CRM</span>
                 </div>
                 <h3 className={`text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight ${plusJakarta.className}`}>
                   Conoce a tus clientes como nunca antes
@@ -406,7 +406,7 @@ export default function LandingPage() {
               <div className="lg:order-1">
                 <div className="flex items-center gap-2.5 mb-4">
                   <div className="w-6 h-[3px] rounded-full bg-gradient-to-r from-indigo-400 to-indigo-500" />
-                  <span className="text-[11px] font-mono font-medium text-gray-400 uppercase tracking-[0.15em]">Ventas</span>
+                  <span className="text-[11px] font-medium text-gray-400">Ventas</span>
                 </div>
                 <h3 className={`text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight ${plusJakarta.className}`}>
                   Pedidos ágiles, ventas más rápidas
@@ -429,7 +429,7 @@ export default function LandingPage() {
       </section>
 
       {/* ===== TESTIMONIALS + STATS ===== */}
-      <section id="clientes" className="py-16 bg-zinc-50">
+      <section id="clientes" className="py-16 bg-zinc-50 dark:bg-zinc-900/50">
         <div className="max-w-7xl mx-auto px-6">
           <ScrollReveal className="text-center mb-16">
             <p className="text-sm font-medium text-indigo-600 mb-2">Nuestros clientes</p>
@@ -489,22 +489,22 @@ export default function LandingPage() {
       <FAQSection fontClassName={plusJakarta.className} />
 
       {/* ===== FINAL CTA ===== */}
-      <section className="py-16 bg-gradient-to-br from-indigo-600 to-indigo-800">
+      <section className="py-16 bg-gradient-to-br from-green-600 to-green-800">
         <ScrollReveal className="max-w-3xl mx-auto px-6 text-center">
           <h2 className={`text-3xl lg:text-4xl font-bold text-white tracking-tight ${plusJakarta.className}`}>
             Empieza hoy. Gratis.
           </h2>
-          <p className="text-indigo-200 mt-4 text-lg">
+          <p className="text-green-200 mt-4 text-lg">
             14 días de prueba completa. Sin tarjeta. Sin compromisos.
           </p>
           <Link
             href="/register"
-            className="inline-flex items-center gap-2 bg-white text-indigo-700 font-semibold px-8 py-4 rounded-xl text-lg shadow-lg hover:bg-indigo-50 transition-colors mt-8"
+            className="inline-flex items-center gap-2 bg-white text-green-700 font-semibold px-8 py-4 rounded-xl text-lg shadow-lg hover:bg-green-50 transition-colors mt-8"
           >
             Comenzar prueba gratuita
             <ArrowRight className="w-5 h-5" />
           </Link>
-          <p className="text-indigo-300 text-sm mt-4">
+          <p className="text-green-300 text-sm mt-4">
             Sin tarjeta de crédito. Cancela cuando quieras.
           </p>
         </ScrollReveal>
@@ -517,7 +517,7 @@ export default function LandingPage() {
             {/* Brand */}
             <div className="md:col-span-1">
               <div className="flex items-center gap-2.5 mb-4">
-                <Image src="/logo-icon.svg" alt="" width={32} height={32} />
+                <Image src="/logo-icon.svg" alt="Handy Suites" width={32} height={32} />
                 <div className="flex items-baseline gap-1">
                   <span className="text-lg font-black text-white tracking-tight">Handy</span>
                   <span className="text-lg font-normal text-gray-500 tracking-tight">

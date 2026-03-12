@@ -54,7 +54,7 @@ export function InventoryList({
             <TableHead>Unidad de medida</TableHead>
             <TableHead>Existencia totales</TableHead>
             <TableHead>Existencia en almacén</TableHead>
-            <TableHead>Existencia en ruta</TableHead>
+
             <TableHead>Estado</TableHead>
           </TableRow>
         </TableHeader>
@@ -94,9 +94,6 @@ export function InventoryList({
               </TableCell>
               <TableCell>
                 <span className="font-medium">{item.warehouseQuantity}</span>
-              </TableCell>
-              <TableCell>
-                <span className="font-medium">{item.routeQuantity}</span>
               </TableCell>
               <TableCell>
                 <Badge variant={getStockBadgeVariant(item)}>

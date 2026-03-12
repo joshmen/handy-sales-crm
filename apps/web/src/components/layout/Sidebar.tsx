@@ -44,6 +44,7 @@ import {
   SbUnits,
   SbMovements,
   SbUsersGlobal,
+  SbIntegrations,
 } from '@/components/layout/DashboardIcons';
 import { useSidebar } from '@/stores/useUIStore';
 import { cn, getInitials } from '@/lib/utils';
@@ -267,13 +268,6 @@ const sidebarItems: SidebarItem[] = [
     permission: 'view_dashboard',
   },
   {
-    id: 'team',
-    label: 'Mi Equipo',
-    icon: SbTeam,
-    href: '/team',
-    permission: 'view_team',
-  },
-  {
     id: 'devices',
     label: 'Dispositivos',
     icon: SbDevices,
@@ -292,21 +286,42 @@ const sidebarItems: SidebarItem[] = [
     label: 'Metas de Vendedor',
     icon: SbGoals,
     href: '/metas',
-    permission: 'view_automations',
+    permission: 'view_metas',
   },
+
+  {
+    id: 'team',
+    label: 'Mi Equipo',
+    icon: SbTeam,
+    href: '/team',
+    permission: 'view_team',
+  },
+
+  // — INTELIGENCIA ARTIFICIAL —
   {
     id: 'ai',
     label: 'Asistente IA',
     icon: SbAI,
     href: '/ai',
     permission: 'view_automations',
+    section: 'IA',
+  },
+
+  // — CUENTA —
+  {
+    id: 'integrations',
+    label: 'Integraciones',
+    icon: SbIntegrations,
+    href: '/integrations',
+    permission: 'view_settings',
+    section: 'Cuenta',
   },
   {
-    id: 'ayuda',
-    label: 'Ayuda',
-    icon: SbHelp,
-    href: '/ayuda',
-    permission: 'view_dashboard',
+    id: 'subscription',
+    label: 'Suscripción',
+    icon: SbSubscription,
+    href: '/subscription',
+    permission: 'view_settings',
   },
 
   // — ADMINISTRACIÓN —
@@ -368,19 +383,14 @@ const sidebarItems: SidebarItem[] = [
       },
     ],
   },
+
+  // — AYUDA (siempre visible al final) —
   {
-    id: 'integrations',
-    label: 'Integraciones',
-    icon: SbAutomations,
-    href: '/integrations',
-    permission: 'view_settings',
-  },
-  {
-    id: 'subscription',
-    label: 'Suscripción',
-    icon: SbSubscription,
-    href: '/subscription',
-    permission: 'view_settings',
+    id: 'ayuda',
+    label: 'Ayuda',
+    icon: SbHelp,
+    href: '/ayuda',
+    permission: 'view_dashboard',
   },
 ];
 
@@ -486,6 +496,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'manage_devices', // Gestión de dispositivos móviles
     'view_activity_logs', // Registro de actividad
     'view_automations', // Automatizaciones
+    'view_metas', // Metas de vendedor
   ],
   SUPERVISOR: [
     'view_dashboard',
@@ -498,6 +509,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'view_visits',
     'view_team',
     'view_reports',
+    'view_metas', // Metas de vendedor
   ],
   VENDEDOR: [
     'view_dashboard',
@@ -534,7 +546,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
   const { isImpersonating } = useImpersonationStore();
   const isSuperAdminDirect = session?.user?.role === 'SUPER_ADMIN' && !isImpersonating;
   const shouldShowCompanySettings =
-    session?.user?.role === 'ADMIN' || session?.user?.role === 'VENDEDOR' || isImpersonating;
+    session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPERVISOR' || session?.user?.role === 'VENDEDOR' || isImpersonating;
   const { open: sidebarOpen, collapsed: sidebarCollapsed, toggle, toggleCollapsed } = useSidebar();
   const pathname = usePathname();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
@@ -756,7 +768,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
           <div className="p-4 border-b border-border">
             <div className="flex items-center justify-between">
               {!sidebarCollapsed && (
-                <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+                <h2 className="text-sm font-semibold text-foreground">
                   {isSuperAdminDirect ? 'Administración' : 'Navegación'}
                 </h2>
               )}
@@ -791,7 +803,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
                     {item.section && showLabels && (
                       <div className="pt-4 pb-1 px-3 first:pt-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">
+                          <span className="text-[10px] font-semibold text-muted-foreground/70">
                             {item.section}
                           </span>
                           <div className="flex-1 h-px bg-border" />

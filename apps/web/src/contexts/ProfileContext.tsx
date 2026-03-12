@@ -74,7 +74,7 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
     loadProfile();
   }, [loadProfile]);
 
-  const updateProfile = async (data: UpdateProfileRequest): Promise<boolean> => {
+  const updateProfile = useCallback(async (data: UpdateProfileRequest): Promise<boolean> => {
     if (!profile || !session?.user?.id) return false;
 
     setIsUpdating(true);
@@ -106,9 +106,9 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
     } finally {
       setIsUpdating(false);
     }
-  };
+  }, [profile, session?.user?.id]);
 
-  const changePassword = async (data: ChangePasswordRequest): Promise<boolean> => {
+  const changePassword = useCallback(async (data: ChangePasswordRequest): Promise<boolean> => {
     if (!session?.user?.id) return false;
 
     setIsChangingPassword(true);
@@ -138,9 +138,9 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
     } finally {
       setIsChangingPassword(false);
     }
-  };
+  }, [session?.user?.id]);
 
-  const uploadAvatar = async (file: File): Promise<boolean> => {
+  const uploadAvatar = useCallback(async (file: File): Promise<boolean> => {
     if (!session?.user?.id) return false;
 
     setIsUpdating(true);
@@ -176,9 +176,9 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
     } finally {
       setIsUpdating(false);
     }
-  };
+  }, [profile, session?.user?.id]);
 
-  const deleteAvatar = async (): Promise<boolean> => {
+  const deleteAvatar = useCallback(async (): Promise<boolean> => {
     if (!session?.user?.id) return false;
 
     setIsUpdating(true);
@@ -214,12 +214,12 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
     } finally {
       setIsUpdating(false);
     }
-  };
+  }, [profile, session?.user?.id]);
 
-  const refreshProfile = async (): Promise<void> => {
+  const refreshProfile = useCallback(async (): Promise<void> => {
     setIsLoading(true);
     await loadProfile();
-  };
+  }, [loadProfile]);
 
   const value = useMemo<ProfileContextType>(() => ({
     profile,

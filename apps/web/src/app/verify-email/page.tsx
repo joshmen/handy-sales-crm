@@ -227,7 +227,7 @@ function VerifyEmailContent() {
               className="text-[14px] font-medium text-indigo-600 hover:text-indigo-700 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
             >
               {countdown > 0
-                ? `Reenviar código en ${Math.floor(countdown / 60)}:${String(countdown % 60).padStart(2, '0')}`
+                ? `Reenviar código en ${Math.floor(Math.max(0, countdown) / 60)}:${String(Math.max(0, countdown) % 60).padStart(2, '0')}`
                 : resending
                   ? 'Reenviando...'
                   : 'Reenviar código'}

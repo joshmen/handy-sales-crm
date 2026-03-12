@@ -336,25 +336,25 @@ export default function DashboardPage() {
     return (
       <div className="space-y-8">
         <div className="flex items-center gap-2 text-sm page-animate">
-          <span className="text-gray-500">Inicio</span>
-          <span className="text-gray-400">/</span>
-          <span className="text-gray-900 font-medium">Mi Rendimiento</span>
+          <span className="text-muted-foreground">Inicio</span>
+          <span className="text-muted-foreground">/</span>
+          <span className="text-foreground font-medium">Mi Rendimiento</span>
         </div>
 
         <div className="page-animate page-animate-delay-1">
-          <h1 className="text-3xl font-semibold text-gray-900 tracking-tight">Mi Rendimiento</h1>
-          <p className="text-gray-500 mt-1">Hola {session?.user?.name}, aquí están tus métricas</p>
+          <h1 className="text-3xl font-semibold text-foreground tracking-tight">Mi Rendimiento</h1>
+          <p className="text-muted-foreground mt-1">Hola {session?.user?.name}, aquí están tus métricas</p>
         </div>
 
         {/* Métricas del vendedor */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 page-animate page-animate-delay-2">
           {vendedorCards.map((card, index) => (
-            <div key={index} className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+            <div key={index} className="bg-card border border-border rounded-xl p-6 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
               <div className="flex items-center justify-between mb-4">
-                <span className="text-sm text-gray-500">{card.title}</span>
+                <span className="text-sm text-muted-foreground">{card.title}</span>
                 <card.icon3d size={30} />
               </div>
-              <div className="text-3xl font-semibold text-gray-900 mb-2">{card.value}</div>
+              <div className="text-3xl font-semibold text-foreground mb-2">{card.value}</div>
               <div className="flex items-center gap-2">
                 {card.change !== 0 ? (
                   <>
@@ -368,7 +368,7 @@ export default function DashboardPage() {
                     </span>
                   </>
                 ) : null}
-                <span className="text-gray-400 text-sm">{card.changeLabel}</span>
+                <span className="text-muted-foreground text-sm">{card.changeLabel}</span>
               </div>
             </div>
           ))}
@@ -456,9 +456,9 @@ export default function DashboardPage() {
       <div className="space-y-8">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm page-animate">
-          <span className="text-gray-500">Inicio</span>
-          <span className="text-gray-400">/</span>
-          <span className="text-gray-900 font-medium">Tablero</span>
+          <span className="text-muted-foreground">Inicio</span>
+          <span className="text-muted-foreground">/</span>
+          <span className="text-foreground font-medium">Tablero</span>
         </div>
 
         {/* Welcome Banner (dismissible, shows for 7 days after onboarding) */}
@@ -505,13 +505,13 @@ export default function DashboardPage() {
           {metricCards.length > 0 ? metricCards.map((card, index) => (
             <div
               key={index}
-              className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+              className="bg-card border border-border rounded-xl p-6 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
             >
               <div className="flex items-center justify-between mb-4">
-                <span className="text-sm text-gray-500">{card.title}</span>
+                <span className="text-sm text-muted-foreground">{card.title}</span>
                 <card.icon3d size={30} />
               </div>
-              <div className={`text-3xl font-semibold text-gray-900 mb-2 ${isRefreshing ? 'animate-pulse' : ''}`}>{card.value}</div>
+              <div className={`text-3xl font-semibold text-foreground mb-2 ${isRefreshing ? 'animate-pulse' : ''}`}>{card.value}</div>
               <div className="flex items-center gap-2">
                 {card.change !== 0 ? (
                   <>
@@ -525,19 +525,19 @@ export default function DashboardPage() {
                     </span>
                   </>
                 ) : null}
-                <span className="text-gray-400 text-sm">{card.changeLabel}</span>
+                <span className="text-muted-foreground text-sm">{card.changeLabel}</span>
               </div>
             </div>
           )) : (
             // Skeleton cards while loading
             Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="bg-white border border-gray-200 rounded-xl p-6 animate-pulse">
+              <div key={i} className="bg-card border border-border rounded-xl p-6 animate-pulse">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="h-4 bg-gray-200 rounded w-24" />
-                  <div className="w-8 h-8 bg-gray-200 rounded-lg" />
+                  <div className="h-4 bg-muted rounded w-24" />
+                  <div className="w-8 h-8 bg-muted rounded-lg" />
                 </div>
-                <div className="h-8 bg-gray-200 rounded w-32 mb-2" />
-                <div className="h-4 bg-gray-200 rounded w-40" />
+                <div className="h-8 bg-muted rounded w-32 mb-2" />
+                <div className="h-4 bg-muted rounded w-40" />
               </div>
             ))
           )}
@@ -790,34 +790,30 @@ function WelcomeBanner({ userName }: { userName?: string | null }) {
   const firstName = userName?.split(' ')[0] || '';
 
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-green-600 via-green-600 to-emerald-500 dark:from-green-700 dark:via-green-800 dark:to-emerald-700 p-5 sm:p-6 page-animate">
-      {/* Decorative background shapes */}
-      <div className="absolute top-0 right-0 w-48 h-48 bg-white/[0.07] rounded-full -translate-y-1/2 translate-x-1/4" />
-      <div className="absolute bottom-0 left-1/2 w-32 h-32 bg-white/[0.05] rounded-full translate-y-1/2" />
-
+    <div className="relative overflow-hidden rounded-xl border border-green-200 dark:border-green-900/50 bg-gradient-to-r from-green-50 via-emerald-50/80 to-white dark:from-green-950/40 dark:via-emerald-950/20 dark:to-card p-5 sm:p-6 page-animate">
       <button
         onClick={handleDismiss}
-        className="absolute top-3 right-3 p-1 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+        className="absolute top-3 right-3 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
         aria-label="Cerrar banner"
       >
         <X className="w-4 h-4" />
       </button>
 
-      <div className="relative flex flex-col sm:flex-row sm:items-center gap-4">
-        <div className="w-11 h-11 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center flex-shrink-0 ring-1 ring-white/20">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+        <div className="w-10 h-10 rounded-lg bg-green-600 dark:bg-green-700 flex items-center justify-center flex-shrink-0">
           <Zap className="w-5 h-5 text-white" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-base font-bold text-white tracking-tight">
+          <h3 className="text-[15px] font-semibold text-foreground">
             {firstName ? `${firstName}, tu espacio está listo` : 'Tu espacio está listo'}
           </h3>
-          <p className="text-sm text-white/75 mt-0.5">
+          <p className="text-sm text-muted-foreground mt-0.5">
             Completa la configuración inicial para sacar el máximo provecho de Handy Suites.
           </p>
         </div>
         <a
           href="/getting-started"
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white text-green-700 text-sm font-semibold hover:bg-white/90 transition-colors shadow-sm flex-shrink-0 w-fit"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-medium transition-colors flex-shrink-0 w-fit"
         >
           Comenzar
           <ArrowRight className="w-3.5 h-3.5" />

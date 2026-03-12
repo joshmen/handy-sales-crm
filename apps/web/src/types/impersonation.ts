@@ -30,6 +30,7 @@ export interface CurrentImpersonationState {
   tenant?: ImpersonatedTenantInfo;
   minutesRemaining?: number;
   accessLevel?: 'READ_ONLY' | 'READ_WRITE';
+  expiresAt?: Date | null;
 }
 
 /**

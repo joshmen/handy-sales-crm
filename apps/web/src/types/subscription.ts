@@ -31,6 +31,30 @@ export interface SubscriptionStatus {
   daysRemaining: number | null;
 }
 
+export interface StripeInvoice {
+  id: string;
+  number: string | null;
+  created: string;
+  periodStart: string;
+  periodEnd: string;
+  status: string;
+  amountPaid: number;
+  amountDue: number;
+  currency: string;
+  invoicePdfUrl: string | null;
+  hostedInvoiceUrl: string | null;
+}
+
+export interface StripePaymentMethod {
+  id: string;
+  type: string;
+  cardBrand: string | null;
+  cardLast4: string | null;
+  cardExpMonth: number | null;
+  cardExpYear: number | null;
+  isDefault: boolean;
+}
+
 export interface ScheduledAction {
   id: number;
   actionType: string;

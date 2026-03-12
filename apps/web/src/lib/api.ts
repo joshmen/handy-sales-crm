@@ -102,6 +102,11 @@ apiInstance.interceptors.response.use(
     const status = error.response?.status;
     const originalRequest = error.config;
 
+    if (error.code === 'ECONNABORTED') {
+      console.error('API timeout:', error.config?.url);
+      return Promise.reject(error);
+    }
+
     if (status !== 404 && status !== 400) {
       if (process.env.NODE_ENV === 'development' && status >= 500) {
         console.error('API Error:', status, error.config?.url);

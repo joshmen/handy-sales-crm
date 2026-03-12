@@ -150,7 +150,7 @@ export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) =>
     loadSettings();
   }, [loadSettings]);
 
-  const updateSettings = async (data: UpdateCompanyRequest): Promise<boolean> => {
+  const updateSettings = useCallback(async (data: UpdateCompanyRequest): Promise<boolean> => {
     if (!settings) return false;
 
     setIsUpdating(true);
@@ -204,9 +204,9 @@ export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) =>
     } finally {
       setIsUpdating(false);
     }
-  };
+  }, [settings]);
 
-  const uploadLogo = async (file: File): Promise<boolean> => {
+  const uploadLogo = useCallback(async (file: File): Promise<boolean> => {
     if (!settings) return false;
 
     setIsUpdating(true);
@@ -241,9 +241,9 @@ export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) =>
     } finally {
       setIsUpdating(false);
     }
-  };
+  }, [settings]);
 
-  const deleteLogo = async (): Promise<boolean> => {
+  const deleteLogo = useCallback(async (): Promise<boolean> => {
     if (!settings) return false;
 
     setIsUpdating(true);
@@ -277,12 +277,12 @@ export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) =>
     } finally {
       setIsUpdating(false);
     }
-  };
+  }, [settings]);
 
-  const refreshSettings = async (): Promise<void> => {
+  const refreshSettings = useCallback(async (): Promise<void> => {
     setIsLoading(true);
     await loadSettings();
-  };
+  }, [loadSettings]);
 
   const value = useMemo<CompanyContextType>(() => ({
     settings,

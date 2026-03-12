@@ -121,15 +121,23 @@ export function SignalRProvider({ children }: { children: React.ReactNode }) {
     // persist through reconnections automatically)
     bindDispatchers(connection);
 
-    connection
-      .start()
-      .then(() => {
+    // Start with retry logic — withAutomaticReconnect only works after first success
+    const startWithRetry = async (conn: HubConnection, attempt = 0) => {
+      const delays = [0, 2000, 5000, 10000, 30000];
+      try {
+        await conn.start();
         setIsConnected(true);
-      })
-      .catch((err) => {
-        console.error('[SignalR] Connection failed:', err);
+      } catch (err) {
+        console.error(`[SignalR] Connection attempt ${attempt + 1} failed:`, err);
         setIsConnected(false);
-      });
+        const nextDelay = delays[Math.min(attempt + 1, delays.length - 1)];
+        if (attempt < 4 && conn === connectionRef.current) {
+          setTimeout(() => startWithRetry(conn, attempt + 1), nextDelay);
+        }
+      }
+    };
+
+    startWithRetry(connection);
 
     return () => {
       connection.stop().catch(() => {});

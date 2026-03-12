@@ -231,6 +231,13 @@ export default function OnboardingPage() {
     }
   }, [session?.onboardingCompleted, router]);
 
+  // Only ADMIN and SUPER_ADMIN should access onboarding
+  useEffect(() => {
+    if (session && session.user?.role !== 'ADMIN' && session.user?.role !== 'SUPER_ADMIN') {
+      router.push('/dashboard');
+    }
+  }, [session, router]);
+
   // Prevent back-button from going to login — replace history entry
   useEffect(() => {
     window.history.replaceState(null, '', '/onboarding');

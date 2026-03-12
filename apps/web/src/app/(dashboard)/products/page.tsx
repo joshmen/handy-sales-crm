@@ -583,14 +583,14 @@ export default function ProductsPage() {
                   ) : null}
                 </button>
               </div>
-              <div className="w-[45px] text-[11px] font-medium text-gray-500 uppercase">Imagen</div>
-              <div className="w-[95px] text-[11px] font-medium text-gray-500 uppercase">Código</div>
-              <div className="flex-1 min-w-[250px] text-[11px] font-medium text-gray-500 uppercase">Nombre</div>
-              <div className="w-[90px] text-[11px] font-medium text-gray-500 uppercase">Precio</div>
-              <div className="w-[90px] text-[11px] font-medium text-gray-500 uppercase">Existencia</div>
-              <div className="w-[100px] text-[11px] font-medium text-gray-500 uppercase hidden md:block">Familia</div>
-              <div className="w-[130px] text-[11px] font-medium text-gray-500 uppercase hidden lg:block">Categoría</div>
-              <div className="w-[50px] text-[11px] font-medium text-gray-500 uppercase text-center">Activo</div>
+              <div className="w-[45px] text-[11px] font-medium text-gray-500">Imagen</div>
+              <div className="w-[95px] text-[11px] font-medium text-gray-500">Código</div>
+              <div className="flex-1 min-w-[250px] text-[11px] font-medium text-gray-500">Nombre</div>
+              <div className="w-[90px] text-[11px] font-medium text-gray-500">Precio</div>
+              <div className="w-[90px] text-[11px] font-medium text-gray-500">Existencia</div>
+              <div className="w-[100px] text-[11px] font-medium text-gray-500 hidden md:block">Familia</div>
+              <div className="w-[130px] text-[11px] font-medium text-gray-500 hidden lg:block">Categoría</div>
+              <div className="w-[50px] text-[11px] font-medium text-gray-500 text-center">Activo</div>
               <div className="w-8"></div>
             </div>
 
@@ -740,7 +740,7 @@ export default function ProductsPage() {
               <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()} disabled={savingProduct}>
                 Cancelar
               </Button>
-              <Button type="submit" form="product-form" variant="success" disabled={savingProduct || loadingCatalogs} className="flex items-center gap-2">
+              <Button type="submit" form="product-form" variant="success" disabled={savingProduct || loadingCatalogs || !watch('familiaId')} className="flex items-center gap-2">
                 {savingProduct && <Loader2 className="w-4 h-4 animate-spin" />}
                 {editingProduct ? 'Guardar Cambios' : 'Crear Producto'}
               </Button>

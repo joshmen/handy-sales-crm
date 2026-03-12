@@ -54,7 +54,14 @@ const zoneFormSchema = z.object({
   centroLatitud: z.union([z.number(), z.nan()]).optional().transform(v => v && !isNaN(v) ? v : undefined),
   centroLongitud: z.union([z.number(), z.nan()]).optional().transform(v => v && !isNaN(v) ? v : undefined),
   radioKm: z.union([z.number(), z.nan()]).optional().transform(v => v && !isNaN(v) ? v : undefined),
-});
+}).refine(
+  (data) => {
+    const hasLat = data.centroLatitud !== undefined;
+    const hasLng = data.centroLongitud !== undefined;
+    return hasLat === hasLng;
+  },
+  { message: 'Las coordenadas deben incluir tanto latitud como longitud', path: ['centroLongitud'] }
+);
 
 type ZoneFormData = z.infer<typeof zoneFormSchema>;
 
@@ -536,10 +543,10 @@ export default function ZonesPage() {
                   ) : null}
                 </button>
               </div>
-              <div className="w-[40px] text-[11px] font-medium text-gray-500 uppercase">Color</div>
-              <div className="flex-1 text-[11px] font-medium text-gray-500 uppercase">Nombre</div>
-              <div className="w-[100px] text-[11px] font-medium text-gray-500 uppercase text-center">Clientes</div>
-              <div className="w-[80px] text-[11px] font-medium text-gray-500 uppercase">Activa</div>
+              <div className="w-[40px] text-[11px] font-medium text-gray-500">Color</div>
+              <div className="flex-1 text-[11px] font-medium text-gray-500">Nombre</div>
+              <div className="w-[100px] text-[11px] font-medium text-gray-500 text-center">Clientes</div>
+              <div className="w-[80px] text-[11px] font-medium text-gray-500">Activa</div>
               <div className="w-8" />
             </div>
 
@@ -712,7 +719,7 @@ export default function ZonesPage() {
                     </div>
                     {/* Legend */}
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-1">
-                      <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">
+                      <span className="text-[11px] font-medium text-gray-500">
                         {zonesWithoutGeo.length > 0
                           ? `${zonesWithGeo.length} de ${allZonesForMap.length} en mapa`
                           : 'Zonas'}
@@ -781,7 +788,7 @@ export default function ZonesPage() {
           <form onSubmit={handleSubmit(handleSaveZone)} className="p-6 space-y-5">
             {/* ── Información general ── */}
             <div className="space-y-4">
-              <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Información general</h4>
+              <h4 className="text-xs font-semibold text-gray-400">Información general</h4>
 
               {/* Name + Color on same row */}
               <div className="flex gap-4 items-start" data-tour="zones-drawer-name">
@@ -852,7 +859,7 @@ export default function ZonesPage() {
 
             {/* ── Ubicación ── */}
             <div data-tour="zones-drawer-map" className="space-y-4">
-              <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Ubicación</h4>
+              <h4 className="text-xs font-semibold text-gray-400">Ubicación</h4>
               {isMapsLoaded ? (
                 <div className="space-y-4">
                   {/* Place search */}
@@ -984,7 +991,7 @@ export default function ZonesPage() {
 
             {/* ── Estado ── */}
             <div className="space-y-3">
-              <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Estado</h4>
+              <h4 className="text-xs font-semibold text-gray-400">Estado</h4>
               <label htmlFor="isEnabled" className="flex items-start gap-3 cursor-pointer group">
                 <input
                   type="checkbox"

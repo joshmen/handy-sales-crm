@@ -80,6 +80,7 @@ export const useImpersonationStore = create<ImpersonationStore>()(
           sessionId: state.sessionId,
           tenant: state.tenant,
           accessLevel: state.accessLevel || 'READ_ONLY',
+          expiresAt: state.expiresAt,
         });
       } else {
         set({
