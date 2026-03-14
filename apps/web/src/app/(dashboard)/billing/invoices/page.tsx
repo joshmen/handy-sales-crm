@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Plus, Search, Download, Send, X as XIcon, FileText, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Search, Download, Send, X as XIcon, FileText, Loader2, ChevronLeft, ChevronRight, ShieldAlert } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { BrandedLoadingScreen } from '@/components/ui/BrandedLoadingScreen';
@@ -15,6 +15,7 @@ import {
   downloadFacturaXml,
   type GetFacturasParams,
 } from '@/services/api/billing';
+import { extractBillingError } from '@/lib/billingApi';
 import type { FacturaListItem, FacturaEstado } from '@/types/billing';
 
 const ESTADO_STYLES: Record<FacturaEstado, string> = {
@@ -36,6 +37,8 @@ export default function InvoicesPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [timbrando, setTimbrando] = useState<number | null>(null);
+  const [timbresModalOpen, setTimbresModalOpen] = useState(false);
+  const [timbresError, setTimbresError] = useState('');
   const [page, setPage] = useState(1);
   const [filterEstado, setFilterEstado] = useState<string>('');
   const [filterRfc, setFilterRfc] = useState('');
@@ -51,8 +54,9 @@ export default function InvoicesPage() {
       const data = await getFacturas(params);
       setFacturas(data.items ?? []);
       setTotalCount(data.totalCount ?? 0);
-    } catch {
-      toast({ title: 'Error al cargar facturas', variant: 'destructive' });
+    } catch (err) {
+      const { message } = extractBillingError(err);
+      toast({ title: 'Error al cargar facturas', description: message, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -69,8 +73,20 @@ export default function InvoicesPage() {
       await timbrarFactura(id);
       toast({ title: 'Factura timbrada exitosamente' });
       loadFacturas();
-    } catch {
-      toast({ title: 'Error al timbrar factura', variant: 'destructive' });
+    } catch (err) {
+      const billingErr = extractBillingError(err);
+      if (billingErr.isTimbresError) {
+        setTimbresError(billingErr.message);
+        setTimbresModalOpen(true);
+      } else {
+        toast({
+          title: 'Error al timbrar factura',
+          description: billingErr.details
+            ? `${billingErr.message} — ${billingErr.details}`
+            : billingErr.message,
+          variant: 'destructive',
+        });
+      }
     } finally {
       setTimbrando(null);
     }
@@ -269,6 +285,38 @@ export default function InvoicesPage() {
             >
               <ChevronRight className="w-4 h-4" />
             </Button>
+          </div>
+        </div>
+      )}
+      {/* Timbres upgrade modal */}
+      {timbresModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl p-8 max-w-md mx-4 shadow-2xl text-center">
+            <div className="flex justify-center mb-4">
+              <div className="w-14 h-14 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                <ShieldAlert className="w-7 h-7 text-amber-600 dark:text-amber-400" />
+              </div>
+            </div>
+            <h3 className="text-lg font-semibold text-foreground mb-2">
+              Facturación no disponible
+            </h3>
+            <p className="text-sm text-muted-foreground mb-6">
+              {timbresError || 'Tu plan no incluye facturación electrónica. Actualiza tu plan para comenzar a timbrar facturas.'}
+            </p>
+            <div className="flex flex-col gap-2">
+              <Link href="/subscription">
+                <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
+                  Actualizar plan &rarr;
+                </Button>
+              </Link>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => setTimbresModalOpen(false)}
+              >
+                Cerrar
+              </Button>
+            </div>
           </div>
         </div>
       )}

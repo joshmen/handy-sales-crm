@@ -82,3 +82,53 @@ export const billingApi = {
 };
 
 export default billingInstance;
+
+// ─── Error Handler ─────────────────────────────────────────────────────────
+// Extracts the real error message from billing API responses.
+// Backend returns errors as:
+//   - BadRequest("string message") → response.data is a plain string
+//   - BadRequest(new { error = "msg" }) → response.data.error
+//   - BadRequest(new { message = "msg" }) → response.data.message
+//   - BadRequest(new { error, code, details }) → PAC errors with code + details
+
+export interface BillingApiError {
+  message: string;
+  code?: string;
+  details?: string;
+  status: number;
+  isTimbresError: boolean; // true when the error is about plan/timbres limits
+}
+
+export function extractBillingError(err: unknown): BillingApiError {
+  const axiosErr = err as { response?: { status?: number; data?: unknown } };
+  const status = axiosErr?.response?.status ?? 0;
+  const data = axiosErr?.response?.data;
+
+  let message = 'Ocurrió un error inesperado. Intenta nuevamente.';
+  let code: string | undefined;
+  let details: string | undefined;
+
+  if (typeof data === 'string' && data.length > 0 && data.length < 500) {
+    // Plain string response: BadRequest("message")
+    message = data;
+  } else if (data && typeof data === 'object') {
+    const obj = data as Record<string, unknown>;
+    // Extract message from common patterns
+    if (typeof obj.error === 'string') message = obj.error;
+    else if (typeof obj.message === 'string') message = obj.message;
+    else if (typeof obj.detail === 'string') message = obj.detail;
+
+    if (typeof obj.code === 'string') code = obj.code;
+    if (typeof obj.details === 'string') details = obj.details;
+  }
+
+  // Detect timbres/plan-related errors
+  const lowerMsg = message.toLowerCase();
+  const isTimbresError =
+    lowerMsg.includes('timbre') ||
+    lowerMsg.includes('plan no incluye') ||
+    lowerMsg.includes('actualiza tu plan') ||
+    lowerMsg.includes('facturación electrónica');
+
+  return { message, code, details, status, isTimbresError };
+}

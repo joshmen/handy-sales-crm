@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { BrandedLoadingScreen } from '@/components/ui/BrandedLoadingScreen';
 import { toast } from '@/hooks/useToast';
+import { extractBillingError } from '@/lib/billingApi';
 import {
   previewFacturaFromOrder,
   createFacturaFromOrder,
@@ -171,13 +172,8 @@ export default function PreFacturaPage() {
       const data = await previewFacturaFromOrder(pedidoId);
       setPreview(data);
     } catch (err: unknown) {
-      const message =
-        err && typeof err === 'object' && 'response' in err
-          ? (err as { response?: { data?: { message?: string; detail?: string } } }).response?.data?.message ||
-            (err as { response?: { data?: { message?: string; detail?: string } } }).response?.data?.detail ||
-            'Error al cargar la pre-factura.'
-          : 'Error al cargar la pre-factura.';
-      setError(message);
+      const apiError = extractBillingError(err);
+      setError(apiError.message);
     } finally {
       setLoading(false);
     }
@@ -228,13 +224,20 @@ export default function PreFacturaPage() {
       });
       router.push('/billing/invoices');
     } catch (err: unknown) {
-      const message =
-        err && typeof err === 'object' && 'response' in err
-          ? (err as { response?: { data?: { message?: string; detail?: string } } }).response?.data?.message ||
-            (err as { response?: { data?: { message?: string; detail?: string } } }).response?.data?.detail ||
-            'Error al crear la factura.'
-          : 'Error al crear la factura.';
-      toast({ title: message, variant: 'destructive' });
+      const apiError = extractBillingError(err);
+      if (apiError.isTimbresError) {
+        toast({
+          title: 'Facturación no disponible',
+          description: `${apiError.message}. Ve a Suscripción para actualizar tu plan.`,
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Error al crear factura',
+          description: apiError.details ? `${apiError.message} — ${apiError.details}` : apiError.message,
+          variant: 'destructive',
+        });
+      }
     } finally {
       setSubmitting(false);
     }

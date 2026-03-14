@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { BrandedLoadingScreen } from '@/components/ui/BrandedLoadingScreen';
 import { toast } from '@/hooks/useToast';
+import { extractBillingError } from '@/lib/billingApi';
 import {
   getFiscalMappings,
   getUnmappedProducts,
@@ -180,8 +181,9 @@ export default function FiscalMappingPage() {
       const data = await getFiscalMappings(mappingsPage, pageSize);
       setMappings(data.items ?? []);
       setMappingsTotal(data.totalCount ?? 0);
-    } catch {
-      toast({ title: 'Error al cargar mapeos fiscales', variant: 'destructive' });
+    } catch (err) {
+      const apiError = extractBillingError(err);
+      toast({ title: 'Error al cargar mapeos fiscales', description: apiError.message, variant: 'destructive' });
     }
   }, [mappingsPage]);
 
@@ -190,8 +192,9 @@ export default function FiscalMappingPage() {
       const data = await getUnmappedProducts(unmappedPage, pageSize);
       setUnmapped(data.items ?? []);
       setUnmappedTotal(data.totalCount ?? 0);
-    } catch {
-      toast({ title: 'Error al cargar productos sin mapear', variant: 'destructive' });
+    } catch (err) {
+      const apiError = extractBillingError(err);
+      toast({ title: 'Error al cargar productos sin mapear', description: apiError.message, variant: 'destructive' });
     }
   }, [unmappedPage]);
 
@@ -239,8 +242,9 @@ export default function FiscalMappingPage() {
       await upsertFiscalMapping(request);
       toast({ title: 'Mapeo actualizado' });
       await Promise.all([loadMappings(), loadUnmapped()]);
-    } catch {
-      toast({ title: 'Error al guardar mapeo', variant: 'destructive' });
+    } catch (err) {
+      const apiError = extractBillingError(err);
+      toast({ title: 'Error al guardar mapeo', description: apiError.message, variant: 'destructive' });
     } finally {
       setSaving(false);
     }
@@ -257,8 +261,9 @@ export default function FiscalMappingPage() {
       toast({ title: 'Valores predeterminados guardados' });
       setDefaultsEditProdServ(false);
       setDefaultsEditUnidad(false);
-    } catch {
-      toast({ title: 'Error al guardar valores predeterminados', variant: 'destructive' });
+    } catch (err) {
+      const apiError = extractBillingError(err);
+      toast({ title: 'Error al guardar valores predeterminados', description: apiError.message, variant: 'destructive' });
     } finally {
       setSavingDefaults(false);
     }
@@ -289,8 +294,9 @@ export default function FiscalMappingPage() {
       setBatchProdServ('');
       setBatchUnidad('');
       await Promise.all([loadMappings(), loadUnmapped()]);
-    } catch {
-      toast({ title: 'Error en asignación masiva', variant: 'destructive' });
+    } catch (err) {
+      const apiError = extractBillingError(err);
+      toast({ title: 'Error en asignación masiva', description: apiError.message, variant: 'destructive' });
     } finally {
       setSaving(false);
     }
