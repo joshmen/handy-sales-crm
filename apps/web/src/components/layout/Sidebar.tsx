@@ -45,6 +45,7 @@ import {
   SbMovements,
   SbUsersGlobal,
   SbIntegrations,
+  SbBilling,
 } from '@/components/layout/DashboardIcons';
 import { useSidebar } from '@/stores/useUIStore';
 import { cn, getInitials } from '@/lib/utils';
@@ -82,7 +83,6 @@ const sidebarItems: SidebarItem[] = [
     icon: SbOrders,
     href: '/orders',
     permission: 'view_orders',
-    badge: '3',
     section: 'Ventas',
   },
   {
@@ -154,25 +154,33 @@ const sidebarItems: SidebarItem[] = [
     ],
   },
   {
-    id: 'price-lists',
-    label: 'Listas de precios',
+    id: 'pricing',
+    label: 'Precios',
     icon: SbPriceLists,
-    href: '/price-lists',
     permission: 'view_products',
-  },
-  {
-    id: 'discounts',
-    label: 'Descuentos',
-    icon: SbDiscounts,
-    href: '/discounts',
-    permission: 'view_discounts',
-  },
-  {
-    id: 'promotions',
-    label: 'Promociones',
-    icon: SbPromotions,
-    href: '/promotions',
-    permission: 'view_promotions',
+    submenu: [
+      {
+        id: 'price-lists',
+        label: 'Listas de precios',
+        icon: SbPriceLists,
+        href: '/price-lists',
+        permission: 'view_products',
+      },
+      {
+        id: 'discounts',
+        label: 'Descuentos',
+        icon: SbDiscounts,
+        href: '/discounts',
+        permission: 'view_discounts',
+      },
+      {
+        id: 'promotions',
+        label: 'Promociones',
+        icon: SbPromotions,
+        href: '/promotions',
+        permission: 'view_promotions',
+      },
+    ],
   },
 
   // — OPERACIÓN —
@@ -268,11 +276,11 @@ const sidebarItems: SidebarItem[] = [
     permission: 'view_dashboard',
   },
   {
-    id: 'devices',
-    label: 'Dispositivos',
-    icon: SbDevices,
-    href: '/devices',
-    permission: 'manage_devices',
+    id: 'metas',
+    label: 'Metas',
+    icon: SbGoals,
+    href: '/metas',
+    permission: 'view_metas',
   },
   {
     id: 'automations',
@@ -281,40 +289,75 @@ const sidebarItems: SidebarItem[] = [
     href: '/automations',
     permission: 'view_automations',
   },
-  {
-    id: 'metas',
-    label: 'Metas de Vendedor',
-    icon: SbGoals,
-    href: '/metas',
-    permission: 'view_metas',
-  },
 
+  // — EQUIPO —
   {
     id: 'team',
     label: 'Mi Equipo',
     icon: SbTeam,
     href: '/team',
     permission: 'view_team',
+    section: 'Equipo',
+  },
+  {
+    id: 'users',
+    label: 'Usuarios',
+    icon: SbUsers,
+    href: '/users',
+    permission: 'view_users',
+  },
+  {
+    id: 'devices',
+    label: 'Dispositivos',
+    icon: SbDevices,
+    href: '/devices',
+    permission: 'manage_devices',
+  },
+  {
+    id: 'roles',
+    label: 'Roles',
+    icon: SbAdmin,
+    href: '/roles',
+    permission: 'manage_roles',
+  },
+  {
+    id: 'activity-logs',
+    label: 'Registro de actividad',
+    icon: SbActivityLog,
+    href: '/activity-logs',
+    permission: 'view_activity_logs',
   },
 
-  // — INTELIGENCIA ARTIFICIAL —
+  // — EMPRESA —
   {
-    id: 'ai',
-    label: 'Asistente IA',
-    icon: SbAI,
-    href: '/ai',
-    permission: 'view_automations',
-    section: 'IA',
-  },
-
-  // — CUENTA —
-  {
-    id: 'integrations',
-    label: 'Integraciones',
-    icon: SbIntegrations,
-    href: '/integrations',
-    permission: 'view_settings',
-    section: 'Cuenta',
+    id: 'billing',
+    label: 'Facturación',
+    icon: SbBilling,
+    permission: 'manage_billing',
+    section: 'Empresa',
+    submenu: [
+      {
+        id: 'billing-dashboard',
+        label: 'Resumen',
+        icon: SbBilling,
+        href: '/billing',
+        permission: 'manage_billing',
+      },
+      {
+        id: 'billing-invoices',
+        label: 'Facturas',
+        icon: SbOrders,
+        href: '/billing/invoices',
+        permission: 'manage_billing',
+      },
+      {
+        id: 'billing-settings',
+        label: 'Configuración Fiscal',
+        icon: SbSettings,
+        href: '/billing/settings',
+        permission: 'manage_billing',
+      },
+    ],
   },
   {
     id: 'subscription',
@@ -323,65 +366,26 @@ const sidebarItems: SidebarItem[] = [
     href: '/subscription',
     permission: 'view_settings',
   },
-
-  // — ADMINISTRACIÓN —
   {
-    id: 'administration',
-    label: 'Administración',
-    icon: SbAdmin,
-    permission: ['view_users', 'manage_roles', 'manage_global_settings'],
-    section: 'Administración',
-    submenu: [
-      {
-        id: 'tenants',
-        label: 'Gestión de Empresas',
-        icon: SbBuildings,
-        href: '/admin/tenants',
-        permission: 'manage_tenants',
-      },
-      {
-        id: 'system-dashboard',
-        label: 'Dashboard Sistema',
-        icon: SbReports,
-        href: '/admin/system-dashboard',
-        permission: 'manage_global_settings',
-      },
-      {
-        id: 'users',
-        label: 'Usuarios',
-        icon: SbUsers,
-        href: '/users',
-        permission: 'view_users',
-      },
-      {
-        id: 'roles',
-        label: 'Roles',
-        icon: SbAdmin,
-        href: '/roles',
-        permission: 'manage_roles',
-      },
-      {
-        id: 'global-settings',
-        label: 'Configuración Global',
-        icon: SbSettings,
-        href: '/global-settings',
-        permission: 'manage_global_settings',
-      },
-      {
-        id: 'activity-logs',
-        label: 'Registro de actividad',
-        icon: SbActivityLog,
-        href: '/activity-logs',
-        permission: 'view_activity_logs',
-      },
-      {
-        id: 'company-settings',
-        label: 'Configuración',
-        icon: SbSettings,
-        href: '/settings',
-        permission: 'view_company_settings',
-      },
-    ],
+    id: 'integrations',
+    label: 'Integraciones',
+    icon: SbIntegrations,
+    href: '/integrations',
+    permission: 'view_settings',
+  },
+  {
+    id: 'company-settings',
+    label: 'Configuración',
+    icon: SbSettings,
+    href: '/settings',
+    permission: 'view_company_settings',
+  },
+  {
+    id: 'ai',
+    label: 'Asistente IA',
+    icon: SbAI,
+    href: '/ai',
+    permission: 'view_automations',
   },
 
   // — AYUDA (siempre visible al final) —

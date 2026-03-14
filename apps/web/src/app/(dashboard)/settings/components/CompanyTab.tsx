@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Separator } from '@/components/ui/Separator';
-import { Camera, Upload, Trash2, Save } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar';
+import { Save } from 'lucide-react';
+import { ImageUpload } from '@/components/ui/ImageUpload';
 import { CompanySettings, UpdateCompanyRequest } from '@/services/api/companyService';
 
 interface CompanyTabProps {
@@ -60,25 +60,14 @@ export const CompanyTab: React.FC<CompanyTabProps> = ({
   deleteLogo,
   settings,
 }) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleLogoClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const result = await uploadLogo(file);
-      if (result) {
-        setCompanySettings(prev => ({
-          ...prev,
-          logo: settings?.companyLogo || prev.logo,
-        }));
-      }
+  const handleLogoUpload = async (file: File) => {
+    const result = await uploadLogo(file);
+    if (result) {
+      setCompanySettings(prev => ({
+        ...prev,
+        logo: settings?.companyLogo || prev.logo,
+      }));
     }
-    // Reset input so same file can be selected again
-    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   return (
@@ -101,46 +90,19 @@ export const CompanyTab: React.FC<CompanyTabProps> = ({
           <div className="space-y-2">
             <Label>Logo de la Empresa</Label>
             <div className="flex items-center gap-4">
-              <div className="relative">
-                <Avatar className="h-16 w-16">
-                  <AvatarImage src={companySettings.logo || ''} alt="Logo" />
-                  <AvatarFallback className="bg-emerald-600/15 text-emerald-700 dark:text-emerald-400 font-semibold text-lg font-bold">
-                    {companySettings.name ? companySettings.name.charAt(0).toUpperCase() : 'E'}
-                  </AvatarFallback>
-                </Avatar>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  style={{ display: 'none' }}
-                />
-                <button
-                  onClick={handleLogoClick}
-                  disabled={isUpdating}
-                  className="absolute bottom-0 right-0 p-1.5 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors disabled:opacity-50 shadow-lg"
-                  title={companySettings.logo ? 'Cambiar logo' : 'Subir logo'}
-                >
-                  {companySettings.logo ? (
-                    <Camera className="h-3.5 w-3.5" />
-                  ) : (
-                    <Upload className="h-3.5 w-3.5" />
-                  )}
-                </button>
-                {companySettings.logo && (
-                  <button
-                    onClick={() => deleteLogo()}
-                    disabled={isUpdating}
-                    className="absolute -bottom-1 -left-1 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors disabled:opacity-50"
-                    title="Eliminar logo"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </button>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                PNG, JPG hasta 2MB. Se mostrará en el sidebar.
-              </p>
+              <ImageUpload
+                variant="avatar"
+                src={companySettings.logo}
+                alt="Logo"
+                fallback={companySettings.name ? companySettings.name.charAt(0).toUpperCase() : 'E'}
+                fallbackClassName="bg-emerald-600/15 text-emerald-700 dark:text-emerald-400"
+                size="md"
+                maxSizeMB={2}
+                hint="PNG, JPG o WebP. Máx. 2 MB."
+                disabled={isUpdating}
+                onUpload={handleLogoUpload}
+                onDelete={deleteLogo}
+              />
             </div>
           </div>
 

@@ -25,6 +25,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'manage_devices',
     'view_activity_logs',
     'view_automations',
+    'manage_billing',
   ],
   ADMIN: [
     'view_dashboard',
@@ -46,6 +47,9 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'view_activity_logs',
     'view_automations',
     'view_metas',
+    'view_team',
+    'manage_roles',
+    'manage_billing',
   ],
   SUPERVISOR: [
     'view_dashboard',

@@ -50,21 +50,45 @@ type AppSessionUser = DefaultSession['user'] & {
 const routeLabels: Record<string, string> = {
   '/dashboard': 'Dashboard',
   '/clients': 'Clientes',
+  '/client-categories': 'Categorías de Clientes',
   '/products': 'Productos',
+  '/product-families': 'Familias de Productos',
+  '/product-categories': 'Categorías de Productos',
+  '/units': 'Unidades de Medida',
+  '/price-lists': 'Listas de Precios',
+  '/discounts': 'Descuentos',
+  '/promotions': 'Promociones',
   '/routes': 'Rutas',
-  '/calendar': 'Calendario',
+  '/routes/manage': 'Administrar Rutas',
+  '/inventory': 'Inventario',
+  '/inventory/movements': 'Movimientos de Inventario',
+  '/zones': 'Zonas',
+  '/visits': 'Visitas',
   '/forms': 'Formularios',
   '/forms/builder': 'Constructor de Formularios',
   '/orders': 'Pedidos',
-  '/deliveries': 'Entregas',
+  '/cobranza': 'Cobranza',
+  '/metas': 'Metas',
+  '/automations': 'Automatizaciones',
+  '/reports': 'Reportes',
+  '/team': 'Mi Equipo',
   '/users': 'Usuarios',
+  '/devices': 'Dispositivos',
+  '/roles': 'Roles',
+  '/activity-logs': 'Registro de Actividad',
+  '/billing': 'Facturación',
+  '/billing/invoices': 'Facturas',
+  '/billing/settings': 'Configuración Fiscal',
   '/subscription': 'Suscripción',
+  '/integrations': 'Integraciones',
+  '/ai': 'Asistente IA',
   '/profile': 'Mi Perfil',
   '/settings': 'Configuración',
   '/global-settings': 'Configuración Global',
-  '/admin': 'Administración',
   '/admin/tenants': 'Gestión de Empresas',
   '/admin/system-dashboard': 'Dashboard Sistema',
+  '/ayuda': 'Ayuda',
+  '/getting-started': 'Guía de Configuración',
 };
 
 // Notification type icons/colors
@@ -171,7 +195,11 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
     setIsLoggingOut(true);
     try {
       await signOut({ redirect: false, callbackUrl: '/' });
-      if (typeof window !== 'undefined') localStorage.clear();
+      if (typeof window !== 'undefined') {
+        localStorage.clear();
+        // Clear PWA API cache to prevent stale tenant data on shared devices
+        caches?.delete('api-cache').catch(() => {});
+      }
       router.push('/');
     } catch {
       toast({ title: 'Error', description: 'No se pudo cerrar la sesión', variant: 'destructive' });

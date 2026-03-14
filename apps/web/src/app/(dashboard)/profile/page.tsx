@@ -1,21 +1,13 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
-import { Separator } from '@/components/ui/Separator';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar';
+import { ImageUpload } from '@/components/ui/ImageUpload';
 import { Badge } from '@/components/ui/Badge';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/Select';
 import { toast } from '@/hooks/useToast';
 import { useSession } from 'next-auth/react';
 import { useProfile } from '@/contexts/ProfileContext';
@@ -23,29 +15,17 @@ import { deviceSessionService, type DeviceSessionDto } from '@/services/api/devi
 import { dashboardService, type ActivityLogEntry } from '@/services/dashboardService';
 import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
 import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
-import { TwoFactorSetup as TwoFactorSetupDialog } from '@/components/settings/TwoFactorSetup';
+import { SecurityTab } from '@/app/(dashboard)/settings/components/SecurityTab';
+import { NotificationsTab } from '@/app/(dashboard)/settings/components/NotificationsTab';
 import {
   User,
-  Mail,
-  Phone,
-  Lock,
-  Bell,
   Shield,
   Smartphone,
   Monitor,
-  Globe,
-  Camera,
   Save,
   MapPin,
   Building,
   Clock,
-  Moon,
-  Sun,
-  Palette,
-  Eye,
-  EyeOff,
-  Trash2,
-  Upload,
 } from 'lucide-react';
 import { getInitials } from '@/lib/utils';
 import { useFormatters } from '@/hooks/useFormatters';
@@ -60,52 +40,52 @@ enum UserRole {
 
 export default function ProfilePage() {
   const { formatDate } = useFormatters();
-  // TODOS los hooks deben estar al inicio para cumplir las reglas de hooks
   useSession();
   const {
     profile,
     isLoading,
     isUpdating,
-    isChangingPassword,
     updateProfile,
-    changePassword,
     uploadAvatar,
     deleteAvatar,
   } = useProfile();
 
-  // Mock function para updatePreferences y toggle2FA (no implementadas en contexto aún)
-  const updatePreferences = async (_data: {
-    language: string;
-    timezone: string;
-    theme: string;
-    emailNotifications: boolean;
-    pushNotifications: boolean;
-    marketingEmails: boolean;
-    soundEnabled: boolean;
-    compactView: boolean;
-    showOnlineStatus: boolean;
-  }) => {
-    return true;
-  };
-
-  const [setupOpen, setSetupOpen] = useState(false);
-  const [tfaStatus, setTfaStatus] = useState<{ enabled: boolean; enabledAt: string | null; remainingRecoveryCodes: number } | null>(null);
   const [devices, setDevices] = useState<DeviceSessionDto[]>([]);
   const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
+  const [editStates, setEditStates] = useState({
+    personal: false,
+    devices: false,
+  });
 
-  // Load 2FA status + devices + activity
+  // Notifications state for NotificationsTab
+  const [notifications, setNotifications] = useState({
+    email: true,
+    push: false,
+    sms: false,
+    desktop: false,
+  });
+
+  // Original profile state for change detection
+  const [originalProfile, setOriginalProfile] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    department: '',
+    location: '',
+    bio: '',
+  });
+
+  const [profileForm, setProfileForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    department: '',
+    location: '',
+    bio: '',
+  });
+
+  // Load devices + activity
   useEffect(() => {
-    const load2FAStatus = async () => {
-      try {
-        const { profileService } = await import('@/services/api/profileService');
-        const response = await profileService.get2FAStatus();
-        if (response.success && response.data) {
-          setTfaStatus(response.data);
-        }
-      } catch {
-        // Silent fail
-      }
-    };
     const loadDevices = async () => {
       try {
         const sessions = await deviceSessionService.getMisSesiones();
@@ -122,133 +102,38 @@ export default function ProfilePage() {
         // Silent fail — activity section will show empty
       }
     };
-    load2FAStatus();
     loadDevices();
     loadActivity();
   }, []);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Estados de edición individuales por tab
-  const [editStates, setEditStates] = useState({
-    personal: false,
-    security: false,
-    preferences: false,
-    devices: false,
-  });
-  // Estados originales para cada sección
-  const [originalStates, setOriginalStates] = useState({
-    profile: {
-      name: '',
-      email: '',
-      phone: '',
-      department: '',
-      location: '',
-      bio: '',
-    },
-    preferences: {
-      language: 'es',
-      timezone: 'America/Mexico_City',
-      theme: 'light',
-      emailNotifications: true,
-      pushNotifications: false,
-      marketingEmails: false,
-      soundEnabled: true,
-      compactView: false,
-      showOnlineStatus: true,
-    },
-  });
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-
-  // Inicializar formularios con valores por defecto que se actualizarán cuando profile esté disponible
-  const [profileForm, setProfileForm] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    department: '',
-    location: '',
-    bio: '',
-  });
-
-  const [passwordForm, setPasswordForm] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
-  });
-
-  const [preferences, setPreferences] = useState({
-    language: 'es',
-    timezone: 'America/Mexico_City',
-    theme: 'light',
-    emailNotifications: true,
-    pushNotifications: false,
-    marketingEmails: false,
-    soundEnabled: true,
-    compactView: false,
-    showOnlineStatus: true,
-  });
-
-  // Efecto para actualizar los formularios cuando el perfil cargue
+  // Update form when profile loads
   useEffect(() => {
     if (profile) {
       const initialProfile = {
         name: profile.nombre || '',
         email: profile.email || '',
-        phone: '', // Not supported by backend yet
-        department: '', // Not supported by backend yet
-        location: '', // Not supported by backend yet
-        bio: '', // Not supported by backend yet
+        phone: '',
+        department: '',
+        location: '',
+        bio: '',
       };
-
-      const initialPreferences = {
-        language: 'es',
-        timezone: 'America/Mexico_City',
-        theme: 'light',
-        emailNotifications: true,
-        pushNotifications: false,
-        marketingEmails: false,
-        soundEnabled: true,
-        compactView: false,
-        showOnlineStatus: true,
-      };
-
       setProfileForm(initialProfile);
-      setPreferences(initialPreferences);
-
-      // Guardar estados originales para detección de cambios
-      setOriginalStates({
-        profile: initialProfile,
-        preferences: initialPreferences,
-      });
+      setOriginalProfile(initialProfile);
     }
   }, [profile]);
 
-  // Funciones para detectar cambios por sección
+  // Change detection for personal tab
   const hasPersonalChanges =
     editStates.personal &&
-    (profileForm.name !== originalStates.profile.name ||
-      profileForm.email !== originalStates.profile.email ||
-      profileForm.phone !== originalStates.profile.phone ||
-      profileForm.department !== originalStates.profile.department ||
-      profileForm.location !== originalStates.profile.location ||
-      profileForm.bio !== originalStates.profile.bio);
+    (profileForm.name !== originalProfile.name ||
+      profileForm.email !== originalProfile.email ||
+      profileForm.phone !== originalProfile.phone ||
+      profileForm.department !== originalProfile.department ||
+      profileForm.location !== originalProfile.location ||
+      profileForm.bio !== originalProfile.bio);
 
-  const hasPreferencesChanges =
-    editStates.preferences &&
-    (preferences.language !== originalStates.preferences.language ||
-      preferences.timezone !== originalStates.preferences.timezone ||
-      preferences.theme !== originalStates.preferences.theme ||
-      preferences.emailNotifications !== originalStates.preferences.emailNotifications ||
-      preferences.pushNotifications !== originalStates.preferences.pushNotifications ||
-      preferences.marketingEmails !== originalStates.preferences.marketingEmails ||
-      preferences.soundEnabled !== originalStates.preferences.soundEnabled ||
-      preferences.compactView !== originalStates.preferences.compactView ||
-      preferences.showOnlineStatus !== originalStates.preferences.showOnlineStatus);
+  const hasUnsavedChanges = hasPersonalChanges;
 
-  // Check if there are unsaved changes in any section
-  const hasUnsavedChanges = hasPersonalChanges || hasPreferencesChanges;
-
-  // Hook para manejar cambios no guardados
   const {
     showDialog,
     setShowDialog,
@@ -257,24 +142,19 @@ export default function ProfilePage() {
   } = useUnsavedChanges({
     hasUnsavedChanges,
     onSave: async () => {
-      // Guardar todas las secciones con cambios
-      let success = true;
       if (hasPersonalChanges) {
-        success = success && (await handleSaveProfile());
+        return await handleSaveProfile();
       }
-      if (hasPreferencesChanges) {
-        success = success && (await handleSavePreferences());
-      }
-      return success;
+      return true;
     },
     message: 'Tienes cambios sin guardar que se perderán si abandonas esta página.',
   });
 
-  // Determinar permisos según el rol (backend usa boolean flags)
+  // Role-based permissions
   const isSuperAdmin = profile?.esSuperAdmin || false;
-  const isVendedor = !profile?.esAdmin && !profile?.esSuperAdmin;
+  const isAdmin = profile?.esAdmin || false;
+  const isVendedor = !isAdmin && !isSuperAdmin;
 
-  // Renders condicionales DESPUÉS de todos los hooks
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -294,7 +174,6 @@ export default function ProfilePage() {
     );
   }
 
-  // Funciones de guardado por sección
   const handleSaveProfile = async (): Promise<boolean> => {
     if (isVendedor) {
       toast({
@@ -308,169 +187,22 @@ export default function ProfilePage() {
     const success = await updateProfile({
       email: profileForm.email,
       nombre: profileForm.name,
-      password: passwordForm.newPassword,
     });
 
     if (success) {
       setEditStates(prev => ({ ...prev, personal: false }));
-      // Update original state to reflect saved changes
-      setOriginalStates(prev => ({
-        ...prev,
-        profile: { ...profileForm },
-      }));
+      setOriginalProfile({ ...profileForm });
     }
 
     return success;
   };
 
-  const handleSavePreferences = async (): Promise<boolean> => {
-    const success = await updatePreferences(preferences);
-
-    if (success) {
-      setEditStates(prev => ({ ...prev, preferences: false }));
-      // Update original state to reflect saved changes
-      setOriginalStates(prev => ({
-        ...prev,
-        preferences: { ...preferences },
-      }));
-    }
-
-    return success;
-  };
-
-  // Funciones de cancelación por sección
   const handleCancelPersonalEdit = () => {
     if (hasPersonalChanges) {
       setShowDialog(true);
     } else {
       setEditStates(prev => ({ ...prev, personal: false }));
-      // Reset form to original values
-      setProfileForm({ ...originalStates.profile });
-    }
-  };
-
-  const handleCancelPreferencesEdit = () => {
-    if (hasPreferencesChanges) {
-      setShowDialog(true);
-    } else {
-      setEditStates(prev => ({ ...prev, preferences: false }));
-      // Reset form to original values
-      setPreferences({ ...originalStates.preferences });
-    }
-  };
-
-  const handleCancelSecurityEdit = () => {
-    setEditStates(prev => ({ ...prev, security: false }));
-    // Reset password form
-    setPasswordForm({
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: '',
-    });
-  };
-
-  const handleCancelDevicesEdit = () => {
-    setEditStates(prev => ({ ...prev, devices: false }));
-  };
-
-  const handleChangePassword = async () => {
-    if (!passwordForm.currentPassword) {
-      toast({
-        title: 'Error',
-        description: 'Ingresa tu contraseña actual',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (passwordForm.newPassword.length < 6) {
-      toast({
-        title: 'Error',
-        description: 'La nueva contraseña debe tener al menos 6 caracteres',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(passwordForm.newPassword)) {
-      toast({
-        title: 'Error',
-        description: 'La contraseña debe contener al menos una minúscula, una mayúscula y un número',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      toast({
-        title: 'Error',
-        description: 'Las contraseñas no coinciden',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (passwordForm.newPassword === passwordForm.currentPassword) {
-      toast({
-        title: 'Error',
-        description: 'La nueva contraseña debe ser diferente a la actual',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    const success = await changePassword({
-      currentPassword: passwordForm.currentPassword,
-      newPassword: passwordForm.newPassword,
-    });
-
-    if (success) {
-      setEditStates(prev => ({ ...prev, security: false }));
-      setPasswordForm({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: '',
-      });
-    }
-  };
-
-  const handleAvatarUpload = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      // Validar tipo y tamaño
-      if (!file.type.startsWith('image/')) {
-        toast({
-          title: 'Error',
-          description: 'Solo se permiten archivos de imagen',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      if (file.size > 2 * 1024 * 1024) {
-        // 2MB
-        toast({
-          title: 'Error',
-          description: 'El archivo debe ser menor a 2MB',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      await uploadAvatar(file);
-    }
-  };
-
-  const handleDeleteAvatar = async () => {
-    if (!profile?.avatarUrl) return;
-
-    const confirmed = confirm('¿Estás seguro de que quieres eliminar tu foto de perfil?');
-    if (confirmed) {
-      await deleteAvatar();
+      setProfileForm({ ...originalProfile });
     }
   };
 
@@ -491,16 +223,6 @@ export default function ProfilePage() {
     }
   };
 
-  const handleToggle2FA = () => {
-    if (tfaStatus?.enabled) {
-      // Redirect to settings security tab for full management
-      window.location.href = '/settings?tab=security';
-    } else {
-      setSetupOpen(true);
-    }
-  };
-
-
   const formatTime = (date: Date) => {
     return formatDate(date, {
       day: 'numeric',
@@ -515,732 +237,342 @@ export default function ProfilePage() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold">Mi Perfil</h1>
-          <p className="text-muted-foreground mt-1">
-            Gestiona tu información personal y preferencias
-          </p>
-        </div>
+        <p className="text-muted-foreground mt-1">
+          Gestiona tu información personal y seguridad
+        </p>
+      </div>
 
-        {/* Profile Overview */}
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
-              <div data-tour="profile-avatar" className="relative">
-                <Avatar className="h-24 w-24">
-                  <AvatarImage src={profile.avatarUrl} alt={profile.nombre} />
-                  <AvatarFallback className="text-2xl bg-primary/15 text-primary font-semibold">
-                    {getInitials(profile.nombre)}
-                  </AvatarFallback>
-                </Avatar>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  style={{ display: 'none' }}
-                />
+      {/* Profile Overview */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
+            <div data-tour="profile-avatar">
+              <ImageUpload
+                variant="avatar"
+                src={profile.avatarUrl}
+                alt={profile.nombre}
+                fallback={getInitials(profile.nombre)}
+                fallbackClassName="bg-primary/15 text-primary"
+                size="lg"
+                maxSizeMB={2}
+                hint="PNG, JPG o WebP. Máx. 2 MB."
+                disabled={isUpdating}
+                onUpload={uploadAvatar}
+                onDelete={deleteAvatar}
+              />
+            </div>
 
-                {/* Botón para cambiar/subir foto */}
-                <button
-                  onClick={handleAvatarUpload}
-                  disabled={isUpdating}
-                  className="absolute bottom-0 right-0 p-1.5 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors disabled:opacity-50 shadow-lg"
-                  title={profile.avatarUrl ? 'Cambiar foto' : 'Subir foto'}
+            <div className="flex-1 text-center md:text-left">
+              <h2 className="text-2xl font-bold">{profile.nombre}</h2>
+              <p className="text-muted-foreground">{profile.email}</p>
+              <div className="flex flex-wrap gap-2 mt-3 justify-center md:justify-start">
+                <Badge
+                  className={
+                    {
+                      [UserRole.SUPER_ADMIN]: 'bg-red-100 text-red-800',
+                      [UserRole.ADMIN]: 'bg-blue-100 text-blue-800',
+                      [UserRole.SUPERVISOR]: 'bg-green-100 text-green-800',
+                      [UserRole.VENDEDOR]: 'bg-yellow-100 text-yellow-800',
+                    }[profile.role as UserRole] || 'bg-gray-100 text-gray-800'
+                  }
                 >
-                  {profile.avatarUrl ? (
-                    <Camera className="h-4 w-4" />
-                  ) : (
-                    <Upload className="h-4 w-4" />
-                  )}
-                </button>
-
-                {/* Botón para eliminar foto (solo si hay foto) */}
-                {profile.avatarUrl && (
-                  <button
-                    onClick={handleDeleteAvatar}
-                    disabled={isUpdating}
-                    className="absolute -bottom-1 -left-1 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors disabled:opacity-50"
-                    title="Eliminar foto"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </button>
-                )}
-              <p className="text-xs text-muted-foreground mt-1">PNG, JPG hasta 2MB.</p>
-              </div>
-
-              <div className="flex-1 text-center md:text-left">
-                <h2 className="text-2xl font-bold">{profile.nombre}</h2>
-                <p className="text-muted-foreground">{profile.email}</p>
-                <div className="flex flex-wrap gap-2 mt-3 justify-center md:justify-start">
-                  <Badge
-                    className={
-                      {
-                        [UserRole.SUPER_ADMIN]: 'bg-red-100 text-red-800',
-                        [UserRole.ADMIN]: 'bg-blue-100 text-blue-800',
-                        [UserRole.SUPERVISOR]: 'bg-green-100 text-green-800',
-                        [UserRole.VENDEDOR]: 'bg-yellow-100 text-yellow-800',
-                      }[profile.role as UserRole] || 'bg-gray-100 text-gray-800'
-                    }
-                  >
-                    {profile.esSuperAdmin && 'Super Administrador'}
-                    {profile.esAdmin && !profile.esSuperAdmin && 'Administrador'}
-                    {!profile.esAdmin && !profile.esSuperAdmin && 'Vendedor'}
-                  </Badge>
-                  <Badge variant="outline">
-                    <Building className="h-3 w-3 mr-1" />
-                    Empresa
-                  </Badge>
-                  <Badge variant="outline">
-                    <MapPin className="h-3 w-3 mr-1" />
-                    {'Ciudad de México'} {/* Backend doesn't support location yet */}
-                  </Badge>
-                </div>
-                <p className="text-sm text-muted-foreground mt-3">
-                  Miembro desde {'15 enero 2024'} {/* Backend doesn't support joined date yet */}
-                </p>
-              </div>
-
-              <div className="text-center md:text-right">
-                {isSuperAdmin && (
-                  <div>
-                    <Badge className="bg-red-100 text-red-800 text-xs">
-                      <Shield className="h-3 w-3 mr-1" />
-                      Super Admin
-                    </Badge>
-                  </div>
-                )}
+                  {profile.esSuperAdmin && 'Super Administrador'}
+                  {profile.esAdmin && !profile.esSuperAdmin && 'Administrador'}
+                  {!profile.esAdmin && !profile.esSuperAdmin && 'Vendedor'}
+                </Badge>
+                <Badge variant="outline">
+                  <Building className="h-3 w-3 mr-1" />
+                  Empresa
+                </Badge>
+                <Badge variant="outline">
+                  <MapPin className="h-3 w-3 mr-1" />
+                  {'Ciudad de México'}
+                </Badge>
               </div>
             </div>
-          </CardContent>
-        </Card>
 
-        <Tabs defaultValue="personal" className="space-y-4">
-          <TabsList data-tour="profile-tabs">
-            <TabsTrigger value="personal">Información Personal</TabsTrigger>
-            <TabsTrigger value="security">Seguridad</TabsTrigger>
-            <TabsTrigger value="preferences">Preferencias</TabsTrigger>
-            <TabsTrigger value="devices">Dispositivos</TabsTrigger>
-            <TabsTrigger value="activity">Actividad</TabsTrigger>
-          </TabsList>
-
-          {/* Personal Information Tab */}
-          <TabsContent value="personal" className="space-y-4">
-            <Card data-tour="profile-personal">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Información Personal</CardTitle>
-                    <CardDescription>
-                      Actualiza tu información personal y de contacto
-                    </CardDescription>
-                  </div>
-                  {!editStates.personal && (
-                    <Button
-                      onClick={() => setEditStates(prev => ({ ...prev, personal: true }))}
-                      disabled={isVendedor || isUpdating}
-                      title={
-                        isVendedor ? 'Solo el administrador puede modificar tu información' : ''
-                      }
-                      size="sm"
-                    >
-                      <User className="h-4 w-4 mr-2" />
-                      Editar Información
-                    </Button>
-                  )}
+            <div className="text-center md:text-right">
+              {isSuperAdmin && (
+                <div>
+                  <Badge className="bg-red-100 text-red-800 text-xs">
+                    <Shield className="h-3 w-3 mr-1" />
+                    Super Admin
+                  </Badge>
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Nombre completo</Label>
-                    <Input
-                      id="name"
-                      value={profileForm.name}
-                      onChange={e => setProfileForm({ ...profileForm, name: e.target.value })}
-                      disabled={!editStates.personal}
-                    />
-                  </div>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={profileForm.email}
-                      onChange={e => setProfileForm({ ...profileForm, email: e.target.value })}
-                      disabled={!editStates.personal}
-                    />
-                  </div>
+      <Tabs defaultValue="personal" className="space-y-4">
+        <TabsList data-tour="profile-tabs">
+          <TabsTrigger value="personal">Información Personal</TabsTrigger>
+          <TabsTrigger value="security">Seguridad</TabsTrigger>
+          <TabsTrigger value="devices">Dispositivos</TabsTrigger>
+          <TabsTrigger value="notifications">Notificaciones</TabsTrigger>
+          <TabsTrigger value="activity">Actividad</TabsTrigger>
+        </TabsList>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Teléfono</Label>
-                    <Input
-                      id="phone"
-                      value={profileForm.phone}
-                      onChange={e => setProfileForm({ ...profileForm, phone: e.target.value })}
-                      disabled={!editStates.personal}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="department">Departamento</Label>
-                    <Input
-                      id="department"
-                      value={profileForm.department}
-                      onChange={e => setProfileForm({ ...profileForm, department: e.target.value })}
-                      disabled={!editStates.personal}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="location">Ubicación</Label>
-                    <Input
-                      id="location"
-                      value={profileForm.location}
-                      onChange={e => setProfileForm({ ...profileForm, location: e.target.value })}
-                      disabled={!editStates.personal}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Rol</Label>
-                    <Input
-                      value={
-                        profile.esSuperAdmin
-                          ? 'Super Administrador'
-                          : profile.esAdmin
-                          ? 'Administrador'
-                          : 'Vendedor'
-                      }
-                      disabled
-                    />
-                  </div>
+        {/* Personal Information Tab */}
+        <TabsContent value="personal" className="space-y-4">
+          <Card data-tour="profile-personal">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Información Personal</CardTitle>
+                  <CardDescription>
+                    Actualiza tu información personal y de contacto
+                  </CardDescription>
                 </div>
-
-                {editStates.personal && (
-                  <div className="flex justify-end gap-2 pt-4">
-                    <Button
-                      variant="outline"
-                      onClick={handleCancelPersonalEdit}
-                      disabled={isUpdating}
-                    >
-                      Cancelar
-                    </Button>
-                    <Button
-                      onClick={handleSaveProfile}
-                      disabled={isUpdating || !hasPersonalChanges}
-                      title={!hasPersonalChanges ? 'No hay cambios para guardar' : ''}
-                    >
-                      <Save className="h-4 w-4 mr-2" />
-                      {isUpdating ? 'Guardando...' : 'Guardar Cambios'}
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Security Tab */}
-          <TabsContent value="security" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Cambiar Contraseña</CardTitle>
-                    <CardDescription>Última actualización: {'1 noviembre 2024'}</CardDescription>
-                  </div>
-                  {!editStates.security && (
-                    <Button
-                      onClick={() => setEditStates(prev => ({ ...prev, security: true }))}
-                      size="sm"
-                    >
-                      <Lock className="h-4 w-4 mr-2" />
-                      Cambiar Contraseña
-                    </Button>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="currentPassword">Contraseña actual</Label>
-                  <div className="relative">
-                    <Input
-                      id="currentPassword"
-                      type={showCurrentPassword ? 'text' : 'password'}
-                      value={passwordForm.currentPassword}
-                      onChange={e =>
-                        setPasswordForm({ ...passwordForm, currentPassword: e.target.value })
-                      }
-                      disabled={!editStates.security}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2"
-                    >
-                      {showCurrentPassword ? (
-                        <EyeOff className="h-4 w-4 text-muted-foreground" />
-                      ) : (
-                        <Eye className="h-4 w-4 text-muted-foreground" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="newPassword">Nueva contraseña</Label>
-                  <div className="relative">
-                    <Input
-                      id="newPassword"
-                      type={showNewPassword ? 'text' : 'password'}
-                      value={passwordForm.newPassword}
-                      onChange={e =>
-                        setPasswordForm({ ...passwordForm, newPassword: e.target.value })
-                      }
-                      disabled={!editStates.security}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowNewPassword(!showNewPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2"
-                    >
-                      {showNewPassword ? (
-                        <EyeOff className="h-4 w-4 text-muted-foreground" />
-                      ) : (
-                        <Eye className="h-4 w-4 text-muted-foreground" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirmar contraseña</Label>
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    value={passwordForm.confirmPassword}
-                    onChange={e =>
-                      setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })
+                {!editStates.personal && (
+                  <Button
+                    onClick={() => setEditStates(prev => ({ ...prev, personal: true }))}
+                    disabled={isVendedor || isUpdating}
+                    title={
+                      isVendedor ? 'Solo el administrador puede modificar tu información' : ''
                     }
-                    disabled={!editStates.security}
+                    size="sm"
+                  >
+                    <User className="h-4 w-4 mr-2" />
+                    Editar Información
+                  </Button>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Nombre completo</Label>
+                  <Input
+                    id="name"
+                    value={profileForm.name}
+                    onChange={e => setProfileForm({ ...profileForm, name: e.target.value })}
+                    disabled={!editStates.personal}
                   />
                 </div>
 
-                {editStates.security && (
-                  <div className="flex justify-end gap-2 pt-4">
-                    <Button
-                      variant="outline"
-                      onClick={handleCancelSecurityEdit}
-                      disabled={isChangingPassword}
-                    >
-                      Cancelar
-                    </Button>
-                    <Button
-                      onClick={handleChangePassword}
-                      disabled={
-                        isChangingPassword ||
-                        !passwordForm.currentPassword ||
-                        !passwordForm.newPassword ||
-                        !passwordForm.confirmPassword
-                      }
-                    >
-                      <Lock className="h-4 w-4 mr-2" />
-                      {isChangingPassword ? 'Cambiando...' : 'Cambiar Contraseña'}
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={profileForm.email}
+                    onChange={e => setProfileForm({ ...profileForm, email: e.target.value })}
+                    disabled={!editStates.personal}
+                  />
+                </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Autenticación de Dos Factores</CardTitle>
-                <CardDescription>Añade una capa extra de seguridad a tu cuenta</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Shield className={`h-5 w-5 ${tfaStatus?.enabled ? 'text-green-600' : 'text-muted-foreground'}`} />
-                    <div>
-                      <p className="font-medium">2FA</p>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Teléfono</Label>
+                  <Input
+                    id="phone"
+                    value={profileForm.phone}
+                    onChange={e => setProfileForm({ ...profileForm, phone: e.target.value })}
+                    disabled={!editStates.personal}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="department">Departamento</Label>
+                  <Input
+                    id="department"
+                    value={profileForm.department}
+                    onChange={e => setProfileForm({ ...profileForm, department: e.target.value })}
+                    disabled={!editStates.personal}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="location">Ubicación</Label>
+                  <Input
+                    id="location"
+                    value={profileForm.location}
+                    onChange={e => setProfileForm({ ...profileForm, location: e.target.value })}
+                    disabled={!editStates.personal}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Rol</Label>
+                  <Input
+                    value={
+                      profile.esSuperAdmin
+                        ? 'Super Administrador'
+                        : profile.esAdmin
+                        ? 'Administrador'
+                        : 'Vendedor'
+                    }
+                    disabled
+                  />
+                </div>
+              </div>
+
+              {editStates.personal && (
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={handleCancelPersonalEdit}
+                    disabled={isUpdating}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={handleSaveProfile}
+                    disabled={isUpdating || !hasPersonalChanges}
+                    title={!hasPersonalChanges ? 'No hay cambios para guardar' : ''}
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    {isUpdating ? 'Guardando...' : 'Guardar Cambios'}
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Security Tab — uses full SecurityTab component from settings */}
+        <TabsContent value="security" className="space-y-4">
+          <SecurityTab />
+        </TabsContent>
+
+        {/* Devices Tab */}
+        <TabsContent value="devices" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Dispositivos Conectados</CardTitle>
+                  <CardDescription>
+                    Gestiona los dispositivos que tienen acceso a tu cuenta
+                  </CardDescription>
+                </div>
+                {!editStates.devices && (
+                  <Button
+                    onClick={() => setEditStates(prev => ({ ...prev, devices: true }))}
+                    size="sm"
+                  >
+                    <Smartphone className="h-4 w-4 mr-2" />
+                    Administrar Dispositivos
+                  </Button>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {devices.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">No hay sesiones activas</p>
+                ) : devices.map(device => (
+                  <div
+                    key={device.id}
+                    className="flex items-center justify-between p-4 border rounded-lg"
+                  >
+                    <div className="flex items-center gap-3">
+                      {device.deviceType === 2 || device.deviceType === 3 ? (
+                        <Smartphone className="h-5 w-5 text-muted-foreground" />
+                      ) : (
+                        <Monitor className="h-5 w-5 text-muted-foreground" />
+                      )}
+                      <div>
+                        <p className="font-medium">{device.deviceName || device.deviceTypeNombre}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {device.deviceTypeNombre}{device.ipAddress ? ` • ${device.ipAddress}` : ''} • Último acceso: {formatTime(new Date(device.lastActivity))}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {device.esSesionActual && (
+                        <Badge className="bg-green-500 text-white">Sesión actual</Badge>
+                      )}
+                      {!device.esSesionActual && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleRevokeDevice(device.id)}
+                        >
+                          Revocar
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {editStates.devices && (
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button variant="outline" onClick={() => setEditStates(prev => ({ ...prev, devices: false }))}>
+                    Terminar Administración
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Notifications Tab — uses NotificationsTab component from settings */}
+        <TabsContent value="notifications" className="space-y-4">
+          <NotificationsTab
+            notifications={notifications}
+            setNotifications={setNotifications}
+            isSuperAdmin={isSuperAdmin}
+            isAdmin={isAdmin}
+          />
+        </TabsContent>
+
+        {/* Activity Tab */}
+        <TabsContent value="activity" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Historial de Actividad</CardTitle>
+              <CardDescription>Registro de las últimas acciones en tu cuenta</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {activityLog.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">No hay actividad reciente</p>
+                ) : activityLog.map(activity => (
+                  <div
+                    key={activity.id}
+                    className="flex items-start gap-3 p-3 hover:bg-muted/50 rounded-lg transition-colors"
+                  >
+                    <div className="p-2 bg-muted rounded-full">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium">{activity.description}</p>
                       <p className="text-sm text-muted-foreground">
-                        {tfaStatus?.enabled ? 'Activo' : 'Inactivo'}
+                        {activity.timeAgo}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {activity.browser && `${activity.browser}`}{activity.operatingSystem ? ` • ${activity.operatingSystem}` : ''}{activity.ipAddress ? ` • IP: ${activity.ipAddress}` : ''}
                       </p>
                     </div>
                   </div>
-                  <Button
-                    variant={tfaStatus?.enabled ? 'outline' : 'default'}
-                    onClick={handleToggle2FA}
-                  >
-                    {tfaStatus?.enabled ? 'Administrar' : 'Configurar 2FA'}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
-            {/* 2FA Setup Dialog */}
-            {setupOpen && (
-              <TwoFactorSetupDialog
-                open={setupOpen}
-                onOpenChange={setSetupOpen}
-                onComplete={async () => {
-                  try {
-                    const { profileService } = await import('@/services/api/profileService');
-                    const response = await profileService.get2FAStatus();
-                    if (response.success && response.data) {
-                      setTfaStatus(response.data);
-                    }
-                  } catch {
-                    // Silent
-                  }
-                }}
-              />
-            )}
-          </TabsContent>
-
-          {/* Preferences Tab */}
-          <TabsContent value="preferences" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Preferencias Generales</CardTitle>
-                    <CardDescription>Configura tus preferencias de aplicación</CardDescription>
-                  </div>
-                  {!editStates.preferences && (
-                    <Button
-                      onClick={() => setEditStates(prev => ({ ...prev, preferences: true }))}
-                      size="sm"
-                    >
-                      <Globe className="h-4 w-4 mr-2" />
-                      Editar Preferencias
-                    </Button>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="language">Idioma</Label>
-                    <Select
-                      value={preferences.language}
-                      onValueChange={value => setPreferences({ ...preferences, language: value })}
-                      disabled={!editStates.preferences}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="es">Español</SelectItem>
-                        <SelectItem value="en">English</SelectItem>
-                        <SelectItem value="pt">Português</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="timezone">Zona horaria</Label>
-                    <Select
-                      value={preferences.timezone}
-                      onValueChange={value => setPreferences({ ...preferences, timezone: value })}
-                      disabled={!editStates.preferences}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="America/Mexico_City">Ciudad de México</SelectItem>
-                        <SelectItem value="America/Bogota">Bogotá</SelectItem>
-                        <SelectItem value="America/New_York">Nueva York</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="space-y-4">
-                  <h4 className="font-medium">Apariencia</h4>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      {preferences.theme === 'light' ? (
-                        <Sun className="h-5 w-5 text-muted-foreground" />
-                      ) : (
-                        <Moon className="h-5 w-5 text-muted-foreground" />
-                      )}
-                      <div>
-                        <p className="font-medium">Tema</p>
-                        <p className="text-sm text-muted-foreground">
-                          {preferences.theme === 'light' ? 'Claro' : 'Oscuro'}
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      variant="outline"
-                      onClick={() =>
-                        setPreferences({
-                          ...preferences,
-                          theme: preferences.theme === 'light' ? 'dark' : 'light',
-                        })
-                      }
-                      disabled={!editStates.preferences}
-                    >
-                      Cambiar
-                    </Button>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Palette className="h-5 w-5 text-muted-foreground" />
-                      <div>
-                        <p className="font-medium">Modo compacto</p>
-                        <p className="text-sm text-muted-foreground">
-                          Reduce el espaciado en la interfaz
-                        </p>
-                      </div>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={preferences.compactView}
-                      onChange={e =>
-                        setPreferences({ ...preferences, compactView: e.target.checked })
-                      }
-                      disabled={!editStates.preferences}
-                      className="rounded border-gray-300"
-                    />
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="space-y-4">
-                  <h4 className="font-medium">Notificaciones</h4>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Mail className="h-5 w-5 text-muted-foreground" />
-                      <div>
-                        <p className="font-medium">Email</p>
-                        <p className="text-sm text-muted-foreground">
-                          Recibir notificaciones por correo
-                        </p>
-                      </div>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={preferences.emailNotifications}
-                      onChange={e =>
-                        setPreferences({ ...preferences, emailNotifications: e.target.checked })
-                      }
-                      disabled={!editStates.preferences}
-                      className="rounded border-gray-300"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Bell className="h-5 w-5 text-muted-foreground" />
-                      <div>
-                        <p className="font-medium">Push</p>
-                        <p className="text-sm text-muted-foreground">
-                          Notificaciones en el navegador
-                        </p>
-                      </div>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={preferences.pushNotifications}
-                      onChange={e =>
-                        setPreferences({ ...preferences, pushNotifications: e.target.checked })
-                      }
-                      disabled={!editStates.preferences}
-                      className="rounded border-gray-300"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Phone className="h-5 w-5 text-muted-foreground" />
-                      <div>
-                        <p className="font-medium">Marketing</p>
-                        <p className="text-sm text-muted-foreground">
-                          Recibir emails promocionales
-                        </p>
-                      </div>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={preferences.marketingEmails}
-                      onChange={e =>
-                        setPreferences({ ...preferences, marketingEmails: e.target.checked })
-                      }
-                      disabled={!editStates.preferences}
-                      className="rounded border-gray-300"
-                    />
-                  </div>
-                </div>
-
-                {editStates.preferences && (
-                  <div className="flex justify-end gap-2 pt-4">
-                    <Button
-                      variant="outline"
-                      onClick={handleCancelPreferencesEdit}
-                      disabled={isUpdating}
-                    >
-                      Cancelar
-                    </Button>
-                    <Button
-                      onClick={handleSavePreferences}
-                      disabled={isUpdating || !hasPreferencesChanges}
-                      title={!hasPreferencesChanges ? 'No hay cambios para guardar' : ''}
-                    >
-                      <Save className="h-4 w-4 mr-2" />
-                      {isUpdating ? 'Guardando...' : 'Guardar Cambios'}
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Devices Tab */}
-          <TabsContent value="devices" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Dispositivos Conectados</CardTitle>
-                    <CardDescription>
-                      Gestiona los dispositivos que tienen acceso a tu cuenta
-                    </CardDescription>
-                  </div>
-                  {!editStates.devices && (
-                    <Button
-                      onClick={() => setEditStates(prev => ({ ...prev, devices: true }))}
-                      size="sm"
-                    >
-                      <Smartphone className="h-4 w-4 mr-2" />
-                      Administrar Dispositivos
-                    </Button>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {devices.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-4">No hay sesiones activas</p>
-                  ) : devices.map(device => (
-                    <div
-                      key={device.id}
-                      className="flex items-center justify-between p-4 border rounded-lg"
-                    >
-                      <div className="flex items-center gap-3">
-                        {device.deviceType === 2 || device.deviceType === 3 ? (
-                          <Smartphone className="h-5 w-5 text-muted-foreground" />
-                        ) : (
-                          <Monitor className="h-5 w-5 text-muted-foreground" />
-                        )}
-                        <div>
-                          <p className="font-medium">{device.deviceName || device.deviceTypeNombre}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {device.deviceTypeNombre}{device.ipAddress ? ` • ${device.ipAddress}` : ''} • Último acceso: {formatTime(new Date(device.lastActivity))}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {device.esSesionActual && (
-                          <Badge className="bg-green-500 text-white">Sesión actual</Badge>
-                        )}
-                        {!device.esSesionActual && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleRevokeDevice(device.id)}
-                          >
-                            Revocar
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {editStates.devices && (
-                  <div className="flex justify-end gap-2 pt-4">
-                    <Button variant="outline" onClick={handleCancelDevicesEdit}>
-                      Terminar Administración
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Activity Tab */}
-          <TabsContent value="activity" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Historial de Actividad</CardTitle>
-                <CardDescription>Registro de las últimas acciones en tu cuenta</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {activityLog.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-4">No hay actividad reciente</p>
-                  ) : activityLog.map(activity => (
-                    <div
-                      key={activity.id}
-                      className="flex items-start gap-3 p-3 hover:bg-muted/50 rounded-lg transition-colors"
-                    >
-                      <div className="p-2 bg-muted rounded-full">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium">{activity.description}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {activity.timeAgo}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {activity.browser && `${activity.browser}`}{activity.operatingSystem ? ` • ${activity.operatingSystem}` : ''}{activity.ipAddress ? ` • IP: ${activity.ipAddress}` : ''}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-
-        {/* Dialog for unsaved changes */}
-        <UnsavedChangesDialog
-          open={showDialog}
-          onOpenChange={setShowDialog}
-          title="¿Descartar cambios?"
-          description={`Tienes cambios sin guardar en ${
-            hasPersonalChanges && hasPreferencesChanges
-              ? 'tu información personal y preferencias'
-              : hasPersonalChanges
-              ? 'tu información personal'
-              : 'tus preferencias'
-          } que se perderán si continúas. ¿Qué deseas hacer?`}
-          onContinue={() => {
-            // Cerrar el diálogo primero
-            setShowDialog(false);
-            // Resetear todos los estados de edición y formas afectadas
-            if (hasPersonalChanges) {
-              setEditStates(prev => ({ ...prev, personal: false }));
-              setProfileForm({ ...originalStates.profile });
-            }
-            if (hasPreferencesChanges) {
-              setEditStates(prev => ({ ...prev, preferences: false }));
-              setPreferences({ ...originalStates.preferences });
-            }
-            handleContinueNavigation();
-          }}
-          onCancel={handleCancelNavigation}
-          showSaveOption={false}
-          isLoading={isUpdating}
-        />
+      {/* Dialog for unsaved changes */}
+      <UnsavedChangesDialog
+        open={showDialog}
+        onOpenChange={setShowDialog}
+        title="¿Descartar cambios?"
+        description="Tienes cambios sin guardar en tu información personal que se perderán si continúas. ¿Qué deseas hacer?"
+        onContinue={() => {
+          setShowDialog(false);
+          if (hasPersonalChanges) {
+            setEditStates(prev => ({ ...prev, personal: false }));
+            setProfileForm({ ...originalProfile });
+          }
+          handleContinueNavigation();
+        }}
+        onCancel={handleCancelNavigation}
+        showSaveOption={false}
+        isLoading={isUpdating}
+      />
     </div>
   );
 }

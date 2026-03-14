@@ -18,21 +18,6 @@ interface HealthResponse {
 }
 
 interface SystemTabProps {
-  profile: {
-    name: string;
-    email: string;
-    phone: string;
-    territory: string;
-    role: string;
-    avatar: string;
-    bio: string;
-  };
-  notifications: {
-    email: boolean;
-    push: boolean;
-    sms: boolean;
-    desktop: boolean;
-  };
   companySettings: {
     name: string;
     logo: string;
@@ -44,8 +29,6 @@ interface SystemTabProps {
 }
 
 export const SystemTab: React.FC<SystemTabProps> = ({
-  profile,
-  notifications,
   companySettings,
   isAdmin,
   isSuperAdmin
@@ -211,8 +194,6 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                   size="sm"
                   onClick={() => {
                     const config = {
-                      profile,
-                      notifications,
                       theme: isDarkMode ? 'dark' : 'light',
                       companySettings: isAdmin ? companySettings : undefined,
                       exportDate: new Date().toISOString(),

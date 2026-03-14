@@ -5,17 +5,14 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useClientOnly } from '@/hooks/useClientOnly';
 import { useCompany } from '@/contexts/CompanyContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
-import { Bell, Shield, Palette, Database, Building, Building2 } from 'lucide-react';
+import { Palette, Database, Building, Building2 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 
-// Import tab components
+// Import tab components (admin-only settings)
 import { CompanyTab } from './components/CompanyTab';
 import { PerfilEmpresaTab } from './components/PerfilEmpresaTab';
-import { NotificationsTab } from './components/NotificationsTab';
-import { SecurityTab } from './components/SecurityTab';
 import { AppearanceTab } from './components/AppearanceTab';
 import { SystemTab } from './components/SystemTab';
-import { BillingTab } from './components/BillingTab';
 
 function SettingsPageContent() {
   const { data: session } = useSession();
@@ -29,25 +26,15 @@ function SettingsPageContent() {
   const isSuperAdmin = userRole === 'SUPER_ADMIN';
   const isAdmin = userRole === 'ADMIN';
 
-  // Get tab from URL params, default to "perfil-empresa" for admins, "notifications" for others
-  // Note: Only ADMIN (not SUPER_ADMIN) can access company settings as they are tenant-specific
-  const defaultTab = searchParams.get('tab') || (isAdmin ? 'perfil-empresa' : 'notifications');
+  // Non-admin users go to Profile (personal settings are there now)
+  useEffect(() => {
+    if (session && !isAdmin && !isSuperAdmin) {
+      router.replace('/profile');
+    }
+  }, [session, isAdmin, isSuperAdmin, router]);
+
+  const defaultTab = searchParams.get('tab') || 'perfil-empresa';
   const [activeTab, setActiveTab] = useState(defaultTab);
-  const [notifications, setNotifications] = useState({
-    email: true,
-    push: true,
-    sms: false,
-    desktop: true,
-  });
-  const [profile] = useState({
-    name: session?.user?.name || 'Carlos Mendoza',
-    email: session?.user?.email || 'carlos.mendoza@handy.com',
-    phone: '+52 644 123 4567',
-    territory: 'Zona Norte',
-    role: userRole,
-    avatar: session?.user?.image || '',
-    bio: 'Vendedor especializado en zona norte con 5 años de experiencia.',
-  });
 
   const [companySettings, setCompanySettings] = useState({
     name: settings?.companyName || 'Mi Empresa',
@@ -83,130 +70,89 @@ function SettingsPageContent() {
     setHasChanges(changed);
   }, [companySettings, originalSettings]);
 
+  // Don't render for non-admin (redirect in progress)
+  if (!isAdmin && !isSuperAdmin) {
+    return null;
+  }
+
   return (
     <div className="flex-1 space-y-6 p-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Configuración</h1>
-            <p className="text-muted-foreground">
-              Gestiona tu perfil y configuraciones del sistema
-            </p>
-          </div>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Configuración</h1>
+          <p className="text-muted-foreground">
+            Configuración de la empresa y el sistema
+          </p>
         </div>
-
-        <Tabs
-          value={activeTab}
-          onValueChange={value => {
-            setActiveTab(value);
-            const params = new URLSearchParams(searchParams);
-            params.set('tab', value);
-            router.push(`/settings?${params.toString()}`, { scroll: false });
-          }}
-          className="space-y-6"
-        >
-          <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${isAdmin ? 7 : (isSuperAdmin ? 5 : 4)}, minmax(0, 1fr))` }}>
-            {isAdmin && (
-              <TabsTrigger value="perfil-empresa" className="flex items-center gap-2">
-                <Building2 className="h-4 w-4" />
-                Perfil
-              </TabsTrigger>
-            )}
-            {isAdmin && (
-              <TabsTrigger value="company" className="flex items-center gap-2">
-                <Building className="h-4 w-4" />
-                Marca
-              </TabsTrigger>
-            )}
-            {(isAdmin || isSuperAdmin) && (
-              <TabsTrigger value="billing" className="flex items-center gap-2">
-                <Building className="h-4 w-4" />
-                Facturación
-              </TabsTrigger>
-            )}
-            <TabsTrigger value="notifications" className="flex items-center gap-2">
-              <Bell className="h-4 w-4" />
-              Notificaciones
-            </TabsTrigger>
-            <TabsTrigger value="security" className="flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              Seguridad
-            </TabsTrigger>
-            <TabsTrigger value="appearance" className="flex items-center gap-2">
-              <Palette className="h-4 w-4" />
-              Apariencia
-            </TabsTrigger>
-            <TabsTrigger value="system" className="flex items-center gap-2">
-              <Database className="h-4 w-4" />
-              Sistema
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Perfil de Empresa - Datos fiscales y contacto (Admin only) */}
-          {isAdmin && (
-            <TabsContent value="perfil-empresa" className="space-y-6">
-              <PerfilEmpresaTab />
-            </TabsContent>
-          )}
-
-          {/* Company Tab - Apariencia: nombre, logo, colores (Admin only) */}
-          {isAdmin && (
-            <TabsContent value="company" className="space-y-6">
-              <CompanyTab
-                companySettings={companySettings}
-                setCompanySettings={setCompanySettings}
-                originalSettings={originalSettings}
-                setOriginalSettings={setOriginalSettings}
-                hasChanges={hasChanges}
-                setHasChanges={setHasChanges}
-                isUpdating={isUpdating}
-                updateSettings={updateSettings}
-                uploadLogo={uploadLogo}
-                deleteLogo={deleteLogo}
-                settings={settings}
-              />
-            </TabsContent>
-          )}
-
-          {/* Billing Tab */}
-          {(isAdmin || isSuperAdmin) && (
-            <TabsContent value="billing" className="space-y-6">
-              <BillingTab isSuperAdmin={isSuperAdmin} isAdmin={isAdmin} />
-            </TabsContent>
-          )}
-
-          {/* Notifications Tab */}
-          <TabsContent value="notifications" className="space-y-6">
-            <NotificationsTab
-              notifications={notifications}
-              setNotifications={setNotifications}
-              isSuperAdmin={isSuperAdmin}
-              isAdmin={isAdmin}
-            />
-          </TabsContent>
-
-          {/* Security Tab */}
-          <TabsContent value="security" className="space-y-6">
-            <SecurityTab />
-          </TabsContent>
-
-          {/* Appearance Tab */}
-          <TabsContent value="appearance" className="space-y-6">
-            <AppearanceTab />
-          </TabsContent>
-
-          {/* System Tab */}
-          <TabsContent value="system" className="space-y-6">
-            <SystemTab
-              profile={profile}
-              notifications={notifications}
-              companySettings={companySettings}
-              isAdmin={isAdmin}
-              isSuperAdmin={isSuperAdmin}
-            />
-          </TabsContent>
-        </Tabs>
       </div>
+
+      <Tabs
+        value={activeTab}
+        onValueChange={value => {
+          setActiveTab(value);
+          const params = new URLSearchParams(searchParams);
+          params.set('tab', value);
+          router.push(`/settings?${params.toString()}`, { scroll: false });
+        }}
+        className="space-y-6"
+      >
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="perfil-empresa" className="flex items-center gap-2">
+            <Building2 className="h-4 w-4" />
+            Perfil Empresa
+          </TabsTrigger>
+          <TabsTrigger value="company" className="flex items-center gap-2">
+            <Building className="h-4 w-4" />
+            Marca
+          </TabsTrigger>
+          <TabsTrigger value="appearance" className="flex items-center gap-2">
+            <Palette className="h-4 w-4" />
+            Apariencia
+          </TabsTrigger>
+          <TabsTrigger value="system" className="flex items-center gap-2">
+            <Database className="h-4 w-4" />
+            Sistema
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Perfil de Empresa - Datos fiscales y contacto */}
+        <TabsContent value="perfil-empresa" className="space-y-6">
+          <PerfilEmpresaTab />
+        </TabsContent>
+
+        {/* Company Tab - Apariencia: nombre, logo, colores */}
+        <TabsContent value="company" className="space-y-6">
+          <CompanyTab
+            companySettings={companySettings}
+            setCompanySettings={setCompanySettings}
+            originalSettings={originalSettings}
+            setOriginalSettings={setOriginalSettings}
+            hasChanges={hasChanges}
+            setHasChanges={setHasChanges}
+            isUpdating={isUpdating}
+            updateSettings={updateSettings}
+            uploadLogo={uploadLogo}
+            deleteLogo={deleteLogo}
+            settings={settings}
+          />
+        </TabsContent>
+
+        {/* Appearance Tab */}
+        <TabsContent value="appearance" className="space-y-6">
+          <AppearanceTab />
+        </TabsContent>
+
+        {/* System Tab */}
+        <TabsContent value="system" className="space-y-6">
+          <SystemTab
+            companySettings={companySettings}
+            isAdmin={isAdmin}
+            isSuperAdmin={isSuperAdmin}
+          />
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }
 
