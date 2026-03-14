@@ -91,11 +91,21 @@ public static class AuthEndpoints
             if (result is null)
                 return Results.BadRequest(new { error = "Código inválido" });
 
-            // Check if force-login returned an error (2FA required for force-login)
+            // Check if returned an error (2FA required for force-login, tenant deactivated, or TOTP lockout)
             var resultType = result.GetType();
             var errorProp = resultType.GetProperty("error");
             if (errorProp != null)
                 return Results.BadRequest(result);
+
+            var codeProp = resultType.GetProperty("code");
+            if (codeProp != null)
+            {
+                var codeValue = codeProp.GetValue(result)?.ToString();
+                if (codeValue == "TOTP_LOCKED")
+                    return Results.Json(result, statusCode: StatusCodes.Status429TooManyRequests);
+                if (codeValue == "TENANT_DEACTIVATED")
+                    return Results.BadRequest(result);
+            }
 
             return Results.Ok(result);
         }).RequireRateLimiting("anonymous");
@@ -165,7 +175,7 @@ public static class AuthEndpoints
                 return Results.BadRequest(new { error = "Usuario desactivado." });
 
             return Results.Ok(result);
-        });
+        }).RequireRateLimiting("anonymous");
 
         // Social register — called from Next.js API route after Google OAuth for NEW users
         app.MapPost("/auth/social-register", async (

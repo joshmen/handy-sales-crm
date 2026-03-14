@@ -37,7 +37,7 @@ public class AiSanitizer : IAiSanitizer
         if (userInput.Length > 2000)
             return new SanitizationResult(false, "El prompt excede el l\u00edmite de 2000 caracteres.");
 
-        var lower = userInput.ToLower();
+        var lower = userInput.ToLowerInvariant();
 
         // Check blocked words
         foreach (var word in BlockedWords)

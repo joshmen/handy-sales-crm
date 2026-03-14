@@ -26,8 +26,8 @@ public static class MobileNotificationEndpoints
             var tenantId = int.Parse(tenantIdClaim);
 
             // Check caller is admin
-            var isAdmin = context.User.FindFirst("es_admin")?.Value == "True"
-                       || context.User.FindFirst("es_super_admin")?.Value == "True";
+            var role = context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+            var isAdmin = role is "ADMIN" or "SUPER_ADMIN" or "SUPERVISOR";
             if (!isAdmin)
                 return Results.Forbid();
 

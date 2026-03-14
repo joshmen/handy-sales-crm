@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useGlobalSettings } from '@/contexts/GlobalSettingsContext';
@@ -8,7 +8,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Switch } from '@/components/ui/Switch';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar';
+import { ImageUpload } from '@/components/ui/ImageUpload';
 import { toast } from '@/hooks/useToast';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import {
@@ -19,9 +19,6 @@ import {
   AlertTriangle,
   Save,
   RotateCcw,
-  Camera,
-  Trash2,
-  Upload,
 } from 'lucide-react';
 import { useFormatters } from '@/hooks/useFormatters';
 
@@ -55,7 +52,6 @@ export default function GlobalSettingsPage() {
     uploadPlatformLogo,
     deletePlatformLogo,
   } = useGlobalSettings();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [settings, setSettings] = useState<GlobalSettings | null>(null);
 
   // Redirect if not SUPER_ADMIN
@@ -114,41 +110,6 @@ export default function GlobalSettingsPage() {
     }
   };
 
-  const handleLogoUpload = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        toast({
-          title: 'Error',
-          description: 'Por favor selecciona una imagen válida',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        toast({
-          title: 'Error',
-          description: 'La imagen no puede ser mayor a 5MB',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      await uploadPlatformLogo(file);
-    }
-  };
-
-  const handleDeleteLogo = async () => {
-    if (!settings?.platformLogo) return;
-    await deletePlatformLogo();
-  };
 
   if (session?.user?.role !== 'SUPER_ADMIN') {
     return null; // Will redirect
@@ -215,51 +176,19 @@ export default function GlobalSettingsPage() {
                     Logo de la plataforma
                   </label>
                   <div className="flex items-center space-x-4">
-                    <div className="relative">
-                      <Avatar className="h-16 w-16">
-                        <AvatarImage
-                          src={settings.platformLogo || ''}
-                          alt="Logo de la plataforma"
-                        />
-                        <AvatarFallback className="bg-primary/15 text-primary font-semibold text-lg font-bold">
-                          {settings.platformName
-                            ? settings.platformName.charAt(0).toUpperCase()
-                            : 'H'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileChange}
-                        style={{ display: 'none' }}
-                      />
-                      <button
-                        onClick={handleLogoUpload}
-                        disabled={isUpdating}
-                        className="absolute bottom-0 right-0 p-1.5 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors disabled:opacity-50 shadow-lg"
-                        title={settings.platformLogo ? 'Cambiar logo' : 'Subir logo'}
-                      >
-                        {settings.platformLogo ? (
-                          <Camera className="h-3.5 w-3.5" />
-                        ) : (
-                          <Upload className="h-3.5 w-3.5" />
-                        )}
-                      </button>
-                      {settings.platformLogo && (
-                        <button
-                          onClick={handleDeleteLogo}
-                          disabled={isUpdating}
-                          className="absolute -bottom-1 -left-1 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors disabled:opacity-50"
-                          title="Eliminar logo"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
-                      )}
-                    </div>
-                    <p className="text-xs text-gray-500">
-                      Máx. 5MB. Se mostrará en la parte superior izquierda.
-                    </p>
+                    <ImageUpload
+                      variant="avatar"
+                      src={settings.platformLogo}
+                      alt="Logo de la plataforma"
+                      fallback={settings.platformName ? settings.platformName.charAt(0).toUpperCase() : 'H'}
+                      fallbackClassName="bg-primary/15 text-primary"
+                      size="md"
+                      maxSizeMB={2}
+                      hint="PNG, JPG o WebP. Máx. 2 MB."
+                      disabled={isUpdating}
+                      onUpload={uploadPlatformLogo}
+                      onDelete={deletePlatformLogo}
+                    />
                   </div>
                 </div>
 

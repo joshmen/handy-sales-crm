@@ -32,6 +32,11 @@ public static class ImageUploadEndpoints
                 if (file.Length > 5 * 1024 * 1024)
                     return Results.BadRequest(new { error = "El archivo no debe superar 5MB" });
 
+                // Validate content type
+                var allowedTypes = new[] { "image/jpeg", "image/png", "image/gif", "image/webp" };
+                if (!allowedTypes.Contains(file.ContentType?.ToLower()))
+                    return Results.BadRequest(new { error = "Tipo de imagen no permitido. Use JPEG, PNG, GIF o WebP." });
+
                 var usuario = await dbContext.Usuarios
                     .Include(u => u.Tenant)
                     .FirstOrDefaultAsync(u => u.Id == userId);
@@ -97,6 +102,11 @@ public static class ImageUploadEndpoints
                 {
                     return Results.NotFound("Empresa no encontrada");
                 }
+
+                // Validate content type
+                var allowedTypes = new[] { "image/jpeg", "image/png", "image/gif", "image/webp" };
+                if (!allowedTypes.Contains(file.ContentType?.ToLower()))
+                    return Results.BadRequest(new { error = "Tipo de imagen no permitido. Use JPEG, PNG, GIF o WebP." });
 
                 // Generar/usar carpeta del tenant
                 var tenantFolder = cloudinaryService.GenerateTenantFolder(tenantId, tenant.NombreEmpresa);

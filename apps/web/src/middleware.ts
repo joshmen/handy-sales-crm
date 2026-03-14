@@ -172,6 +172,7 @@ export default withAuth(
           path === '/reset-password' ||
           path === '/tenant-suspended' ||
           path === '/billing/suspended' ||
+          path === '/set-password' ||
           path.startsWith('/invite') ||
           path.startsWith('/login') ||
           path === '/register' ||

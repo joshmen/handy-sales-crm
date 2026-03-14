@@ -29,5 +29,8 @@ public class RefreshToken
     [Column("ReplacedByToken")]
     public string? ReplacedByToken { get; set; }
 
+    [Column("SessionVersionAtCreation")]
+    public int? SessionVersionAtCreation { get; set; }
+
     public Usuario Usuario { get; set; } = null!;
 }

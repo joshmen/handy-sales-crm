@@ -17,8 +17,8 @@ const withPWA = require("@ducanh2912/next-pwa").default({
         },
       },
       {
-        // API calls — network first with cache fallback
-        urlPattern: /^https?:\/\/.*\/api\/.*/i,
+        // API calls — network first, exclude auth/sensitive endpoints
+        urlPattern: /^https?:\/\/.*\/api\/(?!auth|proxy\/auth).*/i,
         handler: "NetworkFirst",
         options: {
           cacheName: "api-cache",
@@ -93,7 +93,15 @@ const nextConfig = {
           },
           {
             key: "Referrer-Policy",
-            value: "origin-when-cross-origin",
+            value: "strict-origin-when-cross-origin",
+          },
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=31536000; includeSubDomains",
+          },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=(self), payment=(self)",
           },
           {
             key: process.env.NODE_ENV === "development"
@@ -110,6 +118,8 @@ const nextConfig = {
               "frame-ancestors 'self'",
               "base-uri 'self'",
               "form-action 'self'",
+              "object-src 'none'",
+              "upgrade-insecure-requests",
             ].join("; "),
           },
         ],
@@ -156,6 +166,12 @@ const nextConfig = {
   experimental: {
     serverActions: {
       bodySizeLimit: "2mb",
+      allowedOrigins: [
+        "localhost:1083",
+        "handy-sales-crm.vercel.app",
+        "handysuites.com",
+        "www.handysuites.com",
+      ],
     },
   },
 

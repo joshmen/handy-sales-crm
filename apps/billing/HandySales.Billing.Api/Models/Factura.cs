@@ -120,9 +120,21 @@ public class Factura
     public string? Observaciones { get; set; }
     
     public string? XmlContent { get; set; }
-    
+
     [MaxLength(500)]
     public string? PdfUrl { get; set; }
+
+    // Azure Blob Storage URLs (source of truth for XML/PDF files)
+    [MaxLength(500)]
+    public string? XmlBlobUrl { get; set; }
+
+    [MaxLength(500)]
+    public string? PdfBlobUrl { get; set; }
+
+    [MaxLength(50)]
+    public string? NoCertificadoEmisor { get; set; }
+
+    public string? AcuseCancelacion { get; set; }
     
     public int? CreatedBy { get; set; }
     

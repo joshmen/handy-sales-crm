@@ -44,6 +44,9 @@ public class SubscriptionPlan
     [Column("stripe_price_id_anual")]
     public string? StripePriceIdAnual { get; set; }
 
+    [Column("max_timbres_mes")]
+    public int MaxTimbresMes { get; set; }
+
     [Column("activo")]
     public bool Activo { get; set; } = true;
 

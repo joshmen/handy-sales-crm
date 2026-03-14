@@ -122,13 +122,13 @@ public class ImpersonationSession
     /// <summary>
     /// Lista de acciones realizadas (JSON array)
     /// </summary>
-    [Column("actions_performed", TypeName = "json")]
+    [Column("actions_performed", TypeName = "jsonb")]
     public string ActionsPerformed { get; set; } = "[]";
 
     /// <summary>
     /// Lista de páginas visitadas (JSON array)
     /// </summary>
-    [Column("pages_visited", TypeName = "json")]
+    [Column("pages_visited", TypeName = "jsonb")]
     public string PagesVisited { get; set; } = "[]";
 
     /// <summary>

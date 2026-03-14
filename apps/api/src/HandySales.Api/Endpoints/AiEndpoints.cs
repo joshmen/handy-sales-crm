@@ -77,16 +77,18 @@ public static class AiEndpoints
         return (tenantId, userId);
     }
 
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, (int Count, DateTime WindowStart)> _rateLimitState = new();
+
     private static bool CheckRateLimit(IMemoryCache cache, string key, int maxRequests)
     {
-        var count = cache.GetOrCreate(key, entry =>
-        {
-            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
-            return 0;
-        });
-        if (count >= maxRequests) return false;
-        cache.Set(key, count + 1, TimeSpan.FromMinutes(1));
-        return true;
+        var now = DateTime.UtcNow;
+        var state = _rateLimitState.AddOrUpdate(
+            key,
+            _ => (1, now),
+            (_, old) => (now - old.WindowStart).TotalMinutes >= 1
+                ? (1, now)
+                : (old.Count + 1, old.WindowStart));
+        return state.Count <= maxRequests;
     }
 
     /// <summary>
@@ -95,7 +97,7 @@ public static class AiEndpoints
     private static async Task<bool> MaterializedViewExistsAsync(HandySalesDbContext db, string viewName)
     {
         var result = await db.Database
-            .SqlQueryRaw<int>($"SELECT COUNT(*)::int AS \"Value\" FROM pg_matviews WHERE matviewname = '{viewName}'")
+            .SqlQueryRaw<int>("SELECT COUNT(*)::int AS \"Value\" FROM pg_matviews WHERE matviewname = {0}", viewName)
             .FirstOrDefaultAsync();
         return result > 0;
     }
@@ -258,6 +260,8 @@ public static class AiEndpoints
             {
                 var productoService = services.GetRequiredService<ProductoService>();
                 var data = JsonSerializer.Deserialize<BatchToggleParams>(json, CamelCase)!;
+                if (data.Ids == null || data.Ids.Count == 0 || data.Ids.Count > 1000)
+                    throw new InvalidOperationException("Lista de IDs inválida (máx. 1000)");
                 var count = await productoService.BatchToggleActivoAsync(data.Ids, data.Activo);
                 return ($"Se desactivaron {count} productos sin stock.", null);
             }

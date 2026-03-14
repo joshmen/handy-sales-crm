@@ -9,6 +9,8 @@ namespace HandySales.Api.Endpoints;
 
 public static class ImportExportEndpoints
 {
+    private const int MaxExportRows = 50_000;
+
     public static void MapImportExportEndpoints(this IEndpointRouteBuilder app)
     {
         // ═══════════════════════════════════════════════════════
@@ -21,6 +23,8 @@ public static class ImportExportEndpoints
         {
             var tenantId = tenantContext.TenantId ?? 0;
             if (tenantId == 0) return Results.Unauthorized();
+            var rowCount = await db.Clientes.Where(c => c.TenantId == tenantId).CountAsync();
+            if (rowCount > MaxExportRows) return Results.BadRequest(new { message = $"El export excede el límite de {MaxExportRows:N0} filas ({rowCount:N0} encontradas)" });
             var clientes = await db.Clientes
                 .Where(c => c.TenantId == tenantId)
                 .Join(db.Zonas, c => c.IdZona, z => z.Id, (c, z) => new { c, ZonaNombre = z.Nombre })
@@ -49,6 +53,8 @@ public static class ImportExportEndpoints
         {
             var tenantId = tenantContext.TenantId ?? 0;
             if (tenantId == 0) return Results.Unauthorized();
+            var rowCount = await db.Productos.Where(p => p.TenantId == tenantId).CountAsync();
+            if (rowCount > MaxExportRows) return Results.BadRequest(new { message = $"El export excede el límite de {MaxExportRows:N0} filas ({rowCount:N0} encontradas)" });
             var productos = await db.Productos
                 .Where(p => p.TenantId == tenantId)
                 .Include(p => p.Familia)
@@ -76,6 +82,8 @@ public static class ImportExportEndpoints
         {
             var tenantId = tenantContext.TenantId ?? 0;
             if (tenantId == 0) return Results.Unauthorized();
+            var rowCount = await db.Inventarios.Where(i => i.TenantId == tenantId).CountAsync();
+            if (rowCount > MaxExportRows) return Results.BadRequest(new { message = $"El export excede el límite de {MaxExportRows:N0} filas ({rowCount:N0} encontradas)" });
             var inventario = await db.Inventarios
                 .Where(i => i.TenantId == tenantId)
                 .Include(i => i.Producto)
@@ -110,6 +118,9 @@ public static class ImportExportEndpoints
                 query = query.Where(p => p.FechaPedido >= fechaDesde);
             if (DateTime.TryParse(hasta, out var fechaHasta))
                 query = query.Where(p => p.FechaPedido <= fechaHasta.AddDays(1));
+
+            var rowCount = await query.CountAsync();
+            if (rowCount > MaxExportRows) return Results.BadRequest(new { message = $"El export excede el límite de {MaxExportRows:N0} filas ({rowCount:N0} encontradas)" });
 
             var pedidos = await query
                 .OrderByDescending(p => p.FechaPedido)
@@ -150,6 +161,9 @@ public static class ImportExportEndpoints
                 query = query.Where(c => c.FechaCobro >= fechaDesde);
             if (DateTime.TryParse(hasta, out var fechaHasta))
                 query = query.Where(c => c.FechaCobro <= fechaHasta.AddDays(1));
+
+            var rowCount = await query.CountAsync();
+            if (rowCount > MaxExportRows) return Results.BadRequest(new { message = $"El export excede el límite de {MaxExportRows:N0} filas ({rowCount:N0} encontradas)" });
 
             var cobros = await query
                 .OrderByDescending(c => c.FechaCobro)
@@ -329,6 +343,9 @@ public static class ImportExportEndpoints
                 query = query.Where(r => r.Fecha >= fechaDesde);
             if (DateTime.TryParse(hasta, out var fechaHasta))
                 query = query.Where(r => r.Fecha <= fechaHasta.AddDays(1));
+
+            var rowCount = await query.CountAsync();
+            if (rowCount > MaxExportRows) return Results.BadRequest(new { message = $"El export excede el límite de {MaxExportRows:N0} filas ({rowCount:N0} encontradas)" });
 
             var rutas = await query
                 .OrderByDescending(r => r.Fecha)

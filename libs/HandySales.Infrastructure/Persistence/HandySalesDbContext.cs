@@ -93,11 +93,23 @@ public class HandySalesDbContext : DbContext
 
         foreach (var entry in ChangeTracker.Entries<AuditableEntity>())
         {
-            if (entry.State == EntityState.Deleted)
+            switch (entry.State)
             {
-                entry.State = EntityState.Modified;
-                entry.Entity.EliminadoEn = DateTime.UtcNow;
-                entry.Entity.EliminadoPor = currentUser;
+                case EntityState.Added:
+                    entry.Entity.CreadoEn = DateTime.UtcNow;
+                    entry.Entity.CreadoPor ??= currentUser;
+                    // Preserve Activo if explicitly set; otherwise leave default
+                    break;
+                case EntityState.Modified:
+                    entry.Entity.ActualizadoEn = DateTime.UtcNow;
+                    entry.Entity.ActualizadoPor = currentUser;
+                    entry.Entity.Version++;
+                    break;
+                case EntityState.Deleted:
+                    entry.State = EntityState.Modified;
+                    entry.Entity.EliminadoEn = DateTime.UtcNow;
+                    entry.Entity.EliminadoPor = currentUser;
+                    break;
             }
         }
 

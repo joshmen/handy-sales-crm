@@ -188,6 +188,9 @@ public static class RutaVendedorEndpoints
             RutaBatchToggleRequest request,
             [FromServices] RutaVendedorService servicio) =>
         {
+            if (request.Ids == null || request.Ids.Count == 0 || request.Ids.Count > 1000)
+                return Results.BadRequest(new { error = "Lista de IDs inválida (máx. 1000)" });
+
             var count = await servicio.BatchToggleActivoAsync(request.Ids, request.Activo);
             return Results.Ok(new { affected = count });
         });

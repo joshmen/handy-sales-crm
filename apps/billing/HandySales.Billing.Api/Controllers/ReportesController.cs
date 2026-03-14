@@ -19,7 +19,8 @@ public class ReportesController : ControllerBase
         _logger = logger;
     }
 
-    private string GetTenantId() => User.FindFirst("tenant_id")?.Value ?? "00000000-0000-0000-0000-000000000001";
+    private string GetTenantId() => User.FindFirst("tenant_id")?.Value
+        ?? throw new UnauthorizedAccessException("Token missing tenant_id claim");
 
     [HttpGet("dashboard")]
     public async Task<ActionResult<BillingDashboardDto>> GetDashboard(
@@ -31,9 +32,19 @@ public class ReportesController : ControllerBase
         var fin = fechaFin ?? DateTime.UtcNow;
 
         var facturas = await _context.Facturas
-            .Where(f => f.TenantId == tenantId 
-                && f.FechaEmision >= inicio 
+            .Where(f => f.TenantId == tenantId
+                && f.FechaEmision >= inicio
                 && f.FechaEmision <= fin)
+            .Select(f => new
+            {
+                f.Estado,
+                f.FechaEmision,
+                f.Subtotal,
+                f.TotalImpuestosTrasladados,
+                f.Total,
+                f.ReceptorRfc,
+                f.ReceptorNombre
+            })
             .ToListAsync();
 
         var dashboard = new BillingDashboardDto
@@ -42,11 +53,11 @@ public class ReportesController : ControllerBase
             FacturasTimbradas = facturas.Count(f => f.Estado == "TIMBRADA"),
             FacturasPendientes = facturas.Count(f => f.Estado == "PENDIENTE"),
             FacturasCanceladas = facturas.Count(f => f.Estado == "CANCELADA"),
-            
+
             MontoTotal = facturas.Where(f => f.Estado == "TIMBRADA").Sum(f => f.Total),
             MontoSubtotal = facturas.Where(f => f.Estado == "TIMBRADA").Sum(f => f.Subtotal),
             MontoIva = facturas.Where(f => f.Estado == "TIMBRADA").Sum(f => f.TotalImpuestosTrasladados),
-            
+
             FacturasPorDia = facturas
                 .Where(f => f.Estado == "TIMBRADA")
                 .GroupBy(f => f.FechaEmision.Date)
@@ -58,7 +69,7 @@ public class ReportesController : ControllerBase
                 })
                 .OrderBy(x => x.Fecha)
                 .ToList(),
-                
+
             TopClientes = facturas
                 .Where(f => f.Estado == "TIMBRADA")
                 .GroupBy(f => new { f.ReceptorRfc, f.ReceptorNombre })
@@ -194,6 +205,7 @@ public class ReportesController : ControllerBase
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 50)
     {
+        pageSize = Math.Clamp(pageSize, 1, 100);
         var tenantId = GetTenantId();
         var inicio = fechaInicio ?? DateTime.UtcNow.AddDays(-7);
         var fin = fechaFin ?? DateTime.UtcNow;

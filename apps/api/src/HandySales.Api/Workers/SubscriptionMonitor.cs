@@ -253,6 +253,7 @@ public class SubscriptionMonitor : BackgroundService
             // Trial expired without card: shorter grace period (3 days)
             var graceDays = tenant.SubscriptionStatus == "Trial" ? TrialGracePeriodDays : GracePeriodDays;
 
+            var previousStatus = tenant.SubscriptionStatus;
             tenant.SubscriptionStatus = "Expired";
             tenant.GracePeriodEnd = now.AddDays(graceDays);
 
@@ -270,8 +271,8 @@ public class SubscriptionMonitor : BackgroundService
             var emailBody = EmailTemplates.SubscriptionExpired(tenant.NombreEmpresa);
             await emailService.SendBulkAsync(adminEmails!, subject, emailBody);
 
-            _logger.LogInformation("Tenant {TenantId} ({Name}) expired (was {Status}). Grace period: {Days} days until {GraceEnd}",
-                tenant.Id, tenant.NombreEmpresa, tenant.SubscriptionStatus, graceDays, tenant.GracePeriodEnd);
+            _logger.LogInformation("Tenant {TenantId} ({Name}) expired (was {PreviousStatus}). Grace period: {Days} days until {GraceEnd}",
+                tenant.Id, tenant.NombreEmpresa, previousStatus, graceDays, tenant.GracePeriodEnd);
         }
 
         if (expiredTenants.Count > 0)

@@ -51,6 +51,7 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             {
                 ["Cloudinary:Url"] = "cloudinary://000000000000000:fake_secret@fake_cloud",
                 ["SendGrid:ApiKey"] = "SG.fake-key-for-testing",
+                ["Ai:ApiKey"] = "sk-fake-key-for-testing",
             });
         });
 

@@ -40,9 +40,11 @@ public static class MobileClienteEndpoints
             }
 
             var total = clientes.Count;
+            var tamano = porPagina > 0 ? Math.Min(porPagina, 100) : 20;
+            var paginaActual = pagina > 0 ? pagina : 1;
             var paginados = clientes
-                .Skip((pagina - 1) * porPagina)
-                .Take(porPagina)
+                .Skip((paginaActual - 1) * tamano)
+                .Take(tamano)
                 .ToList();
 
             return Results.Ok(new
@@ -51,10 +53,10 @@ public static class MobileClienteEndpoints
                 data = paginados,
                 pagination = new
                 {
-                    page = pagina,
-                    pageSize = porPagina,
+                    page = paginaActual,
+                    pageSize = tamano,
                     total,
-                    totalPages = (int)Math.Ceiling((double)total / porPagina)
+                    totalPages = (int)Math.Ceiling((double)total / tamano)
                 }
             });
         })

@@ -35,6 +35,10 @@ public class MobileAuthService
         if (!loginSuccess || usuario == null)
             return new LoginResult { Success = false };
 
+        // Check if the user account is active
+        if (!usuario.Activo)
+            return new LoginResult { Success = false, Message = "Cuenta desactivada" };
+
         // --- Device binding check (only for non-admin mobile users) ---
         if (!string.IsNullOrEmpty(deviceFingerprint) && !usuario.EsAdmin && !usuario.EsSuperAdmin)
         {
@@ -133,6 +137,15 @@ public class MobileAuthService
 
         if (tokenEntity == null)
             return null;
+
+        // Block deactivated users from refreshing tokens
+        if (!tokenEntity.Usuario.Activo)
+        {
+            tokenEntity.IsRevoked = true;
+            tokenEntity.RevokedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+            return null;
+        }
 
         tokenEntity.IsRevoked = true;
         tokenEntity.RevokedAt = DateTime.UtcNow;

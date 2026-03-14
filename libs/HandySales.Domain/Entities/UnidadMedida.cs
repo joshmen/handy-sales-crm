@@ -14,6 +14,9 @@ public class UnidadMedida : AuditableEntity
     [Column("abreviatura")]
     public string? Abreviatura { get; set; }
 
+    [Column("clave_sat")]
+    public string? ClaveSat { get; set; }
+
     public Tenant Tenant { get; set; } = null!;
     public List<Producto> Productos { get; set; } = new();
 }

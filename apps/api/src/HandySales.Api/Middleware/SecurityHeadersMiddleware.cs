@@ -33,6 +33,12 @@ public class SecurityHeadersMiddleware
         // Restrict permissions (camera, microphone, geolocation, etc.)
         context.Response.Headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(self)";
 
+        // Content Security Policy — API-only, no inline scripts/styles needed
+        context.Response.Headers["Content-Security-Policy"] = "default-src 'none'";
+
+        // Prevent caching of sensitive API responses
+        context.Response.Headers["Cache-Control"] = "no-store";
+
         await _next(context);
     }
 }

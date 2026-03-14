@@ -261,7 +261,7 @@ function LoginContent() {
         if (result?.ok) {
           setNavigating(true);
           const cb = searchParams.get('callbackUrl');
-          router.push(cb?.startsWith('/') ? cb : '/dashboard');
+          router.push(cb && cb.startsWith('/') && !cb.startsWith('//') ? cb : '/dashboard');
           return;
         }
       }
@@ -475,7 +475,11 @@ function LoginContent() {
               <div className="auth-animate auth-animate-delay-6">
                 <button
                   type="button"
-                  onClick={() => signIn('google', { callbackUrl: searchParams.get('callbackUrl') || '/dashboard' })}
+                  onClick={() => {
+                    const raw = searchParams.get('callbackUrl');
+                    const safe = raw && raw.startsWith('/') && !raw.startsWith('//') ? raw : '/dashboard';
+                    signIn('google', { callbackUrl: safe });
+                  }}
                   disabled={isDisabled}
                   className="w-full h-12 border border-[#D1D5DB] text-[15px] font-medium text-[#374151] rounded-[10px] hover:bg-gray-50 hover:border-gray-400 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-3 active:scale-[0.98]"
                 >

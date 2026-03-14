@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using HandySales.Domain.Entities;
 using HandySales.Infrastructure.Persistence;
@@ -14,6 +15,10 @@ using System.Linq;
 
 public class AuthService
 {
+    // TOTP brute-force protection: max 5 failed attempts per user within 10 minutes
+    private const int MaxTotpAttempts = 5;
+    private static readonly TimeSpan TotpLockoutWindow = TimeSpan.FromMinutes(10);
+    private static readonly ConcurrentDictionary<int, (int Count, DateTime FirstAttempt)> _totpAttempts = new();
     private readonly HandySalesDbContext _db;
     private readonly JwtTokenGenerator _jwt;
     private readonly IActivityTrackingService _activityTracking;
@@ -355,6 +360,14 @@ public class AuthService
             return null;
         }
 
+        // Block soft-deleted or deactivated users
+        if (!usuario.Activo || usuario.EliminadoEn != null)
+        {
+            await LogActivityAsync(usuario.TenantId, usuario.Id, "login", "auth",
+                $"Login bloqueado: usuario desactivado o eliminado {usuario.Email}", "blocked");
+            return null;
+        }
+
         // Check tenant is active (SuperAdmin is exempt — they don't belong to a regular tenant)
         if (!usuario.EsSuperAdmin)
         {
@@ -457,8 +470,27 @@ public class AuthService
     /// </summary>
     public async Task<object?> Verify2FAAsync(int userId, string code)
     {
+        // TOTP brute-force protection: check if user is locked out
+        if (_totpAttempts.TryGetValue(userId, out var attempts))
+        {
+            if (DateTime.UtcNow - attempts.FirstAttempt > TotpLockoutWindow)
+            {
+                // Window expired, reset
+                _totpAttempts.TryRemove(userId, out _);
+            }
+            else if (attempts.Count >= MaxTotpAttempts)
+            {
+                _logger.LogWarning("TOTP_LOCKOUT: User {UserId} locked out after {Attempts} failed TOTP attempts", userId, attempts.Count);
+                return new { code = "TOTP_LOCKED", message = "Demasiados intentos fallidos. Intenta de nuevo en 10 minutos." };
+            }
+        }
+
         var usuario = await _db.Usuarios.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Id == userId);
         if (usuario == null || !usuario.TotpEnabled)
+            return null;
+
+        // Block soft-deleted or deactivated users
+        if (!usuario.Activo || usuario.EliminadoEn != null)
             return null;
 
         // Check tenant is active before allowing 2FA completion
@@ -482,7 +514,16 @@ public class AuthService
         }
 
         if (!isValid)
+        {
+            // Track failed attempt
+            _totpAttempts.AddOrUpdate(userId,
+                _ => (1, DateTime.UtcNow),
+                (_, existing) => (existing.Count + 1, existing.FirstAttempt));
             return null;
+        }
+
+        // Success — clear any tracked attempts
+        _totpAttempts.TryRemove(userId, out _);
 
         // Close existing sessions (2FA verification acts as the authorization)
         await CloseAllActiveSessions(usuario, "Sesión cerrada por verificación 2FA desde otro dispositivo");
@@ -520,6 +561,10 @@ public class AuthService
         var usuario = await _db.Usuarios.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Email == dto.email);
 
         if (usuario == null || !BCrypt.Net.BCrypt.Verify(dto.password, usuario.PasswordHash))
+            return null;
+
+        // Block soft-deleted or deactivated users
+        if (!usuario.Activo || usuario.EliminadoEn != null)
             return null;
 
         // Check tenant is active
@@ -755,6 +800,10 @@ public class AuthService
         if (tokenEntity == null)
             return null;
 
+        if (tokenEntity.SessionVersionAtCreation.HasValue &&
+            tokenEntity.SessionVersionAtCreation.Value != tokenEntity.Usuario.SessionVersion)
+            return null;
+
         // Check tenant is active before refreshing
         if (!tokenEntity.Usuario.EsSuperAdmin)
         {
@@ -809,6 +858,11 @@ public class AuthService
             token.RevokedAt = DateTime.UtcNow;
         }
 
+        var usuario = await _db.Usuarios.IgnoreQueryFilters()
+            .Where(u => u.Id == userId)
+            .Select(u => new { u.SessionVersion })
+            .FirstOrDefaultAsync();
+
         // Generar token plano, almacenar hash SHA-256
         var plainToken = Convert.ToBase64String(Guid.NewGuid().ToByteArray()) + Convert.ToBase64String(Guid.NewGuid().ToByteArray());
         var refreshToken = new RefreshToken
@@ -816,7 +870,8 @@ public class AuthService
             Token = HashToken(plainToken),
             UserId = userId,
             ExpiresAt = DateTime.UtcNow.AddDays(30),
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            SessionVersionAtCreation = usuario?.SessionVersion
         };
 
         _db.RefreshTokens.Add(refreshToken);

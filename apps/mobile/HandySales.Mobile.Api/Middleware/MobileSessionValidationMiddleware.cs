@@ -48,7 +48,33 @@ public class MobileSessionValidationMiddleware
             return;
         }
 
-        // Only check if device fingerprint is present (mobile clients always send it)
+        // If fingerprint is absent, check if user has any device sessions — if so, require it
+        if (string.IsNullOrEmpty(deviceFingerprint))
+        {
+            var cacheKeyHasSessions = $"has_device_sessions_{userId}";
+            if (!_cache.TryGetValue<bool>(cacheKeyHasSessions, out var hasSessions))
+            {
+                using var scopeCheck = context.RequestServices.CreateScope();
+                var dbCheck = scopeCheck.ServiceProvider.GetRequiredService<HandySalesDbContext>();
+                hasSessions = await dbCheck.DeviceSessions
+                    .IgnoreQueryFilters()
+                    .AnyAsync(ds => ds.UsuarioId == userId && ds.EliminadoEn == null);
+                _cache.Set(cacheKeyHasSessions, hasSessions, TimeSpan.FromMinutes(2));
+            }
+
+            if (hasSessions)
+            {
+                context.Response.StatusCode = 401;
+                await context.Response.WriteAsJsonAsync(new
+                {
+                    code = "DEVICE_FINGERPRINT_REQUIRED",
+                    message = "Se requiere el header X-Device-Fingerprint para este usuario."
+                });
+                return;
+            }
+        }
+
+        // Check device session status when fingerprint is present
         if (!string.IsNullOrEmpty(deviceFingerprint))
         {
             var cacheKey = $"device_status_{userId}_{deviceFingerprint}";
@@ -65,6 +91,28 @@ public class MobileSessionValidationMiddleware
                     .OrderByDescending(ds => ds.LastActivity)
                     .Select(ds => new { ds.Status })
                     .FirstOrDefaultAsync();
+
+                if (session == null)
+                {
+                    // Unknown fingerprint — check if user has other sessions
+                    var hasOtherSessions = await db.DeviceSessions
+                        .IgnoreQueryFilters()
+                        .AnyAsync(ds => ds.UsuarioId == userId && ds.EliminadoEn == null);
+
+                    sessionStatus = hasOtherSessions ? SessionStatus.RevokedByAdmin : SessionStatus.Active;
+
+                    if (hasOtherSessions)
+                    {
+                        _cache.Set(cacheKey, sessionStatus, TimeSpan.FromSeconds(30));
+                        context.Response.StatusCode = 401;
+                        await context.Response.WriteAsJsonAsync(new
+                        {
+                            code = "DEVICE_NOT_RECOGNIZED",
+                            message = "Dispositivo no reconocido. Registra este dispositivo o contacta a tu administrador."
+                        });
+                        return;
+                    }
+                }
 
                 sessionStatus = session?.Status ?? SessionStatus.Active;
                 _cache.Set(cacheKey, sessionStatus, TimeSpan.FromSeconds(30));

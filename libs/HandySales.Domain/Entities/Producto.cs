@@ -16,7 +16,7 @@ public class Producto : AuditableEntity
     public string CodigoBarra { get; set; } = null!;
     [Column("descripcion")]
     public string Descripcion { get; set; } = null!;
-    [Column("ImagenUrl")]
+    [Column("imagen_url")]
     public string? ImagenUrl { get; set; }
     [Column("familia_id")]
     public int FamiliaId { get; set; }
@@ -26,6 +26,9 @@ public class Producto : AuditableEntity
     public int UnidadMedidaId { get; set; }
     [Column("precio_base")]
     public decimal PrecioBase { get; set; }
+
+    [Column("clave_sat")]
+    public string? ClaveSat { get; set; }
 
     // Navigation properties
     public Tenant Tenant { get; set; } = null!;

@@ -94,10 +94,21 @@ public class AiCreditService : IAiCreditService
 
     public async Task AddExtraCreditsAsync(int tenantId, int credits)
     {
-        var balance = await GetOrCreateBalanceAsync(tenantId);
-        balance.CreditosExtras += credits;
-        balance.ActualizadoEn = DateTime.UtcNow;
-        await _db.SaveChangesAsync();
+        // Ensure a balance row exists for the current month
+        await GetOrCreateBalanceAsync(tenantId);
+
+        var now = DateTime.UtcNow;
+
+        // Atomic update to prevent lost credits from concurrent Stripe webhooks
+        await _db.Database.ExecuteSqlInterpolatedAsync(
+            $"""
+            UPDATE ai_credit_balances
+            SET creditos_extras = creditos_extras + {credits},
+                actualizado_en = {now}
+            WHERE tenant_id = {tenantId}
+              AND anio = {now.Year}
+              AND mes = {now.Month}
+            """);
     }
 
     private async Task<AiCreditBalance> GetOrCreateBalanceAsync(int tenantId)
@@ -127,7 +138,17 @@ public class AiCreditService : IAiCreditService
         };
 
         _db.AiCreditBalances.Add(balance);
-        await _db.SaveChangesAsync();
+        try
+        {
+            await _db.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is Npgsql.PostgresException pg && pg.SqlState == "23505")
+        {
+            // Another request created the balance concurrently — fetch the existing one
+            _db.ChangeTracker.Clear();
+            return await _db.AiCreditBalances
+                .FirstAsync(b => b.TenantId == tenantId && b.Anio == now.Year && b.Mes == now.Month);
+        }
         return balance;
     }
 

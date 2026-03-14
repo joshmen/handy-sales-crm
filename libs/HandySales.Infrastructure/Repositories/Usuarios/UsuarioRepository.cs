@@ -78,8 +78,8 @@ public class UsuarioRepository : IUsuarioRepository
         if (usuario == null)
             return false;
 
-        // Soft delete - mark as inactive instead of removing from database
-        usuario.Activo = false;
+        // Soft delete via SaveChangesAsync override (sets EliminadoEn + EliminadoPor)
+        _db.Usuarios.Remove(usuario);
         await _db.SaveChangesAsync();
         return true;
     }

@@ -41,10 +41,17 @@ public class BillingDbContext : DbContext
         // Configuración de índices únicos
         modelBuilder.Entity<Factura>()
             .HasIndex(f => f.Uuid)
+            .IsUnique()
+            .HasFilter("\"Uuid\" IS NOT NULL");
+
+        modelBuilder.Entity<Factura>()
+            .HasIndex(f => new { f.TenantId, f.Serie, f.Folio })
             .IsUnique();
 
         modelBuilder.Entity<Factura>()
-            .HasIndex(f => new { f.Serie, f.Folio });
+            .HasIndex(f => new { f.TenantId, f.PedidoId })
+            .IsUnique()
+            .HasFilter("\"PedidoId\" IS NOT NULL AND \"Estado\" != 'CANCELADA'");
 
         modelBuilder.Entity<NumeracionDocumento>()
             .HasIndex(n => new { n.TenantId, n.TipoDocumento, n.Serie })

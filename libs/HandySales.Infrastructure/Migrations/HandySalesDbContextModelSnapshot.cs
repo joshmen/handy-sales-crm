@@ -176,7 +176,7 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("activity_type");
 
                     b.Property<string>("AdditionalData")
-                        .HasColumnType("json")
+                        .HasColumnType("jsonb")
                         .HasColumnName("additional_data");
 
                     b.Property<string>("Browser")
@@ -249,11 +249,11 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnName("longitude");
 
                     b.Property<string>("NewValues")
-                        .HasColumnType("json")
+                        .HasColumnType("jsonb")
                         .HasColumnName("new_values");
 
                     b.Property<string>("OldValues")
-                        .HasColumnType("json")
+                        .HasColumnType("jsonb")
                         .HasColumnName("old_values");
 
                     b.Property<string>("OperatingSystem")
@@ -3310,6 +3310,10 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("categoria_id");
 
+                    b.Property<string>("ClaveSat")
+                        .HasColumnType("text")
+                        .HasColumnName("clave_sat");
+
                     b.Property<string>("CodigoBarra")
                         .IsRequired()
                         .HasColumnType("text")
@@ -3342,7 +3346,7 @@ namespace HandySales.Infrastructure.Migrations
 
                     b.Property<string>("ImagenUrl")
                         .HasColumnType("text")
-                        .HasColumnName("ImagenUrl");
+                        .HasColumnName("imagen_url");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
@@ -3516,6 +3520,10 @@ namespace HandySales.Infrastructure.Migrations
                     b.Property<DateTime?>("RevokedAt")
                         .HasColumnType("timestamp without time zone")
                         .HasColumnName("RevokedAt");
+
+                    b.Property<int?>("SessionVersionAtCreation")
+                        .HasColumnType("integer")
+                        .HasColumnName("SessionVersionAtCreation");
 
                     b.Property<string>("Token")
                         .IsRequired()
@@ -4175,6 +4183,10 @@ namespace HandySales.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("max_productos");
 
+                    b.Property<int>("MaxTimbresMes")
+                        .HasColumnType("integer")
+                        .HasColumnName("max_timbres_mes");
+
                     b.Property<int>("MaxUsuarios")
                         .HasColumnType("integer")
                         .HasColumnName("max_usuarios");
@@ -4307,6 +4319,14 @@ namespace HandySales.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("subscription_status");
+
+                    b.Property<DateTime?>("TimbresResetFecha")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("timbres_reset_fecha");
+
+                    b.Property<int>("TimbresUsadosMes")
+                        .HasColumnType("integer")
+                        .HasColumnName("timbres_usados_mes");
 
                     b.Property<DateTime?>("TrialCardCollectedAt")
                         .HasColumnType("timestamp without time zone")
@@ -4750,6 +4770,10 @@ namespace HandySales.Infrastructure.Migrations
                     b.Property<string>("ActualizadoPor")
                         .HasColumnType("text")
                         .HasColumnName("actualizado_por");
+
+                    b.Property<string>("ClaveSat")
+                        .HasColumnType("text")
+                        .HasColumnName("clave_sat");
 
                     b.Property<DateTime>("CreadoEn")
                         .HasColumnType("timestamp without time zone")

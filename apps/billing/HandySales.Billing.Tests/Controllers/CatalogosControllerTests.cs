@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using HandySales.Billing.Api.Controllers;
 using HandySales.Billing.Api.Data;
@@ -23,7 +24,13 @@ public class CatalogosControllerTests : IDisposable
 
         _context = new BillingDbContext(options);
         var logger = new LoggerFactory().CreateLogger<CatalogosController>();
-        _controller = new CatalogosController(_context, logger);
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Jwt:Secret"] = "test-jwt-secret-key-for-encryption-32chars!"
+            })
+            .Build();
+        _controller = new CatalogosController(_context, logger, config);
 
         SetupUserClaims();
         SeedTestData();

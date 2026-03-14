@@ -162,8 +162,24 @@ public class EnviarFacturaRequest
     [Required]
     [EmailAddress]
     public string Email { get; set; } = default!;
-    
+
     public string? Mensaje { get; set; }
     public bool IncluirPdf { get; set; } = true;
     public bool IncluirXml { get; set; } = true;
+}
+
+/// <summary>
+/// Request to create a factura from an existing order (pedido).
+/// Only requires the order ID — all data is read from handy_erp automatically.
+/// </summary>
+public class CreateFacturaFromOrderRequest
+{
+    [Required]
+    public int PedidoId { get; set; }
+
+    public string? MetodoPago { get; set; }
+    public string? FormaPago { get; set; }
+    public string? UsoCfdi { get; set; }
+    public string? Observaciones { get; set; }
+    public bool TimbrarInmediatamente { get; set; } = false;
 }

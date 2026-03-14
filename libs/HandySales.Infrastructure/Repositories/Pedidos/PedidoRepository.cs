@@ -18,30 +18,48 @@ public class PedidoRepository : IPedidoRepository
     public async Task<int> CrearAsync(PedidoCreateDto dto, int usuarioId, int tenantId)
     {
         var esVentaDirecta = dto.TipoVenta == TipoVenta.VentaDirecta;
-        var numeroPedido = await GenerarNumeroPedidoAsync(tenantId, esVentaDirecta ? "VD" : "PED");
 
-        var pedido = new Pedido
+        // Retry loop for unique constraint violations on NumeroPedido
+        Pedido pedido = null!;
+        for (int attempt = 0; attempt < 3; attempt++)
         {
-            TenantId = tenantId,
-            ClienteId = dto.ClienteId,
-            UsuarioId = usuarioId,
-            NumeroPedido = numeroPedido,
-            FechaPedido = DateTime.UtcNow,
-            FechaEntregaEstimada = dto.FechaEntregaEstimada,
-            Estado = esVentaDirecta ? EstadoPedido.Entregado : EstadoPedido.Borrador,
-            FechaEntregaReal = esVentaDirecta ? DateTime.UtcNow : null,
-            TipoVenta = dto.TipoVenta,
-            Notas = dto.Notas,
-            DireccionEntrega = dto.DireccionEntrega,
-            Latitud = dto.Latitud,
-            Longitud = dto.Longitud,
-            ListaPrecioId = dto.ListaPrecioId,
-            Activo = true,
-            CreadoEn = DateTime.UtcNow
-        };
+            try
+            {
+                var numeroPedido = await GenerarNumeroPedidoAsync(tenantId, esVentaDirecta ? "VD" : "PED");
 
-        _db.Pedidos.Add(pedido);
-        await _db.SaveChangesAsync();
+                pedido = new Pedido
+                {
+                    TenantId = tenantId,
+                    ClienteId = dto.ClienteId,
+                    UsuarioId = usuarioId,
+                    NumeroPedido = numeroPedido,
+                    FechaPedido = DateTime.UtcNow,
+                    FechaEntregaEstimada = dto.FechaEntregaEstimada,
+                    Estado = esVentaDirecta ? EstadoPedido.Entregado : EstadoPedido.Borrador,
+                    FechaEntregaReal = esVentaDirecta ? DateTime.UtcNow : null,
+                    TipoVenta = dto.TipoVenta,
+                    Notas = dto.Notas,
+                    DireccionEntrega = dto.DireccionEntrega,
+                    Latitud = dto.Latitud,
+                    Longitud = dto.Longitud,
+                    ListaPrecioId = dto.ListaPrecioId,
+                    Activo = true,
+                    CreadoEn = DateTime.UtcNow
+                };
+
+                _db.Pedidos.Add(pedido);
+                await _db.SaveChangesAsync();
+                break;
+            }
+            catch (DbUpdateException ex) when (ex.InnerException is Npgsql.PostgresException pg && pg.SqlState == "23505")
+            {
+                // Detach the failed entity so next attempt starts clean
+                _db.Entry(pedido).State = EntityState.Detached;
+                if (attempt == 2)
+                    throw new InvalidOperationException("No se pudo generar número de pedido único después de 3 intentos", ex);
+                continue;
+            }
+        }
 
         // Batch-load all referenced products (avoids N+1)
         var productoIds = dto.Detalles.Select(d => d.ProductoId).Distinct().ToList();
@@ -507,6 +525,14 @@ public class PedidoRepository : IPedidoRepository
 
     public async Task<decimal> CalcularTotalAsync(int pedidoId, int tenantId)
     {
+        // Validate the pedido belongs to the specified tenant before querying DetallePedidos
+        var pedidoBelongsToTenant = await _db.Pedidos
+            .AsNoTracking()
+            .AnyAsync(p => p.Id == pedidoId && p.TenantId == tenantId);
+
+        if (!pedidoBelongsToTenant)
+            return 0;
+
         return (await _db.DetallePedidos
             .AsNoTracking()
             .Where(d => d.PedidoId == pedidoId && d.Activo)

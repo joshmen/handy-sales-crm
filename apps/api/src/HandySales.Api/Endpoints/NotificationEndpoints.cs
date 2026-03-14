@@ -89,8 +89,13 @@ public static class NotificationEndpoints
         // ADMIN: Enviar notificación a usuario específico
         group.MapPost("/enviar", async (
             SendNotificationDto dto,
+            HttpContext context,
             [FromServices] INotificationService service) =>
         {
+            var isAdmin = context.User.FindFirst("es_admin")?.Value == "True"
+                || context.User.FindFirst("es_super_admin")?.Value == "True";
+            if (!isAdmin) return Results.Forbid();
+
             var result = await service.EnviarNotificacionAsync(dto);
             return result.Success ? Results.Ok(result) : Results.BadRequest(result);
         })
@@ -103,8 +108,13 @@ public static class NotificationEndpoints
         // ADMIN: Enviar broadcast a múltiples usuarios
         group.MapPost("/broadcast", async (
             BroadcastNotificationDto dto,
+            HttpContext context,
             [FromServices] INotificationService service) =>
         {
+            var isAdmin = context.User.FindFirst("es_admin")?.Value == "True"
+                || context.User.FindFirst("es_super_admin")?.Value == "True";
+            if (!isAdmin) return Results.Forbid();
+
             var result = await service.EnviarBroadcastAsync(dto);
             return Results.Ok(result);
         })

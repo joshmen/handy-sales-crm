@@ -42,6 +42,7 @@ public class FakeJwtAuthHandler : AuthenticationHandler<AuthenticationSchemeOpti
             new(ClaimTypes.NameIdentifier, userId),
             new("tenant_id", tenantId),
             new("sub", userId),
+            new("session_version", "1"),
         };
 
         if (customRole != null)

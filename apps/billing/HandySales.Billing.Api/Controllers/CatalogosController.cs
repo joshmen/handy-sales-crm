@@ -13,14 +13,17 @@ public class CatalogosController : ControllerBase
 {
     private readonly BillingDbContext _context;
     private readonly ILogger<CatalogosController> _logger;
+    private readonly IConfiguration _configuration;
 
-    public CatalogosController(BillingDbContext context, ILogger<CatalogosController> logger)
+    public CatalogosController(BillingDbContext context, ILogger<CatalogosController> logger, IConfiguration configuration)
     {
         _context = context;
         _logger = logger;
+        _configuration = configuration;
     }
 
-    private string GetTenantId() => User.FindFirst("tenant_id")?.Value ?? "00000000-0000-0000-0000-000000000001";
+    private string GetTenantId() => User.FindFirst("tenant_id")?.Value
+        ?? throw new UnauthorizedAccessException("Token missing tenant_id claim");
 
     [HttpGet("tipos-comprobante")]
     public async Task<ActionResult<IEnumerable<TipoComprobante>>> GetTiposComprobante()
@@ -81,16 +84,36 @@ public class CatalogosController : ControllerBase
         var tenantId = GetTenantId();
         
         var config = await _context.ConfiguracionesFiscales
+            .AsNoTracking()
             .Where(c => c.TenantId == tenantId && c.Activo)
+            .Select(c => new
+            {
+                c.Id,
+                c.TenantId,
+                c.EmpresaId,
+                c.RegimenFiscal,
+                c.Rfc,
+                c.RazonSocial,
+                c.DireccionFiscal,
+                c.CodigoPostal,
+                c.Pais,
+                c.Moneda,
+                c.SerieFactura,
+                c.FolioActual,
+                c.LogoUrl,
+                c.Activo,
+                c.PacUsuario,
+                c.PacAmbiente,
+                HasCertificado = c.CertificadoSat != null,
+                HasLlavePrivada = c.LlavePrivada != null,
+                HasPassword = c.PasswordCertificado != null,
+                c.CreatedAt,
+                c.UpdatedAt
+            })
             .FirstOrDefaultAsync();
 
         if (config == null)
             return NotFound("No se ha configurado la información fiscal");
-
-        // No devolver información sensible
-        config.CertificadoSat = null;
-        config.LlavePrivada = null;
-        config.PasswordCertificado = null;
 
         return Ok(config);
     }
@@ -122,15 +145,25 @@ public class CatalogosController : ControllerBase
             SerieFactura = request.SerieFactura ?? "A",
             FolioActual = 1,
             LogoUrl = request.LogoUrl,
+            PacUsuario = request.PacUsuario,
+            PacAmbiente = request.PacAmbiente ?? "sandbox",
             Activo = true
         };
+
+        // Encrypt PAC password before storing (never store plaintext)
+        if (!string.IsNullOrEmpty(request.PacPassword))
+        {
+            var encryptionKey = _configuration["Jwt:Secret"]
+                ?? throw new InvalidOperationException("Jwt:Secret not configured");
+            config.PacPassword = EncryptPassword(request.PacPassword, encryptionKey);
+        }
 
         _context.ConfiguracionesFiscales.Add(config);
         await _context.SaveChangesAsync();
 
         _logger.LogInformation($"Configuración fiscal creada para tenant {tenantId}");
 
-        return CreatedAtAction(nameof(GetConfiguracionFiscal), config);
+        return CreatedAtAction(nameof(GetConfiguracionFiscal), new { config.Id, config.TenantId, message = "Configuración fiscal creada" });
     }
 
     [HttpPut("configuracion-fiscal/{id}")]
@@ -156,6 +189,17 @@ public class CatalogosController : ControllerBase
         config.Moneda = request.Moneda ?? config.Moneda;
         config.SerieFactura = request.SerieFactura ?? config.SerieFactura;
         config.LogoUrl = request.LogoUrl ?? config.LogoUrl;
+        config.PacUsuario = request.PacUsuario ?? config.PacUsuario;
+        config.PacAmbiente = request.PacAmbiente ?? config.PacAmbiente;
+
+        // Encrypt PAC password before storing (never store plaintext)
+        if (!string.IsNullOrEmpty(request.PacPassword))
+        {
+            var encryptionKey = _configuration["Jwt:Secret"]
+                ?? throw new InvalidOperationException("Jwt:Secret not configured");
+            config.PacPassword = EncryptPassword(request.PacPassword, encryptionKey);
+        }
+
         config.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
@@ -174,6 +218,20 @@ public class CatalogosController : ControllerBase
     {
         var tenantId = GetTenantId();
 
+        // Validate file size and type
+        const long maxCertFileSize = 50 * 1024; // 50KB — CSD certs are ~2KB
+        if (request.Certificado.Length > maxCertFileSize)
+            return BadRequest("El certificado excede el tamaño máximo (50KB).");
+        if (request.LlavePrivada.Length > maxCertFileSize)
+            return BadRequest("La llave privada excede el tamaño máximo (50KB).");
+
+        var cerExt = Path.GetExtension(request.Certificado.FileName)?.ToLowerInvariant();
+        var keyExt = Path.GetExtension(request.LlavePrivada.FileName)?.ToLowerInvariant();
+        if (cerExt != ".cer")
+            return BadRequest("El certificado debe ser un archivo .cer");
+        if (keyExt != ".key")
+            return BadRequest("La llave privada debe ser un archivo .key");
+
         var config = await _context.ConfiguracionesFiscales
             .Where(c => c.Id == id && c.TenantId == tenantId)
             .FirstOrDefaultAsync();
@@ -183,8 +241,6 @@ public class CatalogosController : ControllerBase
 
         try
         {
-            // TODO: Validar certificado con el SAT
-            // Por ahora solo guardamos los archivos como base64
 
             using var msCert = new MemoryStream();
             await request.Certificado.CopyToAsync(msCert);
@@ -195,7 +251,9 @@ public class CatalogosController : ControllerBase
             config.LlavePrivada = Convert.ToBase64String(msKey.ToArray());
 
             // Encrypt certificate password before storing (never store plaintext)
-            config.PasswordCertificado = EncryptPassword(request.Password);
+            var encryptionKey = _configuration["Jwt:Secret"]
+                ?? throw new InvalidOperationException("Jwt:Secret not configured");
+            config.PasswordCertificado = EncryptPassword(request.Password, encryptionKey);
             config.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
@@ -257,13 +315,8 @@ public class CatalogosController : ControllerBase
         return CreatedAtAction(nameof(GetNumeracion), numeracion);
     }
 
-    /// <summary>
-    /// Encrypts certificate passwords before database storage using AES-256-CBC.
-    /// Key is derived from JWT secret (same pattern as TotpEncryptionService in Main API).
-    /// </summary>
-    private static string EncryptPassword(string plaintext)
+    public static string EncryptPassword(string plaintext, string key)
     {
-        var key = Environment.GetEnvironmentVariable("Jwt__Secret") ?? "billing-default-key";
         using var sha = System.Security.Cryptography.SHA256.Create();
         var keyBytes = sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(key));
 
@@ -281,6 +334,28 @@ public class CatalogosController : ControllerBase
 
         return Convert.ToBase64String(result);
     }
+
+    public static string DecryptPassword(string cipherText, string key)
+    {
+        using var sha = System.Security.Cryptography.SHA256.Create();
+        var keyBytes = sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(key));
+
+        var fullCipher = Convert.FromBase64String(cipherText);
+
+        using var aes = System.Security.Cryptography.Aes.Create();
+        aes.Key = keyBytes;
+
+        var iv = new byte[aes.BlockSize / 8];
+        var cipher = new byte[fullCipher.Length - iv.Length];
+        Buffer.BlockCopy(fullCipher, 0, iv, 0, iv.Length);
+        Buffer.BlockCopy(fullCipher, iv.Length, cipher, 0, cipher.Length);
+        aes.IV = iv;
+
+        using var decryptor = aes.CreateDecryptor();
+        var plaintextBytes = decryptor.TransformFinalBlock(cipher, 0, cipher.Length);
+
+        return System.Text.Encoding.UTF8.GetString(plaintextBytes);
+    }
 }
 
 // DTOs para Catálogos
@@ -296,6 +371,9 @@ public class CreateConfiguracionFiscalRequest
     public string? Moneda { get; set; }
     public string? SerieFactura { get; set; }
     public string? LogoUrl { get; set; }
+    public string? PacUsuario { get; set; }
+    public string? PacPassword { get; set; }
+    public string? PacAmbiente { get; set; }
 }
 
 public class UpdateConfiguracionFiscalRequest
@@ -309,6 +387,9 @@ public class UpdateConfiguracionFiscalRequest
     public string? Moneda { get; set; }
     public string? SerieFactura { get; set; }
     public string? LogoUrl { get; set; }
+    public string? PacUsuario { get; set; }
+    public string? PacPassword { get; set; }
+    public string? PacAmbiente { get; set; }
 }
 
 public class CreateNumeracionRequest

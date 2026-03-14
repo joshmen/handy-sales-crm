@@ -12,7 +12,9 @@ public static class StripeWebhookEndpoints
             IStripeService stripeService,
             ILogger<Program> logger) =>
         {
+            context.Request.EnableBuffering();
             var json = await new StreamReader(context.Request.Body).ReadToEndAsync();
+            context.Request.Body.Position = 0;
             var signature = context.Request.Headers["Stripe-Signature"].ToString();
 
             if (string.IsNullOrEmpty(signature))

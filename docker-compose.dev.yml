@@ -68,7 +68,7 @@ services:
       Jwt__ExpirationMinutes: 60
       Multitenancy__DefaultTenantId: "00000000-0000-0000-0000-000000000001"
       Multitenancy__DefaultTenantName: "Default"
-      Cloudinary__Url: "${CLOUDINARY_URL:-cloudinary://placeholder:placeholder@placeholder}"
+      Cloudinary__Url: "${CLOUDINARY_URL:-cloudinary://899432929937183:Pxxn5PaFCujbBMJ7ut38v4f2g78@dq0o1nbyh}"
       Seq__ServerUrl: "http://seq:5341"
       SENDGRID_API_KEY: "${SENDGRID_API_KEY}"
       SENDGRID_FROM_EMAIL: "${SENDGRID_FROM_EMAIL}"
@@ -114,14 +114,18 @@ services:
       SAT__CertificadoPath: "/app/certificates"
       SAT__WebServiceUrl: "https://consultaqr.facturaelectronica.sat.gob.mx/ConsultaCFDIService.svc"
       Seq__ServerUrl: "http://seq:5341"
+      AZURE_STORAGE_CONNECTION_STRING: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;"
       SENDGRID_API_KEY: ""
       SENDGRID_FROM_EMAIL: "noreply@handysuites.com"
       SENDGRID_FROM_NAME: "Handy Suites"
+      MAIN_API_URL: "http://api_main:1050"
     ports:
       - "1051:1051"
     depends_on:
       postgres:
         condition: service_healthy
+      azurite:
+        condition: service_started
       seq:
         condition: service_started
     volumes:
@@ -223,6 +227,21 @@ services:
     profiles:
       - nginx  # Solo se ejecuta si usas: docker-compose --profile nginx up
 
+  # Azurite — Azure Storage emulator (for CFDI XML/PDF blob storage)
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    container_name: handysales_azurite_dev
+    restart: unless-stopped
+    ports:
+      - "10000:10000"  # Blob service
+      - "10001:10001"  # Queue service
+      - "10002:10002"  # Table service
+    volumes:
+      - azurite_dev_data:/data
+    command: "azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0 -l /data"
+    networks:
+      - handysales_dev_network
+
   # pgAdmin (database administration tool, optional)
   pgadmin:
     image: dpage/pgadmin4:8.14
@@ -246,6 +265,8 @@ volumes:
   postgres_dev_data:
     driver: local
   seq_dev_data:
+    driver: local
+  azurite_dev_data:
     driver: local
 
 networks:

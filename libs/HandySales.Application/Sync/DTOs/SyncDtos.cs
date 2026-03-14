@@ -63,6 +63,11 @@ public class SyncResponseDto
     /// Summary of sync operation
     /// </summary>
     public SyncSummaryDto Summary { get; set; } = new();
+
+    /// <summary>
+    /// True when any errors occurred during sync (for callers to return appropriate HTTP status)
+    /// </summary>
+    public bool HasErrors => Errors.Count > 0;
 }
 
 public class SyncSummaryDto

@@ -1,9 +1,13 @@
 using HandySales.Application.Usuarios.DTOs;
 using HandySales.Application.Auth.DTOs;
+using HandySales.Domain.Entities;
+using HandySales.Infrastructure.Persistence;
 using HandySales.Mobile.Api.Services;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using System.Security.Cryptography;
 
 namespace HandySales.Mobile.Api.Endpoints;
 
@@ -41,6 +45,16 @@ public static class MobileAuthEndpoints
                         message = result.Message
                     }, statusCode: 403);
                 }
+
+                if (!string.IsNullOrEmpty(result.Message))
+                {
+                    return Results.Json(new
+                    {
+                        success = false,
+                        message = result.Message
+                    }, statusCode: 401);
+                }
+
                 return Results.Unauthorized();
             }
 
@@ -72,13 +86,59 @@ public static class MobileAuthEndpoints
         .Produces<object>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status401Unauthorized);
 
-        group.MapPost("/logout", (HttpContext context) =>
+        group.MapPost("/logout", async (
+            LogoutRequest? request,
+            [FromServices] HandySalesDbContext db,
+            HttpContext context) =>
         {
+            var userIdClaim = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                           ?? context.User.FindFirst("sub")?.Value;
+
+            if (!string.IsNullOrEmpty(userIdClaim) && int.TryParse(userIdClaim, out var userId))
+            {
+                // Revoke refresh token if provided (tokens are stored as SHA-256 hashes)
+                if (!string.IsNullOrEmpty(request?.RefreshToken))
+                {
+                    var hash = SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(request.RefreshToken));
+                    var tokenHash = Convert.ToBase64String(hash);
+                    var token = await db.RefreshTokens
+                        .FirstOrDefaultAsync(t => t.Token == tokenHash && !t.IsRevoked);
+                    if (token != null)
+                    {
+                        token.IsRevoked = true;
+                        token.RevokedAt = DateTime.UtcNow;
+                    }
+                }
+
+                // Update device session status if fingerprint provided
+                var deviceFingerprint = context.Request.Headers["X-Device-Fingerprint"].FirstOrDefault();
+                if (!string.IsNullOrEmpty(deviceFingerprint))
+                {
+                    var session = await db.DeviceSessions
+                        .IgnoreQueryFilters()
+                        .Where(ds => ds.UsuarioId == userId
+                                  && ds.DeviceFingerprint == deviceFingerprint
+                                  && ds.EliminadoEn == null
+                                  && ds.Status == SessionStatus.Active)
+                        .OrderByDescending(ds => ds.LastActivity)
+                        .FirstOrDefaultAsync();
+
+                    if (session != null)
+                    {
+                        session.Status = SessionStatus.LoggedOut;
+                        session.LoggedOutAt = DateTime.UtcNow;
+                        session.LogoutReason = "user_logout";
+                    }
+                }
+
+                await db.SaveChangesAsync();
+            }
+
             return Results.Ok(new { success = true, message = "Sesión cerrada exitosamente" });
         })
         .RequireAuthorization()
         .WithSummary("Cerrar sesión")
-        .WithDescription("Cierra la sesión del vendedor en el dispositivo móvil.")
+        .WithDescription("Cierra la sesión del vendedor, revoca el refresh token y marca la sesión del dispositivo como cerrada.")
         .Produces<object>(StatusCodes.Status200OK);
 
         group.MapPost("/device-token", async (
@@ -137,3 +197,8 @@ public static class MobileAuthEndpoints
 }
 
 public record DeviceTokenDto(string Token, string Platform, string DeviceName);
+
+public class LogoutRequest
+{
+    public string? RefreshToken { get; set; }
+}

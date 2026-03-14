@@ -1,4 +1,5 @@
 using HandySales.Api.Payments;
+using HandySales.Application.SubscriptionPlans.Interfaces;
 using HandySales.Infrastructure.Persistence;
 using HandySales.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
@@ -41,6 +42,23 @@ public static class SubscriptionEndpoints
         group.MapPost("/reactivate", ReactivateSubscription)
             .WithName("ReactivateSubscription")
             .WithSummary("Revierte una cancelación programada");
+
+        group.MapGet("/invoices", GetInvoices)
+            .WithName("GetInvoices")
+            .WithSummary("Lista las facturas/pagos del tenant desde Stripe");
+
+        group.MapGet("/payment-methods", GetPaymentMethods)
+            .WithName("GetPaymentMethods")
+            .WithSummary("Lista los métodos de pago del tenant");
+
+        group.MapPost("/setup-intent", CreateSetupIntent)
+            .WithName("CreateSetupIntent")
+            .WithSummary("Crea un SetupIntent para actualizar tarjeta inline");
+
+        group.MapGet("/timbres", GetTimbres)
+            .WithName("GetTimbres")
+            .WithSummary("Saldo de timbres CFDI del tenant (usados/máximo)");
+group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("RegistrarTimbreUsado")            .WithSummary("Registra el uso de un timbre CFDI (llamado por Billing API tras timbrado exitoso)");
     }
 
     private static async Task<IResult> GetPlans(
@@ -62,6 +80,7 @@ public static class SubscriptionEndpoints
                 p.MaxClientesPorMes,
                 p.IncluyeReportes,
                 p.IncluyeSoportePrioritario,
+                p.MaxTimbresMes,
                 p.Orden
             })
             .ToListAsync();
@@ -83,17 +102,17 @@ public static class SubscriptionEndpoints
         var activeUsers = await db.Usuarios
             .IgnoreQueryFilters()
             .AsNoTracking()
-            .CountAsync(u => u.TenantId == tenant.Id && u.Activo);
+            .CountAsync(u => u.TenantId == tenant.Id && u.Activo && u.EliminadoEn == null);
 
         var activeProductos = await db.Productos
             .IgnoreQueryFilters()
             .AsNoTracking()
-            .CountAsync(p => p.TenantId == tenant.Id && p.Activo);
+            .CountAsync(p => p.TenantId == tenant.Id && p.Activo && p.EliminadoEn == null);
 
         var activeClientes = await db.Clientes
             .IgnoreQueryFilters()
             .AsNoTracking()
-            .CountAsync(c => c.TenantId == tenant.Id && c.Activo);
+            .CountAsync(c => c.TenantId == tenant.Id && c.Activo && c.EliminadoEn == null);
 
         return Results.Ok(new
         {
@@ -114,7 +133,9 @@ public static class SubscriptionEndpoints
             trialCardCollected = tenant.TrialCardCollectedAt != null,
             daysRemaining = tenant.TrialEndsAt.HasValue
                 ? Math.Max(0, (int)(tenant.TrialEndsAt.Value - DateTime.UtcNow).TotalDays)
-                : (int?)null
+                : (int?)null,
+            timbresUsados = tenant.TimbresUsadosMes,
+            timbresResetFecha = tenant.TimbresResetFecha
         });
     }
 
@@ -229,6 +250,113 @@ public static class SubscriptionEndpoints
         {
             return Results.BadRequest(new { message = ex.Message });
         }
+    }
+
+    private static async Task<IResult> GetInvoices(
+        [FromServices] ICurrentTenant currentTenant,
+        [FromServices] HandySalesDbContext db,
+        [FromServices] IStripeService stripeService)
+    {
+        if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
+            return Results.Forbid();
+
+        var tenant = await db.Tenants
+            .AsNoTracking()
+            .FirstOrDefaultAsync(t => t.Id == currentTenant.TenantId);
+
+        if (tenant == null || string.IsNullOrEmpty(tenant.StripeCustomerId))
+            return Results.Ok(Array.Empty<object>());
+
+        try
+        {
+            var invoices = await stripeService.GetInvoicesAsync(tenant.StripeCustomerId);
+            return Results.Ok(invoices);
+        }
+        catch (Exception)
+        {
+            return Results.Ok(Array.Empty<object>());
+        }
+    }
+
+    private static async Task<IResult> GetPaymentMethods(
+        [FromServices] ICurrentTenant currentTenant,
+        [FromServices] HandySalesDbContext db,
+        [FromServices] IStripeService stripeService)
+    {
+        if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
+            return Results.Forbid();
+
+        var tenant = await db.Tenants
+            .AsNoTracking()
+            .FirstOrDefaultAsync(t => t.Id == currentTenant.TenantId);
+
+        if (tenant == null || string.IsNullOrEmpty(tenant.StripeCustomerId))
+            return Results.Ok(Array.Empty<object>());
+
+        try
+        {
+            var methods = await stripeService.GetPaymentMethodsAsync(tenant.StripeCustomerId);
+            return Results.Ok(methods);
+        }
+        catch (Exception)
+        {
+            return Results.Ok(Array.Empty<object>());
+        }
+    }
+
+    private static async Task<IResult> CreateSetupIntent(
+        [FromServices] ICurrentTenant currentTenant,
+        [FromServices] HandySalesDbContext db,
+        [FromServices] IStripeService stripeService)
+    {
+        if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
+            return Results.Forbid();
+
+        var tenant = await db.Tenants
+            .AsNoTracking()
+            .FirstOrDefaultAsync(t => t.Id == currentTenant.TenantId);
+
+        if (tenant == null || string.IsNullOrEmpty(tenant.StripeCustomerId))
+            return Results.BadRequest(new { message = "No hay cuenta de Stripe configurada" });
+
+        try
+        {
+            var clientSecret = await stripeService.CreateSetupIntentAsync(tenant.StripeCustomerId);
+            return Results.Ok(new { clientSecret });
+        }
+        catch (Exception)
+        {
+            return Results.BadRequest(new { message = "Error al crear sesión de actualización de tarjeta" });
+        }
+    }
+
+    private static async Task<IResult> GetTimbres(
+        [FromServices] ICurrentTenant currentTenant,
+        [FromServices] ISubscriptionEnforcementService enforcement)
+    {
+        if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
+            return Results.Forbid();
+
+        var result = await enforcement.CanUsarTimbreAsync(currentTenant.TenantId);
+        return Results.Ok(new
+        {
+            usados = result.Current ?? 0,
+            maximo = result.Limit ?? 0,
+            disponibles = Math.Max(0, (result.Limit ?? 0) - (result.Current ?? 0)),
+            allowed = result.Allowed,
+            message = result.Message
+        });
+    }
+
+    private static async Task<IResult> RegistrarTimbreUsado(
+        [FromServices] ICurrentTenant currentTenant,
+        [FromServices] ISubscriptionEnforcementService enforcement)
+    {
+        if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
+            return Results.Forbid();
+
+        await enforcement.RegistrarTimbreUsadoAsync(currentTenant.TenantId);
+        return Results.Ok(new { registered = true });
     }
 }
 

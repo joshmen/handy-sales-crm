@@ -220,9 +220,9 @@ public class ClienteRepository : IClienteRepository
             .OrderBy(c => c.Nombre)
             .Skip((filtro.Pagina - 1) * filtro.TamanoPagina)
             .Take(filtro.TamanoPagina)
-            .Join(_db.Zonas, c => c.IdZona, z => z.Id, (c, z) => new { c, ZonaNombre = z.Nombre })
-            .Join(_db.CategoriasClientes, x => x.c.CategoriaClienteId, cat => cat.Id, (x, cat) => new { x.c, x.ZonaNombre, CategoriaNombre = cat.Nombre })
-            .GroupJoin(_db.Usuarios, x => x.c.VendedorId, u => u.Id, (x, vendedores) => new { x.c, x.ZonaNombre, x.CategoriaNombre, Vendedor = vendedores.FirstOrDefault() })
+            .GroupJoin(_db.Zonas, c => c.IdZona, z => z.Id, (c, zonas) => new { c, Zona = zonas.FirstOrDefault() })
+            .GroupJoin(_db.CategoriasClientes, x => x.c.CategoriaClienteId, cat => cat.Id, (x, cats) => new { x.c, x.Zona, Categoria = cats.FirstOrDefault() })
+            .GroupJoin(_db.Usuarios, x => x.c.VendedorId, u => u.Id, (x, vendedores) => new { x.c, x.Zona, x.Categoria, Vendedor = vendedores.FirstOrDefault() })
             .Select(x => new ClienteListaDto
             {
                 Id = x.c.Id,
@@ -230,8 +230,8 @@ public class ClienteRepository : IClienteRepository
                 RFC = x.c.RFC,
                 Correo = x.c.Correo,
                 Telefono = x.c.Telefono,
-                ZonaNombre = x.ZonaNombre,
-                CategoriaNombre = x.CategoriaNombre,
+                ZonaNombre = x.Zona != null ? x.Zona.Nombre : null,
+                CategoriaNombre = x.Categoria != null ? x.Categoria.Nombre : null,
                 VendedorId = x.c.VendedorId,
                 VendedorNombre = x.Vendedor != null ? x.Vendedor.Nombre : null,
                 Activo = x.c.Activo

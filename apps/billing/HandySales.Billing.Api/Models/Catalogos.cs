@@ -42,12 +42,22 @@ public class ConfiguracionFiscal
     
     public string? LlavePrivada { get; set; }
     
-    [MaxLength(100)]
+    [MaxLength(500)]
     public string? PasswordCertificado { get; set; }
     
     [MaxLength(500)]
     public string? LogoUrl { get; set; }
-    
+
+    // PAC Finkok credentials (encrypted)
+    [MaxLength(200)]
+    public string? PacUsuario { get; set; }
+
+    [MaxLength(200)]
+    public string? PacPassword { get; set; }
+
+    [MaxLength(20)]
+    public string PacAmbiente { get; set; } = "sandbox"; // sandbox | production
+
     public bool Activo { get; set; } = true;
     
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

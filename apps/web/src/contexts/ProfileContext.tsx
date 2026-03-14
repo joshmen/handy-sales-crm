@@ -39,11 +39,7 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   const loadProfile = useCallback(async () => {
-    // Only load profile when session is fully authenticated
-    if (status !== 'authenticated' || !session?.user?.id) {
-      setIsLoading(false);
-      return;
-    }
+    if (!session?.user?.id) return;
 
     try {
       const response = await profileService.getProfile(session.user.id);
@@ -65,14 +61,30 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
       }
     } catch (error) {
       console.error('Error loading profile:', error);
+      // Fallback a datos de sesión si la API falla
+      const fallbackProfile: UserProfile = {
+        id: parseInt(session.user.id),
+        nombre: session.user.name || 'Usuario',
+        email: session.user.email || 'usuario@example.com',
+        tenantId: 1,
+        esAdmin: session.user.role === 'ADMIN',
+        esSuperAdmin: session.user.role === 'SUPER_ADMIN',
+        avatarUrl: session.user.image || undefined,
+        role: session.user.role || 'VENDEDOR',
+      };
+      setProfile(fallbackProfile);
     } finally {
       setIsLoading(false);
     }
-  }, [status, session?.user?.id, session?.user?.name, session?.user?.email, session?.user?.image, session?.user?.role]);
+  }, [session?.user?.id, session?.user?.name, session?.user?.email, session?.user?.image, session?.user?.role]);
 
   useEffect(() => {
-    loadProfile();
-  }, [loadProfile]);
+    if (status === 'authenticated') {
+      loadProfile();
+    } else if (status === 'unauthenticated') {
+      setIsLoading(false);
+    }
+  }, [loadProfile, status]);
 
   const updateProfile = useCallback(async (data: UpdateProfileRequest): Promise<boolean> => {
     if (!profile || !session?.user?.id) return false;

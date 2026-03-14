@@ -26,10 +26,9 @@ import {
   Upload,
   Download,
   ChevronDown,
-  Trash2,
-  Camera,
   Package,
 } from 'lucide-react';
+import { ImageUpload } from '@/components/ui/ImageUpload';
 import { ListPagination } from '@/components/ui/ListPagination';
 import { Package as PackageIcon } from '@phosphor-icons/react';
 import { SearchBar } from '@/components/common/SearchBar';
@@ -794,77 +793,35 @@ export default function ProductsPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Imagen del producto
                 </label>
-                <div className="flex items-center gap-4">
-                  <div className="relative">
-                    <div className="w-16 h-16 rounded-lg border border-gray-200 flex items-center justify-center overflow-hidden bg-gray-50">
-                      {imagePreview ? (
-                        <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
-                      ) : currentImageUrl ? (
-                        <img src={currentImageUrl} alt="Producto" className="w-full h-full object-cover" />
-                      ) : (
-                        <Package className="w-8 h-8 text-purple-300" />
-                      )}
-                    </div>
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      className="hidden"
-                      ref={(el) => { if (el) el.dataset.productImage = 'true'; }}
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          if (file.size > 5 * 1024 * 1024) {
-                            toast.error('La imagen no debe exceder 5 MB');
-                            return;
-                          }
-                          setImageFile(file);
-                          setImagePreview(URL.createObjectURL(file));
-                        }
-                        e.target.value = '';
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const input = document.querySelector<HTMLInputElement>('input[data-product-image]');
-                        input?.click();
-                      }}
-                      className="absolute bottom-0 right-0 p-1.5 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors shadow-lg"
-                      title={currentImageUrl || imagePreview ? 'Cambiar imagen' : 'Subir imagen'}
-                    >
-                      {currentImageUrl || imagePreview ? (
-                        <Camera className="h-3.5 w-3.5 text-white" />
-                      ) : (
-                        <Upload className="h-3.5 w-3.5 text-white" />
-                      )}
-                    </button>
-                    {(imagePreview || currentImageUrl) && (
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          if (currentImageUrl && editingProduct && !imagePreview) {
-                            try {
-                              await productService.deleteProductImage(editingProduct.id);
-                              setCurrentImageUrl(null);
-                              toast.success('Imagen eliminada');
-                              await fetchProducts();
-                            } catch {
-                              toast.error('Error al eliminar la imagen');
-                            }
-                          } else {
-                            setImageFile(null);
-                            setImagePreview(null);
-                          }
-                        }}
-                        className="absolute -bottom-1 -left-1 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                        title="Eliminar imagen"
-                      >
-                        <Trash2 className="h-3 w-3 text-white" />
-                      </button>
-                    )}
-                  </div>
-                  <p className="text-xs text-gray-400">JPEG, PNG o WebP. Max 5 MB.</p>
-                </div>
+                <ImageUpload
+                  variant="square"
+                  src={imagePreview || currentImageUrl}
+                  alt="Producto"
+                  fallbackIcon={<Package className="w-8 h-8 text-purple-300" />}
+                  size="md"
+                  maxSizeMB={5}
+                  accept="image/jpeg,image/png,image/webp"
+                  hint="PNG, JPG o WebP. Máx. 5 MB."
+                  onUpload={(file) => {
+                    setImageFile(file);
+                    setImagePreview(URL.createObjectURL(file));
+                  }}
+                  onDelete={async () => {
+                    if (currentImageUrl && editingProduct && !imagePreview) {
+                      try {
+                        await productService.deleteProductImage(editingProduct.id);
+                        setCurrentImageUrl(null);
+                        toast.success('Imagen eliminada');
+                        await fetchProducts();
+                      } catch {
+                        toast.error('Error al eliminar la imagen');
+                      }
+                    } else {
+                      setImageFile(null);
+                      setImagePreview(null);
+                    }
+                  }}
+                />
               </div>
 
               {/* Familia de Productos */}

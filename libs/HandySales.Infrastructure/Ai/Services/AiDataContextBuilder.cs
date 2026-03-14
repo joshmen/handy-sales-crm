@@ -139,35 +139,35 @@ public class AiDataContextBuilder : IAiDataContextBuilder
                 switch (cat)
                 {
                     case DataCategory.Ventas:
-                        await AppendVentasContextAsync(sb, since);
+                        await AppendVentasContextAsync(sb, since, tenantId);
                         usedCategories.Add("Ventas");
                         break;
                     case DataCategory.Clientes:
-                        await AppendClientesContextAsync(sb, since);
+                        await AppendClientesContextAsync(sb, since, tenantId);
                         usedCategories.Add("Clientes");
                         break;
                     case DataCategory.Productos:
-                        await AppendProductosContextAsync(sb, since);
+                        await AppendProductosContextAsync(sb, since, tenantId);
                         usedCategories.Add("Productos");
                         break;
                     case DataCategory.Cobros:
-                        await AppendCobrosContextAsync(sb, since);
+                        await AppendCobrosContextAsync(sb, since, tenantId);
                         usedCategories.Add("Cobros");
                         break;
                     case DataCategory.Visitas:
-                        await AppendVisitasContextAsync(sb, since, userId);
+                        await AppendVisitasContextAsync(sb, since, tenantId, userId);
                         usedCategories.Add("Visitas");
                         break;
                     case DataCategory.Inventario:
-                        await AppendInventarioContextAsync(sb);
+                        await AppendInventarioContextAsync(sb, tenantId);
                         usedCategories.Add("Inventario");
                         break;
                     case DataCategory.Vendedores:
-                        await AppendVendedoresContextAsync(sb, since);
+                        await AppendVendedoresContextAsync(sb, since, tenantId);
                         usedCategories.Add("Vendedores");
                         break;
                     case DataCategory.Metas:
-                        await AppendMetasContextAsync(sb, userId);
+                        await AppendMetasContextAsync(sb, tenantId, userId);
                         usedCategories.Add("Metas");
                         break;
                 }
@@ -257,10 +257,10 @@ public class AiDataContextBuilder : IAiDataContextBuilder
 
     // ─── Query Methods ──────────────────────────────────────────────
 
-    private async Task AppendVentasContextAsync(StringBuilder sb, DateTime since)
+    private async Task AppendVentasContextAsync(StringBuilder sb, DateTime since, int tenantId)
     {
         var pedidos = await _db.Pedidos
-            .Where(p => p.FechaPedido >= since)
+            .Where(p => p.TenantId == tenantId && p.FechaPedido >= since)
             .Select(p => new { p.Total, p.Estado, p.ClienteId, p.FechaPedido })
             .ToListAsync();
 
@@ -319,7 +319,7 @@ public class AiDataContextBuilder : IAiDataContextBuilder
         {
             var clientIds = topClients.Select(c => c.ClienteId).ToList();
             var clientNames = await _db.Clientes
-                .Where(c => clientIds.Contains(c.Id))
+                .Where(c => c.TenantId == tenantId && clientIds.Contains(c.Id))
                 .Select(c => new { c.Id, c.Nombre })
                 .ToDictionaryAsync(c => c.Id, c => c.Nombre);
 
@@ -335,10 +335,10 @@ public class AiDataContextBuilder : IAiDataContextBuilder
         }
     }
 
-    private async Task AppendClientesContextAsync(StringBuilder sb, DateTime since)
+    private async Task AppendClientesContextAsync(StringBuilder sb, DateTime since, int tenantId)
     {
-        var totalActivos = await _db.Clientes.CountAsync(c => c.Activo);
-        var totalProspectos = await _db.Clientes.CountAsync(c => c.EsProspecto && c.Activo);
+        var totalActivos = await _db.Clientes.CountAsync(c => c.TenantId == tenantId && c.Activo);
+        var totalProspectos = await _db.Clientes.CountAsync(c => c.TenantId == tenantId && c.EsProspecto && c.Activo);
 
         sb.AppendLine("### Clientes");
         sb.AppendLine("| Métrica | Valor |");
@@ -348,7 +348,7 @@ public class AiDataContextBuilder : IAiDataContextBuilder
 
         // Clients with outstanding balance
         var topDeudores = await _db.Clientes
-            .Where(c => c.Activo && c.Saldo > 0)
+            .Where(c => c.TenantId == tenantId && c.Activo && c.Saldo > 0)
             .OrderByDescending(c => c.Saldo)
             .Take(5)
             .Select(c => new { c.Nombre, c.Saldo })
@@ -370,7 +370,7 @@ public class AiDataContextBuilder : IAiDataContextBuilder
 
         // Clients with no orders in period
         var clientesConPedido = await _db.Pedidos
-            .Where(p => p.FechaPedido >= since)
+            .Where(p => p.TenantId == tenantId && p.FechaPedido >= since)
             .Select(p => p.ClienteId)
             .Distinct()
             .ToListAsync();
@@ -383,12 +383,12 @@ public class AiDataContextBuilder : IAiDataContextBuilder
         }
     }
 
-    private async Task AppendProductosContextAsync(StringBuilder sb, DateTime since)
+    private async Task AppendProductosContextAsync(StringBuilder sb, DateTime since, int tenantId)
     {
         var detalles = await _db.DetallePedidos
             .Include(d => d.Producto)
             .Include(d => d.Pedido)
-            .Where(d => d.Pedido != null && d.Pedido.FechaPedido >= since && d.Pedido.Estado.ToString() != "Cancelado")
+            .Where(d => d.Pedido != null && d.Pedido.TenantId == tenantId && d.Pedido.FechaPedido >= since && d.Pedido.Estado != EstadoPedido.Cancelado)
             .Select(d => new { d.ProductoId, ProductoNombre = d.Producto!.Nombre, d.Cantidad, d.Total })
             .ToListAsync();
 
@@ -432,10 +432,10 @@ public class AiDataContextBuilder : IAiDataContextBuilder
         }
     }
 
-    private async Task AppendCobrosContextAsync(StringBuilder sb, DateTime since)
+    private async Task AppendCobrosContextAsync(StringBuilder sb, DateTime since, int tenantId)
     {
         var cobros = await _db.Cobros
-            .Where(c => c.FechaCobro >= since)
+            .Where(c => c.TenantId == tenantId && c.FechaCobro >= since)
             .Select(c => new { c.Monto, MetodoPago = c.MetodoPago.ToString(), c.FechaCobro })
             .ToListAsync();
 
@@ -473,10 +473,10 @@ public class AiDataContextBuilder : IAiDataContextBuilder
         }
     }
 
-    private async Task AppendVisitasContextAsync(StringBuilder sb, DateTime since, int userId)
+    private async Task AppendVisitasContextAsync(StringBuilder sb, DateTime since, int tenantId, int userId)
     {
         var visitas = await _db.ClienteVisitas
-            .Where(v => v.FechaHoraInicio != null && v.FechaHoraInicio >= since)
+            .Where(v => v.TenantId == tenantId && v.FechaHoraInicio != null && v.FechaHoraInicio >= since)
             .Select(v => new { v.Resultado, v.DuracionMinutos, v.UsuarioId })
             .ToListAsync();
 
@@ -506,11 +506,11 @@ public class AiDataContextBuilder : IAiDataContextBuilder
         sb.AppendLine();
     }
 
-    private async Task AppendInventarioContextAsync(StringBuilder sb)
+    private async Task AppendInventarioContextAsync(StringBuilder sb, int tenantId)
     {
         // Products with inventory tracking
         var productos = await _db.Productos
-            .Where(p => p.Activo && p.Inventario != null)
+            .Where(p => p.TenantId == tenantId && p.Activo && p.Inventario != null)
             .Select(p => new
             {
                 p.Nombre,
@@ -552,10 +552,10 @@ public class AiDataContextBuilder : IAiDataContextBuilder
         }
     }
 
-    private async Task AppendVendedoresContextAsync(StringBuilder sb, DateTime since)
+    private async Task AppendVendedoresContextAsync(StringBuilder sb, DateTime since, int tenantId)
     {
         var vendedores = await _db.Usuarios
-            .Where(u => u.Activo && !u.EsSuperAdmin
+            .Where(u => u.TenantId == tenantId && u.Activo && !u.EsSuperAdmin
                         && u.RolExplicito != "VIEWER"
                         && !u.Email.Contains("e2e"))
             .Select(u => new { u.Id, u.Nombre })
@@ -572,13 +572,13 @@ public class AiDataContextBuilder : IAiDataContextBuilder
         var vendedorIds = vendedores.Select(v => v.Id).ToList();
 
         var ventasPorVendedor = await _db.Pedidos
-            .Where(p => p.FechaPedido >= since && p.Estado != EstadoPedido.Cancelado && vendedorIds.Contains(p.UsuarioId))
+            .Where(p => p.TenantId == tenantId && p.FechaPedido >= since && p.Estado != EstadoPedido.Cancelado && vendedorIds.Contains(p.UsuarioId))
             .GroupBy(p => p.UsuarioId)
             .Select(g => new { UsuarioId = g.Key, Total = g.Sum(x => x.Total), Count = g.Count() })
             .ToListAsync();
 
         var visitasPorVendedor = await _db.ClienteVisitas
-            .Where(v => v.FechaHoraInicio != null && v.FechaHoraInicio >= since && vendedorIds.Contains(v.UsuarioId))
+            .Where(v => v.TenantId == tenantId && v.FechaHoraInicio != null && v.FechaHoraInicio >= since && vendedorIds.Contains(v.UsuarioId))
             .GroupBy(v => v.UsuarioId)
             .Select(g => new { UsuarioId = g.Key, Count = g.Count() })
             .ToListAsync();
@@ -603,11 +603,11 @@ public class AiDataContextBuilder : IAiDataContextBuilder
         sb.AppendLine();
     }
 
-    private async Task AppendMetasContextAsync(StringBuilder sb, int userId)
+    private async Task AppendMetasContextAsync(StringBuilder sb, int tenantId, int userId)
     {
         var now = DateTime.UtcNow;
         var metas = await _db.MetasVendedor
-            .Where(m => m.FechaInicio <= now && m.FechaFin >= now)
+            .Where(m => m.TenantId == tenantId && m.FechaInicio <= now && m.FechaFin >= now)
             .Select(m => new { m.UsuarioId, m.Tipo, m.Monto, m.FechaInicio, m.FechaFin })
             .ToListAsync();
 
@@ -626,7 +626,7 @@ public class AiDataContextBuilder : IAiDataContextBuilder
 
         var vendedorIds = metas.Select(m => m.UsuarioId).Distinct().ToList();
         var vendedorNames = await _db.Usuarios
-            .Where(u => vendedorIds.Contains(u.Id))
+            .Where(u => u.TenantId == tenantId && vendedorIds.Contains(u.Id))
             .Select(u => new { u.Id, u.Nombre })
             .ToDictionaryAsync(u => u.Id, u => u.Nombre);
 
@@ -637,17 +637,17 @@ public class AiDataContextBuilder : IAiDataContextBuilder
             {
                 case "ventas":
                     actual = await _db.Pedidos
-                        .Where(p => p.UsuarioId == meta.UsuarioId && p.FechaPedido >= meta.FechaInicio && p.FechaPedido <= meta.FechaFin && p.Estado != EstadoPedido.Cancelado)
+                        .Where(p => p.TenantId == tenantId && p.UsuarioId == meta.UsuarioId && p.FechaPedido >= meta.FechaInicio && p.FechaPedido <= meta.FechaFin && p.Estado != EstadoPedido.Cancelado)
                         .SumAsync(p => p.Total);
                     break;
                 case "pedidos":
                     actual = await _db.Pedidos
-                        .Where(p => p.UsuarioId == meta.UsuarioId && p.FechaPedido >= meta.FechaInicio && p.FechaPedido <= meta.FechaFin && p.Estado != EstadoPedido.Cancelado)
+                        .Where(p => p.TenantId == tenantId && p.UsuarioId == meta.UsuarioId && p.FechaPedido >= meta.FechaInicio && p.FechaPedido <= meta.FechaFin && p.Estado != EstadoPedido.Cancelado)
                         .CountAsync();
                     break;
                 case "visitas":
                     actual = await _db.ClienteVisitas
-                        .Where(v => v.UsuarioId == meta.UsuarioId && v.FechaHoraInicio >= meta.FechaInicio && v.FechaHoraInicio <= meta.FechaFin)
+                        .Where(v => v.TenantId == tenantId && v.UsuarioId == meta.UsuarioId && v.FechaHoraInicio >= meta.FechaInicio && v.FechaHoraInicio <= meta.FechaFin)
                         .CountAsync();
                     break;
             }

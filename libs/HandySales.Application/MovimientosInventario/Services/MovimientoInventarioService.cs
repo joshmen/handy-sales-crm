@@ -1,3 +1,4 @@
+using HandySales.Application.Common.Interfaces;
 using HandySales.Application.Inventario.Interfaces;
 using HandySales.Application.MovimientosInventario.DTOs;
 using HandySales.Application.MovimientosInventario.Interfaces;
@@ -10,15 +11,18 @@ public class MovimientoInventarioService
     private readonly IMovimientoInventarioRepository _movimientoRepo;
     private readonly IInventarioRepository _inventarioRepo;
     private readonly ICurrentTenant _tenant;
+    private readonly ITransactionManager _transactionManager;
 
     public MovimientoInventarioService(
         IMovimientoInventarioRepository movimientoRepo,
         IInventarioRepository inventarioRepo,
-        ICurrentTenant tenant)
+        ICurrentTenant tenant,
+        ITransactionManager transactionManager)
     {
         _movimientoRepo = movimientoRepo;
         _inventarioRepo = inventarioRepo;
         _tenant = tenant;
+        _transactionManager = transactionManager;
     }
 
     public Task<MovimientoInventarioPaginadoDto> ObtenerPorFiltroAsync(MovimientoInventarioFiltroDto filtro)
@@ -64,30 +68,42 @@ public class MovimientoInventarioService
                 return (0, false, $"Tipo de movimiento inválido: {dto.TipoMovimiento}. Use ENTRADA, SALIDA o AJUSTE");
         }
 
-        // Actualizar el inventario
-        var updateDto = new Inventario.DTOs.InventarioUpdateDto
+        // Wrap inventory update + movement creation in a transaction
+        await using var transaction = await _transactionManager.BeginTransactionAsync();
+        try
         {
-            CantidadActual = cantidadNueva,
-            StockMinimo = inventario.StockMinimo,
-            StockMaximo = inventario.StockMaximo
-        };
+            // Actualizar el inventario
+            var updateDto = new Inventario.DTOs.InventarioUpdateDto
+            {
+                CantidadActual = cantidadNueva,
+                StockMinimo = inventario.StockMinimo,
+                StockMaximo = inventario.StockMaximo
+            };
 
-        var inventarioActualizado = await _inventarioRepo.ActualizarAsync(dto.ProductoId, updateDto, _tenant.TenantId);
-        if (!inventarioActualizado)
-        {
-            return (0, false, "Error al actualizar el inventario");
+            var inventarioActualizado = await _inventarioRepo.ActualizarAsync(dto.ProductoId, updateDto, _tenant.TenantId);
+            if (!inventarioActualizado)
+            {
+                await _transactionManager.RollbackTransactionAsync();
+                return (0, false, "Error al actualizar el inventario");
+            }
+
+            // Obtener el usuario ID del claim
+            int usuarioId = 0;
+            if (int.TryParse(_tenant.UserId, out var uid))
+            {
+                usuarioId = uid;
+            }
+
+            // Crear el movimiento
+            var movimientoId = await _movimientoRepo.CrearAsync(dto, _tenant.TenantId, usuarioId, cantidadAnterior, cantidadNueva);
+
+            await _transactionManager.CommitTransactionAsync();
+            return (movimientoId, true, null);
         }
-
-        // Obtener el usuario ID del claim
-        int usuarioId = 0;
-        if (int.TryParse(_tenant.UserId, out var uid))
+        catch
         {
-            usuarioId = uid;
+            await _transactionManager.RollbackTransactionAsync();
+            throw;
         }
-
-        // Crear el movimiento
-        var movimientoId = await _movimientoRepo.CrearAsync(dto, _tenant.TenantId, usuarioId, cantidadAnterior, cantidadNueva);
-
-        return (movimientoId, true, null);
     }
 }

@@ -10,7 +10,10 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.ResponseCompression;
 
 // Npgsql 6+ requires UTC DateTimes for 'timestamp with time zone'.
-// Enable legacy behavior so Unspecified-Kind DateTimes (from query strings) work.
+// Enable legacy behavior so Unspecified-Kind DateTimes (from query strings, JSON
+// deserialization, and existing data with DateTimeKind.Unspecified) are accepted
+// without throwing InvalidCastException. Removing this would break all existing
+// DateTime comparisons where Kind is not explicitly set to Utc.
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var builder = WebApplication.CreateBuilder(args);
@@ -74,6 +77,9 @@ builder.Services.AddRateLimiter(options =>
 
     options.OnRejected = async (context, cancellationToken) =>
     {
+        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+            context.HttpContext.Response.Headers.RetryAfter = ((int)retryAfter.TotalSeconds).ToString();
+
         context.HttpContext.Response.ContentType = "application/json";
         await context.HttpContext.Response.WriteAsJsonAsync(
             new { error = "Demasiadas solicitudes. Intenta de nuevo en un momento." },
@@ -115,7 +121,7 @@ builder.Services.Configure<GzipCompressionProviderOptions>(options =>
 // OpenAI HttpClient for AI Gateway
 var openAiKey = builder.Configuration["Ai:ApiKey"]
     ?? Environment.GetEnvironmentVariable("OPENAI_API_KEY")
-    ?? "";
+    ?? throw new InvalidOperationException("OpenAI API key is required. Set 'Ai:ApiKey' or OPENAI_API_KEY env var.");
 builder.Services.AddHttpClient("OpenAI", client =>
 {
     client.BaseAddress = new Uri("https://api.openai.com/");
@@ -150,8 +156,8 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
 });
 
 app.UseResponseCompression();
-app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseMiddleware<SecurityHeadersMiddleware>();
+app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseMiddleware<RequestLoggingMiddleware>();
 
 // Swagger configuration (solo desarrollo)

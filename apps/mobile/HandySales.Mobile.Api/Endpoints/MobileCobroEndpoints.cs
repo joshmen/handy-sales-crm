@@ -73,14 +73,17 @@ public static class MobileCobroEndpoints
             [FromQuery] int porPagina,
             [FromServices] CobroService servicio) =>
         {
-            DateTime? desdeDate = string.IsNullOrEmpty(desde) ? null : DateTime.Parse(desde);
-            DateTime? hastaDate = string.IsNullOrEmpty(hasta) ? null : DateTime.Parse(hasta);
+            DateTime? desdeDate = string.IsNullOrEmpty(desde) ? null
+                : DateTime.TryParseExact(desde, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var d) ? d : (DateTime?)null;
+            DateTime? hastaDate = string.IsNullOrEmpty(hasta) ? null
+                : DateTime.TryParseExact(hasta, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var h) ? h : (DateTime?)null;
 
             var cobros = await servicio.ObtenerCobrosAsync(clienteId, desdeDate, hastaDate);
 
             var total = cobros.Count;
             if (pagina < 1) pagina = 1;
             if (porPagina < 1) porPagina = 20;
+            porPagina = Math.Min(porPagina, 100);
 
             var paginados = cobros
                 .Skip((pagina - 1) * porPagina)

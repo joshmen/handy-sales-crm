@@ -1,3 +1,4 @@
+using HandySales.Application.Common.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HandySales.Mobile.Api.Endpoints;
@@ -13,7 +14,8 @@ public static class MobileAttachmentEndpoints
         group.MapPost("/upload", async (
             HttpRequest request,
             IWebHostEnvironment env,
-            ILogger<Program> logger) =>
+            ILogger<Program> logger,
+            IServiceProvider sp) =>
         {
             if (!request.HasFormContentType)
             {
@@ -53,6 +55,22 @@ public static class MobileAttachmentEndpoints
 
             try
             {
+                // Try Cloudinary first (required in production)
+                var cloudinary = sp.GetService<ICloudinaryService>();
+                if (cloudinary != null)
+                {
+                    var url = await cloudinary.UploadImageAsync(file, $"evidence/{eventType}");
+                    logger.LogInformation("Attachment uploaded to Cloudinary: {EventType}/{EventLocalId}/{Tipo} -> {Url}", eventType, eventLocalId, tipo, url);
+                    return Results.Ok(new { success = true, data = new { url } });
+                }
+
+                // Local storage fallback (development only)
+                // TODO: Migrate to Cloudinary for production file storage
+                if (!env.IsDevelopment())
+                {
+                    return Results.StatusCode(501);
+                }
+
                 var uploadsDir = Path.Combine(env.WebRootPath ?? Path.Combine(env.ContentRootPath, "wwwroot"), "uploads", "evidence");
                 Directory.CreateDirectory(uploadsDir);
 
@@ -62,14 +80,14 @@ public static class MobileAttachmentEndpoints
                 await using var stream = new FileStream(filePath, FileMode.Create);
                 await file.CopyToAsync(stream);
 
-                var url = $"/uploads/evidence/{filename}";
+                var localUrl = $"/uploads/evidence/{filename}";
 
-                logger.LogInformation("Attachment uploaded: {EventType}/{EventLocalId}/{Tipo} -> {Url}", eventType, eventLocalId, tipo, url);
+                logger.LogInformation("Attachment uploaded locally: {EventType}/{EventLocalId}/{Tipo} -> {Url}", eventType, eventLocalId, tipo, localUrl);
 
                 return Results.Ok(new
                 {
                     success = true,
-                    data = new { url }
+                    data = new { url = localUrl }
                 });
             }
             catch (Exception ex)

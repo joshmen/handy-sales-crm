@@ -207,20 +207,33 @@ public class SyncRepository : ISyncRepository
                     // Remove existing detalles
                     _db.DetallePedidos.RemoveRange(existing.Detalles);
 
-                    // Add new detalles
+                    // Look up server-side prices for all products in this order
+                    var productoIds = dto.Detalles.Select(d => d.ProductoId).Distinct().ToList();
+                    var serverPrices = await _db.Productos
+                        .AsNoTracking()
+                        .Where(p => productoIds.Contains(p.Id) && p.TenantId == tenantId)
+                        .ToDictionaryAsync(p => p.Id, p => p.PrecioBase);
+
+                    // Add new detalles with server-validated prices
                     foreach (var detalleDto in dto.Detalles)
                     {
+                        var serverPrice = serverPrices.GetValueOrDefault(detalleDto.ProductoId, detalleDto.PrecioUnitario);
+                        var lineSubtotal = serverPrice * detalleDto.Cantidad;
+                        var lineDescuento = detalleDto.Descuento;
+                        var lineImpuesto = (lineSubtotal - lineDescuento) * 0.16m;
+                        var lineTotal = lineSubtotal - lineDescuento + lineImpuesto;
+
                         var detalle = new DetallePedido
                         {
                             PedidoId = existing.Id,
                             ProductoId = detalleDto.ProductoId,
                             Cantidad = detalleDto.Cantidad,
-                            PrecioUnitario = detalleDto.PrecioUnitario,
-                            Descuento = detalleDto.Descuento,
+                            PrecioUnitario = serverPrice,
+                            Descuento = lineDescuento,
                             PorcentajeDescuento = detalleDto.PorcentajeDescuento,
-                            Subtotal = detalleDto.Subtotal,
-                            Impuesto = detalleDto.Impuesto,
-                            Total = detalleDto.Total,
+                            Subtotal = lineSubtotal,
+                            Impuesto = lineImpuesto,
+                            Total = lineTotal,
                             Notas = detalleDto.Notas,
                             CreadoEn = DateTime.UtcNow,
                             CreadoPor = userId,
@@ -229,72 +242,111 @@ public class SyncRepository : ISyncRepository
                         _db.DetallePedidos.Add(detalle);
                     }
 
-                    // Recalculate totals
-                    existing.Subtotal = dto.Detalles.Sum(d => d.Subtotal);
-                    existing.Descuento = dto.Detalles.Sum(d => d.Descuento);
-                    existing.Impuestos = dto.Detalles.Sum(d => d.Impuesto);
-                    existing.Total = dto.Detalles.Sum(d => d.Total);
+                    // Recalculate totals from server-validated detalles
+                    var updatedDetalles = _db.ChangeTracker.Entries<DetallePedido>()
+                        .Where(e => e.State == EntityState.Added && e.Entity.PedidoId == existing.Id)
+                        .Select(e => e.Entity).ToList();
+                    existing.Subtotal = updatedDetalles.Sum(d => d.Subtotal);
+                    existing.Descuento = updatedDetalles.Sum(d => d.Descuento);
+                    existing.Impuestos = updatedDetalles.Sum(d => d.Impuesto);
+                    existing.Total = updatedDetalles.Sum(d => d.Total);
                 }
 
                 return (existing, wasConflict);
             }
         }
 
-        // Create new pedido
-        var numeroPedido = dto.NumeroPedido ?? await GenerarNumeroPedidoAsync(tenantId);
-        var pedido = new Pedido
-        {
-            TenantId = tenantId,
-            UsuarioId = usuarioId,
-            ClienteId = dto.ClienteId,
-            NumeroPedido = numeroPedido,
-            FechaPedido = dto.FechaPedido,
-            FechaEntregaEstimada = dto.FechaEntregaEstimada,
-            Estado = (EstadoPedido)dto.Estado,
-            TipoVenta = (TipoVenta)dto.TipoVenta,
-            Subtotal = dto.Subtotal,
-            Descuento = dto.Descuento,
-            Impuestos = dto.Impuestos,
-            Total = dto.Total,
-            Notas = dto.Notas,
-            DireccionEntrega = dto.DireccionEntrega,
-            Latitud = dto.Latitud,
-            Longitud = dto.Longitud,
-            ListaPrecioId = dto.ListaPrecioId,
-            CreadoEn = DateTime.UtcNow,
-            CreadoPor = userId,
-            Version = 1
-        };
+        // Create new pedido — look up server-side prices first
+        var newProductoIds = dto.Detalles?.Select(d => d.ProductoId).Distinct().ToList() ?? new List<int>();
+        var newServerPrices = newProductoIds.Count > 0
+            ? await _db.Productos.AsNoTracking()
+                .Where(p => newProductoIds.Contains(p.Id) && p.TenantId == tenantId)
+                .ToDictionaryAsync(p => p.Id, p => p.PrecioBase)
+            : new Dictionary<int, decimal>();
 
-        _db.Pedidos.Add(pedido);
-        await _db.SaveChangesAsync(); // Save to get the ID
-
-        // Add detalles
+        // Build detalles with server-validated prices to compute correct totals
+        var newDetalles = new List<DetallePedido>();
         if (dto.Detalles != null)
         {
             foreach (var detalleDto in dto.Detalles)
             {
-                var detalle = new DetallePedido
+                var serverPrice = newServerPrices.GetValueOrDefault(detalleDto.ProductoId, detalleDto.PrecioUnitario);
+                var lineSubtotal = serverPrice * detalleDto.Cantidad;
+                var lineDescuento = detalleDto.Descuento;
+                var lineImpuesto = (lineSubtotal - lineDescuento) * 0.16m;
+                var lineTotal = lineSubtotal - lineDescuento + lineImpuesto;
+
+                newDetalles.Add(new DetallePedido
                 {
-                    PedidoId = pedido.Id,
                     ProductoId = detalleDto.ProductoId,
                     Cantidad = detalleDto.Cantidad,
-                    PrecioUnitario = detalleDto.PrecioUnitario,
-                    Descuento = detalleDto.Descuento,
+                    PrecioUnitario = serverPrice,
+                    Descuento = lineDescuento,
                     PorcentajeDescuento = detalleDto.PorcentajeDescuento,
-                    Subtotal = detalleDto.Subtotal,
-                    Impuesto = detalleDto.Impuesto,
-                    Total = detalleDto.Total,
+                    Subtotal = lineSubtotal,
+                    Impuesto = lineImpuesto,
+                    Total = lineTotal,
                     Notas = detalleDto.Notas,
                     CreadoEn = DateTime.UtcNow,
                     CreadoPor = userId,
                     Version = 1
-                };
-                _db.DetallePedidos.Add(detalle);
+                });
             }
         }
 
-        return (pedido, wasConflict);
+        // Retry loop for order number race condition (duplicate key 23505)
+        const int maxRetries = 3;
+        for (int attempt = 0; attempt < maxRetries; attempt++)
+        {
+            var numeroPedido = dto.NumeroPedido ?? await GenerarNumeroPedidoAsync(tenantId);
+            var pedido = new Pedido
+            {
+                TenantId = tenantId,
+                UsuarioId = usuarioId,
+                ClienteId = dto.ClienteId,
+                NumeroPedido = numeroPedido,
+                FechaPedido = dto.FechaPedido,
+                FechaEntregaEstimada = dto.FechaEntregaEstimada,
+                Estado = (EstadoPedido)dto.Estado,
+                TipoVenta = (TipoVenta)dto.TipoVenta,
+                Subtotal = newDetalles.Sum(d => d.Subtotal),
+                Descuento = newDetalles.Sum(d => d.Descuento),
+                Impuestos = newDetalles.Sum(d => d.Impuesto),
+                Total = newDetalles.Sum(d => d.Total),
+                Notas = dto.Notas,
+                DireccionEntrega = dto.DireccionEntrega,
+                Latitud = dto.Latitud,
+                Longitud = dto.Longitud,
+                ListaPrecioId = dto.ListaPrecioId,
+                CreadoEn = DateTime.UtcNow,
+                CreadoPor = userId,
+                Version = 1
+            };
+
+            try
+            {
+                _db.Pedidos.Add(pedido);
+                await _db.SaveChangesAsync(); // Save to get the ID
+
+                // Add detalles with pedido ID
+                foreach (var detalle in newDetalles)
+                {
+                    detalle.PedidoId = pedido.Id;
+                    _db.DetallePedidos.Add(detalle);
+                }
+
+                return (pedido, wasConflict);
+            }
+            catch (DbUpdateException ex) when (
+                ex.InnerException is Npgsql.PostgresException pg && pg.SqlState == "23505"
+                && attempt < maxRetries - 1)
+            {
+                // Duplicate order number — clear tracker and retry with new number
+                _db.ChangeTracker.Clear();
+            }
+        }
+
+        throw new InvalidOperationException("No se pudo generar un número de pedido único después de varios intentos.");
     }
 
     public async Task<(ClienteVisita entity, bool wasConflict)> UpsertVisitaAsync(int tenantId, int usuarioId, SyncVisitaDto dto, string userId)
@@ -479,6 +531,18 @@ public class SyncRepository : ISyncRepository
                     return (existing, wasConflict);
                 }
 
+                // Validate monto on update
+                if (dto.Monto <= 0)
+                    throw new InvalidOperationException("El monto del cobro debe ser mayor a cero.");
+
+                if (existing.Monto != dto.Monto && existing.PedidoId.HasValue)
+                {
+                    var pedido = await _db.Pedidos.AsNoTracking()
+                        .FirstOrDefaultAsync(p => p.Id == existing.PedidoId.Value && p.TenantId == tenantId);
+                    if (pedido != null && dto.Monto > pedido.Total)
+                        throw new InvalidOperationException($"El monto ({dto.Monto}) excede el total del pedido ({pedido.Total}).");
+                }
+
                 existing.Monto = dto.Monto;
                 existing.MetodoPago = (MetodoPago)dto.MetodoPago;
                 existing.Referencia = dto.Referencia;
@@ -490,6 +554,18 @@ public class SyncRepository : ISyncRepository
 
                 return (existing, wasConflict);
             }
+        }
+
+        if (dto.Monto <= 0)
+            throw new InvalidOperationException("El monto del cobro debe ser mayor a cero.");
+
+        if (dto.PedidoId.HasValue && dto.PedidoId.Value > 0)
+        {
+            var pedido = await _db.Pedidos
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Id == dto.PedidoId.Value && p.TenantId == tenantId);
+            if (pedido != null && dto.Monto > pedido.Total)
+                throw new InvalidOperationException($"El monto ({dto.Monto}) excede el total del pedido ({pedido.Total}).");
         }
 
         var cobro = new Cobro

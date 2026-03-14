@@ -83,12 +83,16 @@ public class SessionValidationMiddleware
         var userIdClaim = context.User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier)
                           ?? context.User.FindFirstValue("sub");
 
-        if (string.IsNullOrEmpty(sessionVersionClaim) || string.IsNullOrEmpty(userIdClaim))
+        if (string.IsNullOrEmpty(userIdClaim))
         {
-            // Tokens without session_version: allow through but skip version check.
-            // Security is enforced when session_version IS present (mismatch → 401).
-            // Old tokens without the claim expire naturally via JWT expiration.
             await _next(context);
+            return;
+        }
+
+        if (string.IsNullOrEmpty(sessionVersionClaim))
+        {
+            context.Response.StatusCode = 401;
+            await context.Response.WriteAsJsonAsync(new { code = "INVALID_TOKEN", message = "Token inválido: falta session_version" });
             return;
         }
 
@@ -170,7 +174,7 @@ public class SessionValidationMiddleware
 
     private static bool ShouldSkipValidation(string path)
     {
-        return path.StartsWith("/auth/") ||
+        return path.Contains("/auth/") ||
                path.StartsWith("/health") ||
                path.StartsWith("/swagger") ||
                path.StartsWith("/hubs/") ||

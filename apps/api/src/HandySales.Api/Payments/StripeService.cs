@@ -17,7 +17,34 @@ public interface IStripeService
     Task HandleWebhookAsync(string json, string signature);
     Task CancelSubscriptionAsync(int tenantId);
     Task ReactivateSubscriptionAsync(int tenantId);
+    Task<List<InvoiceDto>> GetInvoicesAsync(string stripeCustomerId, int limit = 24);
+    Task<List<PaymentMethodDto>> GetPaymentMethodsAsync(string stripeCustomerId);
+    Task<string> CreateSetupIntentAsync(string stripeCustomerId);
 }
+
+public record InvoiceDto(
+    string Id,
+    string? Number,
+    DateTime Created,
+    DateTime PeriodStart,
+    DateTime PeriodEnd,
+    string Status,
+    long AmountPaid,
+    long AmountDue,
+    string Currency,
+    string? InvoicePdfUrl,
+    string? HostedInvoiceUrl
+);
+
+public record PaymentMethodDto(
+    string Id,
+    string Type,
+    string? CardBrand,
+    string? CardLast4,
+    int? CardExpMonth,
+    int? CardExpYear,
+    bool IsDefault
+);
 
 public class StripeService : IStripeService
 {
@@ -488,6 +515,74 @@ public class StripeService : IStripeService
 
         _logger.LogInformation("Subscription updated for tenant {TenantId}, status: {Status}, cancelAtPeriodEnd: {CancelAtPeriodEnd}",
             tenant.Id, subscription.Status, subscription.CancelAtPeriodEnd);
+    }
+
+    public async Task<List<InvoiceDto>> GetInvoicesAsync(string stripeCustomerId, int limit = 24)
+    {
+        var service = new InvoiceService();
+        var options = new InvoiceListOptions
+        {
+            Customer = stripeCustomerId,
+            Limit = limit,
+        };
+
+        var invoices = await service.ListAsync(options);
+
+        return invoices.Data.Select(inv => new InvoiceDto(
+            Id: inv.Id,
+            Number: inv.Number,
+            Created: inv.Created,
+            PeriodStart: inv.PeriodStart,
+            PeriodEnd: inv.PeriodEnd,
+            Status: inv.Status ?? "unknown",
+            AmountPaid: inv.AmountPaid,
+            AmountDue: inv.AmountDue,
+            Currency: inv.Currency ?? "mxn",
+            InvoicePdfUrl: inv.InvoicePdf,
+            HostedInvoiceUrl: inv.HostedInvoiceUrl
+        )).ToList();
+    }
+
+    public async Task<List<PaymentMethodDto>> GetPaymentMethodsAsync(string stripeCustomerId)
+    {
+        // Get default payment method from customer
+        var customerService = new CustomerService();
+        var customer = await customerService.GetAsync(stripeCustomerId);
+        var defaultPmId = customer.InvoiceSettings?.DefaultPaymentMethodId;
+
+        var pmService = new PaymentMethodService();
+        var options = new PaymentMethodListOptions
+        {
+            Customer = stripeCustomerId,
+            Type = "card",
+        };
+
+        var methods = await pmService.ListAsync(options);
+
+        return methods.Data.Select(pm => new PaymentMethodDto(
+            Id: pm.Id,
+            Type: pm.Type ?? "card",
+            CardBrand: pm.Card?.Brand,
+            CardLast4: pm.Card?.Last4,
+            CardExpMonth: (int?)pm.Card?.ExpMonth,
+            CardExpYear: (int?)pm.Card?.ExpYear,
+            IsDefault: pm.Id == defaultPmId
+        )).ToList();
+    }
+
+    public async Task<string> CreateSetupIntentAsync(string stripeCustomerId)
+    {
+        var options = new SetupIntentCreateOptions
+        {
+            Customer = stripeCustomerId,
+            PaymentMethodTypes = new List<string> { "card" },
+            Usage = "off_session",
+        };
+
+        var service = new SetupIntentService();
+        var intent = await service.CreateAsync(options);
+
+        return intent.ClientSecret;
     }
 
     /// <summary>Maps legacy plan codes (PROFESIONAL, BASICO, STARTER) to canonical codes (PRO, BASIC).</summary>

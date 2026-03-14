@@ -49,6 +49,12 @@ public class Tenant : AuditableEntity
     [Column("trial_card_collected_at")]
     public DateTime? TrialCardCollectedAt { get; set; }
 
+    // Timbres CFDI (facturación electrónica)
+    [Column("timbres_usados_mes")]
+    public int TimbresUsadosMes { get; set; }
+    [Column("timbres_reset_fecha")]
+    public DateTime? TimbresResetFecha { get; set; }
+
     // Onboarding
     [Column("onboarding_completed")]
     public bool OnboardingCompleted { get; set; } = false;

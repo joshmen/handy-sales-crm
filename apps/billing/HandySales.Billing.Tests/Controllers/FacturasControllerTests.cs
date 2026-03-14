@@ -13,11 +13,97 @@ using System.Security.Claims;
 
 namespace HandySales.Billing.Tests.Controllers;
 
+/// <summary>
+/// Stub implementations for CFDI services used in controller tests.
+/// These bypass real XML generation, signing, PAC, and blob storage.
+/// </summary>
+internal class StubXmlBuilder : ICfdiXmlBuilder
+{
+    public string BuildXml(Factura factura, ConfiguracionFiscal config) => "<cfdi:Comprobante />";
+}
+
+internal class StubCfdiSigner : ICfdiSigner
+{
+    public string SignXml(string unsignedXml, ConfiguracionFiscal config) => unsignedXml;
+    public string GetNoCertificado(byte[] cerBytes) => "00001000000412345678";
+}
+
+internal class StubPacService : IPacService
+{
+    public Task<TimbradoResult> TimbrarAsync(string xmlPreFirmado, ConfiguracionFiscal config)
+    {
+        return Task.FromResult(new TimbradoResult
+        {
+            Success = true,
+            Uuid = Guid.NewGuid().ToString(),
+            XmlTimbrado = xmlPreFirmado,
+            SelloSat = "STUB_SELLO_SAT",
+            NoCertificadoSat = "00001000000412345678",
+            FechaTimbrado = DateTime.UtcNow,
+            CadenaOriginalSat = "||1.1|test||"
+        });
+    }
+
+    public Task<CancelacionResult> CancelarAsync(string uuid, string rfcEmisor, string motivo,
+        string? folioSustitucion, ConfiguracionFiscal config)
+    {
+        return Task.FromResult(new CancelacionResult
+        {
+            Success = true,
+            EstadoCancelacion = "CANCELADA",
+            AcuseXml = "<Acuse />"
+        });
+    }
+
+    public Task<ConsultaResult> ConsultarEstatusAsync(string uuid, string rfcEmisor, ConfiguracionFiscal config)
+    {
+        return Task.FromResult(new ConsultaResult { Success = true, Estado = "Vigente" });
+    }
+}
+
+internal class StubBlobStorageService : IBlobStorageService
+{
+    public Task<string> UploadXmlAsync(string tenantId, string uuid, string xmlContent)
+        => Task.FromResult($"{tenantId}/2026/03/{uuid}.xml");
+    public Task<string> UploadPdfAsync(string tenantId, string uuid, byte[] pdfBytes)
+        => Task.FromResult($"{tenantId}/2026/03/{uuid}.pdf");
+    public Task<string> GetXmlAsync(string blobPath) => Task.FromResult("<cfdi:Comprobante />");
+    public Task<byte[]> GetPdfAsync(string blobPath) => Task.FromResult(Array.Empty<byte>());
+    public Task<string> GenerateSasUrlAsync(string blobPath, string containerName, TimeSpan? expiry = null)
+        => Task.FromResult($"https://stub.blob.core.windows.net/{containerName}/{blobPath}?sig=test");
+    public Task DeleteBlobAsync(string blobPath, string containerName) => Task.CompletedTask;
+}
+
+internal class StubHttpClientFactory : IHttpClientFactory
+{
+    public HttpClient CreateClient(string name) => new HttpClient();
+}
+
+internal class StubCompanyLogoService : ICompanyLogoService
+{
+    public Task<string?> GetLogoUrlAsync(string tenantId) => Task.FromResult<string?>(null);
+}
+
+internal class StubOrderReaderService : IOrderReaderService
+{
+    public Task<OrderForInvoice?> GetOrderForInvoiceAsync(string tenantId, int pedidoId)
+        => Task.FromResult<OrderForInvoice?>(null);
+}
+
+internal class StubTimbreEnforcementService : ITimbreEnforcementService
+{
+    public Task<TimbreCheckResult> CheckTimbreAvailableAsync(string authorizationHeader)
+        => Task.FromResult(new TimbreCheckResult(true, null, 5, 100));
+    public Task NotifyTimbreUsedAsync(string authorizationHeader) => Task.CompletedTask;
+}
+
 public class FacturasControllerTests : IDisposable
 {
     private readonly BillingDbContext _context;
     private readonly FacturasController _controller;
     private readonly string _testTenantId = "test-tenant-001";
+
+    private const string TestJwtSecret = "test-jwt-secret-key-for-encryption-32chars!";
 
     public FacturasControllerTests()
     {
@@ -31,9 +117,21 @@ public class FacturasControllerTests : IDisposable
         var logger = new LoggerFactory().CreateLogger<FacturasController>();
         var pdfService = new InvoicePdfService();
         var emailLogger = new LoggerFactory().CreateLogger<BillingEmailService>();
-        var config = new ConfigurationBuilder().AddInMemoryCollection().Build();
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Jwt:Secret"] = TestJwtSecret
+            })
+            .Build();
         var emailService = new BillingEmailService(config, emailLogger);
-        _controller = new FacturasController(_context, logger, pdfService, emailService);
+        var httpClientFactory = new StubHttpClientFactory();
+        _controller = new FacturasController(
+            _context, logger, pdfService, emailService,
+            new StubXmlBuilder(), new StubCfdiSigner(),
+            new StubPacService(), new StubBlobStorageService(),
+            new StubTimbreEnforcementService(),
+            new StubCompanyLogoService(), new StubOrderReaderService(),
+            httpClientFactory, config);
 
         // Setup user claims
         SetupUserClaims();
@@ -122,6 +220,24 @@ public class FacturasControllerTests : IDisposable
             TipoCambio = 1,
             Estado = "PENDIENTE",
             CreatedBy = 1
+        });
+
+        // Add test configuracion fiscal (required for timbrado)
+        _context.ConfiguracionesFiscales.Add(new ConfiguracionFiscal
+        {
+            TenantId = _testTenantId,
+            EmpresaId = 1,
+            Rfc = "TEST010101AAA",
+            RazonSocial = "Empresa Test",
+            RegimenFiscal = "601",
+            CodigoPostal = "12345",
+            CertificadoSat = Convert.ToBase64String(new byte[] { 1, 2, 3 }),
+            LlavePrivada = Convert.ToBase64String(new byte[] { 4, 5, 6 }),
+            PasswordCertificado = CatalogosController.EncryptPassword("testpass", TestJwtSecret),
+            PacUsuario = "test_user",
+            PacPassword = CatalogosController.EncryptPassword("test_pass", TestJwtSecret),
+            PacAmbiente = "sandbox",
+            Activo = true
         });
 
         _context.SaveChanges();
@@ -260,7 +376,8 @@ public class FacturasControllerTests : IDisposable
         var result = await _controller.CancelarFactura(1, request);
 
         // Assert
-        result.Should().BeOfType<NoContentResult>();
+        var okResult = result as OkObjectResult;
+        okResult.Should().NotBeNull();
 
         // Verify the state changed
         var factura = await _context.Facturas.FindAsync(1L);

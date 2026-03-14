@@ -73,6 +73,9 @@ public static class PromocionesEndpoints
 
         app.MapPatch("/promociones/batch-toggle", async ([FromBody] PromocionBatchToggleRequest request, [FromServices] PromocionService servicio) =>
         {
+            if (request.Ids == null || request.Ids.Count == 0 || request.Ids.Count > 1000)
+                return Results.BadRequest(new { error = "Lista de IDs inválida (máx. 1000)" });
+
             var count = await servicio.BatchToggleActivoAsync(request.Ids, request.Activo);
             return Results.Ok(new { actualizados = count });
         }).RequireAuthorization();

@@ -65,9 +65,9 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = ""
 });
 
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseRateLimiter();
 app.UseMiddleware<MobileSessionValidationMiddleware>();
 
 // MOBILE-SPECIFIC ENDPOINTS

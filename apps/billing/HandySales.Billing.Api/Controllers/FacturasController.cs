@@ -18,47 +18,113 @@ public class FacturasController : ControllerBase
     private readonly ILogger<FacturasController> _logger;
     private readonly IInvoicePdfService _pdfService;
     private readonly IBillingEmailService _emailService;
+    private readonly ICfdiXmlBuilder _xmlBuilder;
+    private readonly ICfdiSigner _cfdiSigner;
+    private readonly IPacService _pacService;
+    private readonly IBlobStorageService _blobService;
+    private readonly ITimbreEnforcementService _timbreService;
+    private readonly ICompanyLogoService _companyLogoService;
+    private readonly IOrderReaderService _orderReaderService;
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IConfiguration _configuration;
 
     public FacturasController(
         BillingDbContext context,
         ILogger<FacturasController> logger,
         IInvoicePdfService pdfService,
-        IBillingEmailService emailService)
+        IBillingEmailService emailService,
+        ICfdiXmlBuilder xmlBuilder,
+        ICfdiSigner cfdiSigner,
+        IPacService pacService,
+        IBlobStorageService blobService,
+        ITimbreEnforcementService timbreService,
+        ICompanyLogoService companyLogoService,
+        IOrderReaderService orderReaderService,
+        IHttpClientFactory httpClientFactory,
+        IConfiguration configuration)
     {
         _context = context;
         _logger = logger;
         _pdfService = pdfService;
         _emailService = emailService;
+        _xmlBuilder = xmlBuilder;
+        _cfdiSigner = cfdiSigner;
+        _pacService = pacService;
+        _blobService = blobService;
+        _timbreService = timbreService;
+        _companyLogoService = companyLogoService;
+        _orderReaderService = orderReaderService;
+        _httpClientFactory = httpClientFactory;
+        _configuration = configuration;
     }
 
-    private string GetTenantId() => User.FindFirst("tenant_id")?.Value ?? "00000000-0000-0000-0000-000000000001";
+    private string GetTenantId() => User.FindFirst("tenant_id")?.Value
+        ?? throw new UnauthorizedAccessException("Token missing tenant_id claim");
     private int GetUserId() => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+
+    private async Task<byte[]?> DownloadLogoAsync(string? logoUrl)
+    {
+        if (string.IsNullOrEmpty(logoUrl)) return null;
+        if (!Uri.TryCreate(logoUrl, UriKind.Absolute, out var uri))
+            return null;
+        if (uri.Scheme != "https" && uri.Scheme != "http")
+            return null;
+        // Block private/internal IPs to prevent SSRF
+        var host = uri.Host.ToLowerInvariant();
+        if (host == "localhost" || host == "127.0.0.1" || host.StartsWith("10.")
+            || host.StartsWith("192.168.") || host.StartsWith("172.16.")
+            || host.StartsWith("169.254.") || host == "metadata.google.internal"
+            || host.EndsWith(".internal") || host == "[::1]")
+            return null;
+        try
+        {
+            var client = _httpClientFactory.CreateClient("LogoClient");
+            return await client.GetByteArrayAsync(logoUrl);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not download logo from {LogoUrl}", logoUrl);
+            return null;
+        }
+    }
+
+    private async Task<byte[]?> ResolveLogoAsync(string? configLogoUrl, string tenantId)
+    {
+        // 1. Try ConfiguracionFiscal.LogoUrl (billing DB)
+        var logoBytes = await DownloadLogoAsync(configLogoUrl);
+        if (logoBytes != null) return logoBytes;
+
+        // 2. Fallback: company_settings.logo_url (main DB)
+        var mainLogoUrl = await _companyLogoService.GetLogoUrlAsync(tenantId);
+        return await DownloadLogoAsync(mainLogoUrl);
+    }
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<FacturaListDto>>> GetFacturas(
-        [FromQuery] DateTime? fechaInicio,
-        [FromQuery] DateTime? fechaFin,
+        [FromQuery] DateTime? desde,
+        [FromQuery] DateTime? hasta,
         [FromQuery] string? estado,
-        [FromQuery] string? clienteRfc,
+        [FromQuery] string? receptorRfc,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20)
     {
+        pageSize = Math.Clamp(pageSize, 1, 100);
         var tenantId = GetTenantId();
         var query = _context.Facturas
             .Where(f => f.TenantId == tenantId)
             .AsQueryable();
 
-        if (fechaInicio.HasValue)
-            query = query.Where(f => f.FechaEmision >= fechaInicio.Value);
+        if (desde.HasValue)
+            query = query.Where(f => f.FechaEmision >= desde.Value);
 
-        if (fechaFin.HasValue)
-            query = query.Where(f => f.FechaEmision <= fechaFin.Value);
+        if (hasta.HasValue)
+            query = query.Where(f => f.FechaEmision <= hasta.Value);
 
         if (!string.IsNullOrEmpty(estado))
             query = query.Where(f => f.Estado == estado);
 
-        if (!string.IsNullOrEmpty(clienteRfc))
-            query = query.Where(f => f.ReceptorRfc.Contains(clienteRfc));
+        if (!string.IsNullOrEmpty(receptorRfc))
+            query = query.Where(f => f.ReceptorRfc.Contains(receptorRfc));
 
         var total = await query.CountAsync();
 
@@ -81,11 +147,13 @@ public class FacturasController : ControllerBase
             })
             .ToListAsync();
 
-        Response.Headers.Append("X-Total-Count", total.ToString());
-        Response.Headers.Append("X-Page", page.ToString());
-        Response.Headers.Append("X-Page-Size", pageSize.ToString());
-
-        return Ok(facturas);
+        return Ok(new
+        {
+            items = facturas,
+            totalCount = total,
+            page,
+            pageSize
+        });
     }
 
     [HttpGet("{id}")]
@@ -169,11 +237,130 @@ public class FacturasController : ControllerBase
         }
 
         _context.Facturas.Add(factura);
-
-        // Registrar en auditoría
-        RegistrarAuditoria(tenantId, factura.Id, "CREAR", "Factura creada", userId);
-
         await _context.SaveChangesAsync();
+
+        RegistrarAuditoria(tenantId, factura.Id, "CREAR", "Factura creada", userId);
+        await _context.SaveChangesAsync();
+
+        return CreatedAtAction(nameof(GetFactura), new { id = factura.Id }, MapToDto(factura));
+    }
+
+    [HttpPost("from-order")]
+    public async Task<ActionResult<FacturaDto>> CreateFacturaFromOrder(CreateFacturaFromOrderRequest request)
+    {
+        var tenantId = GetTenantId();
+        var userId = GetUserId();
+
+        // 1. Check if this order was already invoiced
+        var existingFactura = await _context.Facturas
+            .Where(f => f.TenantId == tenantId && f.PedidoId == request.PedidoId && f.Estado != "CANCELADA")
+            .FirstOrDefaultAsync();
+
+        if (existingFactura != null)
+            return BadRequest($"Este pedido ya tiene una factura ({existingFactura.Serie}-{existingFactura.Folio}, estado: {existingFactura.Estado})");
+
+        // 2. Read order data from main DB
+        var order = await _orderReaderService.GetOrderForInvoiceAsync(tenantId, request.PedidoId);
+        if (order == null)
+            return NotFound("Pedido no encontrado");
+
+        // 3. Validate order state (must be Entregado = 5)
+        if (order.Estado != 5)
+            return BadRequest("Solo se pueden facturar pedidos con estado 'Entregado'");
+
+        // 4. Validate client is facturable and has fiscal data
+        if (!order.ClienteFacturable)
+            return BadRequest($"El cliente '{order.ClienteNombre}' no está marcado como facturable. Edite el cliente y active la opción 'Facturable'.");
+
+        if (string.IsNullOrEmpty(order.ClienteRfc))
+            return BadRequest($"El cliente '{order.ClienteNombre}' no tiene RFC registrado");
+
+        // 5. Load fiscal config (emisor data)
+        var config = await _context.ConfiguracionesFiscales
+            .Where(c => c.TenantId == tenantId && c.Activo)
+            .FirstOrDefaultAsync();
+
+        if (config == null)
+            return BadRequest("No hay configuración fiscal activa. Configure sus datos fiscales en Facturación → Configuración.");
+
+        // 6. Build factura from order data
+        var serie = config.SerieFactura ?? "A";
+        var folio = await GetNextFolio(tenantId, serie);
+
+        var factura = new Factura
+        {
+            TenantId = tenantId,
+            Serie = serie,
+            Folio = folio,
+            FechaEmision = DateTime.UtcNow,
+            TipoComprobante = "I",
+            MetodoPago = request.MetodoPago ?? "PUE",
+            FormaPago = request.FormaPago ?? "01",
+            UsoCfdi = request.UsoCfdi ?? order.ClienteUsoCfdi ?? "G03",
+            EmisorRfc = config.Rfc ?? "",
+            EmisorNombre = config.RazonSocial ?? "",
+            EmisorRegimenFiscal = config.RegimenFiscal,
+            ReceptorRfc = order.ClienteRfc,
+            ReceptorNombre = order.ClienteRazonSocial ?? order.ClienteNombre,
+            ReceptorUsoCfdi = request.UsoCfdi ?? order.ClienteUsoCfdi ?? "G03",
+            ReceptorDomicilioFiscal = order.ClienteCodigoPostalFiscal,
+            ReceptorRegimenFiscal = order.ClienteRegimenFiscal,
+            Subtotal = order.Subtotal,
+            Descuento = order.Descuento,
+            TotalImpuestosTrasladados = order.Impuestos,
+            TotalImpuestosRetenidos = 0,
+            Total = order.Total,
+            Moneda = "MXN",
+            TipoCambio = 1,
+            ClienteId = order.ClienteId,
+            VendedorId = order.VendedorId,
+            PedidoId = order.PedidoId,
+            Observaciones = request.Observaciones ?? $"Factura generada desde pedido {order.NumeroPedido}",
+            CreatedBy = userId,
+            Estado = "PENDIENTE"
+        };
+
+        // 7. Map order lines to factura detalles
+        var lineNum = 1;
+        foreach (var line in order.Detalles)
+        {
+            factura.Detalles.Add(new DetalleFactura
+            {
+                NumeroLinea = lineNum++,
+                ClaveProdServ = line.ProductoClaveSat ?? "01010101",
+                NoIdentificacion = line.ProductoCodigoBarra,
+                Descripcion = line.ProductoNombre,
+                Unidad = line.UnidadAbreviatura ?? line.UnidadNombre,
+                ClaveUnidad = line.UnidadClaveSat ?? "H87",
+                Cantidad = line.Cantidad,
+                ValorUnitario = line.PrecioUnitario,
+                Importe = line.Subtotal,
+                Descuento = line.Descuento,
+                ProductoId = line.ProductoId,
+            });
+        }
+
+        _context.Facturas.Add(factura);
+        await _context.SaveChangesAsync();
+
+        RegistrarAuditoria(tenantId, factura.Id, "CREAR", $"Factura creada desde pedido {order.NumeroPedido}", userId);
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Factura {Serie}-{Folio} created from order {NumeroPedido} for tenant {TenantId}",
+            factura.Serie, factura.Folio, order.NumeroPedido, tenantId);
+
+        // 8. Auto-timbrar if requested
+        if (request.TimbrarInmediatamente)
+        {
+            var timbrarResult = await TimbrarFactura(factura.Id);
+            if (timbrarResult.Result is OkObjectResult)
+            {
+                var refreshed = await _context.Facturas
+                    .Include(f => f.Detalles).Include(f => f.Impuestos)
+                    .FirstAsync(f => f.Id == factura.Id);
+                return Ok(MapToDto(refreshed));
+            }
+        }
 
         return CreatedAtAction(nameof(GetFactura), new { id = factura.Id }, MapToDto(factura));
     }
@@ -184,42 +371,160 @@ public class FacturasController : ControllerBase
         var tenantId = GetTenantId();
         var userId = GetUserId();
 
+        // Atomic state transition to prevent concurrent double-stamps
+        var updated = await _context.Facturas
+            .Where(f => f.Id == id && f.TenantId == tenantId
+                && (f.Estado == "PENDIENTE" || f.Estado == "ERROR"))
+            .ExecuteUpdateAsync(s => s.SetProperty(f => f.Estado, "PROCESANDO"));
+        if (updated == 0)
+            return BadRequest(new { error = "La factura ya está siendo procesada o no puede ser timbrada." });
+
+        // Reload the factura for the rest of the flow
         var factura = await _context.Facturas
             .Include(f => f.Detalles)
+            .Include(f => f.Impuestos)
             .Where(f => f.Id == id && f.TenantId == tenantId)
             .FirstOrDefaultAsync();
 
         if (factura == null)
             return NotFound();
 
-        if (factura.Estado != "PENDIENTE")
-            return BadRequest($"La factura no puede ser timbrada. Estado actual: {factura.Estado}");
+        var authHeader = Request.Headers.Authorization.ToString();
+        var timbreCheck = await _timbreService.CheckTimbreAvailableAsync(authHeader);
+        if (!timbreCheck.Allowed)
+            return BadRequest(new { error = timbreCheck.Message ?? "No tienes timbres disponibles en tu plan actual." });
+
+        // Load fiscal configuration (CSD + PAC credentials)
+        var config = await _context.ConfiguracionesFiscales
+            .Where(c => c.TenantId == tenantId && c.Activo)
+            .FirstOrDefaultAsync();
+
+        if (config == null)
+            return BadRequest("No se encontró configuración fiscal activa. Configure sus datos fiscales primero.");
+
+        if (string.IsNullOrEmpty(config.PacUsuario) || string.IsNullOrEmpty(config.PacPassword))
+            return BadRequest("No se encontraron credenciales del PAC. Configure sus credenciales Finkok.");
+
+        if (string.IsNullOrEmpty(config.CertificadoSat) || string.IsNullOrEmpty(config.LlavePrivada))
+            return BadRequest("No se encontraron certificados CSD. Suba su certificado (.cer) y llave privada (.key).");
+
+        // Decrypt PAC password into a local variable — never modify the tracked entity
+        string? decryptedPacPassword = null;
+        if (!string.IsNullOrEmpty(config.PacPassword))
+        {
+            var encryptionKey = _configuration["Jwt:Secret"]
+                ?? throw new InvalidOperationException("Jwt:Secret not configured");
+            decryptedPacPassword = CatalogosController.DecryptPassword(config.PacPassword, encryptionKey);
+        }
+
+        // Build a detached copy with decrypted credentials for PAC calls
+        var pacConfig = new ConfiguracionFiscal
+        {
+            PacUsuario = config.PacUsuario,
+            PacPassword = decryptedPacPassword,
+            PacAmbiente = config.PacAmbiente,
+            CertificadoSat = config.CertificadoSat,
+            LlavePrivada = config.LlavePrivada,
+            PasswordCertificado = config.PasswordCertificado,
+            Rfc = config.Rfc,
+            RazonSocial = config.RazonSocial,
+            RegimenFiscal = config.RegimenFiscal,
+            CodigoPostal = config.CodigoPostal
+        };
 
         try
         {
-            // TODO: Implementar timbrado con PAC (Proveedor Autorizado de Certificación)
-            // Por ahora solo simulamos el timbrado
-            
-            factura.Uuid = Guid.NewGuid().ToString();
-            factura.FechaTimbrado = DateTime.UtcNow;
-            factura.Estado = "TIMBRADA";
-            factura.CertificadoSat = "00001000000412345678";
-            factura.FechaCertificacion = DateTime.UtcNow;
+            // 1. Build XML CFDI 4.0
+            var unsignedXml = _xmlBuilder.BuildXml(factura, config);
+            _logger.LogDebug("XML CFDI 4.0 unsigned:\n{Xml}", unsignedXml);
 
-            RegistrarAuditoria(tenantId, factura.Id, "TIMBRAR", "Factura timbrada exitosamente", userId);
+            // 2. Sign XML with CSD (cadena original → SHA256+RSA → Sello)
+            var signedXml = _cfdiSigner.SignXml(unsignedXml, config);
+            _logger.LogDebug("XML CFDI 4.0 signed:\n{Xml}", signedXml);
+            factura.NoCertificadoEmisor = _cfdiSigner.GetNoCertificado(Convert.FromBase64String(config.CertificadoSat));
+            _logger.LogDebug("XML firmado con CSD (NoCertificado: {NoCert})", factura.NoCertificadoEmisor);
+
+            // 3. Send to PAC (Finkok) for timbrado — using decrypted credentials
+            var resultado = await _pacService.TimbrarAsync(signedXml, pacConfig);
+
+            if (!resultado.Success)
+            {
+                factura.Estado = "ERROR";
+                _logger.LogWarning("Timbrado rechazado: {Code} - {Message}", resultado.ErrorCode, resultado.ErrorMessage);
+                RegistrarAuditoria(tenantId, factura.Id, "TIMBRAR_ERROR",
+                    $"Error: {resultado.ErrorCode} - {resultado.ErrorMessage}", userId);
+                await _context.SaveChangesAsync();
+
+                return BadRequest(new
+                {
+                    error = "Error al timbrar la factura",
+                    code = resultado.ErrorCode,
+                    details = resultado.ErrorMessage
+                });
+            }
+
+            // 4. CRITICAL: Save timbrado state IMMEDIATELY after successful PAC response.
+            //    If this succeeds at SAT but a later step fails, we must not lose the UUID/state.
+            factura.Uuid = resultado.Uuid;
+            var fechaTimbrado = EnsureUtc(resultado.FechaTimbrado ?? DateTime.UtcNow);
+            factura.FechaTimbrado = fechaTimbrado;
+            factura.Estado = "TIMBRADA";
+            factura.SelloCfdi = ExtractSelloCfdi(resultado.XmlTimbrado);
+            factura.SelloSat = resultado.SelloSat;
+            factura.CadenaOriginalSat = resultado.CadenaOriginalSat;
+            factura.CertificadoSat = resultado.NoCertificadoSat;
+            factura.FechaCertificacion = fechaTimbrado;
+            factura.XmlContent = resultado.XmlTimbrado; // Local cache as backup
+
+            RegistrarAuditoria(tenantId, factura.Id, "TIMBRAR",
+                $"Factura timbrada exitosamente. UUID: {resultado.Uuid}", userId);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation($"Factura {factura.Serie}-{factura.Folio} timbrada exitosamente");
+            // 5. Upload timbrado XML to Azure Blob Storage (best-effort — XML is already in XmlContent)
+            if (!string.IsNullOrEmpty(resultado.XmlTimbrado) && !string.IsNullOrEmpty(resultado.Uuid))
+            {
+                try
+                {
+                    factura.XmlBlobUrl = await _blobService.UploadXmlAsync(tenantId, resultado.Uuid, resultado.XmlTimbrado);
+                    await _context.SaveChangesAsync();
+                    _logger.LogInformation("XML timbrado subido a Blob Storage: {BlobUrl}", factura.XmlBlobUrl);
+                }
+                catch (Exception blobEx)
+                {
+                    _logger.LogWarning(blobEx, "Could not upload XML to Blob Storage for UUID {Uuid}. XML is available in XmlContent field.", resultado.Uuid);
+                }
+            }
+
+            // Register timbre usage with Main API
+            if (!string.IsNullOrEmpty(authHeader))
+            {
+                try { await _timbreService.NotifyTimbreUsedAsync(authHeader); }
+                catch (Exception ex) { _logger.LogError(ex, "Error notificando uso de timbre para factura {Id}", id); }
+            }
+
+            _logger.LogInformation("Factura {Serie}-{Folio} timbrada exitosamente (UUID: {Uuid})",
+                factura.Serie, factura.Folio, resultado.Uuid);
 
             return Ok(MapToDto(factura));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"Error al timbrar factura {id}");
-            factura.Estado = "ERROR";
-            await _context.SaveChangesAsync();
-            
-            return StatusCode(500, new { error = "Error al timbrar la factura", details = ex.Message });
+            _logger.LogError(ex, "Error al timbrar factura {Id}", id);
+
+            // CRITICAL: If UUID was already assigned, the invoice IS stamped at SAT.
+            // Do NOT set Estado=ERROR — it's already TIMBRADA and persisted.
+            if (string.IsNullOrEmpty(factura.Uuid))
+            {
+                factura.Estado = "ERROR";
+                RegistrarAuditoria(tenantId, factura.Id, "TIMBRAR_ERROR", $"Excepcion: {ex.Message}", userId);
+                await _context.SaveChangesAsync();
+            }
+            else
+            {
+                _logger.LogWarning("Post-timbrado error for UUID {Uuid}, but invoice is already TIMBRADA at SAT. Not changing estado.", factura.Uuid);
+            }
+
+            return StatusCode(500, new { error = "Error al timbrar la factura", details = FinkokPacService.SanitizeErrorMessage(ex.Message, pacConfig.PacUsuario, decryptedPacPassword) });
         }
     }
 
@@ -239,16 +544,69 @@ public class FacturasController : ControllerBase
         if (factura.Estado != "TIMBRADA")
             return BadRequest("Solo se pueden cancelar facturas timbradas");
 
-        factura.Estado = "CANCELADA";
-        factura.EstadoCancelacion = "CANCELADA";
+        var motivosValidos = new[] { "01", "02", "03", "04" };
+        if (!motivosValidos.Contains(request.MotivoCancelacion))
+            return BadRequest($"Motivo de cancelación inválido. Valores válidos: 01, 02, 03, 04");
+        if (request.MotivoCancelacion == "01" && string.IsNullOrEmpty(request.FolioSustitucion))
+            return BadRequest("El motivo '01' requiere un FolioSustitucion (UUID de la factura sustituta)");
+
+        // Load fiscal config for PAC credentials
+        var config = await _context.ConfiguracionesFiscales
+            .Where(c => c.TenantId == tenantId && c.Activo)
+            .FirstOrDefaultAsync();
+
+        if (config == null || string.IsNullOrEmpty(config.PacUsuario) || string.IsNullOrEmpty(config.PacPassword))
+            return BadRequest("No se encontró configuración fiscal o credenciales PAC. Configure sus credenciales Finkok para cancelar facturas timbradas.");
+
+        if (string.IsNullOrEmpty(factura.Uuid))
+            return BadRequest("La factura no tiene UUID asignado. No se puede cancelar ante el SAT.");
+
+        // Decrypt CSD password and PAC password into local variables — never modify the tracked entity
+        var encryptionKey = _configuration["Jwt:Secret"]
+            ?? throw new InvalidOperationException("Jwt:Secret not configured");
+
+        string? decryptedCsdPassword = null;
+        if (!string.IsNullOrEmpty(config.PasswordCertificado))
+            decryptedCsdPassword = CatalogosController.DecryptPassword(config.PasswordCertificado, encryptionKey);
+
+        string? decryptedPacPassword = null;
+        if (!string.IsNullOrEmpty(config.PacPassword))
+            decryptedPacPassword = CatalogosController.DecryptPassword(config.PacPassword, encryptionKey);
+
+        // Detach config so PAC service can't accidentally persist decrypted values
+        _context.Entry(config).State = Microsoft.EntityFrameworkCore.EntityState.Detached;
+        config.PasswordCertificado = decryptedCsdPassword;
+        config.PacPassword = decryptedPacPassword;
+
+        var resultado = await _pacService.CancelarAsync(
+            factura.Uuid, factura.EmisorRfc,
+            request.MotivoCancelacion, request.FolioSustitucion, config);
+
+        if (!resultado.Success)
+        {
+            return BadRequest(new
+            {
+                error = "Error al cancelar la factura con el SAT",
+                code = resultado.ErrorCode,
+                details = resultado.ErrorMessage
+            });
+        }
+
+        factura.EstadoCancelacion = resultado.EstadoCancelacion;
+        factura.AcuseCancelacion = resultado.AcuseXml;
+
+        if (resultado.EstadoCancelacion == "CANCELADA")
+            factura.Estado = "CANCELADA";
+
         factura.FechaCancelacion = DateTime.UtcNow;
         factura.MotivoCancelacion = request.MotivoCancelacion;
         factura.FolioSustitucion = request.FolioSustitucion;
 
-        RegistrarAuditoria(tenantId, factura.Id, "CANCELAR", $"Factura cancelada: {request.MotivoCancelacion}", userId);
+        RegistrarAuditoria(tenantId, factura.Id, "CANCELAR",
+            $"Factura cancelada: {request.MotivoCancelacion} (estado: {factura.EstadoCancelacion})", userId);
         await _context.SaveChangesAsync();
 
-        return NoContent();
+        return Ok(new { estado = factura.EstadoCancelacion });
     }
 
     [HttpGet("{id}/pdf")]
@@ -265,22 +623,52 @@ public class FacturasController : ControllerBase
         if (factura == null)
             return NotFound();
 
-        // Load fiscal configuration for emisor details
+        // Try serving from Blob Storage first (cached)
+        if (!string.IsNullOrEmpty(factura.PdfBlobUrl))
+        {
+            try
+            {
+                var pdfBytes = await _blobService.GetPdfAsync(factura.PdfBlobUrl);
+                var fileName = $"Factura_{factura.Serie ?? ""}_{factura.Folio}_{factura.FechaEmision:yyyyMMdd}.pdf";
+                return File(pdfBytes, "application/pdf", fileName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not retrieve PDF from Blob Storage, regenerating");
+            }
+        }
+
+        // Generate PDF fresh
         var config = await _context.ConfiguracionesFiscales
             .Where(c => c.TenantId == tenantId && c.Activo)
             .FirstOrDefaultAsync();
 
-        var pdfBytes = _pdfService.GeneratePdf(factura, config);
-        var fileName = $"Factura_{factura.Serie ?? ""}_{factura.Folio}_{factura.FechaEmision:yyyyMMdd}.pdf";
+        var logoBytes = await ResolveLogoAsync(config?.LogoUrl, tenantId);
+        var generatedPdf = _pdfService.GeneratePdf(factura, config, logoBytes);
 
-        return File(pdfBytes, "application/pdf", fileName);
+        // Upload to Blob Storage for caching (if timbrada + has UUID)
+        if (factura.Estado == "TIMBRADA" && !string.IsNullOrEmpty(factura.Uuid))
+        {
+            try
+            {
+                factura.PdfBlobUrl = await _blobService.UploadPdfAsync(tenantId, factura.Uuid, generatedPdf);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not cache PDF to Blob Storage");
+            }
+        }
+
+        var pdfFileName = $"Factura_{factura.Serie ?? ""}_{factura.Folio}_{factura.FechaEmision:yyyyMMdd}.pdf";
+        return File(generatedPdf, "application/pdf", pdfFileName);
     }
 
     [HttpGet("{id}/xml")]
     public async Task<ActionResult> GetXml(long id)
     {
         var tenantId = GetTenantId();
-        
+
         var factura = await _context.Facturas
             .Where(f => f.Id == id && f.TenantId == tenantId)
             .FirstOrDefaultAsync();
@@ -288,6 +676,21 @@ public class FacturasController : ControllerBase
         if (factura == null)
             return NotFound();
 
+        // Try Blob Storage first (source of truth)
+        if (!string.IsNullOrEmpty(factura.XmlBlobUrl))
+        {
+            try
+            {
+                var xmlContent = await _blobService.GetXmlAsync(factura.XmlBlobUrl);
+                return Content(xmlContent, "application/xml");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not retrieve XML from Blob Storage, falling back to DB");
+            }
+        }
+
+        // Fallback to DB cache
         if (string.IsNullOrEmpty(factura.XmlContent))
             return NotFound("XML no disponible");
 
@@ -321,7 +724,8 @@ public class FacturasController : ControllerBase
                 .Where(c => c.TenantId == tenantId && c.Activo)
                 .FirstOrDefaultAsync();
 
-            pdfBytes = _pdfService.GeneratePdf(factura, config);
+            var logoBytes = await ResolveLogoAsync(config?.LogoUrl, tenantId);
+            pdfBytes = _pdfService.GeneratePdf(factura, config, logoBytes);
             pdfFileName = $"Factura_{factura.Serie ?? ""}_{factura.Folio}.pdf";
         }
 
@@ -367,30 +771,14 @@ public class FacturasController : ControllerBase
 
     private async Task<int> GetNextFolio(string tenantId, string serie)
     {
-        var numeracion = await _context.NumeracionDocumentos
-            .Where(n => n.TenantId == tenantId && n.TipoDocumento == "FACTURA" && n.Serie == serie)
-            .FirstOrDefaultAsync();
-
-        if (numeracion == null)
-        {
-            numeracion = new NumeracionDocumento
-            {
-                TenantId = tenantId,
-                TipoDocumento = "FACTURA",
-                Serie = serie,
-                FolioInicial = 1,
-                FolioActual = 1,
-                Activo = true
-            };
-            _context.NumeracionDocumentos.Add(numeracion);
-        }
-        else
-        {
-            numeracion.FolioActual++;
-        }
-
-        await _context.SaveChangesAsync();
-        return numeracion.FolioActual;
+        // Atomic upsert: INSERT on first use, UPDATE+increment on subsequent calls
+        var sql = @"INSERT INTO ""NumeracionDocumentos"" (""TenantId"", ""TipoDocumento"", ""Serie"", ""FolioInicial"", ""FolioActual"", ""Activo"")
+                    VALUES ({0}, 'FACTURA', {1}, 1, 1, true)
+                    ON CONFLICT (""TenantId"", ""TipoDocumento"", ""Serie"")
+                    DO UPDATE SET ""FolioActual"" = ""NumeracionDocumentos"".""FolioActual"" + 1
+                    RETURNING ""FolioActual""";
+        var folio = await _context.Database.SqlQueryRaw<int>(sql, tenantId, serie).FirstOrDefaultAsync();
+        return folio == 0 ? 1 : folio;
     }
 
     private void RegistrarAuditoria(string tenantId, long? facturaId, string accion, string descripcion, int usuarioId)
@@ -407,6 +795,27 @@ public class FacturasController : ControllerBase
         };
 
         _context.AuditoriaFacturacion.Add(auditoria);
+    }
+
+    private static DateTime EnsureUtc(DateTime dt)
+    {
+        return dt.Kind == DateTimeKind.Unspecified
+            ? DateTime.SpecifyKind(dt, DateTimeKind.Utc)
+            : dt.ToUniversalTime();
+    }
+
+    private static string? ExtractSelloCfdi(string? xmlTimbrado)
+    {
+        if (string.IsNullOrEmpty(xmlTimbrado)) return null;
+        try
+        {
+            var doc = new System.Xml.XmlDocument();
+            doc.LoadXml(xmlTimbrado);
+            var nsmgr = new System.Xml.XmlNamespaceManager(doc.NameTable);
+            nsmgr.AddNamespace("cfdi", "http://www.sat.gob.mx/cfd/4");
+            return doc.SelectSingleNode("/cfdi:Comprobante", nsmgr)?.Attributes?["Sello"]?.Value;
+        }
+        catch { return null; }
     }
 
     private FacturaDto MapToDto(Factura factura)

@@ -11,47 +11,16 @@ const BACKEND_JWT_SECRET = new TextEncoder().encode(
   process.env.SOCIAL_LOGIN_SECRET || process.env.JWT_SECRET || ''
 );
 
-// —— Usuarios mock para desarrollo (coinciden con seed de BD) ——
-// Password: test123 para todos
-// Solo se usan si el backend es inalcanzable
-const MOCK_USERS = [
-  {
-    id: '1',
-    email: 'admin@jeyma.com',
-    password: 'test123',
-    name: 'Administrador Jeyma',
-    role: 'ADMIN',
-    tenantId: 3,
-    companyId: 3,
-  },
-  {
-    id: '2',
-    email: 'admin@huichol.com',
-    password: 'test123',
-    name: 'Administrador Huichol',
-    role: 'ADMIN',
-    tenantId: 4,
-    companyId: 4,
-  },
-  {
-    id: '4',
-    email: 'vendedor1@jeyma.com',
-    password: 'test123',
-    name: 'Vendedor 1 Jeyma',
-    role: 'VENDEDOR',
-    tenantId: 3,
-    companyId: 3,
-  },
-  {
-    id: '5',
-    email: 'vendedor1@huichol.com',
-    password: 'test123',
-    name: 'Vendedor 1 Huichol',
-    role: 'VENDEDOR',
-    tenantId: 4,
-    companyId: 4,
-  },
-];
+// Mock users loaded lazily only in development — tree-shaken from production builds
+function getMockUsers() {
+  if (process.env.NODE_ENV !== 'development') return [];
+  return [
+    { id: '1', email: 'admin@jeyma.com', password: 'test123', name: 'Administrador Jeyma', role: 'ADMIN', tenantId: 3, companyId: 3 },
+    { id: '2', email: 'admin@huichol.com', password: 'test123', name: 'Administrador Huichol', role: 'ADMIN', tenantId: 4, companyId: 4 },
+    { id: '4', email: 'vendedor1@jeyma.com', password: 'test123', name: 'Vendedor 1 Jeyma', role: 'VENDEDOR', tenantId: 3, companyId: 3 },
+    { id: '5', email: 'vendedor1@huichol.com', password: 'test123', name: 'Vendedor 1 Huichol', role: 'VENDEDOR', tenantId: 4, companyId: 4 },
+  ];
+}
 
 // —— Tipos de respuesta esperada del backend ——
 interface ApiUser {
@@ -225,7 +194,7 @@ export const authOptions: NextAuthOptions = {
 
           // Backend responded but login failed - only fall back to mock in dev
           if (isDevOnly()) {
-            const user = MOCK_USERS.find(
+            const user = getMockUsers().find(
               u => u.email === credentials.email && u.password === credentials.password
             );
             if (user) {
@@ -246,7 +215,7 @@ export const authOptions: NextAuthOptions = {
         } catch (_error) {
           // Backend unreachable - fall back to mock in development
           if (isDevOnly()) {
-            const user = MOCK_USERS.find(
+            const user = getMockUsers().find(
               u => u.email === credentials.email && u.password === credentials.password
             );
             if (user) {

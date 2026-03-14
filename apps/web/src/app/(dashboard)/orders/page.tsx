@@ -26,8 +26,9 @@ import {
 import { ListPagination } from '@/components/ui/ListPagination';
 import { ExportButton } from '@/components/shared/ExportButton';
 import { Button } from '@/components/ui/Button';
-import { ShoppingCart as ShoppingCartIcon } from '@phosphor-icons/react';
+import { ShoppingCart as ShoppingCartIcon, Receipt } from '@phosphor-icons/react';
 import { SearchBar } from '@/components/common/SearchBar';
+import { createFacturaFromOrder } from '@/services/api/billing';
 import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -168,6 +169,7 @@ export default function OrdersPage() {
   const formDataLoaded = useRef(false);
   const [formIsDirty, setFormIsDirty] = useState(false);
   const [usuarios, setUsuarios] = useState<UsuarioOption[]>([]);
+  const [facturandoPedidoId, setFacturandoPedidoId] = useState<string | null>(null);
 
   // Calcular total de montos
   const totalAmount = orders.reduce((sum, order) => sum + order.total, 0);
@@ -267,6 +269,23 @@ export default function OrdersPage() {
       } catch (_err) {
         toast.error('Error al eliminar el pedido');
       }
+    }
+  };
+
+  const handleFacturar = async (orderId: string) => {
+    setFacturandoPedidoId(orderId);
+    try {
+      const factura = await createFacturaFromOrder({
+        pedidoId: parseInt(orderId),
+        timbrarInmediatamente: false,
+      });
+      toast.success(`Factura ${factura.serie}-${factura.folio} creada correctamente`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Error al crear factura';
+      const axiosMsg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(axiosMsg || message);
+    } finally {
+      setFacturandoPedidoId(null);
     }
   };
 
@@ -505,6 +524,16 @@ export default function OrdersPage() {
                       >
                         <Trash2 className="w-3.5 h-3.5 text-red-400 hover:text-red-600" /> Eliminar
                       </button>
+                      {order.status === 'delivered' && (
+                        <button
+                          onClick={() => handleFacturar(order.id)}
+                          disabled={facturandoPedidoId === order.id}
+                          className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-emerald-600 hover:bg-emerald-50 rounded disabled:opacity-50"
+                        >
+                          <Receipt className="w-3.5 h-3.5 text-emerald-500" weight="bold" />
+                          {facturandoPedidoId === order.id ? 'Facturando...' : 'Facturar'}
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))
@@ -597,6 +626,16 @@ export default function OrdersPage() {
                       >
                         <Trash2 className="w-4 h-4 text-red-400 hover:text-red-600" />
                       </button>
+                      {order.status === 'delivered' && (
+                        <button
+                          onClick={() => handleFacturar(order.id)}
+                          disabled={facturandoPedidoId === order.id}
+                          className="p-1.5 hover:bg-emerald-50 rounded transition-colors disabled:opacity-50"
+                          title="Facturar"
+                        >
+                          <Receipt className="w-4 h-4 text-emerald-500 hover:text-emerald-700" weight="bold" />
+                        </button>
+                      )}
                     </div>
                     </div>
                   ))}

@@ -100,65 +100,126 @@ public class CobroRepository : ICobroRepository
 
     public async Task<int> CrearAsync(CobroCreateDto dto, int tenantId, int usuarioId)
     {
-        // Over-payment guard: if linked to a pedido, verify monto doesn't exceed remaining balance
-        if (dto.PedidoId.HasValue)
+        // Use a transaction to prevent over-payment race conditions
+        await using var transaction = await _db.Database.BeginTransactionAsync();
+        try
         {
-            var pedido = await _db.Pedidos
-                .AsNoTracking()
-                .Where(p => p.Id == dto.PedidoId.Value && p.TenantId == tenantId)
-                .Select(p => new { p.Total })
-                .FirstOrDefaultAsync();
-
-            if (pedido != null)
+            // Over-payment guard: if linked to a pedido, lock the row and verify balance
+            if (dto.PedidoId.HasValue)
             {
-                var cobradoPrevio = (await _db.Cobros
-                    .AsNoTracking()
-                    .Where(c => c.PedidoId == dto.PedidoId.Value && c.TenantId == tenantId && c.Activo)
-                    .Select(c => c.Monto)
-                    .ToListAsync())
-                    .Sum();
+                // Row-level lock prevents concurrent over-payments.
+                // Use FOR UPDATE on PostgreSQL; fall back to plain SELECT on SQLite (tests).
+                var isPostgres = _db.Database.ProviderName?.Contains("Npgsql") == true;
+                var pedido = isPostgres
+                    ? await _db.Pedidos
+                        .FromSqlInterpolated($"SELECT * FROM \"Pedidos\" WHERE \"Id\" = {dto.PedidoId.Value} AND \"TenantId\" = {tenantId} AND \"EliminadoEn\" IS NULL FOR UPDATE")
+                        .Select(p => new { p.Total })
+                        .FirstOrDefaultAsync()
+                    : await _db.Pedidos
+                        .AsNoTracking()
+                        .Where(p => p.Id == dto.PedidoId.Value && p.TenantId == tenantId)
+                        .Select(p => new { p.Total })
+                        .FirstOrDefaultAsync();
 
-                var saldoPendiente = pedido.Total - cobradoPrevio;
-                if (dto.Monto > saldoPendiente)
-                    throw new InvalidOperationException(
-                        $"El monto ({dto.Monto:C}) excede el saldo pendiente del pedido ({saldoPendiente:C})");
+                if (pedido != null)
+                {
+                    var cobradoPrevio = (await _db.Cobros
+                        .AsNoTracking()
+                        .Where(c => c.PedidoId == dto.PedidoId.Value && c.TenantId == tenantId && c.Activo)
+                        .Select(c => c.Monto)
+                        .ToListAsync())
+                        .Sum();
+
+                    var saldoPendiente = pedido.Total - cobradoPrevio;
+                    if (dto.Monto > saldoPendiente)
+                        throw new InvalidOperationException(
+                            $"El monto ({dto.Monto:C}) excede el saldo pendiente del pedido ({saldoPendiente:C})");
+                }
             }
+
+            var entity = new Cobro
+            {
+                TenantId = tenantId,
+                PedidoId = dto.PedidoId,
+                ClienteId = dto.ClienteId,
+                UsuarioId = usuarioId,
+                Monto = dto.Monto,
+                MetodoPago = (MetodoPago)dto.MetodoPago,
+                FechaCobro = dto.FechaCobro ?? DateTime.UtcNow,
+                Referencia = dto.Referencia,
+                Notas = dto.Notas,
+                CreadoEn = DateTime.UtcNow,
+                Activo = true,
+            };
+
+            _db.Cobros.Add(entity);
+            await _db.SaveChangesAsync();
+            await transaction.CommitAsync();
+            return entity.Id;
         }
-
-        var entity = new Cobro
+        catch
         {
-            TenantId = tenantId,
-            PedidoId = dto.PedidoId,
-            ClienteId = dto.ClienteId,
-            UsuarioId = usuarioId,
-            Monto = dto.Monto,
-            MetodoPago = (MetodoPago)dto.MetodoPago,
-            FechaCobro = dto.FechaCobro ?? DateTime.UtcNow,
-            Referencia = dto.Referencia,
-            Notas = dto.Notas,
-            CreadoEn = DateTime.UtcNow,
-            Activo = true,
-        };
-
-        _db.Cobros.Add(entity);
-        await _db.SaveChangesAsync();
-        return entity.Id;
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
 
     public async Task<bool> ActualizarAsync(int id, CobroUpdateDto dto, int tenantId)
     {
-        var entity = await _db.Cobros.FirstOrDefaultAsync(c => c.Id == id && c.TenantId == tenantId);
-        if (entity == null) return false;
+        await using var transaction = await _db.Database.BeginTransactionAsync();
+        try
+        {
+            var entity = await _db.Cobros.FirstOrDefaultAsync(c => c.Id == id && c.TenantId == tenantId);
+            if (entity == null) return false;
 
-        entity.Monto = dto.Monto;
-        entity.MetodoPago = (MetodoPago)dto.MetodoPago;
-        if (dto.FechaCobro.HasValue) entity.FechaCobro = dto.FechaCobro.Value;
-        entity.Referencia = dto.Referencia;
-        entity.Notas = dto.Notas;
-        entity.ActualizadoEn = DateTime.UtcNow;
+            // Over-payment guard: if linked to a pedido, verify the new amount doesn't exceed balance
+            if (entity.PedidoId.HasValue)
+            {
+                var isPostgres = _db.Database.ProviderName?.Contains("Npgsql") == true;
+                var pedido = isPostgres
+                    ? await _db.Pedidos
+                        .FromSqlInterpolated($"SELECT * FROM \"Pedidos\" WHERE \"Id\" = {entity.PedidoId.Value} AND \"TenantId\" = {tenantId} AND \"EliminadoEn\" IS NULL FOR UPDATE")
+                        .Select(p => new { p.Total })
+                        .FirstOrDefaultAsync()
+                    : await _db.Pedidos
+                        .AsNoTracking()
+                        .Where(p => p.Id == entity.PedidoId.Value && p.TenantId == tenantId)
+                        .Select(p => new { p.Total })
+                        .FirstOrDefaultAsync();
 
-        await _db.SaveChangesAsync();
-        return true;
+                if (pedido != null)
+                {
+                    // Sum all OTHER active cobros for this pedido (exclude the one being updated)
+                    var cobradoOtros = (await _db.Cobros
+                        .AsNoTracking()
+                        .Where(c => c.PedidoId == entity.PedidoId.Value && c.TenantId == tenantId && c.Activo && c.Id != id)
+                        .Select(c => c.Monto)
+                        .ToListAsync())
+                        .Sum();
+
+                    var saldoPendiente = pedido.Total - cobradoOtros;
+                    if (dto.Monto > saldoPendiente)
+                        throw new InvalidOperationException(
+                            $"El monto ({dto.Monto:C}) excede el saldo pendiente del pedido ({saldoPendiente:C})");
+                }
+            }
+
+            entity.Monto = dto.Monto;
+            entity.MetodoPago = (MetodoPago)dto.MetodoPago;
+            if (dto.FechaCobro.HasValue) entity.FechaCobro = dto.FechaCobro.Value;
+            entity.Referencia = dto.Referencia;
+            entity.Notas = dto.Notas;
+            entity.ActualizadoEn = DateTime.UtcNow;
+
+            await _db.SaveChangesAsync();
+            await transaction.CommitAsync();
+            return true;
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
 
     public async Task<bool> AnularAsync(int id, int tenantId)

@@ -102,7 +102,7 @@ public class AiEmbeddingService : IAiEmbeddingService
                   AND 1 - (embedding <=> {0}::vector) >= {2}
                 ORDER BY embedding <=> {0}::vector
                 LIMIT {3}",
-                queryVector.ToString(), tenantId, minScore, topK)
+                queryVector, tenantId, minScore, topK)
             .ToListAsync();
 
         return results.Select(r => new SemanticSearchResult(

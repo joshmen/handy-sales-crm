@@ -34,7 +34,7 @@ public static class CorsExtensions
                     builder
                         .WithOrigins(allowedOrigins)
                         .WithMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
-                        .WithHeaders("Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With", "X-Device-Id", "X-App-Version")
+                        .WithHeaders("Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With", "X-Device-Id", "X-Device-Fingerprint", "X-App-Version")
                         .SetPreflightMaxAge(TimeSpan.FromHours(1));
                 }
             });

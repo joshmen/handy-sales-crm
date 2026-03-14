@@ -112,12 +112,12 @@ public static class TenantEndpoints
         if (tenant == null)
             return Results.NotFound(new { message = "Tenant no encontrado" });
 
-        var stats = new TenantStatsDto(
-            await context.Usuarios.IgnoreQueryFilters().AsNoTracking().CountAsync(u => u.TenantId == id && u.Activo),
-            await context.Clientes.IgnoreQueryFilters().AsNoTracking().CountAsync(c => c.TenantId == id),
-            await context.Productos.IgnoreQueryFilters().AsNoTracking().CountAsync(p => p.TenantId == id),
-            await context.Pedidos.IgnoreQueryFilters().AsNoTracking().CountAsync(p => p.TenantId == id)
-        );
+        var usuariosTask = context.Usuarios.IgnoreQueryFilters().AsNoTracking().CountAsync(u => u.TenantId == id && u.Activo);
+        var clientesTask = context.Clientes.IgnoreQueryFilters().AsNoTracking().CountAsync(c => c.TenantId == id);
+        var productosTask = context.Productos.IgnoreQueryFilters().AsNoTracking().CountAsync(p => p.TenantId == id);
+        var pedidosTask = context.Pedidos.IgnoreQueryFilters().AsNoTracking().CountAsync(p => p.TenantId == id);
+        await Task.WhenAll(usuariosTask, clientesTask, productosTask, pedidosTask);
+        var stats = new TenantStatsDto(await usuariosTask, await clientesTask, await productosTask, await pedidosTask);
 
         // Cargar DatosEmpresa
         var datosEmpresa = await context.DatosEmpresa
@@ -341,8 +341,8 @@ public static class TenantEndpoints
         if (!currentTenant.IsSuperAdmin)
             return Results.Forbid();
 
-        if (dto.Ids == null || dto.Ids.Count == 0)
-            return Results.BadRequest(new { message = "Debe enviar al menos un ID" });
+        if (dto.Ids == null || dto.Ids.Count == 0 || dto.Ids.Count > 100)
+            return Results.BadRequest(new { message = "Debe enviar entre 1 y 100 IDs" });
 
         int count = 0;
         foreach (var id in dto.Ids)
@@ -403,7 +403,7 @@ public static class TenantEndpoints
         var users = await context.Usuarios
             .IgnoreQueryFilters()
             .AsNoTracking()
-            .Where(u => u.TenantId == id)
+            .Where(u => u.TenantId == id && u.EliminadoEn == null)
             .OrderBy(u => u.Nombre)
             .Select(u => new TenantUserDto(
                 u.Id,
@@ -471,6 +471,9 @@ public static class TenantEndpoints
             roleId = role.Id;
         }
 
+        if (string.IsNullOrEmpty(dto.Password) || dto.Password.Length < 8)
+            return Results.BadRequest(new { message = "La contraseña debe tener al menos 8 caracteres" });
+
         var usuario = new Usuario
         {
             TenantId = id,
@@ -481,6 +484,7 @@ public static class TenantEndpoints
             EsSuperAdmin = false,
             EmailVerificado = false,
             RoleId = roleId,
+            RolExplicito = isAdmin ? "ADMIN" : rolNormalized,
             Activo = true,
             CreadoEn = DateTime.UtcNow,
             CreadoPor = currentTenant.UserId

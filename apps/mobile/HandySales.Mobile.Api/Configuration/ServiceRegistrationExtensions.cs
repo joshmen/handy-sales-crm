@@ -80,7 +80,15 @@ public static class ServiceRegistrationExtensions
         {
             services.AddDbContext<HandySalesDbContext>(options =>
                 options.UseNpgsql(
-                    config.GetConnectionString("DefaultConnection")
+                    config.GetConnectionString("DefaultConnection"),
+                    o =>
+                    {
+                        o.EnableRetryOnFailure(
+                            maxRetryCount: 3,
+                            maxRetryDelay: TimeSpan.FromSeconds(5),
+                            errorCodesToAdd: null);
+                        o.CommandTimeout(30);
+                    }
                 ));
         }
 

@@ -141,15 +141,25 @@ public static class ServiceRegistrationExtensions
 
         // Servicio de tenant para Global Query Filters
         services.AddScoped<ITenantContextService, TenantContextService>();
+        services.AddScoped<HandySales.Application.Common.Interfaces.ITransactionManager, TransactionManager>();
 
         if (environment != "Testing")
         {
             // No registrar DbContext aquí: los tests usarán Sqlite desde CustomWebApplicationFactory
-            services.AddDbContext<HandySalesDbContext>(options =>
+            services.AddSingleton<HandySales.Api.Middleware.SlowQueryInterceptor>();
+            services.AddDbContext<HandySalesDbContext>((sp, options) =>
              options.UseNpgsql(
                  config.GetConnectionString("DefaultConnection"),
-                 o => o.UseVector()
-             ));
+                 o =>
+                 {
+                     o.UseVector();
+                     o.EnableRetryOnFailure(
+                         maxRetryCount: 3,
+                         maxRetryDelay: TimeSpan.FromSeconds(5),
+                         errorCodesToAdd: null);
+                     o.CommandTimeout(30);
+                 })
+             .AddInterceptors(sp.GetRequiredService<HandySales.Api.Middleware.SlowQueryInterceptor>()));
         }
         services.AddFluentValidationAutoValidation();
 

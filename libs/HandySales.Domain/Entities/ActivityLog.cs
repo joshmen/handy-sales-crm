@@ -44,10 +44,10 @@ namespace HandySales.Domain.Entities
         [MaxLength(255)]
         public string? EntityName { get; set; }
 
-        [Column("old_values", TypeName = "json")]
+        [Column("old_values", TypeName = "jsonb")]
         public string? OldValues { get; set; }
 
-        [Column("new_values", TypeName = "json")]
+        [Column("new_values", TypeName = "jsonb")]
         public string? NewValues { get; set; }
 
         // Información de auditoría
@@ -129,7 +129,7 @@ namespace HandySales.Domain.Entities
         [Column("stack_trace")]
         public string? StackTrace { get; set; }
 
-        [Column("additional_data", TypeName = "json")]
+        [Column("additional_data", TypeName = "jsonb")]
         public string? AdditionalData { get; set; }
 
         // Timestamps

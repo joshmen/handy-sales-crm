@@ -17,19 +17,18 @@ import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { exportToCsv } from '@/services/api/importExport';
 import { CsvImportModal } from '@/components/shared/CsvImportModal';
 import {
-  Camera,
   Download,
   Plus,
   Pencil,
   AlertTriangle,
   Upload,
-  Trash2,
   Warehouse,
   Package,
   RefreshCw,
   ChevronDown,
   Loader2,
 } from 'lucide-react';
+import { ImageUpload } from '@/components/ui/ImageUpload';
 import { ListPagination } from '@/components/ui/ListPagination';
 import { SearchBar } from '@/components/common/SearchBar';
 import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
@@ -56,7 +55,6 @@ const ALERTA_LABELS: Record<AlertaInventario, string> = {
 export default function InventoryPage() {
   const router = useRouter();
   const drawerRef = useRef<DrawerHandle>(null);
-  const imageInputRef = useRef<HTMLInputElement>(null);
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -101,17 +99,6 @@ export default function InventoryPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
-
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('La imagen no puede ser mayor a 5MB');
-      return;
-    }
-    setImageFile(file);
-    setImagePreview(URL.createObjectURL(file));
-  };
 
   const handleDeleteImage = async () => {
     const productId = modalMode === 'edit' ? selectedItem?.productId : watch('productoId');
@@ -642,51 +629,22 @@ export default function InventoryPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Imagen del producto
                 </label>
-                <div className="flex items-center gap-4">
-                  <div className="relative">
-                    <div className="w-16 h-16 rounded-lg border border-gray-200 flex items-center justify-center overflow-hidden bg-gray-50">
-                      {imagePreview ? (
-                        <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
-                      ) : currentImageUrl ? (
-                        <img src={currentImageUrl} alt="Producto" className="w-full h-full object-cover" />
-                      ) : (
-                        <Package className="w-8 h-8 text-gray-300" />
-                      )}
-                    </div>
-                    <input
-                      ref={imageInputRef}
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      onChange={handleImageSelect}
-                      style={{ display: 'none' }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => imageInputRef.current?.click()}
-                      disabled={uploadingImage}
-                      className="absolute bottom-0 right-0 p-1.5 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors disabled:opacity-50 shadow-lg"
-                      title={currentImageUrl || imagePreview ? 'Cambiar imagen' : 'Subir imagen'}
-                    >
-                      {currentImageUrl || imagePreview ? (
-                        <Camera className="h-3.5 w-3.5" />
-                      ) : (
-                        <Upload className="h-3.5 w-3.5" />
-                      )}
-                    </button>
-                    {(currentImageUrl || imagePreview) && (
-                      <button
-                        type="button"
-                        onClick={handleDeleteImage}
-                        disabled={uploadingImage}
-                        className="absolute -bottom-1 -left-1 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors disabled:opacity-50"
-                        title="Eliminar imagen"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground">JPEG, PNG o WebP. Max 5 MB.</p>
-                </div>
+                <ImageUpload
+                  variant="square"
+                  src={imagePreview || currentImageUrl}
+                  alt="Producto"
+                  fallbackIcon={<Package className="w-8 h-8 text-gray-300" />}
+                  size="md"
+                  maxSizeMB={5}
+                  accept="image/jpeg,image/png,image/webp"
+                  hint="PNG, JPG o WebP. Máx. 5 MB."
+                  disabled={uploadingImage}
+                  onUpload={(file) => {
+                    setImageFile(file);
+                    setImagePreview(URL.createObjectURL(file));
+                  }}
+                  onDelete={handleDeleteImage}
+                />
               </div>
             )}
 

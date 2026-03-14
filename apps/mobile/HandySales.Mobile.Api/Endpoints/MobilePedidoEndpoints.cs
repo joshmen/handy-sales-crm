@@ -50,7 +50,7 @@ public static class MobilePedidoEndpoints
 
             var total = pedidos.Count;
             var paginaActual = pagina > 0 ? pagina : 1;
-            var tamano = porPagina > 0 ? porPagina : 20;
+            var tamano = porPagina > 0 ? Math.Min(porPagina, 100) : 20;
 
             var paginados = pedidos
                 .OrderByDescending(p => p.FechaPedido)

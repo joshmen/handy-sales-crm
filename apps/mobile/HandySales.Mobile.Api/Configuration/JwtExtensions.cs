@@ -1,9 +1,7 @@
 using HandySales.Shared.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using System.Security.Claims;
 using System.Text;
-using System.IdentityModel.Tokens.Jwt;
 
 namespace HandySales.Mobile.Api.Configuration;
 
@@ -13,6 +11,10 @@ public static class JwtExtensions
     {
         var jwtSettings = config.GetSection("Jwt").Get<JwtSettings>()
             ?? throw new InvalidOperationException("No se encontró la configuración JWT.");
+
+        if (string.IsNullOrWhiteSpace(jwtSettings.Secret))
+            throw new InvalidOperationException("JWT Secret is not configured. Set the Jwt:Secret configuration value or JWT_SECRET environment variable.");
+
         var key = Encoding.ASCII.GetBytes(jwtSettings.Secret);
 
         services.Configure<JwtSettings>(config.GetSection("Jwt"));
@@ -30,68 +32,13 @@ public static class JwtExtensions
             {
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ValidateLifetime = true,
+                    RequireSignedTokens = true,
+                    RequireExpirationTime = true,
                     ValidateIssuer = false,
-                    ValidateAudience = false,
-                    ValidateIssuerSigningKey = false,
-                    ValidateLifetime = false,
-                    RequireSignedTokens = false,
-                    RequireExpirationTime = false
-                };
-
-                options.Events = new JwtBearerEvents
-                {
-                    OnMessageReceived = context =>
-                    {
-                        var authHeader = context.Request.Headers["Authorization"].FirstOrDefault();
-
-                        if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer "))
-                        {
-                            var token = authHeader.Substring("Bearer ".Length);
-                            context.Token = token;
-
-                            try
-                            {
-                                var tokenHandler = new JwtSecurityTokenHandler();
-                                var jsonToken = tokenHandler.ReadJwtToken(token);
-
-                                var claims = new List<Claim>();
-                                foreach (var claim in jsonToken.Claims)
-                                {
-                                    claims.Add(new Claim(claim.Type, claim.Value));
-                                }
-
-                                var subClaim = jsonToken.Claims.FirstOrDefault(c => c.Type == "sub");
-                                if (subClaim != null && !claims.Any(c => c.Type == ClaimTypes.NameIdentifier))
-                                {
-                                    claims.Add(new Claim(ClaimTypes.NameIdentifier, subClaim.Value));
-                                }
-
-                                var identity = new ClaimsIdentity(claims, "Bearer");
-                                var principal = new ClaimsPrincipal(identity);
-                                context.Principal = principal;
-                                context.Success();
-                                return Task.CompletedTask;
-                            }
-                            catch (Exception ex)
-                            {
-                                Console.WriteLine($"[Mobile API] Development mode: Failed to parse JWT token: {ex.Message}");
-                                context.Fail("Invalid JWT token format");
-                                return Task.CompletedTask;
-                            }
-                        }
-                        else
-                        {
-                            context.Fail("No Authorization header found");
-                        }
-
-                        return Task.CompletedTask;
-                    },
-
-                    OnAuthenticationFailed = context =>
-                    {
-                        Console.WriteLine($"[Mobile API] Development mode: Authentication failed: {context.Exception?.Message}");
-                        return Task.CompletedTask;
-                    }
+                    ValidateAudience = false
                 };
             }
             else

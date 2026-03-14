@@ -1,6 +1,6 @@
-# Checklist Maestro de Pendientes (Feb 2026)
+# Checklist Maestro de Pendientes
 
-> Extracted from CLAUDE.md — historical completion tracking. Last updated: 2026-02-20.
+> Historical completion tracking. Last updated: 2026-03-11.
 
 ## ✅ COMPLETADO — Seguridad (SEC-1 a SEC-6)
 
@@ -75,20 +75,44 @@
 - [x] **FUT-10**: Rol VIEWER funcional
 - [x] **INFRA-3**: Integration tests — 66 nuevos tests
 
+## ✅ COMPLETADO — Monetizacion & Marketplace (Mar 2026)
+
+- [x] **STRIPE-1-10**: Stripe Trial Hibrido — 14-day PRO trial, card capture, trial countdown UI, webhook handling, expiration monitor
+- [x] **INT-1-9**: Marketplace Integraciones backend — 3 entities, 5 endpoints, seed data, DI
+- [x] **INT-12-19**: Marketplace Integraciones frontend — types, service, sidebar item, marketplace page con cards/filtros
+
+## ✅ COMPLETADO — Auth & Onboarding (Mar 2026)
+
+- [x] **AUTH-RECAPTCHA**: reCAPTCHA v3 en login + register
+- [x] **AUTH-INVITE**: Email invitations para team members (template + set-password flow)
+- [x] **ONBOARD-1**: Onboarding wizard 4 pasos (perfil, empresa+fiscal, equipo, completado)
+- [x] **METAS-RENOV**: Metas auto-renovacion
+- [x] **PROD-VISUAL**: Products visual alignment
+
+## ✅ COMPLETADO — Activity Logs
+
+- [x] **AUDIT-1**: Activity Logs UI real con filtros (fecha, tenant, categoria, accion)
+
 ## 🟡 EN PROGRESO — App Movil React Native
 
 - [x] **MOB-1 to MOB-5**: Foundation through Push & Notifications — COMPLETE
 - [ ] **MOB-6**: Polish & Testing — Crash reporting, error boundaries, Zod validation
 - [ ] **MOB-7**: Store Release — EAS Submit, TestFlight, Play Store
 
+## 🟡 PENDIENTE — Prioridad Media (Web)
+
+- [ ] **TRIAL-EMAIL**: Trial email sequence — 7 drip emails (Day 0-14) con ScheduledActions
+- [ ] **INT-CONTEXT**: IntegrationsContext — hasIntegration(slug) global helper
+- [ ] **INT-21-26**: Billing Portal frontend — Dashboard facturas, lista, nueva factura, config fiscal, reportes
+- [ ] **AUDIT-IMPERF**: Historial de impersonacion — vista para admin del tenant
+
 ## 🟢 PENDIENTE — Futuro
 
 - [ ] **FUT-3**: Migracion a Azure (cuando 1,000+ users)
-- [ ] **FUT-4**: Custom domain (`app.handysales.com`)
-- [ ] **INFRA-4**: 11 pantallas React sin diseno Pencil
+- [ ] **FUT-4**: Custom domain (`app.handysuites.com`)
 - [ ] **INFRA-5**: Message broker (Redis Streams) + Push Worker directo a FCM/APNs
 - [ ] **RT-9**: SignalR real-time desde mobile sync → web backoffice
-- [ ] **BILL-1**: Conectar PAC real para timbrado CFDI
+- [ ] **BILL-1**: Conectar PAC real para timbrado CFDI (Finkok o SW)
 
 ## 🟢 PENDIENTE — AI Add-on
 

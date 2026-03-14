@@ -1,4 +1,5 @@
 using HandySales.Billing.Api.Models;
+using QRCoder;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
@@ -7,7 +8,7 @@ namespace HandySales.Billing.Api.Services;
 
 public class InvoicePdfService : IInvoicePdfService
 {
-    public byte[] GeneratePdf(Factura factura, ConfiguracionFiscal? config)
+    public byte[] GeneratePdf(Factura factura, ConfiguracionFiscal? config, byte[]? logoBytes = null)
     {
         var document = Document.Create(container =>
         {
@@ -19,7 +20,7 @@ public class InvoicePdfService : IInvoicePdfService
                 page.MarginHorizontal(1.5f, Unit.Centimetre);
                 page.DefaultTextStyle(x => x.FontSize(9));
 
-                page.Header().Element(header => ComposeHeader(header, factura, config));
+                page.Header().Element(header => ComposeHeader(header, factura, config, logoBytes));
                 page.Content().Element(content => ComposeContent(content, factura));
                 page.Footer().Element(footer => ComposeFooter(footer));
             });
@@ -28,7 +29,7 @@ public class InvoicePdfService : IInvoicePdfService
         return document.GeneratePdf();
     }
 
-    private void ComposeHeader(IContainer container, Factura factura, ConfiguracionFiscal? config)
+    private void ComposeHeader(IContainer container, Factura factura, ConfiguracionFiscal? config, byte[]? logoBytes = null)
     {
         container.Column(column =>
         {
@@ -48,23 +49,33 @@ public class InvoicePdfService : IInvoicePdfService
 
             column.Item().PaddingTop(8).Row(row =>
             {
-                // Left: Emisor info
-                row.RelativeItem(3).Column(col =>
+                // Left: Logo + Emisor info
+                row.RelativeItem(3).Row(emisorRow =>
                 {
-                    col.Item().Text(factura.EmisorNombre).FontSize(14).Bold();
-                    col.Item().Text($"RFC: {factura.EmisorRfc}").FontSize(10);
-
-                    if (!string.IsNullOrEmpty(factura.EmisorRegimenFiscal))
-                        col.Item().Text($"Régimen: {factura.EmisorRegimenFiscal}").FontSize(8).FontColor(Colors.Grey.Darken1);
-
-                    if (config != null)
+                    // Company logo (if available)
+                    if (logoBytes != null && logoBytes.Length > 0)
                     {
-                        if (!string.IsNullOrEmpty(config.CodigoPostal))
-                            col.Item().Text($"C.P.: {config.CodigoPostal}").FontSize(8).FontColor(Colors.Grey.Darken1);
-
-                        if (!string.IsNullOrEmpty(config.DireccionFiscal))
-                            col.Item().Text(config.DireccionFiscal).FontSize(8).FontColor(Colors.Grey.Darken1);
+                        emisorRow.ConstantItem(60).Height(60).Padding(2).Image(logoBytes).FitArea();
+                        emisorRow.ConstantItem(8); // spacing
                     }
+
+                    emisorRow.RelativeItem().Column(col =>
+                    {
+                        col.Item().Text(factura.EmisorNombre).FontSize(14).Bold();
+                        col.Item().Text($"RFC: {factura.EmisorRfc}").FontSize(10);
+
+                        if (!string.IsNullOrEmpty(factura.EmisorRegimenFiscal))
+                            col.Item().Text($"Régimen: {factura.EmisorRegimenFiscal}").FontSize(8).FontColor(Colors.Grey.Darken1);
+
+                        if (config != null)
+                        {
+                            if (!string.IsNullOrEmpty(config.CodigoPostal))
+                                col.Item().Text($"C.P.: {config.CodigoPostal}").FontSize(8).FontColor(Colors.Grey.Darken1);
+
+                            if (!string.IsNullOrEmpty(config.DireccionFiscal))
+                                col.Item().Text(config.DireccionFiscal).FontSize(8).FontColor(Colors.Grey.Darken1);
+                        }
+                    });
                 });
 
                 // Right: Invoice identification
@@ -221,11 +232,19 @@ public class InvoicePdfService : IInvoicePdfService
                 // Left: QR placeholder + notes
                 row.RelativeItem(3).Column(col =>
                 {
-                    if (factura.Estado == "TIMBRADA" || !string.IsNullOrEmpty(factura.Uuid))
+                    if (factura.Estado == "TIMBRADA" && !string.IsNullOrEmpty(factura.Uuid))
+                    {
+                        var qrBytes = GenerateQrCode(factura);
+                        if (qrBytes != null)
+                        {
+                            col.Item().Width(110).Height(110).Image(qrBytes);
+                        }
+                    }
+                    else if (factura.Estado == "PENDIENTE")
                     {
                         col.Item().Border(1).BorderColor(Colors.Grey.Lighten1)
                             .Width(100).Height(100).AlignCenter().AlignMiddle()
-                            .Text("QR Code\nPendiente\nintegración PAC")
+                            .Text("QR se genera\nal timbrar")
                             .FontSize(8).FontColor(Colors.Grey.Medium).Italic();
                     }
 
@@ -385,5 +404,33 @@ public class InvoicePdfService : IInvoicePdfService
     {
         if (seal.Length <= 80) return seal;
         return seal[..40] + "..." + seal[^40..];
+    }
+
+    /// <summary>
+    /// Generates SAT verification QR code as PNG bytes.
+    /// URL format: https://verificacfdi.facturaelectronica.sat.gob.mx/default.aspx?id={UUID}&re={RfcEmisor}&rr={RfcReceptor}&tt={Total}&fe={Last8SelloCFDI}
+    /// </summary>
+    private static byte[]? GenerateQrCode(Factura factura)
+    {
+        if (string.IsNullOrEmpty(factura.Uuid)) return null;
+
+        var selloLast8 = !string.IsNullOrEmpty(factura.SelloCfdi) && factura.SelloCfdi.Length >= 8
+            ? factura.SelloCfdi[^8..]
+            : "";
+
+        // SAT total format: 17 chars with leading zeros, 6 decimal places
+        var totalFormatted = factura.Total.ToString("0000000000.000000");
+
+        var url = $"https://verificacfdi.facturaelectronica.sat.gob.mx/default.aspx" +
+                  $"?id={factura.Uuid}" +
+                  $"&re={factura.EmisorRfc}" +
+                  $"&rr={factura.ReceptorRfc}" +
+                  $"&tt={totalFormatted}" +
+                  $"&fe={selloLast8}";
+
+        using var qrGenerator = new QRCodeGenerator();
+        var qrCodeData = qrGenerator.CreateQrCode(url, QRCodeGenerator.ECCLevel.M);
+        using var qrCode = new PngByteQRCode(qrCodeData);
+        return qrCode.GetGraphic(4);
     }
 }

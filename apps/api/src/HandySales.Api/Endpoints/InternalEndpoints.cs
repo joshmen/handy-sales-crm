@@ -1,5 +1,6 @@
 using HandySales.Api.Hubs;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 
 namespace HandySales.Api.Endpoints;
 
@@ -15,8 +16,16 @@ public static class InternalEndpoints
         group.MapPost("/sync-notify", async (
             SyncNotifyRequest request,
             IHubContext<NotificationHub> hubContext,
+            HandySales.Infrastructure.Persistence.HandySalesDbContext db,
             ILogger<Program> logger) =>
         {
+            var tenantExists = await db.Tenants.AsNoTracking().AnyAsync(t => t.Id == request.TenantId);
+            if (!tenantExists)
+            {
+                logger.LogWarning("sync-notify: TenantId={TenantId} does not exist, rejecting broadcast", request.TenantId);
+                return Results.BadRequest(new { message = "Tenant no encontrado" });
+            }
+
             logger.LogInformation(
                 "Sync notification: tenant={TenantId}, user={UserId} ({UserName}), pushed={TotalPushed}, pulled={TotalPulled}",
                 request.TenantId, request.UserId, request.UserName,

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Azure.Storage.Blobs;
 using HandySales.Billing.Api.Data;
 using HandySales.Billing.Api.Configuration;
 using HandySales.Billing.Api.Services;
@@ -25,7 +26,14 @@ builder.Services.AddSwaggerConfiguration();
 builder.Services.AddDbContext<BillingDbContext>(options =>
 {
     var connectionString = builder.Configuration.GetConnectionString("BillingConnection");
-    options.UseNpgsql(connectionString)
+    options.UseNpgsql(connectionString, o =>
+        {
+            o.EnableRetryOnFailure(
+                maxRetryCount: 3,
+                maxRetryDelay: TimeSpan.FromSeconds(5),
+                errorCodesToAdd: null);
+            o.CommandTimeout(30);
+        })
         .UseSnakeCaseNamingConvention();
 });
 
@@ -61,8 +69,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["JWT:Issuer"],
-            ValidAudience = builder.Configuration["JWT:Audience"],
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Secret"] ??
                     throw new InvalidOperationException("Jwt:Secret not configured")))
@@ -71,11 +79,41 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
+// Azure Blob Storage (CFDI XMLs and PDFs)
+var azureStorageConnectionString = builder.Configuration["AZURE_STORAGE_CONNECTION_STRING"]
+    ?? "UseDevelopmentStorage=true";
+builder.Services.AddSingleton(new BlobServiceClient(azureStorageConnectionString));
+builder.Services.AddSingleton<IBlobStorageService, AzureBlobStorageService>();
+
+builder.Services.AddHttpClient("LogoClient", client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(5);
+});
+
+// CFDI 4.0 services (XML generation, signing, PAC timbrado)
+builder.Services.AddSingleton<ICfdiXmlBuilder, CfdiXmlBuilder>();
+builder.Services.AddSingleton<ICfdiSigner, CfdiSigner>();
+builder.Services.AddHttpClient<IPacService, FinkokPacService>();
+
 // PDF generation service
 builder.Services.AddSingleton<IInvoicePdfService, InvoicePdfService>();
 
+// Company logo service (reads from main DB to get company logo for PDF)
+builder.Services.AddSingleton<ICompanyLogoService, CompanyLogoService>();
+
+// Order reader service (reads pedido data from main DB for invoice creation)
+builder.Services.AddSingleton<IOrderReaderService, OrderReaderService>();
+
 // Email service (SendGrid)
 builder.Services.AddSingleton<IBillingEmailService, BillingEmailService>();
+
+// Timbre enforcement (calls Main API to check/register stamp usage)
+var mainApiUrl = builder.Configuration["MAIN_API_URL"] ?? "http://localhost:1050";
+builder.Services.AddHttpClient<ITimbreEnforcementService, TimbreEnforcementService>(client =>
+{
+    client.BaseAddress = new Uri(mainApiUrl);
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
 
 // Health checks
 builder.Services.AddHealthChecks()
@@ -85,6 +123,25 @@ var app = builder.Build();
 
 // Configure the HTTP request pipeline - Swagger (centralized configuration)
 app.UseSwaggerConfiguration(app.Environment);
+
+// Global exception handler — maps known exceptions to proper HTTP status codes
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        var ex = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>()?.Error;
+        if (ex is UnauthorizedAccessException)
+        {
+            context.Response.StatusCode = 401;
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsJsonAsync(new { error = ex.Message });
+            return;
+        }
+        context.Response.StatusCode = 500;
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsJsonAsync(new { error = "Error interno del servidor" });
+    });
+});
 
 // Middleware pipeline
 app.UseHttpsRedirection();

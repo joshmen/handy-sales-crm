@@ -12,7 +12,7 @@ public class ViewerReadOnlyMiddleware
 
     private static readonly HashSet<string> ExcludedPrefixes = new(StringComparer.OrdinalIgnoreCase)
     {
-        "/api/auth",
+        "/auth",
         "/api/2fa",
         "/health"
     };

@@ -1651,6 +1651,39 @@ export function SbIntegrations({ size = 22, className }: IconProps) {
    DOWNLOAD — Purple arrow + cyan tray
    ============================================================ */
 
+/* ============================================================
+   BILLING — Teal receipt + amber stamp accent
+   ============================================================ */
+
+export function SbBilling({ size = 22, className }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+      <defs>
+        <linearGradient id="sbl-a" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#2dd4bf" />
+          <stop offset="100%" stopColor="#0d9488" />
+        </linearGradient>
+        <linearGradient id="sbl-b" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#fbbf24" />
+          <stop offset="100%" stopColor="#d97706" />
+        </linearGradient>
+        <filter id="sbl-s" x="-15%" y="-15%" width="130%" height="140%">
+          <feDropShadow dx="0" dy="1" stdDeviation="1" floodColor="#0d9488" floodOpacity="0.3" />
+        </filter>
+      </defs>
+      {/* Receipt body */}
+      <path d="M6 2h12a1 1 0 011 1v18l-2.5-1.5L14 21l-2-1.5L10 21l-2.5-1.5L5 21V3a1 1 0 011-1z" fill="url(#sbl-a)" filter="url(#sbl-s)" opacity="0.9" />
+      {/* Lines on receipt */}
+      <line x1="9" y1="7" x2="15" y2="7" stroke="white" strokeWidth="1.5" strokeLinecap="round" opacity="0.8" />
+      <line x1="9" y1="10.5" x2="15" y2="10.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" opacity="0.6" />
+      <line x1="9" y1="14" x2="13" y2="14" stroke="white" strokeWidth="1.5" strokeLinecap="round" opacity="0.4" />
+      {/* SAT stamp circle */}
+      <circle cx="16.5" cy="15" r="3" fill="url(#sbl-b)" opacity="0.85" />
+      <path d="M15.5 15l1 1 2-2" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function SbDownload({ size = 22, className }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>

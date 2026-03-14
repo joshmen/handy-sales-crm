@@ -101,7 +101,7 @@ public class AiGatewayService : IAiGatewayService
             temperature
         };
 
-        // 4. Call OpenAI
+        // 4. Call OpenAI (credits deducted AFTER success to avoid lost credits on failure)
         try
         {
             var client = _httpClientFactory.CreateClient("OpenAI");
@@ -120,7 +120,10 @@ public class AiGatewayService : IAiGatewayService
             var tokensIn = result?.Usage?.PromptTokens ?? 0;
             var tokensOut = result?.Usage?.CompletionTokens ?? 0;
 
-            // 5. Detect suggested actions from data context
+            // 5. Deduct credits AFTER successful OpenAI call
+            await _creditService.DeductCreditsAsync(tenantId, request.TipoAccion);
+
+            // 7. Detect suggested actions from data context
             var suggestedActions = await _actionDetector.DetectActionsAsync(
                 request.Prompt, dataContext.CategoriesUsed, tenantId, userId);
 
@@ -128,14 +131,11 @@ public class AiGatewayService : IAiGatewayService
                 _logger.LogInformation("AI actions suggested: [{Actions}]",
                     string.Join(", ", suggestedActions.Select(a => a.ActionType)));
 
-            // 6. Deduct credits
-            await _creditService.DeductCreditsAsync(tenantId, request.TipoAccion);
-
-            // 7. Log usage
+            // 8. Log usage
             var costoUsd = (tokensIn * 0.00000015m) + (tokensOut * 0.0000006m); // gpt-4o-mini pricing
             await LogUsageAsync(tenantId, userId, request, tokensIn, tokensOut, costoUsd, true, null, sw);
 
-            // 8. Get remaining credits
+            // 9. Get remaining credits
             var balance = await _creditService.GetCurrentBalanceAsync(tenantId);
 
             sw.Stop();

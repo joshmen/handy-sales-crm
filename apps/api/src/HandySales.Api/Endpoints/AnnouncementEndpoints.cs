@@ -173,7 +173,7 @@ public static class AnnouncementEndpoints
             // If DisplayMode includes Notification, create NotificationHistory for target users
             if (displayMode == AnnouncementDisplayMode.Notification || displayMode == AnnouncementDisplayMode.Both)
             {
-                var targetUserQuery = db.Usuarios.IgnoreQueryFilters().AsNoTracking().Where(u => u.Activo);
+                var targetUserQuery = db.Usuarios.IgnoreQueryFilters().AsNoTracking().Where(u => u.Activo && u.EliminadoEn == null);
 
                 // Filter by target tenants
                 if (dto.TargetTenantIds is { Count: > 0 })

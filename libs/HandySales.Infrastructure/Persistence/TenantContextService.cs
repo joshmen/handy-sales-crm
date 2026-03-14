@@ -29,8 +29,6 @@ public interface ITenantContextService
 public class TenantContextService : ITenantContextService
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
-    private int? _tenantId;
-    private bool _resolved;
 
     public TenantContextService(IHttpContextAccessor httpContextAccessor)
     {
@@ -41,11 +39,8 @@ public class TenantContextService : ITenantContextService
     {
         get
         {
-            if (!_resolved)
-            {
-                ResolveTenant();
-            }
-            return _tenantId;
+            var claim = _httpContextAccessor.HttpContext?.User?.FindFirst("tenant_id")?.Value;
+            return int.TryParse(claim, out var id) ? id : null;
         }
     }
 
@@ -61,11 +56,6 @@ public class TenantContextService : ITenantContextService
             var user = _httpContextAccessor.HttpContext.User;
             if (user?.Identity?.IsAuthenticated != true)
                 return false;
-
-            // Super admins pueden ver todo (opcional - comentar si no se desea)
-            // var isSuperAdmin = user.FindFirst("es_super_admin")?.Value == "True";
-            // if (isSuperAdmin)
-            //     return false;
 
             return TenantId.HasValue;
         }
@@ -86,26 +76,6 @@ public class TenantContextService : ITenantContextService
             {
                 return null;
             }
-        }
-    }
-
-    private void ResolveTenant()
-    {
-        _resolved = true;
-
-        try
-        {
-            var user = _httpContextAccessor.HttpContext?.User;
-            var tenantClaim = user?.FindFirst("tenant_id")?.Value;
-
-            if (int.TryParse(tenantClaim, out var tenantId))
-            {
-                _tenantId = tenantId;
-            }
-        }
-        catch
-        {
-            // Ignorar errores - _tenantId permanece null
         }
     }
 }
