@@ -246,14 +246,14 @@ export default function ProfilePage() {
       <Card>
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
-            <div data-tour="profile-avatar">
+            <div data-tour="profile-avatar" className="shrink-0">
               <ImageUpload
                 variant="avatar"
                 src={profile.avatarUrl}
                 alt={profile.nombre}
                 fallback={getInitials(profile.nombre)}
                 fallbackClassName="bg-primary/15 text-primary"
-                size="lg"
+                size="xl"
                 maxSizeMB={2}
                 hint="PNG, JPG o WebP. Máx. 2 MB."
                 disabled={isUpdating}
@@ -262,7 +262,7 @@ export default function ProfilePage() {
               />
             </div>
 
-            <div className="flex-1 text-center md:text-left">
+            <div className="flex-1 min-w-0 text-center md:text-left">
               <h2 className="text-2xl font-bold">{profile.nombre}</h2>
               <p className="text-muted-foreground">{profile.email}</p>
               <div className="flex flex-wrap gap-2 mt-3 justify-center md:justify-start">
@@ -291,7 +291,7 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <div className="text-center md:text-right">
+            <div className="text-center md:text-right shrink-0">
               {isSuperAdmin && (
                 <div>
                   <Badge className="bg-red-100 text-red-800 text-xs">
