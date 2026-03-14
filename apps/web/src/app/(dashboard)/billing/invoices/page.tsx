@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Plus, Search, Download, Send, X as XIcon, FileText, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
-import { SbBilling, SbSubscription } from '@/components/layout/DashboardIcons';
+import { TimbresModal } from '@/components/billing/TimbresModal';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { BrandedLoadingScreen } from '@/components/ui/BrandedLoadingScreen';
@@ -290,68 +290,7 @@ export default function InvoicesPage() {
         </div>
       )}
     </PageHeader>
-    {/* Timbres modal — outside PageHeader so backdrop covers entire viewport including sidebar */}
-    {timbresModalOpen && (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setTimbresModalOpen(false)}>
-        <div className="bg-white dark:bg-zinc-900 rounded-2xl p-8 max-w-md mx-4 shadow-2xl text-center animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
-          <div className="flex justify-center mb-5">
-            <div className="w-16 h-16 flex items-center justify-center">
-              {timbresError.includes('no incluye')
-                ? <SbSubscription size={56} />
-                : <SbBilling size={56} />
-              }
-            </div>
-          </div>
-          {timbresError.includes('no incluye') ? (
-            <>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                Tu plan no incluye facturación
-              </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
-                {timbresError}
-              </p>
-              <div className="flex flex-col gap-2.5">
-                <Link href="/subscription">
-                  <Button className="w-full h-11 bg-green-600 hover:bg-green-700 text-white font-medium text-sm rounded-xl">
-                    Actualizar plan &rarr;
-                  </Button>
-                </Link>
-                <Button variant="outline" className="w-full h-11 rounded-xl" onClick={() => setTimbresModalOpen(false)}>
-                  Cerrar
-                </Button>
-              </div>
-            </>
-          ) : (
-            <>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                Timbres agotados
-              </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1.5 leading-relaxed">
-                {timbresError}
-              </p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mb-6">
-                Los timbres se renuevan cada mes. También puedes comprar paquetes adicionales.
-              </p>
-              <div className="flex flex-col gap-2.5">
-                <Link href="/subscription?tab=addons">
-                  <Button className="w-full h-11 bg-green-600 hover:bg-green-700 text-white font-medium text-sm rounded-xl">
-                    Comprar timbres adicionales &rarr;
-                  </Button>
-                </Link>
-                <Link href="/subscription">
-                  <Button variant="outline" className="w-full h-11 rounded-xl">
-                    Ver mi plan
-                  </Button>
-                </Link>
-                <button className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 py-2" onClick={() => setTimbresModalOpen(false)}>
-                  Cerrar
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-    )}
+    <TimbresModal open={timbresModalOpen} onClose={() => setTimbresModalOpen(false)} errorMessage={timbresError} />
   </>
   );
 }

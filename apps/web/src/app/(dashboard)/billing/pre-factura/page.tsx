@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { BrandedLoadingScreen } from '@/components/ui/BrandedLoadingScreen';
 import { toast } from '@/hooks/useToast';
 import { extractBillingError } from '@/lib/billingApi';
+import { TimbresModal } from '@/components/billing/TimbresModal';
 import {
   previewFacturaFromOrder,
   createFacturaFromOrder,
@@ -156,6 +157,8 @@ export default function PreFacturaPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [timbresModalOpen, setTimbresModalOpen] = useState(false);
+  const [timbresError, setTimbresError] = useState('');
 
   // Overrides state: keyed by productoId
   const [overrides, setOverrides] = useState<Record<number, FiscalCodeOverride>>({});
@@ -226,11 +229,8 @@ export default function PreFacturaPage() {
     } catch (err: unknown) {
       const apiError = extractBillingError(err);
       if (apiError.isTimbresError) {
-        toast({
-          title: 'Facturación no disponible',
-          description: `${apiError.message}. Ve a Suscripción para actualizar tu plan.`,
-          variant: 'destructive',
-        });
+        setTimbresError(apiError.message);
+        setTimbresModalOpen(true);
       } else {
         toast({
           title: 'Error al crear factura',
@@ -273,7 +273,7 @@ export default function PreFacturaPage() {
 
   // ─── Preview Loaded ───
 
-  return (
+  return (<>
     <PageHeader
       breadcrumbs={[
         { label: 'Facturación', href: '/billing' },
@@ -452,7 +452,8 @@ export default function PreFacturaPage() {
         </Button>
       </div>
     </PageHeader>
-  );
+    <TimbresModal open={timbresModalOpen} onClose={() => setTimbresModalOpen(false)} errorMessage={timbresError} />
+  </>);
 }
 
 // ─── Desktop Line Row ───
