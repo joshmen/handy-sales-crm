@@ -20,6 +20,12 @@ public class BillingDbContext : DbContext
     public DbSet<NumeracionDocumento> NumeracionDocumentos { get; set; }
     public DbSet<AuditoriaFacturacion> AuditoriaFacturacion { get; set; }
 
+    // Fiscal catalogs & mapping
+    public DbSet<CatalogoProdServ> CatalogoProdServ { get; set; }
+    public DbSet<CatalogoUnidad> CatalogoUnidad { get; set; }
+    public DbSet<MapeoFiscalProducto> MapeosFiscalesProducto { get; set; }
+    public DbSet<DefaultsFiscalesTenant> DefaultsFiscalesTenant { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -38,6 +44,12 @@ public class BillingDbContext : DbContext
         modelBuilder.Entity<NumeracionDocumento>().ToTable("numeracion_documentos");
         modelBuilder.Entity<AuditoriaFacturacion>().ToTable("auditoria_facturacion");
 
+        // Fiscal catalogs & mapping tables
+        modelBuilder.Entity<CatalogoProdServ>().ToTable("catalogo_prod_serv");
+        modelBuilder.Entity<CatalogoUnidad>().ToTable("catalogo_unidad");
+        modelBuilder.Entity<MapeoFiscalProducto>().ToTable("mapeo_fiscal_producto");
+        modelBuilder.Entity<DefaultsFiscalesTenant>().ToTable("defaults_fiscales_tenant");
+
         // Configuración de índices únicos
         modelBuilder.Entity<Factura>()
             .HasIndex(f => f.Uuid)
@@ -55,6 +67,15 @@ public class BillingDbContext : DbContext
 
         modelBuilder.Entity<NumeracionDocumento>()
             .HasIndex(n => new { n.TenantId, n.TipoDocumento, n.Serie })
+            .IsUnique();
+
+        // Fiscal mapping indexes
+        modelBuilder.Entity<MapeoFiscalProducto>()
+            .HasIndex(m => new { m.TenantId, m.ProductoId })
+            .IsUnique();
+
+        modelBuilder.Entity<DefaultsFiscalesTenant>()
+            .HasIndex(d => d.TenantId)
             .IsUnique();
 
         // Configuración de relaciones

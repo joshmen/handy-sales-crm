@@ -104,6 +104,9 @@ builder.Services.AddSingleton<ICompanyLogoService, CompanyLogoService>();
 // Order reader service (reads pedido data from main DB for invoice creation)
 builder.Services.AddSingleton<IOrderReaderService, OrderReaderService>();
 
+// Fiscal code resolver (resolves SAT codes via mapping → product → defaults → fallback)
+builder.Services.AddScoped<FiscalCodeResolver>();
+
 // Email service (SendGrid)
 builder.Services.AddSingleton<IBillingEmailService, BillingEmailService>();
 

@@ -351,6 +351,13 @@ const sidebarItems: SidebarItem[] = [
         permission: 'manage_billing',
       },
       {
+        id: 'billing-fiscal-mapping',
+        label: 'Mapeo Fiscal',
+        icon: SbProducts,
+        href: '/billing/fiscal-mapping',
+        permission: 'manage_billing',
+      },
+      {
         id: 'billing-settings',
         label: 'Configuración Fiscal',
         icon: SbSettings,

@@ -25,10 +25,9 @@ export function Checkbox({
       name={name}
       control={control}
       render={({ field }) => (
-        <label className="flex items-center gap-1.5 cursor-pointer">
+        <label className="flex items-center gap-1.5 cursor-pointer" onClick={(e) => { e.preventDefault(); field.onChange(!field.value); }}>
           <div
-            onClick={() => field.onChange(!field.value)}
-            className={`w-4 h-4 rounded flex items-center justify-center ${
+            className={`w-4 h-4 rounded flex items-center justify-center shrink-0 ${
               field.value ? 'bg-[#16A34A]' : 'border border-gray-300 bg-white'
             }`}
           >
@@ -36,7 +35,7 @@ export function Checkbox({
           </div>
           <span className="text-[13px] text-gray-700">{label}</span>
           {tooltip && (
-            <div className="relative group">
+            <div className="relative group" onClick={(e) => e.stopPropagation()}>
               <HelpCircle className="w-3.5 h-3.5 text-gray-400 cursor-help" />
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-[11px] rounded-lg w-56 text-center opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
                 {tooltip}

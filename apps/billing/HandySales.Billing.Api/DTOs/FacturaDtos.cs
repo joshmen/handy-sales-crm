@@ -182,4 +182,70 @@ public class CreateFacturaFromOrderRequest
     public string? UsoCfdi { get; set; }
     public string? Observaciones { get; set; }
     public bool TimbrarInmediatamente { get; set; } = false;
+
+    /// <summary>
+    /// Optional overrides for fiscal codes per line (from pre-factura review).
+    /// Key = ProductoId, Value = overridden fiscal codes.
+    /// </summary>
+    public List<FiscalCodeOverride>? Overrides { get; set; }
+}
+
+public class FiscalCodeOverride
+{
+    public int ProductoId { get; set; }
+    public string? ClaveProdServ { get; set; }
+    public string? ClaveUnidad { get; set; }
+}
+
+// ─── Pre-Factura (Preview) DTOs ────────────────────────────────────────
+
+public class PreFacturaDto
+{
+    public string EmisorRfc { get; set; } = default!;
+    public string EmisorNombre { get; set; } = default!;
+    public string? EmisorRegimenFiscal { get; set; }
+
+    public string ReceptorRfc { get; set; } = default!;
+    public string ReceptorNombre { get; set; } = default!;
+    public string? ReceptorUsoCfdi { get; set; }
+    public string? ReceptorDomicilioFiscal { get; set; }
+    public string? ReceptorRegimenFiscal { get; set; }
+
+    public string? MetodoPago { get; set; }
+    public string? FormaPago { get; set; }
+
+    public decimal Subtotal { get; set; }
+    public decimal Descuento { get; set; }
+    public decimal Impuestos { get; set; }
+    public decimal Total { get; set; }
+
+    public int PedidoId { get; set; }
+    public string NumeroPedido { get; set; } = default!;
+
+    public bool HasUnmappedProducts { get; set; }
+    public int UnmappedCount { get; set; }
+
+    public List<PreFacturaLineDto> Detalles { get; set; } = new();
+}
+
+public class PreFacturaLineDto
+{
+    public int NumeroLinea { get; set; }
+    public int ProductoId { get; set; }
+    public string ProductoNombre { get; set; } = default!;
+    public string? CodigoBarra { get; set; }
+    public string ClaveProdServ { get; set; } = default!;
+    public string? ClaveUnidad { get; set; }
+    public string? Unidad { get; set; }
+    public decimal Cantidad { get; set; }
+    public decimal PrecioUnitario { get; set; }
+    public decimal Subtotal { get; set; }
+    public decimal Descuento { get; set; }
+    public decimal Total { get; set; }
+
+    /// <summary>true if resolved from MapeoFiscalProducto table</summary>
+    public bool IsMapped { get; set; }
+
+    /// <summary>"mapping" | "producto" | "default" | "fallback"</summary>
+    public string MappingSource { get; set; } = "fallback";
 }

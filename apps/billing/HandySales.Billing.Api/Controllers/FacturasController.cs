@@ -25,6 +25,7 @@ public class FacturasController : ControllerBase
     private readonly ITimbreEnforcementService _timbreService;
     private readonly ICompanyLogoService _companyLogoService;
     private readonly IOrderReaderService _orderReaderService;
+    private readonly FiscalCodeResolver _fiscalCodeResolver;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IConfiguration _configuration;
 
@@ -40,6 +41,7 @@ public class FacturasController : ControllerBase
         ITimbreEnforcementService timbreService,
         ICompanyLogoService companyLogoService,
         IOrderReaderService orderReaderService,
+        FiscalCodeResolver fiscalCodeResolver,
         IHttpClientFactory httpClientFactory,
         IConfiguration configuration)
     {
@@ -54,6 +56,7 @@ public class FacturasController : ControllerBase
         _timbreService = timbreService;
         _companyLogoService = companyLogoService;
         _orderReaderService = orderReaderService;
+        _fiscalCodeResolver = fiscalCodeResolver;
         _httpClientFactory = httpClientFactory;
         _configuration = configuration;
     }
@@ -245,6 +248,87 @@ public class FacturasController : ControllerBase
         return CreatedAtAction(nameof(GetFactura), new { id = factura.Id }, MapToDto(factura));
     }
 
+    [HttpPost("preview-from-order")]
+    public async Task<ActionResult<PreFacturaDto>> PreviewFacturaFromOrder([FromBody] CreateFacturaFromOrderRequest request)
+    {
+        var tenantId = GetTenantId();
+
+        // Reuse validation logic
+        var order = await _orderReaderService.GetOrderForInvoiceAsync(tenantId, request.PedidoId);
+        if (order == null)
+            return NotFound("Pedido no encontrado");
+
+        if (order.Estado != 5)
+            return BadRequest("Solo se pueden facturar pedidos con estado 'Entregado'");
+
+        if (!order.ClienteFacturable)
+            return BadRequest($"El cliente '{order.ClienteNombre}' no está marcado como facturable.");
+
+        if (string.IsNullOrEmpty(order.ClienteRfc))
+            return BadRequest($"El cliente '{order.ClienteNombre}' no tiene RFC registrado");
+
+        var config = await _context.ConfiguracionesFiscales
+            .Where(c => c.TenantId == tenantId && c.Activo)
+            .FirstOrDefaultAsync();
+
+        if (config == null)
+            return BadRequest("No hay configuración fiscal activa.");
+
+        // Resolve fiscal codes via the chain
+        var resolved = await _fiscalCodeResolver.ResolveAsync(tenantId, order.Detalles);
+
+        var lineNum = 1;
+        var detalles = new List<PreFacturaLineDto>();
+        foreach (var line in order.Detalles)
+        {
+            var fiscal = resolved.GetValueOrDefault(line.ProductoId,
+                new FiscalCodeResolver.ResolvedFiscalCode("01010101", "H87", "fallback"));
+
+            detalles.Add(new PreFacturaLineDto
+            {
+                NumeroLinea = lineNum++,
+                ProductoId = line.ProductoId,
+                ProductoNombre = line.ProductoNombre,
+                CodigoBarra = line.ProductoCodigoBarra,
+                ClaveProdServ = fiscal.ClaveProdServ,
+                ClaveUnidad = fiscal.ClaveUnidad,
+                Unidad = line.UnidadAbreviatura ?? line.UnidadNombre,
+                Cantidad = line.Cantidad,
+                PrecioUnitario = line.PrecioUnitario,
+                Subtotal = line.Subtotal,
+                Descuento = line.Descuento,
+                Total = line.Total,
+                IsMapped = fiscal.Source == "mapping",
+                MappingSource = fiscal.Source,
+            });
+        }
+
+        var unmappedCount = detalles.Count(d => d.MappingSource == "fallback");
+
+        return Ok(new PreFacturaDto
+        {
+            EmisorRfc = config.Rfc ?? "",
+            EmisorNombre = config.RazonSocial ?? "",
+            EmisorRegimenFiscal = config.RegimenFiscal,
+            ReceptorRfc = order.ClienteRfc,
+            ReceptorNombre = order.ClienteRazonSocial ?? order.ClienteNombre,
+            ReceptorUsoCfdi = request.UsoCfdi ?? order.ClienteUsoCfdi ?? "G03",
+            ReceptorDomicilioFiscal = order.ClienteCodigoPostalFiscal,
+            ReceptorRegimenFiscal = order.ClienteRegimenFiscal,
+            MetodoPago = request.MetodoPago ?? "PUE",
+            FormaPago = request.FormaPago ?? "01",
+            Subtotal = order.Subtotal,
+            Descuento = order.Descuento,
+            Impuestos = order.Impuestos,
+            Total = order.Total,
+            PedidoId = order.PedidoId,
+            NumeroPedido = order.NumeroPedido,
+            HasUnmappedProducts = unmappedCount > 0,
+            UnmappedCount = unmappedCount,
+            Detalles = detalles,
+        });
+    }
+
     [HttpPost("from-order")]
     public async Task<ActionResult<FacturaDto>> CreateFacturaFromOrder(CreateFacturaFromOrderRequest request)
     {
@@ -320,18 +404,32 @@ public class FacturasController : ControllerBase
             Estado = "PENDIENTE"
         };
 
-        // 7. Map order lines to factura detalles
+        // 7. Resolve fiscal codes via chain: mapping → producto → defaults → fallback
+        var resolved = await _fiscalCodeResolver.ResolveAsync(tenantId, order.Detalles);
+
+        // Apply overrides from pre-factura review (if any)
+        var overrides = request.Overrides?.ToDictionary(o => o.ProductoId) ?? new();
+
         var lineNum = 1;
         foreach (var line in order.Detalles)
         {
+            var fiscal = resolved.GetValueOrDefault(line.ProductoId,
+                new FiscalCodeResolver.ResolvedFiscalCode("01010101", "H87", "fallback"));
+
+            // Pre-factura overrides take highest priority
+            var claveProdServ = overrides.TryGetValue(line.ProductoId, out var ov) && !string.IsNullOrEmpty(ov.ClaveProdServ)
+                ? ov.ClaveProdServ : fiscal.ClaveProdServ;
+            var claveUnidad = overrides.TryGetValue(line.ProductoId, out var ovU) && !string.IsNullOrEmpty(ovU.ClaveUnidad)
+                ? ovU.ClaveUnidad : fiscal.ClaveUnidad;
+
             factura.Detalles.Add(new DetalleFactura
             {
                 NumeroLinea = lineNum++,
-                ClaveProdServ = line.ProductoClaveSat ?? "01010101",
+                ClaveProdServ = claveProdServ,
                 NoIdentificacion = line.ProductoCodigoBarra,
                 Descripcion = line.ProductoNombre,
                 Unidad = line.UnidadAbreviatura ?? line.UnidadNombre,
-                ClaveUnidad = line.UnidadClaveSat ?? "H87",
+                ClaveUnidad = claveUnidad,
                 Cantidad = line.Cantidad,
                 ValorUnitario = line.PrecioUnitario,
                 Importe = line.Subtotal,
@@ -772,13 +870,20 @@ public class FacturasController : ControllerBase
     private async Task<int> GetNextFolio(string tenantId, string serie)
     {
         // Atomic upsert: INSERT on first use, UPDATE+increment on subsequent calls
-        var sql = @"INSERT INTO ""NumeracionDocumentos"" (""TenantId"", ""TipoDocumento"", ""Serie"", ""FolioInicial"", ""FolioActual"", ""Activo"")
-                    VALUES ({0}, 'FACTURA', {1}, 1, 1, true)
-                    ON CONFLICT (""TenantId"", ""TipoDocumento"", ""Serie"")
-                    DO UPDATE SET ""FolioActual"" = ""NumeracionDocumentos"".""FolioActual"" + 1
-                    RETURNING ""FolioActual""";
-        var folio = await _context.Database.SqlQueryRaw<int>(sql, tenantId, serie).FirstOrDefaultAsync();
-        return folio == 0 ? 1 : folio;
+        // Uses raw Npgsql to avoid EF 9 non-composable SQL restriction with SqlQueryRaw
+        var connString = _context.Database.GetConnectionString();
+        await using var conn = new Npgsql.NpgsqlConnection(connString);
+        await conn.OpenAsync();
+        var sql = @"INSERT INTO numeracion_documentos (tenant_id, tipo_documento, serie, folio_inicial, folio_actual, activo, created_at, updated_at)
+                    VALUES (@tid, 'FACTURA', @serie, 1, 1, true, NOW(), NOW())
+                    ON CONFLICT (tenant_id, tipo_documento, serie)
+                    DO UPDATE SET folio_actual = numeracion_documentos.folio_actual + 1, updated_at = NOW()
+                    RETURNING folio_actual";
+        await using var cmd = new Npgsql.NpgsqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("tid", tenantId);
+        cmd.Parameters.AddWithValue("serie", serie);
+        var folio = await cmd.ExecuteScalarAsync();
+        return folio is int f ? f : 1;
     }
 
     private void RegistrarAuditoria(string tenantId, long? facturaId, string accion, string descripcion, int usuarioId)

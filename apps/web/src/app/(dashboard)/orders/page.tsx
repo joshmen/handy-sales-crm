@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
 import { DateTimePicker } from '@/components/ui/DateTimePicker';
@@ -28,7 +29,6 @@ import { ExportButton } from '@/components/shared/ExportButton';
 import { Button } from '@/components/ui/Button';
 import { ShoppingCart as ShoppingCartIcon, Receipt } from '@phosphor-icons/react';
 import { SearchBar } from '@/components/common/SearchBar';
-import { createFacturaFromOrder } from '@/services/api/billing';
 import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -169,7 +169,7 @@ export default function OrdersPage() {
   const formDataLoaded = useRef(false);
   const [formIsDirty, setFormIsDirty] = useState(false);
   const [usuarios, setUsuarios] = useState<UsuarioOption[]>([]);
-  const [facturandoPedidoId, setFacturandoPedidoId] = useState<string | null>(null);
+  const router = useRouter();
 
   // Calcular total de montos
   const totalAmount = orders.reduce((sum, order) => sum + order.total, 0);
@@ -272,21 +272,8 @@ export default function OrdersPage() {
     }
   };
 
-  const handleFacturar = async (orderId: string) => {
-    setFacturandoPedidoId(orderId);
-    try {
-      const factura = await createFacturaFromOrder({
-        pedidoId: parseInt(orderId),
-        timbrarInmediatamente: false,
-      });
-      toast.success(`Factura ${factura.serie}-${factura.folio} creada correctamente`);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Error al crear factura';
-      const axiosMsg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      toast.error(axiosMsg || message);
-    } finally {
-      setFacturandoPedidoId(null);
-    }
+  const handleFacturar = (orderId: string) => {
+    router.push(`/billing/pre-factura?pedidoId=${orderId}`);
   };
 
   const handleSaveOrder = async (orderData: Partial<Order>) => {
@@ -527,11 +514,10 @@ export default function OrdersPage() {
                       {order.status === 'delivered' && (
                         <button
                           onClick={() => handleFacturar(order.id)}
-                          disabled={facturandoPedidoId === order.id}
-                          className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-emerald-600 hover:bg-emerald-50 rounded disabled:opacity-50"
+                          className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-emerald-600 hover:bg-emerald-50 rounded"
                         >
                           <Receipt className="w-3.5 h-3.5 text-emerald-500" weight="bold" />
-                          {facturandoPedidoId === order.id ? 'Facturando...' : 'Facturar'}
+                          Facturar
                         </button>
                       )}
                     </div>
@@ -629,8 +615,7 @@ export default function OrdersPage() {
                       {order.status === 'delivered' && (
                         <button
                           onClick={() => handleFacturar(order.id)}
-                          disabled={facturandoPedidoId === order.id}
-                          className="p-1.5 hover:bg-emerald-50 rounded transition-colors disabled:opacity-50"
+                          className="p-1.5 hover:bg-emerald-50 rounded transition-colors"
                           title="Facturar"
                         >
                           <Receipt className="w-4 h-4 text-emerald-500 hover:text-emerald-700" weight="bold" />

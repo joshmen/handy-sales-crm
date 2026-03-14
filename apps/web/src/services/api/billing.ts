@@ -16,6 +16,13 @@ import type {
   AuditoriaEntry,
   VentasPorPeriodo,
   EstadoFacturaResumen,
+  PreFacturaDto,
+  CatalogoProdServItem,
+  CatalogoUnidadItem,
+  PaginatedMapeos,
+  PaginatedUnmapped,
+  UpsertMapeoFiscalRequest,
+  DefaultsFiscalesTenant,
 } from '@/types/billing';
 
 // ─── Facturas ───
@@ -75,6 +82,64 @@ export async function createFacturaFromOrder(request: CreateFacturaFromOrderRequ
 
 export async function enviarFactura(id: number, request: EnviarFacturaRequest): Promise<void> {
   await billingApi.post(`/api/facturas/${id}/enviar`, request);
+}
+
+export async function previewFacturaFromOrder(pedidoId: number): Promise<PreFacturaDto> {
+  const { data } = await billingApi.post<PreFacturaDto>('/api/facturas/preview-from-order', { pedidoId });
+  return data;
+}
+
+// ─── SAT Catalog Search ───
+
+export async function searchCatalogoProdServ(q: string, limit = 20): Promise<CatalogoProdServItem[]> {
+  const { data } = await billingApi.get<CatalogoProdServItem[]>('/api/catalogos/prod-serv', {
+    params: { q, limit },
+  });
+  return data;
+}
+
+export async function searchCatalogoUnidad(q: string, limit = 20): Promise<CatalogoUnidadItem[]> {
+  const { data } = await billingApi.get<CatalogoUnidadItem[]>('/api/catalogos/unidades', {
+    params: { q, limit },
+  });
+  return data;
+}
+
+// ─── Fiscal Mapping ───
+
+export async function getFiscalMappings(page = 1, pageSize = 50): Promise<PaginatedMapeos> {
+  const { data } = await billingApi.get<PaginatedMapeos>('/api/mapeo-fiscal', {
+    params: { page, pageSize },
+  });
+  return data;
+}
+
+export async function getUnmappedProducts(page = 1, pageSize = 50): Promise<PaginatedUnmapped> {
+  const { data } = await billingApi.get<PaginatedUnmapped>('/api/mapeo-fiscal/unmapped', {
+    params: { page, pageSize },
+  });
+  return data;
+}
+
+export async function upsertFiscalMapping(request: UpsertMapeoFiscalRequest): Promise<void> {
+  await billingApi.post('/api/mapeo-fiscal', request);
+}
+
+export async function batchUpsertFiscalMappings(mappings: UpsertMapeoFiscalRequest[]): Promise<void> {
+  await billingApi.post('/api/mapeo-fiscal/batch', { mappings });
+}
+
+export async function deleteFiscalMapping(productoId: number): Promise<void> {
+  await billingApi.delete(`/api/mapeo-fiscal/${productoId}`);
+}
+
+export async function getFiscalDefaults(): Promise<DefaultsFiscalesTenant> {
+  const { data } = await billingApi.get<DefaultsFiscalesTenant>('/api/mapeo-fiscal/defaults');
+  return data;
+}
+
+export async function setFiscalDefaults(defaults: DefaultsFiscalesTenant): Promise<void> {
+  await billingApi.put('/api/mapeo-fiscal/defaults', defaults);
 }
 
 // ─── Dashboard / Reportes ───

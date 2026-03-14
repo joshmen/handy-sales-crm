@@ -134,6 +134,114 @@ export interface CreateFacturaFromOrderRequest {
   usoCfdi?: string;
   observaciones?: string;
   timbrarInmediatamente?: boolean;
+  overrides?: FiscalCodeOverride[];
+}
+
+export interface FiscalCodeOverride {
+  productoId: number;
+  claveProdServ?: string;
+  claveUnidad?: string;
+}
+
+// ─── Pre-Factura (Preview) ───
+
+export interface PreFacturaDto {
+  emisorRfc: string;
+  emisorNombre: string;
+  emisorRegimenFiscal: string | null;
+  receptorRfc: string;
+  receptorNombre: string;
+  receptorUsoCfdi: string | null;
+  receptorDomicilioFiscal: string | null;
+  receptorRegimenFiscal: string | null;
+  metodoPago: string | null;
+  formaPago: string | null;
+  subtotal: number;
+  descuento: number;
+  impuestos: number;
+  total: number;
+  pedidoId: number;
+  numeroPedido: string;
+  hasUnmappedProducts: boolean;
+  unmappedCount: number;
+  detalles: PreFacturaLineDto[];
+}
+
+export interface PreFacturaLineDto {
+  numeroLinea: number;
+  productoId: number;
+  productoNombre: string;
+  codigoBarra: string | null;
+  claveProdServ: string;
+  claveUnidad: string | null;
+  unidad: string | null;
+  cantidad: number;
+  precioUnitario: number;
+  subtotal: number;
+  descuento: number;
+  total: number;
+  isMapped: boolean;
+  mappingSource: 'mapping' | 'producto' | 'default' | 'fallback';
+}
+
+// ─── Fiscal Catalog Search ───
+
+export interface CatalogoProdServItem {
+  clave: string;
+  descripcion: string;
+}
+
+export interface CatalogoUnidadItem {
+  clave: string;
+  nombre: string;
+}
+
+// ─── Fiscal Mapping ───
+
+export interface MapeoFiscalProducto {
+  id: number;
+  productoId: number;
+  claveProdServ: string;
+  claveUnidad: string;
+  descripcionFiscal: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UnmappedProduct {
+  productoId: number;
+  nombre: string;
+  codigoBarra: string | null;
+  claveSatActual: string | null;
+  unidadNombre: string;
+  unidadAbreviatura: string | null;
+  unidadClaveSat: string | null;
+}
+
+export interface UpsertMapeoFiscalRequest {
+  productoId: number;
+  claveProdServ: string;
+  claveUnidad: string;
+  descripcionFiscal?: string;
+}
+
+export interface DefaultsFiscalesTenant {
+  claveProdServDefault: string;
+  claveUnidadDefault: string;
+}
+
+export interface PaginatedMapeos {
+  items: MapeoFiscalProducto[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface PaginatedUnmapped {
+  items: UnmappedProduct[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
 }
 
 // ─── Configuración Fiscal ───
