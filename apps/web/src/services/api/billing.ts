@@ -1,0 +1,175 @@
+import api from '@/lib/api';
+import { billingApi } from '@/lib/billingApi';
+import type {
+  FacturaListItem,
+  FacturaDetail,
+  CreateFacturaRequest,
+  CreateFacturaFromOrderRequest,
+  CancelarFacturaRequest,
+  EnviarFacturaRequest,
+  ConfiguracionFiscal,
+  CatalogosResponse,
+  BillingDashboard,
+  TimbradoResponse,
+  TimbresBalance,
+  PaginatedFacturas,
+  AuditoriaEntry,
+  VentasPorPeriodo,
+  EstadoFacturaResumen,
+} from '@/types/billing';
+
+// ─── Facturas ───
+
+export interface GetFacturasParams {
+  desde?: string;
+  hasta?: string;
+  estado?: string;
+  receptorRfc?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export async function getFacturas(params: GetFacturasParams = {}): Promise<PaginatedFacturas> {
+  const { data } = await billingApi.get<PaginatedFacturas>('/api/facturas', { params });
+  return data;
+}
+
+export async function getFactura(id: number): Promise<FacturaDetail> {
+  const { data } = await billingApi.get<FacturaDetail>(`/api/facturas/${id}`);
+  return data;
+}
+
+export async function createFactura(request: CreateFacturaRequest): Promise<FacturaDetail> {
+  const { data } = await billingApi.post<FacturaDetail>('/api/facturas', request);
+  return data;
+}
+
+export async function timbrarFactura(id: number): Promise<TimbradoResponse> {
+  const { data } = await billingApi.post<TimbradoResponse>(`/api/facturas/${id}/timbrar`);
+  return data;
+}
+
+export async function cancelarFactura(id: number, request: CancelarFacturaRequest): Promise<{ estado: string }> {
+  const { data } = await billingApi.post<{ estado: string }>(`/api/facturas/${id}/cancelar`, request);
+  return data;
+}
+
+export async function getFacturaPdf(id: number): Promise<Blob> {
+  const { data } = await billingApi.get<Blob>(`/api/facturas/${id}/pdf`, {
+    responseType: 'blob',
+  });
+  return data;
+}
+
+export async function getFacturaXml(id: number): Promise<Blob> {
+  const { data } = await billingApi.get<Blob>(`/api/facturas/${id}/xml`, {
+    responseType: 'blob',
+  });
+  return data;
+}
+
+export async function createFacturaFromOrder(request: CreateFacturaFromOrderRequest): Promise<FacturaDetail> {
+  const { data } = await billingApi.post<FacturaDetail>('/api/facturas/from-order', request);
+  return data;
+}
+
+export async function enviarFactura(id: number, request: EnviarFacturaRequest): Promise<void> {
+  await billingApi.post(`/api/facturas/${id}/enviar`, request);
+}
+
+// ─── Dashboard / Reportes ───
+
+export interface GetDashboardParams {
+  desde?: string;
+  hasta?: string;
+}
+
+export async function getDashboard(params: GetDashboardParams = {}): Promise<BillingDashboard> {
+  const { data } = await billingApi.get<BillingDashboard>('/api/reportes/dashboard', { params });
+  return data;
+}
+
+export async function getVentasPorPeriodo(params: GetDashboardParams = {}): Promise<VentasPorPeriodo[]> {
+  const { data } = await billingApi.get<VentasPorPeriodo[]>('/api/reportes/ventas-por-periodo', { params });
+  return data;
+}
+
+export async function getEstadoFacturas(params: GetDashboardParams = {}): Promise<EstadoFacturaResumen[]> {
+  const { data } = await billingApi.get<EstadoFacturaResumen[]>('/api/reportes/estado-facturas', { params });
+  return data;
+}
+
+export async function getAuditoria(params: { page?: number; pageSize?: number } = {}): Promise<AuditoriaEntry[]> {
+  const { data } = await billingApi.get<AuditoriaEntry[]>('/api/reportes/auditoria', { params });
+  return data;
+}
+
+// ─── Catálogos SAT ───
+
+export async function getCatalogos(): Promise<CatalogosResponse> {
+  const [tipos, metodos, formas, usos] = await Promise.all([
+    billingApi.get<CatalogosResponse['tiposComprobante']>('/api/catalogos/tipos-comprobante'),
+    billingApi.get<CatalogosResponse['metodosPago']>('/api/catalogos/metodos-pago'),
+    billingApi.get<CatalogosResponse['formasPago']>('/api/catalogos/formas-pago'),
+    billingApi.get<CatalogosResponse['usosCfdi']>('/api/catalogos/usos-cfdi'),
+  ]);
+  return {
+    tiposComprobante: tipos.data,
+    metodosPago: metodos.data,
+    formasPago: formas.data,
+    usosCfdi: usos.data,
+  };
+}
+
+// ─── Configuración Fiscal ───
+
+export async function getConfigFiscal(): Promise<ConfiguracionFiscal> {
+  const { data } = await billingApi.get<ConfiguracionFiscal>('/api/catalogos/configuracion-fiscal');
+  return data;
+}
+
+export async function saveConfigFiscal(config: Partial<ConfiguracionFiscal>): Promise<ConfiguracionFiscal> {
+  if (config.id) {
+    const { data } = await billingApi.put<ConfiguracionFiscal>(
+      `/api/catalogos/configuracion-fiscal/${config.id}`,
+      config
+    );
+    return data;
+  }
+  const { data } = await billingApi.post<ConfiguracionFiscal>('/api/catalogos/configuracion-fiscal', config);
+  return data;
+}
+
+export async function uploadCertificado(configId: number, formData: FormData): Promise<void> {
+  await billingApi.post(`/api/catalogos/configuracion-fiscal/${configId}/certificado`, formData);
+}
+
+// ─── Timbres (Main API) ───
+
+export async function getTimbres(): Promise<TimbresBalance> {
+  const { data } = await api.get<TimbresBalance>('/api/subscription/timbres');
+  return data;
+}
+
+// ─── Helpers ───
+
+export function downloadBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+export async function downloadFacturaPdf(id: number, folio: string): Promise<void> {
+  const blob = await getFacturaPdf(id);
+  downloadBlob(blob, `factura-${folio}.pdf`);
+}
+
+export async function downloadFacturaXml(id: number, folio: string): Promise<void> {
+  const blob = await getFacturaXml(id);
+  downloadBlob(blob, `factura-${folio}.xml`);
+}
