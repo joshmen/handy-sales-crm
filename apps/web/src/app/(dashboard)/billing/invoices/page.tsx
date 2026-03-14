@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Plus, Search, Download, Send, X as XIcon, FileText, Loader2, ChevronLeft, ChevronRight, ShieldAlert } from 'lucide-react';
+import { Plus, Search, Download, Send, X as XIcon, FileText, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { SbBilling, SbSubscription } from '@/components/layout/DashboardIcons';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { BrandedLoadingScreen } from '@/components/ui/BrandedLoadingScreen';
@@ -96,7 +97,7 @@ export default function InvoicesPage() {
 
   if (loading && facturas.length === 0) return <BrandedLoadingScreen />;
 
-  return (
+  return (<>
     <PageHeader
       breadcrumbs={[
         { label: 'Facturación', href: '/billing' },
@@ -288,38 +289,69 @@ export default function InvoicesPage() {
           </div>
         </div>
       )}
-      {/* Timbres upgrade modal */}
-      {timbresModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-zinc-900 rounded-2xl p-8 max-w-md mx-4 shadow-2xl text-center">
-            <div className="flex justify-center mb-4">
-              <div className="w-14 h-14 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                <ShieldAlert className="w-7 h-7 text-amber-600 dark:text-amber-400" />
-              </div>
-            </div>
-            <h3 className="text-lg font-semibold text-foreground mb-2">
-              Facturación no disponible
-            </h3>
-            <p className="text-sm text-muted-foreground mb-6">
-              {timbresError || 'Tu plan no incluye facturación electrónica. Actualiza tu plan para comenzar a timbrar facturas.'}
-            </p>
-            <div className="flex flex-col gap-2">
-              <Link href="/subscription">
-                <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
-                  Actualizar plan &rarr;
-                </Button>
-              </Link>
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => setTimbresModalOpen(false)}
-              >
-                Cerrar
-              </Button>
+    </PageHeader>
+    {/* Timbres modal — outside PageHeader so backdrop covers entire viewport including sidebar */}
+    {timbresModalOpen && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setTimbresModalOpen(false)}>
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl p-8 max-w-md mx-4 shadow-2xl text-center animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+          <div className="flex justify-center mb-5">
+            <div className="w-16 h-16 flex items-center justify-center">
+              {timbresError.includes('no incluye')
+                ? <SbSubscription size={56} />
+                : <SbBilling size={56} />
+              }
             </div>
           </div>
+          {timbresError.includes('no incluye') ? (
+            <>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                Tu plan no incluye facturación
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
+                {timbresError}
+              </p>
+              <div className="flex flex-col gap-2.5">
+                <Link href="/subscription">
+                  <Button className="w-full h-11 bg-green-600 hover:bg-green-700 text-white font-medium text-sm rounded-xl">
+                    Actualizar plan &rarr;
+                  </Button>
+                </Link>
+                <Button variant="outline" className="w-full h-11 rounded-xl" onClick={() => setTimbresModalOpen(false)}>
+                  Cerrar
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                Timbres agotados
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1.5 leading-relaxed">
+                {timbresError}
+              </p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mb-6">
+                Los timbres se renuevan cada mes. También puedes comprar paquetes adicionales.
+              </p>
+              <div className="flex flex-col gap-2.5">
+                <Link href="/subscription?tab=addons">
+                  <Button className="w-full h-11 bg-green-600 hover:bg-green-700 text-white font-medium text-sm rounded-xl">
+                    Comprar timbres adicionales &rarr;
+                  </Button>
+                </Link>
+                <Link href="/subscription">
+                  <Button variant="outline" className="w-full h-11 rounded-xl">
+                    Ver mi plan
+                  </Button>
+                </Link>
+                <button className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 py-2" onClick={() => setTimbresModalOpen(false)}>
+                  Cerrar
+                </button>
+              </div>
+            </>
+          )}
         </div>
-      )}
-    </PageHeader>
+      </div>
+    )}
+  </>
   );
 }
