@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Slot, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
-import { View, ActivityIndicator, LogBox, ErrorUtils } from 'react-native';
+import { View, ActivityIndicator, LogBox } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { DatabaseProvider } from '@nozbe/watermelondb/DatabaseProvider';
 import { crashReporter } from '@/services/crashReporter';
@@ -14,11 +14,15 @@ LogBox.ignoreLogs([
 ]);
 
 // Global error handler — captura errores fuera del árbol React
-const previousHandler = ErrorUtils.getGlobalHandler();
-ErrorUtils.setGlobalHandler((error: Error, isFatal?: boolean) => {
-  crashReporter.reportCrash(error, 'global', isFatal ? 'CRASH' : 'ERROR');
-  previousHandler(error, isFatal);
-});
+// ErrorUtils may be undefined in some Expo Go / Hermes environments
+const _ErrorUtils = (globalThis as any).ErrorUtils;
+if (_ErrorUtils?.getGlobalHandler) {
+  const previousHandler = _ErrorUtils.getGlobalHandler();
+  _ErrorUtils.setGlobalHandler((error: Error, isFatal?: boolean) => {
+    crashReporter.reportCrash(error, 'global', isFatal ? 'CRASH' : 'ERROR');
+    previousHandler?.(error, isFatal);
+  });
+}
 
 import { QueryProvider } from '@/providers/QueryProvider';
 import { useAuthStore } from '@/stores';
