@@ -16,8 +16,10 @@ public static class ZonasEndpoints
                 return Results.BadRequest(validation.ToDictionary());
 
             var usuario = context.User.Identity?.Name ?? "sistema";
-            var id = await servicio.CrearZonaAsync(dto, usuario);
-            return Results.Created($"/zonas/{id}", new { id });
+            var result = await servicio.CrearZonaAsync(dto, usuario);
+            if (!result.Success)
+                return Results.BadRequest(new { error = result.Error });
+            return Results.Created($"/zonas/{result.Id}", new { id = result.Id });
         }).RequireAuthorization();
 
         app.MapGet("/zonas", async ([FromServices] ZonaService servicio) =>
@@ -43,8 +45,10 @@ public static class ZonasEndpoints
                 return Results.BadRequest(validation.ToDictionary());
 
             var usuario = context.User.Identity?.Name ?? "sistema";
-            var actualizado = await servicio.ActualizarZonaAsync(id, dto, usuario);
-            return actualizado ? Results.NoContent() : Results.NotFound();
+            var result = await servicio.ActualizarZonaAsync(id, dto, usuario);
+            if (!result.Success)
+                return Results.BadRequest(new { error = result.Error });
+            return Results.NoContent();
         }).RequireAuthorization();
 
         app.MapDelete("/zonas/{id:int}", async (int id, [FromServices] ZonaService servicio) =>

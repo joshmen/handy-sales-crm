@@ -54,10 +54,12 @@ namespace HandySales.Tests.Application.Zonas
         {
             var dto = new CreateZonaDto { Nombre = "Sur", Descripcion = "Zona sur", TenandId = 1 };
             _repoMock.Setup(r => r.CrearAsync(dto, "admin", 1)).ReturnsAsync(10);
+            _repoMock.Setup(r => r.ObtenerZonasConCoordenadasAsync(1, null)).ReturnsAsync(new List<(int, string, double, double, double)>());
 
             var result = await _service.CrearZonaAsync(dto, "admin");
 
-            result.Should().Be(10);
+            result.Success.Should().BeTrue();
+            result.Id.Should().Be(10);
         }
 
         [Fact]
@@ -65,10 +67,11 @@ namespace HandySales.Tests.Application.Zonas
         {
             var dto = new UpdateZonaDto { Id = 1, Nombre = "Modificada", Descripcion = "Nueva", Activo = true };
             _repoMock.Setup(r => r.ActualizarAsync(1, dto, "admin", 1)).ReturnsAsync(true);
+            _repoMock.Setup(r => r.ObtenerZonasConCoordenadasAsync(1, 1)).ReturnsAsync(new List<(int, string, double, double, double)>());
 
             var result = await _service.ActualizarZonaAsync(1, dto, "admin");
 
-            result.Should().BeTrue();
+            result.Success.Should().BeTrue();
         }
 
         [Fact]

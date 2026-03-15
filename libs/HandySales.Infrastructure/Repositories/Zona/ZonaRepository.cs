@@ -148,4 +148,23 @@ public class ZonaRepository : IZonaRepository
         await _db.SaveChangesAsync();
         return entities.Count;
     }
+
+    public async Task<List<(int Id, string Nombre, double Lat, double Lng, double RadioKm)>> ObtenerZonasConCoordenadasAsync(int tenantId, int? excludeId = null)
+    {
+        var query = _db.Zonas
+            .AsNoTracking()
+            .Where(z => z.TenantId == tenantId
+                && z.CentroLatitud.HasValue
+                && z.CentroLongitud.HasValue
+                && z.RadioKm.HasValue);
+
+        if (excludeId.HasValue)
+            query = query.Where(z => z.Id != excludeId.Value);
+
+        var items = await query
+            .Select(z => new { z.Id, z.Nombre, Lat = z.CentroLatitud!.Value, Lng = z.CentroLongitud!.Value, Radio = z.RadioKm!.Value })
+            .ToListAsync();
+
+        return items.Select(z => (z.Id, z.Nombre, z.Lat, z.Lng, z.Radio)).ToList();
+    }
 }
