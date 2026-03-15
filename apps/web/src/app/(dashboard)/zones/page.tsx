@@ -227,9 +227,8 @@ export default function ZonesPage() {
       reset();
     } catch (err) {
       console.error('Error al guardar zona:', err);
-      const axiosErr = err as { response?: { data?: { error?: string; message?: string } } };
-      const backendMsg = axiosErr?.response?.data?.error || axiosErr?.response?.data?.message;
-      toast.error(backendMsg || 'Error al guardar la zona');
+      const apiErr = err as { message?: string };
+      toast.error(apiErr?.message || 'Error al guardar la zona');
     } finally {
       setSavingZone(false);
     }
