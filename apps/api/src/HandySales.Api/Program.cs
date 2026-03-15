@@ -121,7 +121,7 @@ builder.Services.Configure<GzipCompressionProviderOptions>(options =>
 // OpenAI HttpClient for AI Gateway
 var openAiKey = builder.Configuration["Ai:ApiKey"]
     ?? Environment.GetEnvironmentVariable("OPENAI_API_KEY")
-    ?? throw new InvalidOperationException("OpenAI API key is required. Set 'Ai:ApiKey' or OPENAI_API_KEY env var.");
+    ?? ""; // Optional: AI features disabled when key not set
 builder.Services.AddHttpClient("OpenAI", client =>
 {
     client.BaseAddress = new Uri("https://api.openai.com/");
