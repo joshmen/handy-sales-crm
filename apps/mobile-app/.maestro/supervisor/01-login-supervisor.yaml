@@ -1,34 +1,27 @@
 appId: host.exp.exponent
-name: "Login as Supervisor"
+name: "Supervisor: flujo integral — login, equipo, KPIs, mapa, vendedor, dashboard"
 ---
+
+# ═══════════════════════════════════════════
+# FASE 1: LOGIN COMO SUPERVISOR
+# ═══════════════════════════════════════════
 
 # Wait for app to fully load
 - extendedWaitUntil:
-    visible: "Vende en ruta"
+    visible: "Siguiente"
     timeout: 60000
 
-# Tap Omitir (top-right corner) — use point since text tap may not register on Pressable
-- tapOn:
-    point: "90%,5%"
-- waitForAnimationToEnd
-
-# If still on onboarding, try text tap
-- runFlow:
-    when:
-      visible: "Siguiente"
-    commands:
-      - tapOn: "Siguiente"
-      - tapOn: "Siguiente"
-      - tapOn: "Siguiente"
-      - tapOn: "Comenzar"
+# Skip onboarding: tap Siguiente 3x then Comenzar
+- tapOn: "Siguiente"
+- tapOn: "Siguiente"
+- tapOn: "Siguiente"
+- tapOn: "Comenzar"
 
 # Wait for login screen
 - extendedWaitUntil:
     visible:
       id: "login-button"
     timeout: 30000
-
-- takeScreenshot: "01-login-screen"
 
 # Fill supervisor credentials
 - tapOn:
@@ -42,9 +35,6 @@ name: "Login as Supervisor"
 - inputText: "test123"
 - hideKeyboard
 
-- takeScreenshot: "02-credentials-filled"
-
-# Login
 - tapOn:
     id: "login-button"
 
@@ -53,25 +43,95 @@ name: "Login as Supervisor"
     visible: "Hoy"
     timeout: 45000
 
-- takeScreenshot: "03-dashboard"
+- takeScreenshot: "01-dashboard-supervisor"
 
-# Verify Equipo tab visible
+# ═══════════════════════════════════════════
+# FASE 2: VERIFICAR DASHBOARD CON BANNER EQUIPO
+# ═══════════════════════════════════════════
+
+# Verify the supervisor team banner is visible on Hoy dashboard
+- assertVisible:
+    text: "Mi Equipo"
+
+# Verify Equipo tab is in the tab bar
 - assertVisible:
     text: "Equipo"
 
-- takeScreenshot: "04-equipo-tab"
+- takeScreenshot: "02-dashboard-team-banner"
 
-# Tap Equipo
+# ═══════════════════════════════════════════
+# FASE 3: NAVEGAR A EQUIPO — VER KPIs + VENDEDORES
+# ═══════════════════════════════════════════
+
 - tapOn:
     text: "Equipo"
 - waitForAnimationToEnd
 
+# Should see "Mi Equipo" title and KPIs
+- extendedWaitUntil:
+    visible: "Vendedores"
+    timeout: 15000
+
+# Verify KPI section loaded
 - assertVisible:
-    text: "Mi Equipo"
+    id: "supervisor-kpis"
 
-- takeScreenshot: "05-equipo-screen"
+# Verify "Ver mapa" button exists
+- assertVisible:
+    id: "ver-mapa"
 
-# Go to Más tab
+- takeScreenshot: "03-equipo-kpis-vendedores"
+
+# ═══════════════════════════════════════════
+# FASE 4: NAVEGAR AL MAPA DEL EQUIPO
+# ═══════════════════════════════════════════
+
+- tapOn:
+    id: "ver-mapa"
+- waitForAnimationToEnd
+
+# Map should load (wait for map or empty state)
+- extendedWaitUntil:
+    true:
+      or:
+        - visible: "Sin ubicaciones"
+        - visible: "Mapa del Equipo"
+    timeout: 15000
+
+- takeScreenshot: "04-mapa-equipo"
+
+# Go back to equipo list
+- back
+
+# ═══════════════════════════════════════════
+# FASE 5: VER DETALLE DE UN VENDEDOR
+# ═══════════════════════════════════════════
+
+# Wait for vendedores list to be visible again
+- extendedWaitUntil:
+    visible: "Vendedores"
+    timeout: 10000
+
+# If there are vendedores, tap the first one
+- runFlow:
+    when:
+      visible:
+        id: "vendedor-1"
+    commands:
+      - tapOn:
+          id: "vendedor-1"
+      - waitForAnimationToEnd
+      - extendedWaitUntil:
+          visible:
+            id: "vendedor-stats"
+          timeout: 10000
+      - takeScreenshot: "05-vendedor-detalle"
+      - back
+
+# ═══════════════════════════════════════════
+# FASE 6: VERIFICAR TAB MÁS CON BADGE SUPERVISOR
+# ═══════════════════════════════════════════
+
 - tapOn:
     text: "Más"
 - waitForAnimationToEnd
@@ -79,4 +139,18 @@ name: "Login as Supervisor"
 - assertVisible:
     text: "Supervisor"
 
-- takeScreenshot: "06-supervisor-badge"
+- takeScreenshot: "06-mas-supervisor-badge"
+
+# ═══════════════════════════════════════════
+# FASE 7: VOLVER AL DASHBOARD — VERIFICAR INTEGRIDAD
+# ═══════════════════════════════════════════
+
+- tapOn:
+    text: "Hoy"
+- waitForAnimationToEnd
+
+# Dashboard should still show team banner
+- assertVisible:
+    text: "Mi Equipo"
+
+- takeScreenshot: "07-dashboard-final"

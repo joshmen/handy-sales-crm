@@ -44,6 +44,9 @@ using HandySales.Infrastructure.Promociones.Repositories;
 using HandySales.Application.Inventario.Interfaces;
 using HandySales.Application.Inventario.Services;
 using HandySales.Infrastructure.Inventario.Repositories;
+using HandySales.Application.MovimientosInventario.Interfaces;
+using HandySales.Application.MovimientosInventario.Services;
+using HandySales.Infrastructure.MovimientosInventario.Repositories;
 using HandySales.Application.Cobranza.Interfaces;
 using HandySales.Application.Cobranza.Services;
 using HandySales.Infrastructure.Repositories.Cobranza;
@@ -159,6 +162,9 @@ public static class ServiceRegistrationExtensions
         // Inventario
         services.AddScoped<IInventarioRepository, InventarioRepository>();
         services.AddScoped<InventarioService>();
+        services.AddScoped<IMovimientoInventarioRepository, MovimientoInventarioRepository>();
+        services.AddScoped<MovimientoInventarioService>();
+        services.AddScoped<HandySales.Application.Common.Interfaces.ITransactionManager, HandySales.Infrastructure.Persistence.TransactionManager>();
 
         // Cobranza
         services.AddScoped<ICobroRepository, CobroRepository>();

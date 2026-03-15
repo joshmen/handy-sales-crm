@@ -16,16 +16,20 @@ import {
   TrendingUp,
   CheckCircle,
   Clock,
+  Users,
 } from 'lucide-react-native';
 import { HandyLogo } from '@/components/shared/HandyLogo';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { performSync } from '@/sync/syncEngine';
+import { useSupervisorDashboard } from '@/hooks/useSupervisor';
 
 function HoyScreenContent() {
   const insets = useSafeAreaInsets();
   const user = useAuthStore(s => s.user);
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
+  const isSupervisor = user?.role === 'SUPERVISOR';
+  const { data: supDash, refetch: refetchSupDash } = useSupervisorDashboard();
 
   // Local WDB data
   const { data: todayVisits } = useOfflineTodayVisits();
@@ -58,6 +62,7 @@ function HoyScreenContent() {
   const onRefresh = async () => {
     setRefreshing(true);
     await performSync();
+    if (isSupervisor) await refetchSupDash();
     setRefreshing(false);
   };
 
@@ -106,8 +111,47 @@ function HoyScreenContent() {
         </View>
       </View>
 
+      {/* Supervisor Team KPIs */}
+      {isSupervisor && supDash && (
+        <TouchableOpacity
+          style={styles.supervisorBanner}
+          onPress={() => router.push('/(tabs)/equipo')}
+          activeOpacity={0.85}
+          testID="supervisor-team-banner"
+        >
+          <View style={styles.supervisorBannerHeader}>
+            <Users size={18} color="#d97706" />
+            <Text style={styles.supervisorBannerTitle}>Mi Equipo</Text>
+            <Text style={styles.supervisorBannerArrow}>→</Text>
+          </View>
+          <View style={styles.supervisorKpiRow}>
+            <View style={styles.supervisorKpi}>
+              <Text style={styles.supervisorKpiValue}>{supDash.totalVendedores}</Text>
+              <Text style={styles.supervisorKpiLabel}>Vendedores</Text>
+            </View>
+            <View style={styles.supervisorKpiDivider} />
+            <View style={styles.supervisorKpi}>
+              <Text style={styles.supervisorKpiValue}>{supDash.pedidosHoy}</Text>
+              <Text style={styles.supervisorKpiLabel}>Pedidos hoy</Text>
+            </View>
+            <View style={styles.supervisorKpiDivider} />
+            <View style={styles.supervisorKpi}>
+              <Text style={styles.supervisorKpiValue}>
+                {supDash.ventasMes >= 1000 ? `$${(supDash.ventasMes / 1000).toFixed(1)}K` : `$${supDash.ventasMes.toFixed(0)}`}
+              </Text>
+              <Text style={styles.supervisorKpiLabel}>Ventas mes</Text>
+            </View>
+            <View style={styles.supervisorKpiDivider} />
+            <View style={styles.supervisorKpi}>
+              <Text style={styles.supervisorKpiValue}>{supDash.visitasCompletadasHoy}/{supDash.visitasHoy}</Text>
+              <Text style={styles.supervisorKpiLabel}>Visitas</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+      )}
+
       {/* KPI Cards */}
-      <Text style={styles.sectionTitle}>Resumen del Día</Text>
+      <Text style={styles.sectionTitle}>{isSupervisor ? 'Mi Actividad Personal' : 'Resumen del Día'}</Text>
       <View style={styles.kpiRow}>
         <View style={[styles.kpiCard, { backgroundColor: '#eff6ff' }]}>
           <View style={[styles.kpiIcon, { backgroundColor: '#dbeafe' }]}>
@@ -294,6 +338,20 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   activityEmptyText: { fontSize: 13, color: '#94a3b8' },
+  supervisorBanner: {
+    backgroundColor: '#fffbeb', borderRadius: 16, padding: 16, marginBottom: 20,
+    borderWidth: 1, borderColor: '#fef3c7',
+  },
+  supervisorBannerHeader: {
+    flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12,
+  },
+  supervisorBannerTitle: { fontSize: 15, fontWeight: '700', color: '#92400e', flex: 1 },
+  supervisorBannerArrow: { fontSize: 18, color: '#d97706', fontWeight: '700' },
+  supervisorKpiRow: { flexDirection: 'row', alignItems: 'center' },
+  supervisorKpi: { flex: 1, alignItems: 'center' },
+  supervisorKpiValue: { fontSize: 16, fontWeight: '800', color: '#0f172a' },
+  supervisorKpiLabel: { fontSize: 10, color: '#78716c', fontWeight: '500', marginTop: 2 },
+  supervisorKpiDivider: { width: 1, height: 28, backgroundColor: '#fde68a' },
 });
 
 export default function HoyScreen() {
