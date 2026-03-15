@@ -149,7 +149,7 @@ function AutocompleteDropdown<T>({
 
 export default function PreFacturaPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="h-8 w-8 animate-spin text-green-600" /></div>}>
+    <Suspense fallback={<div role="status" className="flex items-center justify-center min-h-[60vh]"><Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" /><span className="sr-only">Cargando...</span></div>}>
       <PreFacturaContent />
     </Suspense>
   );
@@ -253,8 +253,9 @@ function PreFacturaContent() {
   // ─── Loading State ───
 
   if (loading) return (
-    <div className="flex items-center justify-center min-h-[60vh]">
-      <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+    <div role="status" className="flex items-center justify-center min-h-[60vh]">
+      <Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" />
+      <span className="sr-only">Cargando...</span>
     </div>
   );
 
@@ -307,7 +308,7 @@ function PreFacturaContent() {
               o configurar los mapeos desde{' '}
               <button
                 type="button"
-                onClick={() => router.push('/billing/settings')}
+                onClick={() => router.push('/billing/fiscal-mapping')}
                 className="underline hover:no-underline font-medium"
               >
                 Configuración Fiscal

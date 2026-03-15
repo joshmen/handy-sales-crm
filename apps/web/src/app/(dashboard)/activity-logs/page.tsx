@@ -9,6 +9,7 @@ import {
   ChevronRight,
   Search,
   FileText,
+  Loader2,
 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
@@ -170,7 +171,9 @@ export default function ActivityLogsPage() {
     const a = document.createElement('a');
     a.href = url;
     a.download = `activity-logs-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
     toast.success('Logs exportados correctamente');
   };
@@ -292,20 +295,11 @@ export default function ActivityLogsPage() {
             )}
           </div>
             {/* Table */}
-            <div data-tour="logs-table" className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+            <div data-tour="logs-table" className="bg-card border border-border rounded-lg overflow-hidden">
               {loading ? (
-                <div className="flex flex-col items-center justify-center h-64 gap-4">
-                  <div className="flex items-center gap-2">
-                    <img src="/logo-icon.svg" alt="Handy Suites" className="w-8 h-8" />
-                    <span className="text-lg font-semibold text-gray-700">Handy Suites<sup className="text-[8px] font-normal">®</sup></span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <svg className="animate-spin h-4 w-4 text-[#16A34A]" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    <span className="text-sm text-gray-500">Cargando registros...</span>
-                  </div>
+                <div role="status" className="flex items-center justify-center h-64 gap-2">
+                  <Loader2 className="h-5 w-5 animate-spin text-green-600" aria-hidden="true" />
+                  <span className="text-sm text-muted-foreground">Cargando registros...</span>
                 </div>
               ) : logs.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-64 py-20">

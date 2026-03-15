@@ -167,8 +167,16 @@ export default function IntegrationsPage() {
     }
   };
 
-  const handleDeactivate = async (slug: string) => {
-    if (!confirm("¿Deseas desactivar esta integración?")) return;
+  const [deactivateSlug, setDeactivateSlug] = useState<string | null>(null);
+
+  const handleDeactivate = (slug: string) => {
+    setDeactivateSlug(slug);
+  };
+
+  const confirmDeactivate = async () => {
+    if (!deactivateSlug) return;
+    const slug = deactivateSlug;
+    setDeactivateSlug(null);
     setActionLoading(slug);
     try {
       await integrationService.deactivate(slug);
@@ -191,8 +199,9 @@ export default function IntegrationsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+      <div role="status" className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" />
+        <span className="sr-only">Cargando...</span>
       </div>
     );
   }
@@ -213,6 +222,7 @@ export default function IntegrationsPage() {
             <button
               key={f}
               onClick={() => setFilter(f)}
+              aria-pressed={filter === f}
               className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
                 filter === f
                   ? "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300"
@@ -243,6 +253,34 @@ export default function IntegrationsPage() {
           )}
         </div>
       </div>
+
+      {/* Deactivate Confirmation Dialog */}
+      {deactivateSlug && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setDeactivateSlug(null)}>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="deactivate-dialog-title"
+            className="bg-card rounded-xl shadow-xl w-full max-w-sm mx-4 p-6 text-center"
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 id="deactivate-dialog-title" className="text-lg font-semibold text-foreground mb-2">
+              Desactivar integración
+            </h3>
+            <p className="text-sm text-muted-foreground mb-5">
+              ¿Deseas desactivar esta integración? Puedes reactivarla en cualquier momento.
+            </p>
+            <div className="flex gap-3">
+              <Button variant="outline" className="flex-1" onClick={() => setDeactivateSlug(null)}>
+                Cancelar
+              </Button>
+              <Button className="flex-1 bg-red-600 hover:bg-red-700 text-white" onClick={confirmDeactivate}>
+                Desactivar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </PageHeader>
   );
 }

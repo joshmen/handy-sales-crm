@@ -95,8 +95,9 @@ export default function InvoicesPage() {
   const totalPages = Math.ceil(totalCount / pageSize);
 
   if (loading && facturas.length === 0) return (
-    <div className="flex items-center justify-center min-h-[60vh]">
-      <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+    <div role="status" className="flex items-center justify-center min-h-[60vh]">
+      <Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" />
+      <span className="sr-only">Cargando...</span>
     </div>
   );
 
@@ -198,16 +199,18 @@ export default function InvoicesPage() {
                         <button
                           onClick={() => downloadFacturaPdf(f.id, `${f.serie || ''}${f.folio}`)}
                           className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                          aria-label={`Descargar PDF de factura ${f.serie || ''}${f.folio}`}
                           title="Descargar PDF"
                         >
-                          <FileText className="w-4 h-4" />
+                          <FileText className="w-4 h-4" aria-hidden="true" />
                         </button>
                         <button
                           onClick={() => downloadFacturaXml(f.id, `${f.serie || ''}${f.folio}`)}
                           className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                          aria-label={`Descargar XML de factura ${f.serie || ''}${f.folio}`}
                           title="Descargar XML"
                         >
-                          <Download className="w-4 h-4" />
+                          <Download className="w-4 h-4" aria-hidden="true" />
                         </button>
                       </>
                     )}

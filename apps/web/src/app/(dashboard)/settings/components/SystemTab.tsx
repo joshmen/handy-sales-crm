@@ -219,14 +219,14 @@ export const SystemTab: React.FC<SystemTabProps> = ({
             </div>
 
             {(isAdmin || isSuperAdmin) && (
-              <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+              <div className="rounded-lg border border-yellow-200 dark:border-yellow-800/50 bg-yellow-50 dark:bg-yellow-950/20 p-4">
                 <div className="flex items-start gap-2">
-                  <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
+                  <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
                   <div className="space-y-1">
-                    <h4 className="font-medium text-yellow-900">
+                    <h4 className="font-medium text-yellow-900 dark:text-yellow-300">
                       Información para Administradores
                     </h4>
-                    <p className="text-sm text-yellow-800">
+                    <p className="text-sm text-yellow-800 dark:text-yellow-400">
                       Como administrador, tienes acceso completo a todas las
                       configuraciones. Los cambios que realices afectarán a todos los
                       usuarios de tu organización.

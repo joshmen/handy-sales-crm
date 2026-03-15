@@ -423,6 +423,7 @@ export default function AutomationsPage() {
                               onClick={() => handleTest(template.slug, template.nombre)}
                               disabled={testingSlug === template.slug}
                               className="text-gray-400 hover:text-green-600 text-xs transition-colors disabled:opacity-50"
+                              aria-label={`Probar ${template.nombre}`}
                               title="Probar ahora"
                             >
                               {testingSlug === template.slug ? <CircleNotch size={14} className="animate-spin" /> : <Play size={14} weight="fill" />}
@@ -432,6 +433,7 @@ export default function AutomationsPage() {
                               onClick={() => handleOpenConfig(template)}
                               className="text-gray-400 hover:text-gray-600 text-xs transition-colors"
                               data-tour="automations-config-btn"
+                              aria-label={`Configurar ${template.nombre}`}
                               title="Configurar"
                             >
                               <GearSix size={14} />

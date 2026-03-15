@@ -47,7 +47,7 @@ export function UnmappedProductsTable({
             <tr className="border-b border-border bg-muted/50">
               <th className="w-10 px-4 py-3" />
               <th className="text-left px-4 py-3 font-medium text-muted-foreground">Producto</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Codigo Barra</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Código de Barras</th>
               <th className="text-left px-4 py-3 font-medium text-muted-foreground">Unidad</th>
               <th className="text-left px-4 py-3 font-medium text-muted-foreground">Clave ProdServ SAT</th>
               <th className="text-left px-4 py-3 font-medium text-muted-foreground">Clave Unidad SAT</th>
@@ -60,6 +60,7 @@ export function UnmappedProductsTable({
                 <td className="px-4 py-3">
                   <input
                     type="checkbox"
+                    aria-label={`Seleccionar ${u.nombre}`}
                     checked={selectedIds.has(u.productoId)}
                     onChange={() => onToggleSelect(u.productoId)}
                     className="rounded border-border text-green-600 focus:ring-green-500"
@@ -222,7 +223,7 @@ export function UnmappedProductsTable({
       {unmappedTotalPages > 1 && (
         <div className="flex items-center justify-between mt-4 text-sm">
           <span className="text-muted-foreground">
-            Pagina {unmappedPage} de {unmappedTotalPages}
+            Página {unmappedPage} de {unmappedTotalPages}
           </span>
           <div className="flex items-center gap-1">
             <Button

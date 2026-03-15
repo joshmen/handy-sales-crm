@@ -2,20 +2,16 @@
 
 import React, { useState, useEffect } from 'react';
 import { toast } from '@/hooks/useToast';
-import { Breadcrumb } from '@/components/ui/Breadcrumb';
+import { PageHeader } from '@/components/layout/PageHeader';
 import {
   Plus,
   MapPin,
   Ruler,
   Download,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   RefreshCw,
   Edit,
-  Clock,
-  Play,
-  Timer,
   Users,
   Check,
   Minus,
@@ -368,100 +364,85 @@ export default function UsersPage() {
 
   return (
     <>
-      <div className="flex flex-col h-full">
-        {/* Header */}
-        <div className="bg-white px-8 py-6">
-          {/* Breadcrumb */}
-          <Breadcrumb items={[
-            { label: 'Inicio', href: '/dashboard' },
-            { label: 'Usuarios' },
-          ]} />
-
-          {/* Title Row */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-              Usuarios
-            </h1>
-            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-              <button
-                data-tour="users-create-btn"
-                onClick={() => setIsCreateModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Nuevo usuario</span>
-              </button>
-              <button
-                onClick={handleOpenUbicaciones}
-                className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-blue-700 border border-blue-300 rounded hover:bg-blue-50 transition-colors"
-              >
-                <MapPin className="w-4 h-4" />
-                <span>Ubicación</span>
-              </button>
-              <button
-                onClick={handleOpenDistancia}
-                className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-violet-700 border border-violet-300 rounded hover:bg-violet-50 transition-colors"
-              >
-                <Ruler className="w-4 h-4" />
-                <span>Distancia</span>
-              </button>
-              <button
-                onClick={handleDescargar}
-                className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-emerald-700 border border-emerald-300 rounded hover:bg-emerald-50 transition-colors"
-              >
-                <Download className="w-4 h-4" />
-                <span>Descargar</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Filter Row */}
-          <div className="flex items-center gap-3">
-            {/* Date Filter */}
-            <button className="flex items-center justify-between gap-2 px-3 py-2 h-10 min-w-[260px] text-[11px] text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50">
-              <span>03/05/2025 00:00:00 - 03/05/2025 23:59:59</span>
-              <ChevronDown className="w-4 h-4 text-gray-500" />
-            </button>
-
-            {/* Zona Filter */}
-            <div className="min-w-[150px]">
-              <SearchableSelect
-                options={[
-                  { value: 'all', label: 'Todas las zonas' },
-                  ...zones.map(z => ({ value: z.id, label: z.name })),
-                ]}
-                value={filterZona}
-                onChange={(val) => setFilterZona(val ? String(val) : 'all')}
-                placeholder="Todas las zonas"
-              />
-            </div>
-
-            {/* Roles Filter */}
-            <div className="flex-1 min-w-[200px]" data-tour="users-role-filter">
-              <SearchableSelect
-                options={[
-                  { value: 'all', label: 'Todos los roles' },
-                  ...roles.map(r => ({ value: r.nombre, label: r.nombre })),
-                ]}
-                value={filterRole}
-                onChange={(val) => setFilterRole(val ? String(val) : 'all')}
-                placeholder="Todos los roles"
-              />
-            </div>
-
-            {/* Refresh Button */}
+      <PageHeader
+        breadcrumbs={[
+          { label: 'Inicio', href: '/dashboard' },
+          { label: 'Usuarios' },
+        ]}
+        title="Usuarios"
+        actions={
+          <>
             <button
-              onClick={handleRefresh}
-              className="flex items-center gap-2 px-4 py-2 h-10 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+              data-tour="users-create-btn"
+              onClick={() => setIsCreateModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
             >
-              <RefreshCw className="w-4 h-4" />
-              <span>Actualizar</span>
+              <Plus className="w-4 h-4" />
+              <span>Nuevo usuario</span>
             </button>
+            <button
+              onClick={handleOpenUbicaciones}
+              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-blue-700 border border-blue-300 rounded hover:bg-blue-50 transition-colors"
+            >
+              <MapPin className="w-4 h-4" />
+              <span>Ubicación</span>
+            </button>
+            <button
+              onClick={handleOpenDistancia}
+              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-violet-700 border border-violet-300 rounded hover:bg-violet-50 transition-colors"
+            >
+              <Ruler className="w-4 h-4" />
+              <span>Distancia</span>
+            </button>
+            <button
+              onClick={handleDescargar}
+              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-emerald-700 border border-emerald-300 rounded hover:bg-emerald-50 transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              <span>Descargar</span>
+            </button>
+          </>
+        }
+      >
+        {/* Filter Row */}
+        <div className="flex items-center gap-3 mb-4">
+          {/* Zona Filter */}
+          <div className="min-w-[150px]">
+            <SearchableSelect
+              options={[
+                { value: 'all', label: 'Todas las zonas' },
+                ...zones.map(z => ({ value: z.id, label: z.name })),
+              ]}
+              value={filterZona}
+              onChange={(val) => setFilterZona(val ? String(val) : 'all')}
+              placeholder="Todas las zonas"
+            />
           </div>
+
+          {/* Roles Filter */}
+          <div className="flex-1 min-w-[200px]" data-tour="users-role-filter">
+            <SearchableSelect
+              options={[
+                { value: 'all', label: 'Todos los roles' },
+                ...roles.map(r => ({ value: r.nombre, label: r.nombre })),
+              ]}
+              value={filterRole}
+              onChange={(val) => setFilterRole(val ? String(val) : 'all')}
+              placeholder="Todos los roles"
+            />
+          </div>
+
+          {/* Refresh Button */}
+          <button
+            onClick={handleRefresh}
+            className="flex items-center gap-2 px-4 py-2 h-10 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+          >
+            <RefreshCw className="w-4 h-4" />
+            <span>Actualizar</span>
+          </button>
         </div>
 
-        {/* Body */}
-        <div className="flex-1 px-8 py-6 overflow-auto bg-gray-50">
+        <div>
           {/* Selection Action Bar */}
           <BatchActionBar
             selectedCount={batch.selectedCount}
@@ -550,55 +531,18 @@ export default function UsersPage() {
                       </div>
                     </div>
 
-                    {/* Stats Row */}
-                    <div className="flex-1 flex items-center justify-between gap-8">
-                      <div>
-                        <div className="text-xs text-gray-500">Monto pedidos</div>
-                        <div className="text-sm font-semibold text-gray-900">$ 0</div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-gray-500">Monto devoluciones</div>
-                        <div className="text-sm font-semibold text-gray-900">$ 0</div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-gray-500">Efectividad de visitas</div>
-                        <div className="text-sm font-semibold text-gray-900">0/0  0%</div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-gray-500">Efectividad venta en visitas</div>
-                        <div className="text-sm font-semibold text-gray-900">0/0  0%</div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-gray-500">Cumplimiento de agenda</div>
-                        <div className="text-sm font-semibold text-gray-900">0/0  0%</div>
-                      </div>
-                    </div>
                   </div>
 
                   {/* Card Footer */}
-                  <div className="flex items-center justify-between px-5 py-3 bg-gray-50 border-t border-gray-200">
-                    <div className="flex items-center gap-6">
-                      <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                        <Play className="w-3.5 h-3.5" />
-                        <span>Primer inicio de visita: N/A</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                        <Clock className="w-3.5 h-3.5" />
-                        <span>Último fin de visita: N/A</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                        <Timer className="w-3.5 h-3.5" />
-                        <span>Tiempo total de visitas: N/A</span>
-                      </div>
-                    </div>
+                  <div className="flex items-center justify-end px-5 py-3 bg-muted border-t border-border">
                     <button
                       onClick={() => {
                         setSelectedUser(user);
                         setIsEditModalOpen(true);
                       }}
-                      className="w-8 h-8 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-100 transition-colors"
+                      className="w-8 h-8 flex items-center justify-center border border-border rounded hover:bg-muted/50 transition-colors"
                     >
-                      <Edit className="w-4 h-4 text-gray-500" />
+                      <Edit className="w-4 h-4 text-muted-foreground" />
                     </button>
                   </div>
                 </div>
@@ -652,7 +596,7 @@ export default function UsersPage() {
             </div>
           )}
         </div>
-      </div>
+      </PageHeader>
 
       {/* Create Modal */}
       {isCreateModalOpen && (

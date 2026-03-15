@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Separator } from '@/components/ui/Separator';
-import { Save } from 'lucide-react';
+import { Save, Loader2 } from 'lucide-react';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { CompanySettings, UpdateCompanyRequest } from '@/services/api/companyService';
 
@@ -194,7 +194,7 @@ export const CompanyTab: React.FC<CompanyTabProps> = ({
             }}
             disabled={isUpdating || !hasChanges}
           >
-            <Save className="mr-2 h-4 w-4" />
+            {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
             {isUpdating ? 'Guardando...' : 'Guardar configuración'}
           </Button>
         </div>

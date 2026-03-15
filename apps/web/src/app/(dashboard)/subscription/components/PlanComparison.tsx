@@ -97,6 +97,9 @@ export function PlanComparisonPage({
         <div className="flex items-center justify-center gap-3">
           <span className={`text-sm font-medium transition-colors duration-300 ${billingInterval === "month" ? "text-foreground" : "text-muted-foreground"}`}>Mensual</span>
           <button
+            role="switch"
+            aria-checked={billingInterval === "year"}
+            aria-label="Facturación anual"
             onClick={() => setBillingInterval(billingInterval === "month" ? "year" : "month")}
             className="relative w-14 h-7 rounded-full transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
             style={{ backgroundColor: billingInterval === "year" ? "#16A34A" : "hsl(var(--muted-foreground) / 0.3)" }}
@@ -255,7 +258,7 @@ function PlanCard({
             : "border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600"
         } ${isCurrent ? "ring-2 ring-green-500/30" : ""}`}
       >
-        <div className="relative bg-white dark:bg-gray-900 rounded-2xl p-6 h-full flex flex-col min-h-[420px]">
+        <div className="relative bg-card rounded-2xl p-6 h-full flex flex-col min-h-[420px]">
           {isPopular && (
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
               <span className="bg-green-600 text-white text-[11px] font-semibold px-4 py-1 rounded-full shadow-sm flex items-center gap-1">

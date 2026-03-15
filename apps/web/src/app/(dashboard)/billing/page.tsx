@@ -50,8 +50,9 @@ export default function BillingDashboardPage() {
   }, []);
 
   if (loading) return (
-    <div className="flex items-center justify-center min-h-[60vh]">
-      <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+    <div role="status" className="flex items-center justify-center min-h-[60vh]">
+      <Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" />
+      <span className="sr-only">Cargando...</span>
     </div>
   );
 
@@ -101,7 +102,7 @@ export default function BillingDashboardPage() {
       }
     >
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {kpis.map(kpi => (
           <div
             key={kpi.label}
@@ -127,8 +128,16 @@ export default function BillingDashboardPage() {
               {timbres.usados} / {timbres.maximo}
             </span>
           </div>
-          <div className="w-full h-2 bg-muted rounded-full overflow-hidden mb-2">
+          <div
+            role="progressbar"
+            aria-valuenow={timbres.usados}
+            aria-valuemin={0}
+            aria-valuemax={timbres.maximo}
+            aria-label={`Timbres usados: ${timbres.usados} de ${timbres.maximo}`}
+            className="w-full h-2 bg-muted rounded-full overflow-hidden mb-2"
+          >
             <div
+              aria-hidden="true"
               className={`h-full rounded-full transition-all duration-500 ${
                 timbres.maximo > 0 && timbres.usados / timbres.maximo > 0.9
                   ? 'bg-red-500'
@@ -206,7 +215,7 @@ export default function BillingDashboardPage() {
             <SbBilling size={22} />
             <span className="text-sm font-medium">Ver todas las facturas</span>
           </div>
-          <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-green-600 transition-colors" />
+          <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-green-600 transition-colors" aria-hidden="true" />
         </Link>
         <Link
           href="/billing/invoices/new"
@@ -216,7 +225,7 @@ export default function BillingDashboardPage() {
             <Plus className="w-5 h-5 text-green-600" />
             <span className="text-sm font-medium">Crear nueva factura</span>
           </div>
-          <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-green-600 transition-colors" />
+          <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-green-600 transition-colors" aria-hidden="true" />
         </Link>
         <Link
           href="/billing/settings"
@@ -226,7 +235,7 @@ export default function BillingDashboardPage() {
             <SbBilling size={22} />
             <span className="text-sm font-medium">Configuración fiscal</span>
           </div>
-          <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-green-600 transition-colors" />
+          <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-green-600 transition-colors" aria-hidden="true" />
         </Link>
       </div>
     </PageHeader>

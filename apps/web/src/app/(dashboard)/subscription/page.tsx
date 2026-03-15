@@ -120,7 +120,7 @@ export default function SubscriptionPage() {
       const { url } = await subscriptionService.createPortalSession(
         `${window.location.origin}/subscription`
       );
-      window.open(url, "_blank");
+      window.location.assign(url);
     } catch (err) {
       console.error("Error creating portal:", err);
       toast.error("Error al abrir el portal de pagos");
@@ -161,8 +161,9 @@ export default function SubscriptionPage() {
   // ── Loading state ──
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+      <div role="status" className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" />
+        <span className="sr-only">Cargando...</span>
       </div>
     );
   }

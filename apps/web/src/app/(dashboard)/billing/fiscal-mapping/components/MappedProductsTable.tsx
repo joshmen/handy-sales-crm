@@ -53,7 +53,7 @@ export function MappedProductsTable({
               <th className="text-left px-4 py-3 font-medium text-muted-foreground">Producto ID</th>
               <th className="text-left px-4 py-3 font-medium text-muted-foreground">Clave ProdServ SAT</th>
               <th className="text-left px-4 py-3 font-medium text-muted-foreground">Clave Unidad SAT</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Descripcion Fiscal</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Descripción Fiscal</th>
               <th className="text-center px-4 py-3 font-medium text-muted-foreground">Estado</th>
               <th className="text-left px-4 py-3 font-medium text-muted-foreground">Actualizado</th>
             </tr>
@@ -64,6 +64,7 @@ export function MappedProductsTable({
                 <td className="px-4 py-3">
                   <input
                     type="checkbox"
+                    aria-label={`Seleccionar producto ${m.productoId}`}
                     checked={selectedIds.has(m.productoId)}
                     onChange={() => onToggleSelect(m.productoId)}
                     className="rounded border-border text-green-600 focus:ring-green-500"
@@ -204,7 +205,7 @@ export function MappedProductsTable({
       {mappingsTotalPages > 1 && (
         <div className="flex items-center justify-between mt-4 text-sm">
           <span className="text-muted-foreground">
-            Pagina {mappingsPage} de {mappingsTotalPages}
+            Página {mappingsPage} de {mappingsTotalPages}
           </span>
           <div className="flex items-center gap-1">
             <Button

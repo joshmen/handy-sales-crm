@@ -68,7 +68,9 @@ export function PaymentMethods({ paymentMethods, billingLoading, processing, onM
                         {pm.cardBrand || "Tarjeta"}
                       </span>
                       <span className="text-muted-foreground font-mono">
-                        &bull;&bull;&bull;&bull; {pm.cardLast4}
+                        <span aria-hidden="true">&bull;&bull;&bull;&bull; </span>
+                        <span className="sr-only">terminada en </span>
+                        {pm.cardLast4}
                       </span>
                       {pm.isDefault && (
                         <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400">

@@ -32,8 +32,16 @@ export function ConsumoSection({ timbres }: ConsumoSectionProps) {
                     {timbres.usados}/{timbres.maximo} usados{timbres.extras > 0 && ` + ${timbres.extras} extras`}
                   </span>
                 </div>
-                <div className="w-full h-2 bg-muted rounded-full overflow-hidden mb-4">
+                <div
+                  role="progressbar"
+                  aria-valuenow={timbres.usados}
+                  aria-valuemin={0}
+                  aria-valuemax={timbres.maximo + timbres.extras}
+                  aria-label={`Timbres usados: ${timbres.usados} de ${timbres.maximo + timbres.extras}`}
+                  className="w-full h-2 bg-muted rounded-full overflow-hidden mb-4"
+                >
                   <div
+                    aria-hidden="true"
                     className={`h-full rounded-full transition-all ${
                       (timbres.maximo + timbres.extras) > 0
                         ? timbres.usados / (timbres.maximo + timbres.extras) > 0.9 ? 'bg-red-500'
@@ -44,10 +52,11 @@ export function ConsumoSection({ timbres }: ConsumoSectionProps) {
                     style={{ width: `${(timbres.maximo + timbres.extras) > 0 ? Math.min(100, (timbres.usados / (timbres.maximo + timbres.extras)) * 100) : 0}%` }}
                   />
                 </div>
-                <Link href="/subscription/buy-timbres">
-                  <button className="w-full py-2 px-4 text-sm font-medium text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg transition-colors">
-                    Comprar timbres &rarr;
-                  </button>
+                <Link
+                  href="/subscription/buy-timbres"
+                  className="block w-full py-2 px-4 text-sm font-medium text-center text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg transition-colors"
+                >
+                  Comprar timbres &rarr;
                 </Link>
               </>
             ) : (
@@ -67,10 +76,11 @@ export function ConsumoSection({ timbres }: ConsumoSectionProps) {
               </div>
             </div>
             <p className="text-sm text-muted-foreground mb-4">Disponible en la sección de Asistente IA</p>
-            <Link href="/ai">
-              <button className="w-full py-2 px-4 text-sm font-medium text-violet-700 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20 hover:bg-violet-100 dark:hover:bg-violet-900/30 rounded-lg transition-colors">
-                Ver créditos IA &rarr;
-              </button>
+            <Link
+              href="/ai"
+              className="block w-full py-2 px-4 text-sm font-medium text-center text-violet-700 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20 hover:bg-violet-100 dark:hover:bg-violet-900/30 rounded-lg transition-colors"
+            >
+              Ver créditos IA &rarr;
             </Link>
           </CardContent>
         </Card>

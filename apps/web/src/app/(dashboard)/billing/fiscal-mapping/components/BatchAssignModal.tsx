@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { X as XIcon, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { BatchAutocomplete } from './SatAutocomplete';
@@ -28,13 +28,30 @@ export function BatchAssignModal({
   onAssign,
   onClose,
 }: BatchAssignModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-card border border-border rounded-xl p-6 w-full max-w-md mx-4 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="batch-assign-title"
+        className="bg-card border border-border rounded-xl p-6 w-full max-w-md mx-4 shadow-xl"
+        onClick={e => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-foreground">Asignacion Masiva</h3>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
-            <XIcon className="w-5 h-5" />
+          <h3 id="batch-assign-title" className="text-lg font-semibold text-foreground">Asignación Masiva</h3>
+          <button onClick={onClose} aria-label="Cerrar" className="text-muted-foreground hover:text-foreground">
+            <XIcon className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
         <p className="text-sm text-muted-foreground mb-4">
@@ -46,16 +63,11 @@ export function BatchAssignModal({
             <label className="block text-xs font-medium text-muted-foreground mb-1">
               Clave ProdServ SAT
             </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={batchProdServ}
-                readOnly
-                placeholder="Click para buscar..."
-                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground font-mono cursor-pointer"
-                onClick={() => {/* handled by autocomplete below */}}
-              />
-            </div>
+            {batchProdServ && (
+              <div className="mb-1 px-2 py-1 text-xs font-mono bg-muted rounded border border-border inline-block">
+                {batchProdServ}
+              </div>
+            )}
             <BatchAutocomplete<CatalogoProdServItem>
               value={batchProdServ}
               onChange={onBatchProdServChange}
@@ -69,15 +81,11 @@ export function BatchAssignModal({
             <label className="block text-xs font-medium text-muted-foreground mb-1">
               Clave Unidad SAT
             </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={batchUnidad}
-                readOnly
-                placeholder="Click para buscar..."
-                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground font-mono cursor-pointer"
-              />
-            </div>
+            {batchUnidad && (
+              <div className="mb-1 px-2 py-1 text-xs font-mono bg-muted rounded border border-border inline-block">
+                {batchUnidad}
+              </div>
+            )}
             <BatchAutocomplete<CatalogoUnidadItem>
               value={batchUnidad}
               onChange={onBatchUnidadChange}

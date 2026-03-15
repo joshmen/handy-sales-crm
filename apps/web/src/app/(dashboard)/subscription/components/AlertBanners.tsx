@@ -20,7 +20,7 @@ export function AlertBanners({
     <>
       {/* Past due */}
       {subscription.subscriptionStatus === "PastDue" && (
-        <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+        <div role="alert" className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
           <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
           <div>
             <p className="font-medium text-amber-800 dark:text-amber-300">Pago pendiente</p>
@@ -36,10 +36,10 @@ export function AlertBanners({
 
       {/* Expired */}
       {subscription.subscriptionStatus === "Expired" && (
-        <div className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg">
+        <div role="alert" className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg">
           <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
           <div>
-            <p className="font-medium text-red-800">Suscripción expirada</p>
+            <p className="font-medium text-red-800 dark:text-red-300">Suscripción expirada</p>
             <p className="text-sm text-red-700 dark:text-red-400 mt-1">
               Tu suscripción ha expirado. Renueva para continuar usando todas las funciones.
             </p>
@@ -49,7 +49,7 @@ export function AlertBanners({
 
       {/* Cancellation scheduled */}
       {subscription.cancellationScheduledFor && subscription.subscriptionStatus !== "Cancelled" && (
-        <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+        <div role="alert" className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
           <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
           <div className="flex-1">
             <p className="font-medium text-amber-800 dark:text-amber-300">Cancelación programada</p>

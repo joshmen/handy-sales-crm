@@ -125,6 +125,8 @@ export const AppearanceTab: React.FC = () => {
             <Label>Tema</Label>
             <div className="flex gap-4">
               <button
+                aria-pressed={!isDarkMode}
+                aria-label="Tema claro"
                 onClick={() => setTheme('light')}
                 className={cn(
                   "flex items-center gap-2 rounded-lg border-2 p-4 transition-colors",
@@ -133,10 +135,12 @@ export const AppearanceTab: React.FC = () => {
                     : 'border-border bg-background'
                 )}
               >
-                <Sun className="h-5 w-5" />
+                <Sun className="h-5 w-5" aria-hidden="true" />
                 <span>Claro</span>
               </button>
               <button
+                aria-pressed={isDarkMode}
+                aria-label="Tema oscuro"
                 onClick={() => setTheme('dark')}
                 className={cn(
                   "flex items-center gap-2 rounded-lg border-2 p-4 transition-colors",
@@ -145,7 +149,7 @@ export const AppearanceTab: React.FC = () => {
                     : 'border-border bg-background'
                 )}
               >
-                <Moon className="h-5 w-5" />
+                <Moon className="h-5 w-5" aria-hidden="true" />
                 <span>Oscuro</span>
               </button>
             </div>

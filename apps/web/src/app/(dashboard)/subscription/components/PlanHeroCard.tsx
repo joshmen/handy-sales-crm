@@ -81,8 +81,16 @@ export function PlanHeroCard({ subscription, currentPlan, onChangePlan }: PlanHe
                 {subscription.activeUsuarios}/{subscription.maxUsuarios}
               </span>
             </div>
-            <div className="w-full bg-muted rounded-full h-2">
+            <div
+              role="progressbar"
+              aria-valuenow={subscription.activeUsuarios}
+              aria-valuemin={0}
+              aria-valuemax={subscription.maxUsuarios}
+              aria-label={`Usuarios: ${subscription.activeUsuarios} de ${subscription.maxUsuarios}`}
+              className="w-full bg-muted rounded-full h-2"
+            >
               <div
+                aria-hidden="true"
                 className={`h-2 rounded-full transition-all duration-500 ${
                   usersOver ? "bg-red-500" : usersPercent >= 80 ? "bg-amber-500" : "bg-green-500"
                 }`}

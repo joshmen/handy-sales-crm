@@ -4,8 +4,9 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useClientOnly } from '@/hooks/useClientOnly';
 import { useCompany } from '@/contexts/CompanyContext';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
-import { Palette, Database, Building, Building2 } from 'lucide-react';
+import { Palette, Database, Building, Building2, Loader2 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 
 // Import tab components (admin-only settings)
@@ -76,17 +77,14 @@ function SettingsPageContent() {
   }
 
   return (
-    <div className="flex-1 space-y-6 p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Configuración</h1>
-          <p className="text-muted-foreground">
-            Configuración de la empresa y el sistema
-          </p>
-        </div>
-      </div>
-
+    <PageHeader
+      breadcrumbs={[
+        { label: 'Inicio', href: '/dashboard' },
+        { label: 'Configuración' },
+      ]}
+      title="Configuración"
+      subtitle="Configuración de la empresa y el sistema"
+    >
       <Tabs
         value={activeTab}
         onValueChange={value => {
@@ -152,13 +150,13 @@ function SettingsPageContent() {
           />
         </TabsContent>
       </Tabs>
-    </div>
+    </PageHeader>
   );
 }
 
 export default function SettingsPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600" /></div>}>
+    <Suspense fallback={<div role="status" className="flex items-center justify-center min-h-[400px]"><Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" /><span className="sr-only">Cargando...</span></div>}>
       <SettingsPageContent />
     </Suspense>
   );

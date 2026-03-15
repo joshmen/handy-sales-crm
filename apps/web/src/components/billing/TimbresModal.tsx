@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { SbBilling, SbSubscription } from '@/components/layout/DashboardIcons';
@@ -17,6 +18,47 @@ interface TimbresModalProps {
  *   2. Otherwise → Timbres exhausted → Buy more CTA
  */
 export function TimbresModal({ open, onClose, errorMessage }: TimbresModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  // Focus trap + Escape key
+  useEffect(() => {
+    if (!open) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+      if (e.key === 'Tab' && dialogRef.current) {
+        const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    // Auto-focus first button
+    const timer = setTimeout(() => {
+      const firstBtn = dialogRef.current?.querySelector<HTMLElement>('a, button');
+      firstBtn?.focus();
+    }, 50);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      clearTimeout(timer);
+    };
+  }, [open, onClose]);
+
   if (!open) return null;
 
   const isNoPlan = errorMessage.includes('no incluye');
@@ -27,7 +69,11 @@ export function TimbresModal({ open, onClose, errorMessage }: TimbresModalProps)
       onClick={onClose}
     >
       <div
-        className="bg-white dark:bg-zinc-900 rounded-2xl p-8 max-w-md mx-4 shadow-2xl text-center animate-in fade-in zoom-in-95 duration-200"
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="timbres-modal-title"
+        className="bg-card rounded-2xl p-8 max-w-md mx-4 shadow-2xl text-center animate-in fade-in zoom-in-95 duration-200"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex justify-center mb-5">
@@ -38,10 +84,10 @@ export function TimbresModal({ open, onClose, errorMessage }: TimbresModalProps)
 
         {isNoPlan ? (
           <>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+            <h3 id="timbres-modal-title" className="text-xl font-bold text-foreground mb-2">
               Tu plan no incluye facturación
             </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
+            <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
               {errorMessage}
             </p>
             <div className="flex flex-col gap-2.5">
@@ -57,13 +103,13 @@ export function TimbresModal({ open, onClose, errorMessage }: TimbresModalProps)
           </>
         ) : (
           <>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+            <h3 id="timbres-modal-title" className="text-xl font-bold text-foreground mb-2">
               Timbres agotados
             </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-1.5 leading-relaxed">
+            <p className="text-sm text-muted-foreground mb-1.5 leading-relaxed">
               {errorMessage}
             </p>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mb-6">
+            <p className="text-xs text-muted-foreground/70 mb-6">
               Los timbres se renuevan cada mes. También puedes comprar paquetes adicionales.
             </p>
             <div className="flex flex-col gap-2.5">
@@ -78,7 +124,7 @@ export function TimbresModal({ open, onClose, errorMessage }: TimbresModalProps)
                 </Button>
               </Link>
               <button
-                className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 py-2"
+                className="text-xs text-muted-foreground hover:text-foreground py-2 transition-colors"
                 onClick={onClose}
               >
                 Cerrar

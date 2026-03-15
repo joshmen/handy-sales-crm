@@ -48,14 +48,16 @@ export default function BuyTimbresPage() {
   const formatMXN = (n: number) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(n);
 
   if (loading) return (
-    <div className="flex items-center justify-center min-h-[60vh]">
-      <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+    <div role="status" className="flex items-center justify-center min-h-[60vh]">
+      <Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" />
+      <span className="sr-only">Cargando...</span>
     </div>
   );
 
   return (
     <PageHeader
       breadcrumbs={[
+        { label: 'Inicio', href: '/dashboard' },
         { label: 'Suscripción', href: '/subscription' },
         { label: 'Comprar timbres' },
       ]}
@@ -82,10 +84,12 @@ export default function BuyTimbresPage() {
 
         {/* Package selection */}
         <h2 className="text-lg font-bold mb-4">Selecciona un paquete</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div role="radiogroup" aria-label="Selecciona un paquete de timbres" className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           {TIMBRE_PACKAGES.map((pkg) => (
             <button
               key={pkg.cantidad}
+              role="radio"
+              aria-checked={selectedPackage === pkg.cantidad}
               onClick={() => setSelectedPackage(pkg.cantidad)}
               className={`relative p-5 rounded-xl border-2 text-left transition-all ${
                 selectedPackage === pkg.cantidad
@@ -115,7 +119,7 @@ export default function BuyTimbresPage() {
         <div className="flex items-center justify-between border-t border-border pt-6">
           <button
             onClick={() => setShowCancelConfirm(true)}
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors min-h-[44px] px-2"
           >
             <ArrowLeft className="w-4 h-4" />
             Cancelar
