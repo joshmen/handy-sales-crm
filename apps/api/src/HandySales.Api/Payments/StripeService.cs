@@ -1,3 +1,4 @@
+using HandySales.Application.SubscriptionPlans.Interfaces;
 using HandySales.Domain.Entities;
 using HandySales.Infrastructure.Persistence;
 using HandySales.Shared.Email;
@@ -52,18 +53,21 @@ public class StripeService : IStripeService
     private readonly IEmailService _emailService;
     private readonly IMemoryCache _cache;
     private readonly ILogger<StripeService> _logger;
+    private readonly ISubscriptionEnforcementService _enforcement;
     private readonly string _webhookSecret;
 
     public StripeService(
         HandySalesDbContext db,
         IEmailService emailService,
         IMemoryCache cache,
-        ILogger<StripeService> logger)
+        ILogger<StripeService> logger,
+        ISubscriptionEnforcementService enforcement)
     {
         _db = db;
         _emailService = emailService;
         _cache = cache;
         _logger = logger;
+        _enforcement = enforcement;
 
         var secretKey = Environment.GetEnvironmentVariable("STRIPE_SECRET_KEY");
         if (!string.IsNullOrEmpty(secretKey))
@@ -356,6 +360,27 @@ public class StripeService : IStripeService
             return;
 
         if (!int.TryParse(tenantIdStr, out var tenantId)) return;
+
+        // Handle timbre purchase checkout
+        if (session.Metadata.TryGetValue("type", out var purchaseType) && purchaseType == "timbre_purchase")
+        {
+            if (session.Metadata.TryGetValue("purchaseId", out var purchaseIdStr) && int.TryParse(purchaseIdStr, out var purchaseId))
+            {
+                var purchase = await _db.TimbrePurchases.FindAsync(purchaseId);
+                if (purchase != null && purchase.Estado == "pendiente")
+                {
+                    purchase.Estado = "completado";
+                    purchase.StripePaymentIntentId = session.PaymentIntentId;
+                    purchase.CompletadoEn = DateTime.UtcNow;
+                    await _db.SaveChangesAsync();
+
+                    await _enforcement.AddExtraTimbresAsync(purchase.TenantId, purchase.Cantidad);
+                    _logger.LogInformation("Timbre purchase {PurchaseId} completed: {Cantidad} timbres for tenant {TenantId}",
+                        purchaseId, purchase.Cantidad, purchase.TenantId);
+                }
+            }
+            return; // Don't process as subscription checkout
+        }
 
         var tenant = await _db.Tenants.FirstOrDefaultAsync(t => t.Id == tenantId);
         if (tenant == null) return;

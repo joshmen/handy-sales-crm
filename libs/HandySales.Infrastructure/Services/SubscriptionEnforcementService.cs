@@ -99,20 +99,30 @@ public class SubscriptionEnforcementService : ISubscriptionEnforcementService
             timbresUsados = 0;
         }
 
-        if (timbresUsados >= plan.MaxTimbresMes)
+        var totalDisponible = plan.MaxTimbresMes + tenant.TimbresExtras;
+        if (timbresUsados >= totalDisponible)
             return new EnforcementResult(
                 false,
-                $"Tu plan {plan.Nombre} permite máximo {plan.MaxTimbresMes} timbres al mes. Has usado {timbresUsados}.",
-                timbresUsados,
-                plan.MaxTimbresMes);
+                tenant.TimbresExtras > 0
+                    ? $"Has agotado tus {plan.MaxTimbresMes} timbres mensuales y {tenant.TimbresExtras} extras. Compra timbres adicionales."
+                    : $"Tu plan {plan.Nombre} permite máximo {plan.MaxTimbresMes} timbres al mes. Has usado {timbresUsados}. Compra timbres adicionales.",
+                timbresUsados, totalDisponible);
 
-        return new EnforcementResult(true, null, timbresUsados, plan.MaxTimbresMes);
+        return new EnforcementResult(true, null, timbresUsados, totalDisponible);
     }
 
     public async Task<bool> RegistrarTimbreUsadoAsync(int tenantId)
     {
         var plan = await GetPlanForTenantAsync(tenantId);
         if (plan == null) return false;
+
+        var tenant = await _db.Tenants
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .FirstOrDefaultAsync(t => t.Id == tenantId);
+        if (tenant == null) return false;
+
+        var totalLimit = plan.MaxTimbresMes + tenant.TimbresExtras;
 
         var now = DateTime.UtcNow;
         var resetFecha = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -137,9 +147,15 @@ public class SubscriptionEnforcementService : ISubscriptionEnforcementService
               )";
 
         var rows = await _db.Database.ExecuteSqlRawAsync(sql,
-            tenantId, now.Month, now.Year, resetFecha, plan.MaxTimbresMes);
+            tenantId, now.Month, now.Year, resetFecha, totalLimit);
 
         return rows > 0;
+    }
+
+    public async Task AddExtraTimbresAsync(int tenantId, int cantidad)
+    {
+        await _db.Database.ExecuteSqlInterpolatedAsync(
+            $"""UPDATE "Tenants" SET "TimbresExtras" = "TimbresExtras" + {cantidad} WHERE "Id" = {tenantId}""");
     }
 
     private async Task<Domain.Entities.SubscriptionPlan?> GetPlanForTenantAsync(int tenantId)

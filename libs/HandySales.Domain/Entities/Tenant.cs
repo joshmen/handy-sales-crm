@@ -54,6 +54,8 @@ public class Tenant : AuditableEntity
     public int TimbresUsadosMes { get; set; }
     [Column("timbres_reset_fecha")]
     public DateTime? TimbresResetFecha { get; set; }
+    [Column("timbres_extras")]
+    public int TimbresExtras { get; set; }
 
     // Onboarding
     [Column("onboarding_completed")]

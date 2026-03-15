@@ -1,5 +1,6 @@
 using HandySales.Api.Payments;
 using HandySales.Application.SubscriptionPlans.Interfaces;
+using HandySales.Domain.Entities;
 using HandySales.Infrastructure.Persistence;
 using HandySales.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
@@ -59,6 +60,14 @@ public static class SubscriptionEndpoints
             .WithName("GetTimbres")
             .WithSummary("Saldo de timbres CFDI del tenant (usados/máximo)");
 group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("RegistrarTimbreUsado")            .WithSummary("Registra el uso de un timbre CFDI (llamado por Billing API tras timbrado exitoso)");
+
+        group.MapPost("/timbres/checkout", CreateTimbreCheckout)
+            .WithName("CreateTimbreCheckout")
+            .WithSummary("Crea una sesión de Stripe Checkout para comprar timbres extras");
+
+        group.MapGet("/timbres/purchases", GetTimbrePurchases)
+            .WithName("GetTimbrePurchases")
+            .WithSummary("Historial de compras de timbres del tenant");
     }
 
     private static async Task<IResult> GetPlans(
@@ -332,17 +341,23 @@ group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("
 
     private static async Task<IResult> GetTimbres(
         [FromServices] ICurrentTenant currentTenant,
-        [FromServices] ISubscriptionEnforcementService enforcement)
+        [FromServices] ISubscriptionEnforcementService enforcement,
+        [FromServices] HandySalesDbContext db)
     {
         if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
             return Results.Forbid();
 
         var result = await enforcement.CanUsarTimbreAsync(currentTenant.TenantId);
+        var tenant = await db.Tenants
+            .AsNoTracking()
+            .FirstOrDefaultAsync(t => t.Id == currentTenant.TenantId);
+
         return Results.Ok(new
         {
             usados = result.Current ?? 0,
             maximo = result.Limit ?? 0,
             disponibles = Math.Max(0, (result.Limit ?? 0) - (result.Current ?? 0)),
+            extras = tenant?.TimbresExtras ?? 0,
             allowed = result.Allowed,
             message = result.Message
         });
@@ -358,8 +373,102 @@ group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("
         await enforcement.RegistrarTimbreUsadoAsync(currentTenant.TenantId);
         return Results.Ok(new { registered = true });
     }
+
+    private static async Task<IResult> CreateTimbreCheckout(
+        [FromBody] TimbreCheckoutRequest request,
+        [FromServices] ICurrentTenant currentTenant,
+        [FromServices] HandySalesDbContext db,
+        [FromServices] IConfiguration config)
+    {
+        if (!currentTenant.IsAdmin)
+            return Results.Forbid();
+
+        // Validate package
+        var packages = new Dictionary<int, decimal> { { 25, 50m }, { 50, 85m }, { 100, 150m } };
+        if (!packages.TryGetValue(request.Cantidad, out var precio))
+            return Results.BadRequest(new { error = "Paquete no válido. Opciones: 25, 50, 100 timbres." });
+
+        // Create purchase record
+        var purchase = new TimbrePurchase
+        {
+            TenantId = currentTenant.TenantId,
+            Cantidad = request.Cantidad,
+            PrecioMxn = precio,
+        };
+        db.TimbrePurchases.Add(purchase);
+        await db.SaveChangesAsync();
+
+        // Create Stripe Checkout Session
+        var stripeKey = config["Stripe:SecretKey"];
+        if (string.IsNullOrEmpty(stripeKey))
+            return Results.BadRequest(new { error = "Stripe no configurado." });
+
+        Stripe.StripeConfiguration.ApiKey = stripeKey;
+        var domain = config["App:FrontendUrl"] ?? "http://localhost:1083";
+
+        var options = new Stripe.Checkout.SessionCreateOptions
+        {
+            Mode = "payment",
+            LineItems = new List<Stripe.Checkout.SessionLineItemOptions>
+            {
+                new()
+                {
+                    PriceData = new Stripe.Checkout.SessionLineItemPriceDataOptions
+                    {
+                        Currency = "mxn",
+                        UnitAmount = (long)(precio * 100),
+                        ProductData = new Stripe.Checkout.SessionLineItemPriceDataProductDataOptions
+                        {
+                            Name = $"Timbres CFDI x{request.Cantidad}",
+                            Description = $"Paquete de {request.Cantidad} timbres para facturación electrónica",
+                        },
+                    },
+                    Quantity = 1,
+                },
+            },
+            Metadata = new Dictionary<string, string>
+            {
+                ["type"] = "timbre_purchase",
+                ["tenantId"] = currentTenant.TenantId.ToString(),
+                ["purchaseId"] = purchase.Id.ToString(),
+            },
+            SuccessUrl = $"{domain}/subscription?success=timbres",
+            CancelUrl = $"{domain}/subscription/buy-timbres",
+        };
+
+        // Use existing Stripe customer if available
+        var tenant = await db.Tenants.FindAsync(currentTenant.TenantId);
+        if (!string.IsNullOrEmpty(tenant?.StripeCustomerId))
+            options.Customer = tenant.StripeCustomerId;
+
+        var service = new Stripe.Checkout.SessionService();
+        var session = await service.CreateAsync(options);
+
+        purchase.StripeCheckoutSessionId = session.Id;
+        await db.SaveChangesAsync();
+
+        return Results.Ok(new { url = session.Url });
+    }
+
+    private static async Task<IResult> GetTimbrePurchases(
+        [FromServices] ICurrentTenant currentTenant,
+        [FromServices] HandySalesDbContext db)
+    {
+        if (!currentTenant.IsAdmin)
+            return Results.Forbid();
+
+        var purchases = await db.TimbrePurchases
+            .Where(p => p.TenantId == currentTenant.TenantId)
+            .OrderByDescending(p => p.CreadoEn)
+            .Take(20)
+            .Select(p => new { p.Id, p.Cantidad, p.PrecioMxn, p.Estado, p.CreadoEn, p.CompletadoEn })
+            .ToListAsync();
+
+        return Results.Ok(purchases);
+    }
 }
 
 // DTOs
 public record CheckoutRequest(string PlanCode, string Interval, string ReturnUrl);
 public record PortalRequest(string ReturnUrl);
+public record TimbreCheckoutRequest(int Cantidad);

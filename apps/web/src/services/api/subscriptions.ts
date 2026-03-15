@@ -1,5 +1,5 @@
 import { api } from '@/lib/api';
-import type { SubscriptionPlan, SubscriptionStatus, StripeInvoice, StripePaymentMethod } from '@/types/subscription';
+import type { SubscriptionPlan, SubscriptionStatus, StripeInvoice, StripePaymentMethod, TimbreBalance, TimbrePurchaseRecord } from '@/types/subscription';
 
 export const subscriptionService = {
   async getPlans(): Promise<SubscriptionPlan[]> {
@@ -65,6 +65,21 @@ export const subscriptionService = {
 
   async createSetupIntent(): Promise<{ clientSecret: string }> {
     const { data } = await api.post<{ clientSecret: string }>('/api/subscription/setup-intent');
+    return data;
+  },
+
+  async getTimbres(): Promise<TimbreBalance> {
+    const { data } = await api.get<TimbreBalance>('/api/subscription/timbres');
+    return data;
+  },
+
+  async createTimbreCheckout(cantidad: number): Promise<{ url: string }> {
+    const { data } = await api.post<{ url: string }>('/api/subscription/timbres/checkout', { cantidad });
+    return data;
+  },
+
+  async getTimbrePurchases(): Promise<TimbrePurchaseRecord[]> {
+    const { data } = await api.get<TimbrePurchaseRecord[]>('/api/subscription/timbres/purchases');
     return data;
   },
 };

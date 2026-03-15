@@ -7,6 +7,7 @@ public interface ISubscriptionEnforcementService
     Task<EnforcementResult> CanCreateClienteAsync(int tenantId);
     Task<EnforcementResult> CanUsarTimbreAsync(int tenantId);
     Task<bool> RegistrarTimbreUsadoAsync(int tenantId);
+    Task AddExtraTimbresAsync(int tenantId, int cantidad);
 }
 
 public record EnforcementResult(bool Allowed, string? Message = null, int? Current = null, int? Limit = null);

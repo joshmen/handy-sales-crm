@@ -67,7 +67,7 @@ export function TimbresModal({ open, onClose, errorMessage }: TimbresModalProps)
               Los timbres se renuevan cada mes. También puedes comprar paquetes adicionales.
             </p>
             <div className="flex flex-col gap-2.5">
-              <Link href="/subscription?tab=addons">
+              <Link href="/subscription/buy-timbres">
                 <Button className="w-full h-11 bg-green-600 hover:bg-green-700 text-white font-medium text-sm rounded-xl">
                   Comprar timbres adicionales &rarr;
                 </Button>

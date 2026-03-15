@@ -15,9 +15,10 @@ import {
 import { toast } from "@/hooks/useToast";
 import { useRequireAdmin } from "@/hooks/usePermissions";
 import { subscriptionService } from "@/services/api/subscriptions";
-import type { SubscriptionPlan, SubscriptionStatus, StripeInvoice, StripePaymentMethod } from "@/types/subscription";
+import type { SubscriptionPlan, SubscriptionStatus, StripeInvoice, StripePaymentMethod, TimbreBalance } from "@/types/subscription";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { SbSubscription, SbAlert, SbPayments, SbWallet } from "@/components/layout/DashboardIcons";
+import { SbSubscription, SbAlert, SbPayments, SbWallet, SbBilling, SbAI } from "@/components/layout/DashboardIcons";
+import Link from "next/link";
 import {
   Users,
   Check,
@@ -142,6 +143,7 @@ export default function SubscriptionPage() {
   const [invoices, setInvoices] = useState<StripeInvoice[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<StripePaymentMethod[]>([]);
   const [billingLoading, setBillingLoading] = useState(false);
+  const [timbres, setTimbres] = useState<TimbreBalance | null>(null);
 
   const fetchData = useCallback(async () => {
     try {

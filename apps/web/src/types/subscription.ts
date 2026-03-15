@@ -68,3 +68,29 @@ export interface ScheduledAction {
   createdByUserId: number;
   creadoEn: string;
 }
+
+// ─── Timbre Balance & Purchase ───
+
+export interface TimbreBalance {
+  usados: number;
+  maximo: number;
+  extras: number;
+  disponibles: number;
+  allowed: boolean;
+  message: string | null;
+}
+
+export interface TimbrePurchaseRecord {
+  id: number;
+  cantidad: number;
+  precioMxn: number;
+  estado: 'pendiente' | 'completado' | 'fallido';
+  creadoEn: string;
+  completadoEn: string | null;
+}
+
+export const TIMBRE_PACKAGES = [
+  { cantidad: 25, precio: 50, precioUnitario: 2.0 },
+  { cantidad: 50, precio: 85, precioUnitario: 1.7, badge: 'Más popular' },
+  { cantidad: 100, precio: 150, precioUnitario: 1.5, badge: 'Mejor valor' },
+] as const;

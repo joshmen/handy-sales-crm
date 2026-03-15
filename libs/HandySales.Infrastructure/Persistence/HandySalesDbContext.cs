@@ -82,6 +82,9 @@ public class HandySalesDbContext : DbContext
     public DbSet<AiCreditPurchase> AiCreditPurchases => Set<AiCreditPurchase>();
     public DbSet<AiEmbedding> AiEmbeddings => Set<AiEmbedding>();
 
+    // Timbre Purchases
+    public DbSet<TimbrePurchase> TimbrePurchases => Set<TimbrePurchase>();
+
     // Integration Marketplace
     public DbSet<Integration> Integrations => Set<Integration>();
     public DbSet<TenantIntegration> TenantIntegrations => Set<TenantIntegration>();
@@ -884,6 +887,11 @@ public class HandySalesDbContext : DbContext
 
         // IntegrationLog: tenant-scoped, no AuditableEntity
         modelBuilder.Entity<IntegrationLog>()
+            .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
+
+        // TimbrePurchase: no AuditableEntity — tenant filter only
+        modelBuilder.Entity<TimbrePurchase>().ToTable("TimbrePurchases");
+        modelBuilder.Entity<TimbrePurchase>()
             .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
 
         // pgvector extension + AiEmbedding config (PostgreSQL only — skipped in SQLite tests)
