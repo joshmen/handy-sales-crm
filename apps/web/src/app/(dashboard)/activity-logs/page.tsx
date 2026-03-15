@@ -10,6 +10,7 @@ import {
   Search,
   FileText,
 } from 'lucide-react';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { activityLogService, type ActivityLogDto } from '@/services/api/activityLogs';
 import { tenantService } from '@/services/api/tenants';
@@ -190,34 +191,25 @@ export default function ActivityLogsPage() {
   const endItem = Math.min(currentPage * pageSize, totalCount);
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="bg-white px-8 py-6 border-b border-gray-200">
-        {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-[13px] mb-4">
-          <span className="text-gray-500">Administración</span>
-          <ChevronRight className="w-4 h-4 text-gray-400" />
-          <span className="text-gray-900 font-semibold">Logs de Actividad</span>
-        </div>
-
-          {/* Title Row */}
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-gray-900">
-              Logs de Actividad
-            </h1>
-            <button
-              data-tour="logs-export-btn"
-              onClick={handleExport}
-              className="flex items-center gap-2 px-4 py-2.5 text-[13px] font-medium text-gray-700 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
-
-            >
-              <Download className="w-4 h-4" />
-              <span>Exportar CSV</span>
-            </button>
-          </div>
-
+    <PageHeader
+      breadcrumbs={[
+        { label: 'Inicio', href: '/dashboard' },
+        { label: 'Registro de actividad' },
+      ]}
+      title="Registro de actividad"
+      actions={
+        <button
+          data-tour="logs-export-btn"
+          onClick={handleExport}
+          className="flex items-center gap-2 px-4 py-2.5 text-[13px] font-medium text-gray-700 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
+        >
+          <Download className="w-4 h-4" />
+          <span>Exportar CSV</span>
+        </button>
+      }
+    >
           {/* Filter Row */}
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3 mb-6">
             {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -228,7 +220,6 @@ export default function ActivityLogsPage() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-[280px] pl-10 pr-3 py-2.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-
               />
             </div>
 
@@ -300,11 +291,6 @@ export default function ActivityLogsPage() {
               </div>
             )}
           </div>
-        </div>
-
-        {/* Body */}
-        <div className="flex-1 overflow-auto">
-          <div className="px-8 py-6">
             {/* Table */}
             <div data-tour="logs-table" className="bg-white border border-gray-200 rounded-lg overflow-hidden">
               {loading ? (
@@ -479,8 +465,6 @@ export default function ActivityLogsPage() {
                 </div>
               </div>
             )}
-        </div>
-      </div>
-    </div>
+    </PageHeader>
   );
 }

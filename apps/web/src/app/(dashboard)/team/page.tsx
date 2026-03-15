@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { toast } from '@/hooks/useToast';
 import { supervisorService } from '@/services/api';
 import type { SupervisorVendedor, SupervisorDashboard } from '@/services/api/supervisor';
-import { Breadcrumb } from '@/components/ui/Breadcrumb';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar';
 import {
   Users,
@@ -118,16 +118,16 @@ export default function TeamPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <Breadcrumb items={[{ label: 'Mi Equipo' }]} />
-          <p className="text-sm text-gray-500 mt-1">
-            {isSupervisor
-              ? 'Gestiona tu equipo de vendedores y monitorea su rendimiento'
-              : 'Administra las asignaciones de vendedores a supervisores'}
-          </p>
-        </div>
+    <PageHeader
+      breadcrumbs={[
+        { label: 'Inicio', href: '/dashboard' },
+        { label: 'Mi Equipo' },
+      ]}
+      title="Mi Equipo"
+      subtitle={isSupervisor
+        ? 'Gestiona tu equipo de vendedores y monitorea su rendimiento'
+        : 'Administra las asignaciones de vendedores a supervisores'}
+      actions={
         <div className="flex gap-2">
           <button
             onClick={loadData}
@@ -146,8 +146,9 @@ export default function TeamPage() {
             </button>
           )}
         </div>
-      </div>
-
+      }
+    >
+      <div className="space-y-6">
       {/* KPI Cards (Supervisor only) */}
       {dashboard && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -249,6 +250,8 @@ export default function TeamPage() {
       </div>
 
       {/* Asignar Modal */}
+      </div>
+
       {showAsignar && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4">
@@ -312,7 +315,7 @@ export default function TeamPage() {
           </div>
         </div>
       )}
-    </div>
+    </PageHeader>
   );
 }
 

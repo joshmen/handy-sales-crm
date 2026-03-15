@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ChevronRight, ArrowLeft, Lock } from 'lucide-react';
+import { ArrowLeft, Lock } from 'lucide-react';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { getReportTierInfo, ReportTierInfo } from '@/services/api/reports';
 import { toast } from '@/hooks/useToast';
 import {
@@ -198,51 +199,33 @@ export default function ReportsPage() {
     return acc;
   }, {});
 
-  return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="bg-white px-8 py-5 border-b border-gray-200">
-        <div className="flex items-center gap-2 text-[13px] mb-3">
-          <span className="text-gray-500">Administración</span>
-          <ChevronRight className="w-4 h-4 text-gray-400" />
-          {activeCard ? (
-            <>
-              <button
-                onClick={() => setActiveReport(null)}
-                className="text-green-600 hover:text-green-700 font-medium"
-              >
-                Reportes
-              </button>
-              <ChevronRight className="w-4 h-4 text-gray-400" />
-              <span className="text-gray-900 font-semibold">{activeCard.label}</span>
-            </>
-          ) : (
-            <span className="text-gray-900 font-semibold">Reportes</span>
-          )}
-        </div>
-        <div className="flex items-center gap-3">
-          {activeCard && (
-            <button
-              onClick={() => setActiveReport(null)}
-              className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5 text-gray-600" />
-            </button>
-          )}
-          <h1 className="text-2xl font-bold text-gray-900">
-            {activeCard ? activeCard.label : 'Reportes y Análisis'}
-          </h1>
-        </div>
-      </div>
+  const breadcrumbs = [
+    { label: 'Inicio', href: '/dashboard' },
+    ...(activeCard
+      ? [{ label: 'Reportes', href: '#', onClick: () => setActiveReport(null) }, { label: activeCard.label }]
+      : [{ label: 'Reportes' }]
+    ),
+  ];
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto">
+  return (
+    <PageHeader
+      breadcrumbs={breadcrumbs}
+      title={activeCard ? activeCard.label : 'Reportes y Análisis'}
+      actions={activeCard ? (
+        <button
+          onClick={() => setActiveReport(null)}
+          className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-gray-100 transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5 text-gray-600" />
+        </button>
+      ) : undefined}
+    >
         {ActiveComponent && activeReport ? (
-          <div className="p-6" data-tour="reports-content">
+          <div data-tour="reports-content">
             <ActiveComponent />
           </div>
         ) : (
-          <div className="p-6 space-y-6" data-tour="reports-cards">
+          <div className="space-y-6" data-tour="reports-cards">
             {Object.entries(sections).map(([sectionName, sectionReports]) => (
               <div key={sectionName}>
                 <h2 className="text-xs font-semibold text-gray-400 mb-3 px-1">
@@ -273,7 +256,6 @@ export default function ReportsPage() {
             ))}
           </div>
         )}
-      </div>
-    </div>
+    </PageHeader>
   );
 }
