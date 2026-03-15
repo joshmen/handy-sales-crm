@@ -21,6 +21,7 @@ public class InventarioRepository : IInventarioRepository
             .Where(i => i.TenantId == tenantId)
             .Select(i => new InventarioDto
             {
+                Id = i.Id,
                 ProductoId = i.ProductoId,
                 CantidadActual = i.CantidadActual,
                 StockMinimo = i.StockMinimo,
@@ -37,6 +38,7 @@ public class InventarioRepository : IInventarioRepository
             .Where(i => i.Id == id && i.TenantId == tenantId)
             .Select(i => new InventarioDto
             {
+                Id = i.Id,
                 ProductoId = i.ProductoId,
                 CantidadActual = i.CantidadActual,
                 StockMinimo = i.StockMinimo,
@@ -81,10 +83,10 @@ public class InventarioRepository : IInventarioRepository
         return nuevo.Id;
     }
 
-    public async Task<bool> ActualizarAsync(int productoId, InventarioUpdateDto dto, int tenantId)
+    public async Task<bool> ActualizarAsync(int id, InventarioUpdateDto dto, int tenantId)
     {
         var inventario = await _db.Inventarios
-            .FirstOrDefaultAsync(i => i.ProductoId == productoId && i.TenantId == tenantId);
+            .FirstOrDefaultAsync(i => i.Id == id && i.TenantId == tenantId);
 
         if (inventario == null) return false;
 

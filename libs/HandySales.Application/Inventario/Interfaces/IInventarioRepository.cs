@@ -8,7 +8,7 @@ public interface IInventarioRepository
     Task<InventarioDto?> ObtenerPorIdAsync(int id, int tenantId);
     Task<InventarioDto?> ObtenerPorProductoIdAsync(int productoId, int tenantId);
     Task<int> CrearAsync(InventarioCreateDto dto, int tenantId);
-    Task<bool> ActualizarAsync(int productoId, InventarioUpdateDto dto, int tenantId);
+    Task<bool> ActualizarAsync(int id, InventarioUpdateDto dto, int tenantId);
     Task<bool> EliminarAsync(int id, int tenantId);
     Task<InventarioPaginatedResult> ObtenerPorFiltroAsync(InventarioFiltroDto filtro, int tenantId);
 }

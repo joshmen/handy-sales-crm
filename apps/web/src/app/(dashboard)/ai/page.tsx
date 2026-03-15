@@ -217,7 +217,7 @@ function NoPlanGate() {
       </p>
       <div className="opacity-0 animate-ai-fade-up" style={{ animationDelay: '300ms', animationFillMode: 'forwards' }}>
         <Button
-          onClick={() => window.location.href = '/configuracion/suscripcion'}
+          onClick={() => window.location.href = '/subscription'}
           className="!rounded-xl !px-6 !py-3 !bg-violet-600 hover:!bg-violet-700 !border-0"
         >
           <Sparkle size={18} weight="fill" className="mr-2" />

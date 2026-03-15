@@ -255,12 +255,18 @@ export default function ProductsPage() {
       setSavingProduct(true);
       let productId: number;
 
+      // Backend requires descripcion to be non-empty; default to nombre if blank
+      const payload = {
+        ...data,
+        descripcion: data.descripcion?.trim() || data.nombre,
+      };
+
       if (editingProduct) {
         productId = parseInt(editingProduct.id);
-        await productService.updateProduct(productId, data);
+        await productService.updateProduct(productId, payload);
         toast.success('Producto actualizado correctamente');
       } else {
-        const result = await productService.createProduct(data);
+        const result = await productService.createProduct(payload);
         productId = result.id;
         toast.success('Producto creado correctamente');
       }
