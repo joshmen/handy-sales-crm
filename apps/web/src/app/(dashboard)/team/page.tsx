@@ -36,6 +36,9 @@ export default function TeamPage() {
   const isSupervisor = role === 'SUPERVISOR';
   const isAdmin = role === 'ADMIN' || role === 'SUPER_ADMIN';
 
+  // Filter out the current user — admin should not see themselves in "Mi Equipo"
+  const filteredVendedores = vendedores.filter(v => String(v.id) !== userId);
+
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
@@ -126,7 +129,7 @@ export default function TeamPage() {
       title="Mi Equipo"
       subtitle={isSupervisor
         ? 'Gestiona tu equipo de vendedores y monitorea su rendimiento'
-        : 'Administra las asignaciones de vendedores a supervisores'}
+        : 'Estructura de tu equipo — asigna vendedores a supervisores para gestionar rutas y metas'}
       actions={
         <div className="flex gap-2">
           <button
@@ -189,7 +192,7 @@ export default function TeamPage() {
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100">
           <h2 className="text-lg font-semibold text-gray-900">
-            Vendedores del Equipo ({vendedores.length})
+            {isAdmin ? `Equipo (${filteredVendedores.length})` : `Vendedores del Equipo (${filteredVendedores.length})`}
           </h2>
         </div>
 
