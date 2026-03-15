@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, AlertTriangle, ArrowLeft, Check, Stamp } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -148,6 +148,14 @@ function AutocompleteDropdown<T>({
 // ─── Main Page ───
 
 export default function PreFacturaPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="h-8 w-8 animate-spin text-green-600" /></div>}>
+      <PreFacturaContent />
+    </Suspense>
+  );
+}
+
+function PreFacturaContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pedidoId = Number(searchParams.get('pedidoId') || 0);
