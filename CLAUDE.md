@@ -108,20 +108,35 @@ cd apps/web && npm run dev
 ### Testing Commands
 
 ```bash
-# Backend tests (300+ xUnit tests)
-dotnet test
+# Backend tests (429 xUnit tests: 391 API + 38 Mobile)
+dotnet test apps/api/tests/HandySales.Tests/HandySales.Tests.csproj
+dotnet test apps/mobile/HandySales.Mobile.Tests/HandySales.Mobile.Tests.csproj
 
-# Frontend type check
+# Frontend type check (web only — Next.js)
 cd apps/web && npm run type-check
 
-# E2E tests (Playwright)
+# E2E tests — WEB (Playwright)
 cd apps/web && npx playwright test              # Full suite
 cd apps/web && npx playwright test auth.spec.ts  # Single file
+
+# E2E tests — MOBILE (Maestro, NOT Playwright)
+/c/maestro/bin/maestro test apps/mobile-app/.maestro/supervisor/01-login-supervisor.yaml
 
 # Find process on port (Windows — netstat often fails, use PowerShell)
 powershell.exe -Command "Get-NetTCPConnection -LocalPort 1083 | Select-Object OwningProcess"
 powershell.exe -Command "Stop-Process -Id <PID> -Force"
 ```
+
+### MANDATORY — Pre-Commit Testing by Area
+
+| Files changed in | Required tests | Tool |
+|-------------------|---------------|------|
+| `apps/web/` | `npm run type-check` + Playwright E2E | Playwright |
+| `apps/mobile-app/` | Metro loads OK + Maestro E2E | Maestro |
+| `apps/api/` or `libs/` | `dotnet test` + rebuild Docker | xUnit |
+| `apps/mobile/` | `dotnet test` mobile + rebuild Docker | xUnit |
+
+**CRITICAL: `apps/mobile-app/` changes use Maestro, NOT Playwright.** Playwright is for `apps/web/` only. These are completely separate apps (React Native vs Next.js).
 
 > Full setup guide: `docs/development/SETUP.md` | Data persistence: `docs/development/DATA_PERSISTENCE.md`
 
