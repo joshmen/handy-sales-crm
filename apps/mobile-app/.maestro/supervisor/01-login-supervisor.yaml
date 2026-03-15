@@ -11,16 +11,15 @@ name: "Supervisor: flujo integral — login, equipo, KPIs, mapa, vendedor, dashb
     visible: "Siguiente"
     timeout: 60000
 
-# Skip onboarding: Siguiente, Siguiente, Comenzar (3 slides, last button changes)
-- tapOn: "Siguiente"
+# Skip onboarding via action button (testID is stable, text changes per slide)
+- tapOn:
+    id: "onboarding-action"
 - waitForAnimationToEnd
-- tapOn: "Siguiente"
+- tapOn:
+    id: "onboarding-action"
 - waitForAnimationToEnd
-# Third slide shows "Comenzar" instead of "Siguiente"
-- extendedWaitUntil:
-    visible: "Comenzar"
-    timeout: 5000
-- tapOn: "Comenzar"
+- tapOn:
+    id: "onboarding-action"
 
 # Wait for login screen
 - extendedWaitUntil:
