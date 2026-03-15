@@ -1,0 +1,72 @@
+appId: host.exp.exponent
+name: "Login as Supervisor"
+---
+
+# Wait for app to load
+- waitForAnimationToEnd
+
+# If onboarding screen appears, skip through it
+- runFlow:
+    when:
+      visible: "Gestiona tu"
+    file: ../auth/00-onboarding.yaml
+
+# Login screen should be visible
+- assertVisible:
+    text: "Iniciar Sesi"
+    optional: true
+
+- tapOn:
+    id: "email-input"
+- eraseText
+- inputText: "supervisor@jeyma.com"
+- hideKeyboard
+
+- tapOn:
+    id: "password-input"
+- eraseText
+- inputText: "test123"
+- hideKeyboard
+
+- takeScreenshot: "supervisor-login-form"
+
+- tapOn:
+    id: "login-button"
+
+# Wait for dashboard to load (long timeout for bundle)
+- extendedWaitUntil:
+    visible:
+      text: "Hoy"
+    timeout: 45000
+
+- takeScreenshot: "supervisor-dashboard"
+
+# Verify "Equipo" tab is visible (only for supervisors)
+- assertVisible:
+    text: "Equipo"
+
+- takeScreenshot: "supervisor-equipo-tab-visible"
+
+# Tap on Equipo tab
+- tapOn:
+    text: "Equipo"
+
+- waitForAnimationToEnd
+
+# Verify placeholder content
+- assertVisible:
+    text: "Mi Equipo"
+
+- takeScreenshot: "supervisor-equipo-screen"
+
+# Go to Más tab and verify role badge
+- tapOn:
+    text: "M"
+    index: 0
+
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "Supervisor"
+
+- takeScreenshot: "supervisor-mas-role-badge"

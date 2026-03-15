@@ -1,10 +1,11 @@
 import { Platform } from 'react-native';
 import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CalendarClock, Map, ShoppingBag, Wallet, Menu } from 'lucide-react-native';
+import { CalendarClock, Map, ShoppingBag, Wallet, Menu, Users } from 'lucide-react-native';
 import { useAutoSync } from '@/hooks/useAutoSync';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { usePendingCount } from '@/hooks';
+import { useAuthStore } from '@/stores';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 
 export default function TabsLayout() {
@@ -12,6 +13,8 @@ export default function TabsLayout() {
   useAutoSync();
   usePushNotifications();
   const { data: pendingCount = 0 } = usePendingCount();
+  const role = useAuthStore(s => s.user?.role);
+  const isSupervisor = role === 'SUPERVISOR';
 
   return (
     <ErrorBoundary componentName="TabsRoot">
@@ -69,6 +72,14 @@ export default function TabsLayout() {
         options={{
           title: 'Cobrar',
           tabBarIcon: ({ color, size }) => <Wallet size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="equipo"
+        options={{
+          title: 'Equipo',
+          href: isSupervisor ? undefined : null,
+          tabBarIcon: ({ color, size }) => <Users size={size} color={color} />,
         }}
       />
       <Tabs.Screen

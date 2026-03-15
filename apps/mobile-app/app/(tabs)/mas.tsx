@@ -24,12 +24,14 @@ import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 const ROLE_LABELS: Record<string, string> = {
   SUPER_ADMIN: 'Super Admin',
   ADMIN: 'Administrador',
+  SUPERVISOR: 'Supervisor',
   VENDEDOR: 'Vendedor',
 };
 
 const ROLE_COLORS: Record<string, string> = {
   SUPER_ADMIN: '#7c3aed',
   ADMIN: '#2563eb',
+  SUPERVISOR: '#d97706',
   VENDEDOR: '#16a34a',
 };
 

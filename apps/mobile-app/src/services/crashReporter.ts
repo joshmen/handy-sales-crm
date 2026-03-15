@@ -1,13 +1,12 @@
 import { Platform } from 'react-native';
 import * as Application from 'expo-application';
 import * as Device from 'expo-device';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_CONFIG } from '@/utils/constants';
 import { useAuthStore } from '@/stores';
 import { getAccessToken } from '@/api/client';
-import { MMKV } from 'react-native-mmkv';
 
-const crashStorage = new MMKV({ id: 'crash-reports' });
-const QUEUE_KEY = 'pending_crash_reports';
+const QUEUE_KEY = '@crash_reports_queue';
 
 interface CrashReportPayload {
   errorMessage: string;
@@ -64,14 +63,12 @@ async function reportCrash(
     });
 
     if (!response.ok) {
-      // Guardar en cola local para reintento
-      enqueueReport(payload);
+      await enqueueReport(payload);
     }
   } catch {
-    // Si falla el envío (offline), guardar localmente
     try {
       const errorMessage = typeof error === 'string' ? error : error.message;
-      enqueueReport({
+      await enqueueReport({
         errorMessage: errorMessage?.substring(0, 2000) || 'Unknown error',
         stackTrace: typeof error === 'string' ? undefined : error.stack?.substring(0, 10000),
         deviceId: 'unknown',
@@ -87,14 +84,13 @@ async function reportCrash(
   }
 }
 
-function enqueueReport(payload: CrashReportPayload): void {
+async function enqueueReport(payload: CrashReportPayload): Promise<void> {
   try {
-    const existing = crashStorage.getString(QUEUE_KEY);
+    const existing = await AsyncStorage.getItem(QUEUE_KEY);
     const queue: CrashReportPayload[] = existing ? JSON.parse(existing) : [];
-    // Máximo 50 reports en cola
     if (queue.length < 50) {
       queue.push(payload);
-      crashStorage.set(QUEUE_KEY, JSON.stringify(queue));
+      await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
     }
   } catch {
     // Silencioso
@@ -106,7 +102,7 @@ function enqueueReport(payload: CrashReportPayload): void {
  */
 async function flushPendingReports(): Promise<void> {
   try {
-    const existing = crashStorage.getString(QUEUE_KEY);
+    const existing = await AsyncStorage.getItem(QUEUE_KEY);
     if (!existing) return;
 
     const queue: CrashReportPayload[] = JSON.parse(existing);
@@ -134,14 +130,14 @@ async function flushPendingReports(): Promise<void> {
         }
       } catch {
         remaining.push(payload);
-        break; // Si falla uno, probablemente estamos offline
+        break;
       }
     }
 
     if (remaining.length > 0) {
-      crashStorage.set(QUEUE_KEY, JSON.stringify(remaining));
+      await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(remaining));
     } else {
-      crashStorage.delete(QUEUE_KEY);
+      await AsyncStorage.removeItem(QUEUE_KEY);
     }
   } catch {
     // Silencioso

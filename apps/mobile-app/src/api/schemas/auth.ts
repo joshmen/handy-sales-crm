@@ -5,7 +5,7 @@ export const AuthUserSchema = z
     id: z.string(),
     email: z.string(),
     name: z.string(),
-    role: z.enum(['SUPER_ADMIN', 'ADMIN', 'VENDEDOR']),
+    role: z.enum(['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'VENDEDOR']),
     tenantName: z.string().optional(),
     tenantLogo: z.string().optional(),
   })
