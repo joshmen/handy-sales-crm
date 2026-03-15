@@ -6,7 +6,6 @@ import { Plus, Search, Download, Send, X as XIcon, FileText, Loader2, ChevronLef
 import { TimbresModal } from '@/components/billing/TimbresModal';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
-import { BrandedLoadingScreen } from '@/components/ui/BrandedLoadingScreen';
 import { useFormatters } from '@/hooks/useFormatters';
 import { toast } from '@/hooks/useToast';
 import {
@@ -95,7 +94,11 @@ export default function InvoicesPage() {
 
   const totalPages = Math.ceil(totalCount / pageSize);
 
-  if (loading && facturas.length === 0) return <BrandedLoadingScreen />;
+  if (loading && facturas.length === 0) return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+    </div>
+  );
 
   return (<>
     <PageHeader

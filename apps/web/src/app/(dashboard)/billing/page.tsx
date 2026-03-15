@@ -12,7 +12,6 @@ import {
 } from '@/components/layout/DashboardIcons';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
-import { BrandedLoadingScreen } from '@/components/ui/BrandedLoadingScreen';
 import { useFormatters } from '@/hooks/useFormatters';
 import { toast } from '@/hooks/useToast';
 import { getDashboard, getTimbres } from '@/services/api/billing';
@@ -50,7 +49,11 @@ export default function BillingDashboardPage() {
     load();
   }, []);
 
-  if (loading) return <BrandedLoadingScreen />;
+  if (loading) return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+    </div>
+  );
 
   const d = dashboard;
   const kpis: KpiCard[] = [

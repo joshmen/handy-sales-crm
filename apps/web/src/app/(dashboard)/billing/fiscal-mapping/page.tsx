@@ -4,7 +4,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Loader2, Settings2, CheckCheck } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
-import { BrandedLoadingScreen } from '@/components/ui/BrandedLoadingScreen';
 import { toast } from '@/hooks/useToast';
 import { extractBillingError } from '@/lib/billingApi';
 import {
@@ -224,7 +223,11 @@ export default function FiscalMappingPage() {
   const mappingsTotalPages = Math.ceil(mappingsTotal / pageSize);
   const unmappedTotalPages = Math.ceil(unmappedTotal / pageSize);
 
-  if (loading && mappings.length === 0 && unmapped.length === 0) return <BrandedLoadingScreen />;
+  if (loading && mappings.length === 0 && unmapped.length === 0) return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+    </div>
+  );
 
   const currentIds = activeTab === 'todos'
     ? mappings.map(m => m.productoId)

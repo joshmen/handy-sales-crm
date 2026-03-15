@@ -26,6 +26,7 @@ import {
   Zap,
   PartyPopper,
   Compass,
+  Loader2,
 } from 'lucide-react';
 import { productService } from '@/services/api/products';
 import { productCategoryService } from '@/services/api/productCategories';
@@ -41,7 +42,6 @@ import { usersService } from '@/services/api/users';
 import { routeService } from '@/services/api/routes';
 import { orderService } from '@/services/api/orders';
 import { companyService } from '@/services/api/companyService';
-import { BrandedLoadingScreen } from '@/components/ui/BrandedLoadingScreen';
 import { toursByPage } from '@/data/tours';
 import { scheduleTourContinuation } from '@/data/tours/types';
 
@@ -452,9 +452,11 @@ export default function GettingStartedPage() {
     });
   };
 
-  if (loading) {
-    return <BrandedLoadingScreen message="Verificando progreso..." />;
-  }
+  if (loading) return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+    </div>
+  );
 
   // Totals
   const totalSteps = phases.reduce((sum, p) => sum + p.steps.length, 0);

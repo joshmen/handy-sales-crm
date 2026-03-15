@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { Plus, Trash2, Loader2 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
-import { BrandedLoadingScreen } from '@/components/ui/BrandedLoadingScreen';
 import { useFormatters } from '@/hooks/useFormatters';
 import { toast } from '@/hooks/useToast';
 import {
@@ -172,7 +171,11 @@ export default function NewInvoicePage() {
     }
   };
 
-  if (loading) return <BrandedLoadingScreen />;
+  if (loading) return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+    </div>
+  );
 
   if (!config?.rfc) {
     return (

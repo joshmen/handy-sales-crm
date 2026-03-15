@@ -4,7 +4,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Upload, Save, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
-import { BrandedLoadingScreen } from '@/components/ui/BrandedLoadingScreen';
 import { toast } from '@/hooks/useToast';
 import { getConfigFiscal, saveConfigFiscal, uploadCertificado } from '@/services/api/billing';
 import type { ConfiguracionFiscal } from '@/types/billing';
@@ -72,7 +71,11 @@ export default function BillingSettingsPage() {
     setConfig(prev => ({ ...prev, [field]: value }));
   };
 
-  if (loading) return <BrandedLoadingScreen />;
+  if (loading) return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+    </div>
+  );
 
   const hasCertificates = !!config.certificadoSat && !!config.llavePrivada;
 

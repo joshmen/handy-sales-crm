@@ -6,7 +6,6 @@ import { ArrowLeft, Check, Loader2, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
-import { BrandedLoadingScreen } from '@/components/ui/BrandedLoadingScreen';
 import { toast } from '@/hooks/useToast';
 import { SbBilling } from '@/components/layout/DashboardIcons';
 import { subscriptionService } from '@/services/api/subscriptions';
@@ -48,7 +47,11 @@ export default function BuyTimbresPage() {
   const selectedPkg = TIMBRE_PACKAGES.find(p => p.cantidad === selectedPackage)!;
   const formatMXN = (n: number) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(n);
 
-  if (loading) return <BrandedLoadingScreen />;
+  if (loading) return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+    </div>
+  );
 
   return (
     <PageHeader

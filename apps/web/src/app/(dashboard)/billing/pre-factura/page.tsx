@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, AlertTriangle, ArrowLeft, Check, Stamp } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
-import { BrandedLoadingScreen } from '@/components/ui/BrandedLoadingScreen';
 import { toast } from '@/hooks/useToast';
 import { extractBillingError } from '@/lib/billingApi';
 import { TimbresModal } from '@/components/billing/TimbresModal';
@@ -245,7 +244,11 @@ export default function PreFacturaPage() {
 
   // ─── Loading State ───
 
-  if (loading) return <BrandedLoadingScreen />;
+  if (loading) return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+    </div>
+  );
 
   // ─── Error State ───
 
