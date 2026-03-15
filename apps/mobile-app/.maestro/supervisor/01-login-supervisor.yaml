@@ -2,25 +2,39 @@ appId: host.exp.exponent
 name: "Login as Supervisor"
 ---
 
-# Wait for app to load
+# Wait for app to fully load
+- extendedWaitUntil:
+    visible: "Vende en ruta"
+    timeout: 60000
+
+# Tap Omitir (top-right corner) — use point since text tap may not register on Pressable
+- tapOn:
+    point: "90%,5%"
 - waitForAnimationToEnd
 
-# If onboarding screen appears, skip through it
+# If still on onboarding, try text tap
 - runFlow:
     when:
-      visible: "Gestiona tu"
-    file: ../auth/00-onboarding.yaml
+      visible: "Siguiente"
+    commands:
+      - tapOn: "Siguiente"
+      - tapOn: "Siguiente"
+      - tapOn: "Siguiente"
+      - tapOn: "Comenzar"
 
-# Login screen should be visible
-- assertVisible:
-    text: "Iniciar Sesi"
-    optional: true
+# Wait for login screen
+- extendedWaitUntil:
+    visible:
+      id: "login-button"
+    timeout: 30000
 
+- takeScreenshot: "01-login-screen"
+
+# Fill supervisor credentials
 - tapOn:
     id: "email-input"
 - eraseText
 - inputText: "supervisor@jeyma.com"
-- hideKeyboard
 
 - tapOn:
     id: "password-input"
@@ -28,45 +42,41 @@ name: "Login as Supervisor"
 - inputText: "test123"
 - hideKeyboard
 
-- takeScreenshot: "supervisor-login-form"
+- takeScreenshot: "02-credentials-filled"
 
+# Login
 - tapOn:
     id: "login-button"
 
-# Wait for dashboard to load (long timeout for bundle)
+# Wait for dashboard
 - extendedWaitUntil:
-    visible:
-      text: "Hoy"
+    visible: "Hoy"
     timeout: 45000
 
-- takeScreenshot: "supervisor-dashboard"
+- takeScreenshot: "03-dashboard"
 
-# Verify "Equipo" tab is visible (only for supervisors)
+# Verify Equipo tab visible
 - assertVisible:
     text: "Equipo"
 
-- takeScreenshot: "supervisor-equipo-tab-visible"
+- takeScreenshot: "04-equipo-tab"
 
-# Tap on Equipo tab
+# Tap Equipo
 - tapOn:
     text: "Equipo"
-
 - waitForAnimationToEnd
 
-# Verify placeholder content
 - assertVisible:
     text: "Mi Equipo"
 
-- takeScreenshot: "supervisor-equipo-screen"
+- takeScreenshot: "05-equipo-screen"
 
-# Go to Más tab and verify role badge
+# Go to Más tab
 - tapOn:
-    text: "M"
-    index: 0
-
+    text: "Más"
 - waitForAnimationToEnd
 
 - assertVisible:
     text: "Supervisor"
 
-- takeScreenshot: "supervisor-mas-role-badge"
+- takeScreenshot: "06-supervisor-badge"
