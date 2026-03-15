@@ -220,21 +220,18 @@ public class ClienteRepository : IClienteRepository
             .OrderBy(c => c.Nombre)
             .Skip((filtro.Pagina - 1) * filtro.TamanoPagina)
             .Take(filtro.TamanoPagina)
-            .GroupJoin(_db.Zonas, c => c.IdZona, z => z.Id, (c, zonas) => new { c, Zona = zonas.FirstOrDefault() })
-            .GroupJoin(_db.CategoriasClientes, x => x.c.CategoriaClienteId, cat => cat.Id, (x, cats) => new { x.c, x.Zona, Categoria = cats.FirstOrDefault() })
-            .GroupJoin(_db.Usuarios, x => x.c.VendedorId, u => u.Id, (x, vendedores) => new { x.c, x.Zona, x.Categoria, Vendedor = vendedores.FirstOrDefault() })
-            .Select(x => new ClienteListaDto
+            .Select(c => new ClienteListaDto
             {
-                Id = x.c.Id,
-                Nombre = x.c.Nombre,
-                RFC = x.c.RFC,
-                Correo = x.c.Correo,
-                Telefono = x.c.Telefono,
-                ZonaNombre = x.Zona != null ? x.Zona.Nombre : null,
-                CategoriaNombre = x.Categoria != null ? x.Categoria.Nombre : null,
-                VendedorId = x.c.VendedorId,
-                VendedorNombre = x.Vendedor != null ? x.Vendedor.Nombre : null,
-                Activo = x.c.Activo
+                Id = c.Id,
+                Nombre = c.Nombre,
+                RFC = c.RFC,
+                Correo = c.Correo,
+                Telefono = c.Telefono,
+                ZonaNombre = _db.Zonas.Where(z => z.Id == c.IdZona).Select(z => z.Nombre).FirstOrDefault(),
+                CategoriaNombre = _db.CategoriasClientes.Where(cat => cat.Id == c.CategoriaClienteId).Select(cat => cat.Nombre).FirstOrDefault(),
+                VendedorId = c.VendedorId,
+                VendedorNombre = _db.Usuarios.Where(u => u.Id == c.VendedorId).Select(u => u.Nombre).FirstOrDefault(),
+                Activo = c.Activo
             })
             .ToListAsync();
 
