@@ -86,6 +86,7 @@ public static class ServiceRegistrationExtensions
                     config.GetConnectionString("DefaultConnection"),
                     o =>
                     {
+                        o.UseVector();
                         o.EnableRetryOnFailure(
                             maxRetryCount: 3,
                             maxRetryDelay: TimeSpan.FromSeconds(5),

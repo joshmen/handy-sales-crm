@@ -11,10 +11,15 @@ name: "Supervisor: flujo integral — login, equipo, KPIs, mapa, vendedor, dashb
     visible: "Siguiente"
     timeout: 60000
 
-# Skip onboarding: tap Siguiente 3x then Comenzar
+# Skip onboarding: Siguiente, Siguiente, Comenzar (3 slides, last button changes)
 - tapOn: "Siguiente"
+- waitForAnimationToEnd
 - tapOn: "Siguiente"
-- tapOn: "Siguiente"
+- waitForAnimationToEnd
+# Third slide shows "Comenzar" instead of "Siguiente"
+- extendedWaitUntil:
+    visible: "Comenzar"
+    timeout: 5000
 - tapOn: "Comenzar"
 
 # Wait for login screen
@@ -90,12 +95,9 @@ name: "Supervisor: flujo integral — login, equipo, KPIs, mapa, vendedor, dashb
     id: "ver-mapa"
 - waitForAnimationToEnd
 
-# Map should load (wait for map or empty state)
+# Map should load — wait for header
 - extendedWaitUntil:
-    true:
-      or:
-        - visible: "Sin ubicaciones"
-        - visible: "Mapa del Equipo"
+    visible: "Mapa del Equipo"
     timeout: 15000
 
 - takeScreenshot: "04-mapa-equipo"
