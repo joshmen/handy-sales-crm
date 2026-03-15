@@ -1,0 +1,107 @@
+'use client';
+
+import React from 'react';
+import { X as XIcon, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import { BatchAutocomplete } from './SatAutocomplete';
+import { searchCatalogoProdServ, searchCatalogoUnidad } from '@/services/api/billing';
+import type { CatalogoProdServItem, CatalogoUnidadItem } from '@/types/billing';
+
+interface BatchAssignModalProps {
+  selectedCount: number;
+  saving: boolean;
+  batchProdServ: string;
+  batchUnidad: string;
+  onBatchProdServChange: (value: string) => void;
+  onBatchUnidadChange: (value: string) => void;
+  onAssign: () => void;
+  onClose: () => void;
+}
+
+export function BatchAssignModal({
+  selectedCount,
+  saving,
+  batchProdServ,
+  batchUnidad,
+  onBatchProdServChange,
+  onBatchUnidadChange,
+  onAssign,
+  onClose,
+}: BatchAssignModalProps) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="bg-card border border-border rounded-xl p-6 w-full max-w-md mx-4 shadow-xl">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-foreground">Asignacion Masiva</h3>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+            <XIcon className="w-5 h-5" />
+          </button>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">
+          Asignar la misma clave SAT a {selectedCount} producto{selectedCount > 1 ? 's' : ''} seleccionado{selectedCount > 1 ? 's' : ''}.
+        </p>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">
+              Clave ProdServ SAT
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                value={batchProdServ}
+                readOnly
+                placeholder="Click para buscar..."
+                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground font-mono cursor-pointer"
+                onClick={() => {/* handled by autocomplete below */}}
+              />
+            </div>
+            <BatchAutocomplete<CatalogoProdServItem>
+              value={batchProdServ}
+              onChange={onBatchProdServChange}
+              searchFn={searchCatalogoProdServ}
+              renderLabel={(item: CatalogoProdServItem) => `${item.clave} \u2014 ${item.descripcion}`}
+              placeholder="Buscar clave ProdServ..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">
+              Clave Unidad SAT
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                value={batchUnidad}
+                readOnly
+                placeholder="Click para buscar..."
+                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground font-mono cursor-pointer"
+              />
+            </div>
+            <BatchAutocomplete<CatalogoUnidadItem>
+              value={batchUnidad}
+              onChange={onBatchUnidadChange}
+              searchFn={searchCatalogoUnidad}
+              renderLabel={(item: CatalogoUnidadItem) => `${item.clave} \u2014 ${item.nombre}`}
+              placeholder="Buscar clave unidad..."
+            />
+          </div>
+        </div>
+
+        <div className="mt-6 flex justify-end gap-2">
+          <Button variant="outline" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button
+            onClick={onAssign}
+            disabled={saving || (!batchProdServ && !batchUnidad)}
+            className="bg-green-600 hover:bg-green-700 text-white"
+          >
+            {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            Asignar
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
