@@ -19,32 +19,32 @@ export interface SupervisorDashboard {
 
 export const supervisorService = {
   getMisVendedores: async (): Promise<SupervisorVendedor[]> => {
-    const { data } = await api.get('/supervisores/mis-vendedores');
+    const { data } = await api.get('/api/supervisores/mis-vendedores');
     return data;
   },
 
   getVendedoresDeSupervisor: async (supervisorId: number): Promise<SupervisorVendedor[]> => {
-    const { data } = await api.get(`/supervisores/${supervisorId}/vendedores`);
+    const { data } = await api.get(`/api/supervisores/${supervisorId}/vendedores`);
     return data;
   },
 
   asignarVendedores: async (supervisorId: number, vendedorIds: number[]): Promise<{ message: string; asignados: number }> => {
-    const { data } = await api.post(`/supervisores/${supervisorId}/asignar`, { vendedorIds });
+    const { data } = await api.post(`/api/supervisores/${supervisorId}/asignar`, { vendedorIds });
     return data;
   },
 
   desasignarVendedor: async (supervisorId: number, vendedorId: number): Promise<{ message: string }> => {
-    const { data } = await api.delete(`/supervisores/${supervisorId}/vendedores/${vendedorId}`);
+    const { data } = await api.delete(`/api/supervisores/${supervisorId}/vendedores/${vendedorId}`);
     return data;
   },
 
   getDashboard: async (): Promise<SupervisorDashboard> => {
-    const { data } = await api.get('/supervisores/dashboard');
+    const { data } = await api.get('/api/supervisores/dashboard');
     return data;
   },
 
   getVendedoresDisponibles: async (): Promise<SupervisorVendedor[]> => {
-    const { data } = await api.get('/supervisores/vendedores-disponibles');
+    const { data } = await api.get('/api/supervisores/vendedores-disponibles');
     return data;
   },
 };
