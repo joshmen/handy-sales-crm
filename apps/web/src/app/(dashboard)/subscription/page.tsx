@@ -1,131 +1,28 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { Card, CardContent } from "@/components/ui/Card";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/Dialog";
 import { toast } from "@/hooks/useToast";
 import { useRequireAdmin } from "@/hooks/usePermissions";
 import { subscriptionService } from "@/services/api/subscriptions";
 import type { SubscriptionPlan, SubscriptionStatus, StripeInvoice, StripePaymentMethod, TimbreBalance } from "@/types/subscription";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { SbSubscription, SbAlert, SbPayments, SbWallet, SbBilling, SbAI } from "@/components/layout/DashboardIcons";
-import Link from "next/link";
-import {
-  Users,
-  Check,
-  X,
-  Calendar,
-  CreditCard,
-  ChevronRight,
-  Sparkles,
-  Loader2,
-  AlertTriangle,
-  ArrowLeft,
-  RotateCcw,
-  Package,
-  ShieldAlert,
-  ArrowUpRight,
-  FileText,
-  Download,
-  Receipt,
-  ExternalLink,
-} from "lucide-react";
-
-// ── Card brand SVG icons ──────────────────────────────────
-function CardBrandIcon({ brand, className }: { brand: string | null; className?: string }) {
-  const b = (brand || "").toLowerCase();
-  if (b === "visa") return (
-    <svg viewBox="0 0 60 40" className={className} fill="none">
-      <rect width="60" height="40" rx="6" fill="#1A1F71" />
-      <text x="30" y="25" textAnchor="middle" fill="#FFFFFF" fontFamily="Arial, Helvetica, sans-serif" fontSize="16" fontWeight="bold" fontStyle="italic" letterSpacing="1">VISA</text>
-    </svg>
-  );
-  if (b === "mastercard") return (
-    <svg viewBox="0 0 60 40" className={className} fill="none">
-      <rect width="60" height="40" rx="6" fill="#1A1A2E" />
-      <circle cx="23" cy="20" r="10" fill="#EB001B" />
-      <circle cx="37" cy="20" r="10" fill="#F79E1B" />
-      <path d="M30 12.7a10 10 0 010 14.6 10 10 0 000-14.6z" fill="#FF5F00" />
-    </svg>
-  );
-  if (b === "amex" || b === "american_express") return (
-    <svg viewBox="0 0 60 40" className={className} fill="none">
-      <rect width="60" height="40" rx="6" fill="#2E77BC" />
-      <text x="30" y="24" textAnchor="middle" fill="#FFFFFF" fontFamily="Arial, Helvetica, sans-serif" fontSize="11" fontWeight="bold" letterSpacing="0.5">AMEX</text>
-    </svg>
-  );
-  // Default card icon for unknown brands
-  return <CreditCard className={className} />;
-}
+import { ArrowLeft, Loader2 } from "lucide-react";
 
 import { loadStripe } from "@stripe/stripe-js";
 import { EmbeddedCheckoutProvider, EmbeddedCheckout } from "@stripe/react-stripe-js";
 
+import { AlertBanners } from "./components/AlertBanners";
+import { PlanHeroCard } from "./components/PlanHeroCard";
+import { ConsumoSection } from "./components/ConsumoSection";
+import { PlanComparisonPage, QuickPlanComparison } from "./components/PlanComparison";
+import { PaymentMethods } from "./components/PaymentMethods";
+import { InvoiceHistory } from "./components/InvoiceHistory";
+import { CancelSection } from "./components/CancelSection";
+
 const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
   ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
   : null;
-
-// Plan hierarchy for downgrade detection
-const PLAN_HIERARCHY: Record<string, number> = { FREE: 0, BASIC: 1, PRO: 2 };
-
-// Legacy plan codes → canonical codes (old seed data had PROFESIONAL/BASICO/STARTER)
-const PLAN_CODE_MAP: Record<string, string> = {
-  PROFESIONAL: "PRO", PROFESSIONAL: "PRO", BASICO: "BASIC", STARTER: "BASIC",
-};
-const normalizePlanCode = (code: string | null | undefined): string => {
-  if (!code) return "FREE";
-  const upper = code.toUpperCase();
-  if (upper === "TRIAL") return "FREE";
-  return PLAN_CODE_MAP[upper] || upper;
-};
-
-interface DowngradeWarning {
-  isDowngrade: boolean;
-  violations: string[];
-  isFreeBlocked: boolean;
-}
-
-function getDowngradeInfo(
-  plan: SubscriptionPlan,
-  currentPlanCode: string | null,
-  subscription: SubscriptionStatus | null
-): DowngradeWarning {
-  const effectiveCurrent = normalizePlanCode(currentPlanCode);
-  const targetCode = normalizePlanCode(plan.codigo);
-  const currentRank = PLAN_HIERARCHY[effectiveCurrent] ?? 0;
-  const targetRank = PLAN_HIERARCHY[targetCode] ?? 0;
-  const isDowngrade = targetRank < currentRank;
-  const isFreeBlocked = targetCode === "FREE" && !!subscription?.hasStripe;
-
-  const violations: string[] = [];
-  if (isDowngrade && subscription) {
-    if (subscription.activeUsuarios > plan.maxUsuarios)
-      violations.push(`${subscription.activeUsuarios} usuarios activos (máx. ${plan.maxUsuarios})`);
-    if (subscription.activeProductos > plan.maxProductos)
-      violations.push(`${subscription.activeProductos} productos activos (máx. ${plan.maxProductos})`);
-    if (subscription.activeClientes > plan.maxClientesPorMes)
-      violations.push(`${subscription.activeClientes} clientes activos (máx. ${plan.maxClientesPorMes})`);
-  }
-
-  return { isDowngrade, violations, isFreeBlocked };
-}
-
-const statusLabels: Record<string, { label: string; color: string }> = {
-  Trial: { label: "Prueba", color: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300" },
-  Active: { label: "Activo", color: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300" },
-  PastDue: { label: "Pago pendiente", color: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300" },
-  Cancelled: { label: "Cancelado", color: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300" },
-  Expired: { label: "Expirado", color: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300" },
-};
 
 
 export default function SubscriptionPage() {
@@ -261,6 +158,7 @@ export default function SubscriptionPage() {
     }
   };
 
+  // ── Loading state ──
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -271,7 +169,7 @@ export default function SubscriptionPage() {
 
   if (!subscription) return null;
 
-  // Embedded Checkout view
+  // ── Embedded Checkout view ──
   if (checkoutClientSecret) {
     const selectedPlan = plans.find(p => p.codigo === checkoutPlan);
     const checkoutSubtitle = selectedPlan
@@ -315,90 +213,23 @@ export default function SubscriptionPage() {
     );
   }
 
-  // Plan comparison expanded view
+  // ── Plan comparison full-page view ──
   if (showPlans) {
     return (
-      <PageHeader
-        breadcrumbs={[
-          { label: "Inicio", href: "/dashboard" },
-          { label: "Suscripción", href: "/subscription" },
-          { label: "Cambiar plan" },
-        ]}
-        title="Cambiar plan"
-        subtitle="Compara planes y elige el que mejor se adapte a tu negocio"
-        actions={
-          <Button variant="outline" size="sm" onClick={() => setShowPlans(false)}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Volver
-          </Button>
-        }
-      >
-        <div className="space-y-6">
-          {/* Billing interval toggle */}
-          <div className="flex items-center justify-center gap-3">
-            <span className={`text-sm font-medium transition-colors duration-300 ${billingInterval === "month" ? "text-foreground" : "text-muted-foreground"}`}>Mensual</span>
-            <button
-              onClick={() => setBillingInterval(prev => prev === "month" ? "year" : "month")}
-              className="relative w-14 h-7 rounded-full transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
-              style={{ backgroundColor: billingInterval === "year" ? "#16A34A" : "hsl(var(--muted-foreground) / 0.3)" }}
-            >
-              <div
-                className="absolute top-[3px] w-[22px] h-[22px] bg-white rounded-full shadow-md transition-all duration-300"
-                style={{ left: billingInterval === "year" ? "calc(100% - 25px)" : "3px" }}
-              />
-            </button>
-            <span className={`text-sm font-medium transition-colors duration-300 ${billingInterval === "year" ? "text-foreground" : "text-muted-foreground"}`}>
-              Anual
-            </span>
-            {billingInterval === "year" && (
-              <span className="text-xs font-bold text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/40 px-2.5 py-0.5 rounded-full animate-[subFadeIn_0.3s_ease-out]">
-                -17%
-              </span>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {plans.map((plan) => {
-              const effectivePlan = normalizePlanCode(subscription.planTipo);
-              const isCurrent = normalizePlanCode(plan.codigo) === effectivePlan;
-              const isPopular = plan.codigo === "PRO";
-              const price = billingInterval === "year" ? plan.precioAnual : plan.precioMensual;
-              const monthlyEquivalent = billingInterval === "year" ? Math.round(plan.precioAnual / 12) : plan.precioMensual;
-              const downgrade = getDowngradeInfo(plan, subscription.planTipo ?? null, subscription);
-              const isBlocked = downgrade.isFreeBlocked || downgrade.violations.length > 0;
-              const isDisabled = isCurrent || processing || plan.codigo === "FREE" || isBlocked;
-
-              return (
-                <PlanCard
-                  key={plan.id}
-                  plan={plan}
-                  isCurrent={isCurrent}
-                  isPopular={isPopular}
-                  price={price}
-                  monthlyEquivalent={monthlyEquivalent}
-                  billingInterval={billingInterval}
-                  processing={processing}
-                  isBlocked={isBlocked}
-                  isDisabled={isDisabled}
-                  downgrade={downgrade}
-                  onUpgrade={() => handleUpgrade(plan.codigo)}
-                />
-              );
-            })}
-          </div>
-        </div>
-      </PageHeader>
+      <PlanComparisonPage
+        plans={plans}
+        subscription={subscription}
+        billingInterval={billingInterval}
+        setBillingInterval={setBillingInterval}
+        processing={processing}
+        onUpgrade={handleUpgrade}
+        onBack={() => setShowPlans(false)}
+      />
     );
   }
 
+  // ── Main subscription dashboard ──
   const currentPlan = plans.find(p => p.codigo === subscription.planTipo?.toUpperCase());
-  const statusInfo = statusLabels[subscription.subscriptionStatus] || statusLabels.Trial;
-  const daysLeft = subscription.fechaExpiracion
-    ? Math.max(0, Math.ceil((new Date(subscription.fechaExpiracion).getTime() - Date.now()) / 86400000))
-    : null;
-
-  const usersPercent = Math.min((subscription.activeUsuarios / subscription.maxUsuarios) * 100, 100);
-  const usersOver = subscription.activeUsuarios > subscription.maxUsuarios;
 
   return (
     <PageHeader
@@ -411,852 +242,58 @@ export default function SubscriptionPage() {
     >
       <div className="space-y-6 page-animate">
 
-      {/* ── Alert banners ─────────────────────────── */}
+        <AlertBanners
+          subscription={subscription}
+          processing={processing}
+          trialCheckoutLoading={trialCheckoutLoading}
+          onReactivate={handleReactivate}
+          onTrialCheckout={handleTrialCheckout}
+        />
 
-      {subscription.subscriptionStatus === "PastDue" && (
-        <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
-          <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
-          <div>
-            <p className="font-medium text-amber-800 dark:text-amber-300">Pago pendiente</p>
-            <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
-              No pudimos procesar tu último pago. Actualiza tu método de pago para evitar la suspensión del servicio.
-              {subscription.gracePeriodEnd && (
-                <> Tienes hasta el <strong>{new Date(subscription.gracePeriodEnd).toLocaleDateString("es-MX")}</strong>.</>
-              )}
-            </p>
-          </div>
-        </div>
-      )}
+        <PlanHeroCard
+          subscription={subscription}
+          currentPlan={currentPlan}
+          onChangePlan={() => setShowPlans(true)}
+        />
 
-      {subscription.subscriptionStatus === "Expired" && (
-        <div className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg">
-          <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
-          <div>
-            <p className="font-medium text-red-800">Suscripción expirada</p>
-            <p className="text-sm text-red-700 dark:text-red-400 mt-1">
-              Tu suscripción ha expirado. Renueva para continuar usando todas las funciones.
-            </p>
-          </div>
-        </div>
-      )}
+        <ConsumoSection timbres={timbres} />
 
-      {subscription.cancellationScheduledFor && subscription.subscriptionStatus !== "Cancelled" && (
-        <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
-          <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
-          <div className="flex-1">
-            <p className="font-medium text-amber-800 dark:text-amber-300">Cancelación programada</p>
-            <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
-              Tu suscripción se cancelará el <strong>{new Date(subscription.cancellationScheduledFor).toLocaleDateString("es-MX")}</strong>. Mantendrás acceso completo hasta esa fecha.
-            </p>
-          </div>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleReactivate}
-            disabled={processing}
-            className="border-amber-300 text-amber-700 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-900/40 flex-shrink-0"
-          >
-            {processing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <>
-                <RotateCcw className="h-4 w-4 mr-1.5" />
-                Reanudar suscripción
-              </>
-            )}
-          </Button>
-        </div>
-      )}
+        {plans.length > 0 && (
+          <QuickPlanComparison
+            plans={plans}
+            subscription={subscription}
+            processing={processing}
+            onUpgrade={handleUpgrade}
+            onShowFullComparison={() => setShowPlans(true)}
+          />
+        )}
 
-      {subscription.subscriptionStatus === "Trial" && subscription.daysRemaining !== null && (
-        <div className={`flex items-start gap-3 p-4 rounded-lg border ${
-          subscription.trialCardCollected
-            ? "bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800"
-            : subscription.daysRemaining > 7
-              ? "bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800"
-              : subscription.daysRemaining > 3
-                ? "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800"
-                : "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800"
-        }`}>
-          <div className={`p-1.5 rounded-lg ${
-            subscription.trialCardCollected
-              ? "bg-green-100 dark:bg-green-900/40"
-              : subscription.daysRemaining > 7
-                ? "bg-blue-100 dark:bg-blue-900/40"
-                : subscription.daysRemaining > 3
-                  ? "bg-amber-100 dark:bg-amber-900/40"
-                  : "bg-red-100 dark:bg-red-900/40"
-          }`}>
-            {subscription.trialCardCollected ? (
-              <CreditCard className="h-5 w-5 text-green-600" />
-            ) : (
-              <Sparkles className="h-5 w-5 text-blue-600" />
-            )}
-          </div>
-          <div className="flex-1">
-            <p className={`font-semibold ${
-              subscription.trialCardCollected
-                ? "text-green-800 dark:text-green-300"
-                : subscription.daysRemaining > 7
-                  ? "text-blue-800 dark:text-blue-300"
-                  : subscription.daysRemaining > 3
-                    ? "text-amber-800 dark:text-amber-300"
-                    : "text-red-800 dark:text-red-300"
-            }`}>
-              {subscription.trialCardCollected
-                ? "Tarjeta registrada — tu trial continúa"
-                : `Tu periodo de prueba termina en ${subscription.daysRemaining} día${subscription.daysRemaining !== 1 ? "s" : ""}`}
-            </p>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {subscription.trialCardCollected
-                ? `Se cobrará automáticamente cuando termine tu trial${subscription.trialEndsAt ? ` el ${new Date(subscription.trialEndsAt).toLocaleDateString("es-MX")}` : ""}.`
-                : "Agrega un método de pago para no perder acceso a las funciones PRO."}
-            </p>
-          </div>
-          {!subscription.trialCardCollected && (
-            <Button
-              size="sm"
-              onClick={handleTrialCheckout}
-              disabled={trialCheckoutLoading}
-              className="bg-green-600 hover:bg-green-700 text-white flex-shrink-0"
-            >
-              {trialCheckoutLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <>
-                  <CreditCard className="h-4 w-4 mr-1.5" />
-                  Agregar método de pago
-                </>
-              )}
-            </Button>
-          )}
-        </div>
-      )}
+        {subscription.hasStripe && (
+          <PaymentMethods
+            paymentMethods={paymentMethods}
+            billingLoading={billingLoading}
+            processing={processing}
+            onManageBilling={handleManageBilling}
+          />
+        )}
 
-      {/* ── Current plan hero ─────────────────────── */}
-      <Card className="border-2 border-green-200 dark:border-green-800/40 bg-gradient-to-br from-green-50/80 via-emerald-50/50 to-white dark:from-green-950/30 dark:via-emerald-950/20 dark:to-background overflow-hidden">
-        <CardContent className="p-6">
-          <div className="flex items-start justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <div className="p-2.5 bg-background rounded-xl shadow-sm border border-green-100 dark:border-green-900">
-                <SbSubscription size={32} />
-              </div>
-              <div>
-                <div className="flex items-center gap-2.5">
-                  <h2 className="text-xl font-bold text-foreground">
-                    Plan {currentPlan?.nombre || subscription.planTipo || "Sin plan"}
-                  </h2>
-                  <Badge className={statusInfo.color}>{statusInfo.label}</Badge>
-                </div>
-                <p className="text-sm text-muted-foreground mt-0.5">{subscription.nombreEmpresa}</p>
-              </div>
-            </div>
+        {subscription.hasStripe && (
+          <InvoiceHistory
+            invoices={invoices}
+            billingLoading={billingLoading}
+          />
+        )}
 
-            <Button size="sm" onClick={() => setShowPlans(true)} className="bg-green-600 hover:bg-green-700 text-white">
-              <ArrowUpRight className="h-4 w-4 mr-1.5" />
-              Cambiar plan
-            </Button>
-          </div>
-
-          {/* Usage grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Users */}
-            <div className="bg-background/80 backdrop-blur-sm rounded-xl p-4 border border-border/50">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-xs font-medium text-muted-foreground">Usuarios</span>
-                </div>
-                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                  usersOver
-                    ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
-                    : usersPercent >= 80
-                      ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
-                      : "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
-                }`}>
-                  {subscription.activeUsuarios}/{subscription.maxUsuarios}
-                </span>
-              </div>
-              <div className="w-full bg-muted rounded-full h-2">
-                <div
-                  className={`h-2 rounded-full transition-all duration-500 ${
-                    usersOver ? "bg-red-500" : usersPercent >= 80 ? "bg-amber-500" : "bg-green-500"
-                  }`}
-                  style={{ width: `${usersPercent}%` }}
-                />
-              </div>
-              {usersOver && (
-                <p className="text-[11px] text-red-600 dark:text-red-400 mt-2 font-medium">Límite excedido</p>
-              )}
-            </div>
-
-            {/* Expiration */}
-            <div className="bg-background/80 backdrop-blur-sm rounded-xl p-4 border border-border/50">
-              <div className="flex items-center gap-2 mb-3">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span className="text-xs font-medium text-muted-foreground">Vencimiento</span>
-              </div>
-              <p className="text-lg font-bold text-foreground">
-                {subscription.fechaExpiracion
-                  ? new Date(subscription.fechaExpiracion).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" })
-                  : "Sin fecha"}
-              </p>
-              {daysLeft !== null && daysLeft <= 30 && (
-                <p className={`text-[11px] mt-1 font-medium ${daysLeft <= 7 ? "text-red-600" : daysLeft <= 14 ? "text-amber-600" : "text-muted-foreground"}`}>
-                  {daysLeft === 0 ? "Vence hoy" : `${daysLeft} día${daysLeft !== 1 ? "s" : ""} restante${daysLeft !== 1 ? "s" : ""}`}
-                </p>
-              )}
-            </div>
-
-            {/* Products */}
-            {currentPlan && (
-              <div className="bg-background/80 backdrop-blur-sm rounded-xl p-4 border border-border/50">
-                <div className="flex items-center gap-2 mb-3">
-                  <Package className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-xs font-medium text-muted-foreground">Productos</span>
-                </div>
-                <p className="text-lg font-bold text-foreground">
-                  {currentPlan.maxProductos.toLocaleString()}
-                </p>
-                <p className="text-[11px] text-muted-foreground mt-1">máximo permitido</p>
-              </div>
-            )}
-
-            {/* Features */}
-            {currentPlan && (
-              <div className="bg-background/80 backdrop-blur-sm rounded-xl p-4 border border-border/50">
-                <div className="flex items-center gap-2 mb-3">
-                  <Sparkles className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-xs font-medium text-muted-foreground">Funciones</span>
-                </div>
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-1.5">
-                    {currentPlan.incluyeReportes ? (
-                      <Check className="h-3.5 w-3.5 text-green-500" strokeWidth={2.5} />
-                    ) : (
-                      <X className="h-3.5 w-3.5 text-gray-300 dark:text-gray-600" />
-                    )}
-                    <span className={`text-xs ${currentPlan.incluyeReportes ? "text-foreground" : "text-muted-foreground"}`}>Reportes</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    {currentPlan.incluyeSoportePrioritario ? (
-                      <Check className="h-3.5 w-3.5 text-green-500" strokeWidth={2.5} />
-                    ) : (
-                      <X className="h-3.5 w-3.5 text-gray-300 dark:text-gray-600" />
-                    )}
-                    <span className={`text-xs ${currentPlan.incluyeSoportePrioritario ? "text-foreground" : "text-muted-foreground"}`}>Soporte prioritario</span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* ── Consumo ─────────────────── */}
-      {subscription && (
-        <div className="mt-2 page-animate-delay-1">
-          <h3 className="text-sm font-semibold text-muted-foreground mb-3">Consumo</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Timbres CFDI */}
-            <Card>
-              <CardContent className="p-5">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 flex items-center justify-center"><SbBilling size={32} /></div>
-                  <div>
-                    <h4 className="font-semibold text-sm">Timbres CFDI</h4>
-                    <p className="text-xs text-muted-foreground">Facturación electrónica</p>
-                  </div>
-                </div>
-                {timbres ? (
-                  <>
-                    <div className="flex items-baseline justify-between mb-2">
-                      <span className="text-2xl font-bold tabular-nums">{timbres.disponibles}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {timbres.usados}/{timbres.maximo} usados{timbres.extras > 0 && ` + ${timbres.extras} extras`}
-                      </span>
-                    </div>
-                    <div className="w-full h-2 bg-muted rounded-full overflow-hidden mb-4">
-                      <div
-                        className={`h-full rounded-full transition-all ${
-                          (timbres.maximo + timbres.extras) > 0
-                            ? timbres.usados / (timbres.maximo + timbres.extras) > 0.9 ? 'bg-red-500'
-                            : timbres.usados / (timbres.maximo + timbres.extras) > 0.6 ? 'bg-amber-500'
-                            : 'bg-green-500'
-                            : 'bg-muted-foreground/30'
-                        }`}
-                        style={{ width: `${(timbres.maximo + timbres.extras) > 0 ? Math.min(100, (timbres.usados / (timbres.maximo + timbres.extras)) * 100) : 0}%` }}
-                      />
-                    </div>
-                    <Link href="/subscription/buy-timbres">
-                      <button className="w-full py-2 px-4 text-sm font-medium text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg transition-colors">
-                        Comprar timbres &rarr;
-                      </button>
-                    </Link>
-                  </>
-                ) : (
-                  <p className="text-sm text-muted-foreground">Tu plan no incluye facturación</p>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Créditos IA */}
-            <Card>
-              <CardContent className="p-5">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 flex items-center justify-center"><SbAI size={32} /></div>
-                  <div>
-                    <h4 className="font-semibold text-sm">Créditos IA</h4>
-                    <p className="text-xs text-muted-foreground">Asistente inteligente</p>
-                  </div>
-                </div>
-                <p className="text-sm text-muted-foreground mb-4">Disponible en la sección de Asistente IA</p>
-                <Link href="/ai">
-                  <button className="w-full py-2 px-4 text-sm font-medium text-violet-700 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20 hover:bg-violet-100 dark:hover:bg-violet-900/30 rounded-lg transition-colors">
-                    Ver créditos IA &rarr;
-                  </button>
-                </Link>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      )}
-
-      {/* ── Quick plan comparison ─────────────────── */}
-      {plans.length > 0 && !showPlans && (
-        <Card className="page-animate-delay-1">
-          <CardContent className="p-5">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-muted-foreground">Planes disponibles</h3>
-            <Button variant="ghost" size="sm" onClick={() => setShowPlans(true)} className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950/30">
-              Ver comparativa completa
-              <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {plans.map((plan) => {
-              const effectivePlan = normalizePlanCode(subscription.planTipo);
-              const isCurrent = normalizePlanCode(plan.codigo) === effectivePlan;
-              const price = plan.precioMensual;
-              const downgrade = getDowngradeInfo(plan, subscription.planTipo ?? null, subscription);
-              const isBlocked = downgrade.isFreeBlocked || downgrade.violations.length > 0;
-
-              return (
-                <div
-                  key={plan.id}
-                  className={`flex items-center justify-between p-4 rounded-xl border transition-all ${
-                    isCurrent
-                      ? "border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20"
-                      : "border-border hover:border-green-200 dark:hover:border-green-800 hover:bg-accent/50"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-foreground">{plan.nombre}</span>
-                        {isCurrent && (
-                          <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400">
-                            Actual
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-sm text-muted-foreground">
-                        {price === 0 ? "Gratis" : `$${price.toLocaleString("es-MX")} MXN/mes`}
-                        {" · "}{plan.maxUsuarios} usuarios · {plan.maxProductos.toLocaleString()} productos
-                      </span>
-                    </div>
-                  </div>
-                  {!isCurrent && !isBlocked && plan.codigo !== "FREE" && (
-                    <Button
-                      size="sm"
-                      variant={downgrade.isDowngrade ? "outline" : "default"}
-                      onClick={() => handleUpgrade(plan.codigo)}
-                      disabled={processing}
-                      className={downgrade.isDowngrade ? "" : "bg-green-600 hover:bg-green-700 text-white"}
-                    >
-                      {downgrade.isDowngrade ? "Cambiar" : "Actualizar"}
-                    </Button>
-                  )}
-                  {isBlocked && !isCurrent && (
-                    <span className="text-xs text-muted-foreground">No disponible</span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* ── Payment Method ──────────────────────────── */}
-      {subscription.hasStripe && (
-        <Card className="page-animate-delay-1">
-          <CardContent className="p-5">
-          <div className="flex items-center gap-2.5 mb-3">
-            <SbPayments size={20} />
-            <h3 className="text-sm font-semibold text-foreground">Método de pago</h3>
-          </div>
-          {billingLoading ? (
-            <div className="flex items-center gap-2 p-4 border border-border rounded-xl">
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Cargando...</span>
-            </div>
-          ) : paymentMethods.length > 0 ? (
-            <div className="space-y-2">
-              {paymentMethods.map((pm) => (
-                <div
-                  key={pm.id}
-                  className="flex items-center justify-between p-4 border border-border rounded-xl bg-gradient-to-r from-background to-muted/20 hover:shadow-sm transition-all"
-                >
-                  <div className="flex items-center gap-3.5">
-                    <CardBrandIcon brand={pm.cardBrand} className="h-8 w-12 rounded" />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-foreground capitalize">
-                          {pm.cardBrand || "Tarjeta"}
-                        </span>
-                        <span className="text-muted-foreground font-mono">
-                          •••• {pm.cardLast4}
-                        </span>
-                        {pm.isDefault && (
-                          <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400">
-                            Principal
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-xs text-muted-foreground">
-                        Vence {pm.cardExpMonth?.toString().padStart(2, "0")}/{pm.cardExpYear}
-                      </span>
-                    </div>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleManageBilling}
-                    disabled={processing}
-                  >
-                    Actualizar
-                    <ExternalLink className="h-3 w-3 ml-1 opacity-50" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="flex items-center gap-3 p-4 border border-dashed border-border rounded-xl">
-              <CreditCard className="h-5 w-5 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">No hay métodos de pago registrados</span>
-            </div>
-          )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* ── Billing History ────────────────────────── */}
-      {subscription.hasStripe && (
-        <Card className="page-animate-delay-2">
-          <CardContent className="p-5">
-          <div className="flex items-center gap-2.5 mb-3">
-            <SbWallet size={20} />
-            <h3 className="text-sm font-semibold text-foreground">Historial de facturación</h3>
-          </div>
-          {billingLoading ? (
-            <div className="flex items-center gap-2 p-4 border border-border rounded-xl">
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Cargando historial...</span>
-            </div>
-          ) : invoices.length > 0 ? (
-            <div className="border border-border rounded-xl overflow-hidden">
-              {/* Desktop table */}
-              <div className="hidden md:block">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-border bg-muted/30">
-                      <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-3">Fecha</th>
-                      <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-3">No. Factura</th>
-                      <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-3">Período</th>
-                      <th className="text-right text-xs font-semibold text-muted-foreground px-4 py-3">Monto</th>
-                      <th className="text-center text-xs font-semibold text-muted-foreground px-4 py-3">Estado</th>
-                      <th className="text-right text-xs font-semibold text-muted-foreground px-4 py-3">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {invoices.map((inv, i) => (
-                      <tr key={inv.id} className={`border-b border-border/50 last:border-0 hover:bg-accent/30 transition-colors ${i % 2 === 0 ? "" : "bg-muted/10"}`}>
-                        <td className="px-4 py-3 text-sm text-foreground">
-                          {new Date(inv.created).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" })}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-muted-foreground font-mono">
-                          {inv.number || "—"}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-muted-foreground">
-                          {new Date(inv.periodStart).toLocaleDateString("es-MX", { day: "numeric", month: "short" })}
-                          {" — "}
-                          {new Date(inv.periodEnd).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" })}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-foreground text-right font-medium">
-                          ${(inv.amountPaid / 100).toLocaleString("es-MX", { minimumFractionDigits: 2 })} {inv.currency.toUpperCase()}
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <InvoiceStatusBadge status={inv.status} />
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            {inv.hostedInvoiceUrl && (
-                              <a
-                                href={inv.hostedInvoiceUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-md bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800 dark:hover:bg-blue-900/50 transition-colors"
-                                title="Ver factura"
-                              >
-                                <FileText className="h-3.5 w-3.5" />
-                                Ver
-                              </a>
-                            )}
-                            {inv.invoicePdfUrl && (
-                              <a
-                                href={inv.invoicePdfUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-md bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800 dark:hover:bg-red-900/50 transition-colors"
-                                title="Descargar PDF"
-                              >
-                                <Download className="h-3.5 w-3.5" />
-                                PDF
-                              </a>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Mobile cards */}
-              <div className="md:hidden divide-y divide-border">
-                {invoices.map((inv) => (
-                  <div key={inv.id} className="p-4 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-foreground">
-                        {new Date(inv.created).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" })}
-                      </span>
-                      <InvoiceStatusBadge status={inv.status} />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground font-mono">{inv.number || "Sin número"}</span>
-                      <span className="text-sm font-semibold text-foreground">
-                        ${(inv.amountPaid / 100).toLocaleString("es-MX", { minimumFractionDigits: 2 })} {inv.currency.toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {new Date(inv.periodStart).toLocaleDateString("es-MX", { day: "numeric", month: "short" })}
-                      {" — "}
-                      {new Date(inv.periodEnd).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" })}
-                    </div>
-                    <div className="flex gap-2 pt-1">
-                      {inv.hostedInvoiceUrl && (
-                        <a
-                          href={inv.hostedInvoiceUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800 dark:hover:bg-blue-900/50 transition-colors"
-                        >
-                          <FileText className="h-3.5 w-3.5" />
-                          Ver factura
-                        </a>
-                      )}
-                      {inv.invoicePdfUrl && (
-                        <a
-                          href={inv.invoicePdfUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800 dark:hover:bg-red-900/50 transition-colors"
-                        >
-                          <Download className="h-3.5 w-3.5" />
-                          PDF
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center gap-3 p-4 border border-dashed border-border rounded-xl">
-              <Receipt className="h-5 w-5 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">No hay facturas todavía</span>
-            </div>
-          )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* ── Danger zone ───────────────────────────── */}
-      {subscription.hasStripe && subscription.subscriptionStatus !== "Cancelled" && !subscription.cancellationScheduledFor && (
-        <div className="page-animate-delay-2">
-          <div className="flex items-center justify-between p-4 border border-red-200 dark:border-red-900/50 rounded-xl bg-red-50/50 dark:bg-red-950/20">
-            <div className="flex items-center gap-3">
-              <ShieldAlert className="h-4 w-4 text-red-500 dark:text-red-400" />
-              <div>
-                <p className="text-sm font-medium text-red-700 dark:text-red-300">Cancelar suscripción</p>
-                <p className="text-xs text-red-600/70 dark:text-red-400/60">Mantendrás acceso hasta el final del período pagado</p>
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowCancelDialog(true)}
-              className="border-red-300 text-red-600 hover:text-red-700 hover:bg-red-100 hover:border-red-400 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/50 dark:hover:border-red-700"
-            >
-              Cancelar plan
-            </Button>
-          </div>
-        </div>
-      )}
+        <CancelSection
+          subscription={subscription}
+          currentPlan={currentPlan}
+          processing={processing}
+          showCancelDialog={showCancelDialog}
+          onShowCancelDialog={setShowCancelDialog}
+          onCancel={handleCancel}
+        />
 
       </div>
-
-      {/* ── Cancellation confirmation dialog ──────── */}
-      <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <div className="mx-auto mb-2">
-              <SbAlert size={48} />
-            </div>
-            <DialogTitle className="text-center">Cancelar suscripción</DialogTitle>
-            <DialogDescription className="text-center">
-              Tu suscripción seguirá activa hasta el final del período actual
-              {subscription.fechaExpiracion && (
-                <> (<strong>{new Date(subscription.fechaExpiracion).toLocaleDateString("es-MX")}</strong>)</>
-              )}.
-              Después de esa fecha perderás acceso a las funciones de tu plan.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="rounded-lg border border-border bg-muted/50 p-3 text-sm">
-            <p className="font-medium mb-2 text-foreground">Lo que perderás:</p>
-            <ul className="space-y-1.5 text-muted-foreground">
-              {currentPlan && currentPlan.maxUsuarios > 2 && (
-                <li className="flex items-center gap-2">
-                  <X className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
-                  Hasta {currentPlan.maxUsuarios} usuarios (baja a 2)
-                </li>
-              )}
-              {currentPlan?.incluyeReportes && (
-                <li className="flex items-center gap-2">
-                  <X className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
-                  Reportes avanzados
-                </li>
-              )}
-              {currentPlan?.incluyeSoportePrioritario && (
-                <li className="flex items-center gap-2">
-                  <X className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
-                  Soporte prioritario
-                </li>
-              )}
-            </ul>
-          </div>
-
-          <DialogFooter className="flex-col sm:flex-row gap-2 pt-2">
-            <Button
-              variant="outline"
-              onClick={() => setShowCancelDialog(false)}
-              className="sm:flex-1"
-            >
-              Conservar mi plan
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleCancel}
-              disabled={processing}
-              className="sm:flex-1"
-            >
-              {processing ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : null}
-              Confirmar cancelación
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
     </PageHeader>
-  );
-}
-
-
-// ─── Plan Card (full comparison view) ──────────────────────
-function PlanCard({
-  plan, isCurrent, isPopular, price, monthlyEquivalent, billingInterval, processing, isBlocked, isDisabled, downgrade, onUpgrade,
-}: {
-  plan: SubscriptionPlan;
-  isCurrent: boolean;
-  isPopular: boolean;
-  price: number;
-  monthlyEquivalent: number;
-  billingInterval: "month" | "year";
-  processing: boolean;
-  isBlocked: boolean;
-  isDisabled: boolean;
-  downgrade: DowngradeWarning;
-  onUpgrade: () => void;
-}) {
-  return (
-    <div className="relative">
-      <div
-        className={`group relative rounded-2xl transition-all duration-300 ease-out hover:-translate-y-1 ${
-          isPopular
-            ? "border-2 border-green-500 dark:border-green-400 shadow-lg"
-            : "border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600"
-        } ${isCurrent ? "ring-2 ring-green-500/30" : ""}`}
-      >
-
-        <div className="relative bg-white dark:bg-gray-900 rounded-2xl p-6 h-full flex flex-col min-h-[420px]">
-          {isPopular && (
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
-              <span className="bg-green-600 text-white text-[11px] font-semibold px-4 py-1 rounded-full shadow-sm flex items-center gap-1">
-                <Sparkles className="h-3 w-3" />
-                Más popular
-              </span>
-            </div>
-          )}
-
-          <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white">{plan.nombre}</h3>
-            {isCurrent && (
-              <span className="text-[11px] font-semibold uppercase tracking-wider px-3 py-0.5 rounded-full bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400">
-                Plan actual
-              </span>
-            )}
-          </div>
-
-          <div className="mt-4 mb-4 pb-4 border-b border-gray-100 dark:border-gray-800">
-            <div className="flex items-baseline gap-1">
-              <span
-                key={`${plan.codigo}-${billingInterval}`}
-                className="text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight animate-[subPricePop_0.4s_cubic-bezier(0.34,1.56,0.64,1)]"
-              >
-                {price === 0 ? "Gratis" : `$${monthlyEquivalent.toLocaleString("es-MX")}`}
-              </span>
-              {price > 0 && (
-                <span className="text-sm text-gray-400 dark:text-gray-500 font-medium">MXN/mes</span>
-              )}
-            </div>
-            {price > 0 && billingInterval === "year" && (
-              <p className="text-xs text-green-600 dark:text-green-400 font-medium mt-1.5 animate-[subFadeIn_0.3s_ease-out]">
-                Facturado ${price.toLocaleString("es-MX")} MXN/año
-              </p>
-            )}
-          </div>
-
-          <ul className="space-y-2.5 flex-1">
-            <li className="flex items-center gap-2.5 text-sm text-gray-600 dark:text-gray-300">
-              <Check className="h-4 w-4 text-green-500 flex-shrink-0" strokeWidth={2.5} />
-              {plan.maxUsuarios} usuarios
-            </li>
-            <li className="flex items-center gap-2.5 text-sm text-gray-600 dark:text-gray-300">
-              <Check className="h-4 w-4 text-green-500 flex-shrink-0" strokeWidth={2.5} />
-              {plan.maxProductos.toLocaleString()} productos
-            </li>
-            <li className="flex items-center gap-2.5 text-sm text-gray-600 dark:text-gray-300">
-              <Check className="h-4 w-4 text-green-500 flex-shrink-0" strokeWidth={2.5} />
-              {plan.maxClientesPorMes} clientes/mes
-            </li>
-            <li className={`flex items-center gap-2.5 text-sm ${plan.incluyeReportes ? "text-gray-600 dark:text-gray-300" : "text-gray-400 dark:text-gray-600"}`}>
-              {plan.incluyeReportes ? (
-                <Check className="h-4 w-4 text-green-500 flex-shrink-0" strokeWidth={2.5} />
-              ) : (
-                <X className="h-4 w-4 text-gray-300 dark:text-gray-700 flex-shrink-0" />
-              )}
-              Reportes avanzados
-            </li>
-            <li className={`flex items-center gap-2.5 text-sm ${plan.incluyeSoportePrioritario ? "text-gray-600 dark:text-gray-300" : "text-gray-400 dark:text-gray-600"}`}>
-              {plan.incluyeSoportePrioritario ? (
-                <Check className="h-4 w-4 text-green-500 flex-shrink-0" strokeWidth={2.5} />
-              ) : (
-                <X className="h-4 w-4 text-gray-300 dark:text-gray-700 flex-shrink-0" />
-              )}
-              Soporte prioritario
-            </li>
-          </ul>
-
-          {isBlocked && !isCurrent && (
-            <div className={`flex items-center gap-2 px-3 py-2 rounded-lg mt-auto ${
-              downgrade.isFreeBlocked
-                ? "bg-gray-100 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700"
-                : "bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40"
-            }`}>
-              <AlertTriangle className={`h-3.5 w-3.5 flex-shrink-0 ${
-                downgrade.isFreeBlocked ? "text-gray-400" : "text-amber-500"
-              }`} />
-              <span className={`text-[11px] font-medium leading-tight ${
-                downgrade.isFreeBlocked
-                  ? "text-gray-500 dark:text-gray-400"
-                  : "text-amber-700 dark:text-amber-400"
-              }`}>
-                {downgrade.isFreeBlocked
-                  ? "No disponible con historial de pago"
-                  : `Excedes límites: ${downgrade.violations.map(v => v.split(" (")[0]).join(", ")}`}
-              </span>
-            </div>
-          )}
-
-          <button
-            className={`group/btn flex items-center justify-center gap-2 w-full py-3 rounded-xl font-semibold text-sm transition-all duration-300 ${isBlocked || isCurrent ? "mt-3" : "mt-5"} ${
-              isCurrent
-                ? "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-default"
-                : isDisabled
-                  ? "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed opacity-60"
-                  : downgrade.isDowngrade
-                    ? "bg-amber-500 text-white hover:bg-amber-600 shadow-md"
-                    : isPopular
-                      ? "bg-green-600 text-white hover:bg-green-700 shadow-md"
-                      : "bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100"
-            }`}
-            disabled={isDisabled}
-            onClick={onUpgrade}
-          >
-            {processing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : isCurrent ? (
-              "Plan actual"
-            ) : isBlocked ? (
-              downgrade.isFreeBlocked ? "No disponible" : "Límites excedidos"
-            ) : downgrade.isDowngrade ? (
-              <>
-                Cambiar plan
-                <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover/btn:translate-x-1" />
-              </>
-            ) : (
-              <>
-                Actualizar
-                <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover/btn:translate-x-1" />
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-
-    </div>
-  );
-}
-
-
-// ─── Invoice Status Badge ──────────────────────────────────
-const invoiceStatusMap: Record<string, { label: string; className: string }> = {
-  paid: { label: "Pagado", className: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300" },
-  open: { label: "Pendiente", className: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300" },
-  draft: { label: "Borrador", className: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300" },
-  uncollectible: { label: "Incobrable", className: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300" },
-  void: { label: "Anulado", className: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400" },
-};
-
-function InvoiceStatusBadge({ status }: { status: string }) {
-  const info = invoiceStatusMap[status] || { label: status, className: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300" };
-  return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${info.className}`}>
-      {info.label}
-    </span>
   );
 }
