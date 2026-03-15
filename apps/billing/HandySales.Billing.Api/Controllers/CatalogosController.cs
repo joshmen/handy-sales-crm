@@ -102,7 +102,7 @@ public class CatalogosController : ControllerBase
                 c.FolioActual,
                 c.LogoUrl,
                 c.Activo,
-                c.PacUsuario,
+                // PAC credentials managed via env vars — don't expose to frontend
                 c.PacAmbiente,
                 HasCertificado = c.CertificadoSat != null,
                 HasLlavePrivada = c.LlavePrivada != null,
@@ -145,18 +145,10 @@ public class CatalogosController : ControllerBase
             SerieFactura = request.SerieFactura ?? "A",
             FolioActual = 1,
             LogoUrl = request.LogoUrl,
-            PacUsuario = request.PacUsuario,
-            PacAmbiente = request.PacAmbiente ?? "sandbox",
+            // PAC credentials are managed via env vars (FINKOK_USUARIO/FINKOK_PASSWORD/FINKOK_AMBIENTE)
+            // Ignore PacUsuario/PacPassword/PacAmbiente from frontend requests
             Activo = true
         };
-
-        // Encrypt PAC password before storing (never store plaintext)
-        if (!string.IsNullOrEmpty(request.PacPassword))
-        {
-            var encryptionKey = _configuration["Jwt:Secret"]
-                ?? throw new InvalidOperationException("Jwt:Secret not configured");
-            config.PacPassword = EncryptPassword(request.PacPassword, encryptionKey);
-        }
 
         _context.ConfiguracionesFiscales.Add(config);
         await _context.SaveChangesAsync();
@@ -189,16 +181,7 @@ public class CatalogosController : ControllerBase
         config.Moneda = request.Moneda ?? config.Moneda;
         config.SerieFactura = request.SerieFactura ?? config.SerieFactura;
         config.LogoUrl = request.LogoUrl ?? config.LogoUrl;
-        config.PacUsuario = request.PacUsuario ?? config.PacUsuario;
-        config.PacAmbiente = request.PacAmbiente ?? config.PacAmbiente;
-
-        // Encrypt PAC password before storing (never store plaintext)
-        if (!string.IsNullOrEmpty(request.PacPassword))
-        {
-            var encryptionKey = _configuration["Jwt:Secret"]
-                ?? throw new InvalidOperationException("Jwt:Secret not configured");
-            config.PacPassword = EncryptPassword(request.PacPassword, encryptionKey);
-        }
+        // PAC credentials are managed via env vars — ignore from frontend requests
 
         config.UpdatedAt = DateTime.UtcNow;
 

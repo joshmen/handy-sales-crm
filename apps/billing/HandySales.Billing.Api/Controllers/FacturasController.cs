@@ -500,27 +500,36 @@ public class FacturasController : ControllerBase
         if (config == null)
             return BadRequest("No se encontró configuración fiscal activa. Configure sus datos fiscales primero.");
 
-        if (string.IsNullOrEmpty(config.PacUsuario) || string.IsNullOrEmpty(config.PacPassword))
-            return BadRequest("No se encontraron credenciales del PAC. Configure sus credenciales Finkok.");
-
         if (string.IsNullOrEmpty(config.CertificadoSat) || string.IsNullOrEmpty(config.LlavePrivada))
             return BadRequest("No se encontraron certificados CSD. Suba su certificado (.cer) y llave privada (.key).");
 
-        // Decrypt PAC password into a local variable — never modify the tracked entity
+        // Resolve PAC credentials: env vars take priority, then DB (legacy)
+        var pacUsuario = _configuration["FINKOK_USUARIO"] ?? config.PacUsuario;
+        var pacAmbiente = _configuration["FINKOK_AMBIENTE"] ?? config.PacAmbiente;
+
         string? decryptedPacPassword = null;
-        if (!string.IsNullOrEmpty(config.PacPassword))
+        var envPacPassword = _configuration["FINKOK_PASSWORD"];
+        if (!string.IsNullOrEmpty(envPacPassword))
         {
+            decryptedPacPassword = envPacPassword;
+        }
+        else if (!string.IsNullOrEmpty(config.PacPassword))
+        {
+            // Legacy fallback: decrypt from DB
             var encryptionKey = _configuration["Jwt:Secret"]
                 ?? throw new InvalidOperationException("Jwt:Secret not configured");
             decryptedPacPassword = CatalogosController.DecryptPassword(config.PacPassword, encryptionKey);
         }
 
-        // Build a detached copy with decrypted credentials for PAC calls
+        if (string.IsNullOrEmpty(pacUsuario) || string.IsNullOrEmpty(decryptedPacPassword))
+            return BadRequest("No se encontraron credenciales del PAC. Configure las variables de entorno FINKOK_USUARIO/FINKOK_PASSWORD o las credenciales en la base de datos.");
+
+        // Build a detached copy with resolved credentials for PAC calls
         var pacConfig = new ConfiguracionFiscal
         {
-            PacUsuario = config.PacUsuario,
+            PacUsuario = pacUsuario,
             PacPassword = decryptedPacPassword,
-            PacAmbiente = config.PacAmbiente,
+            PacAmbiente = pacAmbiente,
             CertificadoSat = config.CertificadoSat,
             LlavePrivada = config.LlavePrivada,
             PasswordCertificado = config.PasswordCertificado,
@@ -653,13 +662,13 @@ public class FacturasController : ControllerBase
             .Where(c => c.TenantId == tenantId && c.Activo)
             .FirstOrDefaultAsync();
 
-        if (config == null || string.IsNullOrEmpty(config.PacUsuario) || string.IsNullOrEmpty(config.PacPassword))
-            return BadRequest("No se encontró configuración fiscal o credenciales PAC. Configure sus credenciales Finkok para cancelar facturas timbradas.");
+        if (config == null)
+            return BadRequest("No se encontró configuración fiscal. Configure sus datos fiscales para cancelar facturas timbradas.");
 
         if (string.IsNullOrEmpty(factura.Uuid))
             return BadRequest("La factura no tiene UUID asignado. No se puede cancelar ante el SAT.");
 
-        // Decrypt CSD password and PAC password into local variables — never modify the tracked entity
+        // Decrypt CSD password into a local variable — never modify the tracked entity
         var encryptionKey = _configuration["Jwt:Secret"]
             ?? throw new InvalidOperationException("Jwt:Secret not configured");
 
@@ -667,14 +676,31 @@ public class FacturasController : ControllerBase
         if (!string.IsNullOrEmpty(config.PasswordCertificado))
             decryptedCsdPassword = CatalogosController.DecryptPassword(config.PasswordCertificado, encryptionKey);
 
+        // Resolve PAC credentials: env vars take priority, then DB (legacy)
+        var pacUsuario = _configuration["FINKOK_USUARIO"] ?? config.PacUsuario;
+        var pacAmbiente = _configuration["FINKOK_AMBIENTE"] ?? config.PacAmbiente;
+
         string? decryptedPacPassword = null;
-        if (!string.IsNullOrEmpty(config.PacPassword))
+        var envPacPassword = _configuration["FINKOK_PASSWORD"];
+        if (!string.IsNullOrEmpty(envPacPassword))
+        {
+            decryptedPacPassword = envPacPassword;
+        }
+        else if (!string.IsNullOrEmpty(config.PacPassword))
+        {
+            // Legacy fallback: decrypt from DB
             decryptedPacPassword = CatalogosController.DecryptPassword(config.PacPassword, encryptionKey);
+        }
+
+        if (string.IsNullOrEmpty(pacUsuario) || string.IsNullOrEmpty(decryptedPacPassword))
+            return BadRequest("No se encontraron credenciales del PAC. Configure las variables de entorno FINKOK_USUARIO/FINKOK_PASSWORD o las credenciales en la base de datos.");
 
         // Detach config so PAC service can't accidentally persist decrypted values
         _context.Entry(config).State = Microsoft.EntityFrameworkCore.EntityState.Detached;
         config.PasswordCertificado = decryptedCsdPassword;
+        config.PacUsuario = pacUsuario;
         config.PacPassword = decryptedPacPassword;
+        config.PacAmbiente = pacAmbiente;
 
         var resultado = await _pacService.CancelarAsync(
             factura.Uuid, factura.EmisorRfc,

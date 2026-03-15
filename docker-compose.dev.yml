@@ -119,6 +119,9 @@ services:
       SENDGRID_FROM_EMAIL: "noreply@handysuites.com"
       SENDGRID_FROM_NAME: "Handy Suites"
       MAIN_API_URL: "http://api_main:1050"
+      FINKOK_USUARIO: "xjoshmenx@gmail.com"
+      FINKOK_PASSWORD: "${FINKOK_PASSWORD:-}"
+      FINKOK_AMBIENTE: "sandbox"
     ports:
       - "1051:1051"
     depends_on:

@@ -83,7 +83,7 @@ export default function BillingSettingsPage() {
         { label: 'Configuración Fiscal' },
       ]}
       title="Configuración Fiscal"
-      subtitle="Datos del emisor, certificados CSD y credenciales PAC"
+      subtitle="Datos del emisor, certificados CSD y serie/folio"
       actions={
         <Button
           onClick={handleSave}
@@ -258,47 +258,6 @@ export default function BillingSettingsPage() {
           )}
         </section>
 
-        {/* Credenciales PAC */}
-        <section className="bg-card border border-border rounded-xl p-5">
-          <h2 className="text-sm font-semibold text-foreground mb-4">Credenciales PAC (Finkok)</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Usuario</label>
-              <input
-                type="text"
-                value={config.pacUsuario || ''}
-                onChange={e => updateField('pacUsuario', e.target.value)}
-                placeholder="usuario@finkok.com"
-                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-green-500/30"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Contraseña</label>
-              <input
-                type="password"
-                value={config.pacPassword || ''}
-                onChange={e => updateField('pacPassword', e.target.value)}
-                placeholder="••••••••"
-                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-green-500/30"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Ambiente</label>
-              <select
-                value={config.pacAmbiente || 'sandbox'}
-                onChange={e => updateField('pacAmbiente', e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-green-500/30"
-              >
-                <option value="sandbox">Sandbox (pruebas)</option>
-                <option value="production">Producción</option>
-              </select>
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground mt-3">
-            Las credenciales de Finkok se obtienen al contratar el servicio de timbrado.
-            Use &quot;sandbox&quot; para pruebas antes de activar producción.
-          </p>
-        </section>
       </div>
     </PageHeader>
   );
