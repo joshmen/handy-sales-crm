@@ -20,9 +20,6 @@ public class CobroRepository : ICobroRepository
     public async Task<List<CobroDto>> ObtenerCobrosAsync(int tenantId, int? clienteId = null, DateTime? desde = null, DateTime? hasta = null, int? usuarioId = null)
     {
         var query = _db.Cobros
-            .Include(c => c.Pedido)
-            .Include(c => c.Cliente)
-            .Include(c => c.Usuario)
             .AsNoTracking()
             .Where(c => c.TenantId == tenantId && c.Activo)
             .AsQueryable();
@@ -67,9 +64,6 @@ public class CobroRepository : ICobroRepository
     public async Task<CobroDto?> ObtenerPorIdAsync(int id, int tenantId)
     {
         return await _db.Cobros
-            .Include(c => c.Pedido)
-            .Include(c => c.Cliente)
-            .Include(c => c.Usuario)
             .AsNoTracking()
             .Where(c => c.Id == id && c.TenantId == tenantId)
             .Select(c => new CobroDto

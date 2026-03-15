@@ -99,6 +99,13 @@ public class Cliente : AuditableEntity
 
     // === Navegación ===
     public Tenant Tenant { get; set; } = null!;
+
+    [ForeignKey(nameof(IdZona))]
+    public Zona? Zona { get; set; }
+
+    [ForeignKey(nameof(CategoriaClienteId))]
+    public CategoriaCliente? Categoria { get; set; }
+
     public Usuario? Vendedor { get; set; }
     public ListaPrecio? ListaPrecios { get; set; }
 }

@@ -354,7 +354,6 @@ public class RutaVendedorRepository : IRutaVendedorRepository
     {
         return await _db.RutasCarga
             .AsNoTracking()
-            .Include(c => c.Producto)
             .Where(c => c.RutaId == rutaId && c.TenantId == tenantId && c.Activo)
             .Select(c => new RutaCargaDto
             {
@@ -366,10 +365,7 @@ public class RutaVendedorRepository : IRutaVendedorRepository
                 CantidadVenta = c.CantidadVenta,
                 CantidadTotal = c.CantidadTotal,
                 PrecioUnitario = c.PrecioUnitario,
-                Disponible = _db.Inventarios
-                    .Where(i => i.ProductoId == c.ProductoId && i.TenantId == tenantId)
-                    .Select(i => (int?)i.CantidadActual)
-                    .FirstOrDefault()
+                Disponible = c.Producto.Inventario != null ? (int?)c.Producto.Inventario.CantidadActual : null
             })
             .ToListAsync();
     }

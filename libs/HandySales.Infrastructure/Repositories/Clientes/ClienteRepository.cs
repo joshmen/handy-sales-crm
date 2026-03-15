@@ -227,10 +227,10 @@ public class ClienteRepository : IClienteRepository
                 RFC = c.RFC,
                 Correo = c.Correo,
                 Telefono = c.Telefono,
-                ZonaNombre = _db.Zonas.Where(z => z.Id == c.IdZona).Select(z => z.Nombre).FirstOrDefault(),
-                CategoriaNombre = _db.CategoriasClientes.Where(cat => cat.Id == c.CategoriaClienteId).Select(cat => cat.Nombre).FirstOrDefault(),
+                ZonaNombre = c.Zona != null ? c.Zona.Nombre : null,
+                CategoriaNombre = c.Categoria != null ? c.Categoria.Nombre : null,
                 VendedorId = c.VendedorId,
-                VendedorNombre = _db.Usuarios.Where(u => u.Id == c.VendedorId).Select(u => u.Nombre).FirstOrDefault(),
+                VendedorNombre = c.Vendedor != null ? c.Vendedor.Nombre : null,
                 Activo = c.Activo
             })
             .ToListAsync();
