@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CalendarClock, Map, ShoppingBag, Wallet, Menu, Users } from 'lucide-react-native';
+import { SbDashboard, SbMap, SbOrders, SbPayments, SbMenu, SbTeam } from '@/components/icons/DashboardIcons';
 import { useAutoSync } from '@/hooks/useAutoSync';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { usePendingCount } from '@/hooks';
@@ -50,28 +50,28 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: 'Hoy',
-          tabBarIcon: ({ color, size }) => <CalendarClock size={size} color={color} />,
+          tabBarIcon: ({ size }) => <SbDashboard size={size} />,
         }}
       />
       <Tabs.Screen
         name="mapa"
         options={{
           title: 'Mapa',
-          tabBarIcon: ({ color, size }) => <Map size={size} color={color} />,
+          tabBarIcon: ({ size }) => <SbMap size={size} />,
         }}
       />
       <Tabs.Screen
         name="vender"
         options={{
           title: 'Vender',
-          tabBarIcon: ({ color, size }) => <ShoppingBag size={size} color={color} />,
+          tabBarIcon: ({ size }) => <SbOrders size={size} />,
         }}
       />
       <Tabs.Screen
         name="cobrar"
         options={{
           title: 'Cobrar',
-          tabBarIcon: ({ color, size }) => <Wallet size={size} color={color} />,
+          tabBarIcon: ({ size }) => <SbPayments size={size} />,
         }}
       />
       <Tabs.Screen
@@ -79,14 +79,14 @@ export default function TabsLayout() {
         options={{
           title: 'Equipo',
           href: isSupervisor ? undefined : null,
-          tabBarIcon: ({ color, size }) => <Users size={size} color={color} />,
+          tabBarIcon: ({ size }) => <SbTeam size={size} />,
         }}
       />
       <Tabs.Screen
         name="mas"
         options={{
           title: 'Más',
-          tabBarIcon: ({ color, size }) => <Menu size={size} color={color} />,
+          tabBarIcon: ({ size }) => <SbMenu size={size} />,
           tabBarBadge: pendingCount > 0 ? pendingCount : undefined,
           tabBarBadgeStyle: pendingCount > 0 ? { backgroundColor: '#f59e0b', fontSize: 10 } : undefined,
         }}
