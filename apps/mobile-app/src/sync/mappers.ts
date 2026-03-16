@@ -427,7 +427,7 @@ function rawToCobroDto(raw: DirtyRaw, operation: number): any {
     id: raw.server_id ?? 0,
     localId: raw.id,
     clienteId: raw.cliente_server_id ?? (parseInt(String(raw.cliente_id), 10) || 0),
-    pedidoId: raw.pedido_id ?? null,
+    pedidoId: raw.pedido_id ? (parseInt(String(raw.pedido_id), 10) || null) : null,
     monto: raw.monto ?? 0,
     metodoPago: raw.metodo_pago ?? 0,
     fechaCobro: new Date(raw.created_at).toISOString(),
