@@ -1,6 +1,7 @@
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { pedidosApi } from '@/api';
 import { performSync } from '@/sync';
+import Toast from 'react-native-toast-message';
 
 /** Trigger sync after server-side state changes so WatermelonDB gets updated */
 async function syncAfterMutation() {
@@ -54,10 +55,12 @@ export function useConfirmarPedido() {
   return useMutation({
     mutationFn: (id: number) => pedidosApi.confirmar(id),
     onSuccess: (_data, id) => {
+      Toast.show({ type: 'success', text1: 'Pedido confirmado', visibilityTime: 2000 });
       syncAfterMutation();
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['order', id] });
     },
+    onError: () => Toast.show({ type: 'error', text1: 'Error al confirmar', text2: 'Intenta de nuevo' }),
   });
 }
 
@@ -66,10 +69,12 @@ export function useProcesarPedido() {
   return useMutation({
     mutationFn: (id: number) => pedidosApi.procesar(id),
     onSuccess: (_data, id) => {
+      Toast.show({ type: 'success', text1: 'Pedido en proceso', visibilityTime: 2000 });
       syncAfterMutation();
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['order', id] });
     },
+    onError: () => Toast.show({ type: 'error', text1: 'Error al procesar', text2: 'Intenta de nuevo' }),
   });
 }
 
@@ -78,10 +83,12 @@ export function useEnRutaPedido() {
   return useMutation({
     mutationFn: (id: number) => pedidosApi.enRuta(id),
     onSuccess: (_data, id) => {
+      Toast.show({ type: 'success', text1: 'Pedido en ruta', visibilityTime: 2000 });
       syncAfterMutation();
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['order', id] });
     },
+    onError: () => Toast.show({ type: 'error', text1: 'Error al cambiar estado', text2: 'Intenta de nuevo' }),
   });
 }
 
@@ -91,10 +98,12 @@ export function useEntregarPedido() {
     mutationFn: ({ id, notasEntrega }: { id: number; notasEntrega?: string }) =>
       pedidosApi.entregar(id, notasEntrega),
     onSuccess: (_data, { id }) => {
+      Toast.show({ type: 'success', text1: 'Pedido entregado', visibilityTime: 2000 });
       syncAfterMutation();
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['order', id] });
     },
+    onError: () => Toast.show({ type: 'error', text1: 'Error al entregar', text2: 'Intenta de nuevo' }),
   });
 }
 
@@ -104,6 +113,7 @@ export function useCancelarPedido() {
     mutationFn: ({ id, razon }: { id: number; razon: string }) =>
       pedidosApi.cancelar(id, razon),
     onSuccess: (_data, { id }) => {
+      Toast.show({ type: 'info', text1: 'Pedido cancelado', visibilityTime: 2000 });
       syncAfterMutation();
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['order', id] });

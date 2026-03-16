@@ -3,6 +3,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui';
 import { CheckCircle, Eye, Plus, Home } from 'lucide-react-native';
+import Animated, { FadeInDown, BounceIn } from 'react-native-reanimated';
 
 export default function PedidoExitoScreen() {
   const router = useRouter();
@@ -22,25 +23,27 @@ export default function PedidoExitoScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 40 }]}>
-      <View style={styles.iconContainer}>
+      <Animated.View entering={BounceIn.delay(200).duration(600)} style={styles.iconContainer}>
         <View style={styles.iconCircle}>
           <CheckCircle size={56} color={iconColor} />
         </View>
-      </View>
+      </Animated.View>
 
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.subtitle}>{subtitle}</Text>
+      <Animated.View entering={FadeInDown.delay(500).duration(400)}>
+        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.subtitle}>{subtitle}</Text>
+      </Animated.View>
 
       {numero && (
-        <View style={[styles.orderBadge, { backgroundColor: badgeBg, borderColor: badgeBorder }]}>
+        <Animated.View entering={FadeInDown.delay(700).duration(400)} style={[styles.orderBadge, { backgroundColor: badgeBg, borderColor: badgeBorder }]}>
           <Text style={[styles.orderBadgeLabel, { color: badgeLabelColor }]}>
             {isDirecta ? 'Referencia' : 'Número de Pedido'}
           </Text>
           <Text style={[styles.orderBadgeNumber, { color: badgeNumberColor }]}>#{numero}</Text>
-        </View>
+        </Animated.View>
       )}
 
-      <View style={styles.actions}>
+      <Animated.View entering={FadeInDown.delay(900).duration(400)} style={styles.actions}>
         {id && (
           <Button
             title="Ver Pedido"
@@ -63,7 +66,7 @@ export default function PedidoExitoScreen() {
           fullWidth
           icon={<Home size={18} color="#64748b" />}
         />
-      </View>
+      </Animated.View>
     </View>
   );
 }

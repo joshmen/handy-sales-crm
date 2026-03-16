@@ -93,8 +93,8 @@ export default function ReciboScreen() {
   };
 
   const handleDone = () => {
-    // Go back to cobrar index
-    router.navigate('/(tabs)/cobrar');
+    // Replace to prevent back-navigation into payment form
+    router.replace('/(tabs)/cobrar' as any);
   };
 
   return (

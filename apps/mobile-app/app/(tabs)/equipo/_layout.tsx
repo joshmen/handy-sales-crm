@@ -9,6 +9,7 @@ export default function EquipoLayout() {
           headerStyle: { backgroundColor: '#ffffff' },
           headerTitleStyle: { fontWeight: '700', fontSize: 18, color: '#111827' },
           headerShadowVisible: false,
+          animation: 'slide_from_right',
         }}
       >
         <Stack.Screen name="index" options={{ title: 'Mi Equipo', headerShown: false }} />

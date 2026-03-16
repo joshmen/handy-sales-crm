@@ -9,6 +9,7 @@ export default function VenderLayout() {
         headerStyle: { backgroundColor: '#ffffff' },
         headerTitleStyle: { fontWeight: '700', fontSize: 18, color: '#111827' },
         headerShadowVisible: false,
+        animation: 'slide_from_right',
       }}
     >
       <Stack.Screen name="index" options={{ title: 'Pedidos' }} />
@@ -19,7 +20,7 @@ export default function VenderLayout() {
       <Stack.Screen name="crear/index" options={{ title: 'Nuevo Pedido' }} />
       <Stack.Screen name="crear/productos" options={{ title: 'Agregar Productos' }} />
       <Stack.Screen name="crear/revision" options={{ title: 'Revisar Pedido' }} />
-      <Stack.Screen name="crear/exito" options={{ title: '', headerShown: false }} />
+      <Stack.Screen name="crear/exito" options={{ title: '', headerShown: false, animation: 'fade', gestureEnabled: false }} />
     </Stack>
     </ErrorBoundary>
   );

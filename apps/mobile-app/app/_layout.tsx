@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Slot, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
-import { View, ActivityIndicator, LogBox } from 'react-native';
+import { View, ActivityIndicator, LogBox, BackHandler, Alert, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { DatabaseProvider } from '@nozbe/watermelondb/DatabaseProvider';
 import { crashReporter } from '@/services/crashReporter';
@@ -32,6 +32,7 @@ import { OfflineBanner } from '@/components/shared/OfflineBanner';
 import { secureStorage } from '@/utils/storage';
 import { COLORS } from '@/utils/constants';
 import { database } from '@/db/database';
+import Toast from 'react-native-toast-message';
 
 const ONBOARDING_KEY = 'onboarding_complete';
 
@@ -51,6 +52,26 @@ function AuthGate({ onReady }: { onReady: () => void }) {
       setOnboardingDone(true);
     });
   }, []);
+
+  // Back handler — confirm exit on home screen
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    const isHome = segments[0] === '(tabs)' && !segments[1];
+    if (!isHome) return;
+
+    const handler = BackHandler.addEventListener('hardwareBackPress', () => {
+      Alert.alert(
+        'Salir de HandySales',
+        '¿Deseas salir de la aplicación?',
+        [
+          { text: 'No', style: 'cancel' },
+          { text: 'Sí, salir', onPress: () => BackHandler.exitApp() },
+        ]
+      );
+      return true; // Prevent default back
+    });
+    return () => handler.remove();
+  }, [segments]);
 
   useEffect(() => {
     if (isLoading || onboardingDone === null) return;
@@ -108,6 +129,7 @@ export default function RootLayout() {
             {showSplash && appReady && (
               <AnimatedSplash onFinish={handleSplashFinish} />
             )}
+            <Toast />
           </QueryProvider>
         </DatabaseProvider>
       </ErrorBoundary>
