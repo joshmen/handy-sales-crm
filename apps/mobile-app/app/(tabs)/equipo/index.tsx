@@ -1,7 +1,9 @@
 import { View, Text, StyleSheet, ScrollView, Pressable, RefreshControl, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Users, ShoppingBag, Eye, DollarSign, MapPin, TrendingUp, UserCheck, Activity } from 'lucide-react-native';
+import { MapPin, Activity } from 'lucide-react-native';
+import { SbTeam, SbOrders, SbMoney, SbVisit, SbChart, SbClients } from '@/components/icons/DashboardIcons';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { useSupervisorDashboard, useMisVendedores } from '@/hooks/useSupervisor';
 import { useState } from 'react';
@@ -10,7 +12,7 @@ import type { VendedorEquipo } from '@/api/schemas/supervisor';
 function KpiCard({ icon: Icon, label, value, color }: { icon: any; label: string; value: string | number; color: string }) {
   return (
     <View style={[styles.kpiCard, { borderLeftColor: color }]}>
-      <Icon size={20} color={color} />
+      <Icon size={20} />
       <Text style={styles.kpiValue}>{value}</Text>
       <Text style={styles.kpiLabel}>{label}</Text>
     </View>
@@ -91,12 +93,12 @@ function EquipoContent() {
       {/* KPIs */}
       {dashboard && (
         <View style={styles.kpiGrid} testID="supervisor-kpis">
-          <KpiCard icon={Users} label="Vendedores" value={dashboard.totalVendedores} color="#2563eb" />
-          <KpiCard icon={ShoppingBag} label="Pedidos hoy" value={dashboard.pedidosHoy} color="#16a34a" />
-          <KpiCard icon={DollarSign} label="Ventas mes" value={formatMoney(dashboard.ventasMes)} color="#d97706" />
-          <KpiCard icon={Eye} label="Visitas hoy" value={`${dashboard.visitasCompletadasHoy}/${dashboard.visitasHoy}`} color="#7c3aed" />
-          <KpiCard icon={TrendingUp} label="Pedidos mes" value={dashboard.pedidosMes} color="#0891b2" />
-          <KpiCard icon={UserCheck} label="Clientes" value={dashboard.totalClientes} color="#e11d48" />
+          <KpiCard icon={SbTeam} label="Vendedores" value={dashboard.totalVendedores} color="#2563eb" />
+          <KpiCard icon={SbOrders} label="Pedidos hoy" value={dashboard.pedidosHoy} color="#16a34a" />
+          <KpiCard icon={SbMoney} label="Ventas mes" value={formatMoney(dashboard.ventasMes)} color="#d97706" />
+          <KpiCard icon={SbVisit} label="Visitas hoy" value={`${dashboard.visitasCompletadasHoy}/${dashboard.visitasHoy}`} color="#7c3aed" />
+          <KpiCard icon={SbChart} label="Pedidos mes" value={dashboard.pedidosMes} color="#0891b2" />
+          <KpiCard icon={SbClients} label="Clientes" value={dashboard.totalClientes} color="#e11d48" />
         </View>
       )}
 
@@ -113,7 +115,7 @@ function EquipoContent() {
           ))
         ) : (
           <View style={styles.emptyState}>
-            <Users size={32} color="#94a3b8" />
+            <SbTeam size={32} />
             <Text style={styles.emptyText}>No tienes vendedores asignados</Text>
             <Text style={styles.emptySubtext}>Pide al administrador que te asigne vendedores</Text>
           </View>

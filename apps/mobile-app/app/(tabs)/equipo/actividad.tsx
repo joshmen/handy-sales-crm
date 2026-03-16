@@ -1,15 +1,16 @@
 import { useState, useCallback } from 'react';
 import { View, Text, FlatList, RefreshControl, StyleSheet } from 'react-native';
-import { ShoppingBag, MapPin, Wallet, Clock } from 'lucide-react-native';
+import { Clock } from 'lucide-react-native';
+import { SbOrders, SbMap, SbPayments } from '@/components/icons/DashboardIcons';
 import { EmptyState } from '@/components/ui';
 import { formatCurrency } from '@/utils/format';
 import { useActividadEquipo } from '@/hooks/useSupervisor';
 import type { ActividadItem } from '@/api/schemas/supervisor';
 
-const TIPO_CONFIG: Record<string, { icon: typeof ShoppingBag; color: string; bg: string }> = {
-  pedido: { icon: ShoppingBag, color: '#2563eb', bg: '#eff6ff' },
-  visita: { icon: MapPin, color: '#7c3aed', bg: '#f5f3ff' },
-  cobro: { icon: Wallet, color: '#16a34a', bg: '#f0fdf4' },
+const TIPO_CONFIG: Record<string, { icon: any; color: string; bg: string }> = {
+  pedido: { icon: SbOrders, color: '#2563eb', bg: '#eff6ff' },
+  visita: { icon: SbMap, color: '#7c3aed', bg: '#f5f3ff' },
+  cobro: { icon: SbPayments, color: '#16a34a', bg: '#f0fdf4' },
 };
 
 const ESTADO_COLORS: Record<string, string> = {
@@ -57,7 +58,7 @@ export default function ActividadEquipoScreen() {
       return (
         <View style={styles.activityItem}>
           <View style={[styles.activityIcon, { backgroundColor: config.bg }]}>
-            <Icon size={18} color={config.color} />
+            <Icon size={18} />
           </View>
           <View style={styles.activityContent}>
             <Text style={styles.activityDesc} numberOfLines={2}>{item.descripcion}</Text>

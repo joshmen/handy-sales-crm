@@ -12,12 +12,10 @@ import {
   Wallet,
   Map,
   MapPin,
-  Route,
-  TrendingUp,
-  CheckCircle,
   Clock,
-  Users,
 } from 'lucide-react-native';
+import { SbVisit, SbChart, SbMoney, SbRoute, SbTeam } from '@/components/icons/DashboardIcons';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { HandyLogo } from '@/components/shared/HandyLogo';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { performSync } from '@/sync/syncEngine';
@@ -120,7 +118,7 @@ function HoyScreenContent() {
           testID="supervisor-team-banner"
         >
           <View style={styles.supervisorBannerHeader}>
-            <Users size={18} color="#d97706" />
+            <SbTeam size={18} />
             <Text style={styles.supervisorBannerTitle}>Mi Equipo</Text>
             <Text style={styles.supervisorBannerArrow}>→</Text>
           </View>
@@ -151,34 +149,37 @@ function HoyScreenContent() {
       )}
 
       {/* KPI Cards */}
+      <Animated.View entering={FadeInDown.delay(100).duration(400)}>
       <Text style={styles.sectionTitle}>{isSupervisor ? 'Mi Actividad Personal' : 'Resumen del Día'}</Text>
-      <View style={styles.kpiRow}>
+      </Animated.View>
+      <Animated.View entering={FadeInDown.delay(200).duration(400)} style={styles.kpiRow}>
         <View style={[styles.kpiCard, { backgroundColor: '#eff6ff' }]}>
           <View style={[styles.kpiIcon, { backgroundColor: '#dbeafe' }]}>
-            <TrendingUp size={18} color="#2563eb" />
+            <SbVisit size={18} />
           </View>
           <Text style={styles.kpiValue}>{visitasConVenta}</Text>
           <Text style={styles.kpiLabel}>Visitas</Text>
         </View>
         <View style={[styles.kpiCard, { backgroundColor: '#f0fdf4' }]}>
           <View style={[styles.kpiIcon, { backgroundColor: '#dcfce7' }]}>
-            <CheckCircle size={18} color="#16a34a" />
+            <SbChart size={18} />
           </View>
           <Text style={styles.kpiValue}>{visitasCompletadas}</Text>
           <Text style={styles.kpiLabel}>Completadas</Text>
         </View>
         <View style={[styles.kpiCard, { backgroundColor: '#fef2f2' }]}>
           <View style={[styles.kpiIcon, { backgroundColor: '#fee2e2' }]}>
-            <Wallet size={18} color="#ef4444" />
+            <SbMoney size={18} />
           </View>
           <Text style={styles.kpiValue}>
             {formatCurrency(totalPendiente > 0 ? totalPendiente : 0)}
           </Text>
           <Text style={styles.kpiLabel}>Pendiente</Text>
         </View>
-      </View>
+      </Animated.View>
 
       {/* Route Progress */}
+      <Animated.View entering={FadeInDown.delay(300).duration(400)}>
       <Text style={styles.sectionTitle}>Ruta del Día</Text>
       {loadingRuta ? (
         <LoadingSpinner size="small" />
@@ -189,7 +190,7 @@ function HoyScreenContent() {
         >
           <View style={styles.routeHeader}>
             <View style={styles.routeIconBox}>
-              <Route size={20} color="#2563eb" />
+              <SbRoute size={20} />
             </View>
             <View style={styles.routeInfo}>
               <Text style={styles.routeName}>{route.nombre}</Text>
@@ -219,7 +220,10 @@ function HoyScreenContent() {
         </Card>
       )}
 
+      </Animated.View>
+
       {/* Quick Actions */}
+      <Animated.View entering={FadeInDown.delay(400).duration(400)}>
       <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
       <View style={styles.quickActions}>
         <TouchableOpacity
@@ -247,6 +251,8 @@ function HoyScreenContent() {
           <Text style={styles.quickActionTextLight}>Ver Mapa</Text>
         </TouchableOpacity>
       </View>
+
+      </Animated.View>
 
       {/* Activity Feed Placeholder */}
       <Text style={styles.sectionTitle}>Actividad Reciente</Text>

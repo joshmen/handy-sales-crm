@@ -4,7 +4,8 @@ import { useRouter } from 'expo-router';
 import { useOfflineOrders, useOfflineCobros, useClientNameMap } from '@/hooks';
 import { Card, LoadingSpinner, EmptyState } from '@/components/ui';
 import { formatCurrency } from '@/utils/format';
-import { Wallet, ChevronRight, TrendingDown, TrendingUp, DollarSign, User, Plus, Clock, HandCoins } from 'lucide-react-native';
+import { Wallet, ChevronRight, TrendingDown, User, Clock, HandCoins } from 'lucide-react-native';
+import { SbMoney, SbChart } from '@/components/icons/DashboardIcons';
 import { performSync } from '@/sync/syncEngine';
 import { TouchableOpacity } from 'react-native';
 
@@ -91,7 +92,7 @@ export default function CobrarScreen() {
           <View style={styles.summaryRow}>
             <View style={[styles.summaryCard, { backgroundColor: '#eff6ff' }]}>
               <View style={[styles.summaryIcon, { backgroundColor: '#dbeafe' }]}>
-                <DollarSign size={18} color="#2563eb" />
+                <SbMoney size={18} />
               </View>
               <Text style={styles.summaryValue}>
                 {formatCurrency(resumen.totalFacturado)}
@@ -100,7 +101,7 @@ export default function CobrarScreen() {
             </View>
             <View style={[styles.summaryCard, { backgroundColor: '#f0fdf4' }]}>
               <View style={[styles.summaryIcon, { backgroundColor: '#dcfce7' }]}>
-                <TrendingUp size={18} color="#16a34a" />
+                <SbChart size={18} />
               </View>
               <Text style={styles.summaryValue}>
                 {formatCurrency(resumen.totalCobrado)}
