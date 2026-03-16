@@ -2,7 +2,7 @@ import { View, Text, ScrollView, Alert, StyleSheet, TouchableOpacity, TextInput 
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { useOfflineOrderById, useOfflineOrderDetalles, useClientNameMap, useEnviarPedido, useConfirmarPedido, useProcesarPedido, useEnRutaPedido, useEntregarPedido, useCancelarPedido } from '@/hooks';
-import { Card, Button, LoadingSpinner } from '@/components/ui';
+import { Card, LoadingSpinner } from '@/components/ui';
 import { formatCurrency, formatDate } from '@/utils/format';
 import { Calendar, Send, XCircle, Package, CheckCircle, Truck, ClipboardCheck, ArrowRight } from 'lucide-react-native';
 import { useAuthStore } from '@/stores/authStore';
@@ -46,21 +46,29 @@ export default function OrderDetailScreen() {
 
   const estado = order.estado;
   const serverId = order.serverId ?? 0;
-  const canCancel = estado >= 0 && estado <= 4;
+  const isSynced = serverId > 0;
+  const canCancel = isSynced && estado >= 0 && estado <= 4;
   const clienteNombre = clientNames.get(order.clienteId) || 'Cliente';
   const estadoColor = ESTADO_COLORS[estado] ?? ESTADO_COLORS[0];
 
   const handleTransition = (title: string, message: string, onConfirm: () => void) => {
     Alert.alert(title, message, [
       { text: 'Cancelar', style: 'cancel' },
-      { text: 'Confirmar', onPress: onConfirm },
+      { text: 'Confirmar', onPress: async () => {
+        onConfirm();
+      }},
     ]);
+  };
+
+  // Update local WatermelonDB immediately after successful transition
+  const updateLocalStatus = async (nuevoEstado: number) => {
+    try { await order.updateStatus(nuevoEstado); } catch { /* sync will fix */ }
   };
 
   const handleCancelar = () => {
     Alert.alert('Cancelar Pedido', '¿Estás seguro de cancelar este pedido?', [
       { text: 'No', style: 'cancel' },
-      { text: 'Sí, cancelar', style: 'destructive', onPress: () => cancelarMutation.mutate({ id: serverId, razon: 'Cancelado desde app móvil' }) },
+      { text: 'Sí, cancelar', style: 'destructive', onPress: () => cancelarMutation.mutate({ id: serverId, razon: 'Cancelado desde app móvil' }, { onSuccess: () => updateLocalStatus(6) }) },
     ]);
   };
 
@@ -68,13 +76,22 @@ export default function OrderDetailScreen() {
   const renderActionButton = () => {
     const anyLoading = enviarMutation.isPending || confirmarMutation.isPending || procesarMutation.isPending || enRutaMutation.isPending || entregarMutation.isPending;
 
+    // Transitions require serverId — show sync message if not yet synced
+    if (!isSynced && estado > 0) {
+      return (
+        <View style={[styles.actionBtn, { backgroundColor: '#f1f5f9' }]}>
+          <Text style={{ color: '#64748b', fontWeight: '600', fontSize: 14 }}>Sincronizando con servidor...</Text>
+        </View>
+      );
+    }
+
     switch (estado) {
       case 0: // Borrador → Enviar
         return (
           <TouchableOpacity
             testID="btn-enviar"
             style={[styles.actionBtn, { backgroundColor: '#2563eb' }]}
-            onPress={() => handleTransition('Enviar Pedido', '¿Enviar este pedido?', () => enviarMutation.mutate(serverId))}
+            onPress={() => handleTransition('Enviar Pedido', '¿Enviar este pedido?', () => enviarMutation.mutate(serverId, { onSuccess: () => updateLocalStatus(1) }))}
             disabled={anyLoading}
             activeOpacity={0.8}
           >
@@ -88,7 +105,7 @@ export default function OrderDetailScreen() {
           <TouchableOpacity
             testID="btn-confirmar"
             style={[styles.actionBtn, { backgroundColor: '#1e40af' }]}
-            onPress={() => handleTransition('Confirmar Pedido', '¿Confirmar este pedido?', () => confirmarMutation.mutate(serverId))}
+            onPress={() => handleTransition('Confirmar Pedido', '¿Confirmar este pedido?', () => confirmarMutation.mutate(serverId, { onSuccess: () => updateLocalStatus(2) }))}
             disabled={anyLoading}
             activeOpacity={0.8}
           >
@@ -102,7 +119,7 @@ export default function OrderDetailScreen() {
           <TouchableOpacity
             testID="btn-procesar"
             style={[styles.actionBtn, { backgroundColor: '#7c3aed' }]}
-            onPress={() => handleTransition('Procesar Pedido', '¿Iniciar procesamiento?', () => procesarMutation.mutate(serverId))}
+            onPress={() => handleTransition('Procesar Pedido', '¿Iniciar procesamiento?', () => procesarMutation.mutate(serverId, { onSuccess: () => updateLocalStatus(3) }))}
             disabled={anyLoading}
             activeOpacity={0.8}
           >
@@ -115,7 +132,7 @@ export default function OrderDetailScreen() {
           <TouchableOpacity
             testID="btn-en-ruta"
             style={[styles.actionBtn, { backgroundColor: '#ea580c' }]}
-            onPress={() => handleTransition('Poner en Ruta', '¿Enviar a ruta de entrega?', () => enRutaMutation.mutate(serverId))}
+            onPress={() => handleTransition('Poner en Ruta', '¿Enviar a ruta de entrega?', () => enRutaMutation.mutate(serverId, { onSuccess: () => updateLocalStatus(4) }))}
             disabled={anyLoading}
             activeOpacity={0.8}
           >
@@ -137,7 +154,7 @@ export default function OrderDetailScreen() {
             <TouchableOpacity
               testID="btn-entregar"
               style={[styles.actionBtn, { backgroundColor: '#16a34a' }]}
-              onPress={() => handleTransition('Marcar Entregado', '¿Confirmar entrega del pedido?', () => entregarMutation.mutate({ id: serverId, notasEntrega }))}
+              onPress={() => handleTransition('Marcar Entregado', '¿Confirmar entrega del pedido?', () => entregarMutation.mutate({ id: serverId, notasEntrega }, { onSuccess: () => updateLocalStatus(5) }))}
               disabled={anyLoading}
               activeOpacity={0.8}
             >
