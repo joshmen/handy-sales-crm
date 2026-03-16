@@ -13,6 +13,7 @@ export default function EquipoLayout() {
       >
         <Stack.Screen name="index" options={{ title: 'Mi Equipo', headerShown: false }} />
         <Stack.Screen name="mapa" options={{ title: 'Mapa del Equipo' }} />
+        <Stack.Screen name="actividad" options={{ title: 'Actividad del Equipo' }} />
         <Stack.Screen name="vendedor/[id]" options={{ title: 'Detalle Vendedor' }} />
       </Stack>
     </ErrorBoundary>

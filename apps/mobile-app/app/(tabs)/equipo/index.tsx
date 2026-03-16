@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, ScrollView, Pressable, RefreshControl, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Users, ShoppingBag, Eye, DollarSign, MapPin, TrendingUp, UserCheck } from 'lucide-react-native';
+import { Users, ShoppingBag, Eye, DollarSign, MapPin, TrendingUp, UserCheck, Activity } from 'lucide-react-native';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { useSupervisorDashboard, useMisVendedores } from '@/hooks/useSupervisor';
 import { useState } from 'react';
@@ -76,10 +76,16 @@ function EquipoContent() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Mi Equipo</Text>
-        <Pressable style={styles.mapButton} onPress={() => router.push('/(tabs)/equipo/mapa')} testID="ver-mapa">
-          <MapPin size={18} color="#2563eb" />
-          <Text style={styles.mapButtonText}>Ver mapa</Text>
-        </Pressable>
+        <View style={styles.headerButtons}>
+          <Pressable style={styles.mapButton} onPress={() => router.push('/(tabs)/equipo/actividad')} testID="ver-actividad">
+            <Activity size={18} color="#2563eb" />
+            <Text style={styles.mapButtonText}>Actividad</Text>
+          </Pressable>
+          <Pressable style={styles.mapButton} onPress={() => router.push('/(tabs)/equipo/mapa')} testID="ver-mapa">
+            <MapPin size={18} color="#2563eb" />
+            <Text style={styles.mapButtonText}>Ver mapa</Text>
+          </Pressable>
+        </View>
       </View>
 
       {/* KPIs */}
@@ -102,7 +108,7 @@ function EquipoContent() {
             <VendedorRow
               key={v.id}
               vendedor={v}
-              onPress={() => router.push(`/(tabs)/equipo/vendedor/${v.id}`)}
+              onPress={() => router.push(`/(tabs)/equipo/vendedor/${v.id}` as any)}
             />
           ))
         ) : (
@@ -127,6 +133,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8,
   },
   title: { fontSize: 24, fontWeight: '700', color: '#0f172a' },
+  headerButtons: { flexDirection: 'row', gap: 8 },
   mapButton: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     backgroundColor: '#eff6ff', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,

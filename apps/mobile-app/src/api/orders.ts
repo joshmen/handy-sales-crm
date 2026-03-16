@@ -116,6 +116,22 @@ class MobilePedidosApi {
     return validated.data;
   }
 
+  async confirmar(id: number): Promise<void> {
+    await api.post(`${this.basePath}/${id}/confirmar`);
+  }
+
+  async procesar(id: number): Promise<void> {
+    await api.post(`${this.basePath}/${id}/procesar`);
+  }
+
+  async enRuta(id: number): Promise<void> {
+    await api.post(`${this.basePath}/${id}/en-ruta`);
+  }
+
+  async entregar(id: number, notasEntrega?: string): Promise<void> {
+    await api.post(`${this.basePath}/${id}/entregar`, { notasEntrega });
+  }
+
   async cancelar(id: number, razon: string): Promise<MobilePedido> {
     const response = await api.post<ApiResponse<MobilePedido>>(
       `${this.basePath}/${id}/cancelar`,

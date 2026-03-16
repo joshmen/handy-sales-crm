@@ -42,6 +42,51 @@ export function useEnviarPedido() {
   });
 }
 
+export function useConfirmarPedido() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => pedidosApi.confirmar(id),
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order', id] });
+    },
+  });
+}
+
+export function useProcesarPedido() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => pedidosApi.procesar(id),
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order', id] });
+    },
+  });
+}
+
+export function useEnRutaPedido() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => pedidosApi.enRuta(id),
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order', id] });
+    },
+  });
+}
+
+export function useEntregarPedido() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, notasEntrega }: { id: number; notasEntrega?: string }) =>
+      pedidosApi.entregar(id, notasEntrega),
+    onSuccess: (_data, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order', id] });
+    },
+  });
+}
+
 export function useCancelarPedido() {
   const queryClient = useQueryClient();
   return useMutation({

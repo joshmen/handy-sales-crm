@@ -165,6 +165,67 @@ public static class MobilePedidoEndpoints
         .Produces<object>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest);
 
+        group.MapPost("/{id:int}/confirmar", async (
+            int id,
+            [FromServices] PedidoService servicio) =>
+        {
+            var resultado = await servicio.ConfirmarAsync(id);
+            if (!resultado)
+                return Results.BadRequest(new { success = false, message = "No se pudo confirmar el pedido" });
+
+            return Results.Ok(new { success = true, message = "Pedido confirmado" });
+        })
+        .WithSummary("Confirmar pedido")
+        .WithDescription("Cambia estado de Enviado a Confirmado.")
+        .Produces<object>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest);
+
+        group.MapPost("/{id:int}/procesar", async (
+            int id,
+            [FromServices] PedidoService servicio) =>
+        {
+            var resultado = await servicio.IniciarProcesoAsync(id);
+            if (!resultado)
+                return Results.BadRequest(new { success = false, message = "No se pudo procesar el pedido" });
+
+            return Results.Ok(new { success = true, message = "Pedido en proceso" });
+        })
+        .WithSummary("Procesar pedido")
+        .WithDescription("Cambia estado de Confirmado a EnProceso.")
+        .Produces<object>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest);
+
+        group.MapPost("/{id:int}/en-ruta", async (
+            int id,
+            [FromServices] PedidoService servicio) =>
+        {
+            var resultado = await servicio.EnviarARutaAsync(id);
+            if (!resultado)
+                return Results.BadRequest(new { success = false, message = "No se pudo poner en ruta el pedido" });
+
+            return Results.Ok(new { success = true, message = "Pedido en ruta" });
+        })
+        .WithSummary("Poner en ruta")
+        .WithDescription("Cambia estado de EnProceso a EnRuta.")
+        .Produces<object>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest);
+
+        group.MapPost("/{id:int}/entregar", async (
+            int id,
+            [FromBody] EntregarPedidoDto? dto,
+            [FromServices] PedidoService servicio) =>
+        {
+            var resultado = await servicio.EntregarAsync(id, dto?.NotasEntrega);
+            if (!resultado)
+                return Results.BadRequest(new { success = false, message = "No se pudo entregar el pedido" });
+
+            return Results.Ok(new { success = true, message = "Pedido entregado" });
+        })
+        .WithSummary("Entregar pedido")
+        .WithDescription("Cambia estado de EnRuta a Entregado. Acepta notas de entrega opcionales.")
+        .Produces<object>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest);
+
         // === GESTIÓN DE DETALLES ===
 
         group.MapPost("/{pedidoId:int}/productos", async (
@@ -219,3 +280,4 @@ public static class MobilePedidoEndpoints
 }
 
 public record CancelarPedidoDto(string? Motivo);
+public record EntregarPedidoDto(string? NotasEntrega);

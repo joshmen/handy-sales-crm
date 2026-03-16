@@ -100,7 +100,7 @@ function MapaEquipoContent() {
             return (
               <Pressable
                 style={styles.bottomCardContent}
-                onPress={() => router.push(`/(tabs)/equipo/vendedor/${u.usuarioId}`)}
+                onPress={() => router.push(`/(tabs)/equipo/vendedor/${u.usuarioId}` as any)}
               >
                 <View style={styles.bottomAvatar}>
                   <Text style={styles.bottomAvatarText}>
