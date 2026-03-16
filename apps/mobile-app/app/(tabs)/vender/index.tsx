@@ -150,6 +150,7 @@ export default function VenderListScreen() {
 
       {/* FAB Nuevo Pedido */}
       <TouchableOpacity
+        testID="fab-nuevo-pedido"
         style={styles.fab}
         onPress={() => router.push('/(tabs)/vender/crear/modo' as any)}
         activeOpacity={0.85}

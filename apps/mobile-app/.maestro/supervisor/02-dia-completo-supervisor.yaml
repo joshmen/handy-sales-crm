@@ -1,0 +1,209 @@
+appId: host.exp.exponent
+name: "Supervisor: día completo — vender, cobrar, monitorear equipo"
+---
+
+# ═══════════════════════════════════════════
+# PREREQ: Ya logueado como supervisor (run 01 first or be logged in)
+# ═══════════════════════════════════════════
+
+# ═══════════════════════════════════════════
+# FASE 1: DASHBOARD — verificar KPIs de equipo
+# ═══════════════════════════════════════════
+
+- tapOn: "Hoy"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Mi Equipo"
+    timeout: 15000
+
+# KPIs del equipo deben estar visibles
+- assertVisible: "Vendedores"
+- assertVisible: "Ventas mes"
+
+- takeScreenshot: "01-dashboard-kpis"
+
+# ═══════════════════════════════════════════
+# FASE 2: VENDER — crear pedido completo
+# ═══════════════════════════════════════════
+
+# Double-tap Hoy to reset nav stacks, then go to Vender
+- tapOn: "Hoy"
+- tapOn: "Hoy"
+- waitForAnimationToEnd
+- tapOn: "Vender"
+- waitForAnimationToEnd
+
+- takeScreenshot: "02-vender-lista"
+
+# Tap FAB "+" button to create new order
+- tapOn:
+    id: "fab-nuevo-pedido"
+- waitForAnimationToEnd
+
+# Paso 1: Tipo de Venta — seleccionar Preventa
+- extendedWaitUntil:
+    visible: "Tipo de Venta"
+    timeout: 15000
+
+- takeScreenshot: "03-tipo-venta"
+
+- tapOn: "Preventa"
+- waitForAnimationToEnd
+
+# Paso 2: Seleccionar Cliente — list with stepper "1 Cliente"
+- extendedWaitUntil:
+    visible: "Cliente"
+    timeout: 15000
+
+- takeScreenshot: "04-seleccionar-cliente"
+
+# Tap first client (Abarrotes Don Pancho)
+- tapOn: "Abarrotes Don Pancho"
+- waitForAnimationToEnd
+
+# Tap Continuar to go to products
+- tapOn: "Continuar"
+- waitForAnimationToEnd
+
+# Paso 3: Agregar Productos — stepper "2 Productos"
+- extendedWaitUntil:
+    visible: "Productos"
+    timeout: 15000
+
+- takeScreenshot: "05-vender-productos"
+
+# Tap "+ Agregar" on first product (Coca-Cola 2L)
+- tapOn: "Agregar"
+- waitForAnimationToEnd
+
+- takeScreenshot: "06-vender-producto-agregado"
+
+# Tap "Revisar pedido" bottom bar to go to review
+- tapOn: "Revisar pedido"
+- waitForAnimationToEnd
+
+# Paso 4: Revisión — stepper "3 Revisar", should see Total
+- extendedWaitUntil:
+    visible: "Total"
+    timeout: 10000
+
+- takeScreenshot: "07-vender-revision"
+
+# Don't actually send the order in E2E — just verify we got here
+# Reset nav by double-tapping Hoy
+- tapOn: "Hoy"
+- tapOn: "Hoy"
+- waitForAnimationToEnd
+
+- takeScreenshot: "09-vender-post-flow"
+
+# ═══════════════════════════════════════════
+# FASE 3: COBRAR — registrar cobro
+# ═══════════════════════════════════════════
+
+- tapOn: "Cobrar"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Cobranza"
+    timeout: 15000
+
+# Verificar KPIs de cartera
+- assertVisible:
+    text: "Facturado"
+    optional: true
+- assertVisible:
+    text: "Pendiente"
+    optional: true
+
+- takeScreenshot: "10-cobrar-cartera"
+
+# Tap Registrar Cobro
+- tapOn:
+    id: "btn-registrar-cobro"
+- waitForAnimationToEnd
+
+- takeScreenshot: "11-cobrar-registrar"
+
+# Should see registration form
+- runFlow:
+    when:
+      visible: "Monto"
+    commands:
+      - takeScreenshot: "12-cobrar-formulario"
+
+# Go back without submitting
+- back
+- waitForAnimationToEnd
+
+- takeScreenshot: "13-cobrar-post"
+
+# ═══════════════════════════════════════════
+# FASE 4: EQUIPO — monitorear vendedores
+# ═══════════════════════════════════════════
+
+- tapOn: "Equipo"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Vendedores"
+    timeout: 15000
+
+# Verificar KPIs
+- assertVisible:
+    id: "supervisor-kpis"
+
+- takeScreenshot: "14-equipo-kpis"
+
+# Ir al mapa
+- tapOn:
+    id: "ver-mapa"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Mapa del Equipo"
+    timeout: 10000
+
+- takeScreenshot: "15-equipo-mapa"
+
+# Volver
+- back
+- waitForAnimationToEnd
+
+# Tap en primer vendedor si existe
+- runFlow:
+    when:
+      visible:
+        id: "vendedor-5"
+    commands:
+      - tapOn:
+          id: "vendedor-5"
+      - waitForAnimationToEnd
+      - extendedWaitUntil:
+          visible: "Resumen del día"
+          timeout: 10000
+      - takeScreenshot: "16-vendedor-detalle"
+      - back
+
+# ═══════════════════════════════════════════
+# FASE 5: PERFIL — verificar badge Supervisor
+# ═══════════════════════════════════════════
+
+- tapOn: "Más"
+- waitForAnimationToEnd
+
+- assertVisible: "Supervisor"
+
+- takeScreenshot: "17-mas-supervisor"
+
+# ═══════════════════════════════════════════
+# FASE 6: VOLVER AL DASHBOARD — verificar integridad
+# ═══════════════════════════════════════════
+
+- tapOn: "Hoy"
+- waitForAnimationToEnd
+
+- assertVisible: "Mi Equipo"
+
+- takeScreenshot: "18-dashboard-final"

@@ -131,6 +131,7 @@ export default function CobrarScreen() {
         {/* Quick Actions */}
         <View style={styles.actionsRow}>
           <TouchableOpacity
+            testID="btn-registrar-cobro"
             style={[styles.actionButton, { backgroundColor: '#16a34a' }]}
             onPress={() => router.push('/(tabs)/cobrar/registrar' as any)}
             activeOpacity={0.8}
