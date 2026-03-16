@@ -84,6 +84,7 @@ app.MapMobileNotificationEndpoints();
 app.MapMobileAttachmentEndpoints();
 app.MapMobileVentaDirectaEndpoints();
 app.MapMobileSupervisorEndpoints();
+app.MapMobileEmpresaEndpoints();
 app.MapHealthEndpoints();
 
 app.Run();

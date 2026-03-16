@@ -246,6 +246,7 @@ export async function printLogo(imageUri: string): Promise<boolean> {
 
 export interface ReceiptData {
   companyName: string;
+  empresa?: EmpresaHeader;
   clienteNombre: string;
   monto: number;
   metodoPago: number;
@@ -273,9 +274,20 @@ export async function printReceipt(data: ReceiptData): Promise<boolean> {
       }
     }
 
-    // Header
+    // Header — Company info
     await P.printerAlign(ALIGN.CENTER);
     await P.printText(`${data.companyName}\n`, { widthtimes: 1, heigthtimes: 1 });
+    if (data.empresa?.rfc) {
+      await P.printText(`RFC: ${data.empresa.rfc}\n`, {});
+    }
+    if (data.empresa?.direccion) {
+      await P.printText(`${data.empresa.direccion}\n`, {});
+      const cityLine = [data.empresa.ciudad, data.empresa.estado, data.empresa.codigoPostal].filter(Boolean).join(', ');
+      if (cityLine) await P.printText(`${cityLine}\n`, {});
+    }
+    if (data.empresa?.telefono) {
+      await P.printText(`Tel: ${data.empresa.telefono}\n`, {});
+    }
     await P.printText('RECIBO DE COBRO\n', {});
     await P.printText('================================\n', {});
 
@@ -319,6 +331,119 @@ export async function printReceipt(data: ReceiptData): Promise<boolean> {
     return true;
   } catch (e) {
     console.error('[Printer] Print failed:', e);
+    return false;
+  }
+}
+
+// ---------- Order Ticket Printing ----------
+
+export interface EmpresaHeader {
+  rfc?: string | null;
+  direccion?: string | null;
+  ciudad?: string | null;
+  estado?: string | null;
+  codigoPostal?: string | null;
+  telefono?: string | null;
+}
+
+export interface OrderTicketData {
+  companyName: string;
+  empresa?: EmpresaHeader;
+  clienteNombre: string;
+  numeroPedido: string;
+  fecha: string;
+  items: Array<{ nombre: string; cantidad: number; precioUnitario: number; subtotal: number }>;
+  subtotal: number;
+  impuesto: number;
+  descuento: number;
+  total: number;
+  vendedorName: string;
+  tipoVenta: 'Preventa' | 'Venta Directa';
+  logoUri?: string;
+}
+
+export async function printOrderTicket(data: OrderTicketData): Promise<boolean> {
+  loadNativeModules();
+  if (!nativeAvailable || !BluetoothEscposPrinter) return false;
+
+  try {
+    const P = BluetoothEscposPrinter;
+    const ALIGN = P.ALIGN || { LEFT: 0, CENTER: 1, RIGHT: 2 };
+    const fmt = (n: number) =>
+      new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(n);
+
+    // Logo
+    if (data.logoUri) {
+      try { await printLogo(data.logoUri); } catch { /* skip */ }
+    }
+
+    // Header — Company info
+    await P.printerAlign(ALIGN.CENTER);
+    await P.printText(`${data.companyName}\n`, { widthtimes: 1, heigthtimes: 1 });
+    if (data.empresa?.rfc) {
+      await P.printText(`RFC: ${data.empresa.rfc}\n`, {});
+    }
+    if (data.empresa?.direccion) {
+      await P.printText(`${data.empresa.direccion}\n`, {});
+      const cityLine = [data.empresa.ciudad, data.empresa.estado, data.empresa.codigoPostal].filter(Boolean).join(', ');
+      if (cityLine) await P.printText(`${cityLine}\n`, {});
+    }
+    if (data.empresa?.telefono) {
+      await P.printText(`Tel: ${data.empresa.telefono}\n`, {});
+    }
+    await P.printText(`TICKET DE ${data.tipoVenta === 'Preventa' ? 'PEDIDO' : 'VENTA'}\n`, {});
+    await P.printText('================================\n', {});
+
+    // Order info
+    await P.printerAlign(ALIGN.LEFT);
+    await P.printText(`Pedido: ${data.numeroPedido}\n`, {});
+    await P.printText(`Cliente: ${data.clienteNombre}\n`, {});
+    await P.printText(`Fecha: ${new Date(data.fecha).toLocaleString('es-MX')}\n`, {});
+    await P.printText(`Tipo: ${data.tipoVenta}\n`, {});
+    await P.printText('--------------------------------\n', {});
+
+    // Items
+    for (const item of data.items) {
+      await P.printText(`${item.nombre}\n`, {});
+      await P.printText(`  ${item.cantidad} x ${fmt(item.precioUnitario)}`, {});
+      await P.printerAlign(ALIGN.RIGHT);
+      await P.printText(`${fmt(item.subtotal)}\n`, {});
+      await P.printerAlign(ALIGN.LEFT);
+    }
+
+    // Totals
+    await P.printText('--------------------------------\n', {});
+    await P.printText(`Subtotal:`, {});
+    await P.printerAlign(ALIGN.RIGHT);
+    await P.printText(`${fmt(data.subtotal)}\n`, {});
+    await P.printerAlign(ALIGN.LEFT);
+
+    if (data.descuento > 0) {
+      await P.printText(`Descuento:`, {});
+      await P.printerAlign(ALIGN.RIGHT);
+      await P.printText(`-${fmt(data.descuento)}\n`, {});
+      await P.printerAlign(ALIGN.LEFT);
+    }
+
+    await P.printText(`Impuestos:`, {});
+    await P.printerAlign(ALIGN.RIGHT);
+    await P.printText(`${fmt(data.impuesto)}\n`, {});
+    await P.printerAlign(ALIGN.LEFT);
+
+    await P.printText('================================\n', {});
+    await P.printerAlign(ALIGN.CENTER);
+    await P.printText(`TOTAL: ${fmt(data.total)}\n`, { widthtimes: 2, heigthtimes: 2 });
+
+    // Footer
+    await P.printText('\n', {});
+    await P.printerAlign(ALIGN.CENTER);
+    await P.printText(`Atendido por: ${data.vendedorName}\n`, {});
+    await P.printText('Gracias por su compra\n', {});
+    await P.printText('\n\n\n', {}); // feed paper
+
+    return true;
+  } catch (e) {
+    console.error('[Printer] Order ticket print failed:', e);
     return false;
   }
 }

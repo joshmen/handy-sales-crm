@@ -1,14 +1,69 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { useState } from 'react';
+import { View, Text, StyleSheet, Alert } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui';
-import { CheckCircle, Eye, Plus, Home } from 'lucide-react-native';
+import { CheckCircle, Eye, Plus, Home, Printer } from 'lucide-react-native';
 import Animated, { FadeInDown, BounceIn } from 'react-native-reanimated';
+import { useOfflineOrderById, useOfflineOrderDetalles, useClientNameMap } from '@/hooks';
+import { useEmpresa } from '@/hooks/useEmpresa';
+import { useAuthStore } from '@/stores';
+import { usePrinterStore } from '@/stores/printerStore';
+import { printOrderTicket, isNativeAvailable } from '@/services/printerService';
 
 export default function PedidoExitoScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { numero, id, tipo } = useLocalSearchParams<{ numero: string; id: string; tipo?: string }>();
+  const [printing, setPrinting] = useState(false);
+
+  // Data for printing
+  const { data: order } = useOfflineOrderById(id);
+  const { data: detalles } = useOfflineOrderDetalles(id || '');
+  const clientNames = useClientNameMap();
+  const user = useAuthStore(s => s.user);
+  const { data: empresa } = useEmpresa();
+  const { connectedDevice } = usePrinterStore();
+  const printerAvailable = isNativeAvailable() && !!connectedDevice;
+
+  const handlePrint = async () => {
+    if (!order || !detalles) return;
+    setPrinting(true);
+    try {
+      const success = await printOrderTicket({
+        companyName: empresa?.razonSocial || user?.tenantName || 'Handy Suites',
+        empresa: empresa ? {
+          rfc: empresa.rfc,
+          direccion: empresa.direccion,
+          ciudad: empresa.ciudad,
+          estado: empresa.estado,
+          codigoPostal: empresa.codigoPostal,
+          telefono: empresa.telefono,
+        } : undefined,
+        logoUri: empresa?.logoUrl || undefined,
+        clienteNombre: clientNames.get(order.clienteId) || 'Cliente',
+        numeroPedido: order.numeroPedido || `#${numero}`,
+        fecha: order.fechaPedido?.toISOString() || new Date().toISOString(),
+        items: detalles.map(d => ({
+          nombre: d.productoNombre,
+          cantidad: d.cantidad,
+          precioUnitario: d.precioUnitario,
+          subtotal: d.subtotal,
+        })),
+        subtotal: order.subtotal,
+        impuesto: order.impuesto,
+        descuento: order.descuento,
+        total: order.total,
+        vendedorName: user?.name || 'Vendedor',
+        tipoVenta: 'Preventa',
+      });
+      if (!success) Alert.alert('Error', 'No se pudo imprimir. Verifica la conexión con la impresora.');
+    } catch {
+      Alert.alert('Error', 'Error al imprimir el ticket.');
+    } finally {
+      setPrinting(false);
+    }
+  };
 
   const isDirecta = tipo === 'directa';
   const title = isDirecta ? 'Venta Completada' : 'Pedido Levantado';
@@ -44,12 +99,22 @@ export default function PedidoExitoScreen() {
       )}
 
       <Animated.View entering={FadeInDown.delay(900).duration(400)} style={styles.actions}>
+        {printerAvailable && id && (
+          <Button
+            title="Imprimir Ticket"
+            onPress={handlePrint}
+            loading={printing}
+            fullWidth
+            icon={<Printer size={18} color="#ffffff" />}
+          />
+        )}
         {id && (
           <Button
             title="Ver Pedido"
             onPress={() => router.replace(`/(tabs)/vender/${id}` as any)}
+            variant={printerAvailable ? 'secondary' : 'primary'}
             fullWidth
-            icon={<Eye size={18} color="#ffffff" />}
+            icon={<Eye size={18} color={printerAvailable ? '#2563eb' : '#ffffff'} />}
           />
         )}
         <Button

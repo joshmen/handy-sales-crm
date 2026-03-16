@@ -9,6 +9,7 @@ import { METODO_PAGO } from '@/types/cobro';
 import { Button } from '@/components/ui';
 import { usePrinterStore } from '@/stores/printerStore';
 import { printReceipt, isNativeAvailable } from '@/services/printerService';
+import { useEmpresa } from '@/hooks/useEmpresa';
 import {
   CheckCircle,
   User,
@@ -43,6 +44,7 @@ export default function ReciboScreen() {
   const receiptRef = useRef<View>(null);
   const [sharing, setSharing] = useState(false);
   const [printing, setPrinting] = useState(false);
+  const { data: empresa } = useEmpresa();
   const { connectedDevice } = usePrinterStore();
   const printerAvailable = isNativeAvailable() && !!connectedDevice;
 
@@ -72,7 +74,15 @@ export default function ReciboScreen() {
     setPrinting(true);
     try {
       const ok = await printReceipt({
-        companyName: user?.tenantName || 'Handy Suites',
+        companyName: empresa?.razonSocial || user?.tenantName || 'Handy Suites',
+        empresa: empresa ? {
+          rfc: empresa.rfc,
+          direccion: empresa.direccion,
+          ciudad: empresa.ciudad,
+          estado: empresa.estado,
+          codigoPostal: empresa.codigoPostal,
+          telefono: empresa.telefono,
+        } : undefined,
         clienteNombre,
         monto,
         metodoPago,
@@ -80,7 +90,7 @@ export default function ReciboScreen() {
         notas,
         fecha,
         vendedorName: user?.name || 'Vendedor',
-        logoUri: user?.tenantLogo || undefined,
+        logoUri: empresa?.logoUrl || user?.tenantLogo || undefined,
       });
       if (!ok) {
         const { Alert } = require('react-native');
