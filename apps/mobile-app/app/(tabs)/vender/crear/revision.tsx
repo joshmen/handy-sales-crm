@@ -5,6 +5,7 @@ import { useOrderDraftStore } from '@/stores';
 import { useAuthStore } from '@/stores';
 import { createPedidoOffline, createVentaDirectaOffline } from '@/db/actions';
 import { performSync } from '@/sync/syncEngine';
+import { pedidosApi } from '@/api';
 import { ProgressSteps } from '@/components/shared/ProgressSteps';
 import { Card, Button } from '@/components/ui';
 import { QuantityStepper } from '@/components/shared/QuantityStepper';
@@ -99,8 +100,31 @@ export default function CrearPedidoStep3() {
                   1  // estado = Enviado
                 );
                 reset();
-                performSync().catch(() => {});
                 router.replace(`/(tabs)/vender/crear/exito?numero=${pedido.id.slice(0, 8)}&id=${pedido.id}` as any);
+                // Create on server + enviar + assign serverId to local WDB record
+                try {
+                  const serverPedido = await pedidosApi.create({
+                    clienteId: clienteServerId ?? 0,
+                    tipoVenta: 0,
+                    notas: notas || undefined,
+                    detalles: mappedItems.map(i => ({
+                      productoId: i.productoServerId ?? 0,
+                      cantidad: i.cantidad,
+                      precioUnitario: i.precioUnitario,
+                      descuento: 0,
+                    })),
+                  } as any);
+                  if (serverPedido?.id) {
+                    await pedido.setServerId(serverPedido.id, serverPedido.numeroPedido);
+                    // Send the order (Borrador → Enviado) on server
+                    // Use raw API call because pedidosApi.enviar() validates response as MobilePedido
+                    const { api: apiClient } = await import('@/api/client');
+                    await apiClient.post(`/api/mobile/pedidos/${serverPedido.id}/enviar`).catch(() => {});
+                  }
+                } catch {
+                  // Offline — sync will handle it later
+                  performSync().catch(() => {});
+                }
               }
             } catch {
               Alert.alert('Error', 'No se pudo crear el pedido. Intenta de nuevo.');

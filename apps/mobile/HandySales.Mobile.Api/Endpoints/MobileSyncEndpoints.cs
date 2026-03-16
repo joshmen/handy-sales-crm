@@ -64,6 +64,7 @@ public static class MobileSyncEndpoints
             return Results.Ok(new
             {
                 success = true,
+                data = response.ServerChanges,
                 conflicts = response.Conflicts,
                 errors = response.Errors,
                 summary = response.Summary,

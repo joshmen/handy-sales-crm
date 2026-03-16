@@ -34,6 +34,13 @@ export default class Pedido extends Model {
     });
   }
 
+  @writer async setServerId(serverId: number, numeroPedido?: string) {
+    await this.update((record: any) => {
+      record.serverId = serverId;
+      if (numeroPedido) record.numeroPedido = numeroPedido;
+    });
+  }
+
   @writer async recalculateTotals(subtotal: number, impuesto: number) {
     await this.update((record: any) => {
       record.subtotal = subtotal;

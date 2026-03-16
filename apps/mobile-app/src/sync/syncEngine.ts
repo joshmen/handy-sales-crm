@@ -125,6 +125,9 @@ export async function performSync(options?: SyncOptions): Promise<void> {
         if (body?.conflicts) {
           conflictCount = Array.isArray(body.conflicts) ? body.conflicts.length : 0;
         }
+
+        // Server IDs for new records are now assigned directly
+        // in revision.tsx via pedidosApi.create() + pedido.setServerId()
       },
 
       sendCreatedAsUpdated: false,
