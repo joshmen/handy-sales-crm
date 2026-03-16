@@ -119,9 +119,13 @@ export default function ReciboScreen() {
           {/* Dashed top border */}
           <Text style={styles.dashed}>{'- '.repeat(24)}</Text>
 
-          {/* Company Logo */}
-          {empresa?.logoUrl ? (
-            <Image source={{ uri: empresa.logoUrl }} style={styles.logo} resizeMode="contain" />
+          {/* Company Logo — loads from Cloudinary URL */}
+          {(empresa?.logoUrl || user?.tenantLogo) ? (
+            <Image
+              source={{ uri: empresa?.logoUrl || user?.tenantLogo || '' }}
+              style={styles.logo}
+              resizeMode="contain"
+            />
           ) : null}
 
           {/* Company Name */}

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/api/client';
+import { Image } from 'react-native';
 
 export interface DatosEmpresa {
   razonSocial: string | null;
@@ -20,7 +21,14 @@ export function useEmpresa() {
     queryKey: ['empresa'],
     queryFn: async (): Promise<DatosEmpresa> => {
       const response = await api.get('/api/mobile/empresa');
-      return (response.data as any).data;
+      const data = (response.data as any).data;
+
+      // Prefetch logo into RN image cache so it renders instantly
+      if (data?.logoUrl) {
+        Image.prefetch(data.logoUrl).catch(() => {});
+      }
+
+      return data;
     },
     staleTime: 1000 * 60 * 60, // 1 hour cache — company data rarely changes
   });
