@@ -33,7 +33,7 @@ import { secureStorage } from '@/utils/storage';
 import { COLORS } from '@/utils/constants';
 import { database } from '@/db/database';
 import Toast from 'react-native-toast-message';
-import { SyncLoadingScreen } from '@/components/shared/SyncLoadingScreen';
+// SyncLoadingScreen merged into AnimatedSplash (syncMode prop)
 
 const ONBOARDING_KEY = 'onboarding_complete';
 
@@ -41,11 +41,10 @@ SplashScreen.preventAutoHideAsync();
 
 const INITIAL_SYNC_KEY = 'initial_sync_complete';
 
-function AuthGate({ onReady }: { onReady: () => void }) {
+function AuthGate({ onReady }: { onReady: (firstSync?: boolean) => void }) {
   const { isAuthenticated, isLoading, restoreSession } = useAuthStore();
   const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
   const [initialSyncDone, setInitialSyncDone] = useState<boolean | null>(null);
-  const [showSyncLoader, setShowSyncLoader] = useState(false);
   const segments = useSegments();
   const router = useRouter();
 
@@ -84,9 +83,11 @@ function AuthGate({ onReady }: { onReady: () => void }) {
   }, [segments]);
 
   useEffect(() => {
-    if (isLoading || onboardingDone === null) return;
+    if (isLoading || onboardingDone === null || initialSyncDone === null) return;
 
-    onReady();
+    // Tell RootLayout if this is first sync (splash will show progress)
+    const isFirstSync = isAuthenticated && !initialSyncDone;
+    onReady(isFirstSync);
 
     const inAuthGroup = segments[0] === '(auth)';
     const inTabsGroup = segments[0] === '(tabs)';
@@ -98,12 +99,8 @@ function AuthGate({ onReady }: { onReady: () => void }) {
         router.replace('/(auth)/login');
       }
     } else if (isAuthenticated && !inTabsGroup) {
-      // First login (no initial sync yet) → show loading screen
-      if (!initialSyncDone) {
-        setShowSyncLoader(true);
-      } else {
-        router.replace('/(tabs)');
-      }
+      // Navigate to tabs — splash overlay handles sync if needed
+      router.replace('/(tabs)');
     }
   }, [isAuthenticated, isLoading, onboardingDone, initialSyncDone, segments]);
 
@@ -115,36 +112,29 @@ function AuthGate({ onReady }: { onReady: () => void }) {
     );
   }
 
-  // Initial sync loading screen
-  if (showSyncLoader) {
-    return (
-      <SyncLoadingScreen
-        onComplete={async () => {
-          await secureStorage.set(INITIAL_SYNC_KEY, 'true');
-          setInitialSyncDone(true);
-          setShowSyncLoader(false);
-          router.replace('/(tabs)');
-        }}
-      />
-    );
-  }
-
   return <Slot />;
 }
 
 export default function RootLayout() {
   const [showSplash, setShowSplash] = useState(true);
   const [appReady, setAppReady] = useState(false);
+  const [needsInitialSync, setNeedsInitialSync] = useState(false);
 
-  const handleAppReady = useCallback(() => {
+  const handleAppReady = useCallback((firstSync?: boolean) => {
     if (!appReady) {
       setAppReady(true);
+      if (firstSync) setNeedsInitialSync(true);
       SplashScreen.hideAsync();
     }
   }, [appReady]);
 
   const handleSplashFinish = useCallback(() => {
     setShowSplash(false);
+    setNeedsInitialSync(false);
+  }, []);
+
+  const handleSyncComplete = useCallback(async () => {
+    await secureStorage.set(INITIAL_SYNC_KEY, 'true');
   }, []);
 
   return (
@@ -156,7 +146,11 @@ export default function RootLayout() {
             <OfflineBanner />
             <AuthGate onReady={handleAppReady} />
             {showSplash && appReady && (
-              <AnimatedSplash onFinish={handleSplashFinish} />
+              <AnimatedSplash
+                onFinish={handleSplashFinish}
+                syncMode={needsInitialSync}
+                onSyncComplete={handleSyncComplete}
+              />
             )}
             <Toast />
           </QueryProvider>
