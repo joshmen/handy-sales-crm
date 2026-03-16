@@ -76,19 +76,35 @@ export default function CrearPedidoStep3() {
               }));
 
               if (isDirecta) {
+                const montoTotal = total();
+                const metodo = metodoPago ?? 0;
+                const nombre = clienteNombre || 'Cliente';
                 const { pedido } = await createVentaDirectaOffline(
                   clienteId,
                   clienteServerId,
                   user?.id ? Number(user.id) : 0,
                   mappedItems,
-                  metodoPago,
-                  total(),
+                  metodo,
+                  montoTotal,
                   undefined,
                   notas || undefined
                 );
                 reset();
                 performSync().catch(() => {});
-                router.replace(`/(tabs)/vender/crear/exito?numero=${pedido.id.slice(0, 8)}&id=${pedido.id}&tipo=directa` as any);
+                // Navigate to cobro receipt for printing (VD = sale + immediate payment)
+                router.replace({
+                  pathname: '/(tabs)/cobrar/recibo',
+                  params: {
+                    clienteNombre: encodeURIComponent(nombre),
+                    monto: String(montoTotal),
+                    metodoPago: String(metodo),
+                    referencia: encodeURIComponent(pedido.id.slice(0, 8)),
+                    notas: encodeURIComponent(notas || ''),
+                    fecha: new Date().toISOString(),
+                    fromVentaDirecta: '1',
+                    pedidoId: pedido.id,
+                  },
+                } as any);
               } else {
                 const pedido = await createPedidoOffline(
                   clienteId,

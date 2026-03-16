@@ -159,16 +159,14 @@ export default function VenderListScreen() {
       />
 
       {/* FAB Nuevo Pedido */}
-      <Animated.View entering={ZoomIn.delay(300).duration(300)}>
-        <TouchableOpacity
-          testID="fab-nuevo-pedido"
-          style={styles.fab}
-          onPress={() => router.push('/(tabs)/vender/crear/modo' as any)}
-          activeOpacity={0.85}
-        >
-          <Plus size={24} color="#ffffff" />
-        </TouchableOpacity>
-      </Animated.View>
+      <TouchableOpacity
+        testID="fab-nuevo-pedido"
+        style={styles.fab}
+        onPress={() => router.push('/(tabs)/vender/crear/modo' as any)}
+        activeOpacity={0.85}
+      >
+        <Plus size={24} color="#ffffff" />
+      </TouchableOpacity>
     </View>
   );
 }

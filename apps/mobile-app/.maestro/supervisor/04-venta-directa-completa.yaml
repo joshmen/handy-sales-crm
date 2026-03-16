@@ -97,23 +97,23 @@ name: "Supervisor: Venta Directa completa end-to-end"
 - tapOn: "COBRAR"
 - waitForAnimationToEnd
 
-# Pantalla de éxito — Venta Directa muestra "Venta Completada"
+# Recibo — Venta Directa ahora navega al recibo con print
 - extendedWaitUntil:
     visible: "Venta Completada"
     timeout: 15000
 
-- takeScreenshot: "vd-07-exito"
+- takeScreenshot: "vd-07-recibo"
 
-# Verificar éxito
+# Verificar recibo
 - assertVisible: "Venta Completada"
+- assertVisible: "Abarrotes Don Pancho"
 
-# Ver detalle del pedido
-- tapOn: "Ver Pedido"
+# Listo — vuelve a Vender
+- tapOn: "Listo"
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
-    visible: "Abarrotes Don Pancho"
-    timeout: 10000
+    visible: "Pedidos"
+    timeout: 15000
 
-- takeScreenshot: "vd-08-detalle"
-- assertVisible: "Abarrotes Don Pancho"
+- takeScreenshot: "vd-08-lista-pedidos"

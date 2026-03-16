@@ -29,6 +29,8 @@ export default function ReciboScreen() {
     referencia: string;
     notas: string;
     fecha: string;
+    fromVentaDirecta?: string;
+    pedidoId?: string;
   }>();
 
   const clienteNombre = decodeURIComponent(params.clienteNombre || '');
@@ -92,9 +94,16 @@ export default function ReciboScreen() {
     }
   };
 
+  const isFromVD = params.fromVentaDirecta === '1';
+
   const handleDone = () => {
-    // Replace to prevent back-navigation into payment form
-    router.replace('/(tabs)/cobrar' as any);
+    if (isFromVD) {
+      // From Venta Directa — navigate to home then user taps Vender
+      router.replace('/(tabs)' as any);
+    } else {
+      // From Cobrar — go back to Cobrar dashboard
+      router.replace('/(tabs)/cobrar' as any);
+    }
   };
 
   return (
@@ -108,7 +117,7 @@ export default function ReciboScreen() {
           <View style={styles.successIcon}>
             <CheckCircle size={48} color="#16a34a" />
           </View>
-          <Text style={styles.successTitle}>Cobro Registrado</Text>
+          <Text style={styles.successTitle}>{isFromVD ? 'Venta Completada' : 'Cobro Registrado'}</Text>
           <Text style={styles.successSubtitle}>El cobro se guardó exitosamente</Text>
         </View>
 
