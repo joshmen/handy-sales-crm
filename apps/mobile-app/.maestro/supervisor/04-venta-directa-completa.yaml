@@ -1,0 +1,119 @@
+appId: host.exp.exponent
+name: "Supervisor: Venta Directa completa end-to-end"
+---
+
+# ═══════════════════════════════════════════
+# PREREQ: Ya logueado como supervisor@jeyma.com
+# ═══════════════════════════════════════════
+
+# Reset navigation: doble-tap fuerza reset al root del tab
+- tapOn: "Hoy"
+- tapOn: "Hoy"
+- waitForAnimationToEnd
+- tapOn: "Vender"
+- tapOn: "Vender"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "Pedidos"
+    timeout: 5000
+
+# ═══════════════════════════════════════════
+# PASO 1: FAB → Nuevo Pedido
+# ═══════════════════════════════════════════
+- assertVisible: "Pedidos"
+- tapOn:
+    id: "fab-nuevo-pedido"
+- waitForAnimationToEnd
+- assertVisible: "Tipo de Venta"
+
+# ═══════════════════════════════════════════
+# PASO 2: Seleccionar Venta Directa
+# ═══════════════════════════════════════════
+- tapOn: "Venta Directa"
+- waitForAnimationToEnd
+
+# ═══════════════════════════════════════════
+# PASO 3: Seleccionar Cliente (diferente al de preventa)
+# ═══════════════════════════════════════════
+- extendedWaitUntil:
+    visible: "Cliente"
+    timeout: 10000
+
+- takeScreenshot: "vd-01-clientes"
+
+- tapOn: "Abarrotes Don Pancho"
+- waitForAnimationToEnd
+- tapOn: "Continuar"
+- waitForAnimationToEnd
+
+# ═══════════════════════════════════════════
+# PASO 4: Agregar Productos
+# ═══════════════════════════════════════════
+- extendedWaitUntil:
+    visible: "Productos"
+    timeout: 10000
+
+- takeScreenshot: "vd-02-productos"
+
+- tapOn: "Agregar"
+- waitForAnimationToEnd
+
+- takeScreenshot: "vd-03-producto-agregado"
+
+# ═══════════════════════════════════════════
+# PASO 5: Revisar Pedido — debe mostrar método de pago
+# ═══════════════════════════════════════════
+- tapOn: "Revisar pedido"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Subtotal"
+    timeout: 10000
+
+- takeScreenshot: "vd-04-revision"
+
+# Verificar que aparece selector de método de pago (solo Venta Directa)
+- assertVisible: "Efectivo"
+
+# Seleccionar Efectivo como método de pago
+- tapOn: "Efectivo"
+- waitForAnimationToEnd
+
+- takeScreenshot: "vd-05-metodo-pago-seleccionado"
+
+# ═══════════════════════════════════════════
+# PASO 6: Cobrar y Entregar
+# ═══════════════════════════════════════════
+- tapOn: "Cobrar y Entregar"
+- waitForAnimationToEnd
+
+# Diálogo de confirmación — Venta Directa dice "COBRAR"
+- extendedWaitUntil:
+    visible: "COBRAR"
+    timeout: 5000
+
+- takeScreenshot: "vd-06-confirmacion"
+
+- tapOn: "COBRAR"
+- waitForAnimationToEnd
+
+# Pantalla de éxito — Venta Directa muestra "Venta Completada"
+- extendedWaitUntil:
+    visible: "Venta Completada"
+    timeout: 15000
+
+- takeScreenshot: "vd-07-exito"
+
+# Verificar éxito
+- assertVisible: "Venta Completada"
+
+# Ver detalle del pedido
+- tapOn: "Ver Pedido"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Abarrotes Don Pancho"
+    timeout: 10000
+
+- takeScreenshot: "vd-08-detalle"
+- assertVisible: "Abarrotes Don Pancho"

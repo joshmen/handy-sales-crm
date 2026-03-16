@@ -1,131 +1,108 @@
 appId: host.exp.exponent
-name: "Supervisor: día completo — dashboard, equipo, mapa, perfil"
+name: "Supervisor: Registrar cobro completo end-to-end"
 ---
 
 # ═══════════════════════════════════════════
 # PREREQ: Ya logueado como supervisor@jeyma.com
-# Tests 03, 04, 05 cubren vender/cobrar completos.
-# Este test verifica navegación integral del supervisor.
+# Con pedidos creados previamente (hay saldo pendiente)
 # ═══════════════════════════════════════════
 
-# ═══════════════════════════════════════════
-# FASE 1: DASHBOARD — verificar KPIs de equipo
-# ═══════════════════════════════════════════
+# Reset navigation
 - tapOn: "Hoy"
 - tapOn: "Hoy"
 - waitForAnimationToEnd
-
-- extendedWaitUntil:
-    visible: "Mi Equipo"
-    timeout: 15000
-
-# KPIs del equipo
-- assertVisible: "Vendedores"
-- assertVisible: "Ventas mes"
-- assertVisible: "Mi Actividad Personal"
-- assertVisible: "Ruta del Día"
-- assertVisible: "Acciones Rápidas"
-
-- takeScreenshot: "dia-01-dashboard"
-
-# ═══════════════════════════════════════════
-# FASE 2: EQUIPO — KPIs + lista vendedores
-# ═══════════════════════════════════════════
-- tapOn: "Equipo"
-- tapOn: "Equipo"
-- waitForAnimationToEnd
-
-- extendedWaitUntil:
-    visible: "Vendedores"
-    timeout: 10000
-- assertVisible: "Pedidos hoy"
-- assertVisible: "Ventas mes"
-- assertVisible: "Visitas hoy"
-
-# Verificar lista de vendedores
-- assertVisible: "Vendedor 1 Jeyma"
-
-- takeScreenshot: "dia-02-equipo-kpis"
-
-# ═══════════════════════════════════════════
-# FASE 3: DETALLE VENDEDOR
-# ═══════════════════════════════════════════
-- tapOn: "Vendedor 1 Jeyma"
-- waitForAnimationToEnd
-
-- takeScreenshot: "dia-03-vendedor-detalle"
-
-# Volver al equipo
-- pressKey: "back"
-- waitForAnimationToEnd
-
-# ═══════════════════════════════════════════
-# FASE 4: MAPA DEL EQUIPO
-# ═══════════════════════════════════════════
-- tapOn: "Ver mapa"
-- waitForAnimationToEnd
-
-- extendedWaitUntil:
-    visible: "Mapa del Equipo"
-    timeout: 10000
-
-- takeScreenshot: "dia-04-mapa-equipo"
-
-# Volver al equipo
-- pressKey: "back"
-- waitForAnimationToEnd
-
-# ═══════════════════════════════════════════
-# FASE 5: COBRAR — verificar dashboard de cobranza
-# ═══════════════════════════════════════════
 - tapOn: "Cobrar"
 - tapOn: "Cobrar"
 - waitForAnimationToEnd
 
+# ═══════════════════════════════════════════
+# PASO 1: Dashboard de cobranza
+# ═══════════════════════════════════════════
 - extendedWaitUntil:
     visible: "Facturado"
     timeout: 10000
 
+- takeScreenshot: "cobro-01-dashboard"
+
+# Verificar elementos del dashboard
 - assertVisible: "Cobrado"
-- assertVisible: "Pendiente de Cobro"
 - assertVisible: "Registrar Cobro"
-- assertVisible: "Historial"
-
-- takeScreenshot: "dia-05-cobranza-dashboard"
 
 # ═══════════════════════════════════════════
-# FASE 6: VENDER — verificar lista de pedidos
+# PASO 2: Ir a Registrar Cobro
 # ═══════════════════════════════════════════
-- tapOn: "Vender"
-- tapOn: "Vender"
+- tapOn:
+    id: "btn-registrar-cobro"
 - waitForAnimationToEnd
 
-- extendedWaitUntil:
-    visible: "Pedidos"
-    timeout: 10000
+- takeScreenshot: "cobro-02-formulario"
 
-# Debería ver pedidos creados
+# ═══════════════════════════════════════════
+# PASO 3: Seleccionar Cliente
+# ═══════════════════════════════════════════
+- tapOn: "Seleccionar cliente"
+- waitForAnimationToEnd
+
+- takeScreenshot: "cobro-03-picker-clientes"
+
+- tapOn: "Abarrotes Don Pancho"
+- waitForAnimationToEnd
+
+- takeScreenshot: "cobro-04-cliente-seleccionado"
+
+# ═══════════════════════════════════════════
+# PASO 4: Ingresar Monto
+# ═══════════════════════════════════════════
+- tapOn:
+    text: "0.00"
+- inputText: "100"
+# Press enter/done to dismiss numeric keyboard
+- pressKey: "Enter"
+- waitForAnimationToEnd
+
+- takeScreenshot: "cobro-05-monto"
+
+# ═══════════════════════════════════════════
+# PASO 5: Seleccionar Método de Pago
+# ═══════════════════════════════════════════
+- tapOn: "Efectivo"
+- waitForAnimationToEnd
+
+- takeScreenshot: "cobro-06-metodo-pago"
+
+# ═══════════════════════════════════════════
+# PASO 6: Confirmar Cobro
+# ═══════════════════════════════════════════
+# Tap the confirm button (text includes formatted amount)
+- tapOn: "Confirmar Cobro.*"
+- waitForAnimationToEnd
+
+# Confirmation dialog appears
+- extendedWaitUntil:
+    visible: "CONFIRMAR"
+    timeout: 5000
+- takeScreenshot: "cobro-06b-dialogo-confirmacion"
+- tapOn: "CONFIRMAR"
+- waitForAnimationToEnd
+
+# Esperar recibo
+- extendedWaitUntil:
+    visible: "Cobro Registrado"
+    timeout: 15000
+
+- takeScreenshot: "cobro-07-recibo"
+
+# Verificar recibo
+- assertVisible: "Cobro Registrado"
 - assertVisible: "Abarrotes Don Pancho"
 
-- takeScreenshot: "dia-06-pedidos-lista"
-
 # ═══════════════════════════════════════════
-# FASE 7: MÁS — verificar badge Supervisor
+# PASO 7: Volver al dashboard de cobranza
 # ═══════════════════════════════════════════
-- tapOn: "Más"
+- tapOn: "Listo"
 - waitForAnimationToEnd
 
-- assertVisible: "Supervisor"
+- takeScreenshot: "cobro-08-dashboard-actualizado"
 
-- takeScreenshot: "dia-07-mas-supervisor"
-
-# ═══════════════════════════════════════════
-# FASE 8: VOLVER AL DASHBOARD — verificar integridad
-# ═══════════════════════════════════════════
-- tapOn: "Hoy"
-- tapOn: "Hoy"
-- waitForAnimationToEnd
-
-- assertVisible: "Mi Equipo"
-
-- takeScreenshot: "dia-08-dashboard-final"
+# Verificar que volvimos al dashboard
+- assertVisible: "Facturado"

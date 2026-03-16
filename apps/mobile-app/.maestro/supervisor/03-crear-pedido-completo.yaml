@@ -1,0 +1,127 @@
+appId: host.exp.exponent
+name: "Supervisor: Crear Preventa completa end-to-end"
+---
+
+# ═══════════════════════════════════════════
+# PREREQ: Ya logueado como supervisor@jeyma.com
+# ═══════════════════════════════════════════
+
+# Reset navigation: doble-tap Hoy para forzar root, luego Vender
+- tapOn: "Hoy"
+- tapOn: "Hoy"
+- waitForAnimationToEnd
+- tapOn: "Vender"
+- tapOn: "Vender"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "Pedidos"
+    timeout: 5000
+
+# ═══════════════════════════════════════════
+# PASO 1: Tap FAB → Nuevo Pedido
+# ═══════════════════════════════════════════
+- tapOn:
+    id: "fab-nuevo-pedido"
+- waitForAnimationToEnd
+
+# Verificar que llegamos a Tipo de Venta
+- assertVisible: "Tipo de Venta"
+- takeScreenshot: "preventa-01-tipo-venta"
+
+# ═══════════════════════════════════════════
+# PASO 2: Seleccionar Preventa
+# ═══════════════════════════════════════════
+- tapOn: "Preventa"
+- waitForAnimationToEnd
+
+# ═══════════════════════════════════════════
+# PASO 3: Seleccionar Cliente
+# ═══════════════════════════════════════════
+- extendedWaitUntil:
+    visible: "Cliente"
+    timeout: 10000
+
+- takeScreenshot: "preventa-02-clientes"
+
+# Tap en primer cliente disponible
+- tapOn: "Abarrotes Don Pancho"
+- waitForAnimationToEnd
+
+# Verificar selección y continuar
+- tapOn: "Continuar"
+- waitForAnimationToEnd
+
+# ═══════════════════════════════════════════
+# PASO 4: Agregar Productos
+# ═══════════════════════════════════════════
+- extendedWaitUntil:
+    visible: "Productos"
+    timeout: 10000
+
+- takeScreenshot: "preventa-03-productos"
+
+# Agregar primer producto
+- tapOn: "Agregar"
+- waitForAnimationToEnd
+
+- takeScreenshot: "preventa-04-producto-agregado"
+
+# ═══════════════════════════════════════════
+# PASO 5: Revisar Pedido
+# ═══════════════════════════════════════════
+- tapOn: "Revisar pedido"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Subtotal"
+    timeout: 10000
+
+- takeScreenshot: "preventa-05-revision"
+
+# Verificar datos en revisión
+- assertVisible: "Abarrotes Don Pancho"
+
+# ═══════════════════════════════════════════
+# PASO 6: Levantar Pedido (enviar)
+# ═══════════════════════════════════════════
+- tapOn: "Levantar Pedido"
+- waitForAnimationToEnd
+
+# Diálogo de confirmación aparece
+- extendedWaitUntil:
+    visible: "ENVIAR"
+    timeout: 5000
+
+- takeScreenshot: "preventa-05b-confirmacion"
+
+# Confirmar envío
+- tapOn: "ENVIAR"
+- waitForAnimationToEnd
+
+# Esperar pantalla de éxito
+- extendedWaitUntil:
+    visible: "Pedido Levantado"
+    timeout: 15000
+
+- takeScreenshot: "preventa-06-exito"
+
+# Verificar pantalla de éxito
+- assertVisible: "Pedido Levantado"
+
+# ═══════════════════════════════════════════
+# PASO 7: Verificar pedido en lista
+# ═══════════════════════════════════════════
+
+# Usar "Ver Pedido" para confirmar detalle
+- tapOn: "Ver Pedido"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Abarrotes Don Pancho"
+    timeout: 10000
+
+- takeScreenshot: "preventa-07-detalle-pedido"
+
+# Verificar datos del pedido creado
+- assertVisible: "Abarrotes Don Pancho"
+- assertVisible: "Coca-Cola 2L"
