@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Image } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import { captureRef } from 'react-native-view-shot';
@@ -133,10 +133,21 @@ export default function ReciboScreen() {
 
         {/* Receipt Card (capturable) */}
         <View ref={receiptRef} collapsable={false} style={styles.receiptCard}>
-          {/* Company Header */}
+          {/* Company Header with logo + fiscal data */}
           <View style={styles.receiptHeader}>
-            <Text style={styles.companyName}>{user?.tenantName || 'Handy Suites'}</Text>
-            <Text style={styles.receiptLabel}>RECIBO DE COBRO</Text>
+            {empresa?.logoUrl && (
+              <Image source={{ uri: empresa.logoUrl }} style={styles.companyLogo} resizeMode="contain" />
+            )}
+            <Text style={styles.companyName}>{empresa?.razonSocial || user?.tenantName || 'Handy Suites'}</Text>
+            {empresa?.rfc && <Text style={styles.companyDetail}>RFC: {empresa.rfc}</Text>}
+            {empresa?.direccion && <Text style={styles.companyDetail}>{empresa.direccion}</Text>}
+            {(empresa?.ciudad || empresa?.estado) && (
+              <Text style={styles.companyDetail}>
+                {[empresa.ciudad, empresa.estado, empresa.codigoPostal].filter(Boolean).join(', ')}
+              </Text>
+            )}
+            {empresa?.telefono && <Text style={styles.companyDetail}>Tel: {empresa.telefono}</Text>}
+            <Text style={styles.receiptLabel}>{isFromVD ? 'NOTA DE VENTA' : 'RECIBO DE COBRO'}</Text>
           </View>
 
           <View style={styles.divider} />
@@ -305,11 +316,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 4,
   },
+  companyLogo: {
+    width: 64,
+    height: 64,
+    borderRadius: 12,
+    marginBottom: 10,
+  },
   companyName: {
     fontSize: 18,
     fontWeight: '800',
     color: '#0f172a',
     marginBottom: 4,
+  },
+  companyDetail: {
+    fontSize: 12,
+    color: '#64748b',
+    marginBottom: 1,
   },
   receiptLabel: {
     fontSize: 11,

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, Alert } from 'react-native';
+import { View, Text, StyleSheet, Alert, Image } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui';
@@ -84,7 +84,20 @@ export default function PedidoExitoScreen() {
         </View>
       </Animated.View>
 
-      <Animated.View entering={FadeInDown.delay(500).duration(400)}>
+      {/* Company info */}
+      {empresa && (
+        <Animated.View entering={FadeInDown.delay(400).duration(400)} style={styles.companyInfo}>
+          {empresa.logoUrl && (
+            <Image source={{ uri: empresa.logoUrl }} style={styles.companyLogo} resizeMode="contain" />
+          )}
+          <Text style={styles.companyName}>{empresa.razonSocial || user?.tenantName}</Text>
+          {empresa.rfc && <Text style={styles.companyDetail}>RFC: {empresa.rfc}</Text>}
+          {empresa.direccion && <Text style={styles.companyDetail}>{empresa.direccion}</Text>}
+          {empresa.telefono && <Text style={styles.companyDetail}>Tel: {empresa.telefono}</Text>}
+        </Animated.View>
+      )}
+
+      <Animated.View entering={FadeInDown.delay(600).duration(400)}>
         <Text style={styles.title}>{title}</Text>
         <Text style={styles.subtitle}>{subtitle}</Text>
       </Animated.View>
@@ -137,6 +150,10 @@ export default function PedidoExitoScreen() {
 }
 
 const styles = StyleSheet.create({
+  companyInfo: { alignItems: 'center', marginBottom: 16 },
+  companyLogo: { width: 56, height: 56, borderRadius: 12, marginBottom: 8 },
+  companyName: { fontSize: 16, fontWeight: '700', color: '#0f172a', marginBottom: 2 },
+  companyDetail: { fontSize: 12, color: '#64748b' },
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
