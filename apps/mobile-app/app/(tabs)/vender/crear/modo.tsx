@@ -1,7 +1,8 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useOrderDraftStore } from '@/stores';
-import { ShoppingBag, Zap } from 'lucide-react-native';
+import { Zap } from 'lucide-react-native';
+import { SbOrders } from '@/components/icons/DashboardIcons';
 
 export default function ModoVentaScreen() {
   const router = useRouter();
@@ -26,7 +27,7 @@ export default function ModoVentaScreen() {
           activeOpacity={0.8}
         >
           <View style={[styles.iconCircle, styles.iconPreventa]}>
-            <ShoppingBag size={32} color="#2563eb" />
+            <SbOrders size={32} />
           </View>
           <Text style={[styles.cardTitle, styles.textPreventa]}>Preventa</Text>
           <Text style={styles.cardSubtitle}>

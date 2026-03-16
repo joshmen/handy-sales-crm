@@ -18,6 +18,7 @@ import {
   Mail,
   Printer,
 } from 'lucide-react-native';
+import { SbClients, SbOrders, SbRoute } from '@/components/icons/DashboardIcons';
 import { HandyLogo } from '@/components/shared/HandyLogo';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 
@@ -66,19 +67,19 @@ function MasScreenContent() {
   const primaryItems: MenuItem[] = [
     {
       label: 'Clientes',
-      icon: <Users size={20} color="#7c3aed" />,
+      icon: <SbClients size={20} />,
       iconBg: '#ede9fe',
       onPress: () => router.push('/(tabs)/clients'),
     },
     {
       label: 'Pedidos',
-      icon: <ShoppingCart size={20} color="#d97706" />,
+      icon: <SbOrders size={20} />,
       iconBg: '#fef3c7',
       onPress: () => router.push('/(tabs)/vender' as any),
     },
     {
       label: 'Ruta del Día',
-      icon: <Route size={20} color="#2563eb" />,
+      icon: <SbRoute size={20} />,
       iconBg: '#dbeafe',
       onPress: () => router.push('/(tabs)/ruta' as any),
     },

@@ -12,6 +12,7 @@ import { ORDER_STATUS_COLORS } from '@/utils/constants';
 import { formatCurrency, formatDate } from '@/utils/format';
 import { ShoppingCart, ChevronRight, Calendar, Plus } from 'lucide-react-native';
 import { performSync } from '@/sync/syncEngine';
+import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
 import type Pedido from '@/db/models/Pedido';
 
 const STATUS_FILTERS = [
@@ -144,19 +145,23 @@ export default function VenderListScreen() {
             icon={<ShoppingCart size={48} color="#cbd5e1" />}
             title="Sin pedidos"
             message="No tienes pedidos registrados"
+            actionLabel="Crear Pedido"
+            onAction={() => router.push('/(tabs)/vender/crear/modo' as any)}
           />
         }
       />
 
       {/* FAB Nuevo Pedido */}
-      <TouchableOpacity
-        testID="fab-nuevo-pedido"
-        style={styles.fab}
-        onPress={() => router.push('/(tabs)/vender/crear/modo' as any)}
-        activeOpacity={0.85}
-      >
-        <Plus size={24} color="#ffffff" />
-      </TouchableOpacity>
+      <Animated.View entering={ZoomIn.delay(300).duration(300)}>
+        <TouchableOpacity
+          testID="fab-nuevo-pedido"
+          style={styles.fab}
+          onPress={() => router.push('/(tabs)/vender/crear/modo' as any)}
+          activeOpacity={0.85}
+        >
+          <Plus size={24} color="#ffffff" />
+        </TouchableOpacity>
+      </Animated.View>
     </View>
   );
 }

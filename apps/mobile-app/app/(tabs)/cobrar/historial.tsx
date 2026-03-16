@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { View, Text, FlatList, RefreshControl, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useOfflineCobros, useClientNameMap } from '@/hooks';
 import { LoadingSpinner, EmptyState } from '@/components/ui';
 import { formatCurrency, formatTime } from '@/utils/format';
@@ -18,6 +19,7 @@ const METODO_ICONS: Record<number, React.ReactNode> = {
 };
 
 export default function HistorialCobrosScreen() {
+  const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
   const { data: cobros, isLoading } = useOfflineCobros();
   const clientNames = useClientNameMap();
@@ -85,6 +87,8 @@ export default function HistorialCobrosScreen() {
             icon={<Receipt size={48} color="#cbd5e1" />}
             title="Sin cobros"
             message="No tienes cobros registrados"
+            actionLabel="Registrar Cobro"
+            onAction={() => router.push('/(tabs)/cobrar/registrar' as any)}
           />
         }
       />

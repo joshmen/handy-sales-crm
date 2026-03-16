@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import { View, Text, FlatList, RefreshControl, StyleSheet } from 'react-native';
+import { View, Text, FlatList, RefreshControl, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useOfflineOrders, useOfflineCobros, useClientNameMap } from '@/hooks';
 import { Card, LoadingSpinner, EmptyState } from '@/components/ui';
@@ -7,7 +7,7 @@ import { formatCurrency } from '@/utils/format';
 import { Wallet, ChevronRight, TrendingDown, User, Clock, HandCoins } from 'lucide-react-native';
 import { SbMoney, SbChart } from '@/components/icons/DashboardIcons';
 import { performSync } from '@/sync/syncEngine';
-import { TouchableOpacity } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 interface ClienteSaldo {
   clienteId: string;
@@ -88,7 +88,7 @@ export default function CobrarScreen() {
     return (
       <View>
         {/* Summary Cards */}
-        <View style={styles.summarySection}>
+        <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.summarySection}>
           <View style={styles.summaryRow}>
             <View style={[styles.summaryCard, { backgroundColor: '#eff6ff' }]}>
               <View style={[styles.summaryIcon, { backgroundColor: '#dbeafe' }]}>
@@ -127,10 +127,10 @@ export default function CobrarScreen() {
               </View>
             )}
           </View>
-        </View>
+        </Animated.View>
 
         {/* Quick Actions */}
-        <View style={styles.actionsRow}>
+        <Animated.View entering={FadeInDown.delay(250).duration(400)} style={styles.actionsRow}>
           <TouchableOpacity
             testID="btn-registrar-cobro"
             style={[styles.actionButton, { backgroundColor: '#16a34a' }]}
@@ -148,7 +148,7 @@ export default function CobrarScreen() {
             <Clock size={18} color="#ffffff" />
             <Text style={styles.actionButtonText}>Historial</Text>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
 
         {/* Section Header */}
         <View style={styles.listHeader}>

@@ -115,6 +115,8 @@ export default function ClientsListScreen() {
                 ? 'No se encontraron clientes con esa búsqueda'
                 : 'No tienes clientes asignados'
             }
+            actionLabel={!search ? 'Agregar Cliente' : undefined}
+            onAction={!search ? () => router.push('/(tabs)/clients/crear' as any) : undefined}
           />
         }
         ListFooterComponent={

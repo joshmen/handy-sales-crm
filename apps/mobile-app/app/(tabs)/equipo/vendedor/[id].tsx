@@ -1,7 +1,8 @@
 import { View, Text, StyleSheet, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ShoppingBag, Eye, DollarSign, MapPin, Clock, UserCheck, Users } from 'lucide-react-native';
+import { MapPin, Clock } from 'lucide-react-native';
+import { SbOrders, SbVisit, SbMoney, SbClients, SbTeam } from '@/components/icons/DashboardIcons';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { useVendedorResumen } from '@/hooks/useSupervisor';
 import { useState } from 'react';
@@ -9,7 +10,7 @@ import { useState } from 'react';
 function StatCard({ icon: Icon, label, value, color }: { icon: any; label: string; value: string | number; color: string }) {
   return (
     <View style={[styles.statCard, { borderTopColor: color }]}>
-      <Icon size={18} color={color} />
+      <Icon size={18} />
       <Text style={styles.statValue}>{value}</Text>
       <Text style={styles.statLabel}>{label}</Text>
     </View>
@@ -52,7 +53,7 @@ function VendedorDetalleContent() {
   if (!resumen) {
     return (
       <View style={[styles.container, styles.center]}>
-        <Users size={40} color="#94a3b8" />
+        <SbTeam size={40} />
         <Text style={styles.errorText}>Vendedor no encontrado</Text>
       </View>
     );
@@ -86,11 +87,11 @@ function VendedorDetalleContent() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Resumen del día</Text>
         <View style={styles.statGrid} testID="vendedor-stats">
-          <StatCard icon={ShoppingBag} label="Pedidos" value={hoy.pedidos} color="#2563eb" />
-          <StatCard icon={DollarSign} label="Ventas" value={formatMoney(hoy.ventas)} color="#16a34a" />
-          <StatCard icon={Eye} label="Visitas" value={`${hoy.visitasCompletadas}/${hoy.visitas}`} color="#7c3aed" />
-          <StatCard icon={DollarSign} label="Cobros" value={formatMoney(hoy.cobros)} color="#d97706" />
-          <StatCard icon={UserCheck} label="Clientes" value={totalClientes} color="#0891b2" />
+          <StatCard icon={SbOrders} label="Pedidos" value={hoy.pedidos} color="#2563eb" />
+          <StatCard icon={SbMoney} label="Ventas" value={formatMoney(hoy.ventas)} color="#16a34a" />
+          <StatCard icon={SbVisit} label="Visitas" value={`${hoy.visitasCompletadas}/${hoy.visitas}`} color="#7c3aed" />
+          <StatCard icon={SbMoney} label="Cobros" value={formatMoney(hoy.cobros)} color="#d97706" />
+          <StatCard icon={SbClients} label="Clientes" value={totalClientes} color="#0891b2" />
         </View>
       </View>
 
