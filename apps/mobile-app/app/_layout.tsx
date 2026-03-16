@@ -33,14 +33,19 @@ import { secureStorage } from '@/utils/storage';
 import { COLORS } from '@/utils/constants';
 import { database } from '@/db/database';
 import Toast from 'react-native-toast-message';
+import { SyncLoadingScreen } from '@/components/shared/SyncLoadingScreen';
 
 const ONBOARDING_KEY = 'onboarding_complete';
 
 SplashScreen.preventAutoHideAsync();
 
+const INITIAL_SYNC_KEY = 'initial_sync_complete';
+
 function AuthGate({ onReady }: { onReady: () => void }) {
   const { isAuthenticated, isLoading, restoreSession } = useAuthStore();
   const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
+  const [initialSyncDone, setInitialSyncDone] = useState<boolean | null>(null);
+  const [showSyncLoader, setShowSyncLoader] = useState(false);
   const segments = useSegments();
   const router = useRouter();
 
@@ -50,6 +55,11 @@ function AuthGate({ onReady }: { onReady: () => void }) {
       setOnboardingDone(val === 'true');
     }).catch(() => {
       setOnboardingDone(true);
+    });
+    secureStorage.get(INITIAL_SYNC_KEY).then((val) => {
+      setInitialSyncDone(val === 'true');
+    }).catch(() => {
+      setInitialSyncDone(false);
     });
   }, []);
 
@@ -88,15 +98,34 @@ function AuthGate({ onReady }: { onReady: () => void }) {
         router.replace('/(auth)/login');
       }
     } else if (isAuthenticated && !inTabsGroup) {
-      router.replace('/(tabs)');
+      // First login (no initial sync yet) → show loading screen
+      if (!initialSyncDone) {
+        setShowSyncLoader(true);
+      } else {
+        router.replace('/(tabs)');
+      }
     }
-  }, [isAuthenticated, isLoading, onboardingDone, segments]);
+  }, [isAuthenticated, isLoading, onboardingDone, initialSyncDone, segments]);
 
-  if (isLoading || onboardingDone === null) {
+  if (isLoading || onboardingDone === null || initialSyncDone === null) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff' }}>
         <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
+    );
+  }
+
+  // Initial sync loading screen
+  if (showSyncLoader) {
+    return (
+      <SyncLoadingScreen
+        onComplete={async () => {
+          await secureStorage.set(INITIAL_SYNC_KEY, 'true');
+          setInitialSyncDone(true);
+          setShowSyncLoader(false);
+          router.replace('/(tabs)');
+        }}
+      />
     );
   }
 
