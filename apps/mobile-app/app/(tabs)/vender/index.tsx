@@ -5,6 +5,7 @@ const ITEM_MARGIN_BOTTOM = 12; // mb-3
 const ITEM_SLOT = ITEM_HEIGHT + ITEM_MARGIN_BOTTOM;
 import { View, Text, FlatList, RefreshControl, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineOrders, useClientNameMap } from '@/hooks';
 import { Card, LoadingSpinner, EmptyState } from '@/components/ui';
 import { StatusBadge } from '@/components/shared/StatusBadge';
@@ -25,6 +26,7 @@ const STATUS_FILTERS = [
 ];
 
 export default function VenderListScreen() {
+  const insets = useSafeAreaInsets();
   const [statusFilter, setStatusFilter] = useState<number | undefined>(undefined);
   const router = useRouter();
 
@@ -92,6 +94,11 @@ export default function VenderListScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Custom Header */}
+      <View style={[styles.customHeader, { paddingTop: insets.top + 12 }]}>
+        <Text style={styles.screenTitle}>Pedidos</Text>
+      </View>
+
       {/* Status Filter Chips */}
       <View style={styles.filterSection}>
         <ScrollView
@@ -168,6 +175,8 @@ export default function VenderListScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fafc' },
+  customHeader: { paddingHorizontal: 20, paddingBottom: 8 },
+  screenTitle: { fontSize: 28, fontWeight: '800', color: '#0f172a', letterSpacing: -0.5 },
   filterSection: { backgroundColor: '#ffffff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9', paddingBottom: 8 },
   filterScroll: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4, gap: 8 },
   countRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, gap: 6 },

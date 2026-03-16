@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { View, Text, FlatList, RefreshControl, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineOrders, useOfflineCobros, useClientNameMap } from '@/hooks';
 import { Card, LoadingSpinner, EmptyState } from '@/components/ui';
 import { formatCurrency } from '@/utils/format';
@@ -18,6 +19,7 @@ interface ClienteSaldo {
 }
 
 export default function CobrarScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
 
@@ -87,6 +89,11 @@ export default function CobrarScreen() {
   const renderHeader = useCallback(() => {
     return (
       <View>
+        {/* Custom Header */}
+        <View style={[styles.customHeader, { paddingTop: insets.top + 12 }]}>
+          <Text style={styles.screenTitle}>Cobranza</Text>
+        </View>
+
         {/* Summary Cards */}
         <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.summarySection}>
           <View style={styles.summaryRow}>
@@ -236,6 +243,8 @@ export default function CobrarScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fafc' },
   listContent: { paddingBottom: 32 },
+  customHeader: { paddingHorizontal: 20, paddingBottom: 4 },
+  screenTitle: { fontSize: 28, fontWeight: '800', color: '#0f172a', letterSpacing: -0.5 },
   summarySection: { padding: 16, gap: 12 },
   summaryRow: { flexDirection: 'row', gap: 10 },
   summaryCard: {

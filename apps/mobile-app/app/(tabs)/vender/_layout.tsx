@@ -12,7 +12,7 @@ export default function VenderLayout() {
         animation: 'slide_from_right',
       }}
     >
-      <Stack.Screen name="index" options={{ title: 'Pedidos' }} />
+      <Stack.Screen name="index" options={{ title: 'Pedidos', headerShown: false }} />
       <Stack.Screen name="[id]" options={{ title: 'Detalle Pedido' }} />
       <Stack.Screen name="productos" options={{ title: 'Productos' }} />
       <Stack.Screen name="producto/[id]" options={{ title: 'Producto' }} />

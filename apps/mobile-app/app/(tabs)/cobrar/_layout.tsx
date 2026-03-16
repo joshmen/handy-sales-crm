@@ -12,7 +12,7 @@ export default function CobrarLayout() {
         animation: 'slide_from_right',
       }}
     >
-      <Stack.Screen name="index" options={{ title: 'Cobranza' }} />
+      <Stack.Screen name="index" options={{ title: 'Cobranza', headerShown: false }} />
       <Stack.Screen name="estado-cuenta/[clienteId]" options={{ title: 'Estado de Cuenta' }} />
       <Stack.Screen name="registrar" options={{ title: 'Registrar Cobro' }} />
       <Stack.Screen name="historial" options={{ title: 'Historial de Cobros' }} />
