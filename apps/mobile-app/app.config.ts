@@ -27,6 +27,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       googleMapsApiKey: GOOGLE_MAPS_API_KEY,
     },
   },
+  androidStatusBar: {
+    backgroundColor: '#ffffff',
+    barStyle: 'dark-content',
+    translucent: false,
+  },
   android: {
     adaptiveIcon: {
       foregroundImage: "./assets/adaptive-icon.png",
