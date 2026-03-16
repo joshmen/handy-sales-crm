@@ -10,6 +10,7 @@ import { Button } from '@/components/ui';
 import { usePrinterStore } from '@/stores/printerStore';
 import { printReceipt, isNativeAvailable } from '@/services/printerService';
 import { useEmpresa } from '@/hooks/useEmpresa';
+import { useOfflineOrderById, useOfflineOrderDetalles } from '@/hooks';
 import {
   CheckCircle,
   User,
@@ -41,12 +42,18 @@ export default function ReciboScreen() {
   const notas = decodeURIComponent(params.notas || '');
   const fecha = params.fecha || new Date().toISOString();
 
+  const pedidoId = params.pedidoId;
+
   const receiptRef = useRef<View>(null);
   const [sharing, setSharing] = useState(false);
   const [printing, setPrinting] = useState(false);
   const { data: empresa } = useEmpresa();
   const { connectedDevice } = usePrinterStore();
   const printerAvailable = isNativeAvailable() && !!connectedDevice;
+
+  // Load order details for Venta Directa receipts
+  const { data: order } = useOfflineOrderById(pedidoId);
+  const { data: detalles } = useOfflineOrderDetalles(pedidoId || '');
 
   const handleShare = async () => {
     if (!receiptRef.current) return;
@@ -163,9 +170,47 @@ export default function ReciboScreen() {
             </View>
           </View>
 
+          {/* Order Items (Venta Directa only) */}
+          {isFromVD && detalles && detalles.length > 0 && (
+            <View style={styles.itemsSection}>
+              <View style={styles.itemsHeader}>
+                <Text style={styles.itemsHeaderText}>Productos</Text>
+                <Text style={styles.itemsHeaderCount}>{detalles.length}</Text>
+              </View>
+              {detalles.map((item: any) => (
+                <View key={item.id} style={styles.itemRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.itemName}>{item.productoNombre}</Text>
+                    <Text style={styles.itemQty}>{item.cantidad} x {formatCurrency(item.precioUnitario)}</Text>
+                  </View>
+                  <Text style={styles.itemTotal}>{formatCurrency(item.subtotal)}</Text>
+                </View>
+              ))}
+              <View style={styles.itemsDivider} />
+              {order && (
+                <View style={styles.totalsBlock}>
+                  <View style={styles.totalLine}>
+                    <Text style={styles.totalLineLabel}>Subtotal</Text>
+                    <Text style={styles.totalLineValue}>{formatCurrency(order.subtotal)}</Text>
+                  </View>
+                  {order.descuento > 0 && (
+                    <View style={styles.totalLine}>
+                      <Text style={styles.totalLineLabel}>Descuento</Text>
+                      <Text style={[styles.totalLineValue, { color: '#ef4444' }]}>-{formatCurrency(order.descuento)}</Text>
+                    </View>
+                  )}
+                  <View style={styles.totalLine}>
+                    <Text style={styles.totalLineLabel}>Impuestos</Text>
+                    <Text style={styles.totalLineValue}>{formatCurrency(order.impuesto)}</Text>
+                  </View>
+                </View>
+              )}
+            </View>
+          )}
+
           {/* Amount */}
           <View style={styles.amountRow}>
-            <Text style={styles.amountLabel}>Monto cobrado</Text>
+            <Text style={styles.amountLabel}>{isFromVD ? 'Total' : 'Monto cobrado'}</Text>
             <Text style={styles.amountValue}>{formatCurrency(monto)}</Text>
           </View>
 
@@ -370,6 +415,19 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1e293b',
   },
+  itemsSection: { marginTop: 12 },
+  itemsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  itemsHeaderText: { fontSize: 13, fontWeight: '700', color: '#475569' },
+  itemsHeaderCount: { fontSize: 12, fontWeight: '600', color: '#94a3b8' },
+  itemRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: '#f8fafc' },
+  itemName: { fontSize: 13, fontWeight: '600', color: '#1e293b' },
+  itemQty: { fontSize: 11, color: '#94a3b8', marginTop: 1 },
+  itemTotal: { fontSize: 13, fontWeight: '600', color: '#1e293b' },
+  itemsDivider: { height: 1, backgroundColor: '#e2e8f0', marginVertical: 8 },
+  totalsBlock: { gap: 4 },
+  totalLine: { flexDirection: 'row', justifyContent: 'space-between' },
+  totalLineLabel: { fontSize: 12, color: '#94a3b8' },
+  totalLineValue: { fontSize: 12, fontWeight: '500', color: '#475569' },
   amountRow: {
     alignItems: 'center',
     backgroundColor: '#f0fdf4',
