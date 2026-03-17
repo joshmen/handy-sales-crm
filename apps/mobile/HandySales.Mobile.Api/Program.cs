@@ -105,6 +105,7 @@ app.MapMobileAttachmentEndpoints();
 app.MapMobileVentaDirectaEndpoints();
 app.MapMobileSupervisorEndpoints();
 app.MapMobileEmpresaEndpoints();
+app.MapMobileCrashReportEndpoints();
 app.MapHealthEndpoints();
 app.MapHub<MobileNotificationHub>("/hubs/notifications");
 
