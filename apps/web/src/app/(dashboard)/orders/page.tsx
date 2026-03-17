@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { useSignalR } from '@/contexts/SignalRContext';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
 import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
@@ -217,6 +218,21 @@ export default function OrdersPage() {
   useEffect(() => {
     fetchOrders();
   }, [fetchOrders]);
+
+  // Real-time: refresh orders when mobile creates/updates pedidos
+  const { on, off } = useSignalR();
+  useEffect(() => {
+    const handleUpdate = (...args: unknown[]) => {
+      const data = args[0] as { tipo?: string } | undefined;
+      if (!data?.tipo || data.tipo === 'pedido') fetchOrders();
+    };
+    on('DashboardUpdate', handleUpdate);
+    on('PedidoCreated', handleUpdate);
+    return () => {
+      off('DashboardUpdate', handleUpdate);
+      off('PedidoCreated', handleUpdate);
+    };
+  }, [on, off, fetchOrders]);
 
   // Cargar lista de vendedores (solo para admin)
   useEffect(() => {
