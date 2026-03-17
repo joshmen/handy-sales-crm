@@ -95,7 +95,7 @@ export default function VenderListScreen() {
   return (
     <View style={styles.container}>
       {/* Custom Header */}
-      <View style={[styles.customHeader, { paddingTop: insets.top + 12 }]}>
+      <View style={[styles.customHeader, { paddingTop: insets.top + 16 }]}>
         <Text style={styles.screenTitle}>Pedidos</Text>
       </View>
 

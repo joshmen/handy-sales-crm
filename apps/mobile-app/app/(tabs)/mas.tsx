@@ -128,7 +128,7 @@ function MasScreenContent() {
       showsVerticalScrollIndicator={false}
     >
       {/* Profile Card */}
-      <Animated.View entering={FadeInDown.duration(400)} style={[styles.profileCard, { paddingTop: insets.top + 20 }]}>
+      <Animated.View entering={FadeInDown.duration(400)} style={[styles.profileCard, { paddingTop: insets.top + 16 }]}>
         <View style={styles.profileRow}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>

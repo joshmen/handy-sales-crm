@@ -90,7 +90,7 @@ export default function CobrarScreen() {
     return (
       <View>
         {/* Custom Header */}
-        <View style={[styles.customHeader, { paddingTop: insets.top + 12 }]}>
+        <View style={[styles.customHeader, { paddingTop: insets.top + 16 }]}>
           <Text style={styles.screenTitle}>Cobranza</Text>
         </View>
 

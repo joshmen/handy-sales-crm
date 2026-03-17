@@ -53,7 +53,7 @@ export default function ProfileScreen() {
       showsVerticalScrollIndicator={false}
     >
       {/* Profile Header */}
-      <Animated.View entering={FadeInDown.duration(400)} style={[styles.profileHeader, { paddingTop: insets.top + 20 }]}>
+      <Animated.View entering={FadeInDown.duration(400)} style={[styles.profileHeader, { paddingTop: insets.top + 16 }]}>
         <View style={styles.avatarLarge}>
           <Text style={styles.avatarText}>
             {user.name?.[0]?.toUpperCase() || 'U'}
