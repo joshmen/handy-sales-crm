@@ -54,7 +54,7 @@ public class CfdiSigner : ICfdiSigner
 
         // 5. Generate cadena original via XSLT (from XML with NoCertificado populated)
         var cadenaOriginal = GenerateCadenaOriginal(xmlWithCert);
-        _logger.LogDebug("Cadena original: {Cadena}", cadenaOriginal);
+        _logger.LogDebug("Cadena original generated ({Length} chars)", cadenaOriginal.Length);
 
         // 6. Sign cadena original with private key (SHA-256 + RSA PKCS#1)
         var sello = SignCadenaOriginal(cadenaOriginal, keyBytes, password);

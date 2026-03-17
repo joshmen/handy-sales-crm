@@ -333,13 +333,14 @@ public class DeviceSessionRepository : IDeviceSessionRepository
 
     public async Task<Dictionary<int, (int Count, DateTime LastActivity)>> ObtenerPresenciaActivaAsync(int tenantId)
     {
-        return await _db.DeviceSessions
+        var grouped = await _db.DeviceSessions
             .AsNoTracking()
             .Where(ds => ds.TenantId == tenantId && ds.Status == SessionStatus.Active)
             .GroupBy(ds => ds.UsuarioId)
-            .ToDictionaryAsync(
-                g => g.Key,
-                g => (g.Count(), g.Max(ds => ds.LastActivity)));
+            .Select(g => new { UsuarioId = g.Key, Count = g.Count(), LastActivity = g.Max(ds => ds.LastActivity) })
+            .ToListAsync();
+
+        return grouped.ToDictionary(x => x.UsuarioId, x => (x.Count, x.LastActivity));
     }
 
     public async Task<int> LimpiarSesionesExpiradasAsync(int diasInactividad = 30)

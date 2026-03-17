@@ -191,7 +191,12 @@ public class PedidoRepository : IPedidoRepository
             query = query.Where(p => p.FechaPedido >= filtro.FechaDesde.Value);
 
         if (filtro.FechaHasta.HasValue)
-            query = query.Where(p => p.FechaPedido < filtro.FechaHasta.Value.Date.AddDays(1));
+        {
+            var fechaFin = filtro.FechaHasta.Value.Date < DateTime.MaxValue.Date
+                ? filtro.FechaHasta.Value.Date.AddDays(1)
+                : DateTime.MaxValue;
+            query = query.Where(p => p.FechaPedido < fechaFin);
+        }
 
         if (!string.IsNullOrWhiteSpace(filtro.Busqueda))
         {

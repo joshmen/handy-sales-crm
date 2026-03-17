@@ -119,6 +119,7 @@ public class CatalogosController : ControllerBase
     }
 
     [HttpPost("configuracion-fiscal")]
+    [Authorize(Roles = "ADMIN,SUPER_ADMIN")]
     public async Task<ActionResult<ConfiguracionFiscal>> CreateConfiguracionFiscal(
         [FromBody] CreateConfiguracionFiscalRequest request)
     {
@@ -159,6 +160,7 @@ public class CatalogosController : ControllerBase
     }
 
     [HttpPut("configuracion-fiscal/{id}")]
+    [Authorize(Roles = "ADMIN,SUPER_ADMIN")]
     public async Task<ActionResult> UpdateConfiguracionFiscal(
         int id,
         [FromBody] UpdateConfiguracionFiscalRequest request)

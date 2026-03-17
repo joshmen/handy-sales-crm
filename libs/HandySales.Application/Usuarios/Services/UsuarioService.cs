@@ -48,7 +48,7 @@ public class UsuarioService
             {
                 dto.ActiveSessionCount = stats.Count;
                 dto.LastActivity = stats.LastActivity;
-                dto.IsOnline = stats.LastActivity > DateTime.UtcNow.AddMinutes(-5);
+                dto.IsOnline = stats.LastActivity > DateTime.UtcNow.AddMinutes(-PresenceConstants.OnlineThresholdMinutes);
             }
         }
     }
@@ -168,7 +168,16 @@ public class UsuarioService
             AvatarUrl = u.AvatarUrl
         }).ToList();
 
-        await EnrichWithSessionDataAsync(dtos, _tenant.TenantId);
+        // SuperAdmin sees all tenants — enrich per-tenant to get correct presence
+        if (_tenant.IsSuperAdmin)
+        {
+            foreach (var group in dtos.GroupBy(d => d.TenantId))
+                await EnrichWithSessionDataAsync(group.ToList(), group.Key);
+        }
+        else
+        {
+            await EnrichWithSessionDataAsync(dtos, _tenant.TenantId);
+        }
         return dtos;
     }
 
@@ -213,7 +222,15 @@ public class UsuarioService
             })
             .ToList();
 
-        await EnrichWithSessionDataAsync(paginatedUsers, _tenant.TenantId);
+        if (_tenant.IsSuperAdmin)
+        {
+            foreach (var group in paginatedUsers.GroupBy(d => d.TenantId))
+                await EnrichWithSessionDataAsync(group.ToList(), group.Key);
+        }
+        else
+        {
+            await EnrichWithSessionDataAsync(paginatedUsers, _tenant.TenantId);
+        }
         return new PaginatedResult<UsuarioDto>(paginatedUsers, totalCount, pagination.Page, pagination.PageSize);
     }
 

@@ -124,8 +124,11 @@ builder.Services.AddHealthChecks()
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline - Swagger (centralized configuration)
-app.UseSwaggerConfiguration(app.Environment);
+// Configure the HTTP request pipeline - Swagger (dev only — not exposed in production)
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwaggerConfiguration(app.Environment);
+}
 
 // Global exception handler — maps known exceptions to proper HTTP status codes
 app.UseExceptionHandler(errorApp =>

@@ -67,7 +67,13 @@ app.UseSwaggerConfiguration(app.Environment);
 app.UseHttpsRedirection();
 app.UseCors("MobilePolicy");
 
+app.UseRateLimiter();
+app.UseAuthentication();
+app.UseAuthorization();
+app.UseMiddleware<MobileSessionValidationMiddleware>();
+
 // Ensure wwwroot/uploads exists for static file serving (evidence uploads)
+// Placed AFTER auth middleware so static files require authentication
 var wwwroot = Path.Combine(app.Environment.ContentRootPath, "wwwroot");
 Directory.CreateDirectory(Path.Combine(wwwroot, "uploads", "evidence"));
 app.UseStaticFiles(new StaticFileOptions
@@ -75,11 +81,6 @@ app.UseStaticFiles(new StaticFileOptions
     FileProvider = new PhysicalFileProvider(wwwroot),
     RequestPath = ""
 });
-
-app.UseRateLimiter();
-app.UseAuthentication();
-app.UseAuthorization();
-app.UseMiddleware<MobileSessionValidationMiddleware>();
 
 // MOBILE-SPECIFIC ENDPOINTS
 app.MapMobileAuthEndpoints();

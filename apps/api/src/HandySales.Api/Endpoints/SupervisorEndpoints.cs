@@ -1,4 +1,5 @@
 using HandySales.Application.DeviceSessions.Interfaces;
+using HandySales.Application.Usuarios.DTOs;
 using HandySales.Application.Usuarios.Interfaces;
 using HandySales.Infrastructure.Persistence;
 using HandySales.Shared.Multitenancy;
@@ -51,7 +52,7 @@ public static class SupervisorEndpoints
                 return new
                 {
                     v.Id, v.Nombre, v.Email, v.Rol, v.Activo, v.AvatarUrl,
-                    IsOnline = hasSession && stats.LastActivity > DateTime.UtcNow.AddMinutes(-5),
+                    IsOnline = hasSession && stats.LastActivity > DateTime.UtcNow.AddMinutes(-PresenceConstants.OnlineThresholdMinutes),
                     LastActivity = hasSession ? (DateTime?)stats.LastActivity : null,
                     ActiveDeviceCount = hasSession ? stats.Count : 0
                 };

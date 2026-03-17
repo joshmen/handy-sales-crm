@@ -1,3 +1,8 @@
+public static class PresenceConstants
+{
+    public const int OnlineThresholdMinutes = 5;
+}
+
 public class UsuarioDto
 {
     public int Id { get; set; }

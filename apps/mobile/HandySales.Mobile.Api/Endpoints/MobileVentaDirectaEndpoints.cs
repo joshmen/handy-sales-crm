@@ -34,8 +34,8 @@ public static class MobileVentaDirectaEndpoints
             if (string.IsNullOrEmpty(userIdClaim) || string.IsNullOrEmpty(tenantIdClaim))
                 return Results.Unauthorized();
 
-            var usuarioId = int.Parse(userIdClaim);
-            var tenantId = int.Parse(tenantIdClaim);
+            if (!int.TryParse(userIdClaim, out var usuarioId) || !int.TryParse(tenantIdClaim, out var tenantId))
+                return Results.Unauthorized();
 
             // Validate client exists and belongs to tenant
             var cliente = await db.Clientes
@@ -196,7 +196,7 @@ public static class MobileVentaDirectaEndpoints
                         }
                     });
                 }
-                catch (DbUpdateException ex) when (ex.InnerException is Npgsql.PostgresException pg && pg.SqlState == "23505")
+                catch (DbUpdateException ex) when (ex.InnerException is Npgsql.PostgresException pg && (pg.SqlState == "23505" || pg.SqlState == "40001"))
                 {
                     await transaction.RollbackAsync();
                     db.ChangeTracker.Clear();

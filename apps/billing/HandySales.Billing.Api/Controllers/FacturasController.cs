@@ -464,6 +464,7 @@ public class FacturasController : ControllerBase
     }
 
     [HttpPost("{id}/timbrar")]
+    [Authorize(Roles = "ADMIN,SUPER_ADMIN")]
     public async Task<ActionResult<FacturaDto>> TimbrarFactura(long id)
     {
         var tenantId = GetTenantId();
@@ -543,11 +544,10 @@ public class FacturasController : ControllerBase
         {
             // 1. Build XML CFDI 4.0
             var unsignedXml = _xmlBuilder.BuildXml(factura, config);
-            _logger.LogDebug("XML CFDI 4.0 unsigned:\n{Xml}", unsignedXml);
 
             // 2. Sign XML with CSD (cadena original → SHA256+RSA → Sello)
             var signedXml = _cfdiSigner.SignXml(unsignedXml, config);
-            _logger.LogDebug("XML CFDI 4.0 signed:\n{Xml}", signedXml);
+            _logger.LogDebug("CFDI XML generated for factura {FacturaId} ({Length} chars)", factura.Id, signedXml.Length);
             factura.NoCertificadoEmisor = _cfdiSigner.GetNoCertificado(Convert.FromBase64String(config.CertificadoSat));
             _logger.LogDebug("XML firmado con CSD (NoCertificado: {NoCert})", factura.NoCertificadoEmisor);
 
@@ -636,6 +636,7 @@ public class FacturasController : ControllerBase
     }
 
     [HttpPost("{id}/cancelar")]
+    [Authorize(Roles = "ADMIN,SUPER_ADMIN")]
     public async Task<ActionResult> CancelarFactura(long id, [FromBody] CancelarFacturaRequest request)
     {
         var tenantId = GetTenantId();
@@ -822,6 +823,7 @@ public class FacturasController : ControllerBase
     }
 
     [HttpPost("{id}/enviar")]
+    [Authorize(Roles = "ADMIN,SUPER_ADMIN")]
     public async Task<ActionResult> EnviarPorCorreo(long id, [FromBody] EnviarFacturaRequest request)
     {
         var tenantId = GetTenantId();
