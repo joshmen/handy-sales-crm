@@ -31,11 +31,11 @@ function formatTimeAgo(dateStr: string): string {
 function VendedorCallout({ ubicacion }: { ubicacion: UbicacionVendedor }) {
   return (
     <View style={styles.callout}>
-      <Text style={styles.calloutName}>{ubicacion.nombre}</Text>
+      <Text style={styles.calloutName} numberOfLines={2}>{ubicacion.nombre}</Text>
       {ubicacion.clienteNombre && (
         <View style={styles.calloutRow}>
           <MapPin size={12} color="#64748b" />
-          <Text style={styles.calloutDetail}>{ubicacion.clienteNombre}</Text>
+          <Text style={styles.calloutDetail} numberOfLines={2}>{ubicacion.clienteNombre}</Text>
         </View>
       )}
       <View style={styles.calloutRow}>
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
   center: { alignItems: 'center', justifyContent: 'center' },
   loadingText: { marginTop: 12, fontSize: 14, color: '#64748b' },
   map: { flex: 1 },
-  callout: { padding: 8, minWidth: 140 },
+  callout: { padding: 8, minWidth: 140, maxWidth: 220 },
   calloutName: { fontSize: 14, fontWeight: '700', color: '#0f172a', marginBottom: 4 },
   calloutRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   calloutDetail: { fontSize: 12, color: '#64748b' },

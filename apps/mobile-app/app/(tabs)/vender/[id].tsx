@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
   totalRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
   totalLabel: { fontSize: 13, color: '#94a3b8' },
   totalValue: { fontSize: 13, color: '#475569', fontWeight: '500' },
-  discountValue: { fontSize: 13, color: '#ef4444', fontWeight: '500' },
+  discountValue: { fontSize: 13, color: '#16a34a', fontWeight: '500' },
   grandTotalRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#e2e8f0' },
   grandTotalLabel: { fontSize: 16, fontWeight: '800', color: '#0f172a' },
   grandTotalValue: { fontSize: 16, fontWeight: '800', color: '#0f172a' },
