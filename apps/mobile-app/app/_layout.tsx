@@ -44,7 +44,6 @@ const INITIAL_SYNC_KEY = 'initial_sync_complete';
 function AuthGate({ onReady }: { onReady: (firstSync?: boolean) => void }) {
   const { isAuthenticated, isLoading, restoreSession } = useAuthStore();
   const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
-  const [initialSyncDone, setInitialSyncDone] = useState<boolean | null>(null);
   const segments = useSegments();
   const router = useRouter();
 
@@ -55,11 +54,7 @@ function AuthGate({ onReady }: { onReady: (firstSync?: boolean) => void }) {
     }).catch(() => {
       setOnboardingDone(true);
     });
-    secureStorage.get(INITIAL_SYNC_KEY).then((val) => {
-      setInitialSyncDone(val === 'true');
-    }).catch(() => {
-      setInitialSyncDone(false);
-    });
+    // INITIAL_SYNC_KEY no longer needed — sync runs every login
   }, []);
 
   // Back handler — confirm exit on home screen
@@ -83,11 +78,10 @@ function AuthGate({ onReady }: { onReady: (firstSync?: boolean) => void }) {
   }, [segments]);
 
   useEffect(() => {
-    if (isLoading || onboardingDone === null || initialSyncDone === null) return;
+    if (isLoading || onboardingDone === null) return;
 
-    // Tell RootLayout if this is first sync (splash will show progress)
-    const isFirstSync = isAuthenticated && !initialSyncDone;
-    onReady(isFirstSync);
+    // Always sync on login — splash shows progress
+    onReady(isAuthenticated);
 
     const inAuthGroup = segments[0] === '(auth)';
     const inTabsGroup = segments[0] === '(tabs)';
@@ -102,9 +96,9 @@ function AuthGate({ onReady }: { onReady: (firstSync?: boolean) => void }) {
       // Navigate to tabs — splash overlay handles sync if needed
       router.replace('/(tabs)');
     }
-  }, [isAuthenticated, isLoading, onboardingDone, initialSyncDone, segments]);
+  }, [isAuthenticated, isLoading, onboardingDone,segments]);
 
-  if (isLoading || onboardingDone === null || initialSyncDone === null) {
+  if (isLoading || onboardingDone === null) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff' }}>
         <ActivityIndicator size="large" color={COLORS.primary} />
@@ -134,7 +128,7 @@ export default function RootLayout() {
   }, []);
 
   const handleSyncComplete = useCallback(async () => {
-    await secureStorage.set(INITIAL_SYNC_KEY, 'true');
+    // Sync completed — data is ready for offline use
   }, []);
 
   return (
