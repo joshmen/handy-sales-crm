@@ -43,8 +43,8 @@ public static class MobileCrashReportEndpoints
             await repo.CreateAsync(report);
             return Results.Created($"/api/crash-reports/{report.Id}", new { id = report.Id });
         })
-        .RequireAuthorization()
+        .AllowAnonymous()
         .WithTags("CrashReports")
-        .WithSummary("Reportar crash desde móvil");
+        .WithSummary("Reportar crash desde móvil (anonymous — crashes can happen before login)");
     }
 }

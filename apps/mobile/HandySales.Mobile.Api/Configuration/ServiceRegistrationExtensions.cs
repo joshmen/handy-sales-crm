@@ -167,6 +167,9 @@ public static class ServiceRegistrationExtensions
         services.AddScoped<MovimientoInventarioService>();
         services.AddScoped<HandySales.Application.Common.Interfaces.ITransactionManager, HandySales.Infrastructure.Persistence.TransactionManager>();
 
+        // Crash Reports
+        services.AddScoped<HandySales.Application.CrashReporting.ICrashReportRepository, HandySales.Infrastructure.Repositories.CrashReportRepository>();
+
         // Cobranza
         services.AddScoped<ICobroRepository, CobroRepository>();
         services.AddScoped<CobroService>();
