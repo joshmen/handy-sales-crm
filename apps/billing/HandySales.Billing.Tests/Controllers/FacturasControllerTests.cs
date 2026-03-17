@@ -113,7 +113,16 @@ public class FacturasControllerTests : IDisposable
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
 
-        _context = new BillingDbContext(options);
+        // Mock IHttpContextAccessor so global query filters resolve CurrentTenantId
+        var httpContext = new DefaultHttpContext();
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim("tenant_id", _testTenantId),
+            new Claim(ClaimTypes.NameIdentifier, "1"),
+        }, "test"));
+        var httpContextAccessor = new HttpContextAccessor { HttpContext = httpContext };
+
+        _context = new BillingDbContext(options, httpContextAccessor);
         var logger = new LoggerFactory().CreateLogger<FacturasController>();
         var pdfService = new InvoicePdfService();
         var emailLogger = new LoggerFactory().CreateLogger<BillingEmailService>();
@@ -125,13 +134,14 @@ public class FacturasControllerTests : IDisposable
             .Build();
         var emailService = new BillingEmailService(config, emailLogger);
         var httpClientFactory = new StubHttpClientFactory();
+        var fiscalCodeResolver = new FiscalCodeResolver(_context);
         _controller = new FacturasController(
             _context, logger, pdfService, emailService,
             new StubXmlBuilder(), new StubCfdiSigner(),
             new StubPacService(), new StubBlobStorageService(),
             new StubTimbreEnforcementService(),
             new StubCompanyLogoService(), new StubOrderReaderService(),
-            httpClientFactory, config);
+            fiscalCodeResolver, httpClientFactory, config);
 
         // Setup user claims
         SetupUserClaims();
@@ -146,7 +156,8 @@ public class FacturasControllerTests : IDisposable
         {
             new Claim(ClaimTypes.NameIdentifier, "1"),
             new Claim("tenant_id", _testTenantId),
-            new Claim(ClaimTypes.Email, "test@example.com")
+            new Claim(ClaimTypes.Email, "test@example.com"),
+            new Claim(ClaimTypes.Role, "ADMIN")
         };
 
         var identity = new ClaimsIdentity(claims, "TestAuth");

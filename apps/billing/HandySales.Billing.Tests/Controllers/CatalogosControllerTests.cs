@@ -22,7 +22,15 @@ public class CatalogosControllerTests : IDisposable
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
 
-        _context = new BillingDbContext(options);
+        var httpContext = new DefaultHttpContext();
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim("tenant_id", _testTenantId),
+            new Claim(ClaimTypes.NameIdentifier, "1"),
+        }, "test"));
+        var httpContextAccessor = new HttpContextAccessor { HttpContext = httpContext };
+
+        _context = new BillingDbContext(options, httpContextAccessor);
         var logger = new LoggerFactory().CreateLogger<CatalogosController>();
         var config = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
@@ -42,7 +50,7 @@ public class CatalogosControllerTests : IDisposable
         {
             new Claim(ClaimTypes.NameIdentifier, "1"),
             new Claim("tenant_id", _testTenantId),
-            new Claim(ClaimTypes.Role, "Admin")
+            new Claim(ClaimTypes.Role, "ADMIN")
         };
 
         var identity = new ClaimsIdentity(claims, "TestAuth");
