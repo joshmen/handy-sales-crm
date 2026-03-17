@@ -224,7 +224,7 @@ export default function OrdersPage() {
   useEffect(() => {
     const handleUpdate = (...args: unknown[]) => {
       const data = args[0] as { tipo?: string } | undefined;
-      if (!data?.tipo || data.tipo === 'pedido') fetchOrders();
+      if (!data?.tipo || data.tipo === 'pedido' || data.tipo === 'sync') fetchOrders();
     };
     on('DashboardUpdate', handleUpdate);
     on('PedidoCreated', handleUpdate);
