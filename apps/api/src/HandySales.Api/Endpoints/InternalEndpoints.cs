@@ -10,15 +10,26 @@ public static class InternalEndpoints
     {
         var group = app.MapGroup("/api/internal")
             .WithTags("Internal")
-            .RequireAuthorization(policy => policy.RequireRole("SUPER_ADMIN"))
             .ExcludeFromDescription(); // Hide from Swagger — internal use only
 
+        // Sync notification — used by Mobile API to notify web clients via Main API's SignalR hub
         group.MapPost("/sync-notify", async (
             SyncNotifyRequest request,
             IHubContext<NotificationHub> hubContext,
             HandySales.Infrastructure.Persistence.HandySalesDbContext db,
+            IConfiguration configuration,
+            HttpContext context,
             ILogger<Program> logger) =>
         {
+            // API key authentication (no JWT required — internal service-to-service call)
+            var apiKey = context.Request.Headers["X-Internal-Api-Key"].FirstOrDefault();
+            var expectedKey = configuration["InternalApiKey"] ?? "handy-internal-2024";
+            if (string.IsNullOrEmpty(apiKey) || apiKey != expectedKey)
+            {
+                logger.LogWarning("sync-notify: Invalid or missing API key");
+                return Results.Unauthorized();
+            }
+
             var tenantExists = await db.Tenants.AsNoTracking().AnyAsync(t => t.Id == request.TenantId);
             if (!tenantExists)
             {
@@ -83,7 +94,48 @@ public static class InternalEndpoints
 
             return Results.Ok(new { success = true });
         });
+
+        // Dashboard update — lightweight notification for pedido/cobro state changes from Mobile API
+        group.MapPost("/dashboard-notify", async (
+            DashboardNotifyRequest request,
+            IHubContext<NotificationHub> hubContext,
+            IConfiguration configuration,
+            HttpContext context,
+            ILogger<Program> logger) =>
+        {
+            // API key authentication (no JWT required — internal service-to-service call)
+            var apiKey = context.Request.Headers["X-Internal-Api-Key"].FirstOrDefault();
+            var expectedKey = configuration["InternalApiKey"] ?? "handy-internal-2024";
+            if (string.IsNullOrEmpty(apiKey) || apiKey != expectedKey)
+            {
+                logger.LogWarning("dashboard-notify: Invalid or missing API key");
+                return Results.Unauthorized();
+            }
+
+            if (request.TenantId <= 0)
+                return Results.BadRequest(new { message = "TenantId invalido" });
+
+            logger.LogInformation(
+                "Dashboard notification: tenant={TenantId}, tipo={Tipo}, id={Id}",
+                request.TenantId, request.Tipo, request.Id);
+
+            var tenantGroup = $"tenant:{request.TenantId}";
+            await hubContext.Clients.Group(tenantGroup).SendAsync("DashboardUpdate", new
+            {
+                tipo = request.Tipo,
+                id = request.Id
+            });
+
+            return Results.Ok(new { success = true });
+        });
     }
+}
+
+public class DashboardNotifyRequest
+{
+    public string Tipo { get; set; } = "";
+    public int Id { get; set; }
+    public int TenantId { get; set; }
 }
 
 public class SyncNotifyRequest

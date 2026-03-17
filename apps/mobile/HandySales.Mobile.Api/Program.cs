@@ -23,6 +23,14 @@ builder.Services.AddMobileServices(builder.Configuration);
 builder.Services.AddAuthorization();
 builder.Services.AddMemoryCache();
 
+// HTTP client for cross-API notifications to Main API's SignalR hub
+var mainApiUrl = builder.Configuration["MAIN_API_URL"] ?? "http://localhost:1050";
+builder.Services.AddHttpClient("MainApi", client =>
+{
+    client.BaseAddress = new Uri(mainApiUrl);
+    client.Timeout = TimeSpan.FromSeconds(5);
+});
+
 // SignalR for real-time events to web backoffice
 builder.Services.AddSignalR(options =>
 {

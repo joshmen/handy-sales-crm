@@ -162,6 +162,7 @@ services:
       Multitenancy__DefaultTenantId: "00000000-0000-0000-0000-000000000001"
       Multitenancy__DefaultTenantName: "Default"
       Seq__ServerUrl: "http://seq:5341"
+      MAIN_API_URL: "http://api_main:1050"
       RUN_MIGRATIONS: "false"
     ports:
       - "1052:1052"

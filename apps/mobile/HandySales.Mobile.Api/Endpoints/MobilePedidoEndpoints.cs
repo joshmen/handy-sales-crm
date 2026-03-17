@@ -1,19 +1,34 @@
+using System.Net.Http.Json;
 using HandySales.Application.Pedidos.DTOs;
 using HandySales.Application.Pedidos.Services;
-using HandySales.Mobile.Api.Hubs;
 using HandySales.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
 
 namespace HandySales.Mobile.Api.Endpoints;
 
 public static class MobilePedidoEndpoints
 {
-    private static async Task NotifyDashboard(IHubContext<MobileNotificationHub> hub, ITenantContextService tenant, string tipo, int id)
+    /// <summary>
+    /// Sends a DashboardUpdate event to the Main API's SignalR hub so web clients receive real-time updates.
+    /// Fire-and-forget: failures are logged but never block the response.
+    /// </summary>
+    private static async Task NotifyDashboard(IHttpClientFactory httpClientFactory, IConfiguration config, ITenantContextService tenant, string tipo, int id, ILogger? logger = null)
     {
         var tenantId = tenant.TenantId ?? 0;
-        if (tenantId > 0)
-            await hub.Clients.Group($"tenant:{tenantId}").SendAsync("DashboardUpdate", new { tipo, id });
+        if (tenantId <= 0) return;
+
+        try
+        {
+            var client = httpClientFactory.CreateClient("MainApi");
+            var request = new HttpRequestMessage(HttpMethod.Post, "/api/internal/dashboard-notify");
+            request.Headers.Add("X-Internal-Api-Key", config["InternalApiKey"] ?? "handy-internal-2024");
+            request.Content = JsonContent.Create(new { tipo, id, tenantId });
+            await client.SendAsync(request);
+        }
+        catch (Exception ex)
+        {
+            logger?.LogWarning(ex, "Failed to notify Main API dashboard for tenant={TenantId}, tipo={Tipo}, id={Id}", tenantId, tipo, id);
+        }
     }
 
     public static void MapMobilePedidoEndpoints(this IEndpointRouteBuilder app)
@@ -29,12 +44,11 @@ public static class MobilePedidoEndpoints
             PedidoCreateDto dto,
             [FromServices] PedidoService servicio,
             [FromServices] ITenantContextService tenantContext,
-            [FromServices] IHubContext<MobileNotificationHub> hubContext) =>
+            [FromServices] IHttpClientFactory httpClientFactory,
+            [FromServices] IConfiguration config) =>
         {
             var id = await servicio.CrearAsync(dto);
-            var tenantId = tenantContext.TenantId ?? 0;
-            if (tenantId > 0)
-                await hubContext.Clients.Group($"tenant:{tenantId}").SendAsync("DashboardUpdate", new { tipo = "pedido", id });
+            await NotifyDashboard(httpClientFactory, config, tenantContext, "pedido", id);
             return Results.Created($"/api/mobile/pedidos/{id}", new { success = true, data = new { id } });
         })
         .WithSummary("Crear pedido")
@@ -153,13 +167,14 @@ public static class MobilePedidoEndpoints
             int id,
             [FromServices] PedidoService servicio,
             [FromServices] ITenantContextService tenantContext,
-            [FromServices] IHubContext<MobileNotificationHub> hubContext) =>
+            [FromServices] IHttpClientFactory httpClientFactory,
+            [FromServices] IConfiguration config) =>
         {
             var resultado = await servicio.EnviarAsync(id);
             if (!resultado)
                 return Results.BadRequest(new { success = false, message = "No se pudo enviar el pedido" });
 
-            await NotifyDashboard(hubContext, tenantContext, "pedido", id);
+            await NotifyDashboard(httpClientFactory, config, tenantContext, "pedido", id);
             return Results.Ok(new { success = true, message = "Pedido enviado" });
         })
         .WithSummary("Enviar pedido")
@@ -172,13 +187,14 @@ public static class MobilePedidoEndpoints
             [FromBody] CancelarPedidoDto? dto,
             [FromServices] PedidoService servicio,
             [FromServices] ITenantContextService tenantContext,
-            [FromServices] IHubContext<MobileNotificationHub> hubContext) =>
+            [FromServices] IHttpClientFactory httpClientFactory,
+            [FromServices] IConfiguration config) =>
         {
             var resultado = await servicio.CancelarAsync(id, dto?.Motivo);
             if (!resultado)
                 return Results.BadRequest(new { success = false, message = "No se pudo cancelar el pedido" });
 
-            await NotifyDashboard(hubContext, tenantContext, "pedido", id);
+            await NotifyDashboard(httpClientFactory, config, tenantContext, "pedido", id);
             return Results.Ok(new { success = true, message = "Pedido cancelado" });
         })
         .WithSummary("Cancelar pedido")
@@ -190,13 +206,14 @@ public static class MobilePedidoEndpoints
             int id,
             [FromServices] PedidoService servicio,
             [FromServices] ITenantContextService tenantContext,
-            [FromServices] IHubContext<MobileNotificationHub> hubContext) =>
+            [FromServices] IHttpClientFactory httpClientFactory,
+            [FromServices] IConfiguration config) =>
         {
             var resultado = await servicio.ConfirmarAsync(id);
             if (!resultado)
                 return Results.BadRequest(new { success = false, message = "No se pudo confirmar el pedido" });
 
-            await NotifyDashboard(hubContext, tenantContext, "pedido", id);
+            await NotifyDashboard(httpClientFactory, config, tenantContext, "pedido", id);
             return Results.Ok(new { success = true, message = "Pedido confirmado" });
         })
         .WithSummary("Confirmar pedido")
@@ -208,13 +225,14 @@ public static class MobilePedidoEndpoints
             int id,
             [FromServices] PedidoService servicio,
             [FromServices] ITenantContextService tenantContext,
-            [FromServices] IHubContext<MobileNotificationHub> hubContext) =>
+            [FromServices] IHttpClientFactory httpClientFactory,
+            [FromServices] IConfiguration config) =>
         {
             var resultado = await servicio.IniciarProcesoAsync(id);
             if (!resultado)
                 return Results.BadRequest(new { success = false, message = "No se pudo procesar el pedido" });
 
-            await NotifyDashboard(hubContext, tenantContext, "pedido", id);
+            await NotifyDashboard(httpClientFactory, config, tenantContext, "pedido", id);
             return Results.Ok(new { success = true, message = "Pedido en proceso" });
         })
         .WithSummary("Procesar pedido")
@@ -226,13 +244,14 @@ public static class MobilePedidoEndpoints
             int id,
             [FromServices] PedidoService servicio,
             [FromServices] ITenantContextService tenantContext,
-            [FromServices] IHubContext<MobileNotificationHub> hubContext) =>
+            [FromServices] IHttpClientFactory httpClientFactory,
+            [FromServices] IConfiguration config) =>
         {
             var resultado = await servicio.EnviarARutaAsync(id);
             if (!resultado)
                 return Results.BadRequest(new { success = false, message = "No se pudo poner en ruta el pedido" });
 
-            await NotifyDashboard(hubContext, tenantContext, "pedido", id);
+            await NotifyDashboard(httpClientFactory, config, tenantContext, "pedido", id);
             return Results.Ok(new { success = true, message = "Pedido en ruta" });
         })
         .WithSummary("Poner en ruta")
@@ -245,13 +264,14 @@ public static class MobilePedidoEndpoints
             [FromBody] EntregarPedidoDto? dto,
             [FromServices] PedidoService servicio,
             [FromServices] ITenantContextService tenantContext,
-            [FromServices] IHubContext<MobileNotificationHub> hubContext) =>
+            [FromServices] IHttpClientFactory httpClientFactory,
+            [FromServices] IConfiguration config) =>
         {
             var resultado = await servicio.EntregarAsync(id, dto?.NotasEntrega);
             if (!resultado)
                 return Results.BadRequest(new { success = false, message = "No se pudo entregar el pedido" });
 
-            await NotifyDashboard(hubContext, tenantContext, "pedido", id);
+            await NotifyDashboard(httpClientFactory, config, tenantContext, "pedido", id);
             return Results.Ok(new { success = true, message = "Pedido entregado" });
         })
         .WithSummary("Entregar pedido")

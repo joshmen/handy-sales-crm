@@ -1,9 +1,8 @@
+using System.Net.Http.Json;
 using System.Security.Claims;
 using HandySales.Domain.Entities;
 using HandySales.Infrastructure.Persistence;
-using HandySales.Mobile.Api.Hubs;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
 namespace HandySales.Mobile.Api.Endpoints;
@@ -24,7 +23,8 @@ public static class MobileVentaDirectaEndpoints
         group.MapPost("/", async (
             VentaDirectaRequest request,
             [FromServices] HandySalesDbContext db,
-            [FromServices] IHubContext<MobileNotificationHub> hubContext,
+            [FromServices] IHttpClientFactory httpClientFactory,
+            [FromServices] IConfiguration config,
             HttpContext context) =>
         {
             var userIdClaim = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
@@ -181,7 +181,16 @@ public static class MobileVentaDirectaEndpoints
 
                     await transaction.CommitAsync();
 
-                    await hubContext.Clients.Group($"tenant:{tenantId}").SendAsync("DashboardUpdate", new { tipo = "pedido", id = pedido.Id });
+                    // Notify Main API's SignalR hub (fire-and-forget)
+                    try
+                    {
+                        var mainClient = httpClientFactory.CreateClient("MainApi");
+                        var notifyRequest = new HttpRequestMessage(HttpMethod.Post, "/api/internal/dashboard-notify");
+                        notifyRequest.Headers.Add("X-Internal-Api-Key", config["InternalApiKey"] ?? "handy-internal-2024");
+                        notifyRequest.Content = JsonContent.Create(new { tipo = "pedido", id = pedido.Id, tenantId });
+                        await mainClient.SendAsync(notifyRequest);
+                    }
+                    catch { /* fire and forget */ }
 
                     return Results.Created($"/api/mobile/pedidos/{pedido.Id}", new
                     {
