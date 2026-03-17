@@ -1,11 +1,29 @@
+using System.Net.Http.Json;
 using HandySales.Application.Sync.DTOs;
 using HandySales.Application.Sync.Services;
+using HandySales.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HandySales.Mobile.Api.Endpoints;
 
 public static class MobileSyncEndpoints
 {
+    /// <summary>Fire-and-forget notification to Main API so web dashboard updates in real-time.</summary>
+    private static async Task NotifyMainApiAfterSync(IHttpClientFactory httpClientFactory, IConfiguration config, ITenantContextService tenant)
+    {
+        var tenantId = tenant.TenantId ?? 0;
+        if (tenantId <= 0) return;
+        try
+        {
+            var client = httpClientFactory.CreateClient("MainApi");
+            var request = new HttpRequestMessage(HttpMethod.Post, "/api/internal/dashboard-notify");
+            request.Headers.Add("X-Internal-Api-Key", config["InternalApiKey"] ?? "handy-internal-2024");
+            request.Content = JsonContent.Create(new { tipo = "sync", id = 0, tenantId });
+            await client.SendAsync(request);
+        }
+        catch { /* fire and forget */ }
+    }
+
     public static void MapMobileSyncEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/mobile/sync")
@@ -15,9 +33,17 @@ public static class MobileSyncEndpoints
 
         group.MapPost("/", async (
             [FromBody] SyncRequestDto request,
-            [FromServices] SyncService servicio) =>
+            [FromServices] SyncService servicio,
+            [FromServices] ITenantContextService tenantContext,
+            [FromServices] IHttpClientFactory httpClientFactory,
+            [FromServices] IConfiguration config) =>
         {
             var response = await servicio.SyncAsync(request);
+
+            // Notify Main API if client pushed changes (pedidos, cobros, etc.)
+            if (request.ClientChanges != null)
+                await NotifyMainApiAfterSync(httpClientFactory, config, tenantContext);
+
             return Results.Ok(new { success = true, data = response });
         })
         .WithSummary("Sincronización bidireccional")
@@ -51,7 +77,10 @@ public static class MobileSyncEndpoints
 
         group.MapPost("/push", async (
             [FromBody] SyncChangesDto changes,
-            [FromServices] SyncService servicio) =>
+            [FromServices] SyncService servicio,
+            [FromServices] ITenantContextService tenantContext,
+            [FromServices] IHttpClientFactory httpClientFactory,
+            [FromServices] IConfiguration config) =>
         {
             var syncRequest = new SyncRequestDto
             {
@@ -61,6 +90,10 @@ public static class MobileSyncEndpoints
             };
 
             var response = await servicio.SyncAsync(syncRequest);
+
+            // Notify Main API that sync pushed data
+            await NotifyMainApiAfterSync(httpClientFactory, config, tenantContext);
+
             return Results.Ok(new
             {
                 success = true,
