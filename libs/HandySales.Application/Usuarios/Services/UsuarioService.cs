@@ -4,6 +4,7 @@ using HandySales.Shared.Security;
 using BCrypt.Net;
 using HandySales.Application.Common.DTOs;
 using HandySales.Application.CompanySettings.Interfaces;
+using HandySales.Application.DeviceSessions.Interfaces;
 using HandySales.Application.Usuarios.DTOs;
 using HandySales.Application.Usuarios.Interfaces;
 using Microsoft.AspNetCore.Http;
@@ -17,6 +18,7 @@ public class UsuarioService
     private readonly ICloudinaryService _cloudinaryService;
     private readonly ICloudinaryFolderService _folderService;
     private readonly ICompanySettingsRepository _companyRepository;
+    private readonly IDeviceSessionRepository _deviceSessionRepo;
     private readonly PwnedPasswordService? _pwnedPasswords;
 
     public UsuarioService(
@@ -25,6 +27,7 @@ public class UsuarioService
         ICloudinaryService cloudinaryService,
         ICloudinaryFolderService folderService,
         ICompanySettingsRepository companyRepository,
+        IDeviceSessionRepository deviceSessionRepo,
         PwnedPasswordService? pwnedPasswords = null)
     {
         _repo = repo;
@@ -32,7 +35,22 @@ public class UsuarioService
         _cloudinaryService = cloudinaryService;
         _folderService = folderService;
         _companyRepository = companyRepository;
+        _deviceSessionRepo = deviceSessionRepo;
         _pwnedPasswords = pwnedPasswords;
+    }
+
+    private async Task EnrichWithSessionDataAsync(List<UsuarioDto> dtos, int tenantId)
+    {
+        var presencia = await _deviceSessionRepo.ObtenerPresenciaActivaAsync(tenantId);
+        foreach (var dto in dtos)
+        {
+            if (presencia.TryGetValue(dto.Id, out var stats))
+            {
+                dto.ActiveSessionCount = stats.Count;
+                dto.LastActivity = stats.LastActivity;
+                dto.IsOnline = stats.LastActivity > DateTime.UtcNow.AddMinutes(-5);
+            }
+        }
     }
 
     public async Task<bool> EmailDisponibleAsync(string email)
@@ -138,7 +156,7 @@ public class UsuarioService
             throw new UnauthorizedAccessException("No tienes permisos para ver usuarios");
         }
 
-        return usuarios.Select(u => new UsuarioDto
+        var dtos = usuarios.Select(u => new UsuarioDto
         {
             Id = u.Id,
             Email = u.Email,
@@ -149,6 +167,9 @@ public class UsuarioService
             Rol = u.Rol,
             AvatarUrl = u.AvatarUrl
         }).ToList();
+
+        await EnrichWithSessionDataAsync(dtos, _tenant.TenantId);
+        return dtos;
     }
 
     public async Task<PaginatedResult<UsuarioDto>> ObtenerUsuariosPaginados(PaginationRequest pagination)
@@ -192,6 +213,7 @@ public class UsuarioService
             })
             .ToList();
 
+        await EnrichWithSessionDataAsync(paginatedUsers, _tenant.TenantId);
         return new PaginatedResult<UsuarioDto>(paginatedUsers, totalCount, pagination.Page, pagination.PageSize);
     }
 

@@ -1,6 +1,7 @@
 using System.Threading.RateLimiting;
 using HandySales.Mobile.Api.Configuration;
 using HandySales.Mobile.Api.Endpoints;
+using HandySales.Mobile.Api.Hubs;
 using HandySales.Mobile.Api.Middleware;
 using Microsoft.Extensions.FileProviders;
 
@@ -21,6 +22,16 @@ builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddMobileServices(builder.Configuration);
 builder.Services.AddAuthorization();
 builder.Services.AddMemoryCache();
+
+// SignalR for real-time events to web backoffice
+builder.Services.AddSignalR(options =>
+{
+    options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+    options.ClientTimeoutInterval = TimeSpan.FromSeconds(30);
+}).AddJsonProtocol(options =>
+{
+    options.PayloadSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+});
 
 // Global rate limiting
 builder.Services.AddRateLimiter(options =>
@@ -86,6 +97,7 @@ app.MapMobileVentaDirectaEndpoints();
 app.MapMobileSupervisorEndpoints();
 app.MapMobileEmpresaEndpoints();
 app.MapHealthEndpoints();
+app.MapHub<MobileNotificationHub>("/hubs/notifications");
 
 app.Run();
 

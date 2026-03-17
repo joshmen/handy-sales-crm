@@ -28,6 +28,9 @@ public interface IDeviceSessionRepository
     Task<bool> EsSesionValidaAsync(int sessionId, int tenantId);
     Task<bool> ExisteDispositivoAsync(string deviceId, int usuarioId, int tenantId);
 
+    // Presencia
+    Task<Dictionary<int, (int Count, DateTime LastActivity)>> ObtenerPresenciaActivaAsync(int tenantId);
+
     // Limpieza
     Task<int> LimpiarSesionesExpiradasAsync(int diasInactividad = 30);
 }

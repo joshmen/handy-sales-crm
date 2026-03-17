@@ -1,3 +1,4 @@
+using HandySales.Application.DeviceSessions.Interfaces;
 using HandySales.Application.Usuarios.Interfaces;
 using HandySales.Infrastructure.Persistence;
 using HandySales.Shared.Multitenancy;
@@ -18,7 +19,8 @@ public static class SupervisorEndpoints
         // GET /api/supervisores/mis-vendedores
         group.MapGet("/mis-vendedores", async (
             ICurrentTenant tenant,
-            HandySalesDbContext db) =>
+            HandySalesDbContext db,
+            [FromServices] IDeviceSessionRepository sessionRepo) =>
         {
             if (!tenant.IsSupervisor)
                 return Results.Forbid();
@@ -41,7 +43,21 @@ public static class SupervisorEndpoints
                 })
                 .ToListAsync();
 
-            return Results.Ok(vendedores);
+            // Enrich with online/offline status
+            var presencia = await sessionRepo.ObtenerPresenciaActivaAsync(tenant.TenantId);
+            var result = vendedores.Select(v =>
+            {
+                var hasSession = presencia.TryGetValue(v.Id, out var stats);
+                return new
+                {
+                    v.Id, v.Nombre, v.Email, v.Rol, v.Activo, v.AvatarUrl,
+                    IsOnline = hasSession && stats.LastActivity > DateTime.UtcNow.AddMinutes(-5),
+                    LastActivity = hasSession ? (DateTime?)stats.LastActivity : null,
+                    ActiveDeviceCount = hasSession ? stats.Count : 0
+                };
+            });
+
+            return Results.Ok(result);
         })
         .WithSummary("Mis vendedores")
         .WithDescription("Obtiene los vendedores asignados al supervisor autenticado.");

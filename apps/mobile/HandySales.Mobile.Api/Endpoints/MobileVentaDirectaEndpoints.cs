@@ -1,7 +1,9 @@
 using System.Security.Claims;
 using HandySales.Domain.Entities;
 using HandySales.Infrastructure.Persistence;
+using HandySales.Mobile.Api.Hubs;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
 namespace HandySales.Mobile.Api.Endpoints;
@@ -22,6 +24,7 @@ public static class MobileVentaDirectaEndpoints
         group.MapPost("/", async (
             VentaDirectaRequest request,
             [FromServices] HandySalesDbContext db,
+            [FromServices] IHubContext<MobileNotificationHub> hubContext,
             HttpContext context) =>
         {
             var userIdClaim = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
@@ -177,6 +180,8 @@ public static class MobileVentaDirectaEndpoints
                     await db.SaveChangesAsync();
 
                     await transaction.CommitAsync();
+
+                    await hubContext.Clients.Group($"tenant:{tenantId}").SendAsync("DashboardUpdate", new { tipo = "pedido", id = pedido.Id });
 
                     return Results.Created($"/api/mobile/pedidos/{pedido.Id}", new
                     {

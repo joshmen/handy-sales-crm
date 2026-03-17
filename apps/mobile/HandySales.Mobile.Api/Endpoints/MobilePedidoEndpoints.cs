@@ -1,11 +1,21 @@
 using HandySales.Application.Pedidos.DTOs;
 using HandySales.Application.Pedidos.Services;
+using HandySales.Mobile.Api.Hubs;
+using HandySales.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 
 namespace HandySales.Mobile.Api.Endpoints;
 
 public static class MobilePedidoEndpoints
 {
+    private static async Task NotifyDashboard(IHubContext<MobileNotificationHub> hub, ITenantContextService tenant, string tipo, int id)
+    {
+        var tenantId = tenant.TenantId ?? 0;
+        if (tenantId > 0)
+            await hub.Clients.Group($"tenant:{tenantId}").SendAsync("DashboardUpdate", new { tipo, id });
+    }
+
     public static void MapMobilePedidoEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/mobile/pedidos")
@@ -17,9 +27,14 @@ public static class MobilePedidoEndpoints
 
         group.MapPost("/", async (
             PedidoCreateDto dto,
-            [FromServices] PedidoService servicio) =>
+            [FromServices] PedidoService servicio,
+            [FromServices] ITenantContextService tenantContext,
+            [FromServices] IHubContext<MobileNotificationHub> hubContext) =>
         {
             var id = await servicio.CrearAsync(dto);
+            var tenantId = tenantContext.TenantId ?? 0;
+            if (tenantId > 0)
+                await hubContext.Clients.Group($"tenant:{tenantId}").SendAsync("DashboardUpdate", new { tipo = "pedido", id });
             return Results.Created($"/api/mobile/pedidos/{id}", new { success = true, data = new { id } });
         })
         .WithSummary("Crear pedido")
@@ -136,12 +151,15 @@ public static class MobilePedidoEndpoints
 
         group.MapPost("/{id:int}/enviar", async (
             int id,
-            [FromServices] PedidoService servicio) =>
+            [FromServices] PedidoService servicio,
+            [FromServices] ITenantContextService tenantContext,
+            [FromServices] IHubContext<MobileNotificationHub> hubContext) =>
         {
             var resultado = await servicio.EnviarAsync(id);
             if (!resultado)
                 return Results.BadRequest(new { success = false, message = "No se pudo enviar el pedido" });
 
+            await NotifyDashboard(hubContext, tenantContext, "pedido", id);
             return Results.Ok(new { success = true, message = "Pedido enviado" });
         })
         .WithSummary("Enviar pedido")
@@ -152,12 +170,15 @@ public static class MobilePedidoEndpoints
         group.MapPost("/{id:int}/cancelar", async (
             int id,
             [FromBody] CancelarPedidoDto? dto,
-            [FromServices] PedidoService servicio) =>
+            [FromServices] PedidoService servicio,
+            [FromServices] ITenantContextService tenantContext,
+            [FromServices] IHubContext<MobileNotificationHub> hubContext) =>
         {
             var resultado = await servicio.CancelarAsync(id, dto?.Motivo);
             if (!resultado)
                 return Results.BadRequest(new { success = false, message = "No se pudo cancelar el pedido" });
 
+            await NotifyDashboard(hubContext, tenantContext, "pedido", id);
             return Results.Ok(new { success = true, message = "Pedido cancelado" });
         })
         .WithSummary("Cancelar pedido")
@@ -167,12 +188,15 @@ public static class MobilePedidoEndpoints
 
         group.MapPost("/{id:int}/confirmar", async (
             int id,
-            [FromServices] PedidoService servicio) =>
+            [FromServices] PedidoService servicio,
+            [FromServices] ITenantContextService tenantContext,
+            [FromServices] IHubContext<MobileNotificationHub> hubContext) =>
         {
             var resultado = await servicio.ConfirmarAsync(id);
             if (!resultado)
                 return Results.BadRequest(new { success = false, message = "No se pudo confirmar el pedido" });
 
+            await NotifyDashboard(hubContext, tenantContext, "pedido", id);
             return Results.Ok(new { success = true, message = "Pedido confirmado" });
         })
         .WithSummary("Confirmar pedido")
@@ -182,12 +206,15 @@ public static class MobilePedidoEndpoints
 
         group.MapPost("/{id:int}/procesar", async (
             int id,
-            [FromServices] PedidoService servicio) =>
+            [FromServices] PedidoService servicio,
+            [FromServices] ITenantContextService tenantContext,
+            [FromServices] IHubContext<MobileNotificationHub> hubContext) =>
         {
             var resultado = await servicio.IniciarProcesoAsync(id);
             if (!resultado)
                 return Results.BadRequest(new { success = false, message = "No se pudo procesar el pedido" });
 
+            await NotifyDashboard(hubContext, tenantContext, "pedido", id);
             return Results.Ok(new { success = true, message = "Pedido en proceso" });
         })
         .WithSummary("Procesar pedido")
@@ -197,12 +224,15 @@ public static class MobilePedidoEndpoints
 
         group.MapPost("/{id:int}/en-ruta", async (
             int id,
-            [FromServices] PedidoService servicio) =>
+            [FromServices] PedidoService servicio,
+            [FromServices] ITenantContextService tenantContext,
+            [FromServices] IHubContext<MobileNotificationHub> hubContext) =>
         {
             var resultado = await servicio.EnviarARutaAsync(id);
             if (!resultado)
                 return Results.BadRequest(new { success = false, message = "No se pudo poner en ruta el pedido" });
 
+            await NotifyDashboard(hubContext, tenantContext, "pedido", id);
             return Results.Ok(new { success = true, message = "Pedido en ruta" });
         })
         .WithSummary("Poner en ruta")
@@ -213,12 +243,15 @@ public static class MobilePedidoEndpoints
         group.MapPost("/{id:int}/entregar", async (
             int id,
             [FromBody] EntregarPedidoDto? dto,
-            [FromServices] PedidoService servicio) =>
+            [FromServices] PedidoService servicio,
+            [FromServices] ITenantContextService tenantContext,
+            [FromServices] IHubContext<MobileNotificationHub> hubContext) =>
         {
             var resultado = await servicio.EntregarAsync(id, dto?.NotasEntrega);
             if (!resultado)
                 return Results.BadRequest(new { success = false, message = "No se pudo entregar el pedido" });
 
+            await NotifyDashboard(hubContext, tenantContext, "pedido", id);
             return Results.Ok(new { success = true, message = "Pedido entregado" });
         })
         .WithSummary("Entregar pedido")

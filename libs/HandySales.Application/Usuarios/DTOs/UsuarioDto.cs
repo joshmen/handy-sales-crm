@@ -8,6 +8,11 @@ public class UsuarioDto
     public bool EsSuperAdmin { get; set; }
     public string Rol { get; set; } = "VENDEDOR";
     public string? AvatarUrl { get; set; }
+
+    // Session/presence info
+    public bool IsOnline { get; set; }
+    public int ActiveSessionCount { get; set; }
+    public DateTime? LastActivity { get; set; }
 }
 
 public class UsuarioUbicacionDto

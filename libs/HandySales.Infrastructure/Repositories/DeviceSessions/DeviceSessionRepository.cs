@@ -331,6 +331,17 @@ public class DeviceSessionRepository : IDeviceSessionRepository
             .AnyAsync(ds => ds.DeviceId == deviceId && ds.UsuarioId == usuarioId && ds.TenantId == tenantId && ds.Status == SessionStatus.Active);
     }
 
+    public async Task<Dictionary<int, (int Count, DateTime LastActivity)>> ObtenerPresenciaActivaAsync(int tenantId)
+    {
+        return await _db.DeviceSessions
+            .AsNoTracking()
+            .Where(ds => ds.TenantId == tenantId && ds.Status == SessionStatus.Active)
+            .GroupBy(ds => ds.UsuarioId)
+            .ToDictionaryAsync(
+                g => g.Key,
+                g => (g.Count(), g.Max(ds => ds.LastActivity)));
+    }
+
     public async Task<int> LimpiarSesionesExpiradasAsync(int diasInactividad = 30)
     {
         var fechaLimite = DateTime.UtcNow.AddDays(-diasInactividad);

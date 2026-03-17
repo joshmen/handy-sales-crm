@@ -15,6 +15,9 @@ export interface User {
   creadoEn?: string;
   actualizadoEn?: string;
   ultimoAcceso?: string;
+  isOnline?: boolean;
+  activeSessionCount?: number;
+  lastActivity?: string;
 }
 
 export interface PaginatedResult<T> {

@@ -83,6 +83,11 @@ export interface User {
   commissionRate?: number; // Porcentaje de comisión
   dailyTarget?: number; // Meta diaria
 
+  // Online status
+  isOnline?: boolean;
+  activeSessionCount?: number;
+  lastActivity?: string;
+
   // Dispositivos (para app móvil)
   devices?: Device[];
 

@@ -244,6 +244,7 @@ export default function TeamPage() {
                   }`}>
                     {v.activo ? 'Activo' : 'Inactivo'}
                   </span>
+                  <PresenceBadge isOnline={v.isOnline} lastActivity={v.lastActivity} />
                   <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
                     {v.rol}
                   </span>
@@ -387,5 +388,35 @@ function KPICard({
         </div>
       </div>
     </div>
+  );
+}
+
+function PresenceBadge({ isOnline, lastActivity }: { isOnline?: boolean; lastActivity?: string }) {
+  if (isOnline) {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-400">
+        <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+        En línea
+      </span>
+    );
+  }
+
+  if (lastActivity) {
+    const minutesAgo = Math.floor((Date.now() - new Date(lastActivity).getTime()) / 60000);
+    if (minutesAgo < 60) {
+      return (
+        <span className="inline-flex items-center gap-1 text-xs text-amber-700 dark:text-amber-400">
+          <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
+          Hace {minutesAgo} min
+        </span>
+      );
+    }
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+      <span className="w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600 inline-block" />
+      Desconectado
+    </span>
   );
 }

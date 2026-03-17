@@ -7,6 +7,9 @@ export interface SupervisorVendedor {
   rol: string;
   activo: boolean;
   avatarUrl: string | null;
+  isOnline?: boolean;
+  lastActivity?: string;
+  activeDeviceCount?: number;
 }
 
 export interface SupervisorDashboard {
