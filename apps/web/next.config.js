@@ -113,7 +113,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://lh3.googleusercontent.com",
               "font-src 'self' data:",
-              "connect-src 'self' http://localhost:* https://*.railway.app https://accounts.google.com https://res.cloudinary.com wss: ws:",
+              "connect-src 'self' http://localhost:* https://*.railway.app https://accounts.google.com https://www.google.com https://www.gstatic.com https://res.cloudinary.com wss: ws:",
               "frame-src 'self' https://accounts.google.com https://www.google.com https://js.stripe.com https://*.stripe.com",
               "frame-ancestors 'self'",
               "base-uri 'self'",
