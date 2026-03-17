@@ -293,32 +293,11 @@ const sidebarItems: SidebarItem[] = [
   // — EQUIPO —
   {
     id: 'team',
-    label: 'Mi Equipo',
+    label: 'Equipo',
     icon: SbTeam,
     href: '/team',
     permission: 'view_team',
     section: 'Equipo',
-  },
-  {
-    id: 'users',
-    label: 'Usuarios',
-    icon: SbUsers,
-    href: '/users',
-    permission: 'view_users',
-  },
-  {
-    id: 'devices',
-    label: 'Dispositivos',
-    icon: SbDevices,
-    href: '/devices',
-    permission: 'manage_devices',
-  },
-  {
-    id: 'roles',
-    label: 'Roles',
-    icon: SbAdmin,
-    href: '/roles',
-    permission: 'manage_roles',
   },
   {
     id: 'activity-logs',
