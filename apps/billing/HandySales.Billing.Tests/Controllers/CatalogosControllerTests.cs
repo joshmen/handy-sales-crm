@@ -211,10 +211,13 @@ public class CatalogosControllerTests : IDisposable
         var okResult = result.Result as OkObjectResult;
         okResult.Should().NotBeNull();
 
-        var config = okResult!.Value as ConfiguracionFiscal;
-        config.Should().NotBeNull();
-        config!.Rfc.Should().Be("TEST010101AAA");
-        config.CertificadoSat.Should().BeNull(); // Info sensible no devuelta
+        // Controller returns an anonymous projection, not ConfiguracionFiscal
+        var value = okResult!.Value!;
+        var rfc = value.GetType().GetProperty("Rfc")!.GetValue(value) as string;
+        rfc.Should().Be("TEST010101AAA");
+        // Sensitive fields (CertificadoSat, LlavePrivada) are excluded from the projection
+        var hasCert = (bool)value.GetType().GetProperty("HasCertificado")!.GetValue(value)!;
+        hasCert.Should().BeFalse(); // No real cert was uploaded
     }
 
     [Fact]
@@ -240,13 +243,17 @@ public class CatalogosControllerTests : IDisposable
         // Act
         var result = await _controller.CreateConfiguracionFiscal(request);
 
-        // Assert
+        // Assert — controller returns CreatedAtAction with anonymous { Id, TenantId, message }
         var createdResult = result.Result as CreatedAtActionResult;
         createdResult.Should().NotBeNull();
+        createdResult!.StatusCode.Should().Be(201);
 
-        var config = createdResult!.Value as ConfiguracionFiscal;
-        config.Should().NotBeNull();
-        config!.Rfc.Should().Be("NEWRFC010101AAA");
+        // Verify the record was actually persisted
+        var saved = await _context.ConfiguracionesFiscales
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(c => c.Rfc == "NEWRFC010101AAA");
+        saved.Should().NotBeNull();
+        saved!.TenantId.Should().Be("new-tenant-002");
     }
 
     [Fact]
