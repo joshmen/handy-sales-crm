@@ -67,6 +67,7 @@ export default function RegistrarCobroScreen() {
   const { data: cliente } = useOfflineClientById(effectiveClienteId);
 
   const [monto, setMonto] = useState('');
+  const [montoError, setMontoError] = useState('');
   const [metodoPago, setMetodoPago] = useState(0);
   const [referencia, setReferencia] = useState('');
   const [notas, setNotas] = useState('');
@@ -268,9 +269,18 @@ export default function RegistrarCobroScreen() {
               placeholderTextColor="#cbd5e1"
               keyboardType="decimal-pad"
               value={monto}
-              onChangeText={setMonto}
+              onChangeText={(text) => {
+                const cleaned = text.replace(/[^0-9.]/g, '');
+                if (cleaned.match(/^\d*\.?\d{0,2}$/)) {
+                  setMonto(cleaned);
+                  setMontoError('');
+                }
+              }}
             />
           </View>
+          {montoError ? (
+            <Text style={styles.montoError}>{montoError}</Text>
+          ) : null}
         </View>
 
         {/* Método de Pago */}
@@ -431,6 +441,12 @@ const styles = StyleSheet.create({
     color: '#0f172a',
     minWidth: 120,
     textAlign: 'center',
+  },
+  montoError: {
+    fontSize: 12,
+    color: '#ef4444',
+    fontWeight: '500',
+    marginTop: 8,
   },
   sectionLabel: {
     fontSize: 13,

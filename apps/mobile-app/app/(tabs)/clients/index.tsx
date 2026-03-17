@@ -12,6 +12,7 @@ import type Cliente from '@/db/models/Cliente';
 
 export default function ClientsListScreen() {
   const [search, setSearch] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
 
   const { data: clients, isLoading } = useOfflineClients(search || undefined);
@@ -19,6 +20,12 @@ export default function ClientsListScreen() {
 
   const handleSearch = useCallback((query: string) => {
     setSearch(query);
+  }, []);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await performSync();
+    setRefreshing(false);
   }, []);
 
   const renderItem = useCallback(
@@ -101,8 +108,8 @@ export default function ClientsListScreen() {
         contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl
-            refreshing={false}
-            onRefresh={() => performSync()}
+            refreshing={refreshing}
+            onRefresh={onRefresh}
             tintColor="#2563eb"
             colors={['#2563eb']}
           />

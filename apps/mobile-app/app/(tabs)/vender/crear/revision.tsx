@@ -271,15 +271,15 @@ export default function CrearPedidoStep3() {
       {/* Send Button */}
       <View style={styles.footer}>
         <Button
-          title={isDirecta ? 'Cobrar y Entregar' : 'Levantar Pedido'}
+          title={sending ? 'Procesando...' : isDirecta ? 'Cobrar y Entregar' : 'Levantar Pedido'}
           onPress={handleEnviar}
           loading={sending}
-          disabled={items.length === 0}
+          disabled={items.length === 0 || sending}
           fullWidth
-          icon={isDirecta
+          icon={!sending ? (isDirecta
             ? <Zap size={18} color="#ffffff" />
             : <Send size={18} color="#ffffff" />
-          }
+          ) : undefined}
         />
       </View>
     </View>
