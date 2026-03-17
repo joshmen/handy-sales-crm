@@ -114,7 +114,7 @@ public class MobileAuthService
                     email = usuario.Email,
                     name = usuario.Nombre,
                     role = usuario.Rol,
-                    tenantLogo = companyLogo
+                    tenantLogo = companyLogo ?? ""
                 },
                 token = token,
                 refreshToken = plainRefreshToken
@@ -174,7 +174,7 @@ public class MobileAuthService
                 email = tokenEntity.Usuario.Email,
                 name = tokenEntity.Usuario.Nombre,
                 role = tokenEntity.Usuario.Rol,
-                tenantLogo = companyLogo
+                tenantLogo = companyLogo ?? ""
             },
             token = newAccessToken,
             refreshToken = newPlainToken
