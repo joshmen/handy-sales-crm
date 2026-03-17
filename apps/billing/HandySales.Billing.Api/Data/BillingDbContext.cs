@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using HandySales.Billing.Api.Models;
 
@@ -5,7 +7,17 @@ namespace HandySales.Billing.Api.Data;
 
 public class BillingDbContext : DbContext
 {
-    public BillingDbContext(DbContextOptions<BillingDbContext> options) : base(options) { }
+    private readonly IHttpContextAccessor? _httpContextAccessor;
+
+    public BillingDbContext(DbContextOptions<BillingDbContext> options, IHttpContextAccessor? httpContextAccessor = null)
+        : base(options)
+    {
+        _httpContextAccessor = httpContextAccessor;
+    }
+
+    /// <summary>Current tenant ID from JWT claims. Used by global query filters.</summary>
+    public string CurrentTenantId =>
+        _httpContextAccessor?.HttpContext?.User?.FindFirst("tenant_id")?.Value ?? "__none__";
 
     public DbSet<ConfiguracionFiscal> ConfiguracionesFiscales { get; set; }
     public DbSet<TipoComprobante> TiposComprobante { get; set; }
@@ -140,5 +152,15 @@ public class BillingDbContext : DbContext
             entity.Property(c => c.Monto).HasPrecision(18, 2);
             entity.Property(c => c.TipoCambio).HasPrecision(10, 4);
         });
+
+        // ═══ GLOBAL QUERY FILTERS — tenant isolation ═══
+        // All tenant-scoped entities are automatically filtered by CurrentTenantId.
+        // SAT catalog entities (TipoComprobante, MetodoPago, etc.) are global/shared and NOT filtered.
+        modelBuilder.Entity<Factura>().HasQueryFilter(f => f.TenantId == CurrentTenantId);
+        modelBuilder.Entity<ConfiguracionFiscal>().HasQueryFilter(c => c.TenantId == CurrentTenantId);
+        modelBuilder.Entity<NumeracionDocumento>().HasQueryFilter(n => n.TenantId == CurrentTenantId);
+        modelBuilder.Entity<AuditoriaFacturacion>().HasQueryFilter(a => a.TenantId == CurrentTenantId);
+        modelBuilder.Entity<MapeoFiscalProducto>().HasQueryFilter(m => m.TenantId == CurrentTenantId);
+        modelBuilder.Entity<DefaultsFiscalesTenant>().HasQueryFilter(d => d.TenantId == CurrentTenantId);
     }
 }

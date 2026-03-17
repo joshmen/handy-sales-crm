@@ -231,13 +231,15 @@ public class CatalogosController : ControllerBase
             await request.Certificado.CopyToAsync(msCert);
             config.CertificadoSat = Convert.ToBase64String(msCert.ToArray());
 
+            // Encrypt certificate password and private key before storing (never store plaintext)
+            var encryptionKey = _configuration["Billing:EncryptionKey"] ?? _configuration["Jwt:Secret"]
+                ?? throw new InvalidOperationException("Jwt:Secret not configured");
+
             using var msKey = new MemoryStream();
             await request.LlavePrivada.CopyToAsync(msKey);
-            config.LlavePrivada = Convert.ToBase64String(msKey.ToArray());
+            var keyBytes = msKey.ToArray();
+            config.LlavePrivada = EncryptPassword(Convert.ToBase64String(keyBytes), encryptionKey);
 
-            // Encrypt certificate password before storing (never store plaintext)
-            var encryptionKey = _configuration["Jwt:Secret"]
-                ?? throw new InvalidOperationException("Jwt:Secret not configured");
             config.PasswordCertificado = EncryptPassword(request.Password, encryptionKey);
             config.UpdatedAt = DateTime.UtcNow;
 

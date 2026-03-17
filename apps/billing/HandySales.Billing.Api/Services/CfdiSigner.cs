@@ -36,9 +36,10 @@ public class CfdiSigner : ICfdiSigner
             throw new InvalidOperationException("No se encontró el password del certificado en la configuración fiscal");
 
         var cerBytes = Convert.FromBase64String(config.CertificadoSat);
-        var keyBytes = Convert.FromBase64String(config.LlavePrivada);
-        var encryptionKey = _configuration["Jwt:Secret"]
-            ?? throw new InvalidOperationException("Jwt:Secret not configured");
+        var encryptionKey = _configuration["Billing:EncryptionKey"] ?? _configuration["Jwt:Secret"]
+            ?? throw new InvalidOperationException("Billing:EncryptionKey or Jwt:Secret not configured");
+        var decryptedKeyBase64 = CatalogosController.DecryptPassword(config.LlavePrivada, encryptionKey);
+        var keyBytes = Convert.FromBase64String(decryptedKeyBase64);
         var password = CatalogosController.DecryptPassword(config.PasswordCertificado, encryptionKey);
 
         // 2. Extract NoCertificado from .cer

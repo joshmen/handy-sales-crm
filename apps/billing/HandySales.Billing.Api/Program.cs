@@ -17,6 +17,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Host.AddCustomLogging();
 
 // Add services to the container
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddControllers();
 
 // Swagger configuration (centralized)
@@ -78,6 +79,21 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
+
+// Rate limiting (protect PAC timbrado and email endpoints from abuse)
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.GlobalLimiter = System.Threading.RateLimiting.PartitionedRateLimiter.Create<HttpContext, string>(context =>
+        System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 60,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+});
 
 // Azure Blob Storage (CFDI XMLs and PDFs)
 var azureStorageConnectionString = builder.Configuration["AZURE_STORAGE_CONNECTION_STRING"]
@@ -152,6 +168,7 @@ app.UseExceptionHandler(errorApp =>
 // Middleware pipeline
 app.UseHttpsRedirection();
 app.UseCors("BillingApiPolicy");
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 

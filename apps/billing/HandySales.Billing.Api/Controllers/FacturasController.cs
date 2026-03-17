@@ -72,15 +72,27 @@ public class FacturasController : ControllerBase
             return null;
         if (uri.Scheme != "https" && uri.Scheme != "http")
             return null;
-        // Block private/internal IPs to prevent SSRF
-        var host = uri.Host.ToLowerInvariant();
-        if (host == "localhost" || host == "127.0.0.1" || host.StartsWith("10.")
-            || host.StartsWith("192.168.") || host.StartsWith("172.16.")
-            || host.StartsWith("169.254.") || host == "metadata.google.internal"
-            || host.EndsWith(".internal") || host == "[::1]")
-            return null;
+        // Block private/internal IPs to prevent SSRF — resolve DNS first
         try
         {
+            var addresses = await System.Net.Dns.GetHostAddressesAsync(uri.Host);
+            foreach (var addr in addresses)
+            {
+                if (System.Net.IPAddress.IsLoopback(addr))
+                    return null;
+                var bytes = addr.GetAddressBytes();
+                // 10.0.0.0/8
+                if (bytes[0] == 10) return null;
+                // 172.16.0.0/12
+                if (bytes[0] == 172 && bytes[1] >= 16 && bytes[1] <= 31) return null;
+                // 192.168.0.0/16
+                if (bytes[0] == 192 && bytes[1] == 168) return null;
+                // 169.254.0.0/16 (link-local)
+                if (bytes[0] == 169 && bytes[1] == 254) return null;
+                // 100.64.0.0/10 (CGN)
+                if (bytes[0] == 100 && bytes[1] >= 64 && bytes[1] <= 127) return null;
+            }
+
             var client = _httpClientFactory.CreateClient("LogoClient");
             return await client.GetByteArrayAsync(logoUrl);
         }
@@ -517,7 +529,7 @@ public class FacturasController : ControllerBase
         else if (!string.IsNullOrEmpty(config.PacPassword))
         {
             // Legacy fallback: decrypt from DB
-            var encryptionKey = _configuration["Jwt:Secret"]
+            var encryptionKey = _configuration["Billing:EncryptionKey"] ?? _configuration["Jwt:Secret"]
                 ?? throw new InvalidOperationException("Jwt:Secret not configured");
             decryptedPacPassword = CatalogosController.DecryptPassword(config.PacPassword, encryptionKey);
         }
@@ -670,7 +682,7 @@ public class FacturasController : ControllerBase
             return BadRequest("La factura no tiene UUID asignado. No se puede cancelar ante el SAT.");
 
         // Decrypt CSD password into a local variable — never modify the tracked entity
-        var encryptionKey = _configuration["Jwt:Secret"]
+        var encryptionKey = _configuration["Billing:EncryptionKey"] ?? _configuration["Jwt:Secret"]
             ?? throw new InvalidOperationException("Jwt:Secret not configured");
 
         string? decryptedCsdPassword = null;
