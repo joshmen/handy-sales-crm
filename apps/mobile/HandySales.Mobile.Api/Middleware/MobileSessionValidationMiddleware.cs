@@ -150,6 +150,7 @@ public class MobileSessionValidationMiddleware
         return path.StartsWith("/api/mobile/auth/login") ||
                path.StartsWith("/api/mobile/auth/refresh") ||
                path.StartsWith("/api/mobile/auth/ack-unbind") ||
+               path.StartsWith("/api/crash-reports") ||
                path.StartsWith("/health") ||
                path.StartsWith("/swagger") ||
                path == "/";
