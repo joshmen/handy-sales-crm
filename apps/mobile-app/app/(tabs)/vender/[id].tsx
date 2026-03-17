@@ -6,18 +6,7 @@ import { Card, LoadingSpinner } from '@/components/ui';
 import { formatCurrency, formatDate } from '@/utils/format';
 import { Calendar, Send, XCircle, Package, CheckCircle, Truck, ClipboardCheck, ArrowRight } from 'lucide-react-native';
 import { useAuthStore } from '@/stores/authStore';
-
-// ── Status config ──
-const ESTADO_LABELS = ['Borrador', 'Enviado', 'Confirmado', 'En Proceso', 'En Ruta', 'Entregado', 'Cancelado'] as const;
-const ESTADO_COLORS: Record<number, { bg: string; text: string }> = {
-  0: { bg: '#f1f5f9', text: '#475569' },
-  1: { bg: '#fef3c7', text: '#92400e' },
-  2: { bg: '#dbeafe', text: '#1e40af' },
-  3: { bg: '#ede9fe', text: '#6b21a8' },
-  4: { bg: '#ffedd5', text: '#9a3412' },
-  5: { bg: '#dcfce7', text: '#166534' },
-  6: { bg: '#fee2e2', text: '#991b1b' },
-};
+import { ORDER_STATUS_COLORS } from '@/constants/colors';
 
 // ── Stepper states (exclude Cancelado from linear flow) ──
 const STEPPER_STATES = [0, 1, 2, 3, 4, 5];
@@ -49,7 +38,7 @@ export default function OrderDetailScreen() {
   const isSynced = serverId > 0;
   const canCancel = isSynced && estado >= 0 && estado <= 4;
   const clienteNombre = clientNames.get(order.clienteId) || 'Cliente';
-  const estadoColor = ESTADO_COLORS[estado] ?? ESTADO_COLORS[0];
+  const estadoColor = ORDER_STATUS_COLORS[estado] ?? ORDER_STATUS_COLORS[0];
 
   const handleTransition = (title: string, message: string, onConfirm: () => void) => {
     Alert.alert(title, message, [
@@ -180,7 +169,7 @@ export default function OrderDetailScreen() {
             <Text style={styles.clientName}>{clienteNombre}</Text>
           </View>
           <View style={[styles.statusBadge, { backgroundColor: estadoColor.bg }]}>
-            <Text style={[styles.statusText, { color: estadoColor.text }]}>{ESTADO_LABELS[estado]}</Text>
+            <Text style={[styles.statusText, { color: estadoColor.text }]}>{estadoColor.label}</Text>
           </View>
         </View>
         <View style={styles.dateRow}>
@@ -304,7 +293,7 @@ const styles = StyleSheet.create({
   stepDotRow: { flexDirection: 'row', alignItems: 'center', width: '100%', justifyContent: 'center' },
   stepDot: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
   stepLine: { flex: 1, height: 3, borderRadius: 2 },
-  stepLabel: { fontSize: 9, color: '#cbd5e1', marginTop: 4, textAlign: 'center', fontWeight: '500' },
+  stepLabel: { fontSize: 11, color: '#cbd5e1', marginTop: 4, textAlign: 'center', fontWeight: '500' },
   stepLabelActive: { color: '#2563eb', fontWeight: '700' },
   stepLabelPast: { color: '#16a34a' },
   // Cancelled

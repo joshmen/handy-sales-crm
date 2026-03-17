@@ -7,6 +7,7 @@ import { SearchBar } from '@/components/shared/SearchBar';
 import { Badge } from '@/components/ui';
 import { Phone, ChevronRight, Users } from 'lucide-react-native';
 import { performSync } from '@/sync/syncEngine';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import type Cliente from '@/db/models/Cliente';
 
 export default function ClientsListScreen() {
@@ -75,7 +76,7 @@ export default function ClientsListScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.searchSection}>
+      <Animated.View entering={FadeInDown.duration(400)} style={styles.searchSection}>
         <SearchBar
           placeholder="Buscar cliente..."
           onSearch={handleSearch}
@@ -91,7 +92,7 @@ export default function ClientsListScreen() {
             </Text>
           </View>
         )}
-      </View>
+      </Animated.View>
 
       <FlatList
         data={clients ?? []}

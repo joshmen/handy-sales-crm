@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineOrders, useClientNameMap } from '@/hooks';
 import { Card, LoadingSpinner, EmptyState } from '@/components/ui';
 import { StatusBadge } from '@/components/shared/StatusBadge';
-import { ORDER_STATUS_COLORS } from '@/utils/constants';
+import { ORDER_STATUS_COLORS } from '@/constants/colors';
 import { formatCurrency, formatDate } from '@/utils/format';
 import { ShoppingCart, ChevronRight, Calendar, Plus } from 'lucide-react-native';
 import { performSync } from '@/sync/syncEngine';
@@ -50,11 +50,11 @@ export default function VenderListScreen() {
         <View style={styles.orderRow}>
           <View style={[
             styles.orderIcon,
-            { backgroundColor: `${ORDER_STATUS_COLORS[item.estado] || '#6b7280'}15` },
+            { backgroundColor: (ORDER_STATUS_COLORS[item.estado] ?? ORDER_STATUS_COLORS[0]).bg },
           ]}>
             <ShoppingCart
               size={18}
-              color={ORDER_STATUS_COLORS[item.estado] || '#6b7280'}
+              color={(ORDER_STATUS_COLORS[item.estado] ?? ORDER_STATUS_COLORS[0]).text}
             />
           </View>
           <View style={styles.orderContent}>

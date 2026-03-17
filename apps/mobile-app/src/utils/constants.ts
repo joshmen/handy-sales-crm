@@ -40,16 +40,6 @@ export const ORDER_STATUS: Record<number, string> = {
   6: 'Cancelado',
 };
 
-export const ORDER_STATUS_COLORS: Record<number, string> = {
-  0: '#6b7280', // gray
-  1: '#3b82f6', // blue
-  2: '#8b5cf6', // violet
-  3: '#f59e0b', // amber
-  4: '#0891b2', // cyan
-  5: '#22c55e', // green
-  6: '#ef4444', // red
-};
-
 export const VISIT_RESULT: Record<number, string> = {
   0: 'Pendiente',
   1: 'Con Venta',

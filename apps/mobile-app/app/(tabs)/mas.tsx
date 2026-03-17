@@ -21,6 +21,7 @@ import {
 import { SbClients, SbOrders, SbRoute } from '@/components/icons/DashboardIcons';
 import { HandyLogo } from '@/components/shared/HandyLogo';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 const ROLE_LABELS: Record<string, string> = {
   SUPER_ADMIN: 'Super Admin',
@@ -127,7 +128,7 @@ function MasScreenContent() {
       showsVerticalScrollIndicator={false}
     >
       {/* Profile Card */}
-      <View style={[styles.profileCard, { paddingTop: insets.top + 20 }]}>
+      <Animated.View entering={FadeInDown.duration(400)} style={[styles.profileCard, { paddingTop: insets.top + 20 }]}>
         <View style={styles.profileRow}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>
@@ -149,10 +150,10 @@ function MasScreenContent() {
             </View>
           </View>
         </View>
-      </View>
+      </Animated.View>
 
       {/* Primary Navigation */}
-      <View style={styles.section}>
+      <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.section}>
         <Text style={styles.sectionTitle}>Navegación</Text>
         {primaryItems.map((item) => (
           <TouchableOpacity
@@ -168,10 +169,10 @@ function MasScreenContent() {
             <ChevronRight size={18} color="#cbd5e1" />
           </TouchableOpacity>
         ))}
-      </View>
+      </Animated.View>
 
       {/* Secondary Navigation */}
-      <View style={styles.section}>
+      <Animated.View entering={FadeInDown.delay(200).duration(400)} style={styles.section}>
         <Text style={styles.sectionTitle}>Cuenta</Text>
         {secondaryItems.map((item) => (
           <TouchableOpacity
@@ -187,10 +188,10 @@ function MasScreenContent() {
             <ChevronRight size={18} color="#cbd5e1" />
           </TouchableOpacity>
         ))}
-      </View>
+      </Animated.View>
 
       {/* Logout */}
-      <View style={styles.section}>
+      <Animated.View entering={FadeInDown.delay(300).duration(400)} style={styles.section}>
         <TouchableOpacity
           style={styles.logoutItem}
           onPress={handleLogout}
@@ -201,7 +202,7 @@ function MasScreenContent() {
           </View>
           <Text style={styles.logoutLabel}>Cerrar Sesión</Text>
         </TouchableOpacity>
-      </View>
+      </Animated.View>
 
       {/* Footer */}
       <View style={styles.footer}>

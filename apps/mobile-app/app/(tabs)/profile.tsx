@@ -6,6 +6,7 @@ import { useLogout } from '@/hooks';
 import { Card, Button, Badge } from '@/components/ui';
 import { Mail, LogOut, Info, Shield, Building2, Smartphone } from 'lucide-react-native';
 import { HandyLogo } from '@/components/shared/HandyLogo';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 const ROLE_LABELS: Record<string, string> = {
   SUPER_ADMIN: 'Super Admin',
@@ -52,7 +53,7 @@ export default function ProfileScreen() {
       showsVerticalScrollIndicator={false}
     >
       {/* Profile Header */}
-      <View style={[styles.profileHeader, { paddingTop: insets.top + 20 }]}>
+      <Animated.View entering={FadeInDown.duration(400)} style={[styles.profileHeader, { paddingTop: insets.top + 20 }]}>
         <View style={styles.avatarLarge}>
           <Text style={styles.avatarText}>
             {user.name?.[0]?.toUpperCase() || 'U'}
@@ -71,10 +72,10 @@ export default function ProfileScreen() {
             size="md"
           />
         </View>
-      </View>
+      </Animated.View>
 
       {/* Info Cards */}
-      <View style={styles.infoSection}>
+      <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.infoSection}>
         <Card className="mb-3">
           <View style={styles.infoRow}>
             <View style={[styles.infoIcon, { backgroundColor: '#ede9fe' }]}>
@@ -116,10 +117,10 @@ export default function ProfileScreen() {
             </View>
           </View>
         </Card>
-      </View>
+      </Animated.View>
 
       {/* Logout */}
-      <View style={styles.logoutSection}>
+      <Animated.View entering={FadeInDown.delay(200).duration(400)} style={styles.logoutSection}>
         <Button
           title="Cerrar Sesión"
           onPress={handleLogout}
@@ -128,7 +129,7 @@ export default function ProfileScreen() {
           loading={logoutMutation.isPending}
           icon={<LogOut size={18} color="#ffffff" />}
         />
-      </View>
+      </Animated.View>
 
       {/* Branding */}
       <View style={styles.branding}>

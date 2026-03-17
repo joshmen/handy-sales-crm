@@ -92,18 +92,18 @@ function EquipoContent() {
 
       {/* KPIs */}
       {dashboard && (
-        <View style={styles.kpiGrid} testID="supervisor-kpis">
+        <Animated.View entering={FadeInDown.duration(400)} style={styles.kpiGrid} testID="supervisor-kpis">
           <KpiCard icon={SbTeam} label="Vendedores" value={dashboard.totalVendedores} color="#2563eb" />
           <KpiCard icon={SbOrders} label="Pedidos hoy" value={dashboard.pedidosHoy} color="#16a34a" />
           <KpiCard icon={SbMoney} label="Ventas mes" value={formatMoney(dashboard.ventasMes)} color="#d97706" />
           <KpiCard icon={SbVisit} label="Visitas hoy" value={`${dashboard.visitasCompletadasHoy}/${dashboard.visitasHoy}`} color="#7c3aed" />
           <KpiCard icon={SbChart} label="Pedidos mes" value={dashboard.pedidosMes} color="#0891b2" />
           <KpiCard icon={SbClients} label="Clientes" value={dashboard.totalClientes} color="#e11d48" />
-        </View>
+        </Animated.View>
       )}
 
       {/* Vendedores list */}
-      <View style={styles.section}>
+      <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.section}>
         <Text style={styles.sectionTitle}>Vendedores ({vendedores?.length ?? 0})</Text>
         {vendedores && vendedores.length > 0 ? (
           vendedores.map(v => (
@@ -120,7 +120,7 @@ function EquipoContent() {
             <Text style={styles.emptySubtext}>Pide al administrador que te asigne vendedores</Text>
           </View>
         )}
-      </View>
+      </Animated.View>
     </ScrollView>
   );
 }

@@ -1,13 +1,12 @@
 import React from 'react';
 import { Badge } from '@/components/ui';
 import {
-  ORDER_STATUS,
-  ORDER_STATUS_COLORS,
   ROUTE_STATUS,
   ROUTE_STATUS_COLORS,
   VISIT_RESULT,
   VISIT_RESULT_COLORS,
 } from '@/utils/constants';
+import { ORDER_STATUS_COLORS } from '@/constants/colors';
 
 interface StatusBadgeProps {
   type: 'order' | 'route' | 'visit';
@@ -19,10 +18,12 @@ export function StatusBadge({ type, status }: StatusBadgeProps) {
   let color: string;
 
   switch (type) {
-    case 'order':
-      label = ORDER_STATUS[status] || 'Desconocido';
-      color = ORDER_STATUS_COLORS[status] || '#6b7280';
-      break;
+    case 'order': {
+      const orderColor = ORDER_STATUS_COLORS[status] ?? ORDER_STATUS_COLORS[0];
+      label = orderColor.label;
+      color = orderColor.text;
+      return <Badge label={label} color={color} bgColor={orderColor.bg} />;
+    }
     case 'route':
       label = ROUTE_STATUS[status] || 'Desconocido';
       color = ROUTE_STATUS_COLORS[status] || '#6b7280';
