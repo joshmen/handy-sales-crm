@@ -39,9 +39,10 @@ public class MobileAuthService
         if (!usuario.Activo)
             return new LoginResult { Success = false, Message = "Cuenta desactivada" };
 
-        // --- Device binding check (only for non-admin mobile users) ---
-        if (!string.IsNullOrEmpty(deviceFingerprint) && !usuario.EsAdmin && !usuario.EsSuperAdmin)
+        // --- Device session management ---
+        if (!string.IsNullOrEmpty(deviceFingerprint))
         {
+            // Find existing session by fingerprint or deviceId
             var existingSession = await _db.DeviceSessions
                 .IgnoreQueryFilters()
                 .Where(ds => ds.UsuarioId == usuario.Id &&
@@ -49,22 +50,37 @@ public class MobileAuthService
                              ds.EliminadoEn == null &&
                              (ds.Status == SessionStatus.Active || ds.Status == SessionStatus.LoggedOut))
                 .OrderByDescending(ds => ds.LastActivity)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(ds =>
+                    ds.DeviceFingerprint == deviceFingerprint ||
+                    (!string.IsNullOrEmpty(deviceId) && ds.DeviceId == deviceId));
 
-            if (existingSession != null &&
-                !string.IsNullOrEmpty(existingSession.DeviceFingerprint) &&
-                existingSession.DeviceFingerprint != deviceFingerprint)
+            // Device binding check — only for non-admin users
+            if (!usuario.EsAdmin && !usuario.EsSuperAdmin && usuario.Rol != "SUPERVISOR")
             {
-                // Different device — reject login
-                return new LoginResult
+                // Check if there's ANY session with a different fingerprint
+                var boundSession = await _db.DeviceSessions
+                    .IgnoreQueryFilters()
+                    .Where(ds => ds.UsuarioId == usuario.Id &&
+                                 ds.TenantId == usuario.TenantId &&
+                                 ds.EliminadoEn == null &&
+                                 (ds.Status == SessionStatus.Active || ds.Status == SessionStatus.LoggedOut) &&
+                                 !string.IsNullOrEmpty(ds.DeviceFingerprint) &&
+                                 ds.DeviceFingerprint != deviceFingerprint)
+                    .OrderByDescending(ds => ds.LastActivity)
+                    .FirstOrDefaultAsync();
+
+                if (boundSession != null)
                 {
-                    Success = false,
-                    DeviceBound = true,
-                    Message = "Esta cuenta está vinculada a otro dispositivo. Contacta a tu administrador para desvincular."
-                };
+                    return new LoginResult
+                    {
+                        Success = false,
+                        DeviceBound = true,
+                        Message = "Esta cuenta está vinculada a otro dispositivo. Contacta a tu administrador para desvincular."
+                    };
+                }
             }
 
-            // Same device or first login — update/create session
+            // Reuse existing session or create new one
             if (existingSession != null)
             {
                 existingSession.DeviceFingerprint = deviceFingerprint;
@@ -74,15 +90,14 @@ public class MobileAuthService
             }
             else if (!string.IsNullOrEmpty(deviceId))
             {
-                // First login — create device session with fingerprint
                 _db.DeviceSessions.Add(new DeviceSession
                 {
                     TenantId = usuario.TenantId,
                     UsuarioId = usuario.Id,
                     DeviceId = deviceId,
                     DeviceFingerprint = deviceFingerprint,
-                    DeviceName = null, // Will be set by RegisterDeviceTokenAsync
-                    DeviceType = DeviceType.Unknown, // Will be set by RegisterDeviceTokenAsync
+                    DeviceName = null,
+                    DeviceType = DeviceType.Unknown,
                     Status = SessionStatus.Active,
                     LastActivity = DateTime.UtcNow,
                     LoggedInAt = DateTime.UtcNow
@@ -190,14 +205,16 @@ public class MobileAuthService
             _ => DeviceType.Unknown
         };
 
-        // Find existing session for this user (prefer by fingerprint, then by push token)
+        // Find existing session for this user (prefer by fingerprint, then by deviceId, then by push token)
         var existingSession = await _db.DeviceSessions
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(ds =>
                 ds.UsuarioId == userId &&
                 ds.TenantId == tenantId &&
                 ds.EliminadoEn == null &&
+                ds.Status == SessionStatus.Active &&
                 ((!string.IsNullOrEmpty(deviceFingerprint) && ds.DeviceFingerprint == deviceFingerprint) ||
+                 (!string.IsNullOrEmpty(deviceId) && ds.DeviceId == deviceId) ||
                  ds.PushToken == pushToken));
 
         if (existingSession != null)

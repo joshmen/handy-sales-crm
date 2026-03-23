@@ -19,7 +19,7 @@ public static class MobileSupervisorEndpoints
             ICurrentTenant tenant,
             HandySalesDbContext db) =>
         {
-            if (!tenant.IsSupervisor)
+            if (!tenant.IsSupervisor && !tenant.IsAdmin && !tenant.IsSuperAdmin)
                 return Results.Forbid();
 
             var supervisorId = int.Parse(tenant.UserId);
@@ -51,21 +51,26 @@ public static class MobileSupervisorEndpoints
             ICurrentTenant tenant,
             HandySalesDbContext db) =>
         {
-            if (!tenant.IsSupervisor)
+            if (!tenant.IsSupervisor && !tenant.IsAdmin && !tenant.IsSuperAdmin)
                 return Results.Forbid();
 
             var supervisorId = int.Parse(tenant.UserId);
             var hoy = DateTime.UtcNow.Date;
 
-            var subordinadoIds = await db.Usuarios
-                .AsNoTracking()
-                .Where(u => u.SupervisorId == supervisorId
-                         && u.TenantId == tenant.TenantId
-                         && u.EliminadoEn == null)
-                .Select(u => u.Id)
-                .ToListAsync();
-
-            var allIds = new List<int>(subordinadoIds) { supervisorId };
+            List<int> allIds;
+            if (tenant.IsAdmin || tenant.IsSuperAdmin)
+            {
+                allIds = await db.Usuarios.AsNoTracking()
+                    .Where(u => u.TenantId == tenant.TenantId && u.EliminadoEn == null && u.Activo)
+                    .Select(u => u.Id).ToListAsync();
+            }
+            else
+            {
+                var subordinadoIds = await db.Usuarios.AsNoTracking()
+                    .Where(u => u.SupervisorId == supervisorId && u.TenantId == tenant.TenantId && u.EliminadoEn == null)
+                    .Select(u => u.Id).ToListAsync();
+                allIds = new List<int>(subordinadoIds) { supervisorId };
+            }
 
             var pedidosHoy = await db.Pedidos
                 .AsNoTracking()
@@ -123,7 +128,7 @@ public static class MobileSupervisorEndpoints
                 success = true,
                 data = new
                 {
-                    totalVendedores = subordinadoIds.Count,
+                    totalVendedores = allIds.Count,
                     pedidosHoy,
                     pedidosMes,
                     totalClientes,
@@ -142,7 +147,7 @@ public static class MobileSupervisorEndpoints
             ICurrentTenant tenant,
             HandySalesDbContext db) =>
         {
-            if (!tenant.IsSupervisor)
+            if (!tenant.IsSupervisor && !tenant.IsAdmin && !tenant.IsSuperAdmin)
                 return Results.Forbid();
 
             var supervisorId = int.Parse(tenant.UserId);
@@ -204,21 +209,26 @@ public static class MobileSupervisorEndpoints
             ICurrentTenant tenant,
             HandySalesDbContext db) =>
         {
-            if (!tenant.IsSupervisor)
+            if (!tenant.IsSupervisor && !tenant.IsAdmin && !tenant.IsSuperAdmin)
                 return Results.Forbid();
 
             var supervisorId = int.Parse(tenant.UserId);
             var hoy = DateTime.UtcNow.Date;
 
-            var subordinadoIds = await db.Usuarios
-                .AsNoTracking()
-                .Where(u => u.SupervisorId == supervisorId
-                         && u.TenantId == tenant.TenantId
-                         && u.EliminadoEn == null)
-                .Select(u => u.Id)
-                .ToListAsync();
-
-            var allIds = new List<int>(subordinadoIds) { supervisorId };
+            List<int> allIds;
+            if (tenant.IsAdmin || tenant.IsSuperAdmin)
+            {
+                allIds = await db.Usuarios.AsNoTracking()
+                    .Where(u => u.TenantId == tenant.TenantId && u.EliminadoEn == null && u.Activo)
+                    .Select(u => u.Id).ToListAsync();
+            }
+            else
+            {
+                var subordinadoIds = await db.Usuarios.AsNoTracking()
+                    .Where(u => u.SupervisorId == supervisorId && u.TenantId == tenant.TenantId && u.EliminadoEn == null)
+                    .Select(u => u.Id).ToListAsync();
+                allIds = new List<int>(subordinadoIds) { supervisorId };
+            }
 
             // Recent orders today
             var pedidosRecientes = await db.Pedidos
@@ -312,7 +322,7 @@ public static class MobileSupervisorEndpoints
             ICurrentTenant tenant,
             HandySalesDbContext db) =>
         {
-            if (!tenant.IsSupervisor)
+            if (!tenant.IsSupervisor && !tenant.IsAdmin && !tenant.IsSuperAdmin)
                 return Results.Forbid();
 
             var supervisorId = int.Parse(tenant.UserId);

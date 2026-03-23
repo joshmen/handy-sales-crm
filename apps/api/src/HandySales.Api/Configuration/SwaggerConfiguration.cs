@@ -75,8 +75,9 @@ public static class SwaggerConfiguration
 
     public static IApplicationBuilder UseSwaggerConfiguration(this IApplicationBuilder app, IWebHostEnvironment env)
     {
-        // Solo habilitar Swagger en desarrollo — no exponer API schema en producción
-        if (!env.IsDevelopment())
+        // Habilitar Swagger en desarrollo, o si ENABLE_SWAGGER=true (temporal para debugging en prod)
+        var forceSwagger = Environment.GetEnvironmentVariable("ENABLE_SWAGGER");
+        if (!env.IsDevelopment() && forceSwagger != "true")
             return app;
 
         app.UseSwagger(options =>
