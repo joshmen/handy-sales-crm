@@ -1,0 +1,13 @@
+appId: host.exp.exponent
+name: "Dismiss and Navigate"
+---
+- tapOn:
+    text: "AHORA NO"
+    optional: true
+- tapOn:
+    text: "Ahora no"
+    optional: true
+- tapOn: "Hoy"
+- tapOn: "Cobrar"
+- tapOn: "Mas"
+- tapOn: "Hoy"

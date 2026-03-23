@@ -2,7 +2,8 @@ import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Button } from '@/components/ui';
 import { ScreenWrapper } from '@/components/shared/ScreenWrapper';
-import { ArrowLeft, KeyRound } from 'lucide-react-native';
+import { ChevronLeft, KeyRound } from 'lucide-react-native';
+import { COLORS } from '@/theme/colors';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
@@ -11,7 +12,7 @@ export default function ForgotPasswordScreen() {
     <ScreenWrapper bg="#ffffff" padTop>
       <View style={styles.container}>
         <View style={styles.iconContainer}>
-          <KeyRound size={40} color="#2563eb" />
+          <KeyRound size={40} color={COLORS.primary} />
         </View>
         <Text style={styles.title}>Recuperar Contraseña</Text>
         <Text style={styles.description}>
@@ -23,7 +24,7 @@ export default function ForgotPasswordScreen() {
           onPress={() => router.back()}
           variant="outline"
           fullWidth
-          icon={<ArrowLeft size={18} color="#2563eb" />}
+          icon={<ChevronLeft size={18} color={COLORS.primary} />}
         />
       </View>
     </ScreenWrapper>
@@ -41,7 +42,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 20,
-    backgroundColor: '#eff6ff',
+    backgroundColor: COLORS.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 24,

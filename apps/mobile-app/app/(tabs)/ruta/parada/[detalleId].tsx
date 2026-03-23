@@ -1,7 +1,9 @@
 import { useState, useCallback } from 'react';
 import { View, Text, ScrollView, Alert, Linking, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker, Circle } from 'react-native-maps';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import {
   useOfflineRutaHoy,
   useOfflineRutaDetalles,
@@ -13,17 +15,15 @@ import { performCheckIn, formatDistance } from '@/services/geoCheckin';
 import { createVisitaOffline } from '@/db/actions';
 import { performSync } from '@/sync/syncEngine';
 import { getGeofenceColor } from '@/utils/mapColors';
-import { Card, Button, LoadingSpinner } from '@/components/ui';
+import { Card, Button, LoadingSpinner, ConfirmModal } from '@/components/ui';
 import { Badge } from '@/components/ui';
+import { COLORS } from '@/theme/colors';
 import { formatTime } from '@/utils/format';
 import {
   MapPin,
   Clock,
-  Navigation,
-  Play,
-  ShoppingBag,
-  Wallet,
 } from 'lucide-react-native';
+import { SbVisit } from '@/components/icons/DashboardIcons';
 
 const STOP_STATUS_COLORS: Record<number, string> = {
   0: '#6b7280', 1: '#f59e0b', 2: '#22c55e', 3: '#ef4444',
@@ -33,6 +33,7 @@ const STOP_STATUS_NAMES: Record<number, string> = {
 };
 
 export default function ParadaDetailScreen() {
+  const insets = useSafeAreaInsets();
   const { detalleId } = useLocalSearchParams<{ detalleId: string }>();
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
@@ -40,6 +41,7 @@ export default function ParadaDetailScreen() {
 
   const [checkingIn, setCheckingIn] = useState(false);
   const [distance, setDistance] = useState<number | null>(null);
+  const [showConfirmVisita, setShowConfirmVisita] = useState(false);
 
   // Get route + stop from WDB
   const { data: rutas, isLoading: rutaLoading } = useOfflineRutaHoy();
@@ -71,42 +73,40 @@ export default function ParadaDetailScreen() {
 
   const handleLlegar = useCallback(() => {
     if (!stop || !client) return;
-    Alert.alert('Iniciar Visita', `¿Llegaste a ${client.nombre}?`, [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Sí, llegué',
-        onPress: async () => {
-          setCheckingIn(true);
-          try {
-            if (!clientLat || !clientLng) {
-              Alert.alert('Error', 'El cliente no tiene ubicación registrada');
-              return;
-            }
+    setShowConfirmVisita(true);
+  }, [stop, client]);
 
-            const result = await performCheckIn({ latitude: clientLat, longitude: clientLng });
-            setDistance(result.distance);
+  const executeIniciarVisita = useCallback(async () => {
+    setShowConfirmVisita(false);
+    if (!stop || !client) return;
+    setCheckingIn(true);
+    try {
+      if (!clientLat || !clientLng) {
+        Alert.alert('Error', 'El cliente no tiene ubicación registrada');
+        return;
+      }
 
-            await createVisitaOffline(
-              stop.clienteId,
-              client.serverId,
-              Number(user?.id ?? 0),
-              result.coords.latitude,
-              result.coords.longitude,
-              result.distance,
-              route?.id
-            );
+      const result = await performCheckIn({ latitude: clientLat, longitude: clientLng });
+      setDistance(result.distance);
 
-            await stop.arrive(result.coords.latitude, result.coords.longitude);
-            performSync().catch(() => {});
-            router.push('/(tabs)/ruta/visita-activa' as any);
-          } catch {
-            Alert.alert('Error', 'No se pudo iniciar la visita');
-          } finally {
-            setCheckingIn(false);
-          }
-        },
-      },
-    ]);
+      await createVisitaOffline(
+        stop.clienteId,
+        client.serverId,
+        Number(user?.id ?? 0),
+        result.coords.latitude,
+        result.coords.longitude,
+        result.distance,
+        route?.id
+      );
+
+      await stop.arrive(result.coords.latitude, result.coords.longitude);
+      performSync().catch(() => {});
+      router.push('/(tabs)/ruta/visita-activa' as any);
+    } catch {
+      Alert.alert('Error', 'No se pudo iniciar la visita');
+    } finally {
+      setCheckingIn(false);
+    }
   }, [stop, client, clientLat, clientLng, user, route, router]);
 
   if (rutaLoading || !route) {
@@ -128,7 +128,18 @@ export default function ParadaDetailScreen() {
   const statusColor = STOP_STATUS_COLORS[stop.estado] || '#6b7280';
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <View style={styles.container}>
+    {/* Blue Header */}
+    <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
+      <Text style={styles.blueHeaderTitle}>Parada #{stop.orden}</Text>
+      <Badge
+        label={STOP_STATUS_NAMES[stop.estado] || 'Desconocido'}
+        color={statusColor}
+        bgColor={`${statusColor}25`}
+        size="md"
+      />
+    </View>
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       {/* Mini Map */}
       {clientLat && clientLng && (
         <View style={styles.miniMapContainer}>
@@ -146,7 +157,7 @@ export default function ParadaDetailScreen() {
             pitchEnabled={false}
             showsUserLocation
           >
-            <Marker coordinate={{ latitude: clientLat, longitude: clientLng }} pinColor="#2563eb" />
+            <Marker coordinate={{ latitude: clientLat, longitude: clientLng }} pinColor="COLORS.primary" />
             <Circle
               center={{ latitude: clientLat, longitude: clientLng }}
               radius={200}
@@ -167,19 +178,22 @@ export default function ParadaDetailScreen() {
       )}
 
       {/* Status Banner */}
-      <View style={[styles.statusBanner, { backgroundColor: `${statusColor}15`, borderColor: `${statusColor}30` }]}>
-        <Badge
-          label={STOP_STATUS_NAMES[stop.estado] || 'Desconocido'}
-          color={statusColor}
-          bgColor={`${statusColor}25`}
-          size="md"
-        />
-        <Text style={[styles.statusOrder, { color: statusColor }]}>
-          Parada #{stop.orden}
-        </Text>
-      </View>
+      <Animated.View entering={FadeInDown.duration(400).delay(100)}>
+        <View style={[styles.statusBanner, { backgroundColor: `${statusColor}15`, borderColor: `${statusColor}30` }]}>
+          <Badge
+            label={STOP_STATUS_NAMES[stop.estado] || 'Desconocido'}
+            color={statusColor}
+            bgColor={`${statusColor}25`}
+            size="md"
+          />
+          <Text style={[styles.statusOrder, { color: statusColor }]}>
+            Parada #{stop.orden}
+          </Text>
+        </View>
+      </Animated.View>
 
       {/* Client Info */}
+      <Animated.View entering={FadeInDown.duration(400).delay(200)}>
       <Card className="mx-4 mb-3">
         <Text style={styles.cardLabel}>Cliente</Text>
         <Text style={styles.clientName}>{client?.nombre ?? 'Cargando...'}</Text>
@@ -198,51 +212,54 @@ export default function ParadaDetailScreen() {
           </View>
         )}
       </Card>
+      </Animated.View>
 
       {/* Navigation */}
       {clientLat && clientLng && (
+        <Animated.View entering={FadeInDown.duration(400).delay(300)}>
         <Card className="mx-4 mb-3">
           <Button
             title="Navegar con Google Maps"
             onPress={handleNavegar}
             variant="secondary"
             fullWidth
-            icon={<Navigation size={18} color="#2563eb" />}
           />
         </Card>
+        </Animated.View>
       )}
 
       {/* Quick Actions */}
       {(isPendiente || isEnProgreso) && (
+        <Animated.View entering={FadeInDown.duration(400).delay(400)}>
         <View style={styles.quickActions}>
           <Button
             title="Nuevo Pedido"
             onPress={() => router.push('/(tabs)/vender/crear' as any)}
             variant="secondary"
             fullWidth
-            icon={<ShoppingBag size={18} color="#2563eb" />}
           />
           <Button
             title="Registrar Cobro"
             onPress={() => router.push(`/(tabs)/cobrar/registrar?clienteId=${stop.clienteId}&clienteNombre=${encodeURIComponent(client?.nombre ?? '')}&saldo=0` as any)}
             variant="secondary"
             fullWidth
-            icon={<Wallet size={18} color="#2563eb" />}
           />
         </View>
+        </Animated.View>
       )}
 
       {/* Check-in Button */}
       {isPendiente && (
+        <Animated.View entering={FadeInDown.duration(400).delay(500)}>
         <View style={styles.mainActions}>
           <Button
             title="Llegué — Iniciar Visita"
             onPress={handleLlegar}
             loading={checkingIn}
             fullWidth
-            icon={<Play size={18} color="#ffffff" />}
           />
         </View>
+        </Animated.View>
       )}
 
       {stop.notas && (
@@ -251,12 +268,25 @@ export default function ParadaDetailScreen() {
           <Text style={styles.notesText}>{stop.notas}</Text>
         </Card>
       )}
+
+      <ConfirmModal
+        visible={showConfirmVisita}
+        title="Iniciar Visita"
+        message={`¿Llegaste a ${client?.nombre ?? 'este cliente'}?`}
+        confirmText="Sí, llegué"
+        onConfirm={executeIniciarVisita}
+        onCancel={() => setShowConfirmVisita(false)}
+        icon={<SbVisit size={48} />}
+      />
     </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1, backgroundColor: COLORS.background },
+  blueHeader: { backgroundColor: COLORS.headerBg, paddingHorizontal: 16, paddingBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  blueHeaderTitle: { fontSize: 18, fontWeight: '700', color: COLORS.headerText },
   content: { paddingBottom: 32 },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
   emptyText: { fontSize: 14, color: '#94a3b8' },

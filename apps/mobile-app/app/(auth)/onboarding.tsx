@@ -7,54 +7,80 @@ import {
   Pressable,
   StyleSheet,
   type ViewToken,
+  type ListRenderItemInfo,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ShoppingBag, Wallet, BarChart3 } from 'lucide-react-native';
+import { StatusBar } from 'expo-status-bar';
+import { LinearGradient } from 'expo-linear-gradient';
+import { ArrowRight, CheckCircle } from 'lucide-react-native';
 import { secureStorage } from '@/utils/storage';
+import { COLORS } from '@/theme/colors';
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-interface Slide {
+// Pencil design: slides 1-2 have photo ~66% top + white card bottom
+// Slide 3 is full dark with gradient overlay + bullet points
+const IMAGE_HEIGHT = SCREEN_HEIGHT * 0.66;
+
+interface SlideData {
   id: string;
   title: string;
   subtitle: string;
-  icon: React.ReactNode;
-  bgColor: string;
-  iconBg: string;
+  /** 'light' = photo top + white card bottom; 'dark' = full dark overlay */
+  variant: 'light' | 'dark';
+  bullets?: string[];
 }
 
-const SLIDES: Slide[] = [
+const SLIDES: SlideData[] = [
   {
     id: '1',
     title: 'Vende en ruta',
     subtitle:
       'Levanta pedidos desde tu teléfono, consulta productos, precios y stock en tiempo real.',
-    icon: <ShoppingBag size={56} color="#2563eb" />,
-    bgColor: '#eff6ff',
-    iconBg: '#dbeafe',
+    variant: 'light',
   },
   {
     id: '2',
-    title: 'Cobra al instante',
+    title: 'Controla tu cartera',
     subtitle:
-      'Registra cobros en campo con cualquier método de pago. Control total de tu cartera.',
-    icon: <Wallet size={56} color="#16a34a" />,
-    bgColor: '#f0fdf4',
-    iconBg: '#dcfce7',
+      'Registra cobros, da seguimiento a saldos pendientes y reduce tu cartera vencida.',
+    variant: 'light',
   },
   {
     id: '3',
-    title: 'Administra tu día',
+    title: 'Administra\ntu día',
     subtitle:
       'Ruta optimizada, visitas con check-in, reportes de rendimiento y sincronización offline.',
-    icon: <BarChart3 size={56} color="#7c3aed" />,
-    bgColor: '#f5f3ff',
-    iconBg: '#ede9fe',
+    variant: 'dark',
+    bullets: [
+      'Funciona sin internet',
+      'Reduce cartera vencida hasta 40%',
+      'Facturación SAT en 3 clics',
+    ],
   },
 ];
 
 const ONBOARDING_KEY = 'onboarding_complete';
+
+function Dots({ activeIndex, variant }: { activeIndex: number; variant: 'light' | 'dark' }) {
+  const isDark = variant === 'dark';
+  return (
+    <View style={styles.dotsRow}>
+      {SLIDES.map((_, i) => (
+        <View
+          key={i}
+          style={[
+            styles.dot,
+            i === activeIndex
+              ? [styles.dotActive, isDark && styles.dotActiveDark]
+              : [styles.dotInactive, isDark && styles.dotInactiveDark],
+          ]}
+        />
+      ))}
+    </View>
+  );
+}
 
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
@@ -92,32 +118,97 @@ export default function OnboardingScreen() {
     }
   };
 
-  const renderSlide = ({ item }: { item: Slide }) => (
-    <View style={[styles.slide, { width: SCREEN_WIDTH }]}>
-      <View style={[styles.iconContainer, { backgroundColor: item.iconBg }]}>
-        {item.icon}
-      </View>
-      <Text style={styles.slideTitle}>{item.title}</Text>
-      <Text style={styles.slideSubtitle}>{item.subtitle}</Text>
-    </View>
-  );
-
   const isLast = activeIndex === SLIDES.length - 1;
+  const currentVariant = SLIDES[activeIndex]?.variant ?? 'light';
+
+  const renderSlide = ({ item, index }: ListRenderItemInfo<SlideData>) => {
+    if (item.variant === 'dark') {
+      return (
+        <View style={[styles.slideWrap, { width: SCREEN_WIDTH }]}>
+          {/* Dark background with gradient */}
+          <View style={styles.darkBg}>
+            <LinearGradient
+              colors={['#0f172a00', '#0f172a66', '#0f172abb', '#0f172af0', '#0f172a']}
+              locations={[0, 0.3, 0.55, 0.75, 1]}
+              style={StyleSheet.absoluteFill}
+            />
+          </View>
+
+          {/* Content overlay — anchored to bottom */}
+          <View style={[styles.darkContent, { paddingBottom: insets.bottom + 70 }]}>
+            <Text style={styles.darkTitle}>{item.title}</Text>
+            <Text style={styles.darkSubtitle}>{item.subtitle}</Text>
+
+            {/* Bullet points */}
+            {item.bullets && (
+              <View style={styles.bulletsWrap}>
+                {item.bullets.map((b, i) => (
+                  <View key={i} style={styles.bulletRow}>
+                    <CheckCircle size={18} color={COLORS.salesGreen} />
+                    <Text style={styles.bulletText}>{b}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            <Dots activeIndex={index} variant="dark" />
+
+            <Pressable
+              testID="onboarding-action"
+              style={styles.button}
+              onPress={handleNext}
+            >
+              <Text style={styles.buttonText}>Comenzar</Text>
+            </Pressable>
+          </View>
+        </View>
+      );
+    }
+
+    // Light variant — photo placeholder top + white card bottom
+    return (
+      <View style={[styles.slideWrap, { width: SCREEN_WIDTH }]}>
+        {/* Photo placeholder area */}
+        <View style={styles.imageArea}>
+          <View style={styles.imagePlaceholder} />
+          {/* Subtle overlay on image */}
+          <View style={styles.imageOverlay} />
+
+          {/* Skip chip overlaying the image */}
+          <View style={[styles.skipChipWrap, { top: insets.top + 12 }]}>
+            <Pressable
+              testID="skip-onboarding"
+              style={styles.skipChip}
+              onPress={handleComplete}
+            >
+              <Text style={styles.skipChipText}>Omitir</Text>
+            </Pressable>
+          </View>
+        </View>
+
+        {/* White content card */}
+        <View style={[styles.cardArea, { paddingBottom: insets.bottom + 24 }]}>
+          <View style={styles.cardInner}>
+            <Text style={styles.lightTitle}>{item.title}</Text>
+            <Text style={styles.lightSubtitle}>{item.subtitle}</Text>
+            <Dots activeIndex={index} variant="light" />
+            <Pressable
+              testID="onboarding-action"
+              style={styles.button}
+              onPress={handleNext}
+            >
+              <Text style={styles.buttonText}>Siguiente</Text>
+              <ArrowRight size={18} color="#ffffff" />
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    );
+  };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-      {/* Skip button */}
-      <View style={styles.header}>
-        {!isLast ? (
-          <Pressable testID="skip-onboarding" onPress={handleComplete}>
-            <Text style={styles.skipText}>Omitir</Text>
-          </Pressable>
-        ) : (
-          <View />
-        )}
-      </View>
-
-      {/* Slides */}
+    <View style={styles.container}>
+      <StatusBar style={currentVariant === 'dark' ? 'light' : 'dark'} />
       <FlatList
         ref={flatListRef}
         data={SLIDES}
@@ -130,33 +221,6 @@ export default function OnboardingScreen() {
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
       />
-
-      {/* Dots + Button */}
-      <View style={styles.footer}>
-        {/* Dots */}
-        <View style={styles.dotsRow}>
-          {SLIDES.map((_, i) => (
-            <View
-              key={i}
-              style={[
-                styles.dot,
-                i === activeIndex ? styles.dotActive : styles.dotInactive,
-              ]}
-            />
-          ))}
-        </View>
-
-        {/* Action button */}
-        <Pressable
-          testID="onboarding-action"
-          style={[styles.button, isLast && styles.buttonFinal]}
-          onPress={handleNext}
-        >
-          <Text style={styles.buttonText}>
-            {isLast ? 'Comenzar' : 'Siguiente'}
-          </Text>
-        </Pressable>
-      </View>
     </View>
   );
 }
@@ -164,82 +228,152 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#0f172a',
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    height: 48,
+
+  // ─── Slide wrapper ───
+  slideWrap: {
+    height: SCREEN_HEIGHT,
   },
-  skipText: {
-    fontSize: 15,
+
+  // ─── Light variant (slides 1-2) ───
+  imageArea: {
+    height: IMAGE_HEIGHT,
+    backgroundColor: '#e2e8f0',
+    overflow: 'hidden',
+  },
+  imagePlaceholder: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#cbd5e1',
+  },
+  imageOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#0f172a1a',
+  },
+
+  // Skip chip — overlays the photo, top-right
+  skipChipWrap: {
+    position: 'absolute',
+    right: 16,
+    zIndex: 10,
+  },
+  skipChip: {
+    backgroundColor: '#00000040',
+    borderRadius: 20,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+  },
+  skipChipText: {
+    fontSize: 13,
     fontWeight: '600',
-    color: '#94a3b8',
+    color: '#ffffffee',
   },
-  slide: {
+
+  cardArea: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    paddingTop: 20,
+    paddingHorizontal: 24,
+  },
+  cardInner: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 40,
+    gap: 16,
   },
-  iconContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 40,
-  },
-  slideTitle: {
-    fontSize: 28,
+
+  lightTitle: {
+    fontSize: 26,
     fontWeight: '800',
-    color: '#0f172a',
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  slideSubtitle: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: '#64748b',
+    color: COLORS.foreground,
     textAlign: 'center',
   },
-  footer: {
-    paddingHorizontal: 20,
-    paddingBottom: 24,
-    gap: 24,
+  lightSubtitle: {
+    fontSize: 14,
+    lineHeight: 21,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+  },
+
+  // ─── Dark variant (slide 3) ───
+  darkBg: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#0f172a',
+  },
+  darkContent: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    paddingHorizontal: 24,
+    gap: 16,
     alignItems: 'center',
   },
+  darkTitle: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#ffffff',
+    textAlign: 'center',
+    lineHeight: 29,
+  },
+  darkSubtitle: {
+    fontSize: 14,
+    lineHeight: 21,
+    color: '#ffffffb3',
+    textAlign: 'center',
+  },
+
+  // Bullets
+  bulletsWrap: {
+    gap: 10,
+    width: '100%',
+  },
+  bulletRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  bulletText: {
+    fontSize: 14,
+    color: '#ffffffcc',
+  },
+
+  // ─── Shared: Dots ───
   dotsRow: {
     flexDirection: 'row',
     gap: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   dot: {
+    width: 8,
     height: 8,
     borderRadius: 4,
   },
   dotActive: {
-    width: 24,
-    backgroundColor: '#2563eb',
+    backgroundColor: '#1e293b',
   },
   dotInactive: {
-    width: 8,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: '#d4d4d8',
   },
+  dotActiveDark: {
+    backgroundColor: '#ffffff',
+  },
+  dotInactiveDark: {
+    backgroundColor: '#ffffff50',
+  },
+
+  // ─── Shared: Button ───
   button: {
-    backgroundColor: '#2563eb',
-    borderRadius: 14,
-    paddingVertical: 16,
+    backgroundColor: COLORS.primary,
+    borderRadius: 12,
+    height: 50,
     width: '100%',
     alignItems: 'center',
-  },
-  buttonFinal: {
-    backgroundColor: '#16a34a',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
   },
   buttonText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#ffffff',
   },
 });

@@ -1,0 +1,8 @@
+appId: host.exp.exponent
+name: "Navigate All Tabs"
+---
+- tapOn: "Vender"
+- tapOn: "Cobrar"
+- tapOn: "Equipo"
+- tapOn: "Mas"
+- tapOn: "Hoy"

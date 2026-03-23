@@ -1,33 +1,40 @@
-// Brand
-export const PRIMARY = '#2563eb';
-export const PRIMARY_DARK = '#1e40af';
-export const SUCCESS = '#16a34a';
-export const WARNING = '#d97706';
-export const DANGER = '#dc2626';
-export const INFO = '#7c3aed';
+/**
+ * Backward-compatible re-exports from the design system.
+ * New code should import directly from '@/theme/colors' or '@/theme'.
+ */
+export { COLORS } from '@/theme/colors';
 
-// Backgrounds
-export const BG_PRIMARY = '#f8fafc';
-export const BG_CARD = '#ffffff';
-export const BG_MUTED = '#f1f5f9';
+// Legacy flat constants — mapped to the new design system
+import { COLORS } from '@/theme/colors';
 
-// Text
-export const TEXT_PRIMARY = '#0f172a';
-export const TEXT_SECONDARY = '#475569';
-export const TEXT_MUTED = '#94a3b8';
+export const PRIMARY = COLORS.primary;
+export const PRIMARY_DARK = '#312e81'; // indigo-900
+export const SUCCESS = COLORS.success;
+export const WARNING = COLORS.warning;
+export const DANGER = COLORS.error;
+export const INFO = COLORS.info;
+
+export const BG_PRIMARY = COLORS.background;
+export const BG_CARD = COLORS.card;
+export const BG_MUTED = COLORS.border;
+
+export const TEXT_PRIMARY = COLORS.foreground;
+export const TEXT_SECONDARY = COLORS.textSecondary;
+export const TEXT_MUTED = COLORS.textTertiary;
 export const TEXT_LIGHT = '#cbd5e1';
 
-// Borders
-export const BORDER_DEFAULT = '#e2e8f0';
-export const BORDER_LIGHT = '#f1f5f9';
+export const BORDER_DEFAULT = COLORS.borderMedium;
+export const BORDER_LIGHT = COLORS.border;
 
 // Order status (used in both list and detail)
+import { STATUS_PALETTES } from '@/theme/colors';
+
 export const ORDER_STATUS_COLORS: Record<number, { bg: string; text: string; label: string }> = {
-  0: { bg: '#f1f5f9', text: '#475569', label: 'Borrador' },
-  1: { bg: '#fef3c7', text: '#92400e', label: 'Enviado' },
-  2: { bg: '#dbeafe', text: '#1e40af', label: 'Confirmado' },
-  3: { bg: '#ede9fe', text: '#6b21a8', label: 'En Proceso' },
-  4: { bg: '#ffedd5', text: '#9a3412', label: 'En Ruta' },
-  5: { bg: '#dcfce7', text: '#166534', label: 'Entregado' },
-  6: { bg: '#fee2e2', text: '#991b1b', label: 'Cancelado' },
+  0: { bg: STATUS_PALETTES.draft.bg, text: STATUS_PALETTES.draft.text, label: 'Borrador' },
+  1: { bg: STATUS_PALETTES.pending.bg, text: STATUS_PALETTES.pending.text, label: 'Enviado' },
+  2: { bg: STATUS_PALETTES.confirmed.bg, text: STATUS_PALETTES.confirmed.text, label: 'Confirmado' },
+  3: { bg: STATUS_PALETTES.processing.bg, text: STATUS_PALETTES.processing.text, label: 'En Proceso' },
+  4: { bg: STATUS_PALETTES.inTransit.bg, text: STATUS_PALETTES.inTransit.text, label: 'En Ruta' },
+  5: { bg: STATUS_PALETTES.delivered.bg, text: STATUS_PALETTES.delivered.text, label: 'Entregado' },
+  6: { bg: STATUS_PALETTES.cancelled.bg, text: STATUS_PALETTES.cancelled.text, label: 'Cancelado' },
 };

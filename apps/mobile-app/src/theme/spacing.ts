@@ -118,9 +118,9 @@ export const shadows: Record<string, ViewStyle> = {
     }),
   },
 
-  /** Colored shadow for blue elements */
+  /** Colored shadow for primary (indigo) elements */
   blue: {
-    shadowColor: '#2563eb',
+    shadowColor: '#4338CA',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 8,

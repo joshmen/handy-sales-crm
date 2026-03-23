@@ -14,6 +14,7 @@ import { Button, Input } from '@/components/ui';
 import { ScreenWrapper } from '@/components/shared/ScreenWrapper';
 import { Mail, Lock, AlertCircle } from 'lucide-react-native';
 import { HandyLogo } from '@/components/shared/HandyLogo';
+import { COLORS } from '@/theme/colors';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -161,7 +162,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 4,
-    backgroundColor: '#2563eb',
+    backgroundColor: COLORS.headerBg,
     borderRadius: 2,
   },
   logoSection: {
@@ -176,7 +177,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
-    shadowColor: '#2563eb',
+    shadowColor: COLORS.headerBg,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 12,
@@ -210,7 +211,7 @@ const styles = StyleSheet.create({
   },
   forgotText: {
     fontSize: 13,
-    color: '#2563eb',
+    color: COLORS.primary,
     fontWeight: '500',
   },
   errorBanner: {

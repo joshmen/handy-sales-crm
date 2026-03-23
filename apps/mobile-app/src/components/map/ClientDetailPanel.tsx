@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Linking, Platform } from 'rea
 import { MapPin, Navigation, Phone, ShoppingBag, X } from 'lucide-react-native';
 import { getClientMarkerColor } from '@/utils/mapColors';
 import { formatDistance } from '@/services/geoCheckin';
+import { COLORS } from '@/theme/colors';
 import type { MapClient } from '@/hooks/useMapData';
 
 interface ClientDetailPanelProps {
@@ -70,7 +71,7 @@ function ClientDetailPanelInner({
       </View>
 
       <View style={styles.actions}>
-        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#2563eb' }]} onPress={onViewDetail} activeOpacity={0.85}>
+        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: COLORS.primary }]} onPress={onViewDetail} activeOpacity={0.85}>
           <MapPin size={16} color="#fff" />
           <Text style={styles.actionText}>Ver detalle</Text>
         </TouchableOpacity>

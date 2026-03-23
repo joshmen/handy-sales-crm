@@ -1,0 +1,37 @@
+appId: host.exp.exponent
+name: "Quick Login Test"
+---
+
+# Wait for login screen by testID
+- extendedWaitUntil:
+    visible:
+      id: "login-button"
+    timeout: 30000
+
+- takeScreenshot: login-visible
+
+# Fill email
+- tapOn:
+    id: "email-input"
+- eraseText: 50
+- inputText: "admin@jeyma.com"
+- hideKeyboard
+
+# Fill password
+- tapOn:
+    id: "password-input"
+    retryTapIfNoChange: true
+- eraseText: 50
+- inputText: "test123"
+- hideKeyboard
+
+# Login
+- tapOn:
+    id: "login-button"
+
+# Wait for dashboard
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 45000
+
+- takeScreenshot: dashboard-loaded

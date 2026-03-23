@@ -1,0 +1,14 @@
+appId: host.exp.exponent
+name: "Quick Navigation Screenshots"
+---
+
+- tapOn: "Vender"
+- takeScreenshot: nav-01-vender
+- tapOn: "Cobrar"
+- takeScreenshot: nav-02-cobrar
+- tapOn: "Equipo"
+- takeScreenshot: nav-03-equipo
+- tapOn: "Mas"
+- takeScreenshot: nav-04-mas
+- tapOn: "Hoy"
+- takeScreenshot: nav-05-hoy

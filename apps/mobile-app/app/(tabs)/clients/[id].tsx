@@ -11,6 +11,8 @@ import {
   Building2,
   User,
 } from 'lucide-react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { COLORS } from '@/theme/colors';
 
 export default function ClientDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -30,34 +32,38 @@ export default function ClientDetailScreen() {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      {/* Profile Header */}
-      <View style={styles.profileHeader}>
-        <View style={styles.avatarLarge}>
-          <Text style={styles.avatarLargeText}>
-            {client.nombre?.[0]?.toUpperCase() || 'C'}
-          </Text>
+      {/* Blue header background */}
+      <View style={styles.headerBg} />
+
+      {/* Overlapping avatar + profile info */}
+      <Animated.View entering={FadeInDown.duration(400).delay(100)}>
+        <View style={styles.profileHeader}>
+          <View style={styles.avatarLarge}>
+            <Text style={styles.avatarLargeText}>
+              {client.nombre?.[0]?.toUpperCase() || 'C'}
+            </Text>
+          </View>
+          <Text style={styles.clientName}>{client.nombre}</Text>
+          {/* Category name not available in offline mode */}
+          <View style={styles.badgeRow}>
+            <Badge
+              label={client.activo ? 'Activo' : 'Inactivo'}
+              color={client.activo ? '#16a34a' : '#94a3b8'}
+              bgColor={client.activo ? '#dcfce7' : '#f1f5f9'}
+              size="md"
+            />
+          </View>
         </View>
-        <Text style={styles.clientName}>{client.nombre}</Text>
-        {/* Category name not available in offline mode */}
-        <View style={styles.badgeRow}>
-          <Badge
-            label={client.activo ? 'Activo' : 'Inactivo'}
-            color={client.activo ? '#16a34a' : '#94a3b8'}
-            bgColor={client.activo ? '#f0fdf4' : '#f1f5f9'}
-            size="md"
-          />
-        </View>
-      </View>
+      </Animated.View>
 
       {/* Contact Info Card */}
+      <Animated.View entering={FadeInDown.duration(400).delay(200)}>
       <Card className="mb-4">
         <Text style={styles.cardTitle}>Información de Contacto</Text>
         <View style={styles.infoList}>
           {client.rfc && (
             <View style={styles.infoRow}>
-              <View style={[styles.infoIcon, { backgroundColor: '#fef3c7' }]}>
-                <FileText size={14} color="#d97706" />
-              </View>
+              <FileText size={14} color="#6b7280" />
               <View>
                 <Text style={styles.infoLabel}>RFC</Text>
                 <Text style={styles.infoValue}>{client.rfc}</Text>
@@ -66,9 +72,7 @@ export default function ClientDetailScreen() {
           )}
           {client.telefono && (
             <View style={styles.infoRow}>
-              <View style={[styles.infoIcon, { backgroundColor: '#dcfce7' }]}>
-                <Phone size={14} color="#16a34a" />
-              </View>
+              <Phone size={14} color="#6b7280" />
               <View>
                 <Text style={styles.infoLabel}>Teléfono</Text>
                 <Text style={styles.infoValue}>{client.telefono}</Text>
@@ -77,9 +81,7 @@ export default function ClientDetailScreen() {
           )}
           {client.email && (
             <View style={styles.infoRow}>
-              <View style={[styles.infoIcon, { backgroundColor: '#dbeafe' }]}>
-                <Mail size={14} color="#2563eb" />
-              </View>
+              <Mail size={14} color="#6b7280" />
               <View style={{ flex: 1 }}>
                 <Text style={styles.infoLabel}>Correo</Text>
                 <Text style={styles.infoValue} numberOfLines={1}>{client.email}</Text>
@@ -88,9 +90,7 @@ export default function ClientDetailScreen() {
           )}
           {client.direccion && (
             <View style={styles.infoRow}>
-              <View style={[styles.infoIcon, { backgroundColor: '#fce7f3' }]}>
-                <MapPin size={14} color="#db2777" />
-              </View>
+              <MapPin size={14} color="#6b7280" />
               <View style={{ flex: 1 }}>
                 <Text style={styles.infoLabel}>Dirección</Text>
                 <Text style={styles.infoValue}>{client.direccion}</Text>
@@ -100,8 +100,10 @@ export default function ClientDetailScreen() {
           {/* Zone name not available in offline mode */}
         </View>
       </Card>
+      </Animated.View>
 
       {/* Actions */}
+      <Animated.View entering={FadeInDown.duration(400).delay(300)}>
       <View style={styles.actions}>
         {client.telefono && (
           <Button
@@ -109,7 +111,6 @@ export default function ClientDetailScreen() {
             onPress={() => Linking.openURL(`tel:${client.telefono}`)}
             variant="primary"
             fullWidth
-            icon={<Phone size={18} color="#ffffff" />}
           />
         )}
         {client.email && (
@@ -118,10 +119,10 @@ export default function ClientDetailScreen() {
             onPress={() => Linking.openURL(`mailto:${client.email}`)}
             variant="outline"
             fullWidth
-            icon={<Mail size={18} color="#2563eb" />}
           />
         )}
       </View>
+      </Animated.View>
     </ScrollView>
   );
 }
@@ -129,61 +130,64 @@ export default function ClientDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COLORS.background,
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COLORS.background,
   },
   content: {
     paddingBottom: 32,
   },
+  headerBg: {
+    backgroundColor: COLORS.headerBg,
+    height: 120,
+  },
   profileHeader: {
     alignItems: 'center',
-    paddingVertical: 28,
     paddingHorizontal: 16,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    marginTop: -45,
     marginBottom: 16,
   },
   avatarLarge: {
     width: 72,
     height: 72,
     borderRadius: 20,
-    backgroundColor: '#2563eb',
+    backgroundColor: COLORS.headerBg,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
-    shadowColor: '#2563eb',
+    borderWidth: 4,
+    borderColor: COLORS.card,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 4,
   },
   avatarLargeText: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#ffffff',
+    color: COLORS.headerText,
   },
   clientName: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#0f172a',
+    color: COLORS.foreground,
     textAlign: 'center',
   },
   categoryText: {
     fontSize: 14,
-    color: '#64748b',
+    color: COLORS.textSecondary,
     marginTop: 4,
   },
   badgeRow: {
     marginTop: 10,
   },
   cardTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#64748b',
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.textTertiary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 14,
@@ -196,20 +200,12 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 12,
   },
-  infoIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 2,
-  },
   infoLabel: {
     fontSize: 11,
-    color: '#94a3b8',
-    fontWeight: '500',
+    color: COLORS.textTertiary,
+    fontWeight: '600',
     textTransform: 'uppercase',
-    letterSpacing: 0.3,
+    letterSpacing: 0.5,
   },
   infoValue: {
     fontSize: 14,

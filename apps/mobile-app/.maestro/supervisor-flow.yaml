@@ -1,0 +1,36 @@
+appId: host.exp.exponent
+name: "Supervisor Flow"
+---
+
+# First logout current user
+- tapOn: "Mas"
+- tapOn: "Cerrar"
+- extendedWaitUntil:
+    visible:
+      id: "login-button"
+    timeout: 15000
+
+# Login as supervisor
+- tapOn:
+    id: "email-input"
+- eraseText: 50
+- inputText: "vendedor1@jeyma.com"
+- hideKeyboard
+- tapOn:
+    id: "password-input"
+    retryTapIfNoChange: true
+- eraseText: 50
+- inputText: "test123"
+- hideKeyboard
+- tapOn:
+    id: "login-button"
+
+# Wait for dashboard
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 45000
+
+# Navigate tabs
+- tapOn: "Vender"
+- tapOn: "Cobrar"
+- tapOn: "Hoy"

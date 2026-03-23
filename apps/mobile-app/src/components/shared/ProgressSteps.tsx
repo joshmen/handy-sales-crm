@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native';
+import { COLORS } from '@/theme/colors';
 
 interface ProgressStepsProps {
   steps: string[];
@@ -74,15 +75,15 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: '#e2e8f0',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: '#e2e8f0',
   },
   circleActive: {
-    backgroundColor: '#2563eb',
-    borderColor: '#2563eb',
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   circleCompleted: {
     backgroundColor: '#16a34a',
@@ -91,7 +92,7 @@ const styles = StyleSheet.create({
   circleText: { fontSize: 12, fontWeight: '700', color: '#94a3b8' },
   circleTextActive: { color: '#ffffff' },
   label: { fontSize: 10, fontWeight: '500', color: '#94a3b8' },
-  labelActive: { color: '#2563eb', fontWeight: '600' },
+  labelActive: { color: COLORS.primary, fontWeight: '600' },
   labelCompleted: { color: '#16a34a' },
   connector: {
     width: 32,

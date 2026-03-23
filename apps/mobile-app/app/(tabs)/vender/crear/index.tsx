@@ -1,10 +1,12 @@
 import { useState, useCallback } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineClients } from '@/hooks';
 import { useOrderDraftStore } from '@/stores';
 import { ProgressSteps } from '@/components/shared/ProgressSteps';
 import { LoadingSpinner, EmptyState, Button } from '@/components/ui';
+import { COLORS } from '@/theme/colors';
 import { User, Search, Check } from 'lucide-react-native';
 import type Cliente from '@/db/models/Cliente';
 
@@ -12,6 +14,7 @@ const STEPS = ['Cliente', 'Productos', 'Revisar'];
 
 export default function CrearPedidoStep1() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [busqueda, setBusqueda] = useState('');
   const { clienteId, setCliente } = useOrderDraftStore();
 
@@ -67,6 +70,10 @@ export default function CrearPedidoStep1() {
 
   return (
     <View style={styles.container}>
+      {/* Blue Header */}
+      <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
+        <Text style={styles.blueHeaderTitle}>Seleccionar Cliente</Text>
+      </View>
       <ProgressSteps steps={STEPS} currentStep={0} />
 
       <View style={styles.searchSection}>
@@ -113,7 +120,9 @@ export default function CrearPedidoStep1() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1, backgroundColor: COLORS.background },
+  blueHeader: { backgroundColor: COLORS.headerBg, paddingHorizontal: 20, paddingBottom: 12, alignItems: 'center' as const },
+  blueHeaderTitle: { fontSize: 20, fontWeight: '700' as const, color: COLORS.headerText, textAlign: 'center' as const },
   searchSection: { paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#ffffff' },
   searchBar: {
     flexDirection: 'row',
@@ -138,32 +147,32 @@ const styles = StyleSheet.create({
     borderColor: '#f1f5f9',
   },
   clientItemSelected: {
-    borderColor: '#2563eb',
-    backgroundColor: '#eff6ff',
+    borderColor: COLORS.button,
+    backgroundColor: COLORS.buttonLight,
   },
   clientAvatar: {
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: COLORS.background,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
   },
   clientAvatarSelected: {
-    backgroundColor: '#2563eb',
+    backgroundColor: COLORS.button,
   },
   clientInfo: { flex: 1 },
   clientName: { fontSize: 15, fontWeight: '600', color: '#1e293b' },
-  clientNameSelected: { color: '#1e40af' },
+  clientNameSelected: { color: COLORS.button },
   clientPhone: { fontSize: 12, color: '#94a3b8', marginTop: 2 },
   checkBadge: {
-    backgroundColor: '#dbeafe',
+    backgroundColor: COLORS.buttonLight,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
   },
-  checkText: { fontSize: 11, fontWeight: '600', color: '#2563eb' },
+  checkText: { fontSize: 11, fontWeight: '600', color: COLORS.button },
   footer: {
     position: 'absolute',
     bottom: 0,

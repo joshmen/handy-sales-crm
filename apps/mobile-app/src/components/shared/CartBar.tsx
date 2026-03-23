@@ -1,6 +1,7 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { ShoppingBag, ChevronRight } from 'lucide-react-native';
 import { formatCurrency } from '@/utils/format';
+import { COLORS } from '@/theme/colors';
 
 interface CartBarProps {
   itemCount: number;
@@ -46,11 +47,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#2563eb',
+    backgroundColor: COLORS.primary,
     borderRadius: 16,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    shadowColor: '#2563eb',
+    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,

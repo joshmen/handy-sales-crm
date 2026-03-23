@@ -2,16 +2,16 @@ import { View, Text, StyleSheet, ScrollView, RefreshControl, ActivityIndicator }
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MapPin, Clock } from 'lucide-react-native';
-import { SbOrders, SbVisit, SbMoney, SbClients, SbTeam } from '@/components/icons/DashboardIcons';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { useVendedorResumen } from '@/hooks/useSupervisor';
 import { useState } from 'react';
+import { COLORS } from '@/theme/colors';
 
-function StatCard({ icon: Icon, label, value, color }: { icon: any; label: string; value: string | number; color: string }) {
+function StatCard({ label, value, isMoney }: { label: string; value: string | number; isMoney?: boolean }) {
   return (
-    <View style={[styles.statCard, { borderTopColor: color }]}>
-      <Icon size={18} />
-      <Text style={styles.statValue}>{value}</Text>
+    <View style={styles.statCard}>
+      <Text style={[styles.statValue, isMoney && { color: COLORS.salesGreen }]}>{value}</Text>
       <Text style={styles.statLabel}>{label}</Text>
     </View>
   );
@@ -24,7 +24,7 @@ function formatTimeAgo(dateStr: string): string {
   if (mins < 60) return `hace ${mins} min`;
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `hace ${hrs}h`;
-  return `hace ${Math.floor(hrs / 24)} días`;
+  return `hace ${Math.floor(hrs / 24)} dias`;
 }
 
 function VendedorDetalleContent() {
@@ -45,7 +45,7 @@ function VendedorDetalleContent() {
   if (isLoading) {
     return (
       <View style={[styles.container, styles.center]}>
-        <ActivityIndicator size="large" color="#2563eb" />
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }
@@ -53,7 +53,6 @@ function VendedorDetalleContent() {
   if (!resumen) {
     return (
       <View style={[styles.container, styles.center]}>
-        <SbTeam size={40} />
         <Text style={styles.errorText}>Vendedor no encontrado</Text>
       </View>
     );
@@ -66,76 +65,89 @@ function VendedorDetalleContent() {
     <ScrollView
       style={styles.container}
       contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 24 }]}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#2563eb']} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
     >
+      {/* Blue Header */}
+      <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
+        <Text style={styles.blueHeaderTitle}>Detalle Vendedor</Text>
+      </View>
+
       {/* Profile header */}
-      <View style={styles.profileHeader}>
-        <View style={styles.avatarLarge}>
-          <Text style={styles.avatarLargeText}>{initials}</Text>
-        </View>
-        <Text style={styles.profileName}>{vendedor.nombre}</Text>
-        <Text style={styles.profileEmail}>{vendedor.email}</Text>
-        <View style={[styles.statusBadge, { backgroundColor: vendedor.activo ? '#dcfce7' : '#fee2e2' }]}>
-          <View style={[styles.statusDotSmall, { backgroundColor: vendedor.activo ? '#22c55e' : '#ef4444' }]} />
-          <Text style={[styles.statusText, { color: vendedor.activo ? '#16a34a' : '#dc2626' }]}>
-            {vendedor.activo ? 'Activo' : 'Inactivo'}
-          </Text>
-        </View>
-      </View>
-
-      {/* Today's stats */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Resumen del día</Text>
-        <View style={styles.statGrid} testID="vendedor-stats">
-          <StatCard icon={SbOrders} label="Pedidos" value={hoy.pedidos} color="#2563eb" />
-          <StatCard icon={SbMoney} label="Ventas" value={formatMoney(hoy.ventas)} color="#16a34a" />
-          <StatCard icon={SbVisit} label="Visitas" value={`${hoy.visitasCompletadas}/${hoy.visitas}`} color="#7c3aed" />
-          <StatCard icon={SbMoney} label="Cobros" value={formatMoney(hoy.cobros)} color="#d97706" />
-          <StatCard icon={SbClients} label="Clientes" value={totalClientes} color="#0891b2" />
-        </View>
-      </View>
-
-      {/* Last known location */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Última ubicación</Text>
-        {ultimaUbicacion ? (
-          <View style={styles.locationCard}>
-            <View style={styles.locationRow}>
-              <MapPin size={18} color="#2563eb" />
-              <Text style={styles.locationClient}>{ultimaUbicacion.clienteNombre ?? 'Ubicación desconocida'}</Text>
-            </View>
-            <View style={styles.locationRow}>
-              <Clock size={14} color="#94a3b8" />
-              <Text style={styles.locationTime}>{formatTimeAgo(ultimaUbicacion.fecha)}</Text>
-            </View>
-            <Text style={styles.locationCoords}>
-              {ultimaUbicacion.latitud.toFixed(4)}, {ultimaUbicacion.longitud.toFixed(4)}
+      <Animated.View entering={FadeInDown.duration(400).delay(100)}>
+        <View style={styles.profileHeader}>
+          <View style={styles.avatarLarge}>
+            <Text style={styles.avatarLargeText}>{initials}</Text>
+          </View>
+          <Text style={styles.profileName}>{vendedor.nombre}</Text>
+          <Text style={styles.profileEmail}>{vendedor.email}</Text>
+          <View style={[styles.statusBadge, { backgroundColor: vendedor.activo ? '#dcfce7' : '#f1f5f9' }]}>
+            <View style={[styles.statusDotSmall, { backgroundColor: vendedor.activo ? '#22c55e' : '#ef4444' }]} />
+            <Text style={[styles.statusText, { color: vendedor.activo ? '#16a34a' : '#dc2626' }]}>
+              {vendedor.activo ? 'Activo' : 'Inactivo'}
             </Text>
           </View>
-        ) : (
-          <View style={styles.locationCard}>
-            <MapPin size={24} color="#94a3b8" />
-            <Text style={styles.noLocationText}>Sin ubicación registrada hoy</Text>
+        </View>
+      </Animated.View>
+
+      {/* Today's stats — white cards, no colored top borders */}
+      <Animated.View entering={FadeInDown.duration(400).delay(200)}>
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>RESUMEN DEL DIA</Text>
+          <View style={styles.statGrid} testID="vendedor-stats">
+            <StatCard label="Pedidos" value={hoy.pedidos} />
+            <StatCard label="Ventas" value={formatMoney(hoy.ventas)} isMoney />
+            <StatCard label="Visitas" value={`${hoy.visitasCompletadas}/${hoy.visitas}`} />
+            <StatCard label="Cobros" value={formatMoney(hoy.cobros)} isMoney />
+            <StatCard label="Clientes" value={totalClientes} />
           </View>
-        )}
-      </View>
+        </View>
+      </Animated.View>
+
+      {/* Last known location */}
+      <Animated.View entering={FadeInDown.duration(400).delay(300)}>
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>ULTIMA UBICACION</Text>
+          {ultimaUbicacion ? (
+            <View style={styles.locationCard}>
+              <View style={styles.locationRow}>
+                <MapPin size={18} color={COLORS.headerBg} />
+                <Text style={styles.locationClient}>{ultimaUbicacion.clienteNombre ?? 'Ubicacion desconocida'}</Text>
+              </View>
+              <View style={styles.locationRow}>
+                <Clock size={14} color={COLORS.textTertiary} />
+                <Text style={styles.locationTime}>{formatTimeAgo(ultimaUbicacion.fecha)}</Text>
+              </View>
+              <Text style={styles.locationCoords}>
+                {ultimaUbicacion.latitud.toFixed(4)}, {ultimaUbicacion.longitud.toFixed(4)}
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.locationCard}>
+              <MapPin size={24} color={COLORS.textTertiary} />
+              <Text style={styles.noLocationText}>Sin ubicacion registrada hoy</Text>
+            </View>
+          )}
+        </View>
+      </Animated.View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1, backgroundColor: COLORS.background },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  blueHeader: { backgroundColor: COLORS.headerBg, paddingHorizontal: 20, paddingBottom: 16, alignItems: 'center' },
+  blueHeaderTitle: { fontSize: 20, fontWeight: '700', color: COLORS.headerText, textAlign: 'center' },
   scrollContent: { paddingTop: 8 },
-  errorText: { marginTop: 12, fontSize: 15, color: '#64748b' },
+  errorText: { marginTop: 12, fontSize: 15, color: COLORS.textSecondary },
   profileHeader: { alignItems: 'center', paddingVertical: 24 },
   avatarLarge: {
-    width: 72, height: 72, borderRadius: 36, backgroundColor: '#dbeafe',
+    width: 72, height: 72, borderRadius: 36, backgroundColor: COLORS.background,
     alignItems: 'center', justifyContent: 'center', marginBottom: 12,
   },
-  avatarLargeText: { fontSize: 24, fontWeight: '700', color: '#2563eb' },
-  profileName: { fontSize: 20, fontWeight: '700', color: '#0f172a' },
-  profileEmail: { fontSize: 14, color: '#64748b', marginTop: 4 },
+  avatarLargeText: { fontSize: 24, fontWeight: '700', color: '#6b7280' },
+  profileName: { fontSize: 20, fontWeight: '700', color: COLORS.foreground },
+  profileEmail: { fontSize: 14, color: COLORS.textSecondary, marginTop: 4 },
   statusBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, marginTop: 10,
@@ -143,26 +155,52 @@ const styles = StyleSheet.create({
   statusDotSmall: { width: 8, height: 8, borderRadius: 4 },
   statusText: { fontSize: 12, fontWeight: '600' },
   section: { marginTop: 16, paddingHorizontal: 20 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#0f172a', marginBottom: 12 },
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.textTertiary,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginBottom: 12,
+  },
   statGrid: {
     flexDirection: 'row', flexWrap: 'wrap', gap: 10,
   },
   statCard: {
-    backgroundColor: '#ffffff', borderRadius: 12, padding: 14, width: '47%', flexGrow: 1,
-    borderTopWidth: 3, gap: 4,
-    shadowColor: '#0f172a', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 2,
+    backgroundColor: COLORS.card,
+    borderRadius: 14,
+    padding: 14,
+    width: '47%',
+    flexGrow: 1,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  statValue: { fontSize: 18, fontWeight: '700', color: '#0f172a' },
-  statLabel: { fontSize: 11, color: '#64748b', fontWeight: '500' },
+  statValue: { fontSize: 18, fontWeight: '700', color: COLORS.foreground },
+  statLabel: { fontSize: 11, color: COLORS.textSecondary, fontWeight: '500', marginTop: 2 },
   locationCard: {
-    backgroundColor: '#ffffff', borderRadius: 12, padding: 16, gap: 8,
-    shadowColor: '#0f172a', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 2,
+    backgroundColor: COLORS.card,
+    borderRadius: 14,
+    padding: 16,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
   },
   locationRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  locationClient: { fontSize: 15, fontWeight: '600', color: '#0f172a' },
-  locationTime: { fontSize: 13, color: '#64748b' },
-  locationCoords: { fontSize: 11, color: '#94a3b8', fontFamily: 'monospace' },
-  noLocationText: { fontSize: 14, color: '#94a3b8', textAlign: 'center' },
+  locationClient: { fontSize: 15, fontWeight: '600', color: COLORS.foreground },
+  locationTime: { fontSize: 13, color: COLORS.textSecondary },
+  locationCoords: { fontSize: 11, color: COLORS.textTertiary, fontFamily: 'monospace' },
+  noLocationText: { fontSize: 14, color: COLORS.textTertiary, textAlign: 'center' },
 });
 
 export default function VendedorDetalleScreen() {

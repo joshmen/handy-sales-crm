@@ -3,6 +3,7 @@ import { View, Text, Image, StyleSheet, TouchableOpacity, ScrollView } from 'rea
 import { Camera, ImagePlus, X } from 'lucide-react-native';
 import { Button } from '@/components/ui';
 import { capturePhoto, pickFromGallery } from '@/services/evidenceManager';
+import { COLORS } from '@/theme/colors';
 
 interface PhotoEvidenceProps {
   photos: string[];
@@ -51,11 +52,11 @@ export function PhotoEvidence({
         {canAdd && (
           <View style={styles.addButtons}>
             <TouchableOpacity style={styles.addBtn} onPress={handleCamera}>
-              <Camera size={24} color="#2563eb" />
+              <Camera size={24} color={COLORS.primary} />
               <Text style={styles.addText}>Cámara</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.addBtn} onPress={handleGallery}>
-              <ImagePlus size={24} color="#2563eb" />
+              <ImagePlus size={24} color={COLORS.primary} />
               <Text style={styles.addText}>Galería</Text>
             </TouchableOpacity>
           </View>
@@ -94,5 +95,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#f8fafc',
   },
-  addText: { fontSize: 10, color: '#2563eb', fontWeight: '500', marginTop: 4 },
+  addText: { fontSize: 10, color: COLORS.primary, fontWeight: '500', marginTop: 4 },
 });

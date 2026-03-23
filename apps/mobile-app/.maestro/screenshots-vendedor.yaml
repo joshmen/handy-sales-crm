@@ -1,0 +1,8 @@
+appId: host.exp.exponent
+name: "Screenshots Vendedor"
+---
+- tapOn: "Hoy"
+- tapOn: "Cobrar"
+- tapOn: "Vender"
+- tapOn: "Mas"
+- tapOn: "Hoy"

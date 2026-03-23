@@ -12,19 +12,19 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useOfflineTodayVisits, useClientNameMap } from '@/hooks';
 import { updateVisitaCheckout } from '@/db/actions';
 import { saveAttachmentRecord } from '@/services/evidenceManager';
 import { performSync } from '@/sync/syncEngine';
-import { Card, Button, LoadingSpinner } from '@/components/ui';
+import { Card, Button, LoadingSpinner, ConfirmModal } from '@/components/ui';
+import { COLORS } from '@/theme/colors';
 import { PhotoEvidence } from '@/components/evidence/PhotoEvidence';
 import { SignatureCapture } from '@/components/evidence/SignatureCapture';
 import {
   ShoppingBag,
-  Wallet,
   Clock,
   StopCircle,
-  PenTool,
   Check,
   X,
 } from 'lucide-react-native';
@@ -55,6 +55,7 @@ export default function VisitaActivaScreen() {
   const [showSignature, setShowSignature] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [ending, setEnding] = useState(false);
+  const [showConfirmTerminar, setShowConfirmTerminar] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval>>(undefined);
 
   // Timer
@@ -69,47 +70,43 @@ export default function VisitaActivaScreen() {
   }, [visita?.checkInAt]);
 
   const handleTerminar = () => {
-    Alert.alert('Terminar Visita', '¿Estás seguro de terminar esta visita?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Terminar',
-        style: 'destructive',
-        onPress: async () => {
-          if (!visita) return;
-          setEnding(true);
-          try {
-            await updateVisitaCheckout(visita.id, resultado, notas || undefined);
+    setShowConfirmTerminar(true);
+  };
 
-            // Save photo attachments
-            for (const photoUri of photos) {
-              await saveAttachmentRecord({
-                eventType: 'visita',
-                eventLocalId: visita.id,
-                tipo: 'photo',
-                localUri: photoUri,
-              });
-            }
+  const executeTerminarVisita = async () => {
+    setShowConfirmTerminar(false);
+    if (!visita) return;
+    setEnding(true);
+    try {
+      await updateVisitaCheckout(visita.id, resultado, notas || undefined);
 
-            // Save signature attachment
-            if (signatureUri) {
-              await saveAttachmentRecord({
-                eventType: 'visita',
-                eventLocalId: visita.id,
-                tipo: 'signature',
-                localUri: signatureUri,
-              });
-            }
+      // Save photo attachments
+      for (const photoUri of photos) {
+        await saveAttachmentRecord({
+          eventType: 'visita',
+          eventLocalId: visita.id,
+          tipo: 'photo',
+          localUri: photoUri,
+        });
+      }
 
-            performSync().catch(() => {});
-            router.back();
-          } catch {
-            Alert.alert('Error', 'No se pudo finalizar la visita');
-          } finally {
-            setEnding(false);
-          }
-        },
-      },
-    ]);
+      // Save signature attachment
+      if (signatureUri) {
+        await saveAttachmentRecord({
+          eventType: 'visita',
+          eventLocalId: visita.id,
+          tipo: 'signature',
+          localUri: signatureUri,
+        });
+      }
+
+      performSync().catch(() => {});
+      router.back();
+    } catch {
+      Alert.alert('Error', 'No se pudo finalizar la visita');
+    } finally {
+      setEnding(false);
+    }
   };
 
   const formatElapsed = (seconds: number) => {
@@ -142,17 +139,22 @@ export default function VisitaActivaScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Green Header */}
+        {/* Blue Header */}
         <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-          <View style={styles.timerCircle}>
-            <Clock size={20} color="#16a34a" />
-            <Text style={styles.timerText}>{formatElapsed(elapsed)}</Text>
-          </View>
-          <Text style={styles.headerTitle}>Visita en Curso</Text>
+          <Text style={styles.headerTitle}>Visita Activa</Text>
           <Text style={styles.headerSubtitle}>{clientNames.get(visita.clienteId) || 'Cliente'}</Text>
         </View>
 
+        {/* Timer Card */}
+        <Animated.View entering={FadeInDown.duration(400).delay(100)}>
+          <View style={styles.timerCard}>
+            <Clock size={20} color={COLORS.salesGreen} />
+            <Text style={styles.timerText}>{formatElapsed(elapsed)}</Text>
+          </View>
+        </Animated.View>
+
         {/* Quick Actions */}
+        <Animated.View entering={FadeInDown.duration(400).delay(200)}>
         <View style={styles.actionsSection}>
           <Text style={styles.sectionTitle}>Acciones</Text>
           <View style={styles.actionsRow}>
@@ -161,19 +163,19 @@ export default function VisitaActivaScreen() {
               onPress={() => router.push('/(tabs)/vender/crear' as any)}
               variant="secondary"
               fullWidth
-              icon={<ShoppingBag size={18} color="#2563eb" />}
             />
             <Button
               title="Registrar Cobro"
               onPress={() => router.push(`/(tabs)/cobrar/registrar?clienteId=${visita.clienteId}&clienteNombre=${encodeURIComponent(clientNames.get(visita.clienteId) || 'Cliente')}&saldo=0` as any)}
               variant="secondary"
               fullWidth
-              icon={<Wallet size={18} color="#2563eb" />}
             />
           </View>
         </View>
+        </Animated.View>
 
         {/* Resultado */}
+        <Animated.View entering={FadeInDown.duration(400).delay(300)}>
         <View style={styles.resultSection}>
           <Text style={styles.sectionTitle}>Resultado de la Visita</Text>
           <View style={styles.resultGrid}>
@@ -201,8 +203,10 @@ export default function VisitaActivaScreen() {
             })}
           </View>
         </View>
+        </Animated.View>
 
         {/* Notes */}
+        <Animated.View entering={FadeInDown.duration(400).delay(400)}>
         <Card className="mx-4 mb-4">
           <Text style={styles.notesLabel}>Notas de la Visita</Text>
           <TextInput
@@ -216,8 +220,10 @@ export default function VisitaActivaScreen() {
             textAlignVertical="top"
           />
         </Card>
+        </Animated.View>
 
         {/* Evidence: Photos */}
+        <Animated.View entering={FadeInDown.duration(400).delay(500)}>
         <View style={styles.evidenceSection}>
           <PhotoEvidence
             photos={photos}
@@ -245,7 +251,6 @@ export default function VisitaActivaScreen() {
               title="Capturar Firma"
               onPress={() => setShowSignature(true)}
               variant="secondary"
-              icon={<PenTool size={18} color="#2563eb" />}
             />
           )}
         </View>
@@ -258,10 +263,20 @@ export default function VisitaActivaScreen() {
             variant="danger"
             loading={ending}
             fullWidth
-            icon={<StopCircle size={18} color="#ffffff" />}
           />
         </View>
+        </Animated.View>
       </ScrollView>
+
+      <ConfirmModal
+        visible={showConfirmTerminar}
+        title="Terminar Visita"
+        message="¿Estás seguro de terminar esta visita?"
+        confirmText="Terminar"
+        onConfirm={executeTerminarVisita}
+        onCancel={() => setShowConfirmTerminar(false)}
+        destructive
+      />
 
       {/* Signature Modal */}
       <Modal
@@ -283,30 +298,39 @@ export default function VisitaActivaScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1, backgroundColor: COLORS.background },
   content: { paddingBottom: 32 },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, padding: 40 },
-  emptyText: { fontSize: 16, color: '#94a3b8' },
+  emptyText: { fontSize: 16, color: COLORS.textTertiary },
   header: {
-    backgroundColor: '#16a34a',
+    backgroundColor: COLORS.headerBg,
     paddingHorizontal: 16,
-    paddingBottom: 24,
+    paddingBottom: 16,
     alignItems: 'center',
-    gap: 8,
+    gap: 4,
   },
-  timerCircle: {
+  headerTitle: { fontSize: 20, fontWeight: '700', color: COLORS.headerText },
+  headerSubtitle: { fontSize: 14, fontWeight: '500', color: 'rgba(255,255,255,0.8)' },
+  timerCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    gap: 8,
-    marginBottom: 8,
+    justifyContent: 'center',
+    backgroundColor: COLORS.card,
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 4,
+    borderRadius: 14,
+    padding: 16,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  timerText: { fontSize: 24, fontWeight: '800', color: '#ffffff' },
-  headerTitle: { fontSize: 14, color: 'rgba(255,255,255,0.8)', fontWeight: '500' },
-  headerSubtitle: { fontSize: 22, fontWeight: '700', color: '#ffffff' },
+  timerText: { fontSize: 28, fontWeight: '800', color: COLORS.salesGreen },
   actionsSection: { padding: 16 },
   sectionTitle: { fontSize: 15, fontWeight: '700', color: '#1e293b', marginBottom: 12 },
   actionsRow: { gap: 8 },

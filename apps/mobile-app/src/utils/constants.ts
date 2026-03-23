@@ -70,17 +70,8 @@ export const ROUTE_STATUS_COLORS: Record<number, string> = {
   3: '#ef4444',
 };
 
-export const COLORS = {
-  primary: '#2563eb',
-  primaryLight: '#eff6ff',
-  success: '#22c55e',
-  warning: '#f59e0b',
-  danger: '#ef4444',
-  gray: '#6b7280',
-  grayLight: '#f3f4f6',
-  white: '#ffffff',
-  black: '#111827',
-  textPrimary: '#111827',
-  textSecondary: '#6b7280',
-  border: '#e5e7eb',
-} as const;
+/**
+ * Re-export the design system COLORS as the single source of truth.
+ * Import from '@/theme/colors' for the canonical version.
+ */
+export { COLORS } from '@/theme/colors';

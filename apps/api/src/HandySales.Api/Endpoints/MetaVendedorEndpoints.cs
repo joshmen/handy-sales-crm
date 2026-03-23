@@ -1,5 +1,7 @@
+using System.Net.Http.Json;
 using HandySales.Application.Metas.DTOs;
 using HandySales.Application.Metas.Services;
+using HandySales.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HandySales.Api.Endpoints;
@@ -25,6 +27,8 @@ public static class MetaVendedorEndpoints
         group.MapPost("/", async (
             CreateMetaVendedorDto dto,
             [FromServices] MetaVendedorService servicio,
+            [FromServices] IHttpClientFactory httpClientFactory,
+            [FromServices] ITenantContextService tenantContext,
             HttpContext context) =>
         {
             // Admin only
@@ -46,6 +50,26 @@ public static class MetaVendedorEndpoints
 
             var usuario = context.User.Identity?.Name ?? "sistema";
             var id = await servicio.CreateAsync(dto, usuario);
+
+            // Push notification to vendedor: goal assigned
+            try
+            {
+                var tenantId = tenantContext.TenantId ?? 0;
+                if (tenantId > 0)
+                {
+                    var mobileClient = httpClientFactory.CreateClient("MobileApi");
+                    await mobileClient.PostAsJsonAsync("/api/internal/push-notify", new
+                    {
+                        tenantId,
+                        userIds = new[] { dto.UsuarioId },
+                        title = $"Nueva meta de {dto.Tipo}",
+                        body = $"Se te asignó una meta {dto.Periodo} de {dto.Monto:C0}",
+                        data = new Dictionary<string, string> { ["type"] = "goal.assigned" }
+                    });
+                }
+            }
+            catch { /* fire-and-forget */ }
+
             return Results.Created($"/api/metas/{id}", new { id });
         });
 

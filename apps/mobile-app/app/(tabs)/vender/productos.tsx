@@ -1,8 +1,10 @@
 import { useState, useCallback } from 'react';
 import { View, Text, FlatList, TextInput, RefreshControl, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineProducts, useCategoriasProducto } from '@/hooks';
 import { Card, LoadingSpinner, EmptyState } from '@/components/ui';
+import { COLORS } from '@/theme/colors';
 import { formatCurrency } from '@/utils/format';
 import { Package, Search, ChevronRight } from 'lucide-react-native';
 import { performSync } from '@/sync/syncEngine';
@@ -10,6 +12,7 @@ import type Producto from '@/db/models/Producto';
 
 export default function ProductosListScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [busqueda, setBusqueda] = useState('');
   const [categoriaId, setCategoriaId] = useState<number | undefined>(undefined);
 
@@ -23,8 +26,8 @@ export default function ProductosListScreen() {
         onPress={() => router.push(`/(tabs)/vender/producto/${item.id}` as any)}
       >
         <View style={styles.productRow}>
-          <View style={[styles.productIcon, { backgroundColor: '#eff6ff' }]}>
-            <Package size={20} color="#2563eb" />
+          <View style={styles.productIcon}>
+            <Package size={20} color={COLORS.textTertiary} />
           </View>
           <View style={styles.productContent}>
             <Text style={styles.productName} numberOfLines={1}>{item.nombre}</Text>
@@ -67,6 +70,11 @@ export default function ProductosListScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Blue Header */}
+      <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
+        <Text style={styles.blueHeaderTitle}>Productos</Text>
+      </View>
+
       {/* Search */}
       <View style={styles.searchSection}>
         <View style={styles.searchBar}>
@@ -114,7 +122,7 @@ export default function ProductosListScreen() {
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
         refreshControl={
-          <RefreshControl refreshing={false} onRefresh={() => performSync()} tintColor="#2563eb" colors={['#2563eb']} />
+          <RefreshControl refreshing={false} onRefresh={() => performSync()} tintColor={COLORS.primary} colors={[COLORS.primary]} />
         }
         ListEmptyComponent={
           <EmptyState
@@ -129,9 +137,11 @@ export default function ProductosListScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1, backgroundColor: COLORS.background },
+  blueHeader: { backgroundColor: COLORS.headerBg, paddingHorizontal: 20, paddingBottom: 12, alignItems: 'center' as const },
+  blueHeaderTitle: { fontSize: 20, fontWeight: '700' as const, color: COLORS.headerText, textAlign: 'center' as const },
   searchSection: {
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.card,
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9',
     paddingBottom: 8,
@@ -155,7 +165,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: '#f1f5f9',
   },
-  chipActive: { backgroundColor: '#2563eb' },
+  chipActive: { backgroundColor: COLORS.button },
   chipText: { fontSize: 12, fontWeight: '600', color: '#64748b' },
   chipTextActive: { color: '#ffffff' },
   listContent: { paddingTop: 12, paddingBottom: 24 },
@@ -164,6 +174,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 12,
+    backgroundColor: COLORS.background,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -175,11 +186,11 @@ const styles = StyleSheet.create({
   categoryText: { fontSize: 11, color: '#64748b' },
   stockBadge: { paddingHorizontal: 6, paddingVertical: 1, borderRadius: 6 },
   stockOk: { backgroundColor: '#dcfce7' },
-  stockLow: { backgroundColor: '#fee2e2' },
+  stockLow: { backgroundColor: '#fef2f2' },
   stockText: { fontSize: 10, fontWeight: '600' },
   stockTextOk: { color: '#16a34a' },
   stockTextLow: { color: '#ef4444' },
   productRight: { alignItems: 'flex-end', gap: 4, marginLeft: 8 },
-  priceText: { fontSize: 14, fontWeight: '700', color: '#0f172a' },
+  priceText: { fontSize: 14, fontWeight: '700', color: COLORS.salesGreen },
   footer: { paddingVertical: 16, alignItems: 'center' },
 });

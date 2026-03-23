@@ -1,0 +1,4 @@
+appId: host.exp.exponent
+name: "Tap Cobrar"
+---
+- tapOn: "Cobrar"

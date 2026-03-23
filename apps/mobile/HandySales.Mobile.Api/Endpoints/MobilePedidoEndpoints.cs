@@ -1,7 +1,10 @@
 using System.Net.Http.Json;
+using System.Security.Claims;
 using HandySales.Application.Pedidos.DTOs;
 using HandySales.Application.Pedidos.Services;
+using HandySales.Domain.Entities;
 using HandySales.Infrastructure.Persistence;
+using HandySales.Mobile.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HandySales.Mobile.Api.Endpoints;
@@ -29,6 +32,25 @@ public static class MobilePedidoEndpoints
         {
             logger?.LogWarning(ex, "Failed to notify Main API dashboard for tenant={TenantId}, tipo={Tipo}, id={Id}", tenantId, tipo, id);
         }
+    }
+
+    /// <summary>
+    /// Sends push notification to relevant users after order state change.
+    /// Fire-and-forget: failures are logged but never block the response.
+    /// </summary>
+    private static async Task NotifyOrderPush(OrderNotificationHelper helper, HttpContext context, int pedidoId, EstadoPedido newState)
+    {
+        var tenantId = int.TryParse(context.User.FindFirst("tenant_id")?.Value, out var tid) ? tid : 0;
+        var userId = int.TryParse(context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? context.User.FindFirst("sub")?.Value, out var uid) ? uid : 0;
+        if (tenantId <= 0 || userId <= 0) return;
+
+        // Fire-and-forget — don't await in the request pipeline
+        _ = Task.Run(async () =>
+        {
+            try { await helper.NotifyStateChangeAsync(pedidoId, tenantId, userId, newState); }
+            catch { /* logged inside helper */ }
+        });
     }
 
     public static void MapMobilePedidoEndpoints(this IEndpointRouteBuilder app)
@@ -165,16 +187,19 @@ public static class MobilePedidoEndpoints
 
         group.MapPost("/{id:int}/enviar", async (
             int id,
+            HttpContext context,
             [FromServices] PedidoService servicio,
             [FromServices] ITenantContextService tenantContext,
             [FromServices] IHttpClientFactory httpClientFactory,
-            [FromServices] IConfiguration config) =>
+            [FromServices] IConfiguration config,
+            [FromServices] OrderNotificationHelper notifyHelper) =>
         {
             var resultado = await servicio.EnviarAsync(id);
             if (!resultado)
                 return Results.BadRequest(new { success = false, message = "No se pudo enviar el pedido" });
 
             await NotifyDashboard(httpClientFactory, config, tenantContext, "pedido", id);
+            await NotifyOrderPush(notifyHelper, context, id, EstadoPedido.Enviado);
             return Results.Ok(new { success = true, message = "Pedido enviado" });
         })
         .WithSummary("Enviar pedido")
@@ -184,17 +209,20 @@ public static class MobilePedidoEndpoints
 
         group.MapPost("/{id:int}/cancelar", async (
             int id,
+            HttpContext context,
             [FromBody] CancelarPedidoDto? dto,
             [FromServices] PedidoService servicio,
             [FromServices] ITenantContextService tenantContext,
             [FromServices] IHttpClientFactory httpClientFactory,
-            [FromServices] IConfiguration config) =>
+            [FromServices] IConfiguration config,
+            [FromServices] OrderNotificationHelper notifyHelper) =>
         {
             var resultado = await servicio.CancelarAsync(id, dto?.Motivo);
             if (!resultado)
                 return Results.BadRequest(new { success = false, message = "No se pudo cancelar el pedido" });
 
             await NotifyDashboard(httpClientFactory, config, tenantContext, "pedido", id);
+            await NotifyOrderPush(notifyHelper, context, id, EstadoPedido.Cancelado);
             return Results.Ok(new { success = true, message = "Pedido cancelado" });
         })
         .WithSummary("Cancelar pedido")
@@ -204,16 +232,19 @@ public static class MobilePedidoEndpoints
 
         group.MapPost("/{id:int}/confirmar", async (
             int id,
+            HttpContext context,
             [FromServices] PedidoService servicio,
             [FromServices] ITenantContextService tenantContext,
             [FromServices] IHttpClientFactory httpClientFactory,
-            [FromServices] IConfiguration config) =>
+            [FromServices] IConfiguration config,
+            [FromServices] OrderNotificationHelper notifyHelper) =>
         {
             var resultado = await servicio.ConfirmarAsync(id);
             if (!resultado)
                 return Results.BadRequest(new { success = false, message = "No se pudo confirmar el pedido" });
 
             await NotifyDashboard(httpClientFactory, config, tenantContext, "pedido", id);
+            await NotifyOrderPush(notifyHelper, context, id, EstadoPedido.Confirmado);
             return Results.Ok(new { success = true, message = "Pedido confirmado" });
         })
         .WithSummary("Confirmar pedido")
@@ -223,16 +254,19 @@ public static class MobilePedidoEndpoints
 
         group.MapPost("/{id:int}/procesar", async (
             int id,
+            HttpContext context,
             [FromServices] PedidoService servicio,
             [FromServices] ITenantContextService tenantContext,
             [FromServices] IHttpClientFactory httpClientFactory,
-            [FromServices] IConfiguration config) =>
+            [FromServices] IConfiguration config,
+            [FromServices] OrderNotificationHelper notifyHelper) =>
         {
             var resultado = await servicio.IniciarProcesoAsync(id);
             if (!resultado)
                 return Results.BadRequest(new { success = false, message = "No se pudo procesar el pedido" });
 
             await NotifyDashboard(httpClientFactory, config, tenantContext, "pedido", id);
+            await NotifyOrderPush(notifyHelper, context, id, EstadoPedido.EnProceso);
             return Results.Ok(new { success = true, message = "Pedido en proceso" });
         })
         .WithSummary("Procesar pedido")
@@ -242,16 +276,19 @@ public static class MobilePedidoEndpoints
 
         group.MapPost("/{id:int}/en-ruta", async (
             int id,
+            HttpContext context,
             [FromServices] PedidoService servicio,
             [FromServices] ITenantContextService tenantContext,
             [FromServices] IHttpClientFactory httpClientFactory,
-            [FromServices] IConfiguration config) =>
+            [FromServices] IConfiguration config,
+            [FromServices] OrderNotificationHelper notifyHelper) =>
         {
             var resultado = await servicio.EnviarARutaAsync(id);
             if (!resultado)
                 return Results.BadRequest(new { success = false, message = "No se pudo poner en ruta el pedido" });
 
             await NotifyDashboard(httpClientFactory, config, tenantContext, "pedido", id);
+            await NotifyOrderPush(notifyHelper, context, id, EstadoPedido.EnRuta);
             return Results.Ok(new { success = true, message = "Pedido en ruta" });
         })
         .WithSummary("Poner en ruta")
@@ -261,17 +298,33 @@ public static class MobilePedidoEndpoints
 
         group.MapPost("/{id:int}/entregar", async (
             int id,
+            HttpContext context,
             [FromBody] EntregarPedidoDto? dto,
             [FromServices] PedidoService servicio,
             [FromServices] ITenantContextService tenantContext,
             [FromServices] IHttpClientFactory httpClientFactory,
-            [FromServices] IConfiguration config) =>
+            [FromServices] IConfiguration config,
+            [FromServices] OrderNotificationHelper notifyHelper,
+            [FromServices] StockNotificationService stockNotifier) =>
         {
             var resultado = await servicio.EntregarAsync(id, dto?.NotasEntrega);
             if (!resultado)
                 return Results.BadRequest(new { success = false, message = "No se pudo entregar el pedido" });
 
             await NotifyDashboard(httpClientFactory, config, tenantContext, "pedido", id);
+            await NotifyOrderPush(notifyHelper, context, id, EstadoPedido.Entregado);
+
+            // Check stock levels after delivery — fire-and-forget
+            var tenantId = int.TryParse(context.User.FindFirst("tenant_id")?.Value, out var tid) ? tid : 0;
+            if (tenantId > 0)
+            {
+                _ = Task.Run(async () =>
+                {
+                    try { await stockNotifier.CheckAndNotifyLowStockAsync(id, tenantId); }
+                    catch { /* logged inside service */ }
+                });
+            }
+
             return Results.Ok(new { success = true, message = "Pedido entregado" });
         })
         .WithSummary("Entregar pedido")

@@ -1,11 +1,13 @@
 import { View, Text, StyleSheet, ActivityIndicator, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Marker, type Region } from 'react-native-maps';
 import _ClusteredMapView from 'react-native-map-clustering';
 import { useUbicacionesEquipo } from '@/hooks/useSupervisor';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { MapPin, Clock } from 'lucide-react-native';
 import { useState } from 'react';
+import { COLORS } from '@/theme/colors';
 import type { UbicacionVendedor } from '@/api/schemas/supervisor';
 
 const ClusteredMapView = _ClusteredMapView as any;
@@ -28,33 +30,16 @@ function formatTimeAgo(dateStr: string): string {
   return `hace ${Math.floor(hrs / 24)}d`;
 }
 
-function VendedorCallout({ ubicacion }: { ubicacion: UbicacionVendedor }) {
-  return (
-    <View style={styles.callout}>
-      <Text style={styles.calloutName} numberOfLines={2}>{ubicacion.nombre}</Text>
-      {ubicacion.clienteNombre && (
-        <View style={styles.calloutRow}>
-          <MapPin size={12} color="#64748b" />
-          <Text style={styles.calloutDetail} numberOfLines={2}>{ubicacion.clienteNombre}</Text>
-        </View>
-      )}
-      <View style={styles.calloutRow}>
-        <Clock size={12} color="#64748b" />
-        <Text style={styles.calloutDetail}>{formatTimeAgo(ubicacion.fechaUbicacion)}</Text>
-      </View>
-    </View>
-  );
-}
-
 function MapaEquipoContent() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { data: ubicaciones, isLoading } = useUbicacionesEquipo();
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
   if (isLoading) {
     return (
       <View style={[styles.container, styles.center]}>
-        <ActivityIndicator size="large" color="#2563eb" />
+        <ActivityIndicator size="large" color={COLORS.primary} />
         <Text style={styles.loadingText}>Cargando ubicaciones...</Text>
       </View>
     );
@@ -71,11 +56,16 @@ function MapaEquipoContent() {
 
   return (
     <View style={styles.container}>
+      {/* Blue Header */}
+      <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
+        <Text style={styles.blueHeaderTitle}>Mapa del Equipo</Text>
+      </View>
+
       <ClusteredMapView
         style={styles.map}
         initialRegion={initialRegion}
-        clusterColor="#2563eb"
-        clusterTextColor="#ffffff"
+        clusterColor={COLORS.headerBg}
+        clusterTextColor={COLORS.headerText}
         clusterFontFamily="System"
         animationEnabled={false}
       >
@@ -85,7 +75,7 @@ function MapaEquipoContent() {
             coordinate={{ latitude: u.latitud, longitude: u.longitud }}
             title={u.nombre}
             description={u.clienteNombre ? `En: ${u.clienteNombre} — ${formatTimeAgo(u.fechaUbicacion)}` : formatTimeAgo(u.fechaUbicacion)}
-            pinColor="#2563eb"
+            pinColor={COLORS.headerBg}
             onPress={() => setSelectedId(u.usuarioId)}
           />
         ))}
@@ -124,9 +114,9 @@ function MapaEquipoContent() {
       {(!ubicaciones || ubicaciones.length === 0) && (
         <View style={styles.emptyOverlay}>
           <View style={styles.emptyCard}>
-            <MapPin size={32} color="#94a3b8" />
+            <MapPin size={32} color={COLORS.textTertiary} />
             <Text style={styles.emptyText}>Sin ubicaciones</Text>
-            <Text style={styles.emptySubtext}>Los vendedores aparecerán aquí cuando registren visitas con GPS</Text>
+            <Text style={styles.emptySubtext}>Los vendedores apareceran aqui cuando registren visitas con GPS</Text>
           </View>
         </View>
       )}
@@ -135,41 +125,41 @@ function MapaEquipoContent() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1, backgroundColor: COLORS.background },
+  blueHeader: { backgroundColor: COLORS.headerBg, paddingHorizontal: 20, paddingBottom: 12, alignItems: 'center' as const },
+  blueHeaderTitle: { fontSize: 20, fontWeight: '700' as const, color: COLORS.headerText, textAlign: 'center' as const },
   center: { alignItems: 'center', justifyContent: 'center' },
-  loadingText: { marginTop: 12, fontSize: 14, color: '#64748b' },
+  loadingText: { marginTop: 12, fontSize: 14, color: COLORS.textSecondary },
   map: { flex: 1 },
-  callout: { padding: 8, minWidth: 140, maxWidth: 220 },
-  calloutName: { fontSize: 14, fontWeight: '700', color: '#0f172a', marginBottom: 4 },
-  calloutRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
-  calloutDetail: { fontSize: 12, color: '#64748b' },
   bottomCard: {
     position: 'absolute', bottom: 20, left: 16, right: 16,
-    backgroundColor: '#ffffff', borderRadius: 16, padding: 4,
+    backgroundColor: COLORS.card, borderRadius: 14, padding: 4,
+    borderWidth: 1, borderColor: COLORS.border,
     shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 8,
   },
   bottomCardContent: {
     flexDirection: 'row', alignItems: 'center', padding: 12, gap: 12,
   },
   bottomAvatar: {
-    width: 44, height: 44, borderRadius: 22, backgroundColor: '#dbeafe',
+    width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.background,
     alignItems: 'center', justifyContent: 'center',
   },
-  bottomAvatarText: { fontSize: 14, fontWeight: '700', color: '#2563eb' },
+  bottomAvatarText: { fontSize: 14, fontWeight: '700', color: '#6b7280' },
   bottomInfo: { flex: 1 },
-  bottomName: { fontSize: 15, fontWeight: '600', color: '#0f172a' },
-  bottomSub: { fontSize: 12, color: '#64748b', marginTop: 2 },
-  bottomArrow: { fontSize: 20, color: '#2563eb', fontWeight: '700' },
+  bottomName: { fontSize: 15, fontWeight: '600', color: COLORS.foreground },
+  bottomSub: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
+  bottomArrow: { fontSize: 20, color: COLORS.primary, fontWeight: '700' },
   emptyOverlay: {
     ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center',
   },
   emptyCard: {
-    backgroundColor: '#ffffff', borderRadius: 16, padding: 32,
+    backgroundColor: COLORS.card, borderRadius: 14, padding: 32,
     alignItems: 'center', gap: 8,
+    borderWidth: 1, borderColor: COLORS.border,
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4,
   },
-  emptyText: { fontSize: 16, fontWeight: '600', color: '#64748b' },
-  emptySubtext: { fontSize: 13, color: '#94a3b8', textAlign: 'center', maxWidth: 240 },
+  emptyText: { fontSize: 16, fontWeight: '600', color: COLORS.textSecondary },
+  emptySubtext: { fontSize: 13, color: COLORS.textTertiary, textAlign: 'center', maxWidth: 240 },
 });
 
 export default function MapaEquipoScreen() {

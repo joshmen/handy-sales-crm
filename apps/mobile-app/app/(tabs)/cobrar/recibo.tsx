@@ -1,9 +1,11 @@
 import { View, Text, ScrollView, StyleSheet, Image, TouchableOpacity, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Sharing from 'expo-sharing';
 import { captureRef } from 'react-native-view-shot';
 import { useRef, useState, useEffect } from 'react';
 import { useAuthStore } from '@/stores';
+import { COLORS } from '@/theme/colors';
 import { formatCurrency, formatDateTime } from '@/utils/format';
 import { METODO_PAGO } from '@/types/cobro';
 import { usePrinterStore } from '@/stores/printerStore';
@@ -14,6 +16,7 @@ import { Share2, Printer } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 
 export default function ReciboScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuthStore();
   const params = useLocalSearchParams<{
@@ -52,7 +55,7 @@ export default function ReciboScreen() {
       type: 'success',
       text1: isFromVD ? 'Venta Completada' : 'Cobro Registrado',
       text2: 'Guardado exitosamente',
-      visibilityTime: 3000,
+      visibilityTime: 5000,
     });
   }, []);
 
@@ -111,6 +114,11 @@ export default function ReciboScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Blue Header — no back arrow, this is a confirmation screen */}
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+        <Text style={styles.headerTitle}>Recibo</Text>
+      </View>
+
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
         {/* ═══ TICKET CARD ═══ */}
@@ -219,7 +227,7 @@ export default function ReciboScreen() {
           {/* Footer */}
           <Text style={styles.mono}>LE ATENDIO: {(user?.name || 'VENDEDOR').toUpperCase()}</Text>
           <Text style={styles.mono}>TOTAL DE ARTICULOS VENDIDOS = {detalles?.length || 1}</Text>
-          <Text style={styles.mono}>{isFromVD ? 'Gracias por su compra' : 'Gracias por su pago'}</Text>
+          <Text style={[styles.mono, { marginTop: 4 }]}>{isFromVD ? '¡Gracias por su compra!' : '¡Gracias por su pago!'}</Text>
 
           <Text style={styles.dashed}>{'- '.repeat(24)}</Text>
         </View>
@@ -228,15 +236,11 @@ export default function ReciboScreen() {
 
       {/* Action Buttons */}
       <View style={styles.actions}>
-        {printerAvailable && (
-          <TouchableOpacity style={styles.btnPrint} onPress={handlePrint} disabled={printing} activeOpacity={0.8}>
-            <Printer size={18} color="#ffffff" />
-            <Text style={styles.btnPrintText}>{printing ? 'Imprimiendo...' : 'Imprimir'}</Text>
-          </TouchableOpacity>
-        )}
-        <TouchableOpacity style={styles.btnShare} onPress={handleShare} disabled={sharing} activeOpacity={0.8}>
-          <Share2 size={18} color="#2563eb" />
-          <Text style={styles.btnShareText}>Compartir</Text>
+        <TouchableOpacity style={styles.btnPrint} onPress={printerAvailable ? handlePrint : handleShare} disabled={printing || sharing} activeOpacity={0.8}>
+          {printerAvailable ? <Printer size={18} color="#ffffff" /> : <Share2 size={18} color="#ffffff" />}
+          <Text style={styles.btnPrintText}>
+            {printing ? 'Imprimiendo...' : sharing ? 'Compartiendo...' : printerAvailable ? 'Imprimir' : 'Compartir'}
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.btnDone} onPress={handleDone} activeOpacity={0.8}>
           <Text style={styles.btnDoneText}>Listo</Text>
@@ -250,6 +254,13 @@ const MONO = Platform.OS === 'ios' ? 'Courier' : 'monospace';
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#e5e7eb' },
+  header: {
+    backgroundColor: COLORS.headerBg,
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  headerTitle: { fontSize: 20, fontWeight: '700', color: COLORS.headerText },
   scrollContent: { padding: 16, paddingBottom: 100 },
 
   // Ticket card — looks like thermal paper
@@ -354,14 +365,14 @@ const styles = StyleSheet.create({
     fontFamily: MONO,
     fontSize: 14,
     fontWeight: '700',
-    color: '#0f172a',
+    color: COLORS.foreground,
   },
 
   totalValue: {
     fontFamily: MONO,
     fontSize: 14,
     fontWeight: '700',
-    color: '#0f172a',
+    color: COLORS.salesGreen,
   },
 
   // Action buttons
@@ -386,32 +397,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     height: 48,
-    backgroundColor: '#16a34a',
+    backgroundColor: COLORS.button,
     borderRadius: 12,
   },
   btnPrintText: { color: '#fff', fontWeight: '700', fontSize: 14 },
-
-  btnShare: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    height: 48,
-    backgroundColor: '#eff6ff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
-  },
-  btnShareText: { color: '#2563eb', fontWeight: '700', fontSize: 14 },
 
   btnDone: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     height: 48,
-    backgroundColor: '#2563eb',
+    backgroundColor: COLORS.card,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.borderMedium,
   },
-  btnDoneText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  btnDoneText: { color: COLORS.foreground, fontWeight: '700', fontSize: 14 },
 });

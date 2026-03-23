@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Users, Route } from 'lucide-react-native';
+import { COLORS } from '@/theme/colors';
 
 export type MapMode = 'clients' | 'route';
 
@@ -61,7 +62,7 @@ const styles = StyleSheet.create({
     borderRadius: 9,
   },
   btnActive: {
-    backgroundColor: '#2563eb',
+    backgroundColor: COLORS.primary,
   },
   btnText: {
     fontSize: 13,

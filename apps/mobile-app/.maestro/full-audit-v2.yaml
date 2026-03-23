@@ -1,0 +1,56 @@
+appId: host.exp.exponent
+name: "Full Design Audit v2"
+---
+
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 15000
+- takeScreenshot: 01-hoy-admin
+
+- tapOn: "Vender"
+- takeScreenshot: 02-vender
+
+- tapOn: "Cobrar"
+- takeScreenshot: 03-cobrar
+
+- tapOn: "Equipo"
+- takeScreenshot: 04-equipo
+
+- tapOn: "Mas"
+- takeScreenshot: 05-mas
+
+- tapOn:
+    id: "menu-item-configuracion"
+    optional: true
+- tapOn:
+    text: "Configuraci"
+    optional: true
+- takeScreenshot: 06-configuracion
+- back
+
+- tapOn:
+    text: "Mi Perfil"
+- takeScreenshot: 07-perfil
+- back
+
+- tapOn:
+    text: "Clientes"
+- takeScreenshot: 08-clientes
+- back
+
+- tapOn:
+    text: "Notificaciones"
+- takeScreenshot: 09-notificaciones
+- back
+
+- tapOn:
+    text: "Ayuda"
+- takeScreenshot: 10-ayuda
+- back
+
+- tapOn:
+    text: "Acerca de"
+- takeScreenshot: 11-acerca
+
+- tapOn: "Hoy"
+- takeScreenshot: 12-hoy-final

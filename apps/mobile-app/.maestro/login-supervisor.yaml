@@ -1,0 +1,28 @@
+appId: host.exp.exponent
+name: "Login Supervisor"
+---
+
+- extendedWaitUntil:
+    visible:
+      id: "login-button"
+    timeout: 30000
+
+- tapOn:
+    id: "email-input"
+- eraseText: 50
+- inputText: "vendedor1@jeyma.com"
+- hideKeyboard
+
+- tapOn:
+    id: "password-input"
+    retryTapIfNoChange: true
+- eraseText: 50
+- inputText: "test123"
+- hideKeyboard
+
+- tapOn:
+    id: "login-button"
+
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 45000

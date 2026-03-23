@@ -5,10 +5,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineOrders, useOfflineCobros, useClientNameMap } from '@/hooks';
 import { Card, LoadingSpinner, EmptyState } from '@/components/ui';
 import { formatCurrency } from '@/utils/format';
-import { Wallet, ChevronRight, TrendingDown, User, Clock, HandCoins } from 'lucide-react-native';
-import { SbMoney, SbChart } from '@/components/icons/DashboardIcons';
+import { Wallet, ChevronRight, User } from 'lucide-react-native';
 import { performSync } from '@/sync/syncEngine';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { COLORS } from '@/theme/colors';
 
 interface ClienteSaldo {
   clienteId: string;
@@ -89,7 +89,7 @@ export default function CobrarScreen() {
   const renderHeader = useCallback(() => {
     return (
       <View>
-        {/* Custom Header */}
+        {/* Blue Header */}
         <View style={[styles.customHeader, { paddingTop: insets.top + 16 }]}>
           <Text style={styles.screenTitle}>Cobranza</Text>
         </View>
@@ -97,42 +97,24 @@ export default function CobrarScreen() {
         {/* Summary Cards */}
         <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.summarySection}>
           <View style={styles.summaryRow}>
-            <View style={[styles.summaryCard, { backgroundColor: '#eff6ff' }]}>
-              <View style={[styles.summaryIcon, { backgroundColor: '#dbeafe' }]}>
-                <SbMoney size={18} />
-              </View>
-              <Text style={styles.summaryValue}>
+            <View style={styles.summaryCard}>
+              <Text style={[styles.summaryValue, { color: COLORS.salesGreen }]}>
                 {formatCurrency(resumen.totalFacturado)}
               </Text>
               <Text style={styles.summaryLabel}>Facturado</Text>
             </View>
-            <View style={[styles.summaryCard, { backgroundColor: '#f0fdf4' }]}>
-              <View style={[styles.summaryIcon, { backgroundColor: '#dcfce7' }]}>
-                <SbChart size={18} />
-              </View>
-              <Text style={styles.summaryValue}>
+            <View style={styles.summaryCard}>
+              <Text style={[styles.summaryValue, { color: COLORS.salesGreen }]}>
                 {formatCurrency(resumen.totalCobrado)}
               </Text>
               <Text style={styles.summaryLabel}>Cobrado</Text>
             </View>
           </View>
-          <View style={[styles.pendingBanner]}>
-            <View style={styles.pendingBannerLeft}>
-              <TrendingDown size={20} color="#ef4444" />
-              <View>
-                <Text style={styles.pendingBannerLabel}>Pendiente de Cobro</Text>
-                <Text style={styles.pendingBannerValue}>
-                  {formatCurrency(resumen.totalPendiente)}
-                </Text>
-              </View>
-            </View>
-            {resumen.clientesConSaldo > 0 && (
-              <View style={styles.clientCountBadge}>
-                <Text style={styles.clientCountText}>
-                  {resumen.clientesConSaldo} cliente{resumen.clientesConSaldo !== 1 ? 's' : ''}
-                </Text>
-              </View>
-            )}
+          <View style={styles.pendingBanner}>
+            <Text style={styles.pendingBannerLabel}>Pendiente de Cobro</Text>
+            <Text style={styles.pendingBannerValue}>
+              {formatCurrency(resumen.totalPendiente)}
+            </Text>
           </View>
         </Animated.View>
 
@@ -140,38 +122,32 @@ export default function CobrarScreen() {
         <Animated.View entering={FadeInDown.delay(250).duration(400)} style={styles.actionsRow}>
           <TouchableOpacity
             testID="btn-registrar-cobro"
-            style={[styles.actionButton, { backgroundColor: '#16a34a' }]}
+            style={[styles.actionButton, styles.actionButtonPrimary]}
             onPress={() => router.push('/(tabs)/cobrar/registrar' as any)}
             activeOpacity={0.8}
           >
-            <HandCoins size={18} color="#ffffff" />
             <Text style={styles.actionButtonText}>Registrar Cobro</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: '#2563eb' }]}
+            style={[styles.actionButton, styles.actionButtonOutline]}
             onPress={() => router.push('/(tabs)/cobrar/historial' as any)}
             activeOpacity={0.8}
           >
-            <Clock size={18} color="#ffffff" />
-            <Text style={styles.actionButtonText}>Historial</Text>
+            <Text style={[styles.actionButtonText, { color: COLORS.foreground }]}>Historial</Text>
           </TouchableOpacity>
         </Animated.View>
 
         {/* Section Header */}
         <View style={styles.listHeader}>
-          <Text style={styles.listTitle}>Saldos por Cliente</Text>
-          {clientes.length > 0 && (
-            <View style={styles.countBadge}>
-              <Text style={styles.countText}>{clientes.length}</Text>
-            </View>
-          )}
+          <Text style={styles.listTitle}>SALDOS POR CLIENTE</Text>
         </View>
       </View>
     );
   }, [resumen, clientes.length]);
 
   const renderItem = useCallback(
-    ({ item }: { item: ClienteSaldo }) => (
+    ({ item, index }: { item: ClienteSaldo; index: number }) => (
+      <Animated.View entering={FadeInDown.delay(Math.min(index, 10) * 50).duration(300)}>
       <Card
         className="mx-4 mb-3"
         onPress={() => router.push(`/(tabs)/cobrar/estado-cuenta/${item.clienteId}` as any)}
@@ -200,6 +176,7 @@ export default function CobrarScreen() {
           </View>
         </View>
       </Card>
+      </Animated.View>
     ),
     [router]
   );
@@ -224,8 +201,8 @@ export default function CobrarScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#2563eb"
-            colors={['#2563eb']}
+            tintColor={COLORS.primary}
+            colors={[COLORS.primary]}
           />
         }
         ListEmptyComponent={
@@ -241,48 +218,50 @@ export default function CobrarScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1, backgroundColor: COLORS.background },
   listContent: { paddingBottom: 32 },
-  customHeader: { paddingHorizontal: 20, paddingBottom: 4 },
-  screenTitle: { fontSize: 28, fontWeight: '800', color: '#0f172a', letterSpacing: -0.5 },
+  customHeader: {
+    backgroundColor: COLORS.headerBg,
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    alignItems: 'center',
+  },
+  screenTitle: { fontSize: 20, fontWeight: '700', color: COLORS.headerText },
   summarySection: { padding: 16, gap: 12 },
   summaryRow: { flexDirection: 'row', gap: 10 },
   summaryCard: {
     flex: 1,
-    borderRadius: 16,
+    borderRadius: 14,
     padding: 14,
     alignItems: 'center',
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  summaryIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-  },
-  summaryValue: { fontSize: 16, fontWeight: '800', color: '#0f172a' },
-  summaryLabel: { fontSize: 11, color: '#64748b', fontWeight: '500', marginTop: 2 },
+  summaryValue: { fontSize: 16, fontWeight: '800', color: COLORS.foreground, marginTop: 8 },
+  summaryLabel: { fontSize: 11, color: COLORS.textSecondary, fontWeight: '500', marginTop: 2 },
   pendingBanner: {
-    backgroundColor: '#fef2f2',
-    borderRadius: 16,
+    backgroundColor: COLORS.card,
+    borderRadius: 14,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1,
-    borderColor: '#fecaca',
+    borderColor: COLORS.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  pendingBannerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  pendingBannerLabel: { fontSize: 12, color: '#ef4444', fontWeight: '500' },
-  pendingBannerValue: { fontSize: 20, fontWeight: '800', color: '#dc2626' },
-  clientCountBadge: {
-    backgroundColor: '#fee2e2',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  clientCountText: { fontSize: 12, fontWeight: '600', color: '#ef4444' },
+  pendingBannerLabel: { fontSize: 13, color: COLORS.textSecondary, fontWeight: '500' },
+  pendingBannerValue: { fontSize: 18, fontWeight: '800', color: '#dc2626' },
   listHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -290,22 +269,19 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     gap: 8,
   },
-  listTitle: { fontSize: 17, fontWeight: '700', color: '#1e293b' },
-  countBadge: {
-    backgroundColor: '#2563eb',
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    minWidth: 28,
-    alignItems: 'center',
+  listTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.textTertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  countText: { fontSize: 12, fontWeight: '700', color: '#ffffff' },
   clientRow: { flexDirection: 'row', alignItems: 'center' },
   clientAvatar: {
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: COLORS.background,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -313,7 +289,7 @@ const styles = StyleSheet.create({
   clientContent: { flex: 1 },
   clientName: { fontSize: 14, fontWeight: '600', color: '#1e293b', marginBottom: 2 },
   clientMeta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  metaText: { fontSize: 11, color: '#94a3b8' },
+  metaText: { fontSize: 11, color: COLORS.textTertiary },
   metaDot: { fontSize: 11, color: '#cbd5e1' },
   clientRight: { alignItems: 'flex-end', marginLeft: 8, gap: 2 },
   saldoAmount: { fontSize: 15, fontWeight: '700', color: '#ef4444' },
@@ -332,9 +308,22 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 12,
   },
+  actionButtonPrimary: {
+    backgroundColor: COLORS.button,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  actionButtonOutline: {
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
   actionButtonText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#ffffff',
+    color: COLORS.headerText,
   },
 });

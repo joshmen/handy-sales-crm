@@ -6,6 +6,6 @@
  *   import { colors, typography, spacing, shadows } from '@/src/theme';
  */
 
-export { colors, ORDER_STATUS, PAYMENT_STATUS } from './colors';
+export { COLORS, colors, STATUS_PALETTES, GRADIENTS, ORDER_STATUS, PAYMENT_STATUS } from './colors';
 export { typography, fontSizes, lineHeights, fontFamily } from './typography';
 export { spacing, borderRadius, shadows, layout } from './spacing';

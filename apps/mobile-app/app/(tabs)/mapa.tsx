@@ -25,6 +25,7 @@ import { ClientDetailPanel } from '@/components/map/ClientDetailPanel';
 import { NextStopPanel } from '@/components/map/NextStopPanel';
 import { CheckInPanel } from '@/components/map/CheckInPanel';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
+import { COLORS } from '@/theme/colors';
 
 const DEFAULT_REGION: Region = {
   latitude: 19.4326,
@@ -229,7 +230,7 @@ function MapaScreenContent() {
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#2563eb" />
+          <ActivityIndicator size="large" color={COLORS.primary} />
           <Text style={styles.loadingText}>Cargando mapa...</Text>
         </View>
       </View>
@@ -243,17 +244,17 @@ function MapaScreenContent() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Mapa</Text>
-        <View style={styles.headerRight}>
+        <View style={styles.headerTags}>
           {mapMode === 'route' && hasRoute && (
             <View style={styles.progressBadge}>
-              <RouteIcon size={14} color="#16a34a" />
+              <RouteIcon size={14} color="rgba(255,255,255,0.8)" />
               <Text style={styles.progressText}>
                 {routeProgress.completed}/{routeProgress.total}
               </Text>
             </View>
           )}
           <View style={styles.headerBadge}>
-            <MapPin size={14} color="#2563eb" />
+            <MapPin size={14} color="rgba(255,255,255,0.8)" />
             <Text style={styles.headerBadgeText}>
               {mapMode === 'route' ? `${stops.length} paradas` : `${mappableClients.length} clientes`}
             </Text>
@@ -333,7 +334,7 @@ function MapaScreenContent() {
             onPress={handleCenterOnMe}
             activeOpacity={0.8}
           >
-            <Locate size={20} color="#2563eb" />
+            <Locate size={20} color={COLORS.primary} />
           </TouchableOpacity>
         )}
 
@@ -399,41 +400,37 @@ function MapaScreenContent() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1, backgroundColor: COLORS.background },
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
-  loadingText: { fontSize: 14, color: '#64748b' },
+  loadingText: { fontSize: 14, color: COLORS.textSecondary },
   header: {
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.headerBg,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
   },
-  title: { fontSize: 22, fontWeight: '700', color: '#0f172a' },
-  headerRight: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  title: { fontSize: 20, fontWeight: '700', color: COLORS.headerText, textAlign: 'center' },
+  headerTags: { flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center', marginTop: 6 },
   headerBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#eff6ff',
+    backgroundColor: 'rgba(255,255,255,0.15)',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 12,
   },
-  headerBadgeText: { fontSize: 12, fontWeight: '600', color: '#2563eb' },
+  headerBadgeText: { fontSize: 12, fontWeight: '600', color: COLORS.headerText },
   progressBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#f0fdf4',
+    backgroundColor: 'rgba(255,255,255,0.15)',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 12,
   },
-  progressText: { fontSize: 12, fontWeight: '700', color: '#16a34a' },
+  progressText: { fontSize: 12, fontWeight: '700', color: COLORS.headerText },
   mapContainer: { flex: 1, position: 'relative' },
   map: { flex: 1 },
   centerBtn: {

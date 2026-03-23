@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
+import { COLORS } from '@/theme/colors';
 
 interface LoadingSpinnerProps {
   message?: string;
@@ -12,7 +13,7 @@ export function LoadingSpinner({
 }: LoadingSpinnerProps) {
   return (
     <View style={styles.container}>
-      <ActivityIndicator size={size} color="#2563eb" />
+      <ActivityIndicator size={size} color={COLORS.primary} />
       {message && (
         <Text style={styles.message}>{message}</Text>
       )}

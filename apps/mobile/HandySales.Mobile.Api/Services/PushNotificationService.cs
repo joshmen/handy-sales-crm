@@ -159,9 +159,13 @@ public class PushNotificationService
 
         return type switch
         {
-            "order.assigned" or "order.status_changed" => "orders",
+            "order.new" or "order.confirmed" or "order.processing"
+                or "order.en_route" or "order.delivered" or "order.cancelled"
+                or "order.assigned" or "order.status_changed" => "orders",
             "route.published" or "visit.reminder" => "routes",
-            _ when type.StartsWith("collection") => "collections",
+            "cobro.new" or _ when type.StartsWith("collection") => "collections",
+            "stock.low" or "goal.assigned" or "goal.achieved" => "default",
+            "security.device_revoked" or "security.session_revoked" => "default",
             _ => "default"
         };
     }

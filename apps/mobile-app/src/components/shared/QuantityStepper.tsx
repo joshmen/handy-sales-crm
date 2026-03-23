@@ -1,5 +1,6 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Minus, Plus } from 'lucide-react-native';
+import { COLORS } from '@/theme/colors';
 
 interface QuantityStepperProps {
   value: number;
@@ -20,7 +21,7 @@ export function QuantityStepper({ value, onChange, min = 0, max = 999 }: Quantit
         activeOpacity={0.7}
         disabled={!canDecrement}
       >
-        <Minus size={16} color={canDecrement ? '#2563eb' : '#cbd5e1'} />
+        <Minus size={16} color={canDecrement ? COLORS.primary : '#cbd5e1'} />
       </TouchableOpacity>
       <View style={styles.valueContainer}>
         <Text style={styles.value}>{value}</Text>
@@ -49,11 +50,11 @@ const styles = StyleSheet.create({
     height: 34,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#eff6ff',
+    backgroundColor: COLORS.primaryLight,
     borderRadius: 10,
   },
   buttonAdd: {
-    backgroundColor: '#2563eb',
+    backgroundColor: COLORS.primary,
   },
   buttonDisabled: {
     backgroundColor: '#f8fafc',

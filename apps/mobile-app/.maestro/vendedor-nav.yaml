@@ -1,0 +1,8 @@
+appId: host.exp.exponent
+name: "Vendedor Nav All"
+---
+- tapOn: "Vender"
+- tapOn: "Cobrar"
+- tapOn: "Mapa"
+- tapOn: "Mas"
+- tapOn: "Hoy"

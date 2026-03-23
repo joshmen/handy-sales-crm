@@ -9,6 +9,7 @@ import { Phone, ChevronRight, Users } from 'lucide-react-native';
 import { performSync } from '@/sync/syncEngine';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import type Cliente from '@/db/models/Cliente';
+import { COLORS } from '@/theme/colors';
 
 export default function ClientsListScreen() {
   const [search, setSearch] = useState('');
@@ -29,7 +30,8 @@ export default function ClientsListScreen() {
   }, []);
 
   const renderItem = useCallback(
-    ({ item }: { item: Cliente }) => (
+    ({ item, index }: { item: Cliente; index: number }) => (
+      <Animated.View entering={FadeInDown.delay(Math.min(index, 10) * 50).duration(300)}>
       <Card
         className="mx-4 mb-3"
         onPress={() => router.push(`/(tabs)/clients/${item.id}`)}
@@ -37,11 +39,11 @@ export default function ClientsListScreen() {
         <View style={styles.cardRow}>
           <View style={[
             styles.clientAvatar,
-            { backgroundColor: item.activo ? '#eff6ff' : '#f1f5f9' },
+            { backgroundColor: item.activo ? COLORS.primaryLight : '#f1f5f9' },
           ]}>
             <Text style={[
               styles.clientAvatarText,
-              { color: item.activo ? '#2563eb' : '#94a3b8' },
+              { color: item.activo ? COLORS.primary : '#94a3b8' },
             ]}>
               {item.nombre?.[0]?.toUpperCase() || 'C'}
             </Text>
@@ -54,7 +56,7 @@ export default function ClientsListScreen() {
               <Badge
                 label={item.activo ? 'Activo' : 'Inactivo'}
                 color={item.activo ? '#16a34a' : '#94a3b8'}
-                bgColor={item.activo ? '#f0fdf4' : '#f1f5f9'}
+                bgColor={item.activo ? '#dcfce7' : '#f1f5f9'}
               />
             </View>
             <View style={styles.clientMeta}>
@@ -69,6 +71,7 @@ export default function ClientsListScreen() {
           <ChevronRight size={18} color="#cbd5e1" style={styles.chevron} />
         </View>
       </Card>
+      </Animated.View>
     ),
     [router]
   );
@@ -110,8 +113,8 @@ export default function ClientsListScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#2563eb"
-            colors={['#2563eb']}
+            tintColor={COLORS.primary}
+            colors={[COLORS.primary]}
           />
         }
         ListEmptyComponent={
@@ -123,7 +126,7 @@ export default function ClientsListScreen() {
                 ? 'No se encontraron clientes con esa búsqueda'
                 : 'No tienes clientes asignados'
             }
-            actionLabel={!search ? 'Agregar Cliente' : undefined}
+            actionText={!search ? 'Agregar Cliente' : undefined}
             onAction={!search ? () => router.push('/(tabs)/clients/crear' as any) : undefined}
           />
         }
@@ -142,14 +145,12 @@ export default function ClientsListScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COLORS.background,
   },
   searchSection: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    backgroundColor: COLORS.headerBg,
   },
   countRow: {
     flexDirection: 'row',
@@ -158,7 +159,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   countBadge: {
-    backgroundColor: '#2563eb',
+    backgroundColor: 'rgba(255,255,255,0.2)',
     borderRadius: 10,
     paddingHorizontal: 8,
     paddingVertical: 2,
@@ -168,11 +169,11 @@ const styles = StyleSheet.create({
   countBadgeText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#ffffff',
+    color: COLORS.headerText,
   },
   countText: {
     fontSize: 13,
-    color: '#475569',
+    color: 'rgba(255,255,255,0.8)',
     fontWeight: '500',
   },
   listContent: {
@@ -222,7 +223,7 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 12,
-    color: '#94a3b8',
+    color: COLORS.textTertiary,
   },
   chevron: {
     marginLeft: 4,
@@ -236,16 +237,16 @@ const styles = StyleSheet.create({
   },
   footerLoadingText: {
     fontSize: 13,
-    color: '#64748b',
+    color: COLORS.textSecondary,
   },
   footerEnd: {
     textAlign: 'center',
     fontSize: 13,
-    color: '#64748b',
+    color: COLORS.textSecondary,
     fontWeight: '500',
     paddingVertical: 16,
     marginHorizontal: 16,
     borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
+    borderTopColor: COLORS.borderMedium,
   },
 });

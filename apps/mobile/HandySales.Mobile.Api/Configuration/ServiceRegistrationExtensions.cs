@@ -105,6 +105,8 @@ public static class ServiceRegistrationExtensions
 
         // Push Notifications (HttpClient for Expo Push API)
         services.AddHttpClient<PushNotificationService>();
+        services.AddScoped<OrderNotificationHelper>();
+        services.AddScoped<StockNotificationService>();
 
         // Sync notification bridge (Mobile API → Main API via HTTP)
         var mainApiUrl = config["MainApiUrl"] ?? "http://localhost:1050";

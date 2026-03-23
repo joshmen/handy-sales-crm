@@ -13,13 +13,13 @@ export default function VenderLayout() {
       }}
     >
       <Stack.Screen name="index" options={{ title: 'Pedidos', headerShown: false }} />
-      <Stack.Screen name="[id]" options={{ title: 'Detalle Pedido' }} />
-      <Stack.Screen name="productos" options={{ title: 'Productos' }} />
-      <Stack.Screen name="producto/[id]" options={{ title: 'Producto' }} />
-      <Stack.Screen name="crear/modo" options={{ title: 'Nuevo Pedido' }} />
-      <Stack.Screen name="crear/index" options={{ title: 'Nuevo Pedido' }} />
-      <Stack.Screen name="crear/productos" options={{ title: 'Agregar Productos' }} />
-      <Stack.Screen name="crear/revision" options={{ title: 'Revisar Pedido' }} />
+      <Stack.Screen name="[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="productos" options={{ headerShown: false }} />
+      <Stack.Screen name="producto/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="crear/modo" options={{ title: 'Nuevo Pedido', headerShown: false, gestureEnabled: false }} />
+      <Stack.Screen name="crear/index" options={{ title: 'Seleccionar Cliente', headerShown: false, gestureEnabled: false }} />
+      <Stack.Screen name="crear/productos" options={{ title: 'Productos', headerShown: false, gestureEnabled: false }} />
+      <Stack.Screen name="crear/revision" options={{ title: 'Revisar Pedido', headerShown: false, gestureEnabled: false }} />
       <Stack.Screen name="crear/exito" options={{ title: '', headerShown: false, animation: 'fade', gestureEnabled: false }} />
     </Stack>
     </ErrorBoundary>

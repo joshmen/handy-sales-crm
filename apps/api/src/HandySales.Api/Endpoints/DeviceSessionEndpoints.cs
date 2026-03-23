@@ -1,3 +1,4 @@
+using System.Net.Http.Json;
 using HandySales.Application.DeviceSessions.DTOs;
 using HandySales.Application.DeviceSessions.Services;
 using HandySales.Shared.Multitenancy;
@@ -119,10 +120,30 @@ public static class DeviceSessionEndpoints
             int usuarioId,
             LogoutDeviceDto? dto,
             [FromServices] DeviceSessionService servicio,
-            [FromServices] ICurrentTenant currentTenant) =>
+            [FromServices] ICurrentTenant currentTenant,
+            [FromServices] IHttpClientFactory httpClientFactory) =>
         {
             if (currentTenant.Role is not ("ADMIN" or "SUPER_ADMIN")) return Results.Forbid();
             var cantidad = await servicio.CerrarTodasSesionesUsuarioAsync(usuarioId, dto?.Reason);
+
+            // Push security notification to the affected user
+            if (cantidad > 0)
+            {
+                try
+                {
+                    var client = httpClientFactory.CreateClient("MobileApi");
+                    await client.PostAsJsonAsync("/api/internal/push-notify", new
+                    {
+                        tenantId = currentTenant.TenantId,
+                        userIds = new[] { usuarioId },
+                        title = "Sesiones cerradas",
+                        body = "Un administrador cerró todas tus sesiones activas",
+                        data = new Dictionary<string, string> { ["type"] = "security.session_revoked" }
+                    });
+                }
+                catch { /* fire-and-forget */ }
+            }
+
             return Results.Ok(new { mensaje = $"Se cerraron {cantidad} sesiones del usuario", cantidad });
         });
 

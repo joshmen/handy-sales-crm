@@ -1,14 +1,19 @@
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineProductById } from '@/hooks';
 import { useOrderDraftStore } from '@/stores';
-import { Card, Button, LoadingSpinner } from '@/components/ui';
+import { Button, LoadingSpinner } from '@/components/ui';
 import { QuantityStepper } from '@/components/shared/QuantityStepper';
+import { COLORS } from '@/theme/colors';
 import { formatCurrency } from '@/utils/format';
-import { Package, Ruler, AlertTriangle, ShoppingBag } from 'lucide-react-native';
+import { ChevronLeft, ImageIcon, ShoppingBag } from 'lucide-react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 export default function ProductoDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   const { data: product, isLoading } = useOfflineProductById(id || '');
   const { items, addItem, updateQuantity, removeItem } = useOrderDraftStore();
@@ -19,152 +24,183 @@ export default function ProductoDetailScreen() {
   if (isLoading || !product) {
     return (
       <View style={styles.container}>
+        <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <ChevronLeft size={22} color={COLORS.headerText} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Detalle Producto</Text>
+          <View style={{ width: 22 }} />
+        </View>
         <LoadingSpinner message="Cargando producto..." />
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerIcon}>
-          <Package size={40} color="#2563eb" />
-        </View>
-        <Text style={styles.productName}>{product.nombre}</Text>
-        <Text style={styles.productSku}>{product.codigoBarras || 'Sin código'}</Text>
-        <Text style={styles.productPrice}>{formatCurrency(product.precio)}</Text>
+    <View style={styles.container}>
+      {/* Blue Header */}
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <ChevronLeft size={22} color={COLORS.headerText} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Detalle Producto</Text>
+        <View style={{ width: 22 }} />
       </View>
 
-      {/* Info Cards */}
-      <View style={styles.infoSection}>
-        {product.descripcion && (
-          <Card className="mb-3">
-            <Text style={styles.infoLabel}>Descripción</Text>
-            <Text style={styles.infoText}>{product.descripcion}</Text>
-          </Card>
-        )}
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Image placeholder */}
+        <Animated.View entering={FadeInDown.duration(300)}>
+          <View style={styles.imagePlaceholder}>
+            <ImageIcon size={48} color={COLORS.textTertiary} />
+          </View>
+        </Animated.View>
 
-        <View style={styles.infoGrid}>
-          {product.unidadMedidaNombre && (
-            <View style={styles.infoItem}>
-              <Ruler size={16} color="#d97706" />
-              <View>
-                <Text style={styles.infoItemLabel}>Unidad</Text>
-                <Text style={styles.infoItemValue}>{product.unidadMedidaNombre}</Text>
-              </View>
-            </View>
-          )}
-        </View>
+        {/* Product name + SKU + Price */}
+        <Animated.View entering={FadeInDown.duration(300).delay(100)}>
+          <View style={styles.productInfo}>
+            <Text style={styles.productName}>{product.nombre}</Text>
+            <Text style={styles.productSku}>SKU: {product.codigoBarras || 'N/A'}</Text>
+            <Text style={styles.productPrice}>{formatCurrency(product.precio)}</Text>
+          </View>
+        </Animated.View>
 
-        {/* Stock */}
-        <Card className="mb-3">
-          <View style={styles.stockRow}>
-            <View>
-              <Text style={styles.infoLabel}>Stock Disponible</Text>
-              <Text style={[styles.stockValue, product.stockDisponible <= (product.stockMinimo || 0) ? styles.stockAlert : styles.stockGood]}>
+        {/* Details card */}
+        <Animated.View entering={FadeInDown.duration(300).delay(200)}>
+          <Text style={styles.sectionLabel}>DETALLES</Text>
+          <View style={styles.detailsCard}>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Stock</Text>
+              <Text style={[
+                styles.detailValue,
+                product.stockDisponible <= (product.stockMinimo || 0) ? { color: '#ef4444' } : { color: COLORS.foreground },
+              ]}>
                 {product.stockDisponible} unidades
               </Text>
             </View>
-            {product.stockDisponible <= (product.stockMinimo || 0) && (
-              <View style={styles.alertBadge}>
-                <AlertTriangle size={14} color="#ef4444" />
-                <Text style={styles.alertText}>Stock bajo</Text>
+            {product.unidadMedidaNombre ? (
+              <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
+                <Text style={styles.detailLabel}>Unidad</Text>
+                <Text style={styles.detailValue}>{product.unidadMedidaNombre}</Text>
               </View>
+            ) : null}
+          </View>
+        </Animated.View>
+
+        {/* Description */}
+        {product.descripcion ? (
+          <Animated.View entering={FadeInDown.duration(300).delay(300)}>
+            <Text style={styles.sectionLabel}>DESCRIPCIÓN</Text>
+            <View style={styles.detailsCard}>
+              <Text style={styles.descText}>{product.descripcion}</Text>
+            </View>
+          </Animated.View>
+        ) : null}
+
+        {/* Add to Order */}
+        <Animated.View entering={FadeInDown.duration(300).delay(400)}>
+          <View style={styles.addSection}>
+            {qty > 0 ? (
+              <View style={styles.addedRow}>
+                <ShoppingBag size={20} color={COLORS.button} />
+                <Text style={styles.addedText}>En tu pedido:</Text>
+                <QuantityStepper
+                  value={qty}
+                  onChange={(val) => {
+                    if (val <= 0) removeItem(id || '');
+                    else updateQuantity(id || '', val);
+                  }}
+                />
+              </View>
+            ) : (
+              <Button
+                title="Agregar al Pedido"
+                onPress={() => addItem(product)}
+                fullWidth
+              />
             )}
           </View>
-        </Card>
-      </View>
-
-      {/* Add to Order */}
-      <View style={styles.addSection}>
-        {qty > 0 ? (
-          <View style={styles.addedRow}>
-            <ShoppingBag size={20} color="#2563eb" />
-            <Text style={styles.addedText}>En tu pedido:</Text>
-            <QuantityStepper
-              value={qty}
-              onChange={(val) => {
-                if (val <= 0) removeItem(id || '');
-                else updateQuantity(id || '', val);
-              }}
-            />
-          </View>
-        ) : (
-          <Button
-            title="Agregar al Pedido"
-            onPress={() => addItem(product)}
-            fullWidth
-            icon={<ShoppingBag size={18} color="#ffffff" />}
-          />
-        )}
-      </View>
-    </ScrollView>
+        </Animated.View>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
-  content: { paddingBottom: 32 },
+  container: { flex: 1, backgroundColor: COLORS.background },
+  // Header
   header: {
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.headerBg,
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 28,
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    paddingBottom: 16,
   },
-  headerIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 24,
-    backgroundColor: '#eff6ff',
+  backBtn: { padding: 4 },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: COLORS.headerText },
+  scrollContent: { paddingBottom: 32 },
+  // Image placeholder
+  imagePlaceholder: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    height: 160,
+    backgroundColor: COLORS.card,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
   },
-  productName: { fontSize: 20, fontWeight: '800', color: '#0f172a', textAlign: 'center' },
-  productSku: { fontSize: 13, color: '#94a3b8', marginTop: 4 },
-  productPrice: { fontSize: 24, fontWeight: '800', color: '#2563eb', marginTop: 8 },
-  infoSection: { padding: 16 },
-  infoLabel: { fontSize: 12, fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', marginBottom: 6 },
-  infoText: { fontSize: 14, color: '#475569', lineHeight: 22 },
-  infoGrid: { gap: 10, marginBottom: 12 },
-  infoItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 12,
+  // Product info
+  productInfo: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  productName: { fontSize: 20, fontWeight: '700', color: COLORS.foreground },
+  productSku: { fontSize: 12, color: COLORS.textTertiary, marginTop: 4 },
+  productPrice: { fontSize: 24, fontWeight: '800', color: COLORS.salesGreen, marginTop: 8 },
+  // Section
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.textTertiary,
+    letterSpacing: 1,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  // Details card
+  detailsCard: {
+    marginHorizontal: 20,
+    backgroundColor: COLORS.card,
+    borderRadius: 14,
+    paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderColor: COLORS.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  infoItemLabel: { fontSize: 11, color: '#94a3b8' },
-  infoItemValue: { fontSize: 14, fontWeight: '600', color: '#1e293b' },
-  stockRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  stockValue: { fontSize: 18, fontWeight: '700', marginTop: 4 },
-  stockGood: { color: '#16a34a' },
-  stockAlert: { color: '#ef4444' },
-  alertBadge: {
+  detailRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#fee2e2',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
   },
-  alertText: { fontSize: 12, fontWeight: '600', color: '#ef4444' },
-  addSection: { paddingHorizontal: 16 },
+  detailLabel: { fontSize: 13, color: COLORS.textSecondary },
+  detailValue: { fontSize: 13, fontWeight: '600', color: COLORS.foreground },
+  descText: { fontSize: 13, color: '#475569', lineHeight: 20, padding: 16 },
+  // Add to order
+  addSection: { paddingHorizontal: 20, paddingTop: 20 },
   addedRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
-    backgroundColor: '#eff6ff',
+    backgroundColor: COLORS.buttonLight,
     borderRadius: 14,
     padding: 14,
   },
-  addedText: { fontSize: 15, fontWeight: '600', color: '#2563eb' },
+  addedText: { fontSize: 15, fontWeight: '600', color: COLORS.button },
 });

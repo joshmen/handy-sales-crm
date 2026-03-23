@@ -9,11 +9,12 @@ export default function ClientsLayout() {
         headerStyle: { backgroundColor: '#ffffff' },
         headerTitleStyle: { fontWeight: '700', fontSize: 18, color: '#111827' },
         headerShadowVisible: false,
+        animation: 'slide_from_right',
       }}
     >
-      <Stack.Screen name="index" options={{ title: 'Clientes' }} />
-      <Stack.Screen name="[id]" options={{ title: 'Detalle Cliente' }} />
-      <Stack.Screen name="crear" options={{ title: 'Nuevo Cliente' }} />
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="crear" options={{ headerShown: false }} />
     </Stack>
     </ErrorBoundary>
   );

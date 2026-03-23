@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { View, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { Search, X } from 'lucide-react-native';
+import { COLORS } from '@/theme/colors';
 
 interface SearchBarProps {
   placeholder?: string;
@@ -38,7 +39,7 @@ export function SearchBar({
       styles.container,
       isFocused && styles.containerFocused,
     ]}>
-      <Search size={18} color={isFocused ? '#2563eb' : '#94a3b8'} />
+      <Search size={18} color={isFocused ? COLORS.primary : '#94a3b8'} />
       <TextInput
         style={styles.input}
         placeholder={placeholder}
@@ -76,8 +77,8 @@ const styles = StyleSheet.create({
   },
   containerFocused: {
     backgroundColor: '#f8faff',
-    borderColor: '#2563eb',
-    shadowColor: '#2563eb',
+    borderColor: COLORS.primary,
+    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.1,
     shadowRadius: 4,

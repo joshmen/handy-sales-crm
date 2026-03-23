@@ -1,11 +1,14 @@
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useVisitsSummary, useRouteToday } from '@/hooks';
 import { Card, Button, LoadingSpinner } from '@/components/ui';
-import { Trophy, Users, ShoppingBag, Clock, CheckCircle } from 'lucide-react-native';
+import { COLORS } from '@/theme/colors';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 export default function ResumenDiarioScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const visitsSummary = useVisitsSummary();
   const routeToday = useRouteToday();
 
@@ -24,40 +27,45 @@ export default function ResumenDiarioScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-      {/* Effectiveness Banner */}
-      <View style={[styles.effectivenessBanner, { backgroundColor: `${efectividadColor}10`, borderColor: `${efectividadColor}30` }]}>
-        <Trophy size={28} color={efectividadColor} />
-        <View style={styles.effectivenessContent}>
-          <Text style={styles.effectivenessLabel}>Efectividad del Día</Text>
-          <Text style={[styles.effectivenessValue, { color: efectividadColor }]}>{efectividad}%</Text>
-        </View>
+      {/* Blue Header */}
+      <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
+        <Text style={styles.blueHeaderTitle}>Resumen del Día</Text>
       </View>
 
+      {/* Effectiveness Banner */}
+      <Animated.View entering={FadeInDown.duration(400).delay(100)}>
+        <View style={[styles.effectivenessBanner, { backgroundColor: `${efectividadColor}10`, borderColor: `${efectividadColor}30` }]}>
+          <View style={styles.effectivenessContent}>
+            <Text style={styles.effectivenessLabel}>Efectividad del Día</Text>
+            <Text style={[styles.effectivenessValue, { color: efectividadColor }]}>{efectividad}%</Text>
+          </View>
+        </View>
+      </Animated.View>
+
       {/* KPI Grid */}
+      <Animated.View entering={FadeInDown.duration(400).delay(200)}>
       <View style={styles.kpiGrid}>
-        <View style={[styles.kpiCard, { backgroundColor: '#eff6ff' }]}>
-          <Users size={22} color="#2563eb" />
+        <View style={styles.kpiCard}>
           <Text style={styles.kpiValue}>{summary?.totalVisitas ?? 0}</Text>
           <Text style={styles.kpiLabel}>Visitas</Text>
         </View>
-        <View style={[styles.kpiCard, { backgroundColor: '#f0fdf4' }]}>
-          <CheckCircle size={22} color="#16a34a" />
-          <Text style={styles.kpiValue}>{summary?.visitasCompletadas ?? 0}</Text>
+        <View style={styles.kpiCard}>
+          <Text style={[styles.kpiValue, { color: COLORS.salesGreen }]}>{summary?.visitasCompletadas ?? 0}</Text>
           <Text style={styles.kpiLabel}>Completadas</Text>
         </View>
-        <View style={[styles.kpiCard, { backgroundColor: '#fef3c7' }]}>
-          <ShoppingBag size={22} color="#d97706" />
+        <View style={styles.kpiCard}>
           <Text style={styles.kpiValue}>{summary?.visitasConVenta ?? 0}</Text>
           <Text style={styles.kpiLabel}>Con Venta</Text>
         </View>
-        <View style={[styles.kpiCard, { backgroundColor: '#fef2f2' }]}>
-          <Clock size={22} color="#ef4444" />
+        <View style={styles.kpiCard}>
           <Text style={styles.kpiValue}>{summary?.visitasPendientes ?? 0}</Text>
           <Text style={styles.kpiLabel}>Pendientes</Text>
         </View>
       </View>
+      </Animated.View>
 
       {/* Breakdown */}
+      <Animated.View entering={FadeInDown.duration(400).delay(300)}>
       <Card className="mx-4 mb-4">
         <Text style={styles.breakdownTitle}>Desglose</Text>
         <View style={styles.breakdownItem}>
@@ -74,14 +82,16 @@ export default function ResumenDiarioScreen() {
         </View>
         <View style={styles.breakdownItem}>
           <Text style={styles.breakdownLabel}>Tasa de conversión</Text>
-          <Text style={[styles.breakdownValue, { color: '#2563eb' }]}>
+          <Text style={[styles.breakdownValue, { color: COLORS.primary }]}>
             {summary?.tasaConversion ? `${Math.round(summary.tasaConversion)}%` : '-'}
           </Text>
         </View>
       </Card>
+      </Animated.View>
 
       {/* Route Summary */}
       {route && (
+        <Animated.View entering={FadeInDown.duration(400).delay(400)}>
         <Card className="mx-4 mb-4">
           <Text style={styles.breakdownTitle}>Ruta: {route.nombre}</Text>
           <View style={styles.breakdownItem}>
@@ -95,6 +105,7 @@ export default function ResumenDiarioScreen() {
             </View>
           )}
         </Card>
+        </Animated.View>
       )}
 
       <View style={styles.actions}>
@@ -109,8 +120,10 @@ export default function ResumenDiarioScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1, backgroundColor: COLORS.background },
   content: { paddingBottom: 32 },
+  blueHeader: { backgroundColor: COLORS.headerBg, paddingHorizontal: 20, paddingBottom: 16, alignItems: 'center' },
+  blueHeaderTitle: { fontSize: 20, fontWeight: '700', color: COLORS.headerText, textAlign: 'center' },
   effectivenessBanner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -133,10 +146,18 @@ const styles = StyleSheet.create({
   kpiCard: {
     width: '47%',
     flexGrow: 1,
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 14,
+    padding: 14,
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
   },
   kpiValue: { fontSize: 24, fontWeight: '800', color: '#0f172a' },
   kpiLabel: { fontSize: 12, color: '#64748b', fontWeight: '500' },

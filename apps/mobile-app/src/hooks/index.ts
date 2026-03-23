@@ -24,6 +24,9 @@ export { useClientNameMap } from './useClientNameMap';
 // Evidence hooks
 export { useAttachmentsForEvent, usePendingAttachmentCount } from './useOfflineAttachments';
 
+// Notification hooks
+export { useUnreadNotificationCount } from './useNotificationCount';
+
 // Map hooks
 export { useMapData } from './useMapData';
 export { useLocationTracking } from './useLocationTracking';

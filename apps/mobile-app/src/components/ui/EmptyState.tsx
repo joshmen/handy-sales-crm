@@ -7,7 +7,7 @@ interface EmptyStateProps {
   icon?: React.ReactNode;
   title: string;
   message?: string;
-  actionLabel?: string;
+  actionText?: string;
   onAction?: () => void;
 }
 
@@ -15,21 +15,21 @@ export function EmptyState({
   icon,
   title,
   message,
-  actionLabel,
+  actionText,
   onAction,
 }: EmptyStateProps) {
   return (
     <View style={styles.container}>
-      <View style={styles.iconContainer}>
-        {icon || <Inbox size={40} color="#cbd5e1" />}
+      <View style={styles.iconCircle}>
+        {icon || <Inbox size={36} color="#94a3b8" />}
       </View>
       <Text style={styles.title}>{title}</Text>
       {message && (
         <Text style={styles.message}>{message}</Text>
       )}
-      {actionLabel && onAction && (
+      {actionText && onAction && (
         <View style={styles.action}>
-          <Button title={actionLabel} onPress={onAction} size="sm" />
+          <Button title={actionText} onPress={onAction} size="sm" />
         </View>
       )}
     </View>
@@ -44,10 +44,10 @@ const styles = StyleSheet.create({
     paddingVertical: 48,
     paddingHorizontal: 32,
   },
-  iconContainer: {
+  iconCircle: {
     width: 80,
     height: 80,
-    borderRadius: 20,
+    borderRadius: 40,
     backgroundColor: '#f1f5f9',
     alignItems: 'center',
     justifyContent: 'center',

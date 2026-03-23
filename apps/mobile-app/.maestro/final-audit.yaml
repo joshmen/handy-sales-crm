@@ -1,0 +1,26 @@
+appId: host.exp.exponent
+name: "Final Design Audit"
+---
+- tapOn: "Vender"
+- tapOn: "Cobrar"
+- tapOn: "Equipo"
+- tapOn: "Mas"
+- tapOn:
+    text: "Clientes"
+- back
+- tapOn:
+    text: "Mi Perfil"
+- back
+- tapOn:
+    text: "Impresora"
+- back
+- tapOn:
+    text: "Notificaciones"
+- back
+- tapOn:
+    text: "Ayuda"
+- back
+- tapOn:
+    text: "Acerca de"
+- back
+- tapOn: "Hoy"

@@ -1,16 +1,19 @@
 import { useState, useCallback } from 'react';
 import { View, Text, FlatList, RefreshControl, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Clock } from 'lucide-react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SbOrders, SbMap, SbPayments } from '@/components/icons/DashboardIcons';
 import { EmptyState } from '@/components/ui';
 import { formatCurrency } from '@/utils/format';
 import { useActividadEquipo } from '@/hooks/useSupervisor';
+import { COLORS } from '@/theme/colors';
 import type { ActividadItem } from '@/api/schemas/supervisor';
 
-const TIPO_CONFIG: Record<string, { icon: any; color: string; bg: string }> = {
-  pedido: { icon: SbOrders, color: '#2563eb', bg: '#eff6ff' },
-  visita: { icon: SbMap, color: '#7c3aed', bg: '#f5f3ff' },
-  cobro: { icon: SbPayments, color: '#16a34a', bg: '#f0fdf4' },
+const TIPO_CONFIG: Record<string, { icon: any; label: string }> = {
+  pedido: { icon: SbOrders, label: 'Pedido' },
+  visita: { icon: SbMap, label: 'Visita' },
+  cobro: { icon: SbPayments, label: 'Cobro' },
 };
 
 const ESTADO_COLORS: Record<string, string> = {
@@ -18,7 +21,7 @@ const ESTADO_COLORS: Record<string, string> = {
   entregado: '#16a34a',
   en_curso: '#d97706',
   enviado: '#d97706',
-  registrado: '#2563eb',
+  registrado: '#4338CA',
   borrador: '#94a3b8',
 };
 
@@ -36,6 +39,7 @@ function formatRelativeTime(isoDate: string): string {
 }
 
 export default function ActividadEquipoScreen() {
+  const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
   const { data: actividad, isLoading, refetch } = useActividadEquipo();
 
@@ -49,38 +53,40 @@ export default function ActividadEquipoScreen() {
   };
 
   const renderItem = useCallback(
-    ({ item }: { item: ActividadItem }) => {
+    ({ item, index }: { item: ActividadItem; index: number }) => {
       const config = TIPO_CONFIG[item.tipo] ?? TIPO_CONFIG.pedido;
       const Icon = config.icon;
       const estadoColor = ESTADO_COLORS[item.estado] ?? '#94a3b8';
       const vendorName = usuarios[String(item.usuarioId)] ?? '';
 
       return (
-        <View style={styles.activityItem}>
-          <View style={[styles.activityIcon, { backgroundColor: config.bg }]}>
-            <Icon size={18} />
-          </View>
-          <View style={styles.activityContent}>
-            <Text style={styles.activityDesc} numberOfLines={2}>{item.descripcion}</Text>
-            <View style={styles.activityMeta}>
-              {vendorName ? (
-                <>
-                  <Text style={styles.activityVendor} numberOfLines={1}>{vendorName}</Text>
-                  <Text style={styles.activityDot}>·</Text>
-                </>
-              ) : null}
-              <View style={[styles.estadoBadge, { backgroundColor: estadoColor + '18' }]}>
-                <Text style={[styles.estadoText, { color: estadoColor }]}>{item.estado}</Text>
+        <Animated.View entering={FadeInDown.delay(Math.min(index, 10) * 50).duration(300)}>
+          <View style={styles.activityItem}>
+            <View style={styles.activityIconContainer}>
+              <Icon size={18} />
+            </View>
+            <View style={styles.activityContent}>
+              <Text style={styles.activityDesc} numberOfLines={2}>{item.descripcion}</Text>
+              <View style={styles.activityMeta}>
+                {vendorName ? (
+                  <>
+                    <Text style={styles.activityVendor} numberOfLines={1}>{vendorName}</Text>
+                    <Text style={styles.activityDot}>·</Text>
+                  </>
+                ) : null}
+                <View style={[styles.estadoBadge, { backgroundColor: estadoColor + '18' }]}>
+                  <Text style={[styles.estadoText, { color: estadoColor }]}>{item.estado}</Text>
+                </View>
               </View>
             </View>
+            <View style={styles.activityRight}>
+              {item.monto != null && item.monto > 0 && (
+                <Text style={styles.activityMonto}>{formatCurrency(item.monto)}</Text>
+              )}
+              <Text style={styles.activityTime}>{formatRelativeTime(item.fecha)}</Text>
+            </View>
           </View>
-          <View style={styles.activityRight}>
-            {item.monto != null && item.monto > 0 && (
-              <Text style={styles.activityMonto}>{formatCurrency(item.monto)}</Text>
-            )}
-            <Text style={styles.activityTime}>{formatRelativeTime(item.fecha)}</Text>
-          </View>
-        </View>
+        </Animated.View>
       );
     },
     [usuarios]
@@ -89,7 +95,7 @@ export default function ActividadEquipoScreen() {
   if (isLoading && items.length === 0) {
     return (
       <View style={[styles.container, styles.center]}>
-        <Clock size={24} color="#2563eb" />
+        <Clock size={24} color={COLORS.primary} />
         <Text style={styles.loadingText}>Cargando actividad...</Text>
       </View>
     );
@@ -97,6 +103,11 @@ export default function ActividadEquipoScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Blue Header */}
+      <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
+        <Text style={styles.blueHeaderTitle}>Actividad</Text>
+      </View>
+
       <FlatList
         data={items}
         keyExtractor={(item) => `${item.tipo}-${item.id}`}
@@ -106,15 +117,15 @@ export default function ActividadEquipoScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#2563eb"
-            colors={['#2563eb']}
+            tintColor={COLORS.primary}
+            colors={[COLORS.primary]}
           />
         }
         ListEmptyComponent={
           <EmptyState
-            icon={<Clock size={48} color="#cbd5e1" />}
+            icon={<Clock size={48} color={COLORS.textTertiary} />}
             title="Sin actividad reciente"
-            message="Aquí verás la actividad del equipo en tiempo real"
+            message="Aqui veras la actividad del equipo en tiempo real"
           />
         }
       />
@@ -123,34 +134,36 @@ export default function ActividadEquipoScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1, backgroundColor: COLORS.background },
+  blueHeader: { backgroundColor: COLORS.headerBg, paddingHorizontal: 20, paddingBottom: 16, alignItems: 'center' as const },
+  blueHeaderTitle: { fontSize: 20, fontWeight: '700' as const, color: COLORS.headerText, textAlign: 'center' as const },
   center: { alignItems: 'center', justifyContent: 'center', gap: 8 },
-  loadingText: { fontSize: 14, color: '#64748b' },
+  loadingText: { fontSize: 14, color: COLORS.textSecondary },
   listContent: { paddingTop: 8, paddingBottom: 24 },
   activityItem: {
     flexDirection: 'row',
     alignItems: 'center',
     marginHorizontal: 16,
     marginBottom: 8,
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.card,
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderColor: COLORS.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  activityIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
+  activityIconContainer: {
     marginRight: 10,
   },
   activityContent: { flex: 1 },
-  activityDesc: { fontSize: 14, fontWeight: '600', color: '#1e293b' },
+  activityDesc: { fontSize: 14, fontWeight: '600', color: COLORS.foreground },
   activityMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
-  activityVendor: { fontSize: 11, color: '#64748b', fontWeight: '500', maxWidth: 120 },
-  activityDot: { fontSize: 11, color: '#cbd5e1' },
+  activityVendor: { fontSize: 11, color: COLORS.textSecondary, fontWeight: '500', maxWidth: 120 },
+  activityDot: { fontSize: 11, color: COLORS.textTertiary },
   estadoBadge: {
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -158,6 +171,6 @@ const styles = StyleSheet.create({
   },
   estadoText: { fontSize: 10, fontWeight: '600', textTransform: 'capitalize' },
   activityRight: { alignItems: 'flex-end', marginLeft: 8 },
-  activityMonto: { fontSize: 14, fontWeight: '700', color: '#16a34a' },
-  activityTime: { fontSize: 11, color: '#94a3b8', marginTop: 2 },
+  activityMonto: { fontSize: 14, fontWeight: '700', color: COLORS.salesGreen },
+  activityTime: { fontSize: 11, color: COLORS.textTertiary, marginTop: 2 },
 });

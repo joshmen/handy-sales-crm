@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert, Image, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/stores';
 import { useOfflineClientById, useOfflineClients } from '@/hooks';
 import { createCobroOffline } from '@/db/actions';
 import { capturePhoto, saveAttachmentRecord } from '@/services/evidenceManager';
 import { performSync } from '@/sync/syncEngine';
-import { Button } from '@/components/ui';
+import { Button, ConfirmModal } from '@/components/ui';
 import { formatCurrency } from '@/utils/format';
 import { METODO_PAGO } from '@/types/cobro';
 import type Cliente from '@/db/models/Cliente';
@@ -21,19 +22,23 @@ import {
   Camera,
   X,
   Search,
+  ChevronLeft,
   ChevronRight,
 } from 'lucide-react-native';
+import { SbPayments } from '@/components/icons/DashboardIcons';
+import { COLORS } from '@/theme/colors';
 
 const METODO_ICONS: Record<number, React.ReactNode> = {
-  0: <Banknote size={20} color="#16a34a" />,
-  1: <ArrowRightLeft size={20} color="#2563eb" />,
-  2: <FileText size={20} color="#7c3aed" />,
-  3: <CreditCard size={20} color="#d97706" />,
-  4: <CreditCard size={20} color="#0891b2" />,
-  5: <MoreHorizontal size={20} color="#64748b" />,
+  0: <Banknote size={20} color="#6b7280" />,
+  1: <ArrowRightLeft size={20} color="#6b7280" />,
+  2: <FileText size={20} color="#6b7280" />,
+  3: <CreditCard size={20} color="#6b7280" />,
+  4: <CreditCard size={20} color="#6b7280" />,
+  5: <MoreHorizontal size={20} color="#6b7280" />,
 };
 
 export default function RegistrarCobroScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const user = useAuthStore(s => s.user);
   const params = useLocalSearchParams<{
@@ -73,6 +78,7 @@ export default function RegistrarCobroScreen() {
   const [notas, setNotas] = useState('');
   const [receiptPhoto, setReceiptPhoto] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const [showConfirmCobro, setShowConfirmCobro] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
   const scrollToInput = (reactNode: any) => {
@@ -102,89 +108,99 @@ export default function RegistrarCobroScreen() {
 
   const handleConfirmar = () => {
     if (!isValid) return;
+    setShowConfirmCobro(true);
+  };
 
-    Alert.alert(
-      'Confirmar Cobro',
-      `Registrar cobro de ${formatCurrency(montoNum)} para ${effectiveClienteNombre}?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Confirmar',
-          onPress: async () => {
-            setSending(true);
-            try {
-              const cobro = await createCobroOffline(
-                effectiveClienteId,
-                cliente?.serverId ?? null,
-                user?.id ? Number(user.id) : 0,
-                montoNum,
-                metodoPago,
-                referencia || undefined,
-                notas || undefined
-              );
+  const executeConfirmarCobro = async () => {
+    setShowConfirmCobro(false);
+    setSending(true);
+    try {
+      const cobro = await createCobroOffline(
+        effectiveClienteId || '',
+        cliente?.serverId ?? null,
+        user?.id ? Number(user.id) : 0,
+        montoNum,
+        metodoPago,
+        referencia || undefined,
+        notas || undefined
+      );
 
-              // Save receipt photo attachment
-              if (receiptPhoto) {
-                await saveAttachmentRecord({
-                  eventType: 'cobro',
-                  eventLocalId: cobro.id,
-                  tipo: 'receipt',
-                  localUri: receiptPhoto,
-                });
-              }
+      // Save receipt photo attachment
+      if (receiptPhoto) {
+        await saveAttachmentRecord({
+          eventType: 'cobro',
+          eventLocalId: cobro.id,
+          tipo: 'receipt',
+          localUri: receiptPhoto,
+        });
+      }
 
-              performSync().catch(() => {});
-              router.replace({
-                pathname: '/(tabs)/cobrar/recibo',
-                params: {
-                  clienteNombre: encodeURIComponent(effectiveClienteNombre),
-                  monto: String(montoNum),
-                  metodoPago: String(metodoPago),
-                  referencia: encodeURIComponent(referencia || ''),
-                  notas: encodeURIComponent(notas || ''),
-                  fecha: new Date().toISOString(),
-                },
-              });
-            } catch {
-              Alert.alert('Error', 'No se pudo registrar el cobro');
-            } finally {
-              setSending(false);
-            }
-          },
+      performSync().catch(() => {});
+      router.replace({
+        pathname: '/(tabs)/cobrar/recibo',
+        params: {
+          clienteNombre: encodeURIComponent(effectiveClienteNombre),
+          monto: String(montoNum),
+          metodoPago: String(metodoPago),
+          referencia: encodeURIComponent(referencia || ''),
+          notas: encodeURIComponent(notas || ''),
+          fecha: new Date().toISOString(),
         },
-      ]
-    );
+      });
+
+      // Reset form state after navigation to prevent stale data on back
+      setMonto('');
+      setMontoError('');
+      setMetodoPago(0);
+      setReferencia('');
+      setNotas('');
+      setReceiptPhoto(null);
+      setSelectedClient(null);
+    } catch {
+      Alert.alert('Error', 'No se pudo registrar el cobro');
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior="padding" keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
+      {/* Blue Header */}
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <ChevronLeft size={22} color={COLORS.headerText} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Registrar Cobro</Text>
+        <View style={{ width: 22 }} />
+      </View>
+
+      {/* Client name row below header */}
+      {effectiveClienteNombre ? (
+        <View style={styles.clientRow}>
+          <View style={styles.clientInitial}>
+            <Text style={styles.clientInitialText}>{effectiveClienteNombre.charAt(0).toUpperCase()}</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.clientRowName} numberOfLines={1}>{effectiveClienteNombre}</Text>
+            {effectiveSaldo > 0 && (
+              <Text style={styles.clientRowSaldo}>Saldo pendiente: {formatCurrency(effectiveSaldo)}</Text>
+            )}
+          </View>
+        </View>
+      ) : null}
+
       <ScrollView
         ref={scrollRef}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Client Section */}
-        {paramClienteId ? (
-          /* Came from estado-cuenta with a pre-selected client */
-          <View style={styles.clientCard}>
-            <View style={styles.clientAvatar}>
-              <User size={20} color="#2563eb" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.clientName}>{effectiveClienteNombre}</Text>
-              {effectiveSaldo > 0 && (
-                <Text style={styles.saldoText}>
-                  Saldo pendiente: {formatCurrency(effectiveSaldo)}
-                </Text>
-              )}
-            </View>
-          </View>
-        ) : selectedClient && !pickerOpen ? (
+        {/* Client Section (picker — only when no client pre-selected) */}
+        {paramClienteId ? null : selectedClient && !pickerOpen ? (
           /* Client selected from picker — show card with change button */
           <View style={styles.clientCard}>
             <View style={styles.clientAvatar}>
-              <User size={20} color="#2563eb" />
+              <User size={20} color="#6b7280" />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.clientName}>{selectedClient.nombre}</Text>
@@ -356,7 +372,7 @@ export default function RegistrarCobroScreen() {
             }}
             activeOpacity={0.7}
           >
-            <Camera size={24} color="#2563eb" />
+            <Camera size={24} color={COLORS.button} />
             <Text style={styles.receiptBtnText}>Tomar foto del comprobante</Text>
           </TouchableOpacity>
         )}
@@ -372,12 +388,52 @@ export default function RegistrarCobroScreen() {
           fullWidth
         />
       </View>
+      <ConfirmModal
+        visible={showConfirmCobro}
+        title="Confirmar Cobro"
+        message={`Registrar cobro de ${formatCurrency(montoNum)} para ${effectiveClienteNombre}?`}
+        confirmText="Confirmar"
+        onConfirm={executeConfirmarCobro}
+        onCancel={() => setShowConfirmCobro(false)}
+        icon={<SbPayments size={48} />}
+      />
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1, backgroundColor: COLORS.background },
+  header: {
+    backgroundColor: COLORS.headerBg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  backBtn: { padding: 4 },
+  headerTitle: { fontSize: 20, fontWeight: '700', color: COLORS.headerText },
+  clientRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.card,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    gap: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  clientInitial: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.headerBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  clientInitialText: { fontSize: 16, fontWeight: '700', color: COLORS.headerText },
+  clientRowName: { fontSize: 15, fontWeight: '600', color: COLORS.foreground },
+  clientRowSaldo: { fontSize: 12, color: COLORS.salesGreen, fontWeight: '500', marginTop: 2 },
   content: { paddingBottom: 100 },
   clientCard: {
     flexDirection: 'row',
@@ -394,7 +450,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 14,
-    backgroundColor: '#eff6ff',
+    backgroundColor: COLORS.background,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -475,11 +531,11 @@ const styles = StyleSheet.create({
     borderColor: '#f1f5f9',
   },
   metodoCardSelected: {
-    borderColor: '#2563eb',
-    backgroundColor: '#eff6ff',
+    borderColor: COLORS.button,
+    backgroundColor: COLORS.buttonLight,
   },
   metodoLabel: { fontSize: 11, fontWeight: '600', color: '#64748b', textAlign: 'center' },
-  metodoLabelSelected: { color: '#2563eb' },
+  metodoLabelSelected: { color: COLORS.button },
   metodoCheck: {
     position: 'absolute',
     top: 6,
@@ -487,7 +543,7 @@ const styles = StyleSheet.create({
     width: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: '#2563eb',
+    backgroundColor: COLORS.button,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -544,7 +600,7 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     backgroundColor: '#f8fafc',
   },
-  receiptBtnText: { fontSize: 14, fontWeight: '500', color: '#2563eb' },
+  receiptBtnText: { fontSize: 14, fontWeight: '500', color: COLORS.button },
   pickerSection: { marginBottom: 8 },
   searchRow: {
     flexDirection: 'row',

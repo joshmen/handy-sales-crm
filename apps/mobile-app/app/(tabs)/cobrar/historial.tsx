@@ -1,24 +1,28 @@
 import { useState, useCallback } from 'react';
-import { View, Text, FlatList, RefreshControl, StyleSheet } from 'react-native';
+import { View, Text, FlatList, RefreshControl, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineCobros, useClientNameMap } from '@/hooks';
 import { LoadingSpinner, EmptyState } from '@/components/ui';
 import { formatCurrency, formatTime } from '@/utils/format';
 import { METODO_PAGO } from '@/types/cobro';
-import { Receipt, Banknote, ArrowRightLeft, FileText, CreditCard, MoreHorizontal } from 'lucide-react-native';
+import { Receipt, Banknote, ArrowRightLeft, FileText, CreditCard, MoreHorizontal, ChevronLeft } from 'lucide-react-native';
 import { performSync } from '@/sync/syncEngine';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import type Cobro from '@/db/models/Cobro';
+import { COLORS } from '@/theme/colors';
 
 const METODO_ICONS: Record<number, React.ReactNode> = {
-  0: <Banknote size={16} color="#16a34a" />,
-  1: <ArrowRightLeft size={16} color="#2563eb" />,
-  2: <FileText size={16} color="#7c3aed" />,
-  3: <CreditCard size={16} color="#d97706" />,
-  4: <CreditCard size={16} color="#0891b2" />,
-  5: <MoreHorizontal size={16} color="#64748b" />,
+  0: <Banknote size={16} color="#6b7280" />,
+  1: <ArrowRightLeft size={16} color="#6b7280" />,
+  2: <FileText size={16} color="#6b7280" />,
+  3: <CreditCard size={16} color="#6b7280" />,
+  4: <CreditCard size={16} color="#6b7280" />,
+  5: <MoreHorizontal size={16} color="#6b7280" />,
 };
 
 export default function HistorialCobrosScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
   const { data: cobros, isLoading } = useOfflineCobros();
@@ -31,10 +35,15 @@ export default function HistorialCobrosScreen() {
   };
 
   const renderItem = useCallback(
-    ({ item }: { item: Cobro }) => (
-      <View style={styles.cobroItem}>
-        <View style={[styles.cobroIcon, { backgroundColor: '#f0fdf4' }]}>
-          {METODO_ICONS[item.metodoPago] || <Receipt size={16} color="#64748b" />}
+    ({ item, index }: { item: Cobro; index: number }) => (
+      <Animated.View entering={FadeInDown.delay(Math.min(index, 10) * 50).duration(300)}>
+      <TouchableOpacity
+        style={styles.cobroItem}
+        activeOpacity={0.7}
+        onPress={() => router.push(`/(tabs)/cobrar/detalle-cobro/${item.id}` as any)}
+      >
+        <View style={styles.cobroIconWrap}>
+          {METODO_ICONS[item.metodoPago] || <Receipt size={16} color="#6b7280" />}
         </View>
         <View style={styles.cobroContent}>
           <Text style={styles.cobroCliente} numberOfLines={1}>
@@ -54,9 +63,10 @@ export default function HistorialCobrosScreen() {
           <Text style={styles.cobroMonto}>{formatCurrency(item.monto)}</Text>
           <Text style={styles.cobroHora}>{formatTime(item.createdAt)}</Text>
         </View>
-      </View>
+      </TouchableOpacity>
+      </Animated.View>
     ),
-    [clientNames]
+    [clientNames, router]
   );
 
   if (isLoading) {
@@ -69,6 +79,14 @@ export default function HistorialCobrosScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Blue Header */}
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <ChevronLeft size={22} color={COLORS.headerText} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Historial de Cobros</Text>
+        <View style={{ width: 22 }} />
+      </View>
       <FlatList
         data={cobros ?? []}
         keyExtractor={(item) => item.id}
@@ -78,8 +96,8 @@ export default function HistorialCobrosScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#2563eb"
-            colors={['#2563eb']}
+            tintColor={COLORS.primary}
+            colors={[COLORS.primary]}
           />
         }
         ListEmptyComponent={
@@ -87,7 +105,7 @@ export default function HistorialCobrosScreen() {
             icon={<Receipt size={48} color="#cbd5e1" />}
             title="Sin cobros"
             message="No tienes cobros registrados"
-            actionLabel="Registrar Cobro"
+            actionText="Registrar Cobro"
             onAction={() => router.push('/(tabs)/cobrar/registrar' as any)}
           />
         }
@@ -97,34 +115,44 @@ export default function HistorialCobrosScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
-  listContent: { paddingTop: 8, paddingBottom: 24 },
+  container: { flex: 1, backgroundColor: COLORS.background },
+  header: {
+    backgroundColor: COLORS.headerBg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  backBtn: { padding: 4 },
+  headerTitle: { fontSize: 20, fontWeight: '700', color: COLORS.headerText },
+  listContent: { paddingTop: 12, paddingBottom: 24 },
   cobroItem: {
     flexDirection: 'row',
     alignItems: 'center',
     marginHorizontal: 16,
     marginBottom: 8,
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.card,
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderColor: COLORS.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  cobroIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
+  cobroIconWrap: {
     marginRight: 10,
   },
   cobroContent: { flex: 1 },
   cobroCliente: { fontSize: 14, fontWeight: '600', color: '#1e293b' },
   cobroMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
-  cobroMetodo: { fontSize: 11, color: '#64748b', fontWeight: '500' },
+  cobroMetodo: { fontSize: 11, color: COLORS.textSecondary, fontWeight: '500' },
   cobroDot: { fontSize: 11, color: '#cbd5e1' },
-  cobroRef: { fontSize: 11, color: '#94a3b8', flex: 1 },
+  cobroRef: { fontSize: 11, color: COLORS.textTertiary, flex: 1 },
   cobroRight: { alignItems: 'flex-end', marginLeft: 8 },
-  cobroMonto: { fontSize: 15, fontWeight: '700', color: '#16a34a' },
-  cobroHora: { fontSize: 11, color: '#94a3b8', marginTop: 2 },
+  cobroMonto: { fontSize: 15, fontWeight: '700', color: COLORS.salesGreen },
+  cobroHora: { fontSize: 11, color: COLORS.textTertiary, marginTop: 2 },
 });

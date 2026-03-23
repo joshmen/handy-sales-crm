@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, Alert, Image } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui';
-import { CheckCircle, Eye, Plus, Home, Printer } from 'lucide-react-native';
+import { COLORS } from '@/theme/colors';
+import { CheckCircle } from 'lucide-react-native';
 import Animated, { FadeInDown, BounceIn } from 'react-native-reanimated';
 import { useOfflineOrderById, useOfflineOrderDetalles, useClientNameMap } from '@/hooks';
 import { useEmpresa } from '@/hooks/useEmpresa';
@@ -71,7 +72,7 @@ export default function PedidoExitoScreen() {
     ? 'Venta cobrada y entregada exitosamente'
     : 'Tu pedido ha sido levantado exitosamente';
   const iconColor = isDirecta ? '#16a34a' : '#16a34a';
-  const badgeBg = isDirecta ? '#f0fdf4' : '#f0fdf4';
+  const badgeBg = isDirecta ? '#dcfce7' : '#dcfce7';
   const badgeBorder = isDirecta ? '#dcfce7' : '#dcfce7';
   const badgeLabelColor = isDirecta ? '#16a34a' : '#16a34a';
   const badgeNumberColor = isDirecta ? '#15803d' : '#15803d';
@@ -107,7 +108,7 @@ export default function PedidoExitoScreen() {
           <Text style={[styles.orderBadgeLabel, { color: badgeLabelColor }]}>
             {isDirecta ? 'Referencia' : 'Número de Pedido'}
           </Text>
-          <Text style={[styles.orderBadgeNumber, { color: badgeNumberColor }]}>#{numero}</Text>
+          <Text style={[styles.orderBadgeNumber, { color: badgeNumberColor }]}>Pedido #{numero?.slice(0, 5)}</Text>
         </Animated.View>
       )}
 
@@ -118,7 +119,6 @@ export default function PedidoExitoScreen() {
             onPress={handlePrint}
             loading={printing}
             fullWidth
-            icon={<Printer size={18} color="#ffffff" />}
           />
         )}
         {id && (
@@ -127,22 +127,19 @@ export default function PedidoExitoScreen() {
             onPress={() => router.replace(`/(tabs)/vender/${id}` as any)}
             variant={printerAvailable ? 'secondary' : 'primary'}
             fullWidth
-            icon={<Eye size={18} color={printerAvailable ? '#2563eb' : '#ffffff'} />}
           />
         )}
         <Button
           title="Nuevo Pedido"
-          onPress={() => router.replace('/(tabs)/vender/crear/modo' as any)}
+          onPress={() => { router.dismissAll(); router.push('/(tabs)/vender/crear/modo' as any); }}
           variant="secondary"
           fullWidth
-          icon={<Plus size={18} color="#2563eb" />}
         />
         <Button
           title="Ir al Inicio"
           onPress={() => router.replace('/(tabs)' as any)}
           variant="ghost"
           fullWidth
-          icon={<Home size={18} color="#64748b" />}
         />
       </Animated.View>
     </View>
@@ -165,7 +162,7 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: '#f0fdf4',
+    backgroundColor: COLORS.background,
     alignItems: 'center',
     justifyContent: 'center',
   },

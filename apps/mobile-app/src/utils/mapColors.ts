@@ -2,12 +2,12 @@
 export const MAP_COLORS = {
   VISITED_TODAY: '#22c55e',    // green
   PENDING_ROUTE: '#f59e0b',    // amber
-  ACTIVE_STOP: '#2563eb',      // blue
+  ACTIVE_STOP: '#4338CA',      // indigo (primary)
   COMPLETED_STOP: '#22c55e',   // green
   SKIPPED_STOP: '#94a3b8',     // gray
   INACTIVE: '#94a3b8',         // gray
-  DEFAULT: '#6366f1',          // indigo
-  CLUSTER: '#2563eb',          // blue
+  DEFAULT: '#4338CA',          // indigo (primary)
+  CLUSTER: '#4338CA',          // indigo (primary)
   GEOFENCE_OK: '#22c55e',      // green
   GEOFENCE_WARN: '#f59e0b',    // amber
   GEOFENCE_FAR: '#ef4444',     // red

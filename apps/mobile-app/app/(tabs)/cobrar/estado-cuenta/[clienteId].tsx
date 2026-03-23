@@ -1,12 +1,16 @@
-import { View, Text, ScrollView, FlatList, StyleSheet } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEstadoCuenta } from '@/hooks';
-import { Card, Button, LoadingSpinner } from '@/components/ui';
+import { Button, LoadingSpinner } from '@/components/ui';
 import { formatCurrency, formatDate } from '@/utils/format';
-import { Receipt, ArrowDown, ArrowUp, Wallet } from 'lucide-react-native';
+import { ArrowDown, ArrowUp, ChevronLeft } from 'lucide-react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import type { EstadoCuentaMovimiento } from '@/types';
+import { COLORS } from '@/theme/colors';
 
 export default function EstadoCuentaScreen() {
+  const insets = useSafeAreaInsets();
   const { clienteId } = useLocalSearchParams<{ clienteId: string }>();
   const router = useRouter();
   const { data, isLoading } = useEstadoCuenta(Number(clienteId));
@@ -19,14 +23,15 @@ export default function EstadoCuentaScreen() {
     );
   }
 
-  const renderMovimiento = ({ item }: { item: EstadoCuentaMovimiento }) => {
+  const renderMovimiento = ({ item, index }: { item: EstadoCuentaMovimiento; index: number }) => {
     const isFactura = item.tipo === 'factura';
     return (
+      <Animated.View entering={FadeInDown.delay(Math.min(index, 10) * 50).duration(300)}>
       <View style={styles.movItem}>
-        <View style={[styles.movIcon, { backgroundColor: isFactura ? '#fef2f2' : '#f0fdf4' }]}>
+        <View style={[styles.movIcon, { backgroundColor: COLORS.background }]}>
           {isFactura
-            ? <ArrowUp size={16} color="#ef4444" />
-            : <ArrowDown size={16} color="#16a34a" />
+            ? <ArrowUp size={16} color="#6b7280" />
+            : <ArrowDown size={16} color="#6b7280" />
           }
         </View>
         <View style={styles.movContent}>
@@ -40,40 +45,52 @@ export default function EstadoCuentaScreen() {
           <Text style={styles.movSaldo}>Saldo: {formatCurrency(item.saldo)}</Text>
         </View>
       </View>
+      </Animated.View>
     );
   };
 
   return (
     <View style={styles.container}>
       <FlatList
-        data={data.movimientos}
+        data={data.movimientos ?? []}
         keyExtractor={(item) => String(item.id)}
         renderItem={renderMovimiento}
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={
           <View>
-            {/* Client Header */}
-            <View style={styles.header}>
-              <Text style={styles.clientName}>{data.clienteNombre}</Text>
+            {/* Blue Header */}
+            <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+              <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+                <ChevronLeft size={22} color={COLORS.headerText} />
+              </TouchableOpacity>
+              <Text style={styles.headerTitle}>Estado de Cuenta</Text>
+              <View style={{ width: 22 }} />
+            </View>
+            <View style={styles.clientNameRow}>
+              <Text style={styles.clientName} numberOfLines={1}>{data.clienteNombre}</Text>
             </View>
 
             {/* Summary Cards */}
-            <View style={styles.summaryRow}>
-              <View style={[styles.summaryCard, { backgroundColor: '#eff6ff' }]}>
-                <Text style={styles.summaryLabel}>Facturado</Text>
-                <Text style={styles.summaryValue}>{formatCurrency(data.totalFacturado)}</Text>
+            <Animated.View entering={FadeInDown.duration(400).delay(100)}>
+              <View style={styles.summaryRow}>
+                <View style={styles.summaryCard}>
+                  <Text style={styles.summaryLabel}>Facturado</Text>
+                  <Text style={[styles.summaryValue, { color: COLORS.salesGreen }]}>{formatCurrency(data.totalFacturado)}</Text>
+                </View>
+                <View style={styles.summaryCard}>
+                  <Text style={styles.summaryLabel}>Cobrado</Text>
+                  <Text style={[styles.summaryValue, { color: COLORS.salesGreen }]}>{formatCurrency(data.totalCobrado)}</Text>
+                </View>
               </View>
-              <View style={[styles.summaryCard, { backgroundColor: '#f0fdf4' }]}>
-                <Text style={styles.summaryLabel}>Cobrado</Text>
-                <Text style={styles.summaryValue}>{formatCurrency(data.totalCobrado)}</Text>
-              </View>
-            </View>
+            </Animated.View>
 
-            {/* Pending Banner */}
-            <View style={styles.pendingBanner}>
-              <Text style={styles.pendingLabel}>Saldo Pendiente</Text>
-              <Text style={styles.pendingValue}>{formatCurrency(data.saldoPendiente)}</Text>
-            </View>
+            {/* Pending Row */}
+            <Animated.View entering={FadeInDown.duration(400).delay(200)}>
+              <View style={styles.pendingRow}>
+                <Text style={styles.pendingLabel}>Saldo Pendiente</Text>
+                <Text style={styles.pendingValue}>{formatCurrency(data.saldoPendiente)}</Text>
+              </View>
+            </Animated.View>
 
             {/* Register Payment Button */}
             {data.saldoPendiente > 0 && (
@@ -82,15 +99,13 @@ export default function EstadoCuentaScreen() {
                   title="Registrar Cobro"
                   onPress={() => router.push(`/(tabs)/cobrar/registrar?clienteId=${clienteId}&clienteNombre=${encodeURIComponent(data.clienteNombre)}&saldo=${data.saldoPendiente}` as any)}
                   fullWidth
-                  icon={<Wallet size={18} color="#ffffff" />}
                 />
               </View>
             )}
 
             {/* Movimientos Header */}
             <View style={styles.movHeader}>
-              <Receipt size={16} color="#2563eb" />
-              <Text style={styles.movTitle}>Movimientos ({data.movimientos.length})</Text>
+              <Text style={styles.movTitle}>Movimientos ({data.movimientos?.length ?? 0})</Text>
             </View>
           </View>
         }
@@ -105,62 +120,93 @@ export default function EstadoCuentaScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1, backgroundColor: COLORS.background },
   listContent: { paddingBottom: 32 },
   header: {
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.headerBg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    paddingBottom: 16,
   },
-  clientName: { fontSize: 20, fontWeight: '700', color: '#0f172a' },
+  backBtn: { padding: 4 },
+  headerTitle: { fontSize: 20, fontWeight: '700', color: COLORS.headerText },
+  clientNameRow: {
+    backgroundColor: COLORS.card,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  clientName: { fontSize: 15, fontWeight: '600', color: COLORS.foreground },
   summaryRow: {
     flexDirection: 'row',
     gap: 10,
-    paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingHorizontal: 20,
+    paddingTop: 12,
   },
   summaryCard: {
     flex: 1,
     borderRadius: 14,
     padding: 14,
-    alignItems: 'center',
-  },
-  summaryLabel: { fontSize: 11, color: '#64748b', fontWeight: '500' },
-  summaryValue: { fontSize: 16, fontWeight: '800', color: '#0f172a', marginTop: 4 },
-  pendingBanner: {
-    marginHorizontal: 16,
-    marginTop: 10,
-    backgroundColor: '#fef2f2',
-    borderRadius: 14,
-    padding: 16,
-    alignItems: 'center',
+    backgroundColor: COLORS.card,
     borderWidth: 1,
-    borderColor: '#fecaca',
+    borderColor: COLORS.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  pendingLabel: { fontSize: 12, color: '#ef4444', fontWeight: '500' },
-  pendingValue: { fontSize: 24, fontWeight: '800', color: '#dc2626', marginTop: 4 },
-  actionRow: { paddingHorizontal: 16, paddingTop: 12 },
-  movHeader: {
+  summaryLabel: { fontSize: 11, color: COLORS.textSecondary, fontWeight: '500', marginBottom: 4 },
+  summaryValue: { fontSize: 18, fontWeight: '800' },
+  pendingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'space-between',
+    marginHorizontal: 20,
+    marginTop: 10,
+    backgroundColor: COLORS.card,
+    borderRadius: 14,
     paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  pendingLabel: { fontSize: 13, color: COLORS.textSecondary, fontWeight: '500', fontStyle: 'italic' },
+  pendingValue: { fontSize: 18, fontWeight: '800', color: '#dc2626' },
+  actionRow: { paddingHorizontal: 20, paddingTop: 12 },
+  movHeader: {
+    paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 12,
   },
-  movTitle: { fontSize: 15, fontWeight: '700', color: '#1e293b' },
+  movTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.foreground,
+  },
   movItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 16,
+    marginHorizontal: 20,
     marginBottom: 8,
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
+    backgroundColor: COLORS.card,
+    borderRadius: 14,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderColor: COLORS.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
   movIcon: {
     width: 36,
@@ -172,12 +218,12 @@ const styles = StyleSheet.create({
   },
   movContent: { flex: 1 },
   movConcepto: { fontSize: 13, fontWeight: '600', color: '#1e293b' },
-  movFecha: { fontSize: 11, color: '#94a3b8', marginTop: 2 },
+  movFecha: { fontSize: 11, color: COLORS.textTertiary, marginTop: 2 },
   movRight: { alignItems: 'flex-end' },
   movMonto: { fontSize: 14, fontWeight: '700' },
   montoRojo: { color: '#ef4444' },
-  montoVerde: { color: '#16a34a' },
-  movSaldo: { fontSize: 10, color: '#94a3b8', marginTop: 2 },
+  montoVerde: { color: COLORS.salesGreen },
+  movSaldo: { fontSize: 10, color: COLORS.textTertiary, marginTop: 2 },
   emptyMov: { alignItems: 'center', paddingVertical: 24 },
-  emptyText: { fontSize: 14, color: '#94a3b8' },
+  emptyText: { fontSize: 14, color: COLORS.textTertiary },
 });

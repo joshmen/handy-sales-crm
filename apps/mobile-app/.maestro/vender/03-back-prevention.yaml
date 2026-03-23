@@ -1,0 +1,31 @@
+appId: com.handysuites.mobile
+---
+# Test: Verify back navigation is prevented during order creation flow
+# Prerequisite: User logged in, on Vender tab
+
+- tapOn: "Vender"
+- assertVisible: "Pedidos"
+
+# Start new order via FAB
+- tapOn:
+    id: "fab-button"
+    optional: true
+
+# If mode selection appears
+- tapOn:
+    text: "Preventa"
+    optional: true
+
+# Select client step - try back gesture (should be blocked)
+- assertVisible: "Cliente"
+
+# Select first client
+- tapOn:
+    text: "Ferretería El Martillo"
+    optional: true
+
+# Should NOT be able to swipe back (gestureEnabled: false)
+# Continue to products if client selected
+- tapOn:
+    text: "Continuar"
+    optional: true

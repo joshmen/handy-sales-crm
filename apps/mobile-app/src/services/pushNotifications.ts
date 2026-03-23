@@ -155,9 +155,27 @@ export function getDeepLinkFromNotification(
   const safeEntityId = entityId && /^\d+$/.test(entityId) ? entityId : null;
 
   switch (type) {
+    case 'order.new':
+    case 'order.confirmed':
+    case 'order.processing':
+    case 'order.en_route':
+    case 'order.delivered':
+    case 'order.cancelled':
     case 'order.assigned':
     case 'order.status_changed':
       return safeEntityId ? `/(tabs)/vender/${safeEntityId}` : '/(tabs)/vender';
+    case 'cobro.new':
+      return safeEntityId ? `/(tabs)/cobrar/detalle-cobro/${safeEntityId}` : '/(tabs)/cobrar';
+    case 'stock.low':
+      return safeEntityId ? `/(tabs)/vender/producto/${safeEntityId}` : '/(tabs)/vender';
+    case 'goal.assigned':
+    case 'goal.achieved':
+      return '/(tabs)';
+    case 'announcement':
+      return '/(tabs)/notificaciones';
+    case 'security.device_revoked':
+    case 'security.session_revoked':
+      return null; // Handled separately — forces logout
     case 'route.published':
     case 'visit.reminder':
       return '/(tabs)/ruta';

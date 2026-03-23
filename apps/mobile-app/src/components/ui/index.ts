@@ -4,3 +4,6 @@ export { Card } from './Card';
 export { Badge } from './Badge';
 export { LoadingSpinner } from './LoadingSpinner';
 export { EmptyState } from './EmptyState';
+export { ConfirmModal } from './ConfirmModal';
+export { BottomSheet } from './BottomSheet';
+export { OfflineBanner } from './OfflineBanner';

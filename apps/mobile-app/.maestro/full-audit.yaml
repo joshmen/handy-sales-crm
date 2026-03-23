@@ -1,0 +1,66 @@
+appId: host.exp.exponent
+name: "Full Design Audit"
+---
+
+# Already logged in as admin
+
+# 1. Dashboard
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 15000
+- takeScreenshot: 01-dashboard-admin
+
+# 2. Vender tab
+- tapOn: "Vender"
+- takeScreenshot: 02-vender-pedidos
+
+# 3. Cobrar tab
+- tapOn: "Cobrar"
+- takeScreenshot: 03-cobrar-cobranza
+
+# 4. Equipo tab
+- tapOn: "Equipo"
+- takeScreenshot: 04-equipo
+
+# 5. Más tab
+- tapOn: "Mas"
+- takeScreenshot: 05-mas-tab
+
+# 6. Navigate to Configuración
+- tapOn: "Configuración"
+- takeScreenshot: 06-configuracion
+- back
+
+# 7. Navigate to Sincronización
+- tapOn: "Sincronización"
+- takeScreenshot: 07-sincronizacion
+- back
+
+# 8. Navigate to Notificaciones
+- tapOn: "Notificaciones"
+- takeScreenshot: 08-notificaciones
+- back
+
+# 9. Navigate to Ayuda
+- tapOn: "Ayuda"
+- takeScreenshot: 09-ayuda
+- back
+
+# 10. Navigate to Acerca de
+- tapOn: "Acerca de"
+- takeScreenshot: 10-acerca-de
+- back
+
+# 11. Navigate to Clientes
+- tapOn: "Clientes"
+- takeScreenshot: 11-clientes
+- back
+
+# 12. Navigate to Mi Perfil
+- tapOn: "Mi Perfil"
+- takeScreenshot: 12-perfil
+- back
+
+# 13. Back to Hoy
+- tapOn: "Hoy"
+- takeScreenshot: 13-final

@@ -1,10 +1,11 @@
-import { View, Text, ScrollView, TouchableOpacity, Alert, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Application from 'expo-application';
 import { useAuthStore } from '@/stores';
 import { useLogout } from '@/hooks';
-import { Badge } from '@/components/ui';
+import { Badge, ConfirmModal } from '@/components/ui';
 import {
   Users,
   ShoppingCart,
@@ -17,11 +18,14 @@ import {
   RefreshCcw,
   Mail,
   Printer,
+  Bell,
+  Info,
 } from 'lucide-react-native';
 import { SbClients, SbOrders, SbRoute } from '@/components/icons/DashboardIcons';
 import { HandyLogo } from '@/components/shared/HandyLogo';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { COLORS } from '@/theme/colors';
 
 const ROLE_LABELS: Record<string, string> = {
   SUPER_ADMIN: 'Super Admin',
@@ -32,7 +36,7 @@ const ROLE_LABELS: Record<string, string> = {
 
 const ROLE_COLORS: Record<string, string> = {
   SUPER_ADMIN: '#7c3aed',
-  ADMIN: '#2563eb',
+  ADMIN: '#4338CA',
   SUPERVISOR: '#d97706',
   VENDEDOR: '#16a34a',
 };
@@ -49,45 +53,35 @@ function MasScreenContent() {
   const user = useAuthStore(s => s.user);
   const router = useRouter();
   const logoutMutation = useLogout();
+  const [showLogout, setShowLogout] = useState(false);
 
   const handleLogout = () => {
-    Alert.alert(
-      'Cerrar Sesión',
-      '¿Estás seguro que deseas cerrar sesión?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Cerrar Sesión',
-          style: 'destructive',
-          onPress: () => logoutMutation.mutate(),
-        },
-      ]
-    );
+    setShowLogout(true);
   };
 
   const primaryItems: MenuItem[] = [
     {
       label: 'Clientes',
       icon: <SbClients size={20} />,
-      iconBg: '#ede9fe',
+      iconBg: COLORS.background,
       onPress: () => router.push('/(tabs)/clients'),
     },
     {
       label: 'Pedidos',
       icon: <SbOrders size={20} />,
-      iconBg: '#fef3c7',
+      iconBg: COLORS.background,
       onPress: () => router.push('/(tabs)/vender' as any),
     },
     {
       label: 'Ruta del Día',
       icon: <SbRoute size={20} />,
-      iconBg: '#dbeafe',
+      iconBg: COLORS.background,
       onPress: () => router.push('/(tabs)/ruta' as any),
     },
     {
       label: 'Sincronización',
-      icon: <RefreshCcw size={20} color="#0891b2" />,
-      iconBg: '#cffafe',
+      icon: <RefreshCcw size={20} color="#6b7280" />,
+      iconBg: COLORS.background,
       onPress: () => router.push('/(tabs)/sync' as any),
     },
   ];
@@ -95,33 +89,46 @@ function MasScreenContent() {
   const secondaryItems: MenuItem[] = [
     {
       label: 'Mi Perfil',
-      icon: <User size={20} color="#6366f1" />,
-      iconBg: '#e0e7ff',
+      icon: <User size={20} color="#6b7280" />,
+      iconBg: COLORS.background,
       onPress: () => router.push('/(tabs)/profile'),
     },
     {
       label: 'Configuración',
-      icon: <Settings size={20} color="#64748b" />,
-      iconBg: '#f1f5f9',
+      icon: <Settings size={20} color="#6b7280" />,
+      iconBg: COLORS.background,
       onPress: () => router.push('/(tabs)/configuracion' as any),
     },
     {
       label: 'Impresora',
-      icon: <Printer size={20} color="#0891b2" />,
-      iconBg: '#cffafe',
+      icon: <Printer size={20} color="#6b7280" />,
+      iconBg: COLORS.background,
       onPress: () => router.push('/(tabs)/impresora' as any),
     },
     {
+      label: 'Notificaciones',
+      icon: <Bell size={20} color="#6b7280" />,
+      iconBg: COLORS.background,
+      onPress: () => router.push('/(tabs)/notificaciones' as any),
+    },
+    {
       label: 'Ayuda',
-      icon: <HelpCircle size={20} color="#16a34a" />,
-      iconBg: '#dcfce7',
-      onPress: () => {},
+      icon: <HelpCircle size={20} color="#6b7280" />,
+      iconBg: COLORS.background,
+      onPress: () => router.push('/(tabs)/ayuda' as any),
+    },
+    {
+      label: 'Acerca de',
+      icon: <Info size={20} color="#6b7280" />,
+      iconBg: COLORS.background,
+      onPress: () => router.push('/(tabs)/acerca' as any),
     },
   ];
 
   const roleColor = ROLE_COLORS[user?.role || ''] || '#6b7280';
 
   return (
+    <>
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
@@ -138,14 +145,14 @@ function MasScreenContent() {
           <View style={styles.profileInfo}>
             <Text style={styles.profileName}>{user?.name || 'Usuario'}</Text>
             <View style={styles.emailRow}>
-              <Mail size={12} color="#94a3b8" />
+              <Mail size={12} color="rgba(255,255,255,0.6)" />
               <Text style={styles.emailText}>{user?.email || ''}</Text>
             </View>
             <View style={{ marginTop: 6 }}>
               <Badge
                 label={ROLE_LABELS[user?.role || ''] || user?.role || 'Usuario'}
-                color={roleColor}
-                bgColor={`${roleColor}15`}
+                color={COLORS.headerText}
+                bgColor="rgba(255,255,255,0.15)"
               />
             </View>
           </View>
@@ -197,9 +204,7 @@ function MasScreenContent() {
           onPress={handleLogout}
           activeOpacity={0.7}
         >
-          <View style={[styles.menuIcon, { backgroundColor: '#fee2e2' }]}>
-            <LogOut size={20} color="#ef4444" />
-          </View>
+          <LogOut size={20} color={COLORS.headerText} />
           <Text style={styles.logoutLabel}>Cerrar Sesión</Text>
         </TouchableOpacity>
       </Animated.View>
@@ -213,43 +218,47 @@ function MasScreenContent() {
         </Text>
       </View>
     </ScrollView>
+    <ConfirmModal
+      visible={showLogout}
+      title="Cerrar Sesión"
+      message="¿Estás seguro que deseas cerrar sesión?"
+      confirmText="Cerrar Sesión"
+      cancelText="Cancelar"
+      destructive
+      onConfirm={() => { setShowLogout(false); logoutMutation.mutate(); }}
+      onCancel={() => setShowLogout(false)}
+    />
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1, backgroundColor: COLORS.background },
   content: { paddingBottom: 32 },
   profileCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.headerBg,
     paddingHorizontal: 16,
     paddingBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
   },
   profileRow: { flexDirection: 'row', alignItems: 'center' },
   avatar: {
     width: 56,
     height: 56,
     borderRadius: 18,
-    backgroundColor: '#2563eb',
+    backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#2563eb',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
   },
-  avatarText: { fontSize: 24, fontWeight: '700', color: '#ffffff' },
+  avatarText: { fontSize: 24, fontWeight: '700', color: COLORS.headerText },
   profileInfo: { flex: 1, marginLeft: 14 },
-  profileName: { fontSize: 18, fontWeight: '700', color: '#0f172a' },
+  profileName: { fontSize: 18, fontWeight: '700', color: COLORS.headerText },
   emailRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
-  emailText: { fontSize: 13, color: '#94a3b8' },
+  emailText: { fontSize: 13, color: 'rgba(255,255,255,0.7)' },
   section: { paddingHorizontal: 16, paddingTop: 20 },
   sectionTitle: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#94a3b8',
+    color: COLORS.textTertiary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 10,
@@ -257,12 +266,17 @@ const styles = StyleSheet.create({
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.card,
     borderRadius: 14,
     padding: 14,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderColor: COLORS.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
   menuIcon: {
     width: 40,
@@ -276,15 +290,15 @@ const styles = StyleSheet.create({
   logoutItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    backgroundColor: COLORS.destructive,
     borderRadius: 14,
     padding: 14,
-    borderWidth: 1,
-    borderColor: '#fee2e2',
+    gap: 10,
   },
-  logoutLabel: { flex: 1, fontSize: 15, fontWeight: '600', color: '#ef4444' },
+  logoutLabel: { fontSize: 15, fontWeight: '600', color: COLORS.headerText },
   footer: { alignItems: 'center', paddingVertical: 24, gap: 4 },
-  footerBrand: { fontSize: 14, fontWeight: '600', color: '#94a3b8', marginTop: 6 },
+  footerBrand: { fontSize: 14, fontWeight: '600', color: COLORS.textTertiary, marginTop: 6 },
   footerVersion: { fontSize: 12, color: '#cbd5e1' },
 });
 

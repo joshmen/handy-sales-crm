@@ -1,0 +1,29 @@
+appId: com.handysuites.mobile
+---
+# Test: Navigate to new screens from Más tab
+# Prerequisite: User logged in as admin@jeyma.com
+
+- tapOn: "Más"
+- assertVisible: "Clientes"
+
+# Navigate to Notificaciones
+- tapOn: "Notificaciones"
+- assertVisible: "Notificaciones"
+- tapOn:
+    id: "back-button"
+    optional: true
+- back
+
+# Navigate to Ayuda
+- tapOn: "Ayuda"
+- assertVisible: "PREGUNTAS FRECUENTES"
+- assertVisible: "CONTACTO"
+- back
+
+# Navigate to Acerca de
+- tapOn: "Acerca de"
+- assertVisible: "Handy Suites"
+- assertVisible: "Términos de Servicio"
+- back
+
+- assertVisible: "Clientes"

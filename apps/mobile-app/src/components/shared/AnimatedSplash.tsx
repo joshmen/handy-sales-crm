@@ -14,6 +14,7 @@ import { api } from '@/api/client';
 import { Image as RNImage } from 'react-native';
 import { secureStorage } from '@/utils/storage';
 import { RefreshCcw } from 'lucide-react-native';
+import { COLORS } from '@/theme/colors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const LOGO_SIZE = SCREEN_WIDTH * 0.32;
@@ -80,7 +81,6 @@ export function AnimatedSplash({ onFinish, syncMode, onSyncComplete }: AnimatedS
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const progress = syncMode ? (syncPhase / (SYNC_TEXTS.length - 1)) : 0;
-  const isDone = syncPhase === SYNC_TEXTS.length - 1;
 
   const runSync = async () => {
     setSyncError(null);
@@ -109,7 +109,7 @@ export function AnimatedSplash({ onFinish, syncMode, onSyncComplete }: AnimatedS
         }
       } catch { /* non-fatal */ }
 
-      // Catálogos
+      // Catalogos
       setSyncPhase(5);
       try {
         await Promise.allSettled([
@@ -170,6 +170,9 @@ export function AnimatedSplash({ onFinish, syncMode, onSyncComplete }: AnimatedS
 
   return (
     <Animated.View style={[styles.container, { opacity: containerOpacity }]} pointerEvents={syncMode ? 'auto' : 'none'}>
+      {/* Dark gradient overlay (simulates photo + gradient from Pencil design) */}
+      <View style={styles.gradientOverlay} />
+
       <View style={styles.content}>
         <Animated.View style={[styles.logoWrap, { opacity: logoOpacity, transform: [{ scale: logoScale }] }]}>
           <LogoIcon size={LOGO_SIZE} />
@@ -183,9 +186,18 @@ export function AnimatedSplash({ onFinish, syncMode, onSyncComplete }: AnimatedS
 
         <Animated.View style={{ opacity: subtitleOpacity }}>
           <Text style={styles.subtitle}>
-            {syncMode && syncStarted ? SYNC_TEXTS[syncPhase] : 'Tu equipo de ventas, conectado'}
+            {syncMode && syncStarted ? SYNC_TEXTS[syncPhase] : 'Gestión de rutas en ruta'}
           </Text>
         </Animated.View>
+
+        {/* Dots indicator */}
+        {!syncMode && (
+          <Animated.View style={[styles.dotsRow, { opacity: subtitleOpacity }]}>
+            <View style={[styles.dot, styles.dotActive]} />
+            <View style={[styles.dot, styles.dotInactive]} />
+            <View style={[styles.dot, styles.dotInactive]} />
+          </Animated.View>
+        )}
 
         {/* Progress bar — only in sync mode */}
         {syncMode && (
@@ -210,8 +222,8 @@ export function AnimatedSplash({ onFinish, syncMode, onSyncComplete }: AnimatedS
         )}
       </View>
 
-      <Animated.View style={[styles.versionWrap, { opacity: subtitleOpacity }]}>
-        <Text style={styles.versionText}>v1.0.0</Text>
+      <Animated.View style={[styles.footerWrap, { opacity: subtitleOpacity }]}>
+        <Text style={styles.footerText}>Powered by Handy Tech</Text>
       </Animated.View>
     </Animated.View>
   );
@@ -220,30 +232,43 @@ export function AnimatedSplash({ onFinish, syncMode, onSyncComplete }: AnimatedS
 const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#0f172a',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 100,
   },
+  gradientOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#0f172a',
+    opacity: 0.92,
+  },
   content: { alignItems: 'center', justifyContent: 'center' },
   logoWrap: { marginBottom: 24 },
   textWrap: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 8 },
-  brandHandy: { fontSize: 32, fontWeight: '900', color: '#111827', letterSpacing: -1 },
-  brandSuites: { fontSize: 32, fontWeight: '300', color: '#9CA3AF', letterSpacing: -0.5 },
-  brandReg: { fontSize: 16, fontWeight: '400', color: '#9CA3AF', lineHeight: 24 },
-  subtitle: { fontSize: 14, fontWeight: '500', color: '#94a3b8', letterSpacing: 0.5, textAlign: 'center' },
-  versionWrap: { position: 'absolute', bottom: 48 },
-  versionText: { fontSize: 12, color: '#cbd5e1', fontWeight: '500' },
+  brandHandy: { fontSize: 38, fontWeight: '800', color: '#ffffff', letterSpacing: -1 },
+  brandSuites: { fontSize: 38, fontWeight: '300', color: '#ffffffcc', letterSpacing: -0.5 },
+  brandReg: { fontSize: 18, fontWeight: '400', color: '#ffffffcc', lineHeight: 28 },
+  subtitle: { fontSize: 15, fontWeight: '400', color: '#ffffffb3', letterSpacing: 0.3, textAlign: 'center' },
+
+  // Dots
+  dotsRow: { flexDirection: 'row', gap: 8, marginTop: 20, alignItems: 'center' },
+  dot: { borderRadius: 4 },
+  dotActive: { width: 8, height: 8, backgroundColor: '#ffffff' },
+  dotInactive: { width: 6, height: 6, backgroundColor: '#ffffff50', borderRadius: 3 },
+
+  // Footer
+  footerWrap: { position: 'absolute', bottom: 48 },
+  footerText: { fontSize: 11, color: '#ffffff50', fontWeight: '400' },
 
   // Sync progress
   progressSection: { marginTop: 32, width: SCREEN_WIDTH * 0.7, alignItems: 'center', gap: 8 },
-  progressBar: { width: '100%', height: 4, backgroundColor: '#e2e8f0', borderRadius: 2, overflow: 'hidden' },
-  progressFill: { height: '100%', backgroundColor: '#2563eb', borderRadius: 2 },
-  progressPercent: { fontSize: 12, fontWeight: '600', color: '#94a3b8' },
+  progressBar: { width: '100%', height: 4, backgroundColor: '#ffffff20', borderRadius: 2, overflow: 'hidden' },
+  progressFill: { height: '100%', backgroundColor: COLORS.primary, borderRadius: 2 },
+  progressPercent: { fontSize: 12, fontWeight: '600', color: '#ffffffb3' },
 
   // Error
   errorBox: { alignItems: 'center', gap: 12 },
   errorText: { fontSize: 13, color: '#ef4444', textAlign: 'center' },
-  retryBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#2563eb', paddingHorizontal: 20, height: 40, borderRadius: 10 },
+  retryBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: COLORS.primary, paddingHorizontal: 20, height: 40, borderRadius: 10 },
   retryText: { color: '#fff', fontWeight: '700', fontSize: 13 },
 });

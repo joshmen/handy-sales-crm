@@ -1,5 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, Text, ActivityIndicator, View, StyleSheet } from 'react-native';
+import { COLORS } from '@/theme/colors';
 
 interface ButtonProps {
   title: string;
@@ -14,11 +15,11 @@ interface ButtonProps {
 }
 
 const VARIANT_STYLES = {
-  primary: { bg: '#2563eb', text: '#ffffff' },
+  primary: { bg: COLORS.button, text: '#ffffff' },
   secondary: { bg: '#f1f5f9', text: '#334155' },
   danger: { bg: '#ef4444', text: '#ffffff' },
-  ghost: { bg: 'transparent', text: '#2563eb' },
-  outline: { bg: 'transparent', text: '#2563eb' },
+  ghost: { bg: 'transparent', text: COLORS.button },
+  outline: { bg: 'transparent', text: COLORS.button },
 };
 
 const SIZE_CONFIG = {
@@ -58,7 +59,7 @@ export function Button({
           opacity: isDisabled ? 0.5 : 1,
         },
         fullWidth && styles.fullWidth,
-        variant === 'outline' && { borderWidth: 1.5, borderColor: '#2563eb' },
+        variant === 'outline' && { borderWidth: 1.5, borderColor: COLORS.button },
         variant === 'primary' && styles.primaryShadow,
         variant === 'danger' && styles.dangerShadow,
       ]}
@@ -89,7 +90,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   primaryShadow: {
-    shadowColor: '#2563eb',
+    shadowColor: COLORS.button,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 8,

@@ -1,12 +1,14 @@
 import { useState, useCallback } from 'react';
 import { View, Text, FlatList, TextInput, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineProducts, useCategoriasProducto } from '@/hooks';
 import { useOrderDraftStore } from '@/stores';
 import { ProgressSteps } from '@/components/shared/ProgressSteps';
 import { QuantityStepper } from '@/components/shared/QuantityStepper';
 import { CartBar } from '@/components/shared/CartBar';
 import { EmptyState } from '@/components/ui';
+import { COLORS } from '@/theme/colors';
 import { formatCurrency } from '@/utils/format';
 import { Package, Search, Plus } from 'lucide-react-native';
 import type Producto from '@/db/models/Producto';
@@ -15,6 +17,7 @@ const STEPS = ['Cliente', 'Productos', 'Revisar'];
 
 export default function CrearPedidoStep2() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [busqueda, setBusqueda] = useState('');
   const [categoriaId, setCategoriaId] = useState<number | undefined>(undefined);
 
@@ -39,9 +42,7 @@ export default function CrearPedidoStep2() {
       return (
         <View style={styles.productCard}>
           <View style={styles.productRow}>
-            <View style={[styles.productIcon, { backgroundColor: '#eff6ff' }]}>
-              <Package size={20} color="#2563eb" />
-            </View>
+            <Package size={20} color={COLORS.textTertiary} style={{ marginRight: 10 }} />
             <View style={styles.productInfo}>
               <Text style={styles.productName} numberOfLines={1}>{item.nombre}</Text>
               <Text style={styles.productPrice}>{formatCurrency(item.precio)}</Text>
@@ -85,6 +86,10 @@ export default function CrearPedidoStep2() {
 
   return (
     <View style={styles.container}>
+      {/* Blue Header */}
+      <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
+        <Text style={styles.blueHeaderTitle}>Productos</Text>
+      </View>
       <ProgressSteps steps={STEPS} currentStep={1} />
 
       {/* Search + Filters */}
@@ -153,7 +158,9 @@ export default function CrearPedidoStep2() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1, backgroundColor: COLORS.background },
+  blueHeader: { backgroundColor: COLORS.headerBg, paddingHorizontal: 20, paddingBottom: 12, alignItems: 'center' as const },
+  blueHeaderTitle: { fontSize: 20, fontWeight: '700' as const, color: COLORS.headerText, textAlign: 'center' as const },
   searchSection: {
     backgroundColor: '#ffffff',
     borderBottomWidth: 1,
@@ -179,7 +186,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: '#f1f5f9',
   },
-  chipActive: { backgroundColor: '#2563eb' },
+  chipActive: { backgroundColor: COLORS.button },
   chipText: { fontSize: 12, fontWeight: '600', color: '#64748b' },
   chipTextActive: { color: '#ffffff' },
   listContent: { paddingTop: 8, paddingBottom: 100 },
@@ -193,17 +200,9 @@ const styles = StyleSheet.create({
     borderColor: '#f1f5f9',
   },
   productRow: { flexDirection: 'row', alignItems: 'center' },
-  productIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
-  },
   productInfo: { flex: 1 },
-  productName: { fontSize: 14, fontWeight: '600', color: '#1e293b' },
-  productPrice: { fontSize: 13, fontWeight: '700', color: '#2563eb', marginTop: 2 },
+  productName: { fontSize: 14, fontWeight: '600', color: COLORS.foreground },
+  productPrice: { fontSize: 13, fontWeight: '700', color: COLORS.salesGreen, marginTop: 2 },
   stockLabel: { fontSize: 10, fontWeight: '600', marginTop: 2 },
   stockOk: { color: '#16a34a' },
   stockLow: { color: '#ef4444' },
@@ -211,7 +210,7 @@ const styles = StyleSheet.create({
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2563eb',
+    backgroundColor: COLORS.button,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 8,

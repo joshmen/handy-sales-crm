@@ -1,16 +1,20 @@
-import { View, Text, ScrollView, Switch, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, Switch, StyleSheet, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'expo-router';
 import { Card } from '@/components/ui';
-import { Bell, Wifi, Info, Shield, FileText } from 'lucide-react-native';
+import { Bell, Wifi, Info, Shield, FileText, ChevronLeft } from 'lucide-react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Application from 'expo-application';
 import { secureStorage } from '@/utils/storage';
+import { COLORS } from '@/theme/colors';
 
 const PUSH_KEY = 'config_push_enabled';
 const SYNC_KEY = 'config_auto_sync';
 
 export default function ConfiguracionScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const [pushEnabled, setPushEnabled] = useState(true);
   const [autoSync, setAutoSync] = useState(true);
 
@@ -33,58 +37,65 @@ export default function ConfiguracionScreen() {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 16 }]}
+      contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={styles.pageTitle}>Configuración</Text>
+      {/* Blue Header */}
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+        <TouchableOpacity onPress={() => router.navigate('/(tabs)/mas' as any)} style={styles.backBtn}>
+          <ChevronLeft size={22} color={COLORS.headerText} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Configuración</Text>
+        <View style={{ width: 22 }} />
+      </View>
 
+      <View style={styles.body}>
       {/* Notifications */}
-      <Text style={styles.sectionTitle}>Notificaciones</Text>
-      <Card className="mb-4">
-        <View style={styles.settingRow}>
-          <View style={[styles.settingIcon, { backgroundColor: '#dbeafe' }]}>
-            <Bell size={18} color="#2563eb" />
+      <Animated.View entering={FadeInDown.duration(400).delay(100)}>
+        <Text style={styles.sectionTitle}>Notificaciones</Text>
+        <Card className="mb-4">
+          <View style={styles.settingRow}>
+            <Bell size={18} color="#6b7280" style={{ marginRight: 12 }} />
+            <View style={styles.settingContent}>
+              <Text style={styles.settingLabel}>Notificaciones push</Text>
+              <Text style={styles.settingDesc}>Recibe alertas de pedidos y rutas</Text>
+            </View>
+            <Switch
+              value={pushEnabled}
+              onValueChange={togglePush}
+              trackColor={{ false: '#e2e8f0', true: '#86efac' }}
+              thumbColor={pushEnabled ? '#16a34a' : '#f1f5f9'}
+            />
           </View>
-          <View style={styles.settingContent}>
-            <Text style={styles.settingLabel}>Notificaciones push</Text>
-            <Text style={styles.settingDesc}>Recibe alertas de pedidos y rutas</Text>
-          </View>
-          <Switch
-            value={pushEnabled}
-            onValueChange={togglePush}
-            trackColor={{ false: '#e2e8f0', true: '#93c5fd' }}
-            thumbColor={pushEnabled ? '#2563eb' : '#f1f5f9'}
-          />
-        </View>
-      </Card>
+        </Card>
+      </Animated.View>
 
       {/* Data */}
-      <Text style={styles.sectionTitle}>Datos</Text>
-      <Card className="mb-4">
-        <View style={styles.settingRow}>
-          <View style={[styles.settingIcon, { backgroundColor: '#dcfce7' }]}>
-            <Wifi size={18} color="#16a34a" />
+      <Animated.View entering={FadeInDown.duration(400).delay(200)}>
+        <Text style={styles.sectionTitle}>Datos</Text>
+        <Card className="mb-4">
+          <View style={styles.settingRow}>
+            <Wifi size={18} color="#6b7280" style={{ marginRight: 12 }} />
+            <View style={styles.settingContent}>
+              <Text style={styles.settingLabel}>Sincronización automática</Text>
+              <Text style={styles.settingDesc}>Sincronizar datos cuando haya conexión</Text>
+            </View>
+            <Switch
+              value={autoSync}
+              onValueChange={toggleSync}
+              trackColor={{ false: '#e2e8f0', true: '#86efac' }}
+              thumbColor={autoSync ? '#16a34a' : '#f1f5f9'}
+            />
           </View>
-          <View style={styles.settingContent}>
-            <Text style={styles.settingLabel}>Sincronización automática</Text>
-            <Text style={styles.settingDesc}>Sincronizar datos cuando haya conexión</Text>
-          </View>
-          <Switch
-            value={autoSync}
-            onValueChange={toggleSync}
-            trackColor={{ false: '#e2e8f0', true: '#86efac' }}
-            thumbColor={autoSync ? '#16a34a' : '#f1f5f9'}
-          />
-        </View>
-      </Card>
+        </Card>
+      </Animated.View>
 
       {/* About */}
+      <Animated.View entering={FadeInDown.duration(400).delay(300)}>
       <Text style={styles.sectionTitle}>Acerca de</Text>
       <Card className="mb-4">
         <View style={styles.aboutItem}>
-          <View style={[styles.settingIcon, { backgroundColor: '#f1f5f9' }]}>
-            <Info size={18} color="#64748b" />
-          </View>
+          <Info size={18} color="#6b7280" style={{ marginRight: 12 }} />
           <View style={styles.settingContent}>
             <Text style={styles.settingLabel}>Versión</Text>
             <Text style={styles.settingDesc}>
@@ -94,9 +105,7 @@ export default function ConfiguracionScreen() {
         </View>
         <View style={styles.divider} />
         <View style={styles.aboutItem}>
-          <View style={[styles.settingIcon, { backgroundColor: '#ede9fe' }]}>
-            <Shield size={18} color="#7c3aed" />
-          </View>
+          <Shield size={18} color="#6b7280" style={{ marginRight: 12 }} />
           <View style={styles.settingContent}>
             <Text style={styles.settingLabel}>Privacidad</Text>
             <Text style={styles.settingDesc}>Política de privacidad</Text>
@@ -104,27 +113,37 @@ export default function ConfiguracionScreen() {
         </View>
         <View style={styles.divider} />
         <View style={styles.aboutItem}>
-          <View style={[styles.settingIcon, { backgroundColor: '#fef3c7' }]}>
-            <FileText size={18} color="#d97706" />
-          </View>
+          <FileText size={18} color="#6b7280" style={{ marginRight: 12 }} />
           <View style={styles.settingContent}>
             <Text style={styles.settingLabel}>Términos</Text>
             <Text style={styles.settingDesc}>Términos y condiciones</Text>
           </View>
         </View>
       </Card>
+      </Animated.View>
+      </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
-  content: { paddingHorizontal: 16, paddingBottom: 32 },
-  pageTitle: { fontSize: 28, fontWeight: '800', color: '#0f172a', marginBottom: 24 },
+  container: { flex: 1, backgroundColor: COLORS.background },
+  content: { paddingBottom: 32 },
+  header: {
+    backgroundColor: COLORS.headerBg,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  backBtn: { padding: 4 },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: COLORS.headerText, textAlign: 'center' },
+  body: { paddingHorizontal: 16, paddingTop: 20 },
   sectionTitle: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#94a3b8',
+    color: COLORS.textTertiary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 10,
@@ -133,17 +152,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  settingIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
   settingContent: { flex: 1 },
   settingLabel: { fontSize: 15, fontWeight: '600', color: '#1e293b' },
-  settingDesc: { fontSize: 12, color: '#94a3b8', marginTop: 2 },
+  settingDesc: { fontSize: 12, color: COLORS.textTertiary, marginTop: 2 },
   aboutItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -151,8 +162,8 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: COLORS.border,
     marginVertical: 10,
-    marginLeft: 48,
+    marginLeft: 30,
   },
 });

@@ -7,11 +7,13 @@ import { View, Text, FlatList, RefreshControl, ScrollView, TouchableOpacity, Sty
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineOrders, useClientNameMap } from '@/hooks';
-import { Card, LoadingSpinner, EmptyState } from '@/components/ui';
+import { useAuthStore, useOrderDraftStore } from '@/stores';
+import { Card, LoadingSpinner, EmptyState, BottomSheet } from '@/components/ui';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { ORDER_STATUS_COLORS } from '@/constants/colors';
+import { COLORS } from '@/theme/colors';
 import { formatCurrency, formatDate } from '@/utils/format';
-import { ShoppingCart, ChevronRight, Calendar, Plus } from 'lucide-react-native';
+import { ShoppingCart, ChevronRight, Calendar, Plus, ClipboardList, Truck } from 'lucide-react-native';
 import { performSync } from '@/sync/syncEngine';
 import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
 import type Pedido from '@/db/models/Pedido';
@@ -28,7 +30,12 @@ const STATUS_FILTERS = [
 export default function VenderListScreen() {
   const insets = useSafeAreaInsets();
   const [statusFilter, setStatusFilter] = useState<number | undefined>(undefined);
+  const [showOrderTypeSheet, setShowOrderTypeSheet] = useState(false);
   const router = useRouter();
+  const role = useAuthStore(s => s.user?.role);
+  const { setTipoVenta, reset: resetDraft } = useOrderDraftStore();
+
+  const isVendedor = role === 'VENDEDOR';
 
   const { data: allOrders, isLoading } = useOfflineOrders();
   const clientNames = useClientNameMap();
@@ -41,6 +48,21 @@ export default function VenderListScreen() {
 
   const total = orders.length;
 
+  const handleFabPress = () => {
+    if (isVendedor) {
+      router.push('/(tabs)/vender/crear/modo' as any);
+    } else {
+      setShowOrderTypeSheet(true);
+    }
+  };
+
+  const handleOrderTypeSelect = (tipo: number) => {
+    setShowOrderTypeSheet(false);
+    resetDraft();
+    setTipoVenta(tipo);
+    router.push('/(tabs)/vender/crear' as any);
+  };
+
   const renderItem = useCallback(
     ({ item }: { item: Pedido }) => (
       <Card
@@ -48,15 +70,6 @@ export default function VenderListScreen() {
         onPress={() => router.push(`/(tabs)/vender/${item.id}` as any)}
       >
         <View style={styles.orderRow}>
-          <View style={[
-            styles.orderIcon,
-            { backgroundColor: (ORDER_STATUS_COLORS[item.estado] ?? ORDER_STATUS_COLORS[0]).bg },
-          ]}>
-            <ShoppingCart
-              size={18}
-              color={(ORDER_STATUS_COLORS[item.estado] ?? ORDER_STATUS_COLORS[0]).text}
-            />
-          </View>
           <View style={styles.orderContent}>
             <View style={styles.orderHeader}>
               <Text style={styles.orderNumber}>
@@ -69,7 +82,7 @@ export default function VenderListScreen() {
             </Text>
             <View style={styles.orderFooter}>
               <View style={styles.dateRow}>
-                <Calendar size={11} color="#94a3b8" />
+                <Calendar size={11} color={COLORS.textTertiary} />
                 <Text style={styles.dateText}>
                   {formatDate(item.fechaPedido || item.createdAt)}
                 </Text>
@@ -77,7 +90,7 @@ export default function VenderListScreen() {
               <Text style={styles.totalText}>{formatCurrency(item.total)}</Text>
             </View>
           </View>
-          <ChevronRight size={18} color="#cbd5e1" style={{ marginLeft: 4 }} />
+          <ChevronRight size={18} color={COLORS.textTertiary} style={{ marginLeft: 4 }} />
         </View>
       </Card>
     ),
@@ -145,15 +158,15 @@ export default function VenderListScreen() {
         })}
         contentContainerStyle={styles.listContent}
         refreshControl={
-          <RefreshControl refreshing={false} onRefresh={() => performSync()} tintColor="#2563eb" colors={['#2563eb']} />
+          <RefreshControl refreshing={false} onRefresh={() => performSync()} tintColor={COLORS.primary} colors={[COLORS.primary]} />
         }
         ListEmptyComponent={
           <EmptyState
-            icon={<ShoppingCart size={48} color="#cbd5e1" />}
+            icon={<ShoppingCart size={48} color={COLORS.textTertiary} />}
             title="Sin pedidos"
             message="No tienes pedidos registrados"
-            actionLabel="Crear Pedido"
-            onAction={() => router.push('/(tabs)/vender/crear/modo' as any)}
+            actionText="Crear Pedido"
+            onAction={handleFabPress}
           />
         }
       />
@@ -162,39 +175,92 @@ export default function VenderListScreen() {
       <TouchableOpacity
         testID="fab-nuevo-pedido"
         style={styles.fab}
-        onPress={() => router.push('/(tabs)/vender/crear/modo' as any)}
+        onPress={handleFabPress}
         activeOpacity={0.85}
       >
-        <Plus size={24} color="#ffffff" />
+        <Plus size={24} color={COLORS.headerText} />
       </TouchableOpacity>
+
+      {/* BottomSheet for order type (Supervisor/Admin) */}
+      <BottomSheet
+        visible={showOrderTypeSheet}
+        title="Que tipo de pedido?"
+        subtitle="Selecciona el tipo de venta"
+        onClose={() => setShowOrderTypeSheet(false)}
+      >
+        <View style={styles.orderTypeOptions}>
+          <TouchableOpacity
+            style={styles.orderTypeCard}
+            onPress={() => handleOrderTypeSelect(0)}
+            activeOpacity={0.85}
+          >
+            <ClipboardList size={24} color="#6b7280" />
+            <View style={styles.orderTypeInfo}>
+              <Text style={styles.orderTypeTitle}>Preventa</Text>
+              <Text style={styles.orderTypeDesc}>Levantar pedido para entrega posterior</Text>
+            </View>
+            <ChevronRight size={18} color={COLORS.textTertiary} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.orderTypeCard}
+            onPress={() => handleOrderTypeSelect(1)}
+            activeOpacity={0.85}
+          >
+            <Truck size={24} color="#6b7280" />
+            <View style={styles.orderTypeInfo}>
+              <Text style={styles.orderTypeTitle}>Venta Directa</Text>
+              <Text style={styles.orderTypeDesc}>Vender, cobrar y entregar ahora</Text>
+            </View>
+            <ChevronRight size={18} color={COLORS.textTertiary} />
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
-  customHeader: { paddingHorizontal: 20, paddingBottom: 8 },
-  screenTitle: { fontSize: 28, fontWeight: '800', color: '#0f172a', letterSpacing: -0.5 },
-  filterSection: { backgroundColor: '#ffffff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9', paddingBottom: 8 },
+  container: { flex: 1, backgroundColor: COLORS.background },
+  customHeader: { paddingHorizontal: 20, paddingBottom: 12, backgroundColor: COLORS.headerBg },
+  screenTitle: { fontSize: 20, fontWeight: '700', color: COLORS.headerText, textAlign: 'center' },
+  filterSection: { backgroundColor: COLORS.card, borderBottomWidth: 1, borderBottomColor: COLORS.border, paddingBottom: 8 },
   filterScroll: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4, gap: 8 },
   countRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, gap: 6 },
-  countBadge: { backgroundColor: '#2563eb', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2, minWidth: 28, alignItems: 'center' },
-  countBadgeText: { fontSize: 12, fontWeight: '700', color: '#ffffff' },
+  countBadge: { backgroundColor: COLORS.button, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2, minWidth: 28, alignItems: 'center' },
+  countBadgeText: { fontSize: 12, fontWeight: '700', color: COLORS.headerText },
   countText: { fontSize: 13, color: '#475569', fontWeight: '500' },
-  chip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: '#f1f5f9', borderWidth: 1, borderColor: '#f1f5f9' },
-  chipActive: { backgroundColor: '#2563eb', borderColor: '#2563eb' },
-  chipText: { fontSize: 13, fontWeight: '600', color: '#64748b' },
-  chipTextActive: { color: '#ffffff' },
+  chip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: COLORS.border, borderWidth: 1, borderColor: COLORS.border },
+  chipActive: { backgroundColor: COLORS.button, borderColor: COLORS.button },
+  chipText: { fontSize: 13, fontWeight: '600', color: COLORS.textSecondary },
+  chipTextActive: { color: COLORS.headerText },
   listContent: { paddingTop: 12, paddingBottom: 80 },
   orderRow: { flexDirection: 'row', alignItems: 'center' },
-  orderIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   orderContent: { flex: 1 },
   orderHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 },
-  orderNumber: { fontSize: 15, fontWeight: '700', color: '#1e293b' },
-  clientName: { fontSize: 13, color: '#64748b', marginBottom: 6 },
+  orderNumber: { fontSize: 15, fontWeight: '700', color: COLORS.foreground },
+  clientName: { fontSize: 13, color: COLORS.textSecondary, marginBottom: 6 },
   orderFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   dateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  dateText: { fontSize: 11, color: '#94a3b8' },
-  totalText: { fontSize: 14, fontWeight: '700', color: '#0f172a' },
-  fab: { position: 'absolute', right: 20, bottom: 90, width: 56, height: 56, borderRadius: 16, backgroundColor: '#2563eb', alignItems: 'center', justifyContent: 'center', shadowColor: '#2563eb', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 },
+  dateText: { fontSize: 11, color: COLORS.textTertiary },
+  totalText: { fontSize: 14, fontWeight: '700', color: COLORS.salesGreen },
+  fab: {
+    position: 'absolute', right: 20, bottom: 90, width: 56, height: 56, borderRadius: 16,
+    backgroundColor: COLORS.button,
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: COLORS.button, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8,
+  },
+  orderTypeOptions: { gap: 12 },
+  orderTypeCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.card,
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    gap: 14,
+  },
+  orderTypeInfo: { flex: 1 },
+  orderTypeTitle: { fontSize: 16, fontWeight: '700', color: COLORS.foreground },
+  orderTypeDesc: { fontSize: 13, color: COLORS.textSecondary, marginTop: 2 },
 });

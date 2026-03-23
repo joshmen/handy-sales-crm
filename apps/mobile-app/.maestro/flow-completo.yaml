@@ -1,0 +1,34 @@
+appId: host.exp.exponent
+name: "Flow Completo - Todos los flujos"
+---
+
+# Login (ya logueado como admin)
+- extendedWaitUntil:
+    visible: "Hoy"
+    timeout: 15000
+
+# === FLUJO 1: Navegar tabs ===
+- tapOn: "Vender"
+- tapOn: "Cobrar"
+- tapOn: "Equipo"
+- tapOn: "Mas"
+- tapOn: "Hoy"
+
+# === FLUJO 2: Crear pedido (admin = BottomSheet) ===
+- tapOn: "Vender"
+- tapOn:
+    id: "fab-button"
+    optional: true
+
+# === FLUJO 3: Cobrar ===
+- tapOn: "Cobrar"
+
+# === FLUJO 4: Más tab navegación ===
+- tapOn: "Mas"
+- tapOn: "Clientes"
+- back
+- tapOn: "Hoy"
+
+# === FLUJO 5: Equipo ===
+- tapOn: "Equipo"
+- tapOn: "Hoy"

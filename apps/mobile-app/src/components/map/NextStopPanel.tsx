@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Linking, Platform } from 'react-native';
 import { Navigation, MapPin, ArrowRight } from 'lucide-react-native';
 import { formatDistance } from '@/services/geoCheckin';
+import { COLORS } from '@/theme/colors';
 
 interface NextStopPanelProps {
   orden: number;
@@ -59,7 +60,7 @@ function NextStopPanelInner({
           <Text style={styles.actionText}>Navegar</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.actionBtn, { backgroundColor: '#2563eb' }]}
+          style={[styles.actionBtn, { backgroundColor: COLORS.primary }]}
           onPress={onCheckIn}
           activeOpacity={0.85}
         >
@@ -97,12 +98,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   badge: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: COLORS.primaryLight,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
   },
-  badgeText: { fontSize: 12, fontWeight: '700', color: '#2563eb' },
+  badgeText: { fontSize: 12, fontWeight: '700', color: COLORS.primary },
   distance: { fontSize: 13, fontWeight: '600', color: '#64748b' },
   name: { fontSize: 17, fontWeight: '700', color: '#0f172a' },
   address: { fontSize: 13, color: '#64748b', marginTop: 2, marginBottom: 12 },

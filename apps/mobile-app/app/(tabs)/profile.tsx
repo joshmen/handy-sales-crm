@@ -1,12 +1,15 @@
-import { View, Text, Alert, ScrollView, StyleSheet } from 'react-native';
+import { useState } from 'react';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Application from 'expo-application';
 import { useAuthStore } from '@/stores';
 import { useLogout } from '@/hooks';
-import { Card, Button, Badge } from '@/components/ui';
-import { Mail, LogOut, Info, Shield, Building2, Smartphone } from 'lucide-react-native';
+import { Card, Button, Badge, ConfirmModal } from '@/components/ui';
+import { Mail, Shield, Building2, Smartphone, ChevronLeft } from 'lucide-react-native';
 import { HandyLogo } from '@/components/shared/HandyLogo';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { COLORS } from '@/theme/colors';
 
 const ROLE_LABELS: Record<string, string> = {
   SUPER_ADMIN: 'Super Admin',
@@ -17,29 +20,20 @@ const ROLE_LABELS: Record<string, string> = {
 
 const ROLE_COLORS: Record<string, string> = {
   SUPER_ADMIN: '#7c3aed',
-  ADMIN: '#2563eb',
+  ADMIN: '#4338CA',
   SUPERVISOR: '#d97706',
   VENDEDOR: '#16a34a',
 };
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { user } = useAuthStore();
   const logoutMutation = useLogout();
+  const [showLogout, setShowLogout] = useState(false);
 
   const handleLogout = () => {
-    Alert.alert(
-      'Cerrar Sesión',
-      '¿Estás seguro que deseas cerrar sesión?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Cerrar Sesión',
-          style: 'destructive',
-          onPress: () => logoutMutation.mutate(),
-        },
-      ]
-    );
+    setShowLogout(true);
   };
 
   if (!user) return null;
@@ -47,13 +41,21 @@ export default function ProfileScreen() {
   const roleColor = ROLE_COLORS[user.role] || '#6b7280';
 
   return (
+    <>
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      {/* Profile Header */}
-      <Animated.View entering={FadeInDown.duration(400)} style={[styles.profileHeader, { paddingTop: insets.top + 16 }]}>
+      {/* Blue header background + back button */}
+      <View style={[styles.headerBg, { paddingTop: insets.top + 16 }]}>
+        <TouchableOpacity onPress={() => router.navigate('/(tabs)/mas' as any)} style={styles.backBtn}>
+          <ChevronLeft size={22} color={COLORS.headerText} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Overlapping avatar + profile info */}
+      <Animated.View entering={FadeInDown.duration(400)} style={styles.profileHeader}>
         <View style={styles.avatarLarge}>
           <Text style={styles.avatarText}>
             {user.name?.[0]?.toUpperCase() || 'U'}
@@ -61,7 +63,7 @@ export default function ProfileScreen() {
         </View>
         <Text style={styles.userName}>{user.name}</Text>
         <View style={styles.emailRow}>
-          <Mail size={13} color="#94a3b8" />
+          <Mail size={13} color={COLORS.textTertiary} />
           <Text style={styles.emailText}>{user.email}</Text>
         </View>
         <View style={styles.roleBadge}>
@@ -78,9 +80,7 @@ export default function ProfileScreen() {
       <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.infoSection}>
         <Card className="mb-3">
           <View style={styles.infoRow}>
-            <View style={[styles.infoIcon, { backgroundColor: '#ede9fe' }]}>
-              <Shield size={16} color="#7c3aed" />
-            </View>
+            <Shield size={16} color="#6b7280" style={{ marginRight: 12 }} />
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Rol</Text>
               <Text style={styles.infoValue}>
@@ -93,9 +93,7 @@ export default function ProfileScreen() {
         {user.tenantName && (
           <Card className="mb-3">
             <View style={styles.infoRow}>
-              <View style={[styles.infoIcon, { backgroundColor: '#dbeafe' }]}>
-                <Building2 size={16} color="#2563eb" />
-              </View>
+              <Building2 size={16} color="#6b7280" style={{ marginRight: 12 }} />
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Empresa</Text>
                 <Text style={styles.infoValue}>{user.tenantName}</Text>
@@ -106,9 +104,7 @@ export default function ProfileScreen() {
 
         <Card className="mb-3">
           <View style={styles.infoRow}>
-            <View style={[styles.infoIcon, { backgroundColor: '#f0fdf4' }]}>
-              <Smartphone size={16} color="#16a34a" />
-            </View>
+            <Smartphone size={16} color="#6b7280" style={{ marginRight: 12 }} />
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Versión</Text>
               <Text style={styles.infoValue}>
@@ -127,7 +123,6 @@ export default function ProfileScreen() {
           variant="danger"
           fullWidth
           loading={logoutMutation.isPending}
-          icon={<LogOut size={18} color="#ffffff" />}
         />
       </Animated.View>
 
@@ -138,48 +133,65 @@ export default function ProfileScreen() {
         <Text style={styles.brandSubtext}>Gestión de ventas en ruta</Text>
       </View>
     </ScrollView>
+    <ConfirmModal
+      visible={showLogout}
+      title="Cerrar Sesión"
+      message="¿Estás seguro que deseas cerrar sesión?"
+      confirmText="Cerrar Sesión"
+      cancelText="Cancelar"
+      destructive
+      onConfirm={() => { setShowLogout(false); logoutMutation.mutate(); }}
+      onCancel={() => setShowLogout(false)}
+    />
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COLORS.background,
   },
   content: {
     paddingBottom: 32,
   },
+  headerBg: {
+    backgroundColor: COLORS.headerBg,
+    height: 140,
+    paddingHorizontal: 16,
+  },
+  backBtn: { padding: 4, alignSelf: 'flex-start' },
   profileHeader: {
     alignItems: 'center',
-    paddingVertical: 32,
     paddingHorizontal: 16,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    marginTop: -50,
+    paddingBottom: 20,
   },
   avatarLarge: {
     width: 80,
     height: 80,
     borderRadius: 24,
-    backgroundColor: '#2563eb',
+    backgroundColor: COLORS.headerBg,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
-    shadowColor: '#2563eb',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
+    borderWidth: 4,
+    borderColor: COLORS.card,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 6,
   },
   avatarText: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#ffffff',
+    color: COLORS.headerText,
   },
   userName: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#0f172a',
+    color: COLORS.foreground,
   },
   emailRow: {
     flexDirection: 'row',
@@ -189,7 +201,7 @@ const styles = StyleSheet.create({
   },
   emailText: {
     fontSize: 14,
-    color: '#94a3b8',
+    color: COLORS.textTertiary,
   },
   roleBadge: {
     marginTop: 12,
@@ -201,23 +213,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  infoIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
   infoContent: {
     flex: 1,
   },
   infoLabel: {
     fontSize: 11,
-    color: '#94a3b8',
-    fontWeight: '500',
+    color: COLORS.textTertiary,
+    fontWeight: '600',
     textTransform: 'uppercase',
-    letterSpacing: 0.3,
+    letterSpacing: 0.5,
   },
   infoValue: {
     fontSize: 15,
@@ -237,7 +241,7 @@ const styles = StyleSheet.create({
   brandText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#94a3b8',
+    color: COLORS.textTertiary,
     marginTop: 6,
   },
   brandSubtext: {

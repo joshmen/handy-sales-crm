@@ -1,16 +1,19 @@
 import { useState } from 'react';
 import { View, Text, ScrollView, TextInput, Alert, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOrderDraftStore } from '@/stores';
 import { useAuthStore } from '@/stores';
 import { createPedidoOffline, createVentaDirectaOffline } from '@/db/actions';
 import { performSync } from '@/sync/syncEngine';
 import { pedidosApi } from '@/api';
 import { ProgressSteps } from '@/components/shared/ProgressSteps';
-import { Card, Button } from '@/components/ui';
+import { Card, Button, ConfirmModal } from '@/components/ui';
 import { QuantityStepper } from '@/components/shared/QuantityStepper';
+import { COLORS } from '@/theme/colors';
 import { formatCurrency } from '@/utils/format';
 import { User, Package, Send, Zap, Banknote, Building2, FileText, CreditCard, Wallet, MoreHorizontal } from 'lucide-react-native';
+import { SbOrders } from '@/components/icons/DashboardIcons';
 
 const STEPS = ['Cliente', 'Productos', 'Revisar'];
 
@@ -25,8 +28,10 @@ const METODO_PAGO_OPTIONS = [
 
 export default function CrearPedidoStep3() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const user = useAuthStore(s => s.user);
   const [sending, setSending] = useState(false);
+  const [showConfirmPedido, setShowConfirmPedido] = useState(false);
 
   const {
     clienteId,
@@ -50,111 +55,101 @@ export default function CrearPedidoStep3() {
 
   const handleEnviar = () => {
     if (!clienteId || items.length === 0) return;
+    setShowConfirmPedido(true);
+  };
 
-    const alertTitle = isDirecta ? 'Venta Directa' : 'Levantar Pedido';
-    const alertMessage = isDirecta
-      ? `¿Confirmar venta directa para ${clienteNombre}?\n\nTotal: ${formatCurrency(total())}`
-      : `¿Confirmar pedido para ${clienteNombre}?\n\nTotal: ${formatCurrency(total())}`;
-    const confirmText = isDirecta ? 'Cobrar' : 'Enviar';
+  const executeEnviarPedido = async () => {
+    setShowConfirmPedido(false);
+    setSending(true);
+    try {
+      const mappedItems = items.map((item) => ({
+        productoId: item.productoId,
+        productoServerId: item.productoServerId,
+        productoNombre: item.nombre,
+        cantidad: item.cantidad,
+        precioUnitario: item.precioUnitario,
+      }));
 
-    Alert.alert(
-      alertTitle,
-      alertMessage,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: confirmText,
-          onPress: async () => {
-            setSending(true);
-            try {
-              const mappedItems = items.map((item) => ({
-                productoId: item.productoId,
-                productoServerId: item.productoServerId,
-                productoNombre: item.nombre,
-                cantidad: item.cantidad,
-                precioUnitario: item.precioUnitario,
-              }));
-
-              if (isDirecta) {
-                const montoTotal = total();
-                const metodo = metodoPago ?? 0;
-                const nombre = clienteNombre || 'Cliente';
-                const { pedido } = await createVentaDirectaOffline(
-                  clienteId,
-                  clienteServerId,
-                  user?.id ? Number(user.id) : 0,
-                  mappedItems,
-                  metodo,
-                  montoTotal,
-                  undefined,
-                  notas || undefined
-                );
-                reset();
-                performSync().catch(() => {});
-                // Navigate to cobro receipt for printing (VD = sale + immediate payment)
-                router.replace({
-                  pathname: '/(tabs)/cobrar/recibo',
-                  params: {
-                    clienteNombre: encodeURIComponent(nombre),
-                    monto: String(montoTotal),
-                    metodoPago: String(metodo),
-                    referencia: encodeURIComponent(pedido.id.slice(0, 8)),
-                    notas: encodeURIComponent(notas || ''),
-                    fecha: new Date().toISOString(),
-                    fromVentaDirecta: '1',
-                    pedidoId: pedido.id,
-                  },
-                } as any);
-              } else {
-                const pedido = await createPedidoOffline(
-                  clienteId,
-                  clienteServerId,
-                  user?.id ? Number(user.id) : 0,
-                  mappedItems,
-                  notas || undefined,
-                  0, // tipoVenta = Preventa
-                  1  // estado = Enviado
-                );
-                reset();
-                router.replace(`/(tabs)/vender/crear/exito?numero=${pedido.id.slice(0, 8)}&id=${pedido.id}` as any);
-                // Create on server + enviar + assign serverId to local WDB record
-                try {
-                  const serverPedido = await pedidosApi.create({
-                    clienteId: clienteServerId ?? 0,
-                    tipoVenta: 0,
-                    notas: notas || undefined,
-                    detalles: mappedItems.map(i => ({
-                      productoId: i.productoServerId ?? 0,
-                      cantidad: i.cantidad,
-                      precioUnitario: i.precioUnitario,
-                      descuento: 0,
-                    })),
-                  } as any);
-                  if (serverPedido?.id) {
-                    await pedido.setServerId(serverPedido.id, serverPedido.numeroPedido);
-                    // Send the order (Borrador → Enviado) on server
-                    // Use raw API call because pedidosApi.enviar() validates response as MobilePedido
-                    const { api: apiClient } = await import('@/api/client');
-                    await apiClient.post(`/api/mobile/pedidos/${serverPedido.id}/enviar`).catch(() => {});
-                  }
-                } catch {
-                  // Offline — sync will handle it later
-                  performSync().catch(() => {});
-                }
-              }
-            } catch {
-              Alert.alert('Error', 'No se pudo crear el pedido. Intenta de nuevo.');
-            } finally {
-              setSending(false);
-            }
+      if (isDirecta) {
+        const montoTotal = total();
+        const metodo = metodoPago ?? 0;
+        const nombre = clienteNombre || 'Cliente';
+        const { pedido } = await createVentaDirectaOffline(
+          clienteId || '',
+          clienteServerId,
+          user?.id ? Number(user.id) : 0,
+          mappedItems,
+          metodo,
+          montoTotal,
+          undefined,
+          notas || undefined
+        );
+        // Navigate to cobro receipt for printing (VD = sale + immediate payment)
+        router.replace({
+          pathname: '/(tabs)/cobrar/recibo',
+          params: {
+            clienteNombre: encodeURIComponent(nombre),
+            monto: String(montoTotal),
+            metodoPago: String(metodo),
+            referencia: encodeURIComponent(pedido.id.slice(0, 8)),
+            notas: encodeURIComponent(notas || ''),
+            fecha: new Date().toISOString(),
+            fromVentaDirecta: '1',
+            pedidoId: pedido.id,
           },
-        },
-      ]
-    );
+        } as any);
+        reset();
+        performSync().catch(() => {});
+      } else {
+        const pedido = await createPedidoOffline(
+          clienteId || '',
+          clienteServerId,
+          user?.id ? Number(user.id) : 0,
+          mappedItems,
+          notas || undefined,
+          0, // tipoVenta = Preventa
+          1  // estado = Enviado
+        );
+        router.replace(`/(tabs)/vender/crear/exito?numero=${pedido.id.slice(0, 8)}&id=${pedido.id}` as any);
+        reset();
+        // Create on server + enviar + assign serverId to local WDB record
+        try {
+          const serverPedido = await pedidosApi.create({
+            clienteId: clienteServerId ?? 0,
+            tipoVenta: 0,
+            notas: notas || undefined,
+            detalles: mappedItems.map(i => ({
+              productoId: i.productoServerId ?? 0,
+              cantidad: i.cantidad,
+              precioUnitario: i.precioUnitario,
+              descuento: 0,
+            })),
+          } as any);
+          if (serverPedido?.id) {
+            await pedido.setServerId(serverPedido.id, serverPedido.numeroPedido);
+            // Send the order (Borrador → Enviado) on server
+            // Use raw API call because pedidosApi.enviar() validates response as MobilePedido
+            const { api: apiClient } = await import('@/api/client');
+            await apiClient.post(`/api/mobile/pedidos/${serverPedido.id}/enviar`).catch(() => {});
+          }
+        } catch {
+          // Offline — sync will handle it later
+          performSync().catch(() => {});
+        }
+      }
+    } catch {
+      Alert.alert('Error', 'No se pudo crear el pedido. Intenta de nuevo.');
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
     <View style={styles.container}>
+      {/* Blue Header */}
+      <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
+        <Text style={styles.blueHeaderTitle}>Revisar Pedido</Text>
+      </View>
       <ProgressSteps steps={STEPS} currentStep={2} />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -162,7 +157,7 @@ export default function CrearPedidoStep3() {
         <Card className="mx-4 mb-3">
           <View style={styles.clientRow}>
             <View style={styles.clientAvatar}>
-              <User size={18} color="#2563eb" />
+              <User size={18} color={COLORS.textTertiary} />
             </View>
             <View>
               <Text style={styles.clientLabel}>Cliente</Text>
@@ -173,7 +168,7 @@ export default function CrearPedidoStep3() {
 
         {/* Products */}
         <View style={styles.sectionHeader}>
-          <Package size={16} color="#2563eb" />
+          <Package size={16} color={COLORS.textTertiary} />
           <Text style={styles.sectionTitle}>Productos ({items.length})</Text>
         </View>
 
@@ -282,19 +277,33 @@ export default function CrearPedidoStep3() {
           ) : undefined}
         />
       </View>
+
+      <ConfirmModal
+        visible={showConfirmPedido}
+        title={isDirecta ? 'Venta Directa' : 'Levantar Pedido'}
+        message={isDirecta
+          ? `¿Confirmar venta directa para ${clienteNombre}?\n\nTotal: ${formatCurrency(total())}`
+          : `¿Confirmar pedido para ${clienteNombre}?\n\nTotal: ${formatCurrency(total())}`}
+        confirmText={isDirecta ? 'Cobrar' : 'Enviar'}
+        onConfirm={executeEnviarPedido}
+        onCancel={() => setShowConfirmPedido(false)}
+        icon={<SbOrders size={48} />}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1, backgroundColor: COLORS.background },
+  blueHeader: { backgroundColor: COLORS.headerBg, paddingHorizontal: 20, paddingBottom: 12, alignItems: 'center' as const },
+  blueHeaderTitle: { fontSize: 20, fontWeight: '700' as const, color: COLORS.headerText, textAlign: 'center' as const },
   content: { paddingTop: 12, paddingBottom: 100 },
   clientRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   clientAvatar: {
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: '#eff6ff',
+    backgroundColor: COLORS.background,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -323,7 +332,7 @@ const styles = StyleSheet.create({
   lineContent: { flex: 1, marginRight: 8 },
   lineName: { fontSize: 13, fontWeight: '600', color: '#1e293b' },
   linePrice: { fontSize: 11, color: '#94a3b8', marginTop: 2 },
-  lineTotal: { fontSize: 14, fontWeight: '700', color: '#0f172a', marginLeft: 10, minWidth: 70, textAlign: 'right' },
+  lineTotal: { fontSize: 14, fontWeight: '700', color: COLORS.salesGreen, marginLeft: 10, minWidth: 70, textAlign: 'right' },
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -339,8 +348,8 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#e2e8f0',
   },
-  grandTotalLabel: { fontSize: 16, fontWeight: '800', color: '#0f172a' },
-  grandTotalValue: { fontSize: 16, fontWeight: '800', color: '#0f172a' },
+  grandTotalLabel: { fontSize: 16, fontWeight: '800', color: COLORS.foreground },
+  grandTotalValue: { fontSize: 16, fontWeight: '800', color: COLORS.salesGreen },
   paymentLabel: { fontSize: 13, fontWeight: '600', color: '#1e293b', marginBottom: 12 },
   paymentGrid: {
     flexDirection: 'row',
@@ -359,7 +368,7 @@ const styles = StyleSheet.create({
     borderColor: '#f1f5f9',
   },
   paymentOptionSelected: {
-    backgroundColor: '#f0fdf4',
+    backgroundColor: '#dcfce7',
     borderColor: '#16a34a',
   },
   paymentOptionText: {
