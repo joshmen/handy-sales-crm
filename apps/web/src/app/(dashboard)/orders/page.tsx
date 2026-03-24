@@ -629,16 +629,16 @@ export default function OrdersPage() {
 
             {/* Orders Table */}
             <div className="hidden sm:block bg-white border border-gray-200 rounded-lg overflow-x-auto" data-tour="orders-table">
-              {/* Table Header - Always visible */}
-              <div className="flex items-center bg-gray-50 px-4 h-10 border-b border-gray-200 min-w-[1000px]">
-                <div className="w-[100px] text-xs font-semibold text-gray-700"># Pedido</div>
+              {/* Table Header */}
+              <div className="flex items-center bg-gray-50 px-4 h-10 border-b border-gray-200 min-w-[820px]">
+                <div className="w-[90px] text-xs font-semibold text-gray-700"># Pedido</div>
                 <div className="flex-1 text-xs font-semibold text-gray-700">Cliente</div>
-                <div className="w-[120px] text-xs font-semibold text-gray-700">Vendedor</div>
-                <div className="w-[100px] text-xs font-semibold text-gray-700">Fecha</div>
-                <div className="w-[100px] text-xs font-semibold text-gray-700">Estado</div>
-                <div className="w-[100px] text-xs font-semibold text-gray-700">Tipo</div>
-                <div className="w-[100px] text-xs font-semibold text-gray-700 text-right">Total</div>
-                <div className="w-[180px] text-xs font-semibold text-gray-700 text-center">Acciones</div>
+                <div className="w-[110px] text-xs font-semibold text-gray-700 hidden xl:block">Vendedor</div>
+                <div className="w-[85px] text-xs font-semibold text-gray-700">Fecha</div>
+                <div className="w-[95px] text-xs font-semibold text-gray-700">Estado</div>
+                <div className="w-[90px] text-xs font-semibold text-gray-700 hidden lg:block">Tipo</div>
+                <div className="w-[90px] text-xs font-semibold text-gray-700 text-right">Total</div>
+                <div className="w-[140px] text-xs font-semibold text-gray-700 text-center">Acciones</div>
               </div>
 
               {/* Table Body - With loading overlay */}
@@ -663,86 +663,79 @@ export default function OrdersPage() {
                       return (
                   <div
                     key={order.id}
-                    className="flex items-center px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer min-w-[1000px]"
+                    className="flex items-center px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer min-w-[820px]"
                     onClick={() => handleEditOrder(order.id)}
                   >
-                    <div className="w-[100px] text-[13px] text-gray-900 font-medium">
+                    <div className="w-[90px] text-[13px] text-gray-900 font-medium truncate">
                       {order.code}
                     </div>
-                    <div className="flex-1">
-                      <div className="text-[13px] text-gray-900">{order.client.name}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[13px] text-gray-900 truncate">{order.client.name}</div>
                     </div>
-                    <div className="w-[120px] text-[13px] text-gray-600">
+                    <div className="w-[110px] text-[13px] text-gray-600 truncate hidden xl:block">
                       {order.user.name}
                     </div>
-                    <div className="w-[100px] text-[13px] text-gray-600">
+                    <div className="w-[85px] text-[13px] text-gray-600">
                       {formatDate(order.orderDate)}
                     </div>
-                    <div className="w-[100px]">
-                      <span className={`px-2 py-1 text-[11px] font-medium rounded-full ${statusColors[order.status]}`}>
+                    <div className="w-[95px]">
+                      <span className={`px-2 py-0.5 text-[11px] font-medium rounded-full whitespace-nowrap ${statusColors[order.status]}`}>
                         {statusLabels[order.status]}
                       </span>
                     </div>
-                    <div className="w-[100px]">
-                      <span className={`px-2 py-1 text-[11px] font-medium rounded-full ${
+                    <div className="w-[90px] hidden lg:block">
+                      <span className={`px-2 py-0.5 text-[11px] font-medium rounded-full whitespace-nowrap ${
                         order.tipoVenta === 1
                           ? 'bg-green-100 text-green-700'
                           : 'bg-blue-100 text-blue-700'
                       }`}>
-                        {order.tipoVenta === 1 ? 'Venta Directa' : 'Preventa'}
+                        {order.tipoVenta === 1 ? 'V. Directa' : 'Preventa'}
                       </span>
                     </div>
-                    <div className="w-[100px] text-[13px] text-gray-900 font-medium text-right">
-                      ${formatCurrency(order.total)}
+                    <div className="w-[90px] text-[13px] text-gray-900 font-medium text-right">
+                      {formatCurrency(order.total)}
                     </div>
-                    <div className="w-[180px] flex items-center justify-center gap-1" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        onClick={() => handleViewDetails(order.id)}
-                        className="p-1.5 hover:bg-blue-50 rounded transition-colors"
-                        title="Ver detalles"
-                      >
-                        <Eye className="w-4 h-4 text-blue-400 hover:text-blue-600" />
-                      </button>
-                      <button
-                        onClick={() => handleEditOrder(order.id)}
-                        className="p-1.5 hover:bg-green-50 rounded transition-colors"
-                        title="Editar"
-                      >
-                        <Edit className="w-4 h-4 text-amber-400 hover:text-amber-600" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteOrder(order.id)}
-                        className="p-1.5 hover:bg-red-50 rounded transition-colors"
-                        title="Eliminar"
-                      >
-                        <Trash2 className="w-4 h-4 text-red-400 hover:text-red-600" />
-                      </button>
-                      {order.status === 'delivered' && (
-                        <button
-                          onClick={() => handleFacturar(order.id)}
-                          className="p-1.5 hover:bg-emerald-50 rounded transition-colors"
-                          title="Facturar"
-                        >
-                          <Receipt className="w-4 h-4 text-emerald-500 hover:text-emerald-700" weight="bold" />
-                        </button>
-                      )}
+                    <div className="w-[140px] flex items-center justify-end gap-0.5 flex-wrap" onClick={(e) => e.stopPropagation()}>
                       {canAdvanceOrders && nextAction && (
                         <button
                           onClick={() => handleAdvanceStatus(order.id, nextAction.action)}
-                          className={`flex items-center gap-0.5 text-xs px-2 py-1 rounded-md font-medium transition-colors ${nextAction.colorClasses}`}
+                          className={`flex items-center gap-0.5 text-[11px] px-2 py-1 rounded-md font-medium transition-colors ${nextAction.colorClasses}`}
                           title={nextAction.label}
                         >
                           <ChevronRight className="w-3 h-3" />
                           {nextAction.label}
                         </button>
                       )}
+                      <button
+                        onClick={() => handleEditOrder(order.id)}
+                        className="p-1 hover:bg-gray-100 rounded transition-colors"
+                        title="Editar"
+                      >
+                        <Edit className="w-3.5 h-3.5 text-gray-400 hover:text-gray-600" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteOrder(order.id)}
+                        className="p-1 hover:bg-red-50 rounded transition-colors"
+                        title="Eliminar"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-red-400 hover:text-red-600" />
+                      </button>
                       {canAdvanceOrders && canCancel && (
                         <button
                           onClick={() => handleCancelOrderStatus(order.id)}
-                          className="p-1.5 hover:bg-red-50 rounded transition-colors"
-                          title="Cancelar pedido"
+                          className="p-1 hover:bg-red-50 rounded transition-colors"
+                          title="Cancelar"
                         >
-                          <X className="w-4 h-4 text-red-400 hover:text-red-600" />
+                          <X className="w-3.5 h-3.5 text-red-400 hover:text-red-600" />
+                        </button>
+                      )}
+                      {order.status === 'delivered' && (
+                        <button
+                          onClick={() => handleFacturar(order.id)}
+                          className="p-1 hover:bg-emerald-50 rounded transition-colors"
+                          title="Facturar"
+                        >
+                          <Receipt className="w-3.5 h-3.5 text-emerald-500 hover:text-emerald-700" weight="bold" />
                         </button>
                       )}
                     </div>
