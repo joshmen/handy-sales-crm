@@ -15,6 +15,11 @@ public class SecurityHeadersMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
+        var path = context.Request.Path.Value ?? "";
+
+        // Skip strict CSP for Swagger UI (needs scripts, styles, images)
+        var isSwagger = path.StartsWith("/swagger", StringComparison.OrdinalIgnoreCase);
+
         // Prevent MIME-type sniffing
         context.Response.Headers["X-Content-Type-Options"] = "nosniff";
 
@@ -33,11 +38,14 @@ public class SecurityHeadersMiddleware
         // Restrict permissions (camera, microphone, geolocation, etc.)
         context.Response.Headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(self)";
 
-        // Content Security Policy — API-only, no inline scripts/styles needed
-        context.Response.Headers["Content-Security-Policy"] = "default-src 'none'";
+        // Content Security Policy
+        context.Response.Headers["Content-Security-Policy"] = isSwagger
+            ? "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
+            : "default-src 'none'";
 
         // Prevent caching of sensitive API responses
-        context.Response.Headers["Cache-Control"] = "no-store";
+        if (!isSwagger)
+            context.Response.Headers["Cache-Control"] = "no-store";
 
         await _next(context);
     }
