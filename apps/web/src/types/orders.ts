@@ -29,6 +29,7 @@ export interface Order {
   paymentStatus: "pending" | "partial" | "paid";
   tipoVenta?: number; // 0=Preventa, 1=VentaDirecta
   tipoVentaNombre?: string;
+  apiEstado?: string; // Raw API estado for transition buttons (e.g. "Enviado", "Confirmado", "EnProceso")
   createdAt: Date;
   updatedAt: Date;
 }

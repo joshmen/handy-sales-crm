@@ -3,6 +3,7 @@ import { api, handleApiError } from '@/lib/api';
 // Backend DTOs (matching the API)
 export interface RutaListaDto {
   id: number;
+  usuarioId: number;
   nombre: string;
   usuarioNombre: string;
   zonaNombre?: string;
@@ -23,6 +24,7 @@ export interface RutasPaginadasResponse {
 // Frontend interfaces
 export interface RouteListItem {
   id: number;
+  usuarioId: number;
   nombre: string;
   usuarioNombre: string;
   zonaNombre: string;
@@ -57,6 +59,7 @@ export interface RouteListResponse {
 function mapRutaToRouteItem(dto: RutaListaDto): RouteListItem {
   return {
     id: dto.id,
+    usuarioId: dto.usuarioId,
     nombre: dto.nombre,
     usuarioNombre: dto.usuarioNombre,
     zonaNombre: dto.zonaNombre || '',
@@ -368,6 +371,7 @@ export interface RouteCreateRequest {
 }
 
 export interface RouteUpdateRequest {
+  usuarioId?: number;
   zonaId?: number | null;
   nombre?: string;
   descripcion?: string;

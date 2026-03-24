@@ -83,6 +83,12 @@ public class RutaVendedorUpdateDtoValidator : AbstractValidator<RutaVendedorUpda
 {
     public RutaVendedorUpdateDtoValidator()
     {
+        When(x => x.UsuarioId.HasValue, () =>
+        {
+            RuleFor(x => x.UsuarioId)
+                .GreaterThan(0).WithMessage("El vendedor es inválido.");
+        });
+
         When(x => x.Nombre != null, () =>
         {
             RuleFor(x => x.Nombre)

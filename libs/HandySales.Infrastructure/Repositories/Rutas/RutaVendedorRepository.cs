@@ -105,6 +105,7 @@ public class RutaVendedorRepository : IRutaVendedorRepository
             .Select(r => new RutaListaDto
             {
                 Id = r.Id,
+                UsuarioId = r.UsuarioId,
                 Nombre = r.Nombre,
                 UsuarioNombre = r.Usuario.Nombre,
                 ZonaNombre = r.Zona != null ? r.Zona.Nombre : null,

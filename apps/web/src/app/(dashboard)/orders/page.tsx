@@ -24,6 +24,8 @@ import {
   Eye,
   ShoppingCart,
   Loader2,
+  X,
+  ChevronRight,
 } from 'lucide-react';
 import { ListPagination } from '@/components/ui/ListPagination';
 import { ExportButton } from '@/components/shared/ExportButton';
@@ -63,6 +65,25 @@ const statusColors: Record<string, string> = {
   'delivered': 'bg-green-100 text-green-600',
   'cancelled': 'bg-red-100 text-red-600',
 };
+
+// Transition map: given the raw API estado, returns the primary forward action
+function getNextAction(apiEstado?: string): { label: string; action: string; colorClasses: string } | null {
+  switch (apiEstado) {
+    case 'Enviado':
+      return { label: 'Confirmar', action: 'confirmar', colorClasses: 'bg-blue-50 text-blue-700 hover:bg-blue-100' };
+    case 'Confirmado':
+      return { label: 'Procesar', action: 'procesar', colorClasses: 'bg-purple-50 text-purple-700 hover:bg-purple-100' };
+    case 'EnProceso':
+      return { label: 'En Ruta', action: 'en-ruta', colorClasses: 'bg-cyan-50 text-cyan-700 hover:bg-cyan-100' };
+    case 'EnRuta':
+      return { label: 'Entregar', action: 'entregar', colorClasses: 'bg-green-50 text-green-700 hover:bg-green-100' };
+    default:
+      return null;
+  }
+}
+
+// Non-terminal states that can be cancelled
+const cancellableEstados = new Set(['Borrador', 'Enviado', 'Confirmado', 'EnProceso', 'EnRuta']);
 
 function mapApiOrderToOrder(apiOrder: OrderListItem): Order {
   const status = estadoToStatus[apiOrder.estado] || 'pending';
@@ -130,6 +151,7 @@ function mapApiOrderToOrder(apiOrder: OrderListItem): Order {
     paymentStatus: 'pending',
     tipoVenta: apiOrder.tipoVenta,
     tipoVentaNombre: apiOrder.tipoVentaNombre,
+    apiEstado: apiOrder.estado,
     createdAt: new Date(apiOrder.creadoEn),
     updatedAt: new Date(apiOrder.creadoEn),
   };
@@ -144,6 +166,7 @@ export default function OrdersPage() {
   const { formatCurrency, formatDate } = useFormatters();
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN';
+  const canAdvanceOrders = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN' || session?.user?.role === 'SUPERVISOR';
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
@@ -290,6 +313,37 @@ export default function OrdersPage() {
 
   const handleFacturar = (orderId: string) => {
     router.push(`/billing/pre-factura?pedidoId=${orderId}`);
+  };
+
+  const handleAdvanceStatus = async (orderId: string, action: string) => {
+    const id = parseInt(orderId);
+    try {
+      switch (action) {
+        case 'confirmar': await orderService.confirmOrder(id); break;
+        case 'procesar': await orderService.processOrder(id); break;
+        case 'en-ruta': await orderService.sendToRoute(id); break;
+        case 'entregar': await orderService.deliverOrder(id); break;
+      }
+      toast.success('Estado actualizado');
+      fetchOrders();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Error al cambiar estado';
+      toast.error(message);
+    }
+  };
+
+  const handleCancelOrderStatus = async (orderId: string) => {
+    const reason = window.prompt('Motivo de cancelación (opcional):');
+    if (reason === null) return; // User clicked Cancel on the prompt
+    const id = parseInt(orderId);
+    try {
+      await orderService.cancelOrder(id, reason || undefined);
+      toast.success('Pedido cancelado');
+      fetchOrders();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Error al cancelar pedido';
+      toast.error(message);
+    }
   };
 
   const handleSaveOrder = async (orderData: Partial<Order>) => {
@@ -468,7 +522,10 @@ export default function OrdersPage() {
                   </p>
                 </div>
               ) : (
-                filteredOrders.map((order) => (
+                filteredOrders.map((order) => {
+                  const nextAction = getNextAction(order.apiEstado);
+                  const canCancel = cancellableEstados.has(order.apiEstado || '');
+                  return (
                   <div key={order.id} className="bg-white border border-gray-200 rounded-lg p-4">
                     {/* Row 1: Icon + Order number + status */}
                     <div className="flex items-start gap-3 mb-2">
@@ -537,15 +594,39 @@ export default function OrdersPage() {
                         </button>
                       )}
                     </div>
+                    {/* Row 4: Status advancement */}
+                    {canAdvanceOrders && (nextAction || canCancel) && (
+                      <div className="flex items-center gap-2 border-t border-gray-100 pt-2 mt-1">
+                        {nextAction && (
+                          <button
+                            onClick={() => handleAdvanceStatus(order.id, nextAction.action)}
+                            className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-md font-medium transition-colors ${nextAction.colorClasses}`}
+                          >
+                            <ChevronRight className="w-3 h-3" />
+                            {nextAction.label}
+                          </button>
+                        )}
+                        {canCancel && (
+                          <button
+                            onClick={() => handleCancelOrderStatus(order.id)}
+                            className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-md font-medium text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
+                          >
+                            <X className="w-3 h-3" />
+                            Cancelar
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
-                ))
+                  );
+                })
               )}
             </div>
 
             {/* Orders Table */}
             <div className="hidden sm:block bg-white border border-gray-200 rounded-lg overflow-x-auto" data-tour="orders-table">
               {/* Table Header - Always visible */}
-              <div className="flex items-center bg-gray-50 px-4 h-10 border-b border-gray-200 min-w-[920px]">
+              <div className="flex items-center bg-gray-50 px-4 h-10 border-b border-gray-200 min-w-[1000px]">
                 <div className="w-[100px] text-xs font-semibold text-gray-700"># Pedido</div>
                 <div className="flex-1 text-xs font-semibold text-gray-700">Cliente</div>
                 <div className="w-[120px] text-xs font-semibold text-gray-700">Vendedor</div>
@@ -553,7 +634,7 @@ export default function OrdersPage() {
                 <div className="w-[100px] text-xs font-semibold text-gray-700">Estado</div>
                 <div className="w-[100px] text-xs font-semibold text-gray-700">Tipo</div>
                 <div className="w-[100px] text-xs font-semibold text-gray-700 text-right">Total</div>
-                <div className="w-[100px] text-xs font-semibold text-gray-700 text-center">Acciones</div>
+                <div className="w-[180px] text-xs font-semibold text-gray-700 text-center">Acciones</div>
               </div>
 
               {/* Table Body - With loading overlay */}
@@ -572,10 +653,13 @@ export default function OrdersPage() {
                 ) : (
                   /* Table Rows - With opacity transition */
                   <div className={`transition-opacity duration-200 ${loading ? 'opacity-50' : 'opacity-100'}`}>
-                    {filteredOrders.map((order) => (
+                    {filteredOrders.map((order) => {
+                      const nextAction = getNextAction(order.apiEstado);
+                      const canCancel = cancellableEstados.has(order.apiEstado || '');
+                      return (
                   <div
                     key={order.id}
-                    className="flex items-center px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors min-w-[920px]"
+                    className="flex items-center px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors min-w-[1000px]"
                   >
                     <div className="w-[100px] text-[13px] text-gray-900 font-medium">
                       {order.code}
@@ -606,7 +690,7 @@ export default function OrdersPage() {
                     <div className="w-[100px] text-[13px] text-gray-900 font-medium text-right">
                       ${formatCurrency(order.total)}
                     </div>
-                    <div className="w-[100px] flex items-center justify-center gap-1">
+                    <div className="w-[180px] flex items-center justify-center gap-1">
                       <button
                         onClick={() => handleViewDetails(order.id)}
                         className="p-1.5 hover:bg-blue-50 rounded transition-colors"
@@ -637,9 +721,29 @@ export default function OrdersPage() {
                           <Receipt className="w-4 h-4 text-emerald-500 hover:text-emerald-700" weight="bold" />
                         </button>
                       )}
+                      {canAdvanceOrders && nextAction && (
+                        <button
+                          onClick={() => handleAdvanceStatus(order.id, nextAction.action)}
+                          className={`flex items-center gap-0.5 text-xs px-2 py-1 rounded-md font-medium transition-colors ${nextAction.colorClasses}`}
+                          title={nextAction.label}
+                        >
+                          <ChevronRight className="w-3 h-3" />
+                          {nextAction.label}
+                        </button>
+                      )}
+                      {canAdvanceOrders && canCancel && (
+                        <button
+                          onClick={() => handleCancelOrderStatus(order.id)}
+                          className="p-1.5 hover:bg-red-50 rounded transition-colors"
+                          title="Cancelar pedido"
+                        >
+                          <X className="w-4 h-4 text-red-400 hover:text-red-600" />
+                        </button>
+                      )}
                     </div>
                     </div>
-                  ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>

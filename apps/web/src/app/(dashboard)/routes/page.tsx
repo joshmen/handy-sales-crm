@@ -233,7 +233,7 @@ export default function RoutesPage() {
     setEditingRoute(route);
     resetForm({
       nombre: route.nombre,
-      usuarioId: 0,
+      usuarioId: route.usuarioId,
       zonaId: zones.find(z => z.name === route.zonaNombre)?.id ?? null,
       fecha: route.fecha.toISOString().split('T')[0],
       horaInicioEstimada: '',
@@ -250,6 +250,7 @@ export default function RoutesPage() {
       if (editingRoute) {
         const fmtTimeUpd = (t?: string | null) => t ? (t.length === 5 ? `${t}:00` : t) : null;
         const updateData: RouteUpdateRequest = {
+          usuarioId: data.usuarioId || undefined,
           nombre: data.nombre,
           zonaId: data.zonaId,
           fecha: data.fecha,
@@ -726,21 +727,19 @@ export default function RoutesPage() {
               {errors.nombre && <p className="text-xs text-red-500 mt-1">{errors.nombre.message}</p>}
             </div>
 
-            {/* Usuario (solo crear) */}
-            {!editingRoute && (
-              <div data-tour="routes-drawer-vendedor">
-                <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
-                  <User className="w-3.5 h-3.5 text-blue-500" />
-                  Vendedor <span className="text-red-500">*</span>
-                </label>
-                <SearchableSelect
-                  options={usuarios.map(u => ({ value: u.id.toString(), label: u.nombre }))}
-                  value={watch('usuarioId') ? watch('usuarioId').toString() : ''}
-                  onChange={(val) => setValue('usuarioId', val ? parseInt(String(val)) : 0, { shouldDirty: true })}
-                  placeholder="Seleccionar vendedor..."
-                />
-              </div>
-            )}
+            {/* Usuario */}
+            <div data-tour="routes-drawer-vendedor">
+              <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
+                <User className="w-3.5 h-3.5 text-blue-500" />
+                Vendedor <span className="text-red-500">*</span>
+              </label>
+              <SearchableSelect
+                options={usuarios.map(u => ({ value: u.id.toString(), label: u.nombre }))}
+                value={watch('usuarioId') ? watch('usuarioId').toString() : ''}
+                onChange={(val) => setValue('usuarioId', val ? parseInt(String(val)) : 0, { shouldDirty: true })}
+                placeholder="Seleccionar vendedor..."
+              />
+            </div>
 
             {/* Zona */}
             <div data-tour="routes-drawer-zona">

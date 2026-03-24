@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { routeService, RouteDetail, RouteStop, AddStopRequest } from '@/services/api/routes';
+import { routeService, RouteDetail, RouteStop, AddStopRequest, PedidoAsignado } from '@/services/api/routes';
+import { api } from '@/lib/api';
 import { clientService } from '@/services/api/clients';
 import { toast } from '@/hooks/useToast';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
@@ -22,12 +23,22 @@ import {
   Calendar,
   Clock,
   Loader2,
+  Package,
+  Search,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useFormatters } from '@/hooks/useFormatters';
 
+interface PedidoOption {
+  id: number;
+  numeroPedido?: string;
+  clienteNombre?: string;
+  total?: number;
+  estado?: string;
+}
+
 export default function RouteDetailPage() {
-  const { formatDate } = useFormatters();
+  const { formatDate, formatCurrency } = useFormatters();
   const params = useParams();
   const router = useRouter();
   const routeId = Number(params.id);
@@ -45,11 +56,22 @@ export default function RouteDetailPage() {
   const [isCancelOpen, setIsCancelOpen] = useState(false);
   const [cancelMotivo, setCancelMotivo] = useState('');
 
+  // Pedidos
+  const [pedidos, setPedidos] = useState<PedidoAsignado[]>([]);
+  const [isPedidoModalOpen, setIsPedidoModalOpen] = useState(false);
+  const [availablePedidos, setAvailablePedidos] = useState<PedidoOption[]>([]);
+  const [loadingPedidos, setLoadingPedidos] = useState(false);
+  const [pedidoSearch, setPedidoSearch] = useState('');
+
   const fetchRoute = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await routeService.getRuta(routeId);
+      const [data, pedidosData] = await Promise.all([
+        routeService.getRuta(routeId),
+        routeService.getPedidosAsignados(routeId),
+      ]);
       setRoute(data);
+      setPedidos(pedidosData);
     } catch {
       toast.error('Error al cargar la ruta');
     } finally {
@@ -76,7 +98,8 @@ export default function RouteDetailPage() {
 
   const isPlanificada = route?.estado === 0;
   const isEnProgreso = route?.estado === 1;
-  const isEditable = isPlanificada;
+  const isPendienteAceptar = route?.estado === 4;
+  const isEditable = isPlanificada || isPendienteAceptar;
 
   // Actions
   const handleIniciar = async () => {
@@ -178,6 +201,54 @@ export default function RouteDetailPage() {
       fetchRoute();
     } catch {
       toast.error('Error al reordenar');
+    }
+  };
+
+  // Pedidos
+  const handleOpenAddPedido = async () => {
+    setIsPedidoModalOpen(true);
+    setPedidoSearch('');
+    setLoadingPedidos(true);
+    try {
+      const [confirmedRes, enProcesoRes] = await Promise.all([
+        api.get<{ items: PedidoOption[] }>('/pedidos?pagina=1&tamanoPagina=100&estado=Confirmado'),
+        api.get<{ items: PedidoOption[] }>('/pedidos?pagina=1&tamanoPagina=100&estado=EnProceso'),
+      ]);
+      const confirmed = Array.isArray(confirmedRes.data) ? confirmedRes.data : confirmedRes.data.items || [];
+      const enProceso = Array.isArray(enProcesoRes.data) ? enProcesoRes.data : enProcesoRes.data.items || [];
+      const all = [...confirmed, ...enProceso];
+      // Filter out already-assigned pedidos
+      const assignedIds = new Set(pedidos.map(p => p.pedidoId));
+      setAvailablePedidos(all.filter(p => !assignedIds.has(p.id)));
+    } catch {
+      toast.error('Error al cargar pedidos disponibles');
+    } finally {
+      setLoadingPedidos(false);
+    }
+  };
+
+  const handleAddPedido = async (pedidoId: number) => {
+    if (!route) return;
+    try {
+      await routeService.addPedido(route.id, pedidoId);
+      toast.success('Pedido asignado a la ruta');
+      setIsPedidoModalOpen(false);
+      const pedidosData = await routeService.getPedidosAsignados(route.id);
+      setPedidos(pedidosData);
+    } catch (err: unknown) {
+      toast.error((err instanceof Error ? err.message : null) || 'Error al asignar pedido');
+    }
+  };
+
+  const handleRemovePedido = async (pedidoId: number) => {
+    if (!route) return;
+    try {
+      await routeService.removePedido(route.id, pedidoId);
+      toast.success('Pedido removido de la ruta');
+      const pedidosData = await routeService.getPedidosAsignados(route.id);
+      setPedidos(pedidosData);
+    } catch {
+      toast.error('Error al remover pedido');
     }
   };
 
@@ -350,6 +421,97 @@ export default function RouteDetailPage() {
                   {route.kilometrosEstimados}
                 </span>
               </div>
+            )}
+          </div>
+        </div>
+
+        {/* Pedidos Asignados Section */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Pedidos asignados
+              </h2>
+              <span className="inline-flex px-2 py-0.5 text-[10px] font-medium rounded-full bg-blue-100 text-blue-700">
+                {pedidos.length}
+              </span>
+            </div>
+            {isEditable && (
+              <button
+                onClick={handleOpenAddPedido}
+                className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Asignar pedido
+              </button>
+            )}
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+            {/* Table Header */}
+            <div className="flex items-center gap-3 bg-gray-50 px-4 h-10 border-b border-gray-200">
+              <div className="w-[100px] text-xs font-semibold text-gray-600"># Pedido</div>
+              <div className="flex-1 min-w-[160px] text-xs font-semibold text-gray-600">Cliente</div>
+              <div className="w-[120px] text-xs font-semibold text-gray-600 text-right">Monto</div>
+              <div className="w-[60px] text-xs font-semibold text-gray-600 text-center">Prods.</div>
+              <div className="w-[110px] text-xs font-semibold text-gray-600 text-center">Estado</div>
+              {isEditable && (
+                <div className="w-[70px] text-xs font-semibold text-gray-600 text-center">Acciones</div>
+              )}
+            </div>
+
+            {/* Table Body */}
+            {pedidos.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16">
+                <Package className="w-12 h-12 text-gray-300 mb-3" />
+                <p className="text-sm font-medium text-gray-700 mb-1">Sin pedidos asignados</p>
+                <p className="text-xs text-gray-500 mb-3">Asigna pedidos confirmados a esta ruta</p>
+                {isEditable && (
+                  <button
+                    onClick={handleOpenAddPedido}
+                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Asignar pedido
+                  </button>
+                )}
+              </div>
+            ) : (
+              pedidos.map((p) => (
+                <div
+                  key={p.id}
+                  className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                >
+                  <div className="w-[100px]">
+                    <span className="text-[13px] font-medium text-gray-900">#{p.pedidoId}</span>
+                  </div>
+                  <div className="flex-1 min-w-[160px]">
+                    <p className="text-[13px] font-medium text-gray-900 truncate">{p.clienteNombre}</p>
+                  </div>
+                  <div className="w-[120px] text-right">
+                    <span className="text-[13px] text-gray-600">{formatCurrency(p.montoTotal)}</span>
+                  </div>
+                  <div className="w-[60px] text-center">
+                    <span className="text-[13px] text-gray-600">{p.totalProductos}</span>
+                  </div>
+                  <div className="w-[110px] text-center">
+                    <span className="inline-flex px-2 py-0.5 text-[10px] font-medium rounded-full bg-green-100 text-green-600">
+                      {p.estadoNombre}
+                    </span>
+                  </div>
+                  {isEditable && (
+                    <div className="w-[70px] flex items-center justify-center">
+                      <button
+                        onClick={() => handleRemovePedido(p.pedidoId)}
+                        className="p-1 text-gray-400 hover:text-red-600 rounded"
+                        title="Remover pedido"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))
             )}
           </div>
         </div>
@@ -561,6 +723,75 @@ export default function RouteDetailPage() {
               Cancelar ruta
             </button>
           </div>
+        </div>
+      </Modal>
+
+      {/* Add Pedido Modal */}
+      <Modal
+        isOpen={isPedidoModalOpen}
+        onClose={() => setIsPedidoModalOpen(false)}
+        title="Asignar pedido a la ruta"
+        size="lg"
+      >
+        <div className="space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              value={pedidoSearch}
+              onChange={(e) => setPedidoSearch(e.target.value)}
+              placeholder="Buscar por cliente o número de pedido..."
+              className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+          </div>
+
+          {loadingPedidos ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-green-600" />
+            </div>
+          ) : (
+            <div className="space-y-2 max-h-[400px] overflow-y-auto">
+              {availablePedidos
+                .filter((p) => {
+                  if (!pedidoSearch) return true;
+                  const search = pedidoSearch.toLowerCase();
+                  return (
+                    p.numeroPedido?.toLowerCase().includes(search) ||
+                    p.clienteNombre?.toLowerCase().includes(search) ||
+                    p.id.toString().includes(search)
+                  );
+                })
+                .map((p) => (
+                  <div
+                    key={p.id}
+                    className="flex items-center justify-between px-3 py-2 border border-gray-100 rounded-lg hover:bg-gray-50"
+                  >
+                    <div>
+                      <span className="text-[13px] font-medium text-gray-900">
+                        #{p.numeroPedido || p.id}
+                      </span>
+                      <span className="text-xs text-gray-500 ml-2">
+                        {p.clienteNombre || 'Sin cliente'}
+                      </span>
+                      <span className="text-xs text-gray-400 ml-2">
+                        {formatCurrency(p.total || 0)}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => handleAddPedido(p.id)}
+                      className="px-3 py-1 text-xs font-medium rounded bg-green-600 text-white hover:bg-green-700 transition-colors"
+                    >
+                      Asignar
+                    </button>
+                  </div>
+                ))}
+              {availablePedidos.length === 0 && !loadingPedidos && (
+                <p className="text-xs text-gray-400 text-center py-4">
+                  No hay pedidos confirmados disponibles
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </Modal>
     </div>

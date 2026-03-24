@@ -78,6 +78,7 @@ public class RutaDetalleCreateDto
 
 public class RutaVendedorUpdateDto
 {
+    public int? UsuarioId { get; set; }
     public int? ZonaId { get; set; }
     public string? Nombre { get; set; }
     public string? Descripcion { get; set; }
@@ -103,6 +104,7 @@ public class RutaFiltroDto
 public class RutaListaDto
 {
     public int Id { get; set; }
+    public int UsuarioId { get; set; }
     public string Nombre { get; set; } = string.Empty;
     public string UsuarioNombre { get; set; } = string.Empty;
     public string? ZonaNombre { get; set; }

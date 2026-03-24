@@ -119,9 +119,10 @@ public class RutaVendedorService
         if (ruta == null || ruta.TenantId != _tenant.TenantId) return false;
 
         // No permitir editar rutas en progreso o completadas
-        if (ruta.Estado != EstadoRuta.Planificada)
+        if (ruta.Estado != EstadoRuta.Planificada && ruta.Estado != EstadoRuta.PendienteAceptar)
             throw new InvalidOperationException("No se puede editar una ruta que ya está en progreso o completada");
 
+        if (dto.UsuarioId.HasValue) ruta.UsuarioId = dto.UsuarioId.Value;
         if (dto.ZonaId.HasValue) ruta.ZonaId = dto.ZonaId;
         if (!string.IsNullOrEmpty(dto.Nombre)) ruta.Nombre = dto.Nombre;
         if (dto.Descripcion != null) ruta.Descripcion = dto.Descripcion;
