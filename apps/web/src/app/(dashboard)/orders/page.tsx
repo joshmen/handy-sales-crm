@@ -88,7 +88,8 @@ function getNextAction(apiEstado?: string): { label: string; action: string; col
 const cancellableEstados = new Set(['Borrador', 'Enviado', 'Confirmado', 'EnProceso', 'EnRuta']);
 
 function mapApiOrderToOrder(apiOrder: OrderListItem): Order {
-  const status = estadoToStatus[apiOrder.estado] || 'pending';
+  const estadoStr = apiOrder.estadoNombre || String(apiOrder.estado);
+  const status = estadoToStatus[estadoStr] || 'pending';
 
   return {
     id: apiOrder.id.toString(),
@@ -153,7 +154,7 @@ function mapApiOrderToOrder(apiOrder: OrderListItem): Order {
     paymentStatus: 'pending',
     tipoVenta: apiOrder.tipoVenta,
     tipoVentaNombre: apiOrder.tipoVentaNombre,
-    apiEstado: apiOrder.estado,
+    apiEstado: estadoStr,
     createdAt: new Date(apiOrder.creadoEn),
     updatedAt: new Date(apiOrder.creadoEn),
   };

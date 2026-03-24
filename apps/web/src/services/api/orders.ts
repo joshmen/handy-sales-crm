@@ -19,6 +19,7 @@ export interface OrderListItem {
   usuarioId: number;
   usuarioNombre: string;
   estado: OrderStatus;
+  estadoNombre: string;
   tipoVenta: number; // 0=Preventa, 1=VentaDirecta
   tipoVentaNombre: string;
   subtotal: number;
