@@ -428,16 +428,17 @@ export default function DiscountsPage() {
                   {paginatedDiscounts.map((discount) => (
                     <div
                       key={discount.id}
-                      className={`bg-white border rounded-lg p-4 ${
+                      className={`bg-white border rounded-lg p-4 cursor-pointer ${
                         batch.selectedIds.has(discount.id)
                           ? 'border-green-400 bg-green-50/50'
                           : 'border-gray-200'
                       }`}
+                      onClick={() => handleOpenEdit(discount)}
                     >
                       <div className="flex items-start justify-between gap-2 mb-3">
                         <div className="flex items-start gap-2 min-w-0 flex-1">
                           <button
-                            onClick={() => batch.handleToggleSelect(discount.id)}
+                            onClick={(e) => { e.stopPropagation(); batch.handleToggleSelect(discount.id); }}
                             className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
                               batch.selectedIds.has(discount.id)
                                 ? 'bg-green-600 border-green-600 text-white'
@@ -458,12 +459,14 @@ export default function DiscountsPage() {
                             )}
                           </div>
                         </div>
-                        <ActiveToggle
-                          isActive={discount.activo}
-                          onToggle={() => handleToggleActive(discount)}
-                          disabled={loading}
-                          isLoading={togglingId === discount.id}
-                        />
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <ActiveToggle
+                            isActive={discount.activo}
+                            onToggle={() => handleToggleActive(discount)}
+                            disabled={loading}
+                            isLoading={togglingId === discount.id}
+                          />
+                        </div>
                       </div>
                       <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
                         <span className={`inline-flex px-2 py-0.5 rounded-full ${
@@ -478,7 +481,7 @@ export default function DiscountsPage() {
                           <span className="text-gray-400">• {discount.productoCodigo}</span>
                         )}
                       </div>
-                      <div className="mt-2.5 flex items-center justify-end gap-1 border-t border-gray-100 pt-2">
+                      <div className="mt-2.5 flex items-center justify-end gap-1 border-t border-gray-100 pt-2" onClick={(e) => e.stopPropagation()}>
                         <button
                           onClick={() => handleOpenEdit(discount)}
                           disabled={loading}
@@ -520,15 +523,16 @@ export default function DiscountsPage() {
                   {paginatedDiscounts.map((discount) => (
                     <div
                       key={discount.id}
-                      className={`flex items-center gap-5 bg-white border rounded-lg p-5 transition-colors ${
+                      className={`flex items-center gap-5 bg-white border rounded-lg p-5 transition-colors cursor-pointer ${
                         batch.selectedIds.has(discount.id)
                           ? 'border-green-400 bg-green-50/50'
                           : 'border-gray-200'
                       }`}
+                      onClick={() => handleOpenEdit(discount)}
                     >
                       {/* Checkbox */}
                       <button
-                        onClick={() => batch.handleToggleSelect(discount.id)}
+                        onClick={(e) => { e.stopPropagation(); batch.handleToggleSelect(discount.id); }}
                         className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
                           batch.selectedIds.has(discount.id)
                             ? 'bg-green-600 border-green-600 text-white'
@@ -578,7 +582,7 @@ export default function DiscountsPage() {
                       </div>
 
                       {/* Activo Toggle */}
-                      <div className="w-[60px] flex flex-col items-center gap-1">
+                      <div className="w-[60px] flex flex-col items-center gap-1" onClick={(e) => e.stopPropagation()}>
                         <div className="text-xs text-gray-400">Activo</div>
                         <ActiveToggle
                           isActive={discount.activo}
@@ -589,7 +593,7 @@ export default function DiscountsPage() {
                       </div>
 
                       {/* Actions */}
-                      <div className="w-[60px] flex items-center justify-center">
+                      <div className="w-[60px] flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
                         <button
                           onClick={() => handleOpenEdit(discount)}
                           disabled={loading}

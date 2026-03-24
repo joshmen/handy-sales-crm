@@ -440,11 +440,11 @@ export default function RoutesPage() {
             routes.map((route) => {
               const badge = getEstadoBadge(route.estado);
               return (
-                <div key={route.id} className="border border-gray-200 rounded-lg p-3 bg-white">
+                <div key={route.id} className="border border-gray-200 rounded-lg p-3 bg-white cursor-pointer" onClick={() => handleOpenEdit(route)}>
                   {/* Row 1: Checkbox + Icon + Name/Subtitle + Toggle */}
                   <div className="flex items-center gap-3 mb-2">
                     <button
-                      onClick={() => batch.handleToggleSelect(route.id)}
+                      onClick={(e) => { e.stopPropagation(); batch.handleToggleSelect(route.id); }}
                       className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
                         batch.selectedIds.has(route.id)
                           ? 'bg-green-600 border-green-600 text-white'
@@ -464,12 +464,14 @@ export default function RoutesPage() {
                         {route.zonaNombre || 'Sin zona'}
                       </div>
                     </div>
-                    <ActiveToggle
-                      isActive={route.activo}
-                      onToggle={() => handleToggleActive(route)}
-                      disabled={loading}
-                      isLoading={togglingId === route.id}
-                    />
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <ActiveToggle
+                        isActive={route.activo}
+                        onToggle={() => handleToggleActive(route)}
+                        disabled={loading}
+                        isLoading={togglingId === route.id}
+                      />
+                    </div>
                   </div>
                   {/* Row 2: Badges */}
                   <div className="flex flex-wrap items-center gap-2 mb-2">
@@ -489,7 +491,7 @@ export default function RoutesPage() {
                     </span>
                   </div>
                   {/* Row 3: Actions */}
-                  <div className="flex justify-end">
+                  <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => handleOpenEdit(route)}
                       disabled={loading}
@@ -557,12 +559,13 @@ export default function RoutesPage() {
                   return (
                     <div
                       key={route.id}
-                      className={`flex items-center gap-3 px-5 py-3.5 border-b border-gray-200 bg-white hover:bg-gray-50 transition-colors min-w-[900px] ${
+                      className={`flex items-center gap-3 px-5 py-3.5 border-b border-gray-200 bg-white hover:bg-gray-50 transition-colors cursor-pointer min-w-[900px] ${
                         !route.activo ? 'opacity-50' : ''
                       }`}
+                      onClick={() => handleOpenEdit(route)}
                     >
                       {/* Checkbox */}
-                      <div className="w-[28px] flex items-center justify-center">
+                      <div className="w-[28px] flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
                         <button
                           onClick={() => batch.handleToggleSelect(route.id)}
                           className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
@@ -621,7 +624,7 @@ export default function RoutesPage() {
                       </div>
 
                       {/* Toggle Activo */}
-                      <div className="w-[50px] flex items-center justify-center">
+                      <div className="w-[50px] flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
                         <ActiveToggle
                           isActive={route.activo}
                           onToggle={() => handleToggleActive(route)}
@@ -631,7 +634,7 @@ export default function RoutesPage() {
                       </div>
 
                       {/* Editar */}
-                      <div className="w-8 flex items-center justify-center">
+                      <div className="w-8 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
                         <button
                           onClick={() => handleOpenEdit(route)}
                           disabled={loading}

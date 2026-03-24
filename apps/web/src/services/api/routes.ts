@@ -301,6 +301,51 @@ class RouteService {
       throw handleApiError(error);
     }
   }
+
+  // === Templates ===
+
+  async getTemplates(): Promise<RouteTemplate[]> {
+    try {
+      const response = await api.get<RouteTemplate[]>(`${this.basePath}/templates`);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  }
+
+  async createTemplate(data: RouteTemplateCreate): Promise<{ id: number }> {
+    try {
+      const response = await api.post<{ id: number }>(`${this.basePath}/templates`, data);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  }
+
+  async updateTemplate(id: number, data: RouteTemplateUpdate): Promise<void> {
+    try {
+      await api.put(`${this.basePath}/templates/${id}`, data);
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  }
+
+  async deleteTemplate(id: number): Promise<void> {
+    try {
+      await api.delete(`${this.basePath}/templates/${id}`);
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  }
+
+  async instantiateTemplate(id: number, data: InstantiateTemplateRequest): Promise<{ id: number }> {
+    try {
+      const response = await api.post<{ id: number }>(`${this.basePath}/templates/${id}/instanciar`, data);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  }
 }
 
 // Detail interfaces
@@ -455,6 +500,45 @@ export interface CerrarRutaRequest {
     recAlmacen: number;
     cargaVehiculo: number;
   }[];
+}
+
+// Template interfaces
+export interface RouteTemplate {
+  id: number;
+  nombre: string;
+  descripcion?: string;
+  zonaNombre?: string;
+  zonaId?: number;
+  totalParadas: number;
+  kilometrosEstimados?: number;
+  activo: boolean;
+  creadoEn: string;
+}
+
+export interface RouteTemplateCreate {
+  nombre: string;
+  descripcion?: string;
+  zonaId?: number | null;
+  horaInicioEstimada?: string | null;
+  horaFinEstimada?: string | null;
+  notas?: string;
+  esTemplate: boolean;
+}
+
+export interface RouteTemplateUpdate {
+  nombre?: string;
+  descripcion?: string;
+  zonaId?: number | null;
+  horaInicioEstimada?: string | null;
+  horaFinEstimada?: string | null;
+  notas?: string;
+}
+
+export interface InstantiateTemplateRequest {
+  usuarioId: number;
+  fecha: string;
+  horaInicioEstimada?: string | null;
+  horaFinEstimada?: string | null;
 }
 
 // Estado constants

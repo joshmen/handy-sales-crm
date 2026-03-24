@@ -10,6 +10,57 @@ public static class RutaVendedorEndpoints
     {
         var group = app.MapGroup("/rutas").RequireAuthorization();
 
+        // === Templates (MUST be before /{id:int} to avoid route conflicts) ===
+
+        group.MapGet("/templates", async (
+            [FromServices] RutaVendedorService servicio) =>
+        {
+            var templates = await servicio.ObtenerTemplatesAsync();
+            return Results.Ok(templates);
+        });
+
+        group.MapPost("/templates", async (
+            RutaVendedorCreateDto dto,
+            [FromServices] RutaVendedorService servicio) =>
+        {
+            dto.EsTemplate = true;
+            var id = await servicio.CrearAsync(dto);
+            return Results.Created($"/rutas/templates/{id}", new { id });
+        });
+
+        group.MapPut("/templates/{id:int}", async (
+            int id,
+            RutaVendedorUpdateDto dto,
+            [FromServices] RutaVendedorService servicio) =>
+        {
+            var actualizado = await servicio.ActualizarAsync(id, dto);
+            return actualizado ? Results.NoContent() : Results.NotFound();
+        });
+
+        group.MapDelete("/templates/{id:int}", async (
+            int id,
+            [FromServices] RutaVendedorService servicio) =>
+        {
+            var eliminado = await servicio.EliminarAsync(id);
+            return eliminado ? Results.NoContent() : Results.NotFound();
+        });
+
+        group.MapPost("/templates/{id:int}/instanciar", async (
+            int id,
+            InstanciarTemplateDto dto,
+            [FromServices] RutaVendedorService servicio) =>
+        {
+            try
+            {
+                var rutaId = await servicio.InstanciarTemplateAsync(id, dto);
+                return Results.Created($"/rutas/{rutaId}", new { id = rutaId });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
+        });
+
         // CRUD básico
         group.MapPost("/", async (
             RutaVendedorCreateDto dto,

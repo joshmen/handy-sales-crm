@@ -66,7 +66,7 @@ public class RutaVendedorRepository : IRutaVendedorRepository
             .Include(r => r.Usuario)
             .Include(r => r.Zona)
             .Include(r => r.Detalles)
-            .Where(r => r.TenantId == tenantId)
+            .Where(r => r.TenantId == tenantId && !r.EsTemplate)
             .AsQueryable();
 
         if (filtro.MostrarInactivos != true)
@@ -105,9 +105,9 @@ public class RutaVendedorRepository : IRutaVendedorRepository
             .Select(r => new RutaListaDto
             {
                 Id = r.Id,
-                UsuarioId = r.UsuarioId,
+                UsuarioId = r.UsuarioId ?? 0,
                 Nombre = r.Nombre,
-                UsuarioNombre = r.Usuario.Nombre,
+                UsuarioNombre = r.Usuario != null ? r.Usuario.Nombre : "",
                 ZonaNombre = r.Zona != null ? r.Zona.Nombre : null,
                 Fecha = r.Fecha,
                 Estado = r.Estado,
@@ -129,7 +129,7 @@ public class RutaVendedorRepository : IRutaVendedorRepository
             .Include(r => r.Zona)
             .Include(r => r.Detalles)
                 .ThenInclude(d => d.Cliente)
-            .Where(r => r.TenantId == tenantId && r.UsuarioId == usuarioId && r.Activo == true)
+            .Where(r => r.TenantId == tenantId && r.UsuarioId == usuarioId && r.Activo == true && !r.EsTemplate)
             .OrderByDescending(r => r.Fecha)
             .Take(10)
             .ToListAsync();
@@ -151,7 +151,8 @@ public class RutaVendedorRepository : IRutaVendedorRepository
                 r.TenantId == tenantId &&
                 r.UsuarioId == usuarioId &&
                 r.Fecha.Date == fechaBusqueda &&
-                r.Activo == true);
+                r.Activo == true &&
+                !r.EsTemplate);
 
         return ruta != null ? MapToDto(ruta) : null;
     }
@@ -169,7 +170,8 @@ public class RutaVendedorRepository : IRutaVendedorRepository
                 r.UsuarioId == usuarioId &&
                 (r.Estado == EstadoRuta.Planificada || r.Estado == EstadoRuta.EnProgreso) &&
                 r.Fecha >= DateTime.Today &&
-                r.Activo == true)
+                r.Activo == true &&
+                !r.EsTemplate)
             .OrderBy(r => r.Fecha)
             .ToListAsync();
 
@@ -675,12 +677,44 @@ public class RutaVendedorRepository : IRutaVendedorRepository
         }
     }
 
+    // === Templates ===
+
+    public async Task<List<RutaTemplateListaDto>> ObtenerTemplatesAsync(int tenantId)
+    {
+        return await _db.RutasVendedor
+            .AsNoTracking()
+            .Include(r => r.Zona)
+            .Include(r => r.Detalles)
+            .Where(r => r.TenantId == tenantId && r.EsTemplate && r.Activo)
+            .OrderByDescending(r => r.CreadoEn)
+            .Select(r => new RutaTemplateListaDto
+            {
+                Id = r.Id,
+                Nombre = r.Nombre,
+                Descripcion = r.Descripcion,
+                ZonaNombre = r.Zona != null ? r.Zona.Nombre : null,
+                ZonaId = r.ZonaId,
+                TotalParadas = r.Detalles.Count,
+                KilometrosEstimados = r.KilometrosEstimados,
+                Activo = r.Activo,
+                CreadoEn = r.CreadoEn
+            })
+            .ToListAsync();
+    }
+
+    public async Task<RutaVendedor?> ObtenerTemplateConDetallesAsync(int templateId, int tenantId)
+    {
+        return await _db.RutasVendedor
+            .Include(r => r.Detalles)
+            .FirstOrDefaultAsync(r => r.Id == templateId && r.TenantId == tenantId && r.EsTemplate);
+    }
+
     private RutaVendedorDto MapToDto(RutaVendedor ruta)
     {
         return new RutaVendedorDto
         {
             Id = ruta.Id,
-            UsuarioId = ruta.UsuarioId,
+            UsuarioId = ruta.UsuarioId ?? 0,
             UsuarioNombre = ruta.Usuario?.Nombre ?? "",
             ZonaId = ruta.ZonaId,
             ZonaNombre = ruta.Zona?.Nombre,

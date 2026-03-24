@@ -32,14 +32,15 @@ public class RutaVendedorService
         var ruta = new RutaVendedor
         {
             TenantId = _tenant.TenantId,
-            UsuarioId = dto.UsuarioId,
+            UsuarioId = dto.EsTemplate ? null : dto.UsuarioId,
             ZonaId = dto.ZonaId,
             Nombre = dto.Nombre,
             Descripcion = dto.Descripcion,
-            Fecha = dto.Fecha.Date,
+            Fecha = dto.EsTemplate ? DateTime.UtcNow.Date : dto.Fecha.Date,
             HoraInicioEstimada = dto.HoraInicioEstimada,
             HoraFinEstimada = dto.HoraFinEstimada,
             Notas = dto.Notas,
+            EsTemplate = dto.EsTemplate,
             Estado = EstadoRuta.Planificada,
             CreadoEn = DateTime.UtcNow,
             CreadoPor = _tenant.UserId
@@ -277,6 +278,60 @@ public class RutaVendedorService
         if (ruta == null || ruta.TenantId != _tenant.TenantId) return null;
 
         return await _repo.ObtenerSiguienteParadaAsync(rutaId);
+    }
+
+    // === Templates ===
+
+    public async Task<List<RutaTemplateListaDto>> ObtenerTemplatesAsync()
+    {
+        return await _repo.ObtenerTemplatesAsync(_tenant.TenantId);
+    }
+
+    public async Task<int> InstanciarTemplateAsync(int templateId, InstanciarTemplateDto dto)
+    {
+        var template = await _repo.ObtenerTemplateConDetallesAsync(templateId, _tenant.TenantId);
+        if (template == null)
+            throw new InvalidOperationException("Template no encontrado");
+
+        var ruta = new RutaVendedor
+        {
+            TenantId = _tenant.TenantId,
+            UsuarioId = dto.UsuarioId,
+            ZonaId = template.ZonaId,
+            Nombre = template.Nombre,
+            Descripcion = template.Descripcion,
+            Fecha = dto.Fecha.Date,
+            HoraInicioEstimada = dto.HoraInicioEstimada ?? template.HoraInicioEstimada,
+            HoraFinEstimada = dto.HoraFinEstimada ?? template.HoraFinEstimada,
+            Notas = template.Notas,
+            KilometrosEstimados = template.KilometrosEstimados,
+            EsTemplate = false,
+            Estado = EstadoRuta.Planificada,
+            CreadoEn = DateTime.UtcNow,
+            CreadoPor = _tenant.UserId
+        };
+
+        var rutaId = await _repo.CrearAsync(ruta);
+
+        // Copy paradas from template
+        foreach (var detalle in template.Detalles.OrderBy(d => d.OrdenVisita))
+        {
+            var nuevoDetalle = new RutaDetalle
+            {
+                RutaId = rutaId,
+                ClienteId = detalle.ClienteId,
+                OrdenVisita = detalle.OrdenVisita,
+                HoraEstimadaLlegada = detalle.HoraEstimadaLlegada,
+                DuracionEstimadaMinutos = detalle.DuracionEstimadaMinutos,
+                Notas = detalle.Notas,
+                Estado = EstadoParada.Pendiente,
+                CreadoEn = DateTime.UtcNow,
+                CreadoPor = _tenant.UserId
+            };
+            await _repo.AgregarDetalleAsync(nuevoDetalle);
+        }
+
+        return rutaId;
     }
 
     // Toggle activo

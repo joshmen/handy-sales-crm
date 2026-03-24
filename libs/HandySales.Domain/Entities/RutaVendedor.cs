@@ -31,7 +31,7 @@ public class RutaVendedor : AuditableEntity
     public int TenantId { get; set; }
 
     [Column("usuario_id")]
-    public int UsuarioId { get; set; }
+    public int? UsuarioId { get; set; }
 
     [Column("zona_id")]
     public int? ZonaId { get; set; }
@@ -69,6 +69,9 @@ public class RutaVendedor : AuditableEntity
     [Column("notas")]
     public string? Notas { get; set; }
 
+    [Column("es_template")]
+    public bool EsTemplate { get; set; }
+
     [Column("efectivo_inicial")]
     public double? EfectivoInicial { get; set; }
 
@@ -86,7 +89,7 @@ public class RutaVendedor : AuditableEntity
 
     // Navigation properties
     public Tenant Tenant { get; set; } = null!;
-    public Usuario Usuario { get; set; } = null!;
+    public Usuario? Usuario { get; set; }
     public Zona? Zona { get; set; }
     public List<RutaDetalle> Detalles { get; set; } = new();
     public List<RutaCarga> Cargas { get; set; } = new();

@@ -40,6 +40,10 @@ public interface IRutaVendedorRepository
     Task<bool> CambiarActivoAsync(int id, bool activo, int tenantId);
     Task<int> BatchToggleActivoAsync(List<int> ids, bool activo, int tenantId);
 
+    // Templates
+    Task<List<RutaTemplateListaDto>> ObtenerTemplatesAsync(int tenantId);
+    Task<RutaVendedor?> ObtenerTemplateConDetallesAsync(int templateId, int tenantId);
+
     // Entidad raw para operaciones
     Task<RutaVendedor?> ObtenerEntidadAsync(int id);
 

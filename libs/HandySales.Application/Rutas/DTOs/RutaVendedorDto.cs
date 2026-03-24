@@ -64,6 +64,7 @@ public class RutaVendedorCreateDto
     public TimeSpan? HoraInicioEstimada { get; set; }
     public TimeSpan? HoraFinEstimada { get; set; }
     public string? Notas { get; set; }
+    public bool EsTemplate { get; set; }
     public List<RutaDetalleCreateDto>? Detalles { get; set; }
 }
 
@@ -115,10 +116,34 @@ public class RutaListaDto
     public int ParadasCompletadas { get; set; }
     public double? KilometrosEstimados { get; set; }
     public bool Activo { get; set; }
+    public bool EsTemplate { get; set; }
 }
 
 public record RutaCambiarActivoDto(bool Activo);
 public record RutaBatchToggleRequest(List<int> Ids, bool Activo);
+
+// === DTOs para Templates de Rutas ===
+
+public class RutaTemplateListaDto
+{
+    public int Id { get; set; }
+    public string Nombre { get; set; } = string.Empty;
+    public string? Descripcion { get; set; }
+    public string? ZonaNombre { get; set; }
+    public int? ZonaId { get; set; }
+    public int TotalParadas { get; set; }
+    public double? KilometrosEstimados { get; set; }
+    public bool Activo { get; set; }
+    public DateTime CreadoEn { get; set; }
+}
+
+public class InstanciarTemplateDto
+{
+    public int UsuarioId { get; set; }
+    public DateTime Fecha { get; set; }
+    public TimeSpan? HoraInicioEstimada { get; set; }
+    public TimeSpan? HoraFinEstimada { get; set; }
+}
 
 public class IniciarRutaDto
 {

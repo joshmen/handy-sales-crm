@@ -69,6 +69,8 @@ const statusColors: Record<string, string> = {
 // Transition map: given the raw API estado, returns the primary forward action
 function getNextAction(apiEstado?: string): { label: string; action: string; colorClasses: string } | null {
   switch (apiEstado) {
+    case 'Borrador':
+      return { label: 'Enviar', action: 'enviar', colorClasses: 'bg-amber-50 text-amber-700 hover:bg-amber-100' };
     case 'Enviado':
       return { label: 'Confirmar', action: 'confirmar', colorClasses: 'bg-blue-50 text-blue-700 hover:bg-blue-100' };
     case 'Confirmado':
@@ -319,6 +321,7 @@ export default function OrdersPage() {
     const id = parseInt(orderId);
     try {
       switch (action) {
+        case 'enviar': await orderService.sendOrder(id); break;
         case 'confirmar': await orderService.confirmOrder(id); break;
         case 'procesar': await orderService.processOrder(id); break;
         case 'en-ruta': await orderService.sendToRoute(id); break;
@@ -526,7 +529,7 @@ export default function OrdersPage() {
                   const nextAction = getNextAction(order.apiEstado);
                   const canCancel = cancellableEstados.has(order.apiEstado || '');
                   return (
-                  <div key={order.id} className="bg-white border border-gray-200 rounded-lg p-4">
+                  <div key={order.id} className="bg-white border border-gray-200 rounded-lg p-4 cursor-pointer" onClick={() => handleEditOrder(order.id)}>
                     {/* Row 1: Icon + Order number + status */}
                     <div className="flex items-start gap-3 mb-2">
                       <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
@@ -565,7 +568,7 @@ export default function OrdersPage() {
                       <span>{order.user.name}</span>
                     </div>
                     {/* Row 3: Actions */}
-                    <div className="flex items-center justify-end gap-1 border-t border-gray-100 pt-2">
+                    <div className="flex items-center justify-end gap-1 border-t border-gray-100 pt-2" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => handleViewDetails(order.id)}
                         className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded"
@@ -596,7 +599,7 @@ export default function OrdersPage() {
                     </div>
                     {/* Row 4: Status advancement */}
                     {canAdvanceOrders && (nextAction || canCancel) && (
-                      <div className="flex items-center gap-2 border-t border-gray-100 pt-2 mt-1">
+                      <div className="flex items-center gap-2 border-t border-gray-100 pt-2 mt-1" onClick={(e) => e.stopPropagation()}>
                         {nextAction && (
                           <button
                             onClick={() => handleAdvanceStatus(order.id, nextAction.action)}
@@ -659,7 +662,8 @@ export default function OrdersPage() {
                       return (
                   <div
                     key={order.id}
-                    className="flex items-center px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors min-w-[1000px]"
+                    className="flex items-center px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer min-w-[1000px]"
+                    onClick={() => handleEditOrder(order.id)}
                   >
                     <div className="w-[100px] text-[13px] text-gray-900 font-medium">
                       {order.code}
@@ -690,7 +694,7 @@ export default function OrdersPage() {
                     <div className="w-[100px] text-[13px] text-gray-900 font-medium text-right">
                       ${formatCurrency(order.total)}
                     </div>
-                    <div className="w-[180px] flex items-center justify-center gap-1">
+                    <div className="w-[180px] flex items-center justify-center gap-1" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => handleViewDetails(order.id)}
                         className="p-1.5 hover:bg-blue-50 rounded transition-colors"

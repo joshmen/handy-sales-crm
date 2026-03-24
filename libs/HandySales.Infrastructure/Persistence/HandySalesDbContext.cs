@@ -391,10 +391,11 @@ public class HandySalesDbContext : DbContext
                   .HasForeignKey(rv => rv.TenantId)
                   .OnDelete(DeleteBehavior.Cascade);
 
-            // Relación con Usuario
+            // Relación con Usuario (opcional para templates)
             entity.HasOne(rv => rv.Usuario)
                   .WithMany()
                   .HasForeignKey(rv => rv.UsuarioId)
+                  .IsRequired(false)
                   .OnDelete(DeleteBehavior.Restrict);
 
             // Relación con Zona (opcional)
