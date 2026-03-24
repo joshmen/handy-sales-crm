@@ -248,12 +248,13 @@ export default function RoutesPage() {
     try {
       setActionLoading(true);
       if (editingRoute) {
+        const fmtTimeUpd = (t?: string | null) => t ? (t.length === 5 ? `${t}:00` : t) : null;
         const updateData: RouteUpdateRequest = {
           nombre: data.nombre,
           zonaId: data.zonaId,
           fecha: data.fecha,
-          horaInicioEstimada: data.horaInicioEstimada || null,
-          horaFinEstimada: data.horaFinEstimada || null,
+          horaInicioEstimada: fmtTimeUpd(data.horaInicioEstimada),
+          horaFinEstimada: fmtTimeUpd(data.horaFinEstimada),
           descripcion: data.descripcion || undefined,
           notas: data.notas || undefined,
         };
@@ -265,13 +266,14 @@ export default function RoutesPage() {
           setActionLoading(false);
           return;
         }
+        const fmtTime = (t?: string | null) => t ? (t.length === 5 ? `${t}:00` : t) : null;
         const createData: RouteCreateRequest = {
           nombre: data.nombre,
           usuarioId: data.usuarioId,
           zonaId: data.zonaId,
           fecha: data.fecha,
-          horaInicioEstimada: data.horaInicioEstimada || null,
-          horaFinEstimada: data.horaFinEstimada || null,
+          horaInicioEstimada: fmtTime(data.horaInicioEstimada),
+          horaFinEstimada: fmtTime(data.horaFinEstimada),
           descripcion: data.descripcion || undefined,
           notas: data.notas || undefined,
         };
