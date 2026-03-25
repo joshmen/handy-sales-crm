@@ -6,8 +6,10 @@ namespace HandySales.Domain.Entities;
 public enum EstadoPedido
 {
     Borrador = 0,
+    [Obsolete("Migrado a Confirmado")]
     Enviado = 1,
     Confirmado = 2,
+    [Obsolete("Migrado a EnRuta")]
     EnProceso = 3,
     EnRuta = 4,
     Entregado = 5,

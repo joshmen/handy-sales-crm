@@ -2,10 +2,10 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput } from 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useOfflineOrderById, useOfflineOrderDetalles, useClientNameMap, useEnviarPedido, useConfirmarPedido, useProcesarPedido, useEnRutaPedido, useEntregarPedido, useCancelarPedido } from '@/hooks';
+import { useOfflineOrderById, useOfflineOrderDetalles, useClientNameMap, useConfirmarPedido, useEnRutaPedido, useEntregarPedido, useCancelarPedido } from '@/hooks';
 import { LoadingSpinner, ConfirmModal } from '@/components/ui';
 import { formatCurrency, formatDateTime } from '@/utils/format';
-import { Send, XCircle, Package, CheckCircle, Truck, ClipboardCheck, ArrowRight, ChevronLeft } from 'lucide-react-native';
+import { XCircle, Package, CheckCircle, Truck, ArrowRight, ChevronLeft } from 'lucide-react-native';
 import { SbOrders } from '@/components/icons/DashboardIcons';
 import { useAuthStore } from '@/stores/authStore';
 import { ORDER_STATUS_COLORS } from '@/constants/colors';
@@ -13,8 +13,10 @@ import { COLORS } from '@/theme/colors';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 // ── Stepper states (exclude Cancelado from linear flow) ──
-const STEPPER_STATES = [0, 1, 2, 3, 4, 5];
-const STEPPER_LABELS = ['Borrador', 'Enviado', 'Confirmado', 'Proceso', 'En Ruta', 'Entregado'];
+const STEPPER_STATES = [0, 2, 4, 5];
+const STEPPER_LABELS = ['Borrador', 'Confirmado', 'En Ruta', 'Entregado'];
+// Map legacy states 1 (Enviado) and 3 (EnProceso) to Confirmado(2) for stepper display
+const normalizeEstado = (e: number): number => (e === 1 || e === 3) ? 2 : e;
 
 export default function OrderDetailScreen() {
   const insets = useSafeAreaInsets();
@@ -26,9 +28,7 @@ export default function OrderDetailScreen() {
   const user = useAuthStore((s) => s.user);
   const isSupervisor = user?.role === 'SUPERVISOR' || user?.role === 'ADMIN';
 
-  const enviarMutation = useEnviarPedido();
   const confirmarMutation = useConfirmarPedido();
-  const procesarMutation = useProcesarPedido();
   const enRutaMutation = useEnRutaPedido();
   const entregarMutation = useEntregarPedido();
   const cancelarMutation = useCancelarPedido();
@@ -71,9 +71,10 @@ export default function OrderDetailScreen() {
     });
   };
 
-  // Determine which action button to show
+  // Determine which action button to show (simplified 4-state flow)
   const renderActionButton = () => {
-    const anyLoading = enviarMutation.isPending || confirmarMutation.isPending || procesarMutation.isPending || enRutaMutation.isPending || entregarMutation.isPending;
+    const anyLoading = confirmarMutation.isPending || enRutaMutation.isPending || entregarMutation.isPending;
+    const effectiveEstado = normalizeEstado(estado);
 
     // Transitions require serverId — show sync message if not yet synced
     if (!isSynced && estado > 0) {
@@ -84,22 +85,8 @@ export default function OrderDetailScreen() {
       );
     }
 
-    switch (estado) {
-      case 0: // Borrador → Enviar
-        return (
-          <TouchableOpacity
-            testID="btn-enviar"
-            style={[styles.actionBtn, { backgroundColor: COLORS.button }]}
-            onPress={() => handleTransition('Enviar Pedido', '¿Enviar este pedido?', () => enviarMutation.mutate(serverId, { onSuccess: () => updateLocalStatus(1) }))}
-            disabled={anyLoading}
-            activeOpacity={0.8}
-          >
-            <Send size={18} color="#fff" />
-            <Text style={styles.actionBtnText}>Enviar Pedido</Text>
-          </TouchableOpacity>
-        );
-      case 1: // Enviado → Confirmar (solo supervisor)
-        if (!isSupervisor) return null;
+    switch (effectiveEstado) {
+      case 0: // Borrador → Confirmar
         return (
           <TouchableOpacity
             testID="btn-confirmar"
@@ -112,21 +99,7 @@ export default function OrderDetailScreen() {
             <Text style={styles.actionBtnText}>Confirmar Pedido</Text>
           </TouchableOpacity>
         );
-      case 2: // Confirmado → Procesar (solo supervisor)
-        if (!isSupervisor) return null;
-        return (
-          <TouchableOpacity
-            testID="btn-procesar"
-            style={[styles.actionBtn, { backgroundColor: COLORS.button }]}
-            onPress={() => handleTransition('Procesar Pedido', '¿Iniciar procesamiento?', () => procesarMutation.mutate(serverId, { onSuccess: () => updateLocalStatus(3) }))}
-            disabled={anyLoading}
-            activeOpacity={0.8}
-          >
-            <ClipboardCheck size={18} color="#fff" />
-            <Text style={styles.actionBtnText}>Procesar Pedido</Text>
-          </TouchableOpacity>
-        );
-      case 3: // EnProceso → En Ruta
+      case 2: // Confirmado → En Ruta
         return (
           <TouchableOpacity
             testID="btn-en-ruta"
@@ -194,8 +167,9 @@ export default function OrderDetailScreen() {
       {estado !== 6 && (
         <Animated.View entering={FadeInDown.duration(400).delay(200)} style={styles.stepper}>
           {STEPPER_STATES.map((s, i) => {
-            const isActive = s === estado;
-            const isPast = s < estado;
+            const normalized = normalizeEstado(estado);
+            const isActive = s === normalized;
+            const isPast = s < normalized;
             const dotColor = isActive ? COLORS.button : isPast ? '#16a34a' : '#e2e8f0';
             const lineColor = isPast ? '#16a34a' : '#e2e8f0';
             return (
@@ -206,7 +180,7 @@ export default function OrderDetailScreen() {
                     {isPast && <CheckCircle size={10} color="#fff" />}
                     {isActive && <ArrowRight size={10} color="#fff" />}
                   </View>
-                  {i < STEPPER_STATES.length - 1 && <View style={[styles.stepLine, { backgroundColor: s < estado ? '#16a34a' : '#e2e8f0' }]} />}
+                  {i < STEPPER_STATES.length - 1 && <View style={[styles.stepLine, { backgroundColor: s < normalized ? '#16a34a' : '#e2e8f0' }]} />}
                 </View>
                 <Text style={[styles.stepLabel, isActive && styles.stepLabelActive, isPast && styles.stepLabelPast]}>{STEPPER_LABELS[i]}</Text>
               </View>

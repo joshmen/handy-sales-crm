@@ -97,8 +97,8 @@ export const OrderList: React.FC<OrderListProps> = ({
   // Cálculos para el resumen
   const summaryData = useMemo(() => {
     const totalOrders = filteredOrders.length;
-    const pendingOrders = filteredOrders.filter(o => o.status === 'pending').length;
-    const inProgressOrders = filteredOrders.filter(o => o.status === 'in_progress').length;
+    const pendingOrders = filteredOrders.filter(o => o.status === 'confirmed').length;
+    const inProgressOrders = filteredOrders.filter(o => o.status === 'en_route').length;
     const completedOrders = filteredOrders.filter(o => o.status === 'delivered').length;
     const totalValue = filteredOrders.reduce((sum, order) => sum + order.total, 0);
 

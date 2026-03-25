@@ -89,23 +89,12 @@ public class OrderNotificationHelper
 
         return newState switch
         {
-            EstadoPedido.Enviado => (
-                GetSupervisorsAndAdmins(tenantId).Result,
-                $"Nuevo pedido {numero}",
-                $"{clienteNombre} — pedido enviado para revisión",
-                "order.new"
-            ),
+            // Simplified flow: Borrador → Confirmado → EnRuta → Entregado + Cancelado
             EstadoPedido.Confirmado => (
-                new List<int> { vendedorId },
+                GetVendedorAndSupervisors(vendedorId, tenantId).Result,
                 $"Pedido {numero} confirmado",
-                $"Tu pedido para {clienteNombre} fue confirmado",
+                $"Pedido para {clienteNombre} fue confirmado",
                 "order.confirmed"
-            ),
-            EstadoPedido.EnProceso => (
-                new List<int> { vendedorId },
-                $"Pedido {numero} en preparación",
-                $"Tu pedido para {clienteNombre} está siendo preparado",
-                "order.processing"
             ),
             EstadoPedido.EnRuta => (
                 new List<int> { vendedorId },
@@ -125,6 +114,20 @@ public class OrderNotificationHelper
                 $"El pedido para {clienteNombre} fue cancelado",
                 "order.cancelled"
             ),
+#pragma warning disable CS0618 // Legacy states — kept for safety if old data triggers notification
+            EstadoPedido.Enviado => (
+                GetVendedorAndSupervisors(vendedorId, tenantId).Result,
+                $"Pedido {numero} confirmado",
+                $"Pedido para {clienteNombre} fue confirmado",
+                "order.confirmed"
+            ),
+            EstadoPedido.EnProceso => (
+                new List<int> { vendedorId },
+                $"Pedido {numero} en ruta",
+                $"Tu pedido para {clienteNombre} va en camino",
+                "order.en_route"
+            ),
+#pragma warning restore CS0618
             _ => (new List<int>(), "", "", "")
         };
     }

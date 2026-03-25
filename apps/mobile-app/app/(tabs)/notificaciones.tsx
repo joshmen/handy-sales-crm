@@ -50,9 +50,9 @@ function getDeepLinkForStoredNotification(n: StoredNotification): string | null 
   const safeEntityId = entityId && /^\d+$/.test(entityId) ? entityId : null;
 
   switch (type) {
-    case 'order.new':
+    case 'order.new':       // Legacy — kept for backwards compat with older push payloads
     case 'order.confirmed':
-    case 'order.processing':
+    case 'order.processing': // Legacy — kept for backwards compat with older push payloads
     case 'order.en_route':
     case 'order.delivered':
     case 'order.cancelled':

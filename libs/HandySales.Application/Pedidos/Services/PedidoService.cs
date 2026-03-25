@@ -102,9 +102,11 @@ public class PedidoService
         return await _repository.ActualizarAsync(id, dto, _tenant.TenantId);
     }
 
+    [Obsolete("Use ConfirmarAsync instead. Enviar state removed from simplified workflow.")]
     public async Task<bool> EnviarAsync(int id)
     {
-        return await _repository.CambiarEstadoAsync(id, EstadoPedido.Enviado, "Pedido enviado", _tenant.TenantId);
+        // Legacy redirect: Enviar now maps to Confirmar in the simplified 4-state flow
+        return await ConfirmarAsync(id);
     }
 
     public async Task<bool> ConfirmarAsync(int id)
@@ -112,9 +114,11 @@ public class PedidoService
         return await _repository.CambiarEstadoAsync(id, EstadoPedido.Confirmado, "Pedido confirmado", _tenant.TenantId);
     }
 
+    [Obsolete("Use EnviarARutaAsync instead. EnProceso state removed from simplified workflow.")]
     public async Task<bool> IniciarProcesoAsync(int id)
     {
-        return await _repository.CambiarEstadoAsync(id, EstadoPedido.EnProceso, "Pedido en proceso", _tenant.TenantId);
+        // Legacy redirect: IniciarProceso now maps to EnviarARuta in the simplified 4-state flow
+        return await EnviarARutaAsync(id);
     }
 
     public async Task<bool> EnviarARutaAsync(int id)

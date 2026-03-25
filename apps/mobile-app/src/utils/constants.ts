@@ -32,9 +32,9 @@ export const USER_ROLES = {
 
 export const ORDER_STATUS: Record<number, string> = {
   0: 'Borrador',
-  1: 'Enviado',
+  1: 'Confirmado', // Legacy — mapped to Confirmado for backwards compat
   2: 'Confirmado',
-  3: 'En Preparación',
+  3: 'Confirmado', // Legacy — mapped to Confirmado for backwards compat
   4: 'En Ruta',
   5: 'Entregado',
   6: 'Cancelado',

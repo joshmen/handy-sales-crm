@@ -1,43 +1,70 @@
-# Current Task — Stripe Trial Hibrido + Marketplace Integraciones
+# Current Task — Simplify Order States (7 → 4)
 
-> **Fecha**: 11 de marzo de 2026
-> **Plan**: `C:\Users\AW AREA 51M R2\.claude\plans\merry-gathering-toucan.md`
-
----
-
-## PART 1: Stripe Trial Hibrido
-
-### Backend
-- [x] Step 1: Add TrialEndsAt + TrialCardCollectedAt to Tenant entity + migration
-- [x] Step 2: Update registration (RegisterAsync + SocialRegisterAsync) — PlanTipo=PRO, MaxUsuarios=10, TrialEndsAt=+14d
-- [x] Step 3: Trial checkout endpoint (POST /api/subscription/trial-checkout) with Stripe embedded checkout + TrialEnd
-- [x] Step 4: Webhook handling — is_trial_checkout metadata, TrialCardCollectedAt, keep Trial status
-- [x] Step 5: SubscriptionMonitor — trial expiration logic (3-day grace, skip tenants with card)
-- [ ] Step 6: Trial email sequence (7 emails) — DEFERRED, lower priority
-- [x] Step 7: /subscription/current returns trialEndsAt, trialCardCollected, daysRemaining
-
-### Frontend
-- [x] Step 8: Trial countdown banner on subscription page (color-coded, CTA for card capture)
-- [x] Step 9: Trial badge in header ("Trial: Xd" with color coding, links to /subscription)
-- [x] Step 10: Register page copy update ("Prueba gratis por 14 dias — acceso PRO completo")
+> **Fecha**: 25 de marzo de 2026
+> **Scope**: Mobile app only (`apps/mobile-app/`)
 
 ---
 
-## PART 2: Marketplace Integraciones
+## New Flow
+```
+Borrador(0) → Confirmado(2) → EnRuta(4) → Entregado(5)  + Cancelado(6)
+```
+**Removed**: Enviado(1) and EnProceso(3)
 
-### Phase 1: Backend
-- [x] Step 1: Domain entities (Integration, TenantIntegration, IntegrationLog)
-- [x] Step 2: DbContext + Migration (3 DbSets, query filters, unique index)
-- [x] Step 3: Application layer (DTOs, IIntegrationRepository, IntegrationService)
-- [x] Step 4: Repository implementation
-- [x] Step 5: REST endpoints (5 endpoints in IntegrationEndpoints.cs)
-- [x] Step 6: Seed data SQL (seed_integrations.sql — 4 integrations)
+## Plan
 
-### Phase 2: Frontend
-- [x] Step 7: TypeScript types (integration.ts) + API service (integrations.ts)
-- [x] Step 8: Sidebar item ("Integraciones", Admin/SuperAdmin only)
-- [x] Step 9: Marketplace page (cards, filter tabs, activate/deactivate)
-- [ ] Step 10: IntegrationsContext (load active integrations, hasIntegration helper) — DEFERRED
+### 1. API Layer — `src/api/orders.ts`
+- [x] Remove `enviar()` method
+- [x] Remove `procesar()` method
+
+### 2. Hooks — `src/hooks/useOrders.ts`
+- [x] Remove `useEnviarPedido` hook
+- [x] Remove `useProcesarPedido` hook
+
+### 3. Hooks barrel — `src/hooks/index.ts`
+- [x] Remove `useEnviarPedido`, `useProcesarPedido` from exports
+
+### 4. Constants — `src/utils/constants.ts`
+- [x] Update `ORDER_STATUS` map: remove keys 1,3; map old 1→Confirmado, 3→Confirmado for backwards compat
+
+### 5. Colors — `src/constants/colors.ts`
+- [x] Update `ORDER_STATUS_COLORS`: remove keys 1,3; fallback old values to Confirmado
+
+### 6. Theme colors — `src/theme/colors.ts`
+- [x] Update `STATUS_PALETTES`: remove `pending`, `processing`
+- [x] Update `ORDER_STATUS` map: remove keys 1,3; map them to Confirmado for backwards compat
+
+### 7. Order detail — `app/(tabs)/vender/[id].tsx`
+- [x] Update stepper from 6 states to 4: [0, 2, 4, 5]
+- [x] Remove Enviar and Procesar buttons from `renderActionButton()`
+- [x] Change Borrador(0) action to "Confirmar" (goes directly to Confirmado)
+- [x] Change Confirmado(2) action to "Poner en Ruta" (was previously on case 3)
+- [x] Remove imports: `useEnviarPedido`, `useProcesarPedido`
+
+### 8. Order list — `app/(tabs)/vender/index.tsx`
+- [x] Update `STATUS_FILTERS`: remove "Enviado" filter
+
+### 9. Revision screen — `app/(tabs)/vender/crear/revision.tsx`
+- [x] Change preventa to create with estado=2 (Confirmado) instead of estado=1 (Enviado)
+- [x] Remove the server-side `enviar` call after create
+
+### 10. Push notifications — `src/services/pushNotifications.ts`
+- [x] Remove `order.new` and `order.processing` cases (fold into other order cases)
+
+### 11. Notifications screen — `app/(tabs)/notificaciones.tsx`
+- [x] Remove `order.new` and `order.processing` cases
+
+### 12. Activity screen — `app/(tabs)/equipo/actividad.tsx`
+- [x] Remove `enviado` key from ESTADO_COLORS (keep others)
+
+### 13. Cobrar screen — `app/(tabs)/cobrar/index.tsx`
+- [x] Update estado filter comment (was "exclude cancelled=4" but should be "exclude cancelled=6")
+
+### 14. WatermelonDB schema comment — `src/db/schema.ts`
+- [x] Update comment from "0=Borrador..6=Cancelado" to note simplified states
+
+### 15. TypeScript verification
+- [ ] `npx tsc --noEmit` passes with 0 errors
 
 ---
 
@@ -45,64 +72,11 @@
 
 | Check | Status |
 |-------|--------|
-| `dotnet build` | PASS (warnings only) |
-| `dotnet test` | 391/391 PASS |
-| `npm run type-check` | 0 errors |
-| Backend builds | OK |
-| Frontend compiles | OK |
-
----
-
-## Files Created/Modified This Session
-
-### New Files
-- `libs/HandySales.Domain/Entities/Integration.cs`
-- `libs/HandySales.Domain/Entities/TenantIntegration.cs`
-- `libs/HandySales.Domain/Entities/IntegrationLog.cs`
-- `libs/HandySales.Application/Integrations/DTOs/IntegrationDtos.cs`
-- `libs/HandySales.Application/Integrations/Interfaces/IIntegrationRepository.cs`
-- `libs/HandySales.Application/Integrations/Services/IntegrationService.cs`
-- `libs/HandySales.Infrastructure/Repositories/Integrations/IntegrationRepository.cs`
-- `apps/api/src/HandySales.Api/Endpoints/IntegrationEndpoints.cs`
-- `apps/web/src/types/integration.ts`
-- `apps/web/src/services/api/integrations.ts`
-- `apps/web/src/app/(dashboard)/integrations/page.tsx`
-- `infra/database/schema/seed_integrations.sql`
-- EF Core migrations: AddTrialFieldsToTenant, AddIntegrationsMarketplace
-
-### Modified Files
-- `libs/HandySales.Domain/Entities/Tenant.cs` — TrialEndsAt, TrialCardCollectedAt
-- `apps/api/src/HandySales.Api/Auth/AuthService.cs` — Trial registration
-- `apps/api/src/HandySales.Api/Payments/StripeService.cs` — Trial checkout + webhook
-- `apps/api/src/HandySales.Api/Endpoints/SubscriptionEndpoints.cs` — Trial checkout endpoint + trial info
-- `apps/api/src/HandySales.Api/Workers/SubscriptionMonitor.cs` — Trial expiration
-- `apps/api/src/HandySales.Api/Configuration/ServiceRegistrationExtensions.cs` — DI for integrations
-- `apps/api/src/HandySales.Api/Program.cs` — MapIntegrationEndpoints
-- `libs/HandySales.Infrastructure/Persistence/HandySalesDbContext.cs` — 3 new DbSets
-- `libs/HandySales.Application/CompanySettings/DTOs/CompanySettingsDto.cs` — TrialEndsAt, DaysRemaining
-- `libs/HandySales.Application/CompanySettings/Services/CompanySettingsService.cs` — Map trial fields
-- `apps/web/src/services/api/companyService.ts` — Trial fields in type
-- `apps/web/src/services/api/subscriptions.ts` — createTrialCheckoutSession
-- `apps/web/src/types/subscription.ts` — Trial fields
-- `apps/web/src/app/(dashboard)/subscription/page.tsx` — Trial countdown banner
-- `apps/web/src/components/layout/Header.tsx` — Trial badge
-- `apps/web/src/components/layout/Sidebar.tsx` — Integraciones sidebar item
-- `apps/web/src/app/register/page.tsx` — Updated copy
-
----
-
-## Deferred Items
-- **Trial email sequence** (Step 6): 7 drip emails over 14 days. Needs ScheduledActions + email templates.
-- **IntegrationsContext** (Step 10): Global context for `hasIntegration(slug)`. Build when integrations affect other UI.
-- **Billing Portal connection**: After PAC is connected for real SAT invoicing.
+| `npx tsc --noEmit` | PENDING |
 
 ---
 
 ## Previous Tasks (Archived)
 
-### Onboarding Wizard (completado — session anterior)
+### Stripe Trial + Marketplace (completado)
 See previous todo.md in git history.
-
-### Sprint 4 (completado — commit 7b3c7da)
-- [x] C4: SubscriptionPlan CRUD + enforcement service
-- [x] C5: Aviso de privacidad + Terminos de servicio

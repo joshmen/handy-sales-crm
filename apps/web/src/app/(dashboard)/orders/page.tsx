@@ -40,56 +40,67 @@ import { useFormatters } from '@/hooks/useFormatters';
 // Mapeo de estados de API a estados del componente
 const estadoToStatus: Record<string, Order['status']> = {
   'Borrador': 'draft',
-  'Enviado': 'pending',
   'Confirmado': 'confirmed',
-  'EnProceso': 'in_progress',
-  'EnRuta': 'in_progress',
+  'EnRuta': 'en_route',
   'Entregado': 'delivered',
   'Cancelado': 'cancelled',
+  // Legacy: old states map to confirmed for backwards compat
+  'Enviado': 'confirmed',
+  'EnProceso': 'confirmed',
 };
 
 const statusLabels: Record<string, string> = {
   'draft': 'Borrador',
-  'pending': 'Pendiente',
   'confirmed': 'Confirmado',
-  'in_progress': 'En proceso',
+  'en_route': 'En Ruta',
   'delivered': 'Entregado',
   'cancelled': 'Cancelado',
 };
 
-const statusColors: Record<string, string> = {
-  'draft': 'bg-gray-100 text-gray-600',
-  'pending': 'bg-yellow-100 text-yellow-600',
-  'confirmed': 'bg-blue-100 text-blue-600',
-  'in_progress': 'bg-purple-100 text-purple-600',
-  'delivered': 'bg-green-100 text-green-600',
-  'cancelled': 'bg-red-100 text-red-600',
+// Dot color + subtle text — no pastel backgrounds
+const statusDotColors: Record<string, string> = {
+  'draft': 'bg-gray-400 ring-2 ring-gray-200 ring-offset-1',
+  'confirmed': 'bg-blue-500 ring-2 ring-blue-200 ring-offset-1',
+  'en_route': 'bg-cyan-500 ring-2 ring-cyan-200 ring-offset-1',
+  'delivered': 'bg-emerald-500',
+  'cancelled': 'bg-red-400',
+};
+const statusTextColors: Record<string, string> = {
+  'draft': 'text-gray-500',
+  'confirmed': 'text-blue-700',
+  'en_route': 'text-cyan-700',
+  'delivered': 'text-emerald-700',
+  'cancelled': 'text-red-500',
+};
+// Left border accent for rows needing attention
+const statusBorderColors: Record<string, string> = {
+  'draft': 'border-l-gray-300',
+  'confirmed': 'border-l-blue-400',
+  'en_route': 'border-l-cyan-400',
+  'delivered': '',
+  'cancelled': '',
 };
 
 // Transition map: given the raw API estado, returns the primary forward action
 function getNextAction(apiEstado?: string): { label: string; action: string; colorClasses: string } | null {
   switch (apiEstado) {
     case 'Borrador':
-      return { label: 'Enviar', action: 'enviar', colorClasses: 'bg-amber-50 text-amber-700 hover:bg-amber-100' };
-    case 'Enviado':
-      return { label: 'Confirmar', action: 'confirmar', colorClasses: 'bg-blue-50 text-blue-700 hover:bg-blue-100' };
+      return { label: 'Confirmar', action: 'confirmar', colorClasses: 'border border-blue-300 text-blue-700 hover:bg-blue-50' };
     case 'Confirmado':
-      return { label: 'Procesar', action: 'procesar', colorClasses: 'bg-purple-50 text-purple-700 hover:bg-purple-100' };
-    case 'EnProceso':
-      return { label: 'En Ruta', action: 'en-ruta', colorClasses: 'bg-cyan-50 text-cyan-700 hover:bg-cyan-100' };
+      return { label: 'Enviar a Ruta', action: 'en-ruta', colorClasses: 'border border-cyan-300 text-cyan-700 hover:bg-cyan-50' };
     case 'EnRuta':
-      return { label: 'Entregar', action: 'entregar', colorClasses: 'bg-green-50 text-green-700 hover:bg-green-100' };
+      return { label: 'Entregar', action: 'entregar', colorClasses: 'bg-emerald-600 text-white hover:bg-emerald-700' };
     default:
       return null;
   }
 }
 
 // Non-terminal states that can be cancelled
-const cancellableEstados = new Set(['Borrador', 'Enviado', 'Confirmado', 'EnProceso', 'EnRuta']);
+const cancellableEstados = new Set(['Borrador', 'Confirmado', 'EnRuta']);
 
 function mapApiOrderToOrder(apiOrder: OrderListItem): Order {
   const estadoStr = apiOrder.estadoNombre || String(apiOrder.estado);
-  const status = estadoToStatus[estadoStr] || 'pending';
+  const status = estadoToStatus[estadoStr] || 'draft';
 
   return {
     id: apiOrder.id.toString(),
@@ -322,9 +333,7 @@ export default function OrdersPage() {
     const id = parseInt(orderId);
     try {
       switch (action) {
-        case 'enviar': await orderService.sendOrder(id); break;
         case 'confirmar': await orderService.confirmOrder(id); break;
-        case 'procesar': await orderService.processOrder(id); break;
         case 'en-ruta': await orderService.sendToRoute(id); break;
         case 'entregar': await orderService.deliverOrder(id); break;
       }
@@ -467,9 +476,8 @@ export default function OrdersPage() {
             >
               <option value="">Todos los estados</option>
               <option value="Borrador">Borrador</option>
-              <option value="Enviado">Pendiente</option>
               <option value="Confirmado">Confirmado</option>
-              <option value="EnProceso">En proceso</option>
+              <option value="EnRuta">En Ruta</option>
               <option value="Entregado">Entregado</option>
               <option value="Cancelado">Cancelado</option>
             </select>
@@ -542,16 +550,15 @@ export default function OrdersPage() {
                         </p>
                         <p className="text-xs text-gray-500 truncate">{order.client.name}</p>
                       </div>
-                      <span className={`px-2 py-1 text-[11px] font-medium rounded-full whitespace-nowrap ${statusColors[order.status]}`}>
-                        {statusLabels[order.status]}
+                      <span className="flex items-center gap-1.5">
+                        <span className={`w-2 h-2 rounded-full ${statusDotColors[order.status]}`} />
+                        <span className={`text-[11px] font-medium whitespace-nowrap ${statusTextColors[order.status]}`}>{statusLabels[order.status]}</span>
                       </span>
                     </div>
-                    {/* TipoVenta badge */}
+                    {/* TipoVenta */}
                     <div className="flex justify-end mt-1">
-                      <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full ${
-                        order.tipoVenta === 1
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-blue-100 text-blue-700'
+                      <span className={`text-[10px] font-medium ${
+                        order.tipoVenta === 1 ? 'text-emerald-600' : 'text-gray-400'
                       }`}>
                         {order.tipoVenta === 1 ? 'Venta Directa' : 'Preventa'}
                       </span>
@@ -630,15 +637,16 @@ export default function OrdersPage() {
             {/* Orders Table */}
             <div className="hidden sm:block bg-white border border-gray-200 rounded-lg overflow-x-auto" data-tour="orders-table">
               {/* Table Header */}
-              <div className="flex items-center bg-gray-50 px-4 h-10 border-b border-gray-200">
-                <div className="w-[130px] shrink-0 text-xs font-semibold text-gray-700"># Pedido</div>
-                <div className="flex-1 min-w-[120px] text-xs font-semibold text-gray-700">Cliente</div>
-                <div className="w-[130px] shrink-0 text-xs font-semibold text-gray-700 hidden xl:block">Vendedor</div>
-                <div className="w-[80px] shrink-0 text-xs font-semibold text-gray-700">Fecha</div>
-                <div className="w-[90px] shrink-0 text-xs font-semibold text-gray-700">Estado</div>
-                <div className="w-[90px] shrink-0 text-xs font-semibold text-gray-700 hidden lg:block">Tipo</div>
-                <div className="w-[90px] shrink-0 text-xs font-semibold text-gray-700 text-right">Total</div>
-                <div className="w-[150px] shrink-0 text-xs font-semibold text-gray-700 text-right">Acciones</div>
+              <div className="flex items-center bg-gray-50/80 px-4 h-9 border-b border-gray-200 text-[11px] font-medium text-gray-500 uppercase tracking-wider">
+                <div className="w-4 shrink-0 mr-2" />
+                <div className="w-[150px] shrink-0"># Pedido</div>
+                <div className="flex-1 min-w-[100px] max-w-[300px]">Cliente</div>
+                <div className="w-[140px] shrink-0 hidden xl:block">Vendedor</div>
+                <div className="w-[75px] shrink-0">Fecha</div>
+                <div className="w-[90px] shrink-0">Estado</div>
+                <div className="w-[85px] shrink-0 hidden lg:block">Tipo</div>
+                <div className="w-[90px] shrink-0 text-right pr-4">Total</div>
+                <div className="w-[180px] shrink-0 text-center border-l-2 border-gray-200 pl-3">Acciones</div>
               </div>
 
               {/* Table Body - With loading overlay */}
@@ -648,7 +656,7 @@ export default function OrdersPage() {
                 {/* Empty State */}
                 {!loading && filteredOrders.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-20">
-                    <FileText className="w-16 h-16 text-violet-300 mb-4" />
+                    <FileText className="w-16 h-16 text-gray-300 mb-4" />
                     <h3 className="text-lg font-semibold text-gray-700 mb-2">No se encontraron resultados</h3>
                     <p className="text-sm text-gray-500 text-center">
                       Crea pedidos desde la app móvil
@@ -663,81 +671,77 @@ export default function OrdersPage() {
                       return (
                   <div
                     key={order.id}
-                    className="flex items-center px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
+                    className={`flex items-center px-4 py-2 border-b border-gray-100 border-l-4 hover:bg-gray-50/70 transition-colors cursor-pointer ${statusBorderColors[order.status]}`}
                     onClick={() => handleEditOrder(order.id)}
                   >
-                    <div className="w-[130px] shrink-0 text-[13px] text-gray-900 font-medium">
+                    {/* Status dot */}
+                    <div className="w-4 shrink-0 mr-2 flex justify-center">
+                      <div className={`w-2.5 h-2.5 rounded-full ${statusDotColors[order.status]}`} />
+                    </div>
+                    <div className="w-[150px] shrink-0 text-[13px] text-gray-800 font-mono">
                       {order.code}
                     </div>
-                    <div className="flex-1 min-w-[120px]">
-                      <div className="text-[13px] text-gray-900 truncate">{order.client.name}</div>
+                    <div className="flex-1 min-w-[100px] max-w-[300px]">
+                      <div className="text-[13px] text-gray-900 font-medium truncate">{order.client.name}</div>
                     </div>
-                    <div className="w-[130px] shrink-0 text-[13px] text-gray-600 truncate hidden xl:block">
+                    <div className="w-[140px] shrink-0 text-[13px] text-gray-500 truncate hidden xl:block">
                       {order.user.name}
                     </div>
-                    <div className="w-[80px] shrink-0 text-[13px] text-gray-600 whitespace-nowrap">
+                    <div className="w-[75px] shrink-0 text-[12px] text-gray-500 whitespace-nowrap tabular-nums">
                       {order.orderDate.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
                     </div>
                     <div className="w-[90px] shrink-0">
-                      <span className={`px-2 py-0.5 text-[11px] font-medium rounded-full whitespace-nowrap ${statusColors[order.status]}`}>
+                      <span className={`text-[12px] font-medium whitespace-nowrap ${statusTextColors[order.status]}`}>
                         {statusLabels[order.status]}
                       </span>
                     </div>
-                    <div className="w-[90px] shrink-0 hidden lg:block">
-                      <span className={`px-2 py-0.5 text-[11px] font-medium rounded-full whitespace-nowrap ${
-                        order.tipoVenta === 1
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-blue-100 text-blue-700'
+                    <div className="w-[85px] shrink-0 hidden lg:block">
+                      <span className={`text-[12px] whitespace-nowrap ${
+                        order.tipoVenta === 1 ? 'text-emerald-600' : 'text-gray-500'
                       }`}>
                         {order.tipoVenta === 1 ? 'V. Directa' : 'Preventa'}
                       </span>
                     </div>
-                    <div className="w-[90px] shrink-0 text-[13px] text-gray-900 font-semibold text-right whitespace-nowrap">
+                    <div className="w-[90px] shrink-0 text-[13px] text-gray-900 font-semibold text-right pr-4 whitespace-nowrap tabular-nums">
                       {formatCurrency(order.total)}
                     </div>
-                    <div className="w-[150px] shrink-0 flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                    <div className="w-[180px] shrink-0 flex items-center justify-center gap-2 border-l-2 border-gray-200 pl-3" onClick={(e) => e.stopPropagation()}>
+                      {/* Primary action */}
                       {canAdvanceOrders && nextAction && (
                         <button
                           onClick={() => handleAdvanceStatus(order.id, nextAction.action)}
-                          className={`flex items-center gap-0.5 text-[11px] px-2.5 py-1 rounded-md font-semibold transition-colors whitespace-nowrap ${nextAction.colorClasses}`}
-                          title={nextAction.label}
+                          className={`flex items-center gap-0.5 text-[11px] px-2.5 py-1 rounded font-semibold transition-colors whitespace-nowrap ${nextAction.colorClasses}`}
                         >
-                          <ChevronRight className="w-3 h-3" />
                           {nextAction.label}
-                        </button>
-                      )}
-                      <button
-                        onClick={() => handleEditOrder(order.id)}
-                        className="p-1.5 hover:bg-gray-100 rounded transition-colors"
-                        title="Editar"
-                      >
-                        <Edit className="w-4 h-4 text-gray-400 hover:text-gray-600" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteOrder(order.id)}
-                        className="p-1.5 hover:bg-red-50 rounded transition-colors"
-                        title="Eliminar"
-                      >
-                        <Trash2 className="w-4 h-4 text-red-400 hover:text-red-600" />
-                      </button>
-                      {canAdvanceOrders && canCancel && (
-                        <button
-                          onClick={() => handleCancelOrderStatus(order.id)}
-                          className="p-1.5 hover:bg-red-50 rounded transition-colors"
-                          title="Cancelar"
-                        >
-                          <X className="w-4 h-4 text-red-400 hover:text-red-600" />
                         </button>
                       )}
                       {order.status === 'delivered' && (
                         <button
                           onClick={() => handleFacturar(order.id)}
-                          className="p-1.5 hover:bg-emerald-50 rounded transition-colors"
-                          title="Facturar"
+                          className="text-[11px] px-2.5 py-1 rounded font-medium text-emerald-700 border border-emerald-200 hover:bg-emerald-50 transition-colors whitespace-nowrap"
                         >
-                          <Receipt className="w-4 h-4 text-emerald-500 hover:text-emerald-700" weight="bold" />
+                          Facturar
                         </button>
                       )}
+                      {/* Secondary actions — grouped */}
+                      <div className="flex items-center gap-0.5 border border-gray-200 rounded-md px-0.5 py-0.5">
+                        {canAdvanceOrders && canCancel && (
+                          <button
+                            onClick={() => handleCancelOrderStatus(order.id)}
+                            className="p-1 hover:bg-red-50 rounded transition-colors"
+                            title="Cancelar"
+                          >
+                            <X className="w-3.5 h-3.5 text-gray-400 hover:text-red-500" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDeleteOrder(order.id)}
+                          className="p-1 hover:bg-red-50 rounded transition-colors"
+                          title="Eliminar"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-gray-400 hover:text-red-500" />
+                        </button>
+                      </div>
                     </div>
                     </div>
                       );

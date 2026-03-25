@@ -39,17 +39,6 @@ export function useOrderDetail(id: number) {
   });
 }
 
-export function useEnviarPedido() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (id: number) => pedidosApi.enviar(id),
-    onSuccess: (_data, id) => {
-      syncAfterMutation();
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
-    },
-  });
-}
-
 export function useConfirmarPedido() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -61,20 +50,6 @@ export function useConfirmarPedido() {
       queryClient.invalidateQueries({ queryKey: ['order', id] });
     },
     onError: () => Toast.show({ type: 'error', text1: 'Error al confirmar', text2: 'Intenta de nuevo' }),
-  });
-}
-
-export function useProcesarPedido() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (id: number) => pedidosApi.procesar(id),
-    onSuccess: (_data, id) => {
-      Toast.show({ type: 'success', text1: 'Pedido en proceso', visibilityTime: 2000 });
-      syncAfterMutation();
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
-      queryClient.invalidateQueries({ queryKey: ['order', id] });
-    },
-    onError: () => Toast.show({ type: 'error', text1: 'Error al procesar', text2: 'Intenta de nuevo' }),
   });
 }
 

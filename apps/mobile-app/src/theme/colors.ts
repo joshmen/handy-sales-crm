@@ -151,15 +151,15 @@ export const colors = {
 
 /**
  * Order status map by estado number (matches backend EstadoPedido enum)
- * 0 = Borrador, 1 = Pendiente, 2 = Confirmado, 3 = En Proceso,
- * 4 = En Transito, 5 = Entregado, 6 = Cancelado
+ * Active states: 0 = Borrador, 2 = Confirmado, 4 = En Ruta, 5 = Entregado, 6 = Cancelado
+ * Legacy states 1 (Enviado) and 3 (EnProceso) map to Confirmado for backwards compat.
  */
 export const ORDER_STATUS: Record<number, { label: string; bg: string; text: string; border: string }> = {
   0: { label: 'Borrador', ...STATUS_PALETTES.draft },
-  1: { label: 'Pendiente', ...STATUS_PALETTES.pending },
+  1: { label: 'Confirmado', ...STATUS_PALETTES.confirmed }, // Legacy backwards compat
   2: { label: 'Confirmado', ...STATUS_PALETTES.confirmed },
-  3: { label: 'En Proceso', ...STATUS_PALETTES.processing },
-  4: { label: 'En Transito', ...STATUS_PALETTES.inTransit },
+  3: { label: 'Confirmado', ...STATUS_PALETTES.confirmed }, // Legacy backwards compat
+  4: { label: 'En Ruta', ...STATUS_PALETTES.inTransit },
   5: { label: 'Entregado', ...STATUS_PALETTES.delivered },
   6: { label: 'Cancelado', ...STATUS_PALETTES.cancelled },
 };

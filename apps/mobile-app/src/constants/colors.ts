@@ -31,9 +31,9 @@ import { STATUS_PALETTES } from '@/theme/colors';
 
 export const ORDER_STATUS_COLORS: Record<number, { bg: string; text: string; label: string }> = {
   0: { bg: STATUS_PALETTES.draft.bg, text: STATUS_PALETTES.draft.text, label: 'Borrador' },
-  1: { bg: STATUS_PALETTES.pending.bg, text: STATUS_PALETTES.pending.text, label: 'Enviado' },
+  1: { bg: STATUS_PALETTES.confirmed.bg, text: STATUS_PALETTES.confirmed.text, label: 'Confirmado' }, // Legacy backwards compat
   2: { bg: STATUS_PALETTES.confirmed.bg, text: STATUS_PALETTES.confirmed.text, label: 'Confirmado' },
-  3: { bg: STATUS_PALETTES.processing.bg, text: STATUS_PALETTES.processing.text, label: 'En Proceso' },
+  3: { bg: STATUS_PALETTES.confirmed.bg, text: STATUS_PALETTES.confirmed.text, label: 'Confirmado' }, // Legacy backwards compat
   4: { bg: STATUS_PALETTES.inTransit.bg, text: STATUS_PALETTES.inTransit.text, label: 'En Ruta' },
   5: { bg: STATUS_PALETTES.delivered.bg, text: STATUS_PALETTES.delivered.text, label: 'Entregado' },
   6: { bg: STATUS_PALETTES.cancelled.bg, text: STATUS_PALETTES.cancelled.text, label: 'Cancelado' },

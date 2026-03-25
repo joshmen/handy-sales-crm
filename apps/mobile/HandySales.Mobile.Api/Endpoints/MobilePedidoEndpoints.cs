@@ -183,8 +183,9 @@ public static class MobilePedidoEndpoints
         .Produces<object>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status404NotFound);
 
-        // === CAMBIOS DE ESTADO ===
+        // === CAMBIOS DE ESTADO — Simplified flow: Borrador → Confirmado → EnRuta → Entregado + Cancelado ===
 
+        // Legacy endpoint for backwards compatibility — redirects to ConfirmarAsync
         group.MapPost("/{id:int}/enviar", async (
             int id,
             HttpContext context,
@@ -194,16 +195,16 @@ public static class MobilePedidoEndpoints
             [FromServices] IConfiguration config,
             [FromServices] OrderNotificationHelper notifyHelper) =>
         {
-            var resultado = await servicio.EnviarAsync(id);
+            var resultado = await servicio.ConfirmarAsync(id);
             if (!resultado)
-                return Results.BadRequest(new { success = false, message = "No se pudo enviar el pedido" });
+                return Results.BadRequest(new { success = false, message = "No se pudo confirmar el pedido" });
 
             await NotifyDashboard(httpClientFactory, config, tenantContext, "pedido", id);
-            await NotifyOrderPush(notifyHelper, context, id, EstadoPedido.Enviado);
-            return Results.Ok(new { success = true, message = "Pedido enviado" });
+            await NotifyOrderPush(notifyHelper, context, id, EstadoPedido.Confirmado);
+            return Results.Ok(new { success = true, message = "Pedido confirmado" });
         })
-        .WithSummary("Enviar pedido")
-        .WithDescription("Cambia el estado de Borrador a Enviado. Valida que tenga productos.")
+        .WithSummary("[Legacy] Enviar pedido → Confirmar")
+        .WithDescription("Legacy: redirige a Confirmar. Cambia el estado de Borrador a Confirmado.")
         .Produces<object>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest);
 
@@ -248,10 +249,11 @@ public static class MobilePedidoEndpoints
             return Results.Ok(new { success = true, message = "Pedido confirmado" });
         })
         .WithSummary("Confirmar pedido")
-        .WithDescription("Cambia estado de Enviado a Confirmado.")
+        .WithDescription("Cambia estado de Borrador a Confirmado.")
         .Produces<object>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest);
 
+        // Legacy endpoint for backwards compatibility — redirects to EnviarARutaAsync
         group.MapPost("/{id:int}/procesar", async (
             int id,
             HttpContext context,
@@ -261,16 +263,16 @@ public static class MobilePedidoEndpoints
             [FromServices] IConfiguration config,
             [FromServices] OrderNotificationHelper notifyHelper) =>
         {
-            var resultado = await servicio.IniciarProcesoAsync(id);
+            var resultado = await servicio.EnviarARutaAsync(id);
             if (!resultado)
-                return Results.BadRequest(new { success = false, message = "No se pudo procesar el pedido" });
+                return Results.BadRequest(new { success = false, message = "No se pudo poner en ruta el pedido" });
 
             await NotifyDashboard(httpClientFactory, config, tenantContext, "pedido", id);
-            await NotifyOrderPush(notifyHelper, context, id, EstadoPedido.EnProceso);
-            return Results.Ok(new { success = true, message = "Pedido en proceso" });
+            await NotifyOrderPush(notifyHelper, context, id, EstadoPedido.EnRuta);
+            return Results.Ok(new { success = true, message = "Pedido en ruta" });
         })
-        .WithSummary("Procesar pedido")
-        .WithDescription("Cambia estado de Confirmado a EnProceso.")
+        .WithSummary("[Legacy] Procesar pedido → En Ruta")
+        .WithDescription("Legacy: redirige a EnRuta. Cambia estado de Confirmado a EnRuta.")
         .Produces<object>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest);
 
@@ -292,7 +294,7 @@ public static class MobilePedidoEndpoints
             return Results.Ok(new { success = true, message = "Pedido en ruta" });
         })
         .WithSummary("Poner en ruta")
-        .WithDescription("Cambia estado de EnProceso a EnRuta.")
+        .WithDescription("Cambia estado de Confirmado a EnRuta.")
         .Produces<object>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest);
 

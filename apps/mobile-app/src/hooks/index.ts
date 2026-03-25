@@ -1,6 +1,6 @@
 export { useLogin, useLogout } from './useAuth';
 export { useClientsList, useClientDetail } from './useClients';
-export { useOrdersList, useOrderDetail, useEnviarPedido, useConfirmarPedido, useProcesarPedido, useEnRutaPedido, useEntregarPedido, useCancelarPedido } from './useOrders';
+export { useOrdersList, useOrderDetail, useConfirmarPedido, useEnRutaPedido, useEntregarPedido, useCancelarPedido } from './useOrders';
 export { useVisitsToday, useVisitsSummary, useVisitsSummaryWeekly, useActiveVisit } from './useVisits';
 export { useRouteToday, useRoutePending, useRouteDetail, useIniciarRuta, useCompletarRuta } from './useRoutes';
 export { useSaldos, useResumenCartera, useEstadoCuenta, useMisCobros, useCrearCobro } from './useCobros';

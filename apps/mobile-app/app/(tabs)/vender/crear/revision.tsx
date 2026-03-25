@@ -108,11 +108,11 @@ export default function CrearPedidoStep3() {
           mappedItems,
           notas || undefined,
           0, // tipoVenta = Preventa
-          1  // estado = Enviado
+          2  // estado = Confirmado (simplified flow: skip Enviado)
         );
         router.replace(`/(tabs)/vender/crear/exito?numero=${pedido.id.slice(0, 8)}&id=${pedido.id}` as any);
         reset();
-        // Create on server + enviar + assign serverId to local WDB record
+        // Create on server + confirm + assign serverId to local WDB record
         try {
           const serverPedido = await pedidosApi.create({
             clienteId: clienteServerId ?? 0,
@@ -127,10 +127,8 @@ export default function CrearPedidoStep3() {
           } as any);
           if (serverPedido?.id) {
             await pedido.setServerId(serverPedido.id, serverPedido.numeroPedido);
-            // Send the order (Borrador → Enviado) on server
-            // Use raw API call because pedidosApi.enviar() validates response as MobilePedido
-            const { api: apiClient } = await import('@/api/client');
-            await apiClient.post(`/api/mobile/pedidos/${serverPedido.id}/enviar`).catch(() => {});
+            // Confirm the order (Borrador → Confirmado) on server
+            await pedidosApi.confirmar(serverPedido.id).catch(() => {});
           }
         } catch {
           // Offline — sync will handle it later

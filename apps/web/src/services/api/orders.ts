@@ -215,27 +215,9 @@ class OrderService {
   }
 
   // Cambios de estado (workflow)
-  async sendOrder(id: number): Promise<{ mensaje: string }> {
-    try {
-      const response = await api.post<{ mensaje: string }>(`${this.basePath}/${id}/enviar`);
-      return response.data;
-    } catch (error) {
-      throw handleApiError(error);
-    }
-  }
-
   async confirmOrder(id: number): Promise<{ mensaje: string }> {
     try {
       const response = await api.post<{ mensaje: string }>(`${this.basePath}/${id}/confirmar`);
-      return response.data;
-    } catch (error) {
-      throw handleApiError(error);
-    }
-  }
-
-  async processOrder(id: number): Promise<{ mensaje: string }> {
-    try {
-      const response = await api.post<{ mensaje: string }>(`${this.basePath}/${id}/procesar`);
       return response.data;
     } catch (error) {
       throw handleApiError(error);

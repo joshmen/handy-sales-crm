@@ -142,16 +142,18 @@ public static class PedidoEndpoints
         .Produces<List<PedidoListaDto>>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status401Unauthorized);
 
-        // Cambios de estado
+        // Cambios de estado — Simplified flow: Borrador → Confirmado → EnRuta → Entregado + Cancelado
+
+        // Legacy endpoint for backwards compatibility — redirects to ConfirmarAsync
         group.MapPost("/{id:int}/enviar", async (
             int id,
             [FromServices] PedidoService servicio) =>
         {
-            var resultado = await servicio.EnviarAsync(id);
-            return resultado ? Results.Ok(new { mensaje = "Pedido enviado" }) : Results.BadRequest(new { error = "No se pudo enviar el pedido" });
+            var resultado = await servicio.ConfirmarAsync(id);
+            return resultado ? Results.Ok(new { mensaje = "Pedido confirmado" }) : Results.BadRequest(new { error = "No se pudo confirmar el pedido" });
         })
-        .WithSummary("Enviar pedido")
-        .WithDescription("Cambia el estado del pedido de Borrador a Enviado. Valida que tenga al menos un producto.")
+        .WithSummary("[Legacy] Enviar pedido → Confirmar")
+        .WithDescription("Legacy: redirige a Confirmar. Cambia el estado del pedido de Borrador a Confirmado.")
         .Produces<object>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status401Unauthorized);
@@ -164,20 +166,21 @@ public static class PedidoEndpoints
             return resultado ? Results.Ok(new { mensaje = "Pedido confirmado" }) : Results.BadRequest(new { error = "No se pudo confirmar el pedido" });
         })
         .WithSummary("Confirmar pedido")
-        .WithDescription("Cambia el estado del pedido de Enviado a Confirmado (requiere permisos de admin).")
+        .WithDescription("Cambia el estado del pedido de Borrador a Confirmado.")
         .Produces<object>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status401Unauthorized);
 
+        // Legacy endpoint for backwards compatibility — redirects to EnviarARutaAsync
         group.MapPost("/{id:int}/procesar", async (
             int id,
             [FromServices] PedidoService servicio) =>
         {
-            var resultado = await servicio.IniciarProcesoAsync(id);
-            return resultado ? Results.Ok(new { mensaje = "Pedido en proceso" }) : Results.BadRequest(new { error = "No se pudo iniciar el proceso" });
+            var resultado = await servicio.EnviarARutaAsync(id);
+            return resultado ? Results.Ok(new { mensaje = "Pedido en ruta" }) : Results.BadRequest(new { error = "No se pudo poner en ruta el pedido" });
         })
-        .WithSummary("Iniciar proceso de pedido")
-        .WithDescription("Cambia el estado del pedido de Confirmado a EnProceso.")
+        .WithSummary("[Legacy] Procesar pedido → En Ruta")
+        .WithDescription("Legacy: redirige a EnRuta. Cambia el estado del pedido de Confirmado a EnRuta.")
         .Produces<object>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status401Unauthorized);
@@ -190,7 +193,7 @@ public static class PedidoEndpoints
             return resultado ? Results.Ok(new { mensaje = "Pedido en ruta" }) : Results.BadRequest(new { error = "No se pudo enviar a ruta" });
         })
         .WithSummary("Enviar a ruta")
-        .WithDescription("Cambia el estado del pedido de EnProceso a EnRuta (pedido salió para entrega).")
+        .WithDescription("Cambia el estado del pedido de Confirmado a EnRuta (pedido salió para entrega).")
         .Produces<object>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status401Unauthorized);

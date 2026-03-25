@@ -19,8 +19,10 @@ const TIPO_CONFIG: Record<string, { icon: any; label: string }> = {
 const ESTADO_COLORS: Record<string, string> = {
   completada: '#16a34a',
   entregado: '#16a34a',
+  confirmado: '#4338CA',
   en_curso: '#d97706',
-  enviado: '#d97706',
+  en_ruta: '#ea580c',
+  enviado: '#4338CA', // Legacy — maps to confirmado color
   registrado: '#4338CA',
   borrador: '#94a3b8',
 };

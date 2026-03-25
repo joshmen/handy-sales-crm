@@ -27,20 +27,15 @@ const statusConfig = {
     color: "bg-gray-100 text-gray-800",
     dotColor: "bg-gray-400",
   },
-  pending: {
-    label: "Pendiente",
-    color: "bg-yellow-100 text-yellow-800",
-    dotColor: "bg-yellow-400",
-  },
   confirmed: {
     label: "Confirmado",
     color: "bg-blue-100 text-blue-800",
     dotColor: "bg-blue-400",
   },
-  in_progress: {
-    label: "En Progreso",
-    color: "bg-orange-100 text-orange-800",
-    dotColor: "bg-orange-400",
+  en_route: {
+    label: "En Ruta",
+    color: "bg-cyan-100 text-cyan-800",
+    dotColor: "bg-cyan-400",
   },
   delivered: {
     label: "Entregado",

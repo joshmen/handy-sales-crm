@@ -104,24 +104,8 @@ class MobilePedidosApi {
     await api.delete(`${this.basePath}/${id}`);
   }
 
-  async enviar(id: number): Promise<MobilePedido> {
-    const response = await api.post<ApiResponse<MobilePedido>>(
-      `${this.basePath}/${id}/enviar`
-    );
-    const validated = validateResponse(
-      PedidoResponseSchema,
-      response.data,
-      `POST /api/mobile/pedidos/${id}/enviar`
-    );
-    return validated.data;
-  }
-
   async confirmar(id: number): Promise<void> {
     await api.post(`${this.basePath}/${id}/confirmar`);
-  }
-
-  async procesar(id: number): Promise<void> {
-    await api.post(`${this.basePath}/${id}/procesar`);
   }
 
   async enRuta(id: number): Promise<void> {

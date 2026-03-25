@@ -21,8 +21,8 @@ import type Pedido from '@/db/models/Pedido';
 const STATUS_FILTERS = [
   { label: 'Todos', value: undefined },
   { label: 'Borrador', value: 0 },
-  { label: 'Enviado', value: 1 },
   { label: 'Confirmado', value: 2 },
+  { label: 'En Ruta', value: 4 },
   { label: 'Entregado', value: 5 },
   { label: 'Cancelado', value: 6 },
 ];

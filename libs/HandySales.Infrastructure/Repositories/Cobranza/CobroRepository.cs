@@ -231,12 +231,14 @@ public class CobroRepository : ICobroRepository
     {
         // Get delivered/confirmed pedidos from the last 12 months
         var unAnoAtras = DateTime.UtcNow.AddYears(-1);
+#pragma warning disable CS0618 // Legacy enum values still needed for querying existing DB data
         var query = _db.Pedidos
             .AsNoTracking()
             .Where(p => p.TenantId == tenantId && p.Activo &&
                         p.FechaPedido >= unAnoAtras &&
                         (p.Estado == EstadoPedido.Entregado || p.Estado == EstadoPedido.Confirmado || p.Estado == EstadoPedido.EnRuta || p.Estado == EstadoPedido.EnProceso))
             .AsQueryable();
+#pragma warning restore CS0618
 
         if (clienteId.HasValue)
             query = query.Where(p => p.ClienteId == clienteId.Value);
@@ -311,10 +313,12 @@ public class CobroRepository : ICobroRepository
         if (cliente == null) return null;
 
         // Default: last 12 months. historico=true: all-time
+#pragma warning disable CS0618 // Legacy enum values still needed for querying existing DB data
         var pedidosQuery = _db.Pedidos
             .AsNoTracking()
             .Where(p => p.ClienteId == clienteId && p.TenantId == tenantId && p.Activo &&
                         (p.Estado == EstadoPedido.Entregado || p.Estado == EstadoPedido.Confirmado || p.Estado == EstadoPedido.EnRuta || p.Estado == EstadoPedido.EnProceso));
+#pragma warning restore CS0618
 
         if (!historico)
         {

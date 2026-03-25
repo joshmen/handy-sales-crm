@@ -31,9 +31,9 @@ export default function CobrarScreen() {
   const { clientes, resumen } = useMemo(() => {
     const byClient = new Map<string, { facturado: number; cobrado: number }>();
 
-    // Sum order totals (exclude cancelled = estado 4, and drafts = estado 0)
+    // Sum order totals (exclude drafts = estado 0 and cancelled = estado 6)
     pedidos?.forEach((p) => {
-      if (p.estado >= 1 && p.estado !== 4) {
+      if (p.estado >= 1 && p.estado !== 6) {
         const entry = byClient.get(p.clienteId) ?? { facturado: 0, cobrado: 0 };
         entry.facturado += p.total || 0;
         byClient.set(p.clienteId, entry);

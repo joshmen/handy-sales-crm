@@ -32,7 +32,7 @@ export function VendedorDashboard() {
 
   const totalPendiente = useMemo(() => {
     const facturado = (pedidos ?? [])
-      .filter((p) => p.estado >= 1 && p.estado !== 4)
+      .filter((p) => p.estado >= 1 && p.estado !== 6)
       .reduce((sum, p) => sum + (p.total || 0), 0);
     const cobrado = (cobros ?? []).reduce((sum, c) => sum + (c.monto || 0), 0);
     return facturado - cobrado;

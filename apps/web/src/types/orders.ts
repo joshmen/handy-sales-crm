@@ -9,9 +9,8 @@ export interface Order {
   user: User;
   status:
     | "draft"
-    | "pending"
     | "confirmed"
-    | "in_progress"
+    | "en_route"
     | "delivered"
     | "cancelled";
   priority: "low" | "normal" | "high" | "urgent";
@@ -29,7 +28,7 @@ export interface Order {
   paymentStatus: "pending" | "partial" | "paid";
   tipoVenta?: number; // 0=Preventa, 1=VentaDirecta
   tipoVentaNombre?: string;
-  apiEstado?: string; // Raw API estado for transition buttons (e.g. "Enviado", "Confirmado", "EnProceso")
+  apiEstado?: string; // Raw API estado for transition buttons (e.g. "Confirmado", "EnRuta")
   createdAt: Date;
   updatedAt: Date;
 }

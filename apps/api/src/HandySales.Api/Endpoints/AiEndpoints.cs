@@ -481,7 +481,9 @@ public static class AiEndpoints
     private static async Task<object> CollectionsPriorityFallbackAsync(HandySalesDbContext db, int tenantId, int limit)
     {
         var now = DateTime.UtcNow;
+#pragma warning disable CS0618 // Legacy enum values still needed for querying existing DB data
         var estadosConDeuda = new[] { EstadoPedido.Entregado, EstadoPedido.Confirmado, EstadoPedido.EnRuta, EstadoPedido.EnProceso };
+#pragma warning restore CS0618
 
         var clientes = await db.Clientes.AsNoTracking()
             .Where(c => c.TenantId == tenantId && c.Activo && c.Saldo > 0)

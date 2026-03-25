@@ -568,16 +568,17 @@ public class PedidoRepository : IPedidoRepository
     {
         return (estadoActual, nuevoEstado) switch
         {
-            (EstadoPedido.Borrador, EstadoPedido.Enviado) => true,
+            (EstadoPedido.Borrador, EstadoPedido.Confirmado) => true,
             (EstadoPedido.Borrador, EstadoPedido.Cancelado) => true,
-            (EstadoPedido.Enviado, EstadoPedido.Confirmado) => true,
-            (EstadoPedido.Enviado, EstadoPedido.Cancelado) => true,
-            (EstadoPedido.Confirmado, EstadoPedido.EnProceso) => true,
+            (EstadoPedido.Confirmado, EstadoPedido.EnRuta) => true,
             (EstadoPedido.Confirmado, EstadoPedido.Cancelado) => true,
-            (EstadoPedido.EnProceso, EstadoPedido.EnRuta) => true,
-            (EstadoPedido.EnProceso, EstadoPedido.Cancelado) => true,
             (EstadoPedido.EnRuta, EstadoPedido.Entregado) => true,
             (EstadoPedido.EnRuta, EstadoPedido.Cancelado) => true,
+            // Legacy: allow old states to transition forward for safety
+#pragma warning disable CS0618 // Obsolete member usage intentional for backwards compatibility
+            (EstadoPedido.Enviado, EstadoPedido.Confirmado) => true,
+            (EstadoPedido.EnProceso, EstadoPedido.EnRuta) => true,
+#pragma warning restore CS0618
             _ => false
         };
     }
