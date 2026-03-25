@@ -630,15 +630,15 @@ export default function OrdersPage() {
             {/* Orders Table */}
             <div className="hidden sm:block bg-white border border-gray-200 rounded-lg overflow-x-auto" data-tour="orders-table">
               {/* Table Header */}
-              <div className="flex items-center bg-gray-50 px-4 h-10 border-b border-gray-200 min-w-[820px]">
-                <div className="w-[90px] text-xs font-semibold text-gray-700"># Pedido</div>
-                <div className="flex-1 text-xs font-semibold text-gray-700">Cliente</div>
-                <div className="w-[110px] text-xs font-semibold text-gray-700 hidden xl:block">Vendedor</div>
-                <div className="w-[85px] text-xs font-semibold text-gray-700">Fecha</div>
-                <div className="w-[95px] text-xs font-semibold text-gray-700">Estado</div>
-                <div className="w-[90px] text-xs font-semibold text-gray-700 hidden lg:block">Tipo</div>
-                <div className="w-[90px] text-xs font-semibold text-gray-700 text-right">Total</div>
-                <div className="w-[140px] text-xs font-semibold text-gray-700 text-center">Acciones</div>
+              <div className="flex items-center bg-gray-50 px-4 h-10 border-b border-gray-200">
+                <div className="w-[130px] shrink-0 text-xs font-semibold text-gray-700"># Pedido</div>
+                <div className="flex-1 min-w-[120px] text-xs font-semibold text-gray-700">Cliente</div>
+                <div className="w-[130px] shrink-0 text-xs font-semibold text-gray-700 hidden xl:block">Vendedor</div>
+                <div className="w-[80px] shrink-0 text-xs font-semibold text-gray-700">Fecha</div>
+                <div className="w-[90px] shrink-0 text-xs font-semibold text-gray-700">Estado</div>
+                <div className="w-[90px] shrink-0 text-xs font-semibold text-gray-700 hidden lg:block">Tipo</div>
+                <div className="w-[90px] shrink-0 text-xs font-semibold text-gray-700 text-right">Total</div>
+                <div className="w-[150px] shrink-0 text-xs font-semibold text-gray-700 text-right">Acciones</div>
               </div>
 
               {/* Table Body - With loading overlay */}
@@ -663,27 +663,27 @@ export default function OrdersPage() {
                       return (
                   <div
                     key={order.id}
-                    className="flex items-center px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer min-w-[820px]"
+                    className="flex items-center px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
                     onClick={() => handleEditOrder(order.id)}
                   >
-                    <div className="w-[90px] text-[13px] text-gray-900 font-medium truncate">
+                    <div className="w-[130px] shrink-0 text-[13px] text-gray-900 font-medium">
                       {order.code}
                     </div>
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-[120px]">
                       <div className="text-[13px] text-gray-900 truncate">{order.client.name}</div>
                     </div>
-                    <div className="w-[110px] text-[13px] text-gray-600 truncate hidden xl:block">
+                    <div className="w-[130px] shrink-0 text-[13px] text-gray-600 truncate hidden xl:block">
                       {order.user.name}
                     </div>
-                    <div className="w-[85px] text-[13px] text-gray-600">
-                      {formatDate(order.orderDate)}
+                    <div className="w-[80px] shrink-0 text-[13px] text-gray-600 whitespace-nowrap">
+                      {order.orderDate.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
                     </div>
-                    <div className="w-[95px]">
+                    <div className="w-[90px] shrink-0">
                       <span className={`px-2 py-0.5 text-[11px] font-medium rounded-full whitespace-nowrap ${statusColors[order.status]}`}>
                         {statusLabels[order.status]}
                       </span>
                     </div>
-                    <div className="w-[90px] hidden lg:block">
+                    <div className="w-[90px] shrink-0 hidden lg:block">
                       <span className={`px-2 py-0.5 text-[11px] font-medium rounded-full whitespace-nowrap ${
                         order.tipoVenta === 1
                           ? 'bg-green-100 text-green-700'
@@ -692,14 +692,14 @@ export default function OrdersPage() {
                         {order.tipoVenta === 1 ? 'V. Directa' : 'Preventa'}
                       </span>
                     </div>
-                    <div className="w-[90px] text-[13px] text-gray-900 font-medium text-right">
+                    <div className="w-[90px] shrink-0 text-[13px] text-gray-900 font-semibold text-right whitespace-nowrap">
                       {formatCurrency(order.total)}
                     </div>
-                    <div className="w-[140px] flex items-center justify-end gap-0.5 flex-wrap" onClick={(e) => e.stopPropagation()}>
+                    <div className="w-[150px] shrink-0 flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                       {canAdvanceOrders && nextAction && (
                         <button
                           onClick={() => handleAdvanceStatus(order.id, nextAction.action)}
-                          className={`flex items-center gap-0.5 text-[11px] px-2 py-1 rounded-md font-medium transition-colors ${nextAction.colorClasses}`}
+                          className={`flex items-center gap-0.5 text-[11px] px-2.5 py-1 rounded-md font-semibold transition-colors whitespace-nowrap ${nextAction.colorClasses}`}
                           title={nextAction.label}
                         >
                           <ChevronRight className="w-3 h-3" />
@@ -708,34 +708,34 @@ export default function OrdersPage() {
                       )}
                       <button
                         onClick={() => handleEditOrder(order.id)}
-                        className="p-1 hover:bg-gray-100 rounded transition-colors"
+                        className="p-1.5 hover:bg-gray-100 rounded transition-colors"
                         title="Editar"
                       >
-                        <Edit className="w-3.5 h-3.5 text-gray-400 hover:text-gray-600" />
+                        <Edit className="w-4 h-4 text-gray-400 hover:text-gray-600" />
                       </button>
                       <button
                         onClick={() => handleDeleteOrder(order.id)}
-                        className="p-1 hover:bg-red-50 rounded transition-colors"
+                        className="p-1.5 hover:bg-red-50 rounded transition-colors"
                         title="Eliminar"
                       >
-                        <Trash2 className="w-3.5 h-3.5 text-red-400 hover:text-red-600" />
+                        <Trash2 className="w-4 h-4 text-red-400 hover:text-red-600" />
                       </button>
                       {canAdvanceOrders && canCancel && (
                         <button
                           onClick={() => handleCancelOrderStatus(order.id)}
-                          className="p-1 hover:bg-red-50 rounded transition-colors"
+                          className="p-1.5 hover:bg-red-50 rounded transition-colors"
                           title="Cancelar"
                         >
-                          <X className="w-3.5 h-3.5 text-red-400 hover:text-red-600" />
+                          <X className="w-4 h-4 text-red-400 hover:text-red-600" />
                         </button>
                       )}
                       {order.status === 'delivered' && (
                         <button
                           onClick={() => handleFacturar(order.id)}
-                          className="p-1 hover:bg-emerald-50 rounded transition-colors"
+                          className="p-1.5 hover:bg-emerald-50 rounded transition-colors"
                           title="Facturar"
                         >
-                          <Receipt className="w-3.5 h-3.5 text-emerald-500 hover:text-emerald-700" weight="bold" />
+                          <Receipt className="w-4 h-4 text-emerald-500 hover:text-emerald-700" weight="bold" />
                         </button>
                       )}
                     </div>
