@@ -74,25 +74,35 @@ public static class RutaVendedorEndpoints
             // Push notification to assigned vendedor
             if (dto.UsuarioId > 0)
             {
+                // Capture scoped values before Task.Run (scope may be disposed by then)
+                var tenantId = tenantContext.TenantId;
+                var usuarioId = dto.UsuarioId;
+                var nombre = dto.Nombre;
+                var routeId = id;
+
                 _ = Task.Run(async () =>
                 {
                     try
                     {
                         var client = httpClientFactory.CreateClient("MobileApi");
-                        await client.PostAsJsonAsync("/api/internal/push-notify", new
+                        var response = await client.PostAsJsonAsync("/api/internal/push-notify", new
                         {
-                            tenantId = tenantContext.TenantId,
-                            userIds = new[] { dto.UsuarioId },
+                            tenantId,
+                            userIds = new[] { usuarioId },
                             title = "Nueva ruta asignada",
-                            body = $"Se te asignó la ruta: {dto.Nombre}",
+                            body = $"Se te asigno la ruta: {nombre}",
                             data = new Dictionary<string, string>
                             {
                                 ["type"] = "route.published",
-                                ["entityId"] = id.ToString()
+                                ["entityId"] = routeId.ToString()
                             }
                         });
+                        Console.WriteLine($"[Push] Route {routeId} -> user {usuarioId}: {response.StatusCode}");
                     }
-                    catch { /* fire and forget */ }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[Push] Route push FAILED: {ex.Message}");
+                    }
                 });
             }
 
@@ -129,6 +139,8 @@ public static class RutaVendedorEndpoints
 
             // Push notification if vendedor was reassigned
             var nuevoUsuarioId = dto.UsuarioId ?? rutaAntes?.UsuarioId ?? 0;
+            var tenantId = tenantContext.TenantId;
+            var rutaNombre = dto.Nombre ?? rutaAntes?.Nombre ?? "Ruta";
             if (nuevoUsuarioId > 0)
             {
                 _ = Task.Run(async () =>
@@ -136,20 +148,24 @@ public static class RutaVendedorEndpoints
                     try
                     {
                         var client = httpClientFactory.CreateClient("MobileApi");
-                        await client.PostAsJsonAsync("/api/internal/push-notify", new
+                        var response = await client.PostAsJsonAsync("/api/internal/push-notify", new
                         {
-                            tenantId = tenantContext.TenantId,
+                            tenantId,
                             userIds = new[] { nuevoUsuarioId },
                             title = "Ruta actualizada",
-                            body = $"Tu ruta fue actualizada: {dto.Nombre ?? rutaAntes?.Nombre ?? "Ruta"}",
+                            body = $"Tu ruta fue actualizada: {rutaNombre}",
                             data = new Dictionary<string, string>
                             {
                                 ["type"] = "route.published",
                                 ["entityId"] = id.ToString()
                             }
                         });
+                        Console.WriteLine($"[Push] Route PUT {id} -> user {nuevoUsuarioId}: {response.StatusCode}");
                     }
-                    catch { /* fire and forget */ }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[Push] Route PUT push FAILED: {ex.Message}");
+                    }
                 });
             }
 
