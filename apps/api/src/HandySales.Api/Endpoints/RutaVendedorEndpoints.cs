@@ -72,7 +72,7 @@ public static class RutaVendedorEndpoints
             var id = await servicio.CrearAsync(dto);
 
             // Push notification to assigned vendedor
-            if (dto.UsuarioId.HasValue && dto.UsuarioId.Value > 0)
+            if (dto.UsuarioId > 0)
             {
                 _ = Task.Run(async () =>
                 {
@@ -82,7 +82,7 @@ public static class RutaVendedorEndpoints
                         await client.PostAsJsonAsync("/api/internal/push-notify", new
                         {
                             tenantId = tenantContext.TenantId,
-                            userIds = new[] { dto.UsuarioId.Value },
+                            userIds = new[] { dto.UsuarioId },
                             title = "Nueva ruta asignada",
                             body = $"Se te asignó la ruta: {dto.Nombre}",
                             data = new Dictionary<string, string>
