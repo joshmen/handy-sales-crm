@@ -32,6 +32,22 @@ internal class FakePwnedPasswordHandler : DelegatingHandler
     }
 }
 
+/// <summary>
+/// No-op HTTP handler that returns 200 OK for any request. Used to stub
+/// service-to-service calls (e.g., MobileApi push notifications) in tests.
+/// </summary>
+internal class FakeNoOpHttpHandler : DelegatingHandler
+{
+    protected override Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+        {
+            Content = new StringContent("{\"success\":true}")
+        });
+    }
+}
+
 public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 {
     private SqliteConnection? _connection;
@@ -89,6 +105,10 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             // Replace PwnedPasswordService with a fake that never flags passwords
             services.AddHttpClient<PwnedPasswordService>()
                 .ConfigurePrimaryHttpMessageHandler(() => new FakePwnedPasswordHandler());
+
+            // Stub MobileApi HttpClient (used for push notifications from Main API → Mobile API)
+            services.AddHttpClient("MobileApi")
+                .ConfigurePrimaryHttpMessageHandler(() => new FakeNoOpHttpHandler());
 
             // Stub IRealtimePushService so SignalRPushService (which needs IHubContext) is not resolved
             services.RemoveAll<IRealtimePushService>();
