@@ -73,7 +73,9 @@ public class SyncRepository : ISyncRepository
         var query = _db.RutasVendedor
             .AsNoTracking()
             .Include(r => r.Detalles)
-            .Where(r => r.TenantId == tenantId && r.UsuarioId == usuarioId);
+            .Where(r => r.TenantId == tenantId
+                     && r.UsuarioId.HasValue && r.UsuarioId.Value == usuarioId
+                     && !r.EsTemplate);
 
         if (since.HasValue)
         {
