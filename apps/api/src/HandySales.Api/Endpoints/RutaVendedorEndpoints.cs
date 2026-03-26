@@ -1,5 +1,6 @@
 using HandySales.Application.Rutas.DTOs;
 using HandySales.Application.Rutas.Services;
+using HandySales.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HandySales.Api.Endpoints;
@@ -64,9 +65,37 @@ public static class RutaVendedorEndpoints
         // CRUD básico
         group.MapPost("/", async (
             RutaVendedorCreateDto dto,
-            [FromServices] RutaVendedorService servicio) =>
+            [FromServices] RutaVendedorService servicio,
+            [FromServices] IHttpClientFactory httpClientFactory,
+            [FromServices] ICurrentTenant tenantContext) =>
         {
             var id = await servicio.CrearAsync(dto);
+
+            // Push notification to assigned vendedor
+            if (dto.UsuarioId.HasValue && dto.UsuarioId.Value > 0)
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var client = httpClientFactory.CreateClient("MobileApi");
+                        await client.PostAsJsonAsync("/api/internal/push-notify", new
+                        {
+                            tenantId = tenantContext.TenantId,
+                            userIds = new[] { dto.UsuarioId.Value },
+                            title = "Nueva ruta asignada",
+                            body = $"Se te asignó la ruta: {dto.Nombre}",
+                            data = new Dictionary<string, string>
+                            {
+                                ["type"] = "route.published",
+                                ["entityId"] = id.ToString()
+                            }
+                        });
+                    }
+                    catch { /* fire and forget */ }
+                });
+            }
+
             return Results.Created($"/rutas/{id}", new { id });
         });
 

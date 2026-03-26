@@ -4,20 +4,29 @@ import { database } from '@/db/database';
 import Ruta from '@/db/models/Ruta';
 import RutaDetalle from '@/db/models/RutaDetalle';
 import { useObservable } from './useObservable';
+import { useAuthStore } from '@/stores';
 
 export function useOfflineRoutes() {
+  const user = useAuthStore((s) => s.user);
   const observable = useMemo(() => {
+    if (!user?.id) return null;
     return database
       .get<Ruta>('rutas')
-      .query(Q.where('activo', true), Q.sortBy('fecha', Q.desc))
+      .query(
+        Q.where('usuario_id', Number(user.id)),
+        Q.where('activo', true),
+        Q.sortBy('fecha', Q.desc)
+      )
       .observe();
-  }, []);
+  }, [user?.id]);
 
   return useObservable(observable);
 }
 
 export function useOfflineRutaHoy() {
+  const user = useAuthStore((s) => s.user);
   const observable = useMemo(() => {
+    if (!user?.id) return null;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayMs = today.getTime();
@@ -26,12 +35,13 @@ export function useOfflineRutaHoy() {
     return database
       .get<Ruta>('rutas')
       .query(
+        Q.where('usuario_id', Number(user.id)),
         Q.where('activo', true),
         Q.where('fecha', Q.gte(todayMs)),
         Q.where('fecha', Q.lt(tomorrowMs))
       )
       .observe();
-  }, []);
+  }, [user?.id]);
 
   return useObservable(observable);
 }

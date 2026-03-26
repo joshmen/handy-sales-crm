@@ -111,7 +111,8 @@ public static class AnnouncementEndpoints
             [FromServices] HandySalesDbContext db,
             [FromServices] ICurrentTenant tenant,
             [FromServices] IMemoryCache cache,
-            [FromServices] IHubContext<NotificationHub> hubContext) =>
+            [FromServices] IHubContext<NotificationHub> hubContext,
+            [FromServices] IHttpClientFactory httpClientFactory) =>
         {
             if (!tenant.IsSuperAdmin)
                 return Results.Forbid();
@@ -264,6 +265,40 @@ public static class AnnouncementEndpoints
                     await hubContext.Clients.All.SendAsync("ReceiveNotification", notifPayload);
                 }
             }
+
+            // Push notification to mobile devices (fire and forget)
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    var pushBody = announcement.Mensaje.Length > 100
+                        ? announcement.Mensaje[..97] + "..."
+                        : announcement.Mensaje;
+
+                    // Send to each target tenant, or broadcast if no specific targets
+                    var targetTenants = dto.TargetTenantIds is { Count: > 0 }
+                        ? dto.TargetTenantIds
+                        : await db.Tenants.AsNoTracking().Where(t => t.Activo).Select(t => t.Id).ToListAsync();
+
+                    var mobileClient = httpClientFactory.CreateClient("MobileApi");
+                    foreach (var tid in targetTenants)
+                    {
+                        await mobileClient.PostAsJsonAsync("/api/internal/push-notify", new
+                        {
+                            tenantId = tid,
+                            roles = dto.TargetRoles ?? new List<string>(),
+                            title = announcement.Titulo,
+                            body = pushBody,
+                            data = new Dictionary<string, string>
+                            {
+                                ["type"] = "announcement",
+                                ["entityId"] = announcement.Id.ToString()
+                            }
+                        });
+                    }
+                }
+                catch { /* fire and forget */ }
+            });
 
             return Results.Created($"/api/superadmin/announcements/{announcement.Id}", new
             {
