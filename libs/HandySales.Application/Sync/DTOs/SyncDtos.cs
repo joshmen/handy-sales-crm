@@ -201,6 +201,7 @@ public class SyncRutaDto
 {
     public int Id { get; set; }
     public string? LocalId { get; set; }
+    public int? UsuarioId { get; set; }
     public int? ZonaId { get; set; }
     public string Nombre { get; set; } = string.Empty;
     public string? Descripcion { get; set; }

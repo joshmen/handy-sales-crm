@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineClients } from '@/hooks';
 import { useOrderDraftStore } from '@/stores';
@@ -17,6 +17,16 @@ export default function CrearPedidoStep1() {
   const insets = useSafeAreaInsets();
   const [busqueda, setBusqueda] = useState('');
   const { clienteId, setCliente } = useOrderDraftStore();
+  const params = useLocalSearchParams<{ clienteId?: string; clienteNombre?: string }>();
+
+  // Auto-select client if passed from visita/parada — skip to products
+  useEffect(() => {
+    if (params.clienteId && !clienteId) {
+      const nombre = params.clienteNombre ? decodeURIComponent(params.clienteNombre) : 'Cliente';
+      setCliente(params.clienteId, Number(params.clienteId), nombre);
+      router.push('/(tabs)/vender/crear/productos' as any);
+    }
+  }, [params.clienteId]);
 
   const { data: clientes, isLoading } = useOfflineClients(busqueda || undefined);
 

@@ -1,14 +1,33 @@
 import { Platform } from 'react-native';
+import * as Device from 'expo-device';
+import Constants from 'expo-constants';
 
 // API URL: Use EXPO_PUBLIC_API_URL for preview/production builds,
-// fall back to local dev server for development
+// fall back to local dev server for development.
+// Detection: physical device via WiFi uses the host IP from Expo's debuggerHost,
+// emulator uses 10.0.2.2, iOS simulator uses localhost.
 const getApiUrl = (): string => {
   if (process.env.EXPO_PUBLIC_API_URL) {
     return process.env.EXPO_PUBLIC_API_URL;
   }
-  const host = process.env.EXPO_PUBLIC_BACKEND_IP || (
-    Platform.OS === 'android' ? '10.0.2.2' : 'localhost'
-  );
+
+  // Explicit override from .env
+  if (process.env.EXPO_PUBLIC_BACKEND_IP) {
+    return `http://${process.env.EXPO_PUBLIC_BACKEND_IP}:1052`;
+  }
+
+  // Auto-detect: physical device gets the dev server host IP (same machine running Metro)
+  if (Device.isDevice) {
+    const debuggerHost = Constants.expoConfig?.hostUri
+      ?? Constants.experienceUrl?.match(/\/\/([\d.]+):/)?.[1];
+    if (debuggerHost) {
+      const ip = debuggerHost.split(':')[0];
+      return `http://${ip}:1052`;
+    }
+  }
+
+  // Emulator/simulator fallback
+  const host = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
   return `http://${host}:1052`;
 };
 

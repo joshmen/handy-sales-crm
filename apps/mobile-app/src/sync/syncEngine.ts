@@ -69,6 +69,7 @@ export async function performSync(options?: SyncOptions): Promise<void> {
           ? new Date(lastPulledAt).toISOString()
           : null;
 
+        console.log('[Sync] Pulling from server... lastSync:', lastSync);
         const response = await api.post('/api/mobile/sync/pull', {
           lastSyncTimestamp: lastSync,
           entityTypes: null,
@@ -79,10 +80,18 @@ export async function performSync(options?: SyncOptions): Promise<void> {
         const rawServerChanges = body.data ?? body;
         const serverTimestamp = body.serverTimestamp ?? rawServerChanges.serverTimestamp;
 
+        console.log('[Sync] Raw rutas from server:', rawServerChanges.rutas?.length ?? 0);
+        if (rawServerChanges.rutas?.length) {
+          rawServerChanges.rutas.forEach((r: any) =>
+            console.log(`[Sync]   ruta id=${r.id} usuarioId=${r.usuarioId} nombre=${r.nombre} estado=${r.estado} fecha=${r.fecha}`)
+          );
+        }
+
         // Security: discard any records that belong to a different tenant.
-        // This prevents a misconfigured server from leaking cross-tenant data
-        // into the local WatermelonDB database.
         const currentTenantId = Number(useAuthStore.getState().user?.tenantId ?? 0);
+        const currentUserId = Number(useAuthStore.getState().user?.id ?? 0);
+        console.log('[Sync] Current user:', currentUserId, 'tenant:', currentTenantId);
+
         const serverChanges = currentTenantId
           ? {
               ...rawServerChanges,
@@ -90,10 +99,12 @@ export async function performSync(options?: SyncOptions): Promise<void> {
               productos: filterByTenant(rawServerChanges.productos, currentTenantId),
               pedidos:   filterByTenant(rawServerChanges.pedidos,   currentTenantId),
               visitas:   filterByTenant(rawServerChanges.visitas,   currentTenantId),
-              rutas:     filterByTenant(rawServerChanges.rutas,     currentTenantId),
+              rutas:     rawServerChanges.rutas,     // Rutas don't have tenantId in DTO — already filtered server-side by user
               cobros:    filterByTenant(rawServerChanges.cobros,    currentTenantId),
             }
-          : rawServerChanges; // No tenantId in session — skip filtering (should never happen)
+          : rawServerChanges;
+
+        console.log('[Sync] After filter - rutas:', serverChanges.rutas?.length ?? 0);
 
         // Count pulled records
         for (const entityData of Object.values(serverChanges)) {
@@ -102,6 +113,8 @@ export async function performSync(options?: SyncOptions): Promise<void> {
 
         const timestamp = new Date(serverTimestamp).getTime();
         const changes = mapPullToWatermelon(serverChanges, lastPulledAt ?? null);
+
+        console.log('[Sync] Mapped rutas - created:', changes.rutas?.created?.length ?? 0, 'updated:', changes.rutas?.updated?.length ?? 0);
 
         return { changes, timestamp };
       },

@@ -386,6 +386,7 @@ public class SyncService
             response.ServerChanges.Rutas = rutas.Select(r => new SyncRutaDto
             {
                 Id = r.Id,
+                UsuarioId = r.UsuarioId,
                 ZonaId = r.ZonaId,
                 Nombre = r.Nombre,
                 Descripcion = r.Descripcion,

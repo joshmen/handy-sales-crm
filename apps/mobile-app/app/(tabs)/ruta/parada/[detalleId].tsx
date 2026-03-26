@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { View, Text, ScrollView, Alert, Linking, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, Alert, Linking, StyleSheet, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker, Circle } from 'react-native-maps';
@@ -22,6 +22,7 @@ import { formatTime } from '@/utils/format';
 import {
   MapPin,
   Clock,
+  ChevronLeft,
 } from 'lucide-react-native';
 import { SbVisit } from '@/components/icons/DashboardIcons';
 
@@ -131,6 +132,9 @@ export default function ParadaDetailScreen() {
     <View style={styles.container}>
     {/* Blue Header */}
     <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
+      <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <ChevronLeft size={22} color={COLORS.headerText} />
+      </TouchableOpacity>
       <Text style={styles.blueHeaderTitle}>Parada #{stop.orden}</Text>
       <Badge
         label={STOP_STATUS_NAMES[stop.estado] || 'Desconocido'}
@@ -234,7 +238,11 @@ export default function ParadaDetailScreen() {
         <View style={styles.quickActions}>
           <Button
             title="Nuevo Pedido"
-            onPress={() => router.push('/(tabs)/vender/crear' as any)}
+            onPress={() => {
+              const { setCliente } = require('@/stores').useOrderDraftStore.getState();
+              setCliente(stop.clienteId, client?.serverId ?? Number(stop.clienteId), client?.nombre || 'Cliente');
+              router.push(`/(tabs)/vender/crear/productos?fromParada=${detalleId}` as any);
+            }}
             variant="secondary"
             fullWidth
           />
@@ -285,8 +293,9 @@ export default function ParadaDetailScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  blueHeader: { backgroundColor: COLORS.headerBg, paddingHorizontal: 16, paddingBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  blueHeaderTitle: { fontSize: 18, fontWeight: '700', color: COLORS.headerText },
+  blueHeader: { backgroundColor: COLORS.headerBg, paddingHorizontal: 16, paddingBottom: 16, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  backBtn: { padding: 4 },
+  blueHeaderTitle: { flex: 1, fontSize: 18, fontWeight: '700', color: COLORS.headerText },
   content: { paddingBottom: 32 },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
   emptyText: { fontSize: 14, color: '#94a3b8' },

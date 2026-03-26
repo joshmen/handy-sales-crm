@@ -160,7 +160,7 @@ export default function VisitaActivaScreen() {
           <View style={styles.actionsRow}>
             <Button
               title="Nuevo Pedido"
-              onPress={() => router.push('/(tabs)/vender/crear' as any)}
+              onPress={() => router.push(`/(tabs)/vender/crear?clienteId=${visita.clienteId}&clienteNombre=${encodeURIComponent(clientNames.get(visita.clienteId) || 'Cliente')}` as any)}
               variant="secondary"
               fullWidth
             />

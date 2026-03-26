@@ -184,7 +184,7 @@ function mapRutaToRaw(r: any): DirtyRaw {
     server_id: r.id,
     nombre: r.nombre || '',
     fecha: toTimestamp(r.fecha),
-    usuario_id: 0,
+    usuario_id: r.usuarioId ?? 0,
     estado: r.estado ?? 0,
     km_recorridos: r.kilometrosReales ?? null,
     hora_inicio: toTimestamp(r.horaInicioReal),

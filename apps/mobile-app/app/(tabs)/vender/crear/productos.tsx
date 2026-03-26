@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react';
-import { View, Text, FlatList, TextInput, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useState, useCallback, useEffect } from 'react';
+import { View, Text, FlatList, TextInput, ScrollView, TouchableOpacity, StyleSheet, BackHandler } from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineProducts, useCategoriasProducto } from '@/hooks';
 import { useOrderDraftStore } from '@/stores';
@@ -10,7 +10,7 @@ import { CartBar } from '@/components/shared/CartBar';
 import { EmptyState } from '@/components/ui';
 import { COLORS } from '@/theme/colors';
 import { formatCurrency } from '@/utils/format';
-import { Package, Search, Plus } from 'lucide-react-native';
+import { Package, Search, Plus, ChevronLeft } from 'lucide-react-native';
 import type Producto from '@/db/models/Producto';
 
 const STEPS = ['Cliente', 'Productos', 'Revisar'];
@@ -18,6 +18,25 @@ const STEPS = ['Cliente', 'Productos', 'Revisar'];
 export default function CrearPedidoStep2() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { fromParada } = useLocalSearchParams<{ fromParada?: string }>();
+
+  const handleBack = useCallback(() => {
+    if (fromParada) {
+      router.replace(`/(tabs)/ruta/parada/${fromParada}` as any);
+    } else {
+      router.back();
+    }
+  }, [fromParada, router]);
+
+  // Intercept Android back button/gesture when coming from parada
+  useEffect(() => {
+    if (!fromParada) return;
+    const handler = BackHandler.addEventListener('hardwareBackPress', () => {
+      handleBack();
+      return true; // Prevent default back behavior
+    });
+    return () => handler.remove();
+  }, [fromParada, handleBack]);
   const [busqueda, setBusqueda] = useState('');
   const [categoriaId, setCategoriaId] = useState<number | undefined>(undefined);
 
@@ -88,7 +107,11 @@ export default function CrearPedidoStep2() {
     <View style={styles.container}>
       {/* Blue Header */}
       <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
+        <TouchableOpacity onPress={handleBack} style={styles.backBtn}>
+          <ChevronLeft size={22} color={COLORS.headerText} />
+        </TouchableOpacity>
         <Text style={styles.blueHeaderTitle}>Productos</Text>
+        <View style={{ width: 22 }} />
       </View>
       <ProgressSteps steps={STEPS} currentStep={1} />
 
@@ -159,8 +182,9 @@ export default function CrearPedidoStep2() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  blueHeader: { backgroundColor: COLORS.headerBg, paddingHorizontal: 20, paddingBottom: 12, alignItems: 'center' as const },
-  blueHeaderTitle: { fontSize: 20, fontWeight: '700' as const, color: COLORS.headerText, textAlign: 'center' as const },
+  blueHeader: { backgroundColor: COLORS.headerBg, paddingHorizontal: 16, paddingBottom: 12, flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'space-between' as const },
+  backBtn: { padding: 4 },
+  blueHeaderTitle: { flex: 1, fontSize: 20, fontWeight: '700' as const, color: COLORS.headerText, textAlign: 'center' as const },
   searchSection: {
     backgroundColor: '#ffffff',
     borderBottomWidth: 1,

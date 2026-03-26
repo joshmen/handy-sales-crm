@@ -27,18 +27,21 @@ export function useOfflineRutaHoy() {
   const user = useAuthStore((s) => s.user);
   const observable = useMemo(() => {
     if (!user?.id) return null;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayMs = today.getTime();
-    const tomorrowMs = todayMs + 86400000;
+    // Widen the window to ±12h around today to handle any timezone offset.
+    // A route dated "2026-03-26T00:00:00Z" should show on March 25 local (Mexico UTC-6)
+    // and also on March 26 local. This ensures the route always appears on the intended day.
+    const now = new Date();
+    const localMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const windowStart = localMidnight - 12 * 3600000; // 12h before local midnight
+    const windowEnd = localMidnight + 36 * 3600000;   // 36h after local midnight (covers full day + offset)
 
     return database
       .get<Ruta>('rutas')
       .query(
         Q.where('usuario_id', Number(user.id)),
         Q.where('activo', true),
-        Q.where('fecha', Q.gte(todayMs)),
-        Q.where('fecha', Q.lt(tomorrowMs))
+        Q.where('fecha', Q.gte(windowStart)),
+        Q.where('fecha', Q.lt(windowEnd))
       )
       .observe();
   }, [user?.id]);
