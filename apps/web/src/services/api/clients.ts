@@ -11,6 +11,7 @@ interface ClienteListaDto {
   zonaNombre?: string;
   categoriaNombre?: string;
   activo: boolean;
+  esProspecto: boolean;
 }
 
 interface ClienteDto {
@@ -68,6 +69,7 @@ export interface ClientsListParams {
   zoneId?: number;
   categoryId?: number;
   isActive?: boolean;
+  esProspecto?: boolean;
 }
 
 export interface ClientsListResponse {
@@ -132,6 +134,7 @@ function mapClienteToClient(dto: ClienteListaDto): Client {
     categoryName: dto.categoriaNombre,
     type: ClientType.MINORISTA,
     isActive: dto.activo,
+    esProspecto: dto.esProspecto,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -194,6 +197,7 @@ class ClientService {
       if (params.zoneId) queryParams.append('zonaId', params.zoneId.toString());
       if (params.categoryId) queryParams.append('categoriaClienteId', params.categoryId.toString());
       if (params.isActive !== undefined) queryParams.append('activo', params.isActive.toString());
+      if (params.esProspecto !== undefined) queryParams.append('esProspecto', params.esProspecto.toString());
 
       const response = await api.get<ClientePaginatedResult>(
         `${this.basePath}?${queryParams.toString()}`
@@ -249,6 +253,22 @@ class ClientService {
   async searchClients(query: string): Promise<Client[]> {
     const response = await this.getClients({ search: query, limit: 50 });
     return response.clients;
+  }
+
+  async aprobarProspecto(id: number): Promise<void> {
+    try {
+      await api.post(`${this.basePath}/${id}/aprobar-prospecto`);
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  }
+
+  async rechazarProspecto(id: number): Promise<void> {
+    try {
+      await api.post(`${this.basePath}/${id}/rechazar-prospecto`);
+    } catch (error) {
+      throw handleApiError(error);
+    }
   }
 }
 

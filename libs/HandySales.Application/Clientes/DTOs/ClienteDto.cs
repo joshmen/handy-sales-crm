@@ -56,6 +56,7 @@ public class ClienteListaDto
     public int? VendedorId { get; set; }
     public string? VendedorNombre { get; set; }
     public bool Activo { get; set; }
+    public bool EsProspecto { get; set; }
 }
 
 public class ClienteFiltroDto
@@ -65,6 +66,7 @@ public class ClienteFiltroDto
     public int? VendedorId { get; set; }
     public string? Busqueda { get; set; }
     public bool? Activo { get; set; }
+    public bool? EsProspecto { get; set; }
     public int Pagina { get; set; } = 1;
     public int TamanoPagina { get; set; } = 20;
 }

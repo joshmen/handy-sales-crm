@@ -53,11 +53,20 @@ export default function ClientsListScreen() {
               <Text style={styles.clientName} numberOfLines={1}>
                 {item.nombre}
               </Text>
-              <Badge
-                label={item.activo ? 'Activo' : 'Inactivo'}
-                color={item.activo ? '#16a34a' : '#94a3b8'}
-                bgColor={item.activo ? '#dcfce7' : '#f1f5f9'}
-              />
+              <View style={styles.badgeRow}>
+                {item.esProspecto && (
+                  <Badge
+                    label="Prospecto"
+                    color="#d97706"
+                    bgColor="#fef3c7"
+                  />
+                )}
+                <Badge
+                  label={item.activo ? 'Activo' : 'Inactivo'}
+                  color={item.activo ? '#16a34a' : '#94a3b8'}
+                  bgColor={item.activo ? '#dcfce7' : '#f1f5f9'}
+                />
+              </View>
             </View>
             <View style={styles.clientMeta}>
               {item.telefono && (
@@ -204,6 +213,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 4,
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   clientName: {
     fontSize: 15,

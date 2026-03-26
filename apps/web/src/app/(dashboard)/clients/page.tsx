@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { Client } from '@/types';
 import { clientService } from '@/services/api/clients';
 import { api } from '@/lib/api';
@@ -24,6 +25,8 @@ import {
   Minus,
   Loader2,
   Users,
+  CheckCircle,
+  XCircle,
 } from 'lucide-react';
 import { ListPagination } from '@/components/ui/ListPagination';
 import { SearchBar } from '@/components/common/SearchBar';
@@ -33,8 +36,14 @@ import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { ActiveToggle } from '@/components/ui/ActiveToggle';
 import { getInitials } from '@/lib/utils';
 
+type ProspectFilter = 'todos' | 'clientes' | 'prospectos';
+
 export default function ClientsPage() {
   const router = useRouter();
+  const { data: session } = useSession();
+  const userRole = session?.user?.role;
+  const canManageProspects = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN' || userRole === 'SUPERVISOR';
+
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -46,11 +55,13 @@ export default function ClientsPage() {
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [showDataMenu, setShowDataMenu] = useState(false);
+  const [prospectActionLoading, setProspectActionLoading] = useState<string | null>(null);
 
   // Filtros
   const [selectedZona, setSelectedZona] = useState<number | null>(null);
   const [selectedCategoria, setSelectedCategoria] = useState<number | null>(null);
   const [showInactive, setShowInactive] = useState(false);
+  const [prospectFilter, setProspectFilter] = useState<ProspectFilter>('todos');
 
   // Catálogos para filtros
   const [zonas, setZonas] = useState<{ id: number; nombre: string }[]>([]);
@@ -67,6 +78,7 @@ export default function ClientsPage() {
         isActive: showInactive ? undefined : true,
         zoneId: selectedZona || undefined,
         categoryId: selectedCategoria || undefined,
+        esProspecto: prospectFilter === 'prospectos' ? true : prospectFilter === 'clientes' ? false : undefined,
       });
       setClients(response.clients);
       setTotalClients(response.total);
@@ -78,7 +90,7 @@ export default function ClientsPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, searchTerm, showInactive, selectedZona, selectedCategoria]);
+  }, [currentPage, searchTerm, showInactive, selectedZona, selectedCategoria, prospectFilter]);
 
   useEffect(() => {
     fetchClients();
@@ -125,10 +137,44 @@ export default function ClientsPage() {
     }
   };
 
+  const handleAprobarProspecto = async (client: Client) => {
+    try {
+      setProspectActionLoading(client.id);
+      await clientService.aprobarProspecto(parseInt(client.id));
+      toast.success(`"${client.name}" aprobado como cliente`);
+      setClients(prev => prev.map(c =>
+        c.id === client.id ? { ...c, esProspecto: false } : c
+      ));
+      if (prospectFilter === 'prospectos') {
+        setClients(prev => prev.filter(c => c.id !== client.id));
+      }
+    } catch (err) {
+      console.error('Error al aprobar prospecto:', err);
+      toast.error('Error al aprobar el prospecto');
+    } finally {
+      setProspectActionLoading(null);
+    }
+  };
+
+  const handleRechazarProspecto = async (client: Client) => {
+    if (!window.confirm(`¿Estás seguro de rechazar al prospecto "${client.name}"? Se eliminará del sistema.`)) return;
+    try {
+      setProspectActionLoading(client.id);
+      await clientService.rechazarProspecto(parseInt(client.id));
+      toast.success(`Prospecto "${client.name}" rechazado`);
+      setClients(prev => prev.filter(c => c.id !== client.id));
+    } catch (err) {
+      console.error('Error al rechazar prospecto:', err);
+      toast.error('Error al rechazar el prospecto');
+    } finally {
+      setProspectActionLoading(null);
+    }
+  };
+
   const visibleIds = clients.map(c => parseInt(c.id));
   const batch = useBatchOperations({
     visibleIds,
-    clearDeps: [currentPage, searchTerm, selectedZona, selectedCategoria, showInactive],
+    clearDeps: [currentPage, searchTerm, selectedZona, selectedCategoria, showInactive, prospectFilter],
   });
 
   const handleBatchToggle = async () => {
@@ -213,6 +259,27 @@ export default function ClientsPage() {
         }
       >
         <div className="space-y-4">
+        {/* Prospect Filter Chips */}
+        <div className="flex items-center gap-1.5">
+          {([
+            { key: 'todos', label: 'Todos' },
+            { key: 'clientes', label: 'Clientes' },
+            { key: 'prospectos', label: 'Prospectos' },
+          ] as const).map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => { setProspectFilter(key); setCurrentPage(1); }}
+              className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
+                prospectFilter === key
+                  ? 'bg-green-600 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         {/* Filter Row */}
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <SearchBar
@@ -321,8 +388,15 @@ export default function ClientsPage() {
 
                 {/* Name and Code */}
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-gray-900 truncate">
-                    {client.name}
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm font-medium text-gray-900 truncate">
+                      {client.name}
+                    </span>
+                    {client.esProspecto && (
+                      <span className="text-[11px] font-medium text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded flex-shrink-0">
+                        Prospecto
+                      </span>
+                    )}
                   </div>
                   <div className="text-xs text-gray-500">{client.code}</div>
                 </div>
@@ -351,7 +425,29 @@ export default function ClientsPage() {
               </div>
 
               {/* Row 3: Actions */}
-              <div className="flex justify-end">
+              <div className="flex justify-end gap-1">
+                {client.esProspecto && canManageProspects && (
+                  <>
+                    <button
+                      onClick={() => handleAprobarProspecto(client)}
+                      disabled={loading || prospectActionLoading === client.id}
+                      className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-green-700 hover:bg-green-50 rounded disabled:opacity-50 transition-colors"
+                      title="Aprobar prospecto"
+                    >
+                      <CheckCircle className="w-3.5 h-3.5" />
+                      <span>Aprobar</span>
+                    </button>
+                    <button
+                      onClick={() => handleRechazarProspecto(client)}
+                      disabled={loading || prospectActionLoading === client.id}
+                      className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-red-600 hover:bg-red-50 rounded disabled:opacity-50 transition-colors"
+                      title="Rechazar prospecto"
+                    >
+                      <XCircle className="w-3.5 h-3.5" />
+                      <span>Rechazar</span>
+                    </button>
+                  </>
+                )}
                 <button
                   onClick={() => handleEditClient(client)}
                   disabled={loading}
@@ -393,7 +489,7 @@ export default function ClientsPage() {
             <div className="w-[90px] text-[11px] font-medium text-gray-500 hidden md:block">Saldo</div>
             <div className="w-[110px] text-[11px] font-medium text-gray-500 hidden lg:block">Lim. crédito</div>
             <div className="w-[50px] text-[11px] font-medium text-gray-500 text-center">Activo</div>
-            <div className="w-8"></div>
+            <div className="w-[100px] text-[11px] font-medium text-gray-500 text-center">Acciones</div>
           </div>
 
           {/* Table Body - With loading overlay */}
@@ -443,8 +539,15 @@ export default function ClientsPage() {
                       </span>
                     </div>
                     <div className="min-w-0">
-                      <div className="text-[13px] font-medium text-gray-900 truncate">
-                        {client.name} ({client.code})
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[13px] font-medium text-gray-900 truncate">
+                          {client.name} ({client.code})
+                        </span>
+                        {client.esProspecto && (
+                          <span className="text-[11px] font-medium text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded flex-shrink-0">
+                            Prospecto
+                          </span>
+                        )}
                       </div>
                       <div className="text-[11px] text-gray-500 truncate">
                         {client.email || client.phone || '—'}
@@ -491,8 +594,28 @@ export default function ClientsPage() {
                     />
                   </div>
 
-                  {/* Edit column */}
-                  <div className="w-8 flex justify-center">
+                  {/* Actions column */}
+                  <div className="w-[100px] flex items-center justify-center gap-1">
+                    {client.esProspecto && canManageProspects && (
+                      <>
+                        <button
+                          onClick={() => handleAprobarProspecto(client)}
+                          disabled={loading || prospectActionLoading === client.id}
+                          className="p-1 hover:bg-green-50 rounded transition-colors disabled:opacity-50"
+                          title="Aprobar prospecto"
+                        >
+                          <CheckCircle className="w-4 h-4 text-green-600" />
+                        </button>
+                        <button
+                          onClick={() => handleRechazarProspecto(client)}
+                          disabled={loading || prospectActionLoading === client.id}
+                          className="p-1 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
+                          title="Rechazar prospecto"
+                        >
+                          <XCircle className="w-4 h-4 text-red-500" />
+                        </button>
+                      </>
+                    )}
                     <button
                       onClick={() => handleEditClient(client)}
                       disabled={loading}

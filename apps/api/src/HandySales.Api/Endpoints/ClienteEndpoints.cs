@@ -105,6 +105,34 @@ public static class ClienteEndpoints
             var actualizados = await servicio.BatchToggleActivoAsync(request.Ids, request.Activo);
             return Results.Ok(new { actualizados });
         }).RequireAuthorization();
+
+        app.MapPost("/clientes/{id:int}/aprobar-prospecto", async (
+            int id,
+            [FromServices] ClienteService servicio,
+            [FromServices] ICurrentTenant currentTenant) =>
+        {
+            if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin && !currentTenant.IsSupervisor)
+                return Results.Forbid();
+
+            var aprobado = await servicio.AprobarProspectoAsync(id);
+            return aprobado
+                ? Results.NoContent()
+                : Results.NotFound(new { message = "Prospecto no encontrado o ya fue aprobado." });
+        }).RequireAuthorization();
+
+        app.MapPost("/clientes/{id:int}/rechazar-prospecto", async (
+            int id,
+            [FromServices] ClienteService servicio,
+            [FromServices] ICurrentTenant currentTenant) =>
+        {
+            if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin && !currentTenant.IsSupervisor)
+                return Results.Forbid();
+
+            var rechazado = await servicio.RechazarProspectoAsync(id);
+            return rechazado
+                ? Results.NoContent()
+                : Results.NotFound(new { message = "Prospecto no encontrado o ya fue procesado." });
+        }).RequireAuthorization();
     }
 }
 

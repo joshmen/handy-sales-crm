@@ -13,4 +13,6 @@ public interface IClienteRepository
     Task<bool> CambiarActivoAsync(int id, bool activo, int tenantId);
     Task<int> BatchToggleActivoAsync(List<int> ids, bool activo, int tenantId);
     Task<bool> ExisteNombreEnTenantAsync(string nombre, int tenantId, int? excludeId = null);
+    Task<bool> AprobarProspectoAsync(int id, int tenantId);
+    Task<bool> RechazarProspectoAsync(int id, int tenantId);
 }

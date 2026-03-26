@@ -141,11 +141,14 @@ public static class MobileClienteEndpoints
         .WithDescription("Lista clientes dentro de un radio en kilómetros desde las coordenadas proporcionadas.")
         .Produces<object>(StatusCodes.Status200OK);
 
-        // POST /api/mobile/clientes — Crear cliente
+        // POST /api/mobile/clientes — Crear cliente (siempre como prospecto)
         group.MapPost("/", async (
             ClienteCreateDto dto,
             [FromServices] ClienteService servicio) =>
         {
+            // Mobile-created clients are always prospects pending approval
+            dto.EsProspecto = true;
+
             var resultado = await servicio.CrearClienteAsync(dto);
             if (!resultado.Success)
                 return Results.Conflict(new { success = false, message = resultado.Error });

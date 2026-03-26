@@ -82,4 +82,10 @@ public class ClienteService
 
     public Task<int> BatchToggleActivoAsync(List<int> ids, bool activo)
         => _repo.BatchToggleActivoAsync(ids, activo, _tenant.TenantId);
+
+    public Task<bool> AprobarProspectoAsync(int id)
+        => _repo.AprobarProspectoAsync(id, _tenant.TenantId);
+
+    public Task<bool> RechazarProspectoAsync(int id)
+        => _repo.RechazarProspectoAsync(id, _tenant.TenantId);
 }

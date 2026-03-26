@@ -189,6 +189,10 @@ public class ClienteRepository : IClienteRepository
         if (filtro.Activo.HasValue)
             query = query.Where(c => c.Activo == filtro.Activo.Value);
 
+        // Filtrar por prospecto
+        if (filtro.EsProspecto.HasValue)
+            query = query.Where(c => c.EsProspecto == filtro.EsProspecto.Value);
+
         // Filtrar por zona
         if (filtro.ZonaId.HasValue)
             query = query.Where(c => c.IdZona == filtro.ZonaId.Value);
@@ -231,7 +235,8 @@ public class ClienteRepository : IClienteRepository
                 CategoriaNombre = c.Categoria != null ? c.Categoria.Nombre : null,
                 VendedorId = c.VendedorId,
                 VendedorNombre = c.Vendedor != null ? c.Vendedor.Nombre : null,
-                Activo = c.Activo
+                Activo = c.Activo,
+                EsProspecto = c.EsProspecto
             })
             .ToListAsync();
 
@@ -281,5 +286,28 @@ public class ClienteRepository : IClienteRepository
             c.TenantId == tenantId &&
             c.Activo &&
             (excludeId == null || c.Id != excludeId));
+    }
+
+    public async Task<bool> AprobarProspectoAsync(int id, int tenantId)
+    {
+        var cliente = await _db.Clientes.FirstOrDefaultAsync(c => c.Id == id && c.TenantId == tenantId);
+        if (cliente == null || !cliente.EsProspecto) return false;
+
+        cliente.EsProspecto = false;
+        cliente.ActualizadoEn = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> RechazarProspectoAsync(int id, int tenantId)
+    {
+        var cliente = await _db.Clientes.FirstOrDefaultAsync(c => c.Id == id && c.TenantId == tenantId);
+        if (cliente == null || !cliente.EsProspecto) return false;
+
+        // Soft delete via SaveChangesAsync override
+        _db.Clientes.Remove(cliente);
+        await _db.SaveChangesAsync();
+        return true;
     }
 }

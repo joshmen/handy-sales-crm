@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export const schema = appSchema({
-  version: 3,
+  version: 4,
   tables: [
     // ─── Clientes ──────────────────────────────────────────
     tableSchema({
@@ -25,6 +25,7 @@ export const schema = appSchema({
         { name: 'limite_credito', type: 'number' },
         { name: 'dias_credito', type: 'number' },
         { name: 'notas', type: 'string', isOptional: true },
+        { name: 'es_prospecto', type: 'boolean' },
         { name: 'activo', type: 'boolean' },
         { name: 'version', type: 'number' },
         { name: 'created_at', type: 'number' },

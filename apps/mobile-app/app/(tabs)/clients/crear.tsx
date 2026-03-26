@@ -1,11 +1,12 @@
-import { useState } from 'react';
-import { View, Text, ScrollView, TextInput, Alert, StyleSheet, TouchableOpacity } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TextInput, Alert, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import * as Location from 'expo-location';
 import { clientesApi } from '@/api';
 import { useZonas, useCategoriasCliente } from '@/hooks';
-import { Save, ChevronLeft } from 'lucide-react-native';
+import { Save, ChevronLeft, MapPin } from 'lucide-react-native';
 import { COLORS } from '@/theme/colors';
 import type { ClienteCreateRequest } from '@/types/client';
 
@@ -23,6 +24,27 @@ export default function CrearClienteScreen() {
   const [direccion, setDireccion] = useState('');
   const [zonaId, setZonaId] = useState<number | undefined>(undefined);
   const [categoriaId, setCategoriaId] = useState<number | undefined>(undefined);
+
+  // GPS auto-capture
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationStatus, setLocationStatus] = useState<'loading' | 'success' | 'denied' | 'error'>('loading');
+
+  useEffect(() => {
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setLocationStatus('denied');
+        return;
+      }
+      try {
+        const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        setLocation({ lat: loc.coords.latitude, lng: loc.coords.longitude });
+        setLocationStatus('success');
+      } catch {
+        setLocationStatus('error');
+      }
+    })();
+  }, []);
 
   const crearMutation = useMutation({
     mutationFn: (data: ClienteCreateRequest) => clientesApi.create(data),
@@ -49,6 +71,8 @@ export default function CrearClienteScreen() {
       direccion: direccion || undefined,
       idZona: zonaId,
       categoriaClienteId: categoriaId,
+      latitud: location?.lat,
+      longitud: location?.lng,
     });
   };
 
@@ -176,6 +200,27 @@ export default function CrearClienteScreen() {
             textAlignVertical="top"
           />
         </View>
+
+        {/* GPS Status Indicator */}
+        <View style={styles.gpsRow}>
+          <MapPin size={14} color={
+            locationStatus === 'success' ? '#16a34a' :
+            locationStatus === 'loading' ? COLORS.textTertiary :
+            '#94a3b8'
+          } />
+          {locationStatus === 'loading' && (
+            <>
+              <ActivityIndicator size="small" color={COLORS.textTertiary} style={styles.gpsSpinner} />
+              <Text style={styles.gpsTextLoading}>Obteniendo ubicación...</Text>
+            </>
+          )}
+          {locationStatus === 'success' && (
+            <Text style={styles.gpsTextSuccess}>Ubicación capturada</Text>
+          )}
+          {(locationStatus === 'denied' || locationStatus === 'error') && (
+            <Text style={styles.gpsTextDenied}>Sin ubicación</Text>
+          )}
+        </View>
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom || 16 }]}>
@@ -258,6 +303,19 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: COLORS.headerBg, borderColor: COLORS.headerBg },
   chipText: { fontSize: 13, fontWeight: '600', color: COLORS.textSecondary },
   chipTextActive: { color: COLORS.headerText },
+
+  /* GPS indicator */
+  gpsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 4,
+    marginBottom: 16,
+  },
+  gpsSpinner: { marginRight: 2 },
+  gpsTextLoading: { fontSize: 12, color: COLORS.textTertiary },
+  gpsTextSuccess: { fontSize: 12, color: '#16a34a', fontWeight: '500' },
+  gpsTextDenied: { fontSize: 12, color: '#94a3b8' },
 
   /* Footer */
   footer: {

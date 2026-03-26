@@ -32,5 +32,16 @@ export const migrations = schemaMigrations({
         }),
       ],
     },
+    {
+      toVersion: 4,
+      steps: [
+        addColumns({
+          table: 'clientes',
+          columns: [
+            { name: 'es_prospecto', type: 'boolean' },
+          ],
+        }),
+      ],
+    },
   ],
 });

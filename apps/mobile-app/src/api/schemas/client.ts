@@ -13,6 +13,7 @@ export const MobileClienteSchema = z
     latitud: z.number().optional(),
     longitud: z.number().optional(),
     vendedorId: z.number().optional(),
+    esProspecto: z.boolean().optional(),
     activo: z.boolean(),
     zonaNombre: z.string().optional(),
     categoriaNombre: z.string().optional(),

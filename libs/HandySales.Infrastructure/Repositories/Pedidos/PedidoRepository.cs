@@ -17,6 +17,13 @@ public class PedidoRepository : IPedidoRepository
 
     public async Task<int> CrearAsync(PedidoCreateDto dto, int usuarioId, int tenantId)
     {
+        // Block orders for prospects pending approval
+        var cliente = await _db.Clientes
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Id == dto.ClienteId && c.TenantId == tenantId);
+        if (cliente != null && cliente.EsProspecto)
+            throw new InvalidOperationException("El cliente es un prospecto pendiente de aprobación. No se pueden crear pedidos para prospectos.");
+
         var esVentaDirecta = dto.TipoVenta == TipoVenta.VentaDirecta;
 
         // Retry loop for unique constraint violations on NumeroPedido

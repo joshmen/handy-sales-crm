@@ -83,6 +83,7 @@ function mapClienteToRaw(c: any): DirtyRaw {
     limite_credito: c.limiteCredito ?? 0,
     dias_credito: c.diasCredito ?? 0,
     notas: null,
+    es_prospecto: c.esProspecto ?? false,
     activo: c.activo ?? true,
     version: c.version ?? 1,
     created_at: toTimestamp(c.actualizadoEn),
