@@ -118,10 +118,42 @@ public static class RutaVendedorEndpoints
         group.MapPut("/{id:int}", async (
             int id,
             RutaVendedorUpdateDto dto,
-            [FromServices] RutaVendedorService servicio) =>
+            [FromServices] RutaVendedorService servicio,
+            [FromServices] IHttpClientFactory httpClientFactory,
+            [FromServices] ICurrentTenant tenantContext) =>
         {
+            // Get route before update to detect vendedor change
+            var rutaAntes = await servicio.ObtenerPorIdAsync(id);
             var actualizado = await servicio.ActualizarAsync(id, dto);
-            return actualizado ? Results.NoContent() : Results.NotFound();
+            if (!actualizado) return Results.NotFound();
+
+            // Push notification if vendedor was reassigned
+            var nuevoUsuarioId = dto.UsuarioId ?? rutaAntes?.UsuarioId ?? 0;
+            if (nuevoUsuarioId > 0)
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var client = httpClientFactory.CreateClient("MobileApi");
+                        await client.PostAsJsonAsync("/api/internal/push-notify", new
+                        {
+                            tenantId = tenantContext.TenantId,
+                            userIds = new[] { nuevoUsuarioId },
+                            title = "Ruta actualizada",
+                            body = $"Tu ruta fue actualizada: {dto.Nombre ?? rutaAntes?.Nombre ?? "Ruta"}",
+                            data = new Dictionary<string, string>
+                            {
+                                ["type"] = "route.published",
+                                ["entityId"] = id.ToString()
+                            }
+                        });
+                    }
+                    catch { /* fire and forget */ }
+                });
+            }
+
+            return Results.NoContent();
         });
 
         group.MapDelete("/{id:int}", async (
