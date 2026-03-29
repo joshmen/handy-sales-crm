@@ -3,6 +3,7 @@ import {
   View,
   Text,
   FlatList,
+  Image,
   Dimensions,
   Pressable,
   StyleSheet,
@@ -27,8 +28,8 @@ interface SlideData {
   id: string;
   title: string;
   subtitle: string;
-  /** 'light' = photo top + white card bottom; 'dark' = full dark overlay */
   variant: 'light' | 'dark';
+  image: string;
   bullets?: string[];
 }
 
@@ -39,6 +40,7 @@ const SLIDES: SlideData[] = [
     subtitle:
       'Levanta pedidos desde tu teléfono, consulta productos, precios y stock en tiempo real.',
     variant: 'light',
+    image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&q=80',
   },
   {
     id: '2',
@@ -46,6 +48,7 @@ const SLIDES: SlideData[] = [
     subtitle:
       'Registra cobros, da seguimiento a saldos pendientes y reduce tu cartera vencida.',
     variant: 'light',
+    image: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=800&q=80',
   },
   {
     id: '3',
@@ -53,10 +56,11 @@ const SLIDES: SlideData[] = [
     subtitle:
       'Ruta optimizada, visitas con check-in, reportes de rendimiento y sincronización offline.',
     variant: 'dark',
+    image: 'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=800&q=80',
     bullets: [
       'Funciona sin internet',
       'Reduce cartera vencida hasta 40%',
-      'Facturación SAT en 3 clics',
+      'Facturacion SAT en 3 clics',
     ],
   },
 ];
@@ -118,17 +122,17 @@ export default function OnboardingScreen() {
     }
   };
 
-  const isLast = activeIndex === SLIDES.length - 1;
   const currentVariant = SLIDES[activeIndex]?.variant ?? 'light';
 
   const renderSlide = ({ item, index }: ListRenderItemInfo<SlideData>) => {
     if (item.variant === 'dark') {
       return (
         <View style={[styles.slideWrap, { width: SCREEN_WIDTH }]}>
-          {/* Dark background with gradient */}
+          {/* Dark background with image + gradient */}
           <View style={styles.darkBg}>
+            <Image source={{ uri: item.image }} style={StyleSheet.absoluteFill} resizeMode="cover" />
             <LinearGradient
-              colors={['#0f172a00', '#0f172a66', '#0f172abb', '#0f172af0', '#0f172a']}
+              colors={['#0f172a00', '#0f172a40', '#0f172abb', '#0f172af0', '#0f172a']}
               locations={[0, 0.3, 0.55, 0.75, 1]}
               style={StyleSheet.absoluteFill}
             />
@@ -168,10 +172,9 @@ export default function OnboardingScreen() {
     // Light variant — photo placeholder top + white card bottom
     return (
       <View style={[styles.slideWrap, { width: SCREEN_WIDTH }]}>
-        {/* Photo placeholder area */}
+        {/* Photo area */}
         <View style={styles.imageArea}>
-          <View style={styles.imagePlaceholder} />
-          {/* Subtle overlay on image */}
+          <Image source={{ uri: item.image }} style={StyleSheet.absoluteFill} resizeMode="cover" />
           <View style={styles.imageOverlay} />
 
           {/* Skip chip overlaying the image */}
@@ -241,10 +244,6 @@ const styles = StyleSheet.create({
     height: IMAGE_HEIGHT,
     backgroundColor: '#e2e8f0',
     overflow: 'hidden',
-  },
-  imagePlaceholder: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#cbd5e1',
   },
   imageOverlay: {
     ...StyleSheet.absoluteFillObject,
