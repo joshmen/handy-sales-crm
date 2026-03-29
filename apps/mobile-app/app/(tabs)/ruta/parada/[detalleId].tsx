@@ -12,7 +12,8 @@ import {
   useOfflineOrderDetalles,
 } from '@/hooks';
 import { useUserLocation } from '@/hooks/useLocation';
-import { formatDistance } from '@/services/geoCheckin';
+import { formatDistance, haversineDistance } from '@/services/geoCheckin';
+import { useOrderDraftStore } from '@/stores';
 import { database } from '@/db/database';
 import { Q } from '@nozbe/watermelondb';
 import RutaDetalle from '@/db/models/RutaDetalle';
@@ -32,6 +33,7 @@ import {
   Navigation,
 } from 'lucide-react-native';
 import { SbRoute, SbWarning } from '@/components/icons/DashboardIcons';
+import { GpsMapModal } from '@/components/shared/GpsMapModal';
 
 const STOP_STATUS_COLORS: Record<number, string> = {
   0: '#6b7280', 1: '#f59e0b', 2: '#22c55e', 3: '#ef4444',
@@ -54,27 +56,6 @@ export default function ParadaDetailScreen() {
   const [showNoVisito, setShowNoVisito] = useState(false);
   const [noVisitoReason, setNoVisitoReason] = useState('');
   const [showGpsModal, setShowGpsModal] = useState(false);
-  const [gpsCoord, setGpsCoord] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [placeSearch, setPlaceSearch] = useState('');
-  const [placeResults, setPlaceResults] = useState<any[]>([]);
-  const placeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const mapRef = useRef<MapView | null>(null);
-
-  const searchPlaces = useCallback((query: string) => {
-    setPlaceSearch(query);
-    if (placeTimer.current) clearTimeout(placeTimer.current);
-    if (query.length < 3) { setPlaceResults([]); return; }
-    placeTimer.current = setTimeout(async () => {
-      try {
-        const key = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
-        const loc = gpsCoord ? `${gpsCoord.latitude},${gpsCoord.longitude}` : '';
-        const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&location=${loc}&radius=5000&key=${key}`;
-        const res = await fetch(url);
-        const data = await res.json();
-        setPlaceResults(data.results?.slice(0, 5) ?? []);
-      } catch { setPlaceResults([]); }
-    }, 500);
-  }, [gpsCoord]);
 
   // Keyboard offset for modals — moves card up when keyboard appears
   const keyboardOffset = useRef(new RNAnimated.Value(0)).current;
@@ -108,7 +89,7 @@ export default function ParadaDetailScreen() {
   // Compute distance when location and client coords available
   const userDistance = (() => {
     if (!location || !clientLat || !clientLng) return null;
-    const { haversineDistance } = require('@/services/geoCheckin');
+    // haversineDistance imported at top
     return Math.round(haversineDistance(location, { latitude: clientLat, longitude: clientLng }));
   })();
   const distanceColor = userDistance != null ? getGeofenceColor(userDistance) : '#94a3b8';
@@ -148,7 +129,7 @@ export default function ParadaDetailScreen() {
     const allAttended = allStops.length > 0 && allStops.every((s) => s.estado === 2 || s.estado === 3);
     if (allAttended) {
       // Calculate km from GPS coords of visited stops
-      const { haversineDistance: hd } = require('@/services/geoCheckin');
+      const hd = haversineDistance;
       const visited = allStops.filter((s) => s.latitudLlegada != null && s.longitudLlegada != null);
       let totalMeters = 0;
       for (let i = 1; i < visited.length; i++) {
@@ -266,7 +247,6 @@ export default function ParadaDetailScreen() {
           activeOpacity={0.7}
           onPress={() => {
             if (!location) return;
-            setGpsCoord({ latitude: location.latitude, longitude: location.longitude });
             setShowGpsModal(true);
           }}
         >
@@ -459,7 +439,7 @@ export default function ParadaDetailScreen() {
           <Button
             title="Nuevo Pedido"
             onPress={() => {
-              const store = require('@/stores').useOrderDraftStore.getState();
+              const store = useOrderDraftStore.getState();
               store.setCliente(stop.clienteId, client?.serverId ?? Number(stop.clienteId), client?.nombre || 'Cliente');
               store.setFromParada(detalleId);
               router.push(`/(tabs)/vender/crear/modo?fromParada=${detalleId}` as any);
@@ -595,130 +575,24 @@ export default function ParadaDetailScreen() {
       </Modal>
 
       {/* GPS Location Modal */}
-      <Modal
-        visible={showGpsModal}
-        transparent={false}
-        animationType="slide"
-        onRequestClose={() => { setShowGpsModal(false); setPlaceSearch(''); setPlaceResults([]); }}
-      >
-        <View style={styles.gpsModalContainer}>
-          {/* Header */}
-          <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
-            <Text style={styles.blueHeaderTitle}>Ubicacion del cliente</Text>
-          </View>
-
-          {/* Search bar */}
-          <View style={styles.gpsSearchBar}>
-            <TextInput
-              style={styles.gpsSearchInput}
-              placeholder="Buscar tienda, direccion..."
-              placeholderTextColor="#94a3b8"
-              value={placeSearch}
-              onChangeText={searchPlaces}
-              returnKeyType="search"
-            />
-            {placeSearch.length > 0 && (
-              <TouchableOpacity onPress={() => { setPlaceSearch(''); setPlaceResults([]); }} style={{ padding: 4 }}>
-                <Text style={{ color: '#94a3b8', fontSize: 16 }}>✕</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-
-          {/* Search results overlay */}
-          {placeResults.length > 0 && (
-            <View style={styles.gpsResultsList}>
-              {placeResults.map((place: any) => (
-                <TouchableOpacity
-                  key={place.place_id}
-                  style={styles.gpsResultItem}
-                  onPress={() => {
-                    const loc = place.geometry?.location;
-                    if (loc) {
-                      const coord = { latitude: loc.lat, longitude: loc.lng };
-                      setGpsCoord(coord);
-                      mapRef.current?.animateToRegion({ ...coord, latitudeDelta: 0.002, longitudeDelta: 0.002 }, 500);
-                    }
-                    setPlaceSearch(place.name);
-                    setPlaceResults([]);
-                  }}
-                >
-                  <MapPin size={14} color="#64748b" />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.gpsResultName} numberOfLines={1}>{place.name}</Text>
-                    <Text style={styles.gpsResultAddr} numberOfLines={1}>{place.formatted_address}</Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-
-          {/* Map */}
-          {gpsCoord && (
-            <MapView
-              ref={mapRef}
-              style={{ flex: 1 }}
-              initialRegion={{
-                latitude: gpsCoord.latitude,
-                longitude: gpsCoord.longitude,
-                latitudeDelta: 0.003,
-                longitudeDelta: 0.003,
-              }}
-              onPress={(e) => { setGpsCoord(e.nativeEvent.coordinate); setPlaceResults([]); }}
-              onPoiClick={(e) => {
-                const { coordinate, name } = e.nativeEvent;
-                setGpsCoord(coordinate);
-                setPlaceSearch(name ?? '');
-                setPlaceResults([]);
-                mapRef.current?.animateToRegion({ ...coordinate, latitudeDelta: 0.002, longitudeDelta: 0.002 }, 500);
-              }}
-              showsUserLocation
-              showsPointsOfInterest
-              showsBuildings
-              showsMyLocationButton
-            >
-              <Marker
-                coordinate={gpsCoord}
-                draggable
-                onDragEnd={(e) => setGpsCoord(e.nativeEvent.coordinate)}
-                title={client?.nombre ?? 'Cliente'}
-              >
-                <View style={styles.gpsCustomMarker}>
-                  <MapPin size={20} color="#ffffff" />
-                </View>
-              </Marker>
-            </MapView>
-          )}
-
-          {/* Actions */}
-          <View style={[styles.gpsActions, { paddingBottom: insets.bottom + 16 }]}>
-            <TouchableOpacity
-              style={styles.gpsConfirmBtn}
-              onPress={async () => {
-                if (!client || !gpsCoord) return;
-                try {
-                  await client.updateFields({ latitud: gpsCoord.latitude, longitud: gpsCoord.longitude });
-                  setShowGpsModal(false);
-                  setPlaceSearch(''); setPlaceResults([]);
-                  setShowError('Ubicacion de ' + (client.nombre ?? 'cliente') + ' guardada correctamente');
-                } catch {
-                  setShowError('No se pudo guardar la ubicacion');
-                }
-              }}
-              activeOpacity={0.8}
-            >
-              <MapPin size={18} color="#ffffff" />
-              <Text style={styles.gpsConfirmText}>Guardar ubicacion</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.gpsCancelBtn}
-              onPress={() => { setShowGpsModal(false); setPlaceSearch(''); setPlaceResults([]); }}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.gpsCancelText}>Cancelar</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      {location && (
+        <GpsMapModal
+          visible={showGpsModal}
+          initialCoord={{ latitude: location.latitude, longitude: location.longitude }}
+          clientName={client?.nombre}
+          onConfirm={async (coord) => {
+            if (!client) return;
+            try {
+              await client.updateFields({ latitud: coord.latitude, longitud: coord.longitude });
+              setShowGpsModal(false);
+              setShowError('Ubicacion de ' + (client.nombre ?? 'cliente') + ' guardada correctamente');
+            } catch {
+              setShowError('No se pudo guardar la ubicacion');
+            }
+          }}
+          onCancel={() => setShowGpsModal(false)}
+        />
+      )}
 
       {/* Error/Aviso Modal */}
       <ConfirmModal
@@ -752,40 +626,6 @@ const styles = StyleSheet.create({
   },
   gpsBannerText: { flex: 1, fontSize: 12, color: '#991b1b', fontWeight: '500' },
   gpsBannerAction: { fontSize: 12, fontWeight: '700', color: COLORS.primary },
-  gpsModalContainer: { flex: 1, backgroundColor: '#ffffff' },
-  gpsSearchBar: {
-    flexDirection: 'row', alignItems: 'center',
-    marginHorizontal: 16, marginVertical: 10,
-    paddingHorizontal: 12, height: 44, borderRadius: 12,
-    backgroundColor: '#f1f5f9', borderWidth: 1, borderColor: '#e2e8f0',
-  },
-  gpsSearchInput: { flex: 1, fontSize: 14, color: '#1e293b' },
-  gpsResultsList: {
-    marginHorizontal: 16, marginBottom: 4,
-    backgroundColor: '#ffffff', borderRadius: 12, borderWidth: 1, borderColor: '#e2e8f0',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 4,
-  },
-  gpsResultItem: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    paddingHorizontal: 16, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: '#f1f5f9',
-  },
-  gpsResultName: { fontSize: 14, fontWeight: '600', color: '#1e293b' },
-  gpsResultAddr: { fontSize: 12, color: '#64748b' },
-  gpsActions: { paddingHorizontal: 16, paddingTop: 12, gap: 8, backgroundColor: '#ffffff', borderTopWidth: 1, borderTopColor: '#e2e8f0' },
-  gpsConfirmBtn: {
-    height: 50, borderRadius: 14, backgroundColor: COLORS.button,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-  },
-  gpsConfirmText: { color: '#ffffff', fontSize: 16, fontWeight: '700' },
-  gpsCancelBtn: { height: 44, alignItems: 'center', justifyContent: 'center' },
-  gpsCancelText: { color: '#64748b', fontSize: 14, fontWeight: '600' },
-  gpsCustomMarker: {
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center',
-    borderWidth: 3, borderColor: '#ffffff',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 6,
-  },
   miniMapContainer: { marginHorizontal: 16, marginTop: 12, marginBottom: 8, borderRadius: 16, overflow: 'hidden', position: 'relative' },
   miniMap: { height: 160, borderRadius: 16 },
   distanceBadge: {

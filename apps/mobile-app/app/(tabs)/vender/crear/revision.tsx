@@ -5,6 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOrderDraftStore } from '@/stores';
 import { useAuthStore } from '@/stores';
 import { createPedidoOffline, createVentaDirectaOffline } from '@/db/actions';
+import { database } from '@/db/database';
+import RutaDetalle from '@/db/models/RutaDetalle';
 import { ProgressSteps } from '@/components/shared/ProgressSteps';
 import { Card, Button, ConfirmModal } from '@/components/ui';
 import { QuantityStepper } from '@/components/shared/QuantityStepper';
@@ -86,8 +88,8 @@ export default function CrearPedidoStep3() {
         const paradaId = useOrderDraftStore.getState().fromParadaId;
         if (paradaId) {
           try {
-            const { database } = require('@/db/database');
-            const stopRecord = await database.get('ruta_detalles').find(paradaId);
+            // database imported at top
+            const stopRecord = await database.get<RutaDetalle>('ruta_detalles').find(paradaId);
             if (stopRecord) await stopRecord.depart();
           } catch { /* ignore */ }
         }
@@ -123,8 +125,8 @@ export default function CrearPedidoStep3() {
         const paradaId = useOrderDraftStore.getState().fromParadaId;
         if (paradaId) {
           try {
-            const { database } = require('@/db/database');
-            const stopRecord = await database.get('ruta_detalles').find(paradaId);
+            // database imported at top
+            const stopRecord = await database.get<RutaDetalle>('ruta_detalles').find(paradaId);
             if (stopRecord) await stopRecord.depart();
           } catch { /* ignore */ }
         }
