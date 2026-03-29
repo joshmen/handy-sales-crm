@@ -105,6 +105,7 @@ public static class ServiceRegistrationExtensions
 
         // Push Notifications (HttpClient for Expo Push API)
         services.AddHttpClient<PushNotificationService>();
+        services.AddScoped<HandySales.Infrastructure.Notifications.Services.NotificationSettingsService>();
         services.AddScoped<OrderNotificationHelper>();
         services.AddScoped<StockNotificationService>();
 

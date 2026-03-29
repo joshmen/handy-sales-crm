@@ -50,6 +50,14 @@ public class CompanySetting : AuditableEntity
     [MaxLength(10)]
     public string Theme { get; set; } = "light";
 
+    /// <summary>
+    /// JSON config for which notification types are enabled at tenant level.
+    /// Keys match automation handler slugs and order event types.
+    /// Default: all enabled.
+    /// </summary>
+    [Column("notification_config", TypeName = "jsonb")]
+    public string? NotificationConfig { get; set; }
+
     // Navigation properties
     public Tenant Tenant { get; set; } = null!;
     public Company? Company { get; set; }

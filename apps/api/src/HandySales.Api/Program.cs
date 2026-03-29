@@ -218,6 +218,7 @@ app.MapMigrationEndpoints();
 app.MapTestEndpoints();
 app.MapHealthEndpoints();
 app.MapNotificationEndpoints();
+app.MapNotificationSettingsEndpoints();
 app.MapImpersonationEndpoints();
 app.MapTenantImpersonationHistoryEndpoints();
 app.MapTenantEndpoints();

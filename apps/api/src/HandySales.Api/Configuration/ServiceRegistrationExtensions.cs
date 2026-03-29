@@ -288,6 +288,7 @@ public static class ServiceRegistrationExtensions
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<IRealtimePushService, SignalRPushService>();
         services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<NotificationSettingsService>();
 
         // Cobranza
         services.AddScoped<ICobroRepository, CobroRepository>();

@@ -1,4 +1,5 @@
 using HandySales.Domain.Entities;
+using HandySales.Infrastructure.Notifications.Services;
 using HandySales.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,15 +13,18 @@ public class OrderNotificationHelper
 {
     private readonly HandySalesDbContext _db;
     private readonly PushNotificationService _push;
+    private readonly NotificationSettingsService _settings;
     private readonly ILogger<OrderNotificationHelper> _logger;
 
     public OrderNotificationHelper(
         HandySalesDbContext db,
         PushNotificationService push,
+        NotificationSettingsService settings,
         ILogger<OrderNotificationHelper> logger)
     {
         _db = db;
         _push = push;
+        _settings = settings;
         _logger = logger;
     }
 
@@ -36,6 +40,17 @@ public class OrderNotificationHelper
     {
         try
         {
+            // Check if notification type is enabled for this tenant
+            var notifType = newState switch
+            {
+                EstadoPedido.Confirmado => "order.confirmed",
+                EstadoPedido.EnRuta => "order.en_route",
+                EstadoPedido.Entregado => "order.delivered",
+                EstadoPedido.Cancelado => "order.cancelled",
+                _ => "order.confirmed",
+            };
+            if (!await _settings.IsEnabledAsync(tenantId, notifType)) return;
+
             // Load pedido info
             var pedido = await _db.Pedidos
                 .IgnoreQueryFilters()
