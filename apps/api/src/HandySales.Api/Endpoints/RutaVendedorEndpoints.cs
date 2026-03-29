@@ -72,8 +72,10 @@ public static class RutaVendedorEndpoints
         {
             var id = await servicio.CrearAsync(dto);
 
-            // Push notification to assigned vendedor (if enabled)
-            if (dto.UsuarioId > 0 && await notifSettings.IsEnabledAsync(tenantContext.TenantId, "route.published"))
+            // Push notification to assigned vendedor
+            var pushEnabled = true;
+            try { pushEnabled = await notifSettings.IsEnabledAsync(tenantContext.TenantId, "route.published"); } catch { /* default: send */ }
+            if (dto.UsuarioId > 0 && pushEnabled)
             {
                 var tenantId = tenantContext.TenantId;
                 var usuarioId = dto.UsuarioId;
