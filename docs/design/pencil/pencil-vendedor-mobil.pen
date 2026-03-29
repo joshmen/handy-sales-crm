@@ -6810,12 +6810,49 @@
           "children": [
             {
               "type": "frame",
-              "id": "nmFZs",
-              "name": "exBtn1",
+              "id": "eezp8",
+              "name": "exBtnRuta",
               "width": "fill_container",
               "height": 48,
               "fill": "#1565C0",
               "cornerRadius": 14,
+              "gap": 8,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "LBCOH",
+                  "width": 18,
+                  "height": 18,
+                  "iconFontName": "map-pin",
+                  "iconFontFamily": "lucide",
+                  "fill": "#ffffff"
+                },
+                {
+                  "type": "text",
+                  "id": "3rn07",
+                  "fill": "#ffffff",
+                  "content": "Volver a Ruta",
+                  "fontFamily": "DM Sans",
+                  "fontSize": 15,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "nmFZs",
+              "name": "exBtn1",
+              "width": "fill_container",
+              "height": 48,
+              "fill": "#ffffff",
+              "cornerRadius": 14,
+              "stroke": {
+                "align": "inside",
+                "thickness": 1,
+                "fill": "#e2e8f0"
+              },
               "gap": 8,
               "justifyContent": "center",
               "alignItems": "center",
@@ -6828,13 +6865,13 @@
                   "height": 18,
                   "iconFontName": "eye",
                   "iconFontFamily": "lucide",
-                  "fill": "$--white"
+                  "fill": "#475569"
                 },
                 {
                   "type": "text",
                   "id": "QnFSt",
                   "name": "exBtn1Txt",
-                  "fill": "$--white",
+                  "fill": "#475569",
                   "content": "Ver Pedido",
                   "fontFamily": "DM Sans",
                   "fontSize": 15,
@@ -6912,6 +6949,16 @@
                   "fontWeight": "normal"
                 }
               ]
+            },
+            {
+              "type": "text",
+              "id": "Eak9L",
+              "fill": "#94a3b8",
+              "content": "(Volver a Ruta aparece solo desde parada)",
+              "textAlign": "center",
+              "fontFamily": "DM Sans",
+              "fontSize": 10,
+              "fontWeight": "normal"
             }
           ]
         },
@@ -8980,7 +9027,7 @@
               "id": "osSpO",
               "name": "rtProgressLbl",
               "fill": "$--text-secondary",
-              "content": "4 de 6 completadas • 67%",
+              "content": "4 de 6 atendidas • 67%",
               "fontFamily": "DM Sans",
               "fontSize": 12,
               "fontWeight": "normal"
@@ -9008,7 +9055,7 @@
                       "id": "3Fkih",
                       "name": "rtPill1T",
                       "fill": "$--green",
-                      "content": "4 Hechas",
+                      "content": "4 Atendidas",
                       "fontFamily": "DM Sans",
                       "fontSize": 11,
                       "fontWeight": "600"
@@ -10478,58 +10525,140 @@
               "id": "3fAjz",
               "name": "pdActTitle",
               "fill": "$--foreground",
-              "content": "Acciones",
+              "content": "Acciones rapidas",
               "fontFamily": "DM Sans",
               "fontSize": 16,
               "fontWeight": "700"
             },
             {
               "type": "frame",
-              "id": "Ntllr",
-              "name": "pdActRow",
+              "id": "jAXJy",
+              "name": "pdNewActions",
               "width": "fill_container",
+              "layout": "vertical",
               "gap": 10,
               "children": [
                 {
                   "type": "frame",
-                  "id": "uNX8u",
-                  "name": "pdActNav",
+                  "id": "duh7K",
+                  "name": "pdActRow1",
                   "width": "fill_container",
-                  "height": 44,
-                  "fill": "#1565C0",
-                  "cornerRadius": 12,
-                  "gap": 6,
-                  "justifyContent": "center",
-                  "alignItems": "center",
+                  "gap": 10,
                   "children": [
                     {
-                      "type": "icon_font",
-                      "id": "XC147",
-                      "name": "pdActNavIc",
-                      "width": 16,
-                      "height": 16,
-                      "iconFontName": "navigation",
-                      "iconFontFamily": "lucide",
-                      "fill": "$--white"
+                      "type": "frame",
+                      "id": "piqaR",
+                      "name": "pdNavBtn",
+                      "width": "fill_container",
+                      "height": 44,
+                      "fill": "#f1f5f9",
+                      "cornerRadius": 12,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "#e2e8f0"
+                      },
+                      "gap": 6,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "Etz9j",
+                          "width": 16,
+                          "height": 16,
+                          "iconFontName": "navigation",
+                          "iconFontFamily": "lucide",
+                          "fill": "#64748b"
+                        },
+                        {
+                          "type": "text",
+                          "id": "MlcyO",
+                          "fill": "#64748b",
+                          "content": "Navegar",
+                          "fontFamily": "DM Sans",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
                     },
                     {
-                      "type": "text",
-                      "id": "mlLjN",
-                      "name": "pdActNavTxt",
-                      "fill": "$--white",
-                      "content": "Navegar",
-                      "fontFamily": "DM Sans",
-                      "fontSize": 13,
-                      "fontWeight": "600"
+                      "type": "frame",
+                      "id": "q4VeC",
+                      "name": "pdCallBtn",
+                      "width": "fill_container",
+                      "height": 44,
+                      "fill": "#f1f5f9",
+                      "cornerRadius": 12,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "#e2e8f0"
+                      },
+                      "gap": 6,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "I9ky1",
+                          "width": 16,
+                          "height": 16,
+                          "iconFontName": "phone",
+                          "iconFontFamily": "lucide",
+                          "fill": "#64748b"
+                        },
+                        {
+                          "type": "text",
+                          "id": "rzZ70",
+                          "fill": "#64748b",
+                          "content": "Llamar",
+                          "fontFamily": "DM Sans",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
                     }
                   ]
                 },
                 {
                   "type": "frame",
-                  "id": "0pDFA",
-                  "name": "pdActCall",
+                  "id": "Ck7cO",
+                  "name": "pdNuevoPedido",
                   "width": "fill_container",
-                  "height": 44,
+                  "height": 48,
+                  "fill": "#1565C0",
+                  "cornerRadius": 12,
+                  "gap": 8,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "z77Gu",
+                      "width": 18,
+                      "height": 18,
+                      "iconFontName": "shopping-bag",
+                      "iconFontFamily": "lucide",
+                      "fill": "#ffffff"
+                    },
+                    {
+                      "type": "text",
+                      "id": "Eigin",
+                      "fill": "#ffffff",
+                      "content": "Nuevo Pedido",
+                      "fontFamily": "DM Sans",
+                      "fontSize": 15,
+                      "fontWeight": "700"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "qVtv5",
+                  "name": "pdRegCobro",
+                  "width": "fill_container",
+                  "height": 48,
                   "fill": "#ffffff",
                   "cornerRadius": 12,
                   "stroke": {
@@ -10537,76 +10666,66 @@
                     "thickness": 1,
                     "fill": "#e2e8f0"
                   },
-                  "gap": 6,
+                  "gap": 8,
                   "justifyContent": "center",
                   "alignItems": "center",
                   "children": [
                     {
                       "type": "icon_font",
-                      "id": "arxmI",
-                      "name": "pdActCallIc",
-                      "width": 16,
-                      "height": 16,
-                      "iconFontName": "phone",
+                      "id": "pbwR5",
+                      "width": 18,
+                      "height": 18,
+                      "iconFontName": "credit-card",
                       "iconFontFamily": "lucide",
-                      "fill": "#0f172a"
+                      "fill": "#475569"
                     },
                     {
                       "type": "text",
-                      "id": "aqzjA",
-                      "name": "pdActCallTxt",
-                      "fill": "#0f172a",
-                      "content": "Llamar",
+                      "id": "MUx8l",
+                      "fill": "#475569",
+                      "content": "Registrar Cobro",
                       "fontFamily": "DM Sans",
-                      "fontSize": 13,
+                      "fontSize": 15,
                       "fontWeight": "600"
                     }
                   ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "frame",
-          "id": "WqSID",
-          "x": 0,
-          "y": 700,
-          "name": "pdStartBtn",
-          "width": 393,
-          "padding": 20,
-          "children": [
-            {
-              "type": "frame",
-              "id": "oeR9z",
-              "name": "pdStart",
-              "width": "fill_container",
-              "height": 52,
-              "fill": "#1565C0",
-              "cornerRadius": 14,
-              "gap": 8,
-              "justifyContent": "center",
-              "alignItems": "center",
-              "children": [
-                {
-                  "type": "icon_font",
-                  "id": "BnbRk",
-                  "name": "pdStartIc",
-                  "width": 18,
-                  "height": 18,
-                  "iconFontName": "map-pin",
-                  "iconFontFamily": "lucide",
-                  "fill": "$--white"
                 },
                 {
-                  "type": "text",
-                  "id": "XCy4w",
-                  "name": "pdStartTxt",
-                  "fill": "$--white",
-                  "content": "Iniciar Visita",
-                  "fontFamily": "DM Sans",
-                  "fontSize": 16,
-                  "fontWeight": "700"
+                  "type": "frame",
+                  "id": "6cAcH",
+                  "name": "pdNoVisito",
+                  "width": "fill_container",
+                  "height": 48,
+                  "fill": "#ffffff",
+                  "cornerRadius": 12,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "#fecaca"
+                  },
+                  "gap": 8,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "ZIIb3",
+                      "width": 16,
+                      "height": 16,
+                      "iconFontName": "circle-alert",
+                      "iconFontFamily": "lucide",
+                      "fill": "#ef4444"
+                    },
+                    {
+                      "type": "text",
+                      "id": "sH7Hp",
+                      "fill": "#ef4444",
+                      "content": "No se visito",
+                      "fontFamily": "DM Sans",
+                      "fontSize": 15,
+                      "fontWeight": "600"
+                    }
+                  ]
                 }
               ]
             }
@@ -10830,6 +10949,57 @@
                   "fontWeight": "500"
                 }
               ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "RDGH5",
+          "x": 20,
+          "y": 240,
+          "name": "pdGpsBanner",
+          "width": 353,
+          "height": 40,
+          "fill": "#fef2f2",
+          "cornerRadius": 10,
+          "stroke": {
+            "align": "inside",
+            "thickness": 1,
+            "fill": "#fecaca"
+          },
+          "gap": 8,
+          "padding": [
+            10,
+            14
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "icon_font",
+              "id": "uxKVB",
+              "width": 16,
+              "height": 16,
+              "iconFontName": "map-pin",
+              "iconFontFamily": "lucide",
+              "fill": "#ef4444"
+            },
+            {
+              "type": "text",
+              "id": "SpzEB",
+              "fill": "#991b1b",
+              "content": "Sin ubicacion GPS",
+              "fontFamily": "DM Sans",
+              "fontSize": 12,
+              "fontWeight": "500"
+            },
+            {
+              "type": "text",
+              "id": "PtPbL",
+              "fill": "#4338CA",
+              "content": "Agregar",
+              "fontFamily": "DM Sans",
+              "fontSize": 12,
+              "fontWeight": "700"
             }
           ]
         }
@@ -11897,6 +12067,14 @@
           ]
         }
       ]
+    },
+    {
+      "type": "prompt",
+      "id": "JY4fL",
+      "x": 2431.700291713143,
+      "y": 1938.016139306693,
+      "width": 250,
+      "height": 219
     }
   ],
   "variables": {
