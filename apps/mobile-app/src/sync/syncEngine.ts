@@ -41,13 +41,7 @@ interface SyncOptions {
 }
 
 export async function performSync(options?: SyncOptions): Promise<void> {
-  if (syncCursors.isSyncInProgress()) {
-    console.log('[Sync] Already in progress, skipping');
-    return;
-  }
-
   options?.onStart?.();
-  syncCursors.setSyncInProgress(true);
 
   let pullCount = 0;
   const pendingIdMappings: any[] = [];
@@ -70,28 +64,18 @@ export async function performSync(options?: SyncOptions): Promise<void> {
           ? new Date(lastPulledAt).toISOString()
           : null;
 
-        console.log('[Sync] Pulling from server... lastSync:', lastSync);
+        if (__DEV__) console.log('[Sync] Pull lastSync:', lastSync);
         const response = await api.post('/api/mobile/sync/pull', {
           lastSyncTimestamp: lastSync,
           entityTypes: null,
         });
 
-        // The /pull endpoint returns: { success, data: { clientes, productos, ... }, summary, serverTimestamp }
         const body = response.data as any;
         const rawServerChanges = body.data ?? body;
         const serverTimestamp = body.serverTimestamp ?? rawServerChanges.serverTimestamp;
 
-        console.log('[Sync] Raw rutas from server:', rawServerChanges.rutas?.length ?? 0);
-        if (rawServerChanges.rutas?.length) {
-          rawServerChanges.rutas.forEach((r: any) =>
-            console.log(`[Sync]   ruta id=${r.id} usuarioId=${r.usuarioId} nombre=${r.nombre} estado=${r.estado} fecha=${r.fecha}`)
-          );
-        }
-
         // Security: discard any records that belong to a different tenant.
         const currentTenantId = Number(useAuthStore.getState().user?.tenantId ?? 0);
-        const currentUserId = Number(useAuthStore.getState().user?.id ?? 0);
-        console.log('[Sync] Current user:', currentUserId, 'tenant:', currentTenantId);
 
         const serverChanges = currentTenantId
           ? {
@@ -105,8 +89,6 @@ export async function performSync(options?: SyncOptions): Promise<void> {
             }
           : rawServerChanges;
 
-        console.log('[Sync] After filter - rutas:', serverChanges.rutas?.length ?? 0);
-
         // Count pulled records
         for (const entityData of Object.values(serverChanges)) {
           if (Array.isArray(entityData)) pullCount += entityData.length;
@@ -115,7 +97,7 @@ export async function performSync(options?: SyncOptions): Promise<void> {
         const timestamp = new Date(serverTimestamp).getTime();
         const changes = mapPullToWatermelon(serverChanges, lastPulledAt ?? null);
 
-        console.log('[Sync] Mapped rutas - created:', changes.rutas?.created?.length ?? 0, 'updated:', changes.rutas?.updated?.length ?? 0);
+        if (__DEV__) console.log('[Sync] Mapped changes for', Object.keys(changes).length, 'tables');
 
         return { changes, timestamp };
       },
@@ -133,7 +115,7 @@ export async function performSync(options?: SyncOptions): Promise<void> {
           .filter(([, v]) => Array.isArray(v) && (v as any[]).length > 0)
           .map(([k, v]) => `${k}:${(v as any[]).length}`)
           .join(', ');
-        if (summary) console.log('[Sync] Pushing:', summary);
+        if (__DEV__ && summary) console.log('[Sync] Pushing:', summary);
 
         // Only push if there are actual changes
         const hasChanges = pushCount > 0;
@@ -153,27 +135,28 @@ export async function performSync(options?: SyncOptions): Promise<void> {
       },
 
       sendCreatedAsUpdated: true,
-      _unsafeBatchPerCollection: true,
     });
 
-    // Phase 2b: Apply server ID mappings for records created during push
+    // Phase 2b: Apply server ID mappings for records created during push (batched)
     if (pendingIdMappings.length) {
       await database.write(async () => {
+        const updates: any[] = [];
         for (const m of pendingIdMappings) {
           try {
             const record = await database.get(m.entityType).find(m.localId);
-            await (record as any).update((r: any) => { r.server_id = m.serverId; });
-          } catch { /* record not found — ignore */ }
+            updates.push(record.prepareUpdate((r: any) => { r.server_id = m.serverId; }));
+          } catch { /* record not found */ }
         }
+        if (updates.length) await database.batch(...updates);
       });
-      console.log('[Sync] Applied', pendingIdMappings.length, 'ID mappings');
+      if (__DEV__) console.log('[Sync] Applied', pendingIdMappings.length, 'ID mappings');
     }
 
     // Phase 3: Upload pending attachments (deferred, non-fatal)
     try {
       const uploaded = await uploadPendingAttachments();
       if (uploaded > 0) {
-        console.log(`[Sync] Uploaded ${uploaded} attachments`);
+        if (__DEV__) console.log(`[Sync] Uploaded ${uploaded} attachments`);
         await cleanUploadedFiles();
       }
     } catch (attachmentError) {
@@ -197,6 +180,6 @@ export async function performSync(options?: SyncOptions): Promise<void> {
     options?.onError?.(err);
     throw err;
   } finally {
-    syncCursors.setSyncInProgress(false);
+    // sync state managed by syncStore, not here
   }
 }

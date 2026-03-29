@@ -1,10 +1,12 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { View, Text, ScrollView, RefreshControl, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/stores';
-import { useOfflineTodayVisits, useOfflineRutaHoy, useOfflineRutaDetalles, useOfflineOrders, useOfflineCobros } from '@/hooks';
+import { useOfflineTodayVisits, useOfflineRutaHoy, useOfflineOrders, useOfflineCobros } from '@/hooks';
+import { database } from '@/db/database';
+import { Q } from '@nozbe/watermelondb';
 import { Card, LoadingSpinner } from '@/components/ui';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { formatCurrency } from '@/utils/format';
@@ -19,69 +21,37 @@ export function VendedorDashboard() {
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
 
-  // Direct query state — bypasses WDB observable issues in Expo Go LokiJS
+  // Route stats — single source of truth via direct query on focus
   const [routeStats, setRouteStats] = useState({ total: 0, atendidas: 0, routeName: '', routeEstado: 0 });
 
-  const fetchRouteStats = useCallback(async () => {
-    try {
-      const { database } = require('@/db/database');
-      const { Q } = require('@nozbe/watermelondb');
-      const userId = Number(user?.id ?? 0);
-      if (!userId) return;
-
-      const now = new Date();
-      const localMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-      const windowStart = localMidnight - 12 * 3600000;
-      const windowEnd = localMidnight + 36 * 3600000;
-
-      const rutas = await database.get('rutas').query(
-        Q.where('usuario_id', userId),
-        Q.where('activo', true),
-        Q.where('fecha', Q.gte(windowStart)),
-        Q.where('fecha', Q.lt(windowEnd))
-      ).fetch();
-
-      const route = rutas[0];
-      if (!route) {
-        setRouteStats({ total: 0, atendidas: 0, routeName: '', routeEstado: 0 });
-        return;
-      }
-
-      const detalles = await database.get('ruta_detalles').query(
-        Q.where('ruta_id', route.id),
-        Q.sortBy('orden', Q.asc)
-      ).fetch();
-
+  useFocusEffect(useCallback(() => {
+    const userId = Number(user?.id ?? 0);
+    if (!userId) return;
+    const now = new Date();
+    const localMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    database.get('rutas').query(
+      Q.where('usuario_id', userId), Q.where('activo', true),
+      Q.where('fecha', Q.gte(localMidnight - 12 * 3600000)),
+      Q.where('fecha', Q.lt(localMidnight + 36 * 3600000))
+    ).fetch().then(async (rutas: any[]) => {
+      const r = rutas[0];
+      if (!r) { setRouteStats({ total: 0, atendidas: 0, routeName: '', routeEstado: 0 }); return; }
+      const detalles = await database.get('ruta_detalles').query(Q.where('ruta_id', r.id)).fetch();
       setRouteStats({
         total: detalles.length,
         atendidas: detalles.filter((d: any) => d.estado === 2 || d.estado === 3).length,
-        routeName: (route as any).nombre || '',
-        routeEstado: (route as any).estado ?? 0,
+        routeName: r.nombre || '',
+        routeEstado: r.estado ?? 0,
       });
-    } catch { /* ignore */ }
-  }, [user?.id]);
-
-  // Refresh on tab focus
-  useFocusEffect(useCallback(() => { fetchRouteStats(); }, [fetchRouteStats]));
+    }).catch(() => {});
+  }, [user?.id]));
 
   // Local WDB data (for other KPIs)
   const { data: todayVisits } = useOfflineTodayVisits();
   const { data: rutas, isLoading: loadingRuta } = useOfflineRutaHoy();
   const route = rutas?.[0] ?? null;
-  const { data: detalles } = useOfflineRutaDetalles(route?.id ?? '');
   const { data: pedidos } = useOfflineOrders();
   const { data: cobros } = useOfflineCobros();
-
-  // Also update stats when detalles observable changes (works within same tab)
-  useEffect(() => {
-    if (detalles?.length) {
-      setRouteStats(prev => ({
-        ...prev,
-        total: detalles.length,
-        atendidas: detalles.filter((d) => d.estado === 2 || d.estado === 3).length,
-      }));
-    }
-  }, [detalles]);
 
   // Compute KPIs
   const visitasCompletadas = todayVisits?.filter((v) => v.checkOutAt != null).length ?? 0;
@@ -108,7 +78,6 @@ export function VendedorDashboard() {
   const onRefresh = async () => {
     setRefreshing(true);
     await performSync();
-    await fetchRouteStats();
     setRefreshing(false);
   };
 

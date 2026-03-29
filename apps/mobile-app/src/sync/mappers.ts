@@ -445,7 +445,6 @@ function rawToRutaDto(raw: DirtyRaw, operation: number): any {
 }
 
 function rawToRutaDetalleDto(raw: DirtyRaw, operation: number): any {
-  console.log('[Sync] rawToRutaDetalleDto — id:', raw.id, 'server_id:', raw.server_id, 'estado:', raw.estado);
   return {
     id: raw.server_id ?? 0,
     localId: raw.id,

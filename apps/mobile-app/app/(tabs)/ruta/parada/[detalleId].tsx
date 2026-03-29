@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { View, Text, ScrollView, Linking, StyleSheet, TouchableOpacity, Modal, TextInput, Dimensions, Keyboard, Animated as RNAnimated } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -86,13 +86,12 @@ export default function ParadaDetailScreen() {
   const clientLat = client?.latitud ?? null;
   const clientLng = client?.longitud ?? null;
 
-  // Compute distance when location and client coords available
-  const userDistance = (() => {
+  // Compute distance when location and client coords available (memoized)
+  const userDistance = useMemo(() => {
     if (!location || !clientLat || !clientLng) return null;
-    // haversineDistance imported at top
     return Math.round(haversineDistance(location, { latitude: clientLat, longitude: clientLng }));
-  })();
-  const distanceColor = userDistance != null ? getGeofenceColor(userDistance) : '#94a3b8';
+  }, [location?.latitude, location?.longitude, clientLat, clientLng]);
+  const distanceColor = useMemo(() => userDistance != null ? getGeofenceColor(userDistance) : '#94a3b8', [userDistance]);
 
   const handleNavegar = useCallback(() => {
     if (clientLat && clientLng) {
