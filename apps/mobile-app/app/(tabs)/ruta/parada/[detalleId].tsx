@@ -100,13 +100,7 @@ export default function ParadaDetailScreen() {
     }
   }, [clientLat, clientLng]);
 
-  // Auto-start route if still Planificada (offline-first, sync will push later)
-  useEffect(() => {
-    if (!route) return;
-    database.get<Ruta>('rutas').find(route.id).then((freshRoute) => {
-      if (freshRoute.estado === 0) freshRoute.startRoute().catch(() => {});
-    }).catch(() => {});
-  }, [route?.id]);
+  // Route start is now explicit — vendor accepts from ruta/index.tsx banner
 
   // Auto GPS check-in on mount for Pendiente stops
   useEffect(() => {

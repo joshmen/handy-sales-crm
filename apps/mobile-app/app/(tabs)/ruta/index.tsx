@@ -5,7 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineRutaHoy, useOfflineRutaDetalles, useClientNameMap } from '@/hooks';
 import { LoadingSpinner, EmptyState } from '@/components/ui';
 import { COLORS, STATUS_PALETTES } from '@/theme/colors';
-import { ChevronLeft, Navigation, Map } from 'lucide-react-native';
+import { ChevronLeft, Navigation, Map, CheckCircle } from 'lucide-react-native';
+import Ruta from '@/db/models/Ruta';
 import { formatTime } from '@/utils/format';
 import { performSync } from '@/sync/syncEngine';
 import { database } from '@/db/database';
@@ -36,6 +37,7 @@ export default function RutaScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
+  const [accepting, setAccepting] = useState(false);
 
   const { data: rutas, isLoading } = useOfflineRutaHoy();
   const route = rutas?.[0] ?? null;
@@ -114,6 +116,34 @@ export default function RutaScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.button} colors={[COLORS.button]} />}
         showsVerticalScrollIndicator={false}
       >
+        {/* Accept Route Banner — shown when route is Planificada */}
+        {route.estado === 0 && (
+          <Animated.View entering={FadeInDown.duration(400)}>
+            <View style={styles.acceptBanner}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.acceptTitle}>Nueva ruta asignada</Text>
+                <Text style={styles.acceptSub}>Acepta la ruta para comenzar tu jornada</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.acceptBtn}
+                disabled={accepting}
+                activeOpacity={0.8}
+                onPress={async () => {
+                  setAccepting(true);
+                  try {
+                    const freshRoute = await database.get<Ruta>('rutas').find(route.id);
+                    await freshRoute.startRoute();
+                  } catch { /* ignore */ }
+                  setAccepting(false);
+                }}
+              >
+                <CheckCircle size={18} color="#ffffff" />
+                <Text style={styles.acceptBtnText}>{accepting ? 'Aceptando...' : 'Aceptar'}</Text>
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+        )}
+
         {/* Progress Section — white bg */}
         <Animated.View entering={FadeInDown.duration(400).delay(100)}>
           <View style={styles.progressSection}>
@@ -210,6 +240,22 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 18, fontWeight: '700', color: COLORS.headerText },
 
   scrollContent: { paddingBottom: 32 },
+
+  // Accept banner
+  acceptBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    marginHorizontal: 16, marginTop: 12, marginBottom: 4,
+    padding: 16, borderRadius: 14,
+    backgroundColor: COLORS.headerBg,
+  },
+  acceptTitle: { fontSize: 15, fontWeight: '700', color: '#ffffff' },
+  acceptSub: { fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
+  acceptBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  acceptBtnText: { fontSize: 14, fontWeight: '700', color: '#ffffff' },
 
   // Progress section — white background
   progressSection: {
