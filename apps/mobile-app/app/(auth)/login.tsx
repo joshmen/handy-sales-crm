@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  ImageBackground,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useLogin } from '@/hooks';
@@ -49,7 +50,13 @@ export default function LoginScreen() {
   };
 
   return (
-    <ScreenWrapper bg="#ffffff" padTop>
+    <ImageBackground
+      source={require('@/../assets/images/onboarding/login-bg.png')}
+      style={{ flex: 1 }}
+      resizeMode="cover"
+      blurRadius={1}
+    >
+      <View style={styles.bgOverlay} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
@@ -59,22 +66,19 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-        {/* Blue accent top */}
-        <View style={styles.accentBar} />
 
-        {/* Logo Section */}
-        <View style={styles.logoSection}>
-          <View style={styles.logoContainer}>
-            <HandyLogo size={56} />
+        {/* Form Card (Pencil design: semi-transparent card over blurred bg) */}
+        <View style={styles.formCard}>
+          {/* Logo */}
+          <View style={styles.logoSection}>
+            <View style={styles.logoContainer}>
+              <HandyLogo size={56} />
+            </View>
+            <Text style={styles.title}>Handy Suites®</Text>
+            <Text style={styles.subtitle}>
+              Gestiona tus ventas desde cualquier lugar
+            </Text>
           </View>
-          <Text style={styles.title}>Handy Suites®</Text>
-          <Text style={styles.subtitle}>
-            Gestiona tus ventas desde cualquier lugar
-          </Text>
-        </View>
-
-        {/* Form Section */}
-        <View style={styles.formSection}>
           <Text style={styles.formTitle}>Iniciar Sesión</Text>
 
           <Input
@@ -145,7 +149,7 @@ export default function LoginScreen() {
         </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </ScreenWrapper>
+    </ImageBackground>
   );
 }
 
@@ -156,14 +160,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingBottom: 32,
   },
-  accentBar: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 4,
-    backgroundColor: COLORS.headerBg,
-    borderRadius: 2,
+  bgOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#00000010',
   },
   logoSection: {
     alignItems: 'center',
@@ -195,8 +194,16 @@ const styles = StyleSheet.create({
     marginTop: 6,
     textAlign: 'center',
   },
-  formSection: {
+  formCard: {
+    backgroundColor: '#fffffffa',
+    borderRadius: 20,
+    padding: 24,
     marginBottom: 32,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 30,
+    elevation: 8,
   },
   formTitle: {
     fontSize: 20,

@@ -24,12 +24,17 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 // Slide 3 is full dark with gradient overlay + bullet points
 const IMAGE_HEIGHT = SCREEN_HEIGHT * 0.66;
 
+// Pencil design images — exported from pencil-shared-mobil.pen
+const SLIDE1_IMAGE = require('@/../assets/images/onboarding/slide1-hero.png');
+const SLIDE2_IMAGE = require('@/../assets/images/onboarding/slide2-hero.png');
+const SLIDE3_IMAGE = require('@/../assets/images/onboarding/slide3-bg.png');
+
 interface SlideData {
   id: string;
   title: string;
   subtitle: string;
   variant: 'light' | 'dark';
-  image: string;
+  image: any;
   bullets?: string[];
 }
 
@@ -40,7 +45,7 @@ const SLIDES: SlideData[] = [
     subtitle:
       'Levanta pedidos desde tu teléfono, consulta productos, precios y stock en tiempo real.',
     variant: 'light',
-    image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&q=80',
+    image: SLIDE1_IMAGE,
   },
   {
     id: '2',
@@ -48,7 +53,7 @@ const SLIDES: SlideData[] = [
     subtitle:
       'Registra cobros, da seguimiento a saldos pendientes y reduce tu cartera vencida.',
     variant: 'light',
-    image: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=800&q=80',
+    image: SLIDE2_IMAGE,
   },
   {
     id: '3',
@@ -56,7 +61,7 @@ const SLIDES: SlideData[] = [
     subtitle:
       'Ruta optimizada, visitas con check-in, reportes de rendimiento y sincronización offline.',
     variant: 'dark',
-    image: 'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=800&q=80',
+    image: SLIDE3_IMAGE,
     bullets: [
       'Funciona sin internet',
       'Reduce cartera vencida hasta 40%',
@@ -130,7 +135,7 @@ export default function OnboardingScreen() {
         <View style={[styles.slideWrap, { width: SCREEN_WIDTH }]}>
           {/* Dark background with image + gradient */}
           <View style={styles.darkBg}>
-            <Image source={{ uri: item.image }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            <Image source={item.image} style={StyleSheet.absoluteFill} resizeMode="cover" />
             <LinearGradient
               colors={['#0f172a00', '#0f172a40', '#0f172abb', '#0f172af0', '#0f172a']}
               locations={[0, 0.3, 0.55, 0.75, 1]}
@@ -174,7 +179,7 @@ export default function OnboardingScreen() {
       <View style={[styles.slideWrap, { width: SCREEN_WIDTH }]}>
         {/* Photo area */}
         <View style={styles.imageArea}>
-          <Image source={{ uri: item.image }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+          <Image source={item.image} style={StyleSheet.absoluteFill} resizeMode="cover" />
           <View style={styles.imageOverlay} />
 
           {/* Skip chip overlaying the image */}
