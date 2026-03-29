@@ -6,7 +6,7 @@ import { useClientOnly } from '@/hooks/useClientOnly';
 import { useCompany } from '@/contexts/CompanyContext';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
-import { Palette, Database, Building, Building2, Loader2 } from 'lucide-react';
+import { Palette, Database, Building, Building2, Bell, Loader2 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 
 // Import tab components (admin-only settings)
@@ -14,6 +14,7 @@ import { CompanyTab } from './components/CompanyTab';
 import { PerfilEmpresaTab } from './components/PerfilEmpresaTab';
 import { AppearanceTab } from './components/AppearanceTab';
 import { SystemTab } from './components/SystemTab';
+import { NotificationsTab } from './components/NotificationsTab';
 
 function SettingsPageContent() {
   const { data: session } = useSession();
@@ -95,22 +96,26 @@ function SettingsPageContent() {
         }}
         className="space-y-6"
       >
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="perfil-empresa" className="flex items-center gap-2">
             <Building2 className="h-4 w-4" />
-            Perfil Empresa
+            <span className="hidden sm:inline">Perfil</span>
           </TabsTrigger>
           <TabsTrigger value="company" className="flex items-center gap-2">
             <Building className="h-4 w-4" />
-            Marca
+            <span className="hidden sm:inline">Marca</span>
           </TabsTrigger>
           <TabsTrigger value="appearance" className="flex items-center gap-2">
             <Palette className="h-4 w-4" />
-            Apariencia
+            <span className="hidden sm:inline">Apariencia</span>
+          </TabsTrigger>
+          <TabsTrigger value="notifications" className="flex items-center gap-2">
+            <Bell className="h-4 w-4" />
+            <span className="hidden sm:inline">Notificaciones</span>
           </TabsTrigger>
           <TabsTrigger value="system" className="flex items-center gap-2">
             <Database className="h-4 w-4" />
-            Sistema
+            <span className="hidden sm:inline">Sistema</span>
           </TabsTrigger>
         </TabsList>
 
@@ -139,6 +144,16 @@ function SettingsPageContent() {
         {/* Appearance Tab */}
         <TabsContent value="appearance" className="space-y-6">
           <AppearanceTab />
+        </TabsContent>
+
+        {/* Notifications Tab */}
+        <TabsContent value="notifications" className="space-y-6">
+          <NotificationsTab
+            notifications={{ email: true, push: true, sms: false, desktop: true }}
+            setNotifications={() => {}}
+            isSuperAdmin={isSuperAdmin}
+            isAdmin={isAdmin}
+          />
         </TabsContent>
 
         {/* System Tab */}
