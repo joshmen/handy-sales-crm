@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TextInput, Alert, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { useState, useEffect, useRef } from 'react';
+import { View, Text, ScrollView, TextInput, Alert, StyleSheet, TouchableOpacity, ActivityIndicator, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Location from 'expo-location';
+import MapView, { Marker } from 'react-native-maps';
 import { clientesApi } from '@/api';
 import { useZonas, useCategoriasCliente } from '@/hooks';
 import { Save, ChevronLeft, MapPin } from 'lucide-react-native';
@@ -28,6 +29,28 @@ export default function CrearClienteScreen() {
   // GPS auto-capture
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationStatus, setLocationStatus] = useState<'loading' | 'success' | 'denied' | 'error'>('loading');
+  const [showMapModal, setShowMapModal] = useState(false);
+  const [mapCoord, setMapCoord] = useState<{ latitude: number; longitude: number } | null>(null);
+  const mapRef = useRef<MapView | null>(null);
+  const [placeSearch, setPlaceSearch] = useState('');
+  const [placeResults, setPlaceResults] = useState<any[]>([]);
+  const placeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const searchPlaces = (query: string) => {
+    setPlaceSearch(query);
+    if (placeTimer.current) clearTimeout(placeTimer.current);
+    if (query.length < 3) { setPlaceResults([]); return; }
+    placeTimer.current = setTimeout(async () => {
+      try {
+        const key = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+        const loc = mapCoord ? `${mapCoord.latitude},${mapCoord.longitude}` : '';
+        const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&location=${loc}&radius=5000&key=${key}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        setPlaceResults(data.results?.slice(0, 5) ?? []);
+      } catch { setPlaceResults([]); }
+    }, 500);
+  };
 
   useEffect(() => {
     (async () => {
@@ -201,26 +224,30 @@ export default function CrearClienteScreen() {
           />
         </View>
 
-        {/* GPS Status Indicator */}
-        <View style={styles.gpsRow}>
-          <MapPin size={14} color={
-            locationStatus === 'success' ? '#16a34a' :
-            locationStatus === 'loading' ? COLORS.textTertiary :
-            '#94a3b8'
-          } />
-          {locationStatus === 'loading' && (
+        {/* GPS Location Button */}
+        <TouchableOpacity
+          style={[styles.gpsButton, location && styles.gpsButtonSuccess]}
+          onPress={() => {
+            const coord = location
+              ? { latitude: location.lat, longitude: location.lng }
+              : { latitude: 25.79, longitude: -108.99 }; // Default Los Mochis
+            setMapCoord(coord);
+            setShowMapModal(true);
+          }}
+          activeOpacity={0.7}
+        >
+          <MapPin size={16} color={location ? '#16a34a' : '#64748b'} />
+          {locationStatus === 'loading' ? (
             <>
-              <ActivityIndicator size="small" color={COLORS.textTertiary} style={styles.gpsSpinner} />
-              <Text style={styles.gpsTextLoading}>Obteniendo ubicación...</Text>
+              <ActivityIndicator size="small" color={COLORS.textTertiary} style={{ marginRight: 4 }} />
+              <Text style={styles.gpsButtonText}>Obteniendo ubicacion...</Text>
             </>
+          ) : location ? (
+            <Text style={[styles.gpsButtonText, { color: '#16a34a' }]}>Ubicacion capturada — toca para ajustar</Text>
+          ) : (
+            <Text style={styles.gpsButtonText}>Agregar ubicacion en mapa</Text>
           )}
-          {locationStatus === 'success' && (
-            <Text style={styles.gpsTextSuccess}>Ubicación capturada</Text>
-          )}
-          {(locationStatus === 'denied' || locationStatus === 'error') && (
-            <Text style={styles.gpsTextDenied}>Sin ubicación</Text>
-          )}
-        </View>
+        </TouchableOpacity>
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom || 16 }]}>
@@ -236,6 +263,119 @@ export default function CrearClienteScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+
+      {/* Map Modal */}
+      <Modal
+        visible={showMapModal}
+        transparent={false}
+        animationType="slide"
+        onRequestClose={() => { setShowMapModal(false); setPlaceSearch(''); setPlaceResults([]); }}
+      >
+        <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
+          <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+            <View style={styles.headerBack} />
+            <Text style={styles.headerTitle}>Ubicacion del cliente</Text>
+            <View style={styles.headerBack} />
+          </View>
+
+          {/* Search */}
+          <View style={styles.mapSearchBar}>
+            <TextInput
+              style={styles.mapSearchInput}
+              placeholder="Buscar tienda, direccion..."
+              placeholderTextColor="#94a3b8"
+              value={placeSearch}
+              onChangeText={searchPlaces}
+              returnKeyType="search"
+            />
+            {placeSearch.length > 0 && (
+              <TouchableOpacity onPress={() => { setPlaceSearch(''); setPlaceResults([]); }} style={{ padding: 4 }}>
+                <Text style={{ color: '#94a3b8', fontSize: 16 }}>✕</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Search results */}
+          {placeResults.length > 0 && (
+            <View style={styles.mapResultsList}>
+              {placeResults.map((place: any) => (
+                <TouchableOpacity
+                  key={place.place_id}
+                  style={styles.mapResultItem}
+                  onPress={() => {
+                    const loc = place.geometry?.location;
+                    if (loc) {
+                      const coord = { latitude: loc.lat, longitude: loc.lng };
+                      setMapCoord(coord);
+                      mapRef.current?.animateToRegion({ ...coord, latitudeDelta: 0.002, longitudeDelta: 0.002 }, 500);
+                    }
+                    setPlaceSearch(place.name);
+                    setPlaceResults([]);
+                  }}
+                >
+                  <MapPin size={14} color="#64748b" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.mapResultName} numberOfLines={1}>{place.name}</Text>
+                    <Text style={styles.mapResultAddr} numberOfLines={1}>{place.formatted_address}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          {/* Map */}
+          {mapCoord && (
+            <MapView
+              ref={mapRef}
+              style={{ flex: 1 }}
+              initialRegion={{ ...mapCoord, latitudeDelta: 0.003, longitudeDelta: 0.003 }}
+              onPress={(e) => { setMapCoord(e.nativeEvent.coordinate); setPlaceResults([]); }}
+              onPoiClick={(e) => {
+                const { coordinate, name } = e.nativeEvent;
+                setMapCoord(coordinate);
+                setPlaceSearch(name ?? '');
+                setPlaceResults([]);
+                mapRef.current?.animateToRegion({ ...coordinate, latitudeDelta: 0.002, longitudeDelta: 0.002 }, 500);
+              }}
+              showsUserLocation
+              showsPointsOfInterest
+              showsBuildings
+              showsMyLocationButton
+            >
+              <Marker coordinate={mapCoord} draggable onDragEnd={(e) => setMapCoord(e.nativeEvent.coordinate)}>
+                <View style={styles.mapCustomMarker}>
+                  <MapPin size={20} color="#ffffff" />
+                </View>
+              </Marker>
+            </MapView>
+          )}
+
+          {/* Actions */}
+          <View style={{ padding: 16, paddingBottom: insets.bottom + 16, gap: 8, borderTopWidth: 1, borderTopColor: '#e2e8f0' }}>
+            <TouchableOpacity
+              style={styles.submitButton}
+              onPress={() => {
+                if (mapCoord) {
+                  setLocation({ lat: mapCoord.latitude, lng: mapCoord.longitude });
+                  setLocationStatus('success');
+                }
+                setShowMapModal(false);
+                setPlaceSearch(''); setPlaceResults([]);
+              }}
+              activeOpacity={0.8}
+            >
+              <MapPin size={18} color={COLORS.headerText} />
+              <Text style={styles.submitButtonText}>Guardar ubicacion</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{ height: 44, alignItems: 'center', justifyContent: 'center' }}
+              onPress={() => { setShowMapModal(false); setPlaceSearch(''); setPlaceResults([]); }}
+            >
+              <Text style={{ color: '#64748b', fontSize: 14, fontWeight: '600' }}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -304,18 +444,41 @@ const styles = StyleSheet.create({
   chipText: { fontSize: 13, fontWeight: '600', color: COLORS.textSecondary },
   chipTextActive: { color: COLORS.headerText },
 
-  /* GPS indicator */
-  gpsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 4,
-    marginBottom: 16,
+  /* GPS button */
+  gpsButton: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    padding: 14, borderRadius: 12, marginBottom: 16,
+    backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e2e8f0',
   },
-  gpsSpinner: { marginRight: 2 },
-  gpsTextLoading: { fontSize: 12, color: COLORS.textTertiary },
-  gpsTextSuccess: { fontSize: 12, color: '#16a34a', fontWeight: '500' },
-  gpsTextDenied: { fontSize: 12, color: '#94a3b8' },
+  gpsButtonSuccess: { backgroundColor: '#f0fdf4', borderColor: '#bbf7d0' },
+  gpsButtonText: { fontSize: 13, color: '#64748b', fontWeight: '500' },
+
+  /* Map modal */
+  mapSearchBar: {
+    flexDirection: 'row', alignItems: 'center',
+    marginHorizontal: 16, marginVertical: 10,
+    paddingHorizontal: 12, height: 44, borderRadius: 12,
+    backgroundColor: '#f1f5f9', borderWidth: 1, borderColor: '#e2e8f0',
+  },
+  mapSearchInput: { flex: 1, fontSize: 14, color: '#1e293b' },
+  mapResultsList: {
+    marginHorizontal: 16, marginBottom: 4,
+    backgroundColor: '#ffffff', borderRadius: 12, borderWidth: 1, borderColor: '#e2e8f0',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 4,
+  },
+  mapResultItem: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    paddingHorizontal: 16, paddingVertical: 12,
+    borderBottomWidth: 1, borderBottomColor: '#f1f5f9',
+  },
+  mapResultName: { fontSize: 14, fontWeight: '600', color: '#1e293b' },
+  mapResultAddr: { fontSize: 12, color: '#64748b' },
+  mapCustomMarker: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: COLORS.headerBg, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 3, borderColor: '#ffffff',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 6,
+  },
 
   /* Footer */
   footer: {

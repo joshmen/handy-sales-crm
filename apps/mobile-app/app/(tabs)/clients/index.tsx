@@ -1,17 +1,19 @@
 import { useState, useCallback } from 'react';
-import { View, Text, FlatList, RefreshControl, StyleSheet } from 'react-native';
+import { View, Text, FlatList, RefreshControl, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineClients } from '@/hooks';
 import { Card, LoadingSpinner, EmptyState } from '@/components/ui';
 import { SearchBar } from '@/components/shared/SearchBar';
 import { Badge } from '@/components/ui';
-import { Phone, ChevronRight, Users } from 'lucide-react-native';
+import { Phone, ChevronRight, ChevronLeft, Users, Plus } from 'lucide-react-native';
 import { performSync } from '@/sync/syncEngine';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import type Cliente from '@/db/models/Cliente';
 import { COLORS } from '@/theme/colors';
 
 export default function ClientsListScreen() {
+  const insets = useSafeAreaInsets();
   const [search, setSearch] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
@@ -95,7 +97,17 @@ export default function ClientsListScreen() {
 
   return (
     <View style={styles.container}>
-      <Animated.View entering={FadeInDown.duration(400)} style={styles.searchSection}>
+      {/* Header with safe area */}
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <ChevronLeft size={22} color={COLORS.headerText} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Clientes</Text>
+        <View style={{ width: 22 }} />
+      </View>
+
+      {/* Search */}
+      <View style={styles.searchSection}>
         <SearchBar
           placeholder="Buscar cliente..."
           onSearch={handleSearch}
@@ -111,7 +123,7 @@ export default function ClientsListScreen() {
             </Text>
           </View>
         )}
-      </Animated.View>
+      </View>
 
       <FlatList
         data={clients ?? []}
@@ -132,7 +144,7 @@ export default function ClientsListScreen() {
             title="Sin clientes"
             message={
               search
-                ? 'No se encontraron clientes con esa búsqueda'
+                ? 'No se encontraron clientes con esa busqueda'
                 : 'No tienes clientes asignados'
             }
             actionText={!search ? 'Agregar Cliente' : undefined}
@@ -147,6 +159,15 @@ export default function ClientsListScreen() {
           ) : null
         }
       />
+
+      {/* FAB Nuevo Cliente */}
+      <TouchableOpacity
+        style={[styles.fab, { bottom: 24 + insets.bottom }]}
+        onPress={() => router.push('/(tabs)/clients/crear' as any)}
+        activeOpacity={0.85}
+      >
+        <Plus size={24} color={COLORS.headerText} />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -155,6 +176,21 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    backgroundColor: COLORS.headerBg,
+  },
+  backBtn: { padding: 4 },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: COLORS.headerText,
+    letterSpacing: 0.3,
   },
   searchSection: {
     paddingHorizontal: 16,
@@ -187,7 +223,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingTop: 12,
-    paddingBottom: 24,
+    paddingBottom: 100,
   },
   cardRow: {
     flexDirection: 'row',
@@ -242,17 +278,6 @@ const styles = StyleSheet.create({
   chevron: {
     marginLeft: 4,
   },
-  footerLoader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    gap: 8,
-  },
-  footerLoadingText: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-  },
   footerEnd: {
     textAlign: 'center',
     fontSize: 13,
@@ -262,5 +287,20 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     borderTopWidth: 1,
     borderTopColor: COLORS.borderMedium,
+  },
+  fab: {
+    position: 'absolute',
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: COLORS.button,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: COLORS.button,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
 });
