@@ -277,7 +277,7 @@ export default function RouteAdminPage() {
       setActionLoading(true);
       const req: InstantiateTemplateRequest = {
         usuarioId: data.usuarioId,
-        fecha: data.fecha,
+        fecha: `${data.fecha}T12:00:00.000Z`,
       };
       await routeService.instantiateTemplate(assigningTemplate.id, req);
       toast.success(`Ruta creada desde template "${assigningTemplate.nombre}"`);

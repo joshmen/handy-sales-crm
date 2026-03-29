@@ -38,7 +38,7 @@ interface PedidoOption {
 }
 
 export default function RouteDetailPage() {
-  const { formatDate, formatCurrency } = useFormatters();
+  const { formatDateOnly, formatCurrency } = useFormatters();
   const params = useParams();
   const router = useRouter();
   const routeId = Number(params.id);
@@ -384,7 +384,7 @@ export default function RouteDetailPage() {
               <div>
                 <p className="text-[11px] text-gray-500">Fecha</p>
                 <p className="text-[13px] font-medium text-gray-900">
-                  {formatDate(route.fecha, { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                  {formatDateOnly(route.fecha)}
                 </p>
               </div>
             </div>

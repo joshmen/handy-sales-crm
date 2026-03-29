@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useCompany } from '@/contexts/CompanyContext';
-import { formatDate, formatCurrency, formatNumber } from '@/lib/formatters';
+import { formatDate, formatDateOnly, formatCurrency, formatNumber } from '@/lib/formatters';
 
 /**
  * Hook that provides tenant-aware formatting functions.
@@ -12,6 +12,13 @@ export function useFormatters() {
   const fmtDate = useCallback(
     (date: string | Date, options?: Intl.DateTimeFormatOptions) =>
       formatDate(date, settings, options),
+    [settings]
+  );
+
+  /** For date-only fields (route fecha, birthdate) — no timezone shift */
+  const fmtDateOnly = useCallback(
+    (date: string | Date, options?: Intl.DateTimeFormatOptions) =>
+      formatDateOnly(date, settings, options),
     [settings]
   );
 
@@ -27,6 +34,7 @@ export function useFormatters() {
 
   return {
     formatDate: fmtDate,
+    formatDateOnly: fmtDateOnly,
     formatCurrency: fmtCurrency,
     formatNumber: fmtNumber,
   };

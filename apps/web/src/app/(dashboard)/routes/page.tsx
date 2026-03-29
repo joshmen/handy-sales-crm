@@ -41,6 +41,7 @@ import { ActiveToggle } from '@/components/ui/ActiveToggle';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { Path } from '@phosphor-icons/react';
 import { useFormatters } from '@/hooks/useFormatters';
+import { dateOnlyToUTC } from '@/lib/formatters';
 
 interface ZoneOption {
   id: number;
@@ -66,7 +67,7 @@ const routeSchema = z.object({
 type RouteFormData = z.infer<typeof routeSchema>;
 
 export default function RoutesPage() {
-  const { formatDate } = useFormatters();
+  const { formatDateOnly } = useFormatters();
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN';
 
@@ -253,7 +254,7 @@ export default function RoutesPage() {
           usuarioId: data.usuarioId || undefined,
           nombre: data.nombre,
           zonaId: data.zonaId,
-          fecha: data.fecha,
+          fecha: dateOnlyToUTC(data.fecha),
           horaInicioEstimada: fmtTimeUpd(data.horaInicioEstimada),
           horaFinEstimada: fmtTimeUpd(data.horaFinEstimada),
           descripcion: data.descripcion || undefined,
@@ -272,7 +273,7 @@ export default function RoutesPage() {
           nombre: data.nombre,
           usuarioId: data.usuarioId,
           zonaId: data.zonaId,
-          fecha: data.fecha,
+          fecha: dateOnlyToUTC(data.fecha),
           horaInicioEstimada: fmtTime(data.horaInicioEstimada),
           horaFinEstimada: fmtTime(data.horaFinEstimada),
           descripcion: data.descripcion || undefined,
@@ -487,7 +488,7 @@ export default function RoutesPage() {
                       {route.usuarioNombre}
                     </span>
                     <span className="text-xs text-gray-500">
-                      {formatDate(route.fecha, { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                      {formatDateOnly(route.fecha)}
                     </span>
                   </div>
                   {/* Row 3: Actions */}
@@ -602,7 +603,7 @@ export default function RoutesPage() {
                       {/* Fecha */}
                       <div className="w-[100px]">
                         <span className="text-[13px] text-gray-900">
-                          {formatDate(route.fecha, { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                          {formatDateOnly(route.fecha)}
                         </span>
                       </div>
 

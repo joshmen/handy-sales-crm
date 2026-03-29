@@ -35,6 +35,37 @@ export function formatDate(
 }
 
 /**
+ * Format a date-only field (no timezone conversion).
+ * Use for fields like route fecha, birthdate, etc. where the date is the same
+ * regardless of timezone. Extracts YYYY-MM-DD from the ISO string and formats it.
+ */
+export function formatDateOnly(
+  date: string | Date,
+  settings: FormatSettings | null,
+  options?: Intl.DateTimeFormatOptions
+): string {
+  if (!date) return '';
+  // Extract the date part from ISO string to avoid timezone shift
+  const iso = typeof date === 'string' ? date : date.toISOString();
+  const [datePart] = iso.split('T');
+  if (!datePart) return '';
+  // Parse as local date (noon to avoid edge cases)
+  const [y, m, d] = datePart.split('-').map(Number);
+  const local = new Date(y, m - 1, d, 12, 0, 0);
+  if (isNaN(local.getTime())) return '';
+  const locale = getLocale(settings);
+  return local.toLocaleDateString(locale, options ?? { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+/**
+ * Convert a date-only string (YYYY-MM-DD) to noon UTC for storage.
+ * Prevents timezone shifts from changing the day.
+ */
+export function dateOnlyToUTC(dateStr: string): string {
+  return `${dateStr}T12:00:00.000Z`;
+}
+
+/**
  * Format a currency amount using the tenant's currency and locale.
  */
 export function formatCurrency(

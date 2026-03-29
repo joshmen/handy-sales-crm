@@ -29,7 +29,7 @@ interface UsuarioOption {
 }
 
 export default function ManageRoutesPage() {
-  const { formatDate } = useFormatters();
+  const { formatDateOnly } = useFormatters();
   const router = useRouter();
   const [routes, setRoutes] = useState<RouteListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -286,7 +286,7 @@ export default function ManageRoutesPage() {
                       {badge.label}
                     </span>
                     <span className="text-xs text-gray-500">
-                      {formatDate(route.fecha, { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                      {formatDateOnly(route.fecha)}
                     </span>
                     {progreso && (
                       <span className="text-xs text-gray-600">
@@ -374,7 +374,7 @@ export default function ManageRoutesPage() {
                       {/* Fecha */}
                       <div className="w-[100px]">
                         <span className="text-[13px] text-gray-900">
-                          {formatDate(route.fecha, { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                          {formatDateOnly(route.fecha)}
                         </span>
                       </div>
 
