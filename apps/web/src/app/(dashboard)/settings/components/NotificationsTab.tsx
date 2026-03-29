@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Switch } from '@/components/ui/Switch';
 import { Separator } from '@/components/ui/Separator';
-import { Bell, ShoppingCart, Package, CreditCard, Users, BarChart3, Save, Clock } from 'lucide-react';
+import { Bell, ShoppingCart, Package, CreditCard, BarChart3, Save, MapPin } from 'lucide-react';
 import { notificationSettingsService, type NotificationSettings } from '@/services/api/notificationSettings';
 import { toast } from '@/hooks/useToast';
 
@@ -20,6 +20,7 @@ const DEFAULT_SETTINGS: NotificationSettings = {
   pushEnabled: true, emailEnabled: true,
   orderConfirmed: true, orderEnRoute: true, orderDelivered: true, orderCancelled: true,
   stockLow: true, inventarioCritico: true,
+  routeAssigned: true,
   cobroExitoso: true, cobroVencido: true,
   metaNoCumplida: true, clienteInactivo: true, bienvenidaCliente: true, stockBajoAlerta: true, resumenDiario: true,
   quietHoursStart: null, quietHoursEnd: null,
@@ -119,6 +120,19 @@ export const NotificationsTab: React.FC<NotificationsTabProps> = ({ isSuperAdmin
           <ToggleRow label="Pedido en ruta" description="Cuando un pedido sale a entrega" checked={settings.orderEnRoute} onChange={(v) => update('orderEnRoute', v)} disabled={loading || !canEdit || !settings.pushEnabled} />
           <ToggleRow label="Pedido entregado" description="Cuando un pedido se entrega al cliente" checked={settings.orderDelivered} onChange={(v) => update('orderDelivered', v)} disabled={loading || !canEdit || !settings.pushEnabled} />
           <ToggleRow label="Pedido cancelado" description="Cuando un pedido se cancela" checked={settings.orderCancelled} onChange={(v) => update('orderCancelled', v)} disabled={loading || !canEdit || !settings.pushEnabled} />
+        </CardContent>
+      </Card>
+
+      {/* Route notifications */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MapPin className="h-5 w-5 text-indigo-500" />
+            Rutas
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-1">
+          <ToggleRow label="Ruta asignada" description="Cuando se asigna o actualiza una ruta a un vendedor" checked={settings.routeAssigned} onChange={(v) => update('routeAssigned', v)} disabled={loading || !canEdit || !settings.pushEnabled} />
         </CardContent>
       </Card>
 

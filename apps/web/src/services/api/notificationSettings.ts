@@ -9,6 +9,7 @@ export interface NotificationSettings {
   orderCancelled: boolean;
   stockLow: boolean;
   inventarioCritico: boolean;
+  routeAssigned: boolean;
   cobroExitoso: boolean;
   cobroVencido: boolean;
   metaNoCumplida: boolean;

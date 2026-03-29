@@ -67,14 +67,14 @@ public static class RutaVendedorEndpoints
             RutaVendedorCreateDto dto,
             [FromServices] RutaVendedorService servicio,
             [FromServices] IHttpClientFactory httpClientFactory,
-            [FromServices] ICurrentTenant tenantContext) =>
+            [FromServices] ICurrentTenant tenantContext,
+            [FromServices] HandySales.Infrastructure.Notifications.Services.NotificationSettingsService notifSettings) =>
         {
             var id = await servicio.CrearAsync(dto);
 
-            // Push notification to assigned vendedor
-            if (dto.UsuarioId > 0)
+            // Push notification to assigned vendedor (if enabled)
+            if (dto.UsuarioId > 0 && await notifSettings.IsEnabledAsync(tenantContext.TenantId, "route.published"))
             {
-                // Capture scoped values before Task.Run (scope may be disposed by then)
                 var tenantId = tenantContext.TenantId;
                 var usuarioId = dto.UsuarioId;
                 var nombre = dto.Nombre;
@@ -130,18 +130,18 @@ public static class RutaVendedorEndpoints
             RutaVendedorUpdateDto dto,
             [FromServices] RutaVendedorService servicio,
             [FromServices] IHttpClientFactory httpClientFactory,
-            [FromServices] ICurrentTenant tenantContext) =>
+            [FromServices] ICurrentTenant tenantContext,
+            [FromServices] HandySales.Infrastructure.Notifications.Services.NotificationSettingsService notifSettings) =>
         {
-            // Get route before update to detect vendedor change
             var rutaAntes = await servicio.ObtenerPorIdAsync(id);
             var actualizado = await servicio.ActualizarAsync(id, dto);
             if (!actualizado) return Results.NotFound();
 
-            // Push notification if vendedor was reassigned
+            // Push notification if vendedor was reassigned (and route.published is enabled)
             var nuevoUsuarioId = dto.UsuarioId ?? rutaAntes?.UsuarioId ?? 0;
             var tenantId = tenantContext.TenantId;
             var rutaNombre = dto.Nombre ?? rutaAntes?.Nombre ?? "Ruta";
-            if (nuevoUsuarioId > 0)
+            if (nuevoUsuarioId > 0 && await notifSettings.IsEnabledAsync(tenantId, "route.published"))
             {
                 _ = Task.Run(async () =>
                 {

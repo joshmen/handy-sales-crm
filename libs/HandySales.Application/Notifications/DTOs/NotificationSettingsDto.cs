@@ -23,6 +23,9 @@ public class NotificationSettingsDto
     public bool CobroExitoso { get; set; } = true;
     public bool CobroVencido { get; set; } = true;
 
+    // Transactional — Routes
+    public bool RouteAssigned { get; set; } = true;
+
     // Automation — Operations
     public bool MetaNoCumplida { get; set; } = true;
     public bool ClienteInactivo { get; set; } = true;

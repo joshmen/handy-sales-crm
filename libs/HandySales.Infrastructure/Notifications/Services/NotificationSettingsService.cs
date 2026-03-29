@@ -66,6 +66,7 @@ public class NotificationSettingsService
             "order.delivered" => config.OrderDelivered,
             "order.cancelled" => config.OrderCancelled,
             "stock.low" => config.StockLow,
+            "route.published" => config.RouteAssigned,
             "inventario-critico" => config.InventarioCritico,
             "cobro-exitoso-aviso" => config.CobroExitoso,
             "cobro-vencido-recordatorio" => config.CobroVencido,
