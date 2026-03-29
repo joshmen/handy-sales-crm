@@ -1,14 +1,15 @@
-import { useMemo, useState } from 'react';
+import { useState, useCallback } from 'react';
 import { View, Text, ScrollView, RefreshControl, TouchableOpacity, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineRutaHoy, useOfflineRutaDetalles, useClientNameMap } from '@/hooks';
-import { Button, LoadingSpinner, EmptyState, ConfirmModal } from '@/components/ui';
+import { LoadingSpinner, EmptyState } from '@/components/ui';
 import { COLORS } from '@/theme/colors';
 import { ChevronLeft, Navigation, Map } from 'lucide-react-native';
-import { SbRoute } from '@/components/icons/DashboardIcons';
 import { formatTime } from '@/utils/format';
 import { performSync } from '@/sync/syncEngine';
+import { database } from '@/db/database';
+import { Q } from '@nozbe/watermelondb';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import type RutaDetalle from '@/db/models/RutaDetalle';
 
@@ -35,8 +36,6 @@ export default function RutaScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
-  const [starting, setStarting] = useState(false);
-  const [showConfirmIniciar, setShowConfirmIniciar] = useState(false);
 
   const { data: rutas, isLoading } = useOfflineRutaHoy();
   const route = rutas?.[0] ?? null;
@@ -44,14 +43,23 @@ export default function RutaScreen() {
   const { data: detalles } = useOfflineRutaDetalles(route?.id ?? '');
   const clientNames = useClientNameMap();
 
-  const stats = useMemo(() => {
-    const total = detalles?.length ?? 0;
-    const completadas = detalles?.filter((d) => d.estado === 2).length ?? 0;
-    const pendientes = detalles?.filter((d) => d.estado === 0).length ?? 0;
-    return { total, completadas, pendientes };
-  }, [detalles]);
+  // Direct query for stats on every focus (WDB observable unreliable in Expo Go/LokiJS)
+  const [stats, setStats] = useState({ total: 0, atendidas: 0, pendientes: 0, omitidas: 0 });
+  useFocusEffect(useCallback(() => {
+    if (!route?.id) return;
+    database.get<RutaDetalle>('ruta_detalles')
+      .query(Q.where('ruta_id', route.id))
+      .fetch()
+      .then((stops) => {
+        const total = stops.length;
+        const visitadas = stops.filter((d) => d.estado === 2).length;
+        const omitidas = stops.filter((d) => d.estado === 3).length;
+        setStats({ total, atendidas: visitadas + omitidas, pendientes: total - visitadas - omitidas, omitidas });
+      })
+      .catch(() => {});
+  }, [route?.id]));
 
-  const progress = stats.total > 0 ? (stats.completadas / stats.total) * 100 : 0;
+  const progress = stats.total > 0 ? (stats.atendidas / stats.total) * 100 : 0;
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -59,20 +67,6 @@ export default function RutaScreen() {
     setRefreshing(false);
   };
 
-  const handleIniciar = () => {
-    if (!route) return;
-    setShowConfirmIniciar(true);
-  };
-
-  const executeIniciarRuta = async () => {
-    setShowConfirmIniciar(false);
-    setStarting(true);
-    try {
-      await route!.startRoute();
-    } finally {
-      setStarting(false);
-    }
-  };
 
   if (isLoading) {
     return <View style={styles.container}><LoadingSpinner message="Cargando ruta..." /></View>;
@@ -82,7 +76,7 @@ export default function RutaScreen() {
     return (
       <View style={styles.container}>
         <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <TouchableOpacity onPress={() => router.navigate('/(tabs)' as any)} style={styles.backBtn}>
             <ChevronLeft size={22} color={COLORS.headerText} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Ruta del Día</Text>
@@ -98,13 +92,12 @@ export default function RutaScreen() {
     );
   }
 
-  const isPlanificada = route.estado === 0;
 
   return (
     <View style={styles.container}>
       {/* Blue Header — back + title + map icon */}
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => router.navigate('/(tabs)' as any)} style={styles.backBtn}>
           <ChevronLeft size={22} color={COLORS.headerText} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Ruta del Día</Text>
@@ -131,13 +124,13 @@ export default function RutaScreen() {
               <View style={[styles.progressFill, { width: `${progress}%` }]} />
             </View>
             <Text style={styles.progressLabel}>
-              {stats.completadas} de {stats.total} completadas • {Math.round(progress)}%
+              {stats.atendidas} de {stats.total} atendidas • {Math.round(progress)}%
             </Text>
 
             {/* Stat pills */}
             <View style={styles.pillsRow}>
               <View style={[styles.pill, { backgroundColor: '#f0fdf4' }]}>
-                <Text style={[styles.pillText, { color: '#16a34a' }]}>{stats.completadas} Hechas</Text>
+                <Text style={[styles.pillText, { color: '#16a34a' }]}>{stats.atendidas} Hechas</Text>
               </View>
               <View style={[styles.pill, { backgroundColor: '#fffbeb' }]}>
                 <Text style={[styles.pillText, { color: '#d97706' }]}>{stats.pendientes} Pendientes</Text>
@@ -147,9 +140,6 @@ export default function RutaScreen() {
               </View>
             </View>
 
-            {isPlanificada && (
-              <Button title="Iniciar Ruta" onPress={handleIniciar} loading={starting} fullWidth />
-            )}
           </View>
         </Animated.View>
 
@@ -199,15 +189,6 @@ export default function RutaScreen() {
           </View>
         </Animated.View>
 
-        <ConfirmModal
-          visible={showConfirmIniciar}
-          title="Iniciar Ruta"
-          message="¿Estás listo para iniciar la ruta?"
-          confirmText="Iniciar"
-          onConfirm={executeIniciarRuta}
-          onCancel={() => setShowConfirmIniciar(false)}
-          icon={<SbRoute size={48} />}
-        />
       </ScrollView>
     </View>
   );

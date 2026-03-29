@@ -137,7 +137,6 @@ export default function RootLayout() {
         <DatabaseProvider database={database}>
           <QueryProvider>
             <StatusBar style={showSplash ? 'light' : 'dark'} />
-            <OfflineBanner />
             <AuthGate onReady={handleAppReady} />
             {showSplash && appReady && (
               <AnimatedSplash

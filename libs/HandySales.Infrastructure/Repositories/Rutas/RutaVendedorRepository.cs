@@ -112,7 +112,7 @@ public class RutaVendedorRepository : IRutaVendedorRepository
                 Fecha = r.Fecha,
                 Estado = r.Estado,
                 TotalParadas = r.Detalles.Count,
-                ParadasCompletadas = r.Detalles.Count(d => d.Estado == EstadoParada.Visitado),
+                ParadasCompletadas = r.Detalles.Count(d => d.Estado == EstadoParada.Visitado || d.Estado == EstadoParada.Omitido),
                 KilometrosEstimados = r.KilometrosEstimados,
                 Activo = r.Activo
             })
@@ -285,6 +285,7 @@ public class RutaVendedorRepository : IRutaVendedorRepository
         var detalle = await _db.RutasDetalle.FindAsync(detalleId);
         if (detalle == null) return false;
 
+        detalle.Estado = EstadoParada.Visitado;
         detalle.HoraSalidaReal = horaSalida;
         detalle.VisitaId = visitaId;
         detalle.PedidoId = pedidoId;

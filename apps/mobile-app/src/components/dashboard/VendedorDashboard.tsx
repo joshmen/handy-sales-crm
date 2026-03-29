@@ -1,13 +1,14 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { View, Text, ScrollView, RefreshControl, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/stores';
 import { useOfflineTodayVisits, useOfflineRutaHoy, useOfflineRutaDetalles, useOfflineOrders, useOfflineCobros } from '@/hooks';
 import { Card, LoadingSpinner } from '@/components/ui';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { formatCurrency } from '@/utils/format';
-import { MapPin, ChevronDown } from 'lucide-react-native';
+import { MapPin } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { performSync } from '@/sync/syncEngine';
 import { COLORS } from '@/theme/colors';
@@ -18,13 +19,69 @@ export function VendedorDashboard() {
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
 
-  // Local WDB data
+  // Direct query state — bypasses WDB observable issues in Expo Go LokiJS
+  const [routeStats, setRouteStats] = useState({ total: 0, atendidas: 0, routeName: '', routeEstado: 0 });
+
+  const fetchRouteStats = useCallback(async () => {
+    try {
+      const { database } = require('@/db/database');
+      const { Q } = require('@nozbe/watermelondb');
+      const userId = Number(user?.id ?? 0);
+      if (!userId) return;
+
+      const now = new Date();
+      const localMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      const windowStart = localMidnight - 12 * 3600000;
+      const windowEnd = localMidnight + 36 * 3600000;
+
+      const rutas = await database.get('rutas').query(
+        Q.where('usuario_id', userId),
+        Q.where('activo', true),
+        Q.where('fecha', Q.gte(windowStart)),
+        Q.where('fecha', Q.lt(windowEnd))
+      ).fetch();
+
+      const route = rutas[0];
+      if (!route) {
+        setRouteStats({ total: 0, atendidas: 0, routeName: '', routeEstado: 0 });
+        return;
+      }
+
+      const detalles = await database.get('ruta_detalles').query(
+        Q.where('ruta_id', route.id),
+        Q.sortBy('orden', Q.asc)
+      ).fetch();
+
+      setRouteStats({
+        total: detalles.length,
+        atendidas: detalles.filter((d: any) => d.estado === 2 || d.estado === 3).length,
+        routeName: (route as any).nombre || '',
+        routeEstado: (route as any).estado ?? 0,
+      });
+    } catch { /* ignore */ }
+  }, [user?.id]);
+
+  // Refresh on tab focus
+  useFocusEffect(useCallback(() => { fetchRouteStats(); }, [fetchRouteStats]));
+
+  // Local WDB data (for other KPIs)
   const { data: todayVisits } = useOfflineTodayVisits();
   const { data: rutas, isLoading: loadingRuta } = useOfflineRutaHoy();
   const route = rutas?.[0] ?? null;
   const { data: detalles } = useOfflineRutaDetalles(route?.id ?? '');
   const { data: pedidos } = useOfflineOrders();
   const { data: cobros } = useOfflineCobros();
+
+  // Also update stats when detalles observable changes (works within same tab)
+  useEffect(() => {
+    if (detalles?.length) {
+      setRouteStats(prev => ({
+        ...prev,
+        total: detalles.length,
+        atendidas: detalles.filter((d) => d.estado === 2 || d.estado === 3).length,
+      }));
+    }
+  }, [detalles]);
 
   // Compute KPIs
   const visitasCompletadas = todayVisits?.filter((v) => v.checkOutAt != null).length ?? 0;
@@ -38,13 +95,8 @@ export function VendedorDashboard() {
     return facturado - cobrado;
   }, [pedidos, cobros]);
 
-  // Route progress from detalles
-  const stats = useMemo(() => {
-    const total = detalles?.length ?? 0;
-    const completadas = detalles?.filter((d) => d.estado === 2).length ?? 0;
-    return { total, completadas };
-  }, [detalles]);
-  const progress = stats.total > 0 ? (stats.completadas / stats.total) * 100 : 0;
+  const stats = routeStats;
+  const progress = stats.total > 0 ? (stats.atendidas / stats.total) * 100 : 0;
 
   const initials = (user?.name ?? 'V')
     .split(' ')
@@ -56,6 +108,7 @@ export function VendedorDashboard() {
   const onRefresh = async () => {
     setRefreshing(true);
     await performSync();
+    await fetchRouteStats();
     setRefreshing(false);
   };
 
@@ -87,13 +140,6 @@ export function VendedorDashboard() {
             <Text style={styles.greeting}>
               {getGreeting()}, {user?.name?.split(' ')[0] || 'Vendedor'}
             </Text>
-            <View style={styles.badgeRow}>
-              <View style={styles.preventaBadge}>
-                <View style={styles.greenDot} />
-                <Text style={styles.preventaText}>Preventa</Text>
-                <ChevronDown size={14} color={COLORS.headerText} />
-              </View>
-            </View>
           </View>
           <View style={styles.headerAvatar}>
             <Text style={styles.headerAvatarText}>{initials}</Text>
@@ -130,7 +176,7 @@ export function VendedorDashboard() {
         ) : route ? (
           <Card
             className="mb-5"
-            onPress={() => router.push('/(tabs)/ruta' as any)}
+            onPress={() => router.navigate('/(tabs)/ruta' as any)}
           >
             <View style={styles.routeHeader}>
               <View style={styles.routeIconBox}>
@@ -147,7 +193,7 @@ export function VendedorDashboard() {
               </View>
               <View style={styles.progressRow}>
                 <Text style={styles.progressText}>
-                  {stats.completadas}/{stats.total} paradas
+                  {stats.atendidas}/{stats.total} paradas
                 </Text>
                 <Text style={styles.progressPercent}>{Math.round(progress)}%</Text>
               </View>

@@ -430,6 +430,34 @@ export function SbVisit({ size = 24, style }: IconProps) {
    TARGET — Red/amber bullseye (Metas)
    ============================================================ */
 
+export function SbWarning({ size = 24, style }: IconProps) {
+  return (
+    <View style={[iconShadow('#d97706'), style]}>
+      <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+        <Defs>
+          <LinearGradient id="swn-a" x1="0" y1="0" x2="0.5" y2="1">
+            <Stop offset="0%" stopColor="#fbbf24" />
+            <Stop offset="100%" stopColor="#d97706" />
+          </LinearGradient>
+          <LinearGradient id="swn-b" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0%" stopColor="#92400e" />
+            <Stop offset="100%" stopColor="#78350f" />
+          </LinearGradient>
+        </Defs>
+        {/* Triangle body */}
+        <Path d="M12 2.5L22.5 20.5H1.5L12 2.5Z" fill="url(#swn-a)" />
+        {/* Inner white triangle */}
+        <Path d="M12 6L19.5 19H4.5L12 6Z" fill="white" opacity="0.15" />
+        {/* Exclamation mark */}
+        <Rect x="11" y="10" width="2" height="5" rx="1" fill="url(#swn-b)" />
+        <Circle cx="12" cy="17.5" r="1.2" fill="url(#swn-b)" />
+        {/* Glass highlight */}
+        <Path d="M9 7L12 3.5L13 5.5L10 8.5Z" fill="white" opacity="0.25" />
+      </Svg>
+    </View>
+  );
+}
+
 export function SbTarget({ size = 24, style }: IconProps) {
   return (
     <View style={[iconShadow('#b91c1c'), style]}>

@@ -15,7 +15,7 @@ import { printOrderTicket, isNativeAvailable } from '@/services/printerService';
 export default function PedidoExitoScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { numero, id, tipo } = useLocalSearchParams<{ numero: string; id: string; tipo?: string }>();
+  const { numero, id, tipo, fromRuta } = useLocalSearchParams<{ numero: string; id: string; tipo?: string; fromRuta?: string }>();
   const [printing, setPrinting] = useState(false);
 
   // Data for printing
@@ -67,6 +67,7 @@ export default function PedidoExitoScreen() {
   };
 
   const isDirecta = tipo === 'directa';
+  const isFromRuta = fromRuta === '1';
   const title = isDirecta ? 'Venta Completada' : 'Pedido Levantado';
   const subtitle = isDirecta
     ? 'Venta cobrada y entregada exitosamente'
@@ -121,26 +122,46 @@ export default function PedidoExitoScreen() {
             fullWidth
           />
         )}
-        {id && (
-          <Button
-            title="Ver Pedido"
-            onPress={() => router.replace(`/(tabs)/vender/${id}` as any)}
-            variant={printerAvailable ? 'secondary' : 'primary'}
-            fullWidth
-          />
+        {isFromRuta ? (
+          <>
+            <Button
+              title="Volver a Ruta"
+              onPress={() => router.replace('/(tabs)/ruta' as any)}
+              fullWidth
+            />
+            {id && (
+              <Button
+                title="Ver Pedido"
+                onPress={() => router.replace(`/(tabs)/vender/${id}` as any)}
+                variant="secondary"
+                fullWidth
+              />
+            )}
+          </>
+        ) : (
+          <>
+            {id && (
+              <Button
+                title="Ver Pedido"
+                onPress={() => router.replace(`/(tabs)/vender/${id}` as any)}
+                variant={printerAvailable ? 'secondary' : 'primary'}
+                fullWidth
+              />
+            )}
+            <Button
+              title="Nuevo Pedido"
+              onPress={() => { router.dismissAll(); router.push('/(tabs)/vender/crear/modo' as any); }}
+              variant="secondary"
+              fullWidth
+            />
+            <Button
+              title="Ir al Inicio"
+              onPress={() => router.replace('/(tabs)' as any)}
+              variant="ghost"
+              fullWidth
+            />
+          </>
         )}
-        <Button
-          title="Nuevo Pedido"
-          onPress={() => { router.dismissAll(); router.push('/(tabs)/vender/crear/modo' as any); }}
-          variant="secondary"
-          fullWidth
-        />
-        <Button
-          title="Ir al Inicio"
-          onPress={() => router.replace('/(tabs)' as any)}
-          variant="ghost"
-          fullWidth
-        />
       </Animated.View>
     </View>
   );

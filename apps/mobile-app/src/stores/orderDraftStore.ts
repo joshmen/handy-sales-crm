@@ -19,8 +19,10 @@ interface OrderDraftState {
   notas: string;
   tipoVenta: number; // 0=Preventa, 1=VentaDirecta
   metodoPago: number; // 0=Efectivo, 1=Transferencia, 2=Cheque, 3=T.Crédito, 4=T.Débito, 5=Otro
+  fromParadaId: string | null; // Track which route stop originated this order
 
   setCliente: (id: string, serverId: number | null, nombre: string) => void;
+  setFromParada: (paradaId: string | null) => void;
   addItem: (producto: Producto, cantidad?: number) => void;
   removeItem: (productoId: string) => void;
   updateQuantity: (productoId: string, cantidad: number) => void;
@@ -46,9 +48,12 @@ export const useOrderDraftStore = create<OrderDraftState>((set, get) => ({
   notas: '',
   tipoVenta: 0,
   metodoPago: 0,
+  fromParadaId: null,
 
   setCliente: (id, serverId, nombre) =>
     set({ clienteId: id, clienteServerId: serverId, clienteNombre: nombre }),
+
+  setFromParada: (paradaId) => set({ fromParadaId: paradaId }),
 
   addItem: (producto, cantidad = 1) => {
     const items = get().items;
@@ -101,7 +106,7 @@ export const useOrderDraftStore = create<OrderDraftState>((set, get) => ({
   setMetodoPago: (metodoPago) => set({ metodoPago }),
 
   reset: () =>
-    set({ clienteId: null, clienteServerId: null, clienteNombre: '', items: [], notas: '', tipoVenta: 0, metodoPago: 0 }),
+    set({ clienteId: null, clienteServerId: null, clienteNombre: '', items: [], notas: '', tipoVenta: 0, metodoPago: 0, fromParadaId: null }),
 
   itemCount: () => get().items.reduce((sum, i) => sum + i.cantidad, 0),
   subtotal: () =>

@@ -1,12 +1,6 @@
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { pedidosApi } from '@/api';
-import { performSync } from '@/sync';
 import Toast from 'react-native-toast-message';
-
-/** Trigger sync after server-side state changes so WatermelonDB gets updated */
-async function syncAfterMutation() {
-  try { await performSync(); } catch { /* silent */ }
-}
 
 interface UseOrdersListParams {
   estado?: number;
@@ -45,7 +39,7 @@ export function useConfirmarPedido() {
     mutationFn: (id: number) => pedidosApi.confirmar(id),
     onSuccess: (_data, id) => {
       Toast.show({ type: 'success', text1: 'Pedido confirmado', visibilityTime: 2000 });
-      syncAfterMutation();
+      // WDB sync handles server updates automatically
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['order', id] });
     },
@@ -59,7 +53,7 @@ export function useEnRutaPedido() {
     mutationFn: (id: number) => pedidosApi.enRuta(id),
     onSuccess: (_data, id) => {
       Toast.show({ type: 'success', text1: 'Pedido en ruta', visibilityTime: 2000 });
-      syncAfterMutation();
+      // WDB sync handles server updates automatically
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['order', id] });
     },
@@ -74,7 +68,7 @@ export function useEntregarPedido() {
       pedidosApi.entregar(id, notasEntrega),
     onSuccess: (_data, { id }) => {
       Toast.show({ type: 'success', text1: 'Pedido entregado', visibilityTime: 2000 });
-      syncAfterMutation();
+      // WDB sync handles server updates automatically
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['order', id] });
     },
@@ -89,7 +83,7 @@ export function useCancelarPedido() {
       pedidosApi.cancelar(id, razon),
     onSuccess: (_data, { id }) => {
       Toast.show({ type: 'info', text1: 'Pedido cancelado', visibilityTime: 2000 });
-      syncAfterMutation();
+      // WDB sync handles server updates automatically
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['order', id] });
     },

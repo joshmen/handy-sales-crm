@@ -45,6 +45,8 @@ export default function RegistrarCobroScreen() {
     clienteId: string;
     clienteNombre: string;
     saldo: string;
+    fromRuta?: string;
+    paradaId?: string;
   }>();
 
   const paramClienteId = params.clienteId || undefined;
@@ -135,6 +137,15 @@ export default function RegistrarCobroScreen() {
         });
       }
 
+      // Mark parada as completed if cobro came from a route stop
+      if (params.paradaId) {
+        try {
+          const { database } = require('@/db/database');
+          const stopRecord = await database.get('ruta_detalles').find(params.paradaId);
+          if (stopRecord) await stopRecord.depart();
+        } catch { /* ignore */ }
+      }
+
       performSync().catch(() => {});
       router.replace({
         pathname: '/(tabs)/cobrar/recibo',
@@ -145,6 +156,7 @@ export default function RegistrarCobroScreen() {
           referencia: encodeURIComponent(referencia || ''),
           notas: encodeURIComponent(notas || ''),
           fecha: new Date().toISOString(),
+          fromRuta: params.fromRuta || '',
         },
       });
 

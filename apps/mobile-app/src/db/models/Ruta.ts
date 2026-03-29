@@ -37,11 +37,11 @@ export default class Ruta extends Model {
     });
   }
 
-  @writer async finishRoute(kmRecorridos: number) {
+  @writer async completeRoute(kmRecorridos?: number) {
     await this.update((record: any) => {
       record.estado = 2; // Completada
       record.horaFin = new Date();
-      record.kmRecorridos = kmRecorridos;
+      if (kmRecorridos != null) record.kmRecorridos = kmRecorridos;
     });
   }
 }

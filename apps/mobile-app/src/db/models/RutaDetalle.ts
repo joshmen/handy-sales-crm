@@ -13,6 +13,7 @@ export default class RutaDetalle extends Model {
   @field('cliente_id') clienteId!: string;
   @field('cliente_server_id') clienteServerId!: number | null;
   @field('orden') orden!: number;
+  @field('pedido_id') pedidoId!: string | null;
   @field('estado') estado!: number;
   @date('hora_llegada') horaLlegada!: Date | null;
   @date('hora_salida') horaSalida!: Date | null;
@@ -43,7 +44,7 @@ export default class RutaDetalle extends Model {
 
   @writer async skip(notas?: string) {
     await this.update((record: any) => {
-      record.estado = 4; // Omitida
+      record.estado = 3; // Omitida
       if (notas) record.notas = notas;
     });
   }

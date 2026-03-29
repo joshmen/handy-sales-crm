@@ -16,17 +16,20 @@ export default function CrearPedidoStep1() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [busqueda, setBusqueda] = useState('');
-  const { clienteId, setCliente } = useOrderDraftStore();
+  const { clienteId, setCliente, reset: resetDraft } = useOrderDraftStore();
   const params = useLocalSearchParams<{ clienteId?: string; clienteNombre?: string }>();
 
-  // Auto-select client if passed from visita/parada — skip to products
+  // If coming from parada with clienteId, auto-select and skip to products
+  // If coming normally (no params), reset the draft so old selection is cleared
   useEffect(() => {
-    if (params.clienteId && !clienteId) {
+    if (params.clienteId) {
       const nombre = params.clienteNombre ? decodeURIComponent(params.clienteNombre) : 'Cliente';
       setCliente(params.clienteId, Number(params.clienteId), nombre);
       router.push('/(tabs)/vender/crear/productos' as any);
+    } else {
+      resetDraft();
     }
-  }, [params.clienteId]);
+  }, []);
 
   const { data: clientes, isLoading } = useOfflineClients(busqueda || undefined);
 

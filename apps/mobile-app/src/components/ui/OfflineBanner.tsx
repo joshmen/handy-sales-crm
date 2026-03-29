@@ -1,36 +1,39 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
+import { Text, StyleSheet, Animated } from 'react-native';
 import { WifiOff, Wifi } from 'lucide-react-native';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
+
+const BANNER_HEIGHT = 30;
+const TAB_BAR_HEIGHT = 60;
 
 export function OfflineBanner() {
   const { isConnected } = useNetworkStatus();
   const [showReconnected, setShowReconnected] = useState(false);
   const [wasOffline, setWasOffline] = useState(false);
-  const translateY = useRef(new Animated.Value(-60)).current;
+  const slideAnim = useRef(new Animated.Value(BANNER_HEIGHT)).current;
 
   useEffect(() => {
     if (!isConnected) {
       setWasOffline(true);
-      Animated.spring(translateY, {
+      Animated.spring(slideAnim, {
         toValue: 0,
-        damping: 15,
-        stiffness: 200,
+        damping: 20,
+        stiffness: 300,
         useNativeDriver: true,
       }).start();
     } else if (wasOffline) {
       setShowReconnected(true);
-      Animated.spring(translateY, {
+      Animated.spring(slideAnim, {
         toValue: 0,
-        damping: 15,
-        stiffness: 200,
+        damping: 20,
+        stiffness: 300,
         useNativeDriver: true,
       }).start();
 
       const timer = setTimeout(() => {
-        Animated.timing(translateY, {
-          toValue: -60,
-          duration: 300,
+        Animated.timing(slideAnim, {
+          toValue: BANNER_HEIGHT,
+          duration: 250,
           useNativeDriver: true,
         }).start(() => {
           setShowReconnected(false);
@@ -40,7 +43,7 @@ export function OfflineBanner() {
 
       return () => clearTimeout(timer);
     }
-  }, [isConnected, wasOffline, translateY]);
+  }, [isConnected, wasOffline, slideAnim]);
 
   if (isConnected && !showReconnected) return null;
 
@@ -51,21 +54,19 @@ export function OfflineBanner() {
       style={[
         styles.banner,
         isOffline ? styles.offlineBanner : styles.reconnectedBanner,
-        { transform: [{ translateY }] },
+        { transform: [{ translateY: slideAnim }] },
       ]}
     >
-      <View style={styles.content}>
-        {isOffline ? (
-          <WifiOff size={16} color="#92400e" />
-        ) : (
-          <Wifi size={16} color="#065f46" />
-        )}
-        <Text style={[styles.text, isOffline ? styles.offlineText : styles.reconnectedText]}>
-          {isOffline
-            ? 'Sin conexión — Los cambios se guardan localmente'
-            : 'Conexión restaurada — Sincronizando...'}
-        </Text>
-      </View>
+      {isOffline ? (
+        <WifiOff size={13} color="#ffffff" />
+      ) : (
+        <Wifi size={13} color="#ffffff" />
+      )}
+      <Text style={styles.text}>
+        {isOffline
+          ? 'Sin conexion, cambios se guardan local'
+          : 'Conexion restaurada'}
+      </Text>
     </Animated.View>
   );
 }
@@ -73,33 +74,25 @@ export function OfflineBanner() {
 const styles = StyleSheet.create({
   banner: {
     position: 'absolute',
-    top: 0,
+    bottom: TAB_BAR_HEIGHT,
     left: 0,
     right: 0,
     zIndex: 999,
-  },
-  content: {
+    height: BANNER_HEIGHT,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    gap: 8,
+    gap: 6,
   },
   offlineBanner: {
-    backgroundColor: '#FEF3C7',
+    backgroundColor: '#dc2626',
   },
   reconnectedBanner: {
-    backgroundColor: '#D1FAE5',
+    backgroundColor: '#16a34a',
   },
   text: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
-  },
-  offlineText: {
-    color: '#92400e',
-  },
-  reconnectedText: {
-    color: '#065f46',
+    color: '#ffffff',
   },
 });

@@ -32,6 +32,7 @@ public class SyncChangesDto
     public List<SyncRutaDto>? Rutas { get; set; }
     public List<SyncProductoDto>? Productos { get; set; }
     public List<SyncCobroDto>? Cobros { get; set; }
+    public List<SyncRutaDetalleDto>? RutaDetalles { get; set; }
 }
 
 /// <summary>
@@ -65,6 +66,11 @@ public class SyncResponseDto
     public SyncSummaryDto Summary { get; set; } = new();
 
     /// <summary>
+    /// Mappings of localId → serverId for records created during push
+    /// </summary>
+    public List<IdMappingDto> CreatedIdMappings { get; set; } = new();
+
+    /// <summary>
     /// True when any errors occurred during sync (for callers to return appropriate HTTP status)
     /// </summary>
     public bool HasErrors => Errors.Count > 0;
@@ -83,6 +89,7 @@ public class SyncSummaryDto
     public int ProductosPulled { get; set; }
     public int CobrosPulled { get; set; }
     public int CobrosPushed { get; set; }
+    public int RutaDetallesPushed { get; set; }
     public int ConflictsFound { get; set; }
     public int ErrorsFound { get; set; }
 }
@@ -276,6 +283,13 @@ public class SyncCobroDto
     public DateTime? ActualizadoEn { get; set; }
     public SyncOperation Operation { get; set; } = SyncOperation.Create;
     public bool IsDeleted { get; set; }
+}
+
+public class IdMappingDto
+{
+    public string EntityType { get; set; } = string.Empty;
+    public string LocalId { get; set; } = string.Empty;
+    public int ServerId { get; set; }
 }
 
 public enum SyncOperation

@@ -5,8 +5,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOrderDraftStore } from '@/stores';
 import { useAuthStore } from '@/stores';
 import { createPedidoOffline, createVentaDirectaOffline } from '@/db/actions';
-import { performSync } from '@/sync/syncEngine';
-import { pedidosApi } from '@/api';
 import { ProgressSteps } from '@/components/shared/ProgressSteps';
 import { Card, Button, ConfirmModal } from '@/components/ui';
 import { QuantityStepper } from '@/components/shared/QuantityStepper';
@@ -84,6 +82,16 @@ export default function CrearPedidoStep3() {
           undefined,
           notas || undefined
         );
+        // Mark parada as completed if this came from a route stop (WDB sync pushes to server)
+        const paradaId = useOrderDraftStore.getState().fromParadaId;
+        if (paradaId) {
+          try {
+            const { database } = require('@/db/database');
+            const stopRecord = await database.get('ruta_detalles').find(paradaId);
+            if (stopRecord) await stopRecord.depart();
+          } catch { /* ignore */ }
+        }
+
         // Navigate to cobro receipt for printing (VD = sale + immediate payment)
         router.replace({
           pathname: '/(tabs)/cobrar/recibo',
@@ -95,11 +103,12 @@ export default function CrearPedidoStep3() {
             notas: encodeURIComponent(notas || ''),
             fecha: new Date().toISOString(),
             fromVentaDirecta: '1',
+            fromEntrega: paradaId ? '1' : '',
             pedidoId: pedido.id,
           },
         } as any);
         reset();
-        performSync().catch(() => {});
+        // WDB sync will push pedido to server automatically via withChangesForTables
       } else {
         const pedido = await createPedidoOffline(
           clienteId || '',
@@ -110,30 +119,18 @@ export default function CrearPedidoStep3() {
           0, // tipoVenta = Preventa
           2  // estado = Confirmado (simplified flow: skip Enviado)
         );
-        router.replace(`/(tabs)/vender/crear/exito?numero=${pedido.id.slice(0, 8)}&id=${pedido.id}` as any);
-        reset();
-        // Create on server + confirm + assign serverId to local WDB record
-        try {
-          const serverPedido = await pedidosApi.create({
-            clienteId: clienteServerId ?? 0,
-            tipoVenta: 0,
-            notas: notas || undefined,
-            detalles: mappedItems.map(i => ({
-              productoId: i.productoServerId ?? 0,
-              cantidad: i.cantidad,
-              precioUnitario: i.precioUnitario,
-              descuento: 0,
-            })),
-          } as any);
-          if (serverPedido?.id) {
-            await pedido.setServerId(serverPedido.id, serverPedido.numeroPedido);
-            // Confirm the order (Borrador → Confirmado) on server
-            await pedidosApi.confirmar(serverPedido.id).catch(() => {});
-          }
-        } catch {
-          // Offline — sync will handle it later
-          performSync().catch(() => {});
+        // Mark parada as completed if this came from a route stop
+        const paradaId = useOrderDraftStore.getState().fromParadaId;
+        if (paradaId) {
+          try {
+            const { database } = require('@/db/database');
+            const stopRecord = await database.get('ruta_detalles').find(paradaId);
+            if (stopRecord) await stopRecord.depart();
+          } catch { /* ignore */ }
         }
+        router.replace(`/(tabs)/vender/crear/exito?numero=${pedido.id.slice(0, 8)}&id=${pedido.id}${paradaId ? '&fromRuta=1' : ''}` as any);
+        reset();
+        // WDB sync will push pedido + ruta_detalle to server automatically
       }
     } catch {
       Alert.alert('Error', 'No se pudo crear el pedido. Intenta de nuevo.');

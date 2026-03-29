@@ -3,57 +3,64 @@ import NetInfo from '@react-native-community/netinfo';
 import { AppState, type AppStateStatus } from 'react-native';
 import { useSyncStore } from '@/stores';
 import { crashReporter } from '@/services/crashReporter';
+import { database } from '@/db/database';
 
-const MIN_SYNC_INTERVAL = 5 * 60 * 1000; // 5 minutes
+const SYNC_DEBOUNCE_MS = 2000; // 2 seconds — groups rapid writes into one sync
 
 export function useAutoSync() {
-  const { sync, status, lastSyncAt } = useSyncStore();
+  const { sync } = useSyncStore();
   const wasOffline = useRef(false);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    // Auto-sync when network comes back online
-    const unsubscribe = NetInfo.addEventListener((state) => {
-      const isOnline = state.isConnected ?? false;
-
-      if (isOnline && wasOffline.current) {
-        // Flush crash reports immediately on reconnect (don't wait for sync interval)
-        crashReporter.flushPendingReports().catch(() => {});
-
-        const timeSinceSync = lastSyncAt ? Date.now() - lastSyncAt : Infinity;
-        if (timeSinceSync > MIN_SYNC_INTERVAL && status !== 'syncing') {
-          console.log('[AutoSync] Network restored, syncing...');
-          sync();
-        }
+  const syncIfOnline = () => {
+    NetInfo.fetch().then((net) => {
+      if (net.isConnected && useSyncStore.getState().status !== 'syncing') {
+        useSyncStore.getState().sync();
       }
+    }).catch(() => {});
+  };
 
-      wasOffline.current = !isOnline;
+  // Core: auto-sync when WDB tables change (official WDB pattern)
+  useEffect(() => {
+    const subscription = database.withChangesForTables([
+      'pedidos', 'detalle_pedidos', 'ruta_detalles', 'rutas',
+      'visitas', 'cobros', 'clientes',
+    ]).subscribe(() => {
+      // Debounce — wait 2s after last write before syncing
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+      debounceTimer.current = setTimeout(syncIfOnline, SYNC_DEBOUNCE_MS);
     });
 
-    return () => unsubscribe();
-  }, [lastSyncAt, status]);
+    return () => {
+      subscription.unsubscribe();
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    };
+  }, []);
 
+  // Auto-sync when network comes back online
   useEffect(() => {
-    // Auto-sync when app comes to foreground
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      const isOnline = state.isConnected ?? false;
+      if (isOnline && wasOffline.current) {
+        crashReporter.flushPendingReports().catch(() => {});
+        syncIfOnline();
+      }
+      wasOffline.current = !isOnline;
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Auto-sync when app comes to foreground
+  useEffect(() => {
     const subscription = AppState.addEventListener(
       'change',
       (nextState: AppStateStatus) => {
-        if (nextState === 'active') {
-          const timeSinceSync = lastSyncAt ? Date.now() - lastSyncAt : Infinity;
-          if (timeSinceSync > MIN_SYNC_INTERVAL && status !== 'syncing') {
-            console.log('[AutoSync] App foregrounded, syncing...');
-            sync();
-          }
-        }
+        if (nextState === 'active') syncIfOnline();
       }
     );
-
     return () => subscription.remove();
-  }, [lastSyncAt, status]);
+  }, []);
 
   // Initial sync on mount
-  useEffect(() => {
-    if (!lastSyncAt && status === 'idle') {
-      sync();
-    }
-  }, []);
+  useEffect(() => { sync(); }, []);
 }

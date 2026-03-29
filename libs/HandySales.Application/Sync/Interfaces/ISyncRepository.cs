@@ -24,6 +24,9 @@ public interface ISyncRepository
     // Push changes from client - Rutas
     Task<(RutaVendedor entity, bool wasConflict)> UpsertRutaAsync(int tenantId, int usuarioId, SyncRutaDto dto, string userId);
 
+    // Push changes from client - RutaDetalles
+    Task<bool> UpsertRutaDetalleAsync(int tenantId, int usuarioId, SyncRutaDetalleDto dto);
+
     // Pull/Push - Cobros
     Task<List<Cobro>> GetCobrosModifiedSinceAsync(int tenantId, int usuarioId, DateTime? since);
     Task<(Cobro entity, bool wasConflict)> UpsertCobroAsync(int tenantId, int usuarioId, SyncCobroDto dto, string userId);

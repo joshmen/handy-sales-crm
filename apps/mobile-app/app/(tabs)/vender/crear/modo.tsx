@@ -1,30 +1,61 @@
-import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useState, useCallback, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, BackHandler } from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOrderDraftStore } from '@/stores';
-import { ClipboardList, Truck } from 'lucide-react-native';
+import { ClipboardList, Truck, ChevronLeft } from 'lucide-react-native';
 import { COLORS } from '@/theme/colors';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 export default function ModoVentaScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { setTipoVenta, reset } = useOrderDraftStore();
+  const { setTipoVenta, reset, clienteId } = useOrderDraftStore();
+  const { fromParada } = useLocalSearchParams<{ fromParada?: string }>();
   const [selected, setSelected] = useState<number | null>(null);
+
+  const handleBack = useCallback(() => {
+    if (fromParada) {
+      router.replace(`/(tabs)/ruta/parada/${fromParada}` as any);
+    } else {
+      router.back();
+    }
+  }, [fromParada, router]);
+
+  // Intercept Android back gesture
+  useEffect(() => {
+    if (!fromParada) return;
+    const handler = BackHandler.addEventListener('hardwareBackPress', () => {
+      handleBack();
+      return true;
+    });
+    return () => handler.remove();
+  }, [fromParada, handleBack]);
 
   const handleSelect = (tipo: number) => {
     setSelected(tipo);
-    reset();
+    // If coming from parada, DON'T reset — client is already set
+    if (!fromParada) {
+      reset();
+    }
     setTipoVenta(tipo);
-    router.replace('/(tabs)/vender/crear' as any);
+    // If client already selected (from parada), skip to products
+    if (clienteId) {
+      router.push(`/(tabs)/vender/crear/productos?fromParada=${fromParada || ''}` as any);
+    } else {
+      router.replace('/(tabs)/vender/crear' as any);
+    }
   };
 
   return (
     <View style={styles.container}>
       {/* Blue Header */}
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+        <TouchableOpacity onPress={handleBack} style={styles.backBtn}>
+          <ChevronLeft size={22} color={COLORS.headerText} />
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>Nuevo Pedido</Text>
+        <View style={{ width: 22 }} />
       </View>
 
       <View style={styles.body}>
@@ -77,14 +108,19 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: COLORS.headerBg,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingBottom: 16,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
+  backBtn: { padding: 4 },
   headerTitle: {
+    flex: 1,
     fontSize: 20,
     fontWeight: '700',
     color: COLORS.headerText,
+    textAlign: 'center',
   },
   body: {
     paddingHorizontal: 20,

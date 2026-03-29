@@ -123,6 +123,16 @@ public class SyncService
                     else
                     {
                         response.Summary.PedidosPushed++;
+                        // Return ID mapping for newly created records
+                        if (dto.Operation == SyncOperation.Create && !string.IsNullOrEmpty(dto.LocalId))
+                        {
+                            response.CreatedIdMappings.Add(new IdMappingDto
+                            {
+                                EntityType = "pedidos",
+                                LocalId = dto.LocalId,
+                                ServerId = entity.Id
+                            });
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -247,6 +257,31 @@ public class SyncService
                     response.Errors.Add(new SyncErrorDto
                     {
                         EntityType = "Cobro",
+                        EntityId = dto.Id > 0 ? dto.Id : null,
+                        Operation = dto.Operation.ToString(),
+                        Message = ex.Message
+                    });
+                    response.Summary.ErrorsFound++;
+                }
+            }
+        }
+
+        // Push RutaDetalles (updates only — detalles are created by admin)
+        if (clientChanges.RutaDetalles?.Any() == true)
+        {
+            foreach (var dto in clientChanges.RutaDetalles.Where(rd => rd.Operation == SyncOperation.Update))
+            {
+                try
+                {
+                    var success = await _repo.UpsertRutaDetalleAsync(tenantId, usuarioId, dto);
+                    if (success)
+                        response.Summary.RutaDetallesPushed++;
+                }
+                catch (Exception ex)
+                {
+                    response.Errors.Add(new SyncErrorDto
+                    {
+                        EntityType = "RutaDetalle",
                         EntityId = dto.Id > 0 ? dto.Id : null,
                         Operation = dto.Operation.ToString(),
                         Message = ex.Message

@@ -490,6 +490,34 @@ public class SyncRepository : ISyncRepository
         throw new InvalidOperationException($"RutaVendedor sync only supports Update operation. Id: {dto.Id}, Operation: {dto.Operation}");
     }
 
+    public async Task<bool> UpsertRutaDetalleAsync(int tenantId, int usuarioId, SyncRutaDetalleDto dto)
+    {
+        if (dto.Id <= 0) return false;
+
+        var existing = await _db.RutasDetalle
+            .Include(d => d.Ruta)
+            .FirstOrDefaultAsync(d => d.Id == dto.Id
+                && d.Ruta != null
+                && d.Ruta.TenantId == tenantId
+                && d.Ruta.UsuarioId == usuarioId);
+
+        if (existing == null) return false;
+
+        existing.Estado = (EstadoParada)dto.Estado;
+        existing.RazonOmision = dto.RazonOmision;
+        existing.HoraLlegadaReal = dto.HoraLlegadaReal;
+        existing.HoraSalidaReal = dto.HoraSalidaReal;
+        existing.Latitud = dto.LatitudLlegada;
+        existing.Longitud = dto.LongitudLlegada;
+        existing.VisitaId = dto.VisitaId;
+        existing.PedidoId = dto.PedidoId;
+        if (!string.IsNullOrEmpty(dto.Notas))
+            existing.Notas = dto.Notas;
+        existing.ActualizadoEn = DateTime.UtcNow;
+
+        return await _db.SaveChangesAsync() > 0;
+    }
+
     public async Task<List<Cobro>> GetCobrosModifiedSinceAsync(int tenantId, int usuarioId, DateTime? since)
     {
         var query = _db.Cobros

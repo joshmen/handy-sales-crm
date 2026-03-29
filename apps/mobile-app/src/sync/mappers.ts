@@ -38,26 +38,25 @@ export function mapPullToWatermelon(
 
 function splitByOperation(
   items: any[] | undefined,
-  isFirstSync: boolean,
+  _isFirstSync: boolean,
   mapper: (item: any) => DirtyRaw
 ): { created: DirtyRaw[]; updated: DirtyRaw[]; deleted: string[] } {
   if (!items?.length) return { created: [], updated: [], deleted: [] };
 
-  const created: DirtyRaw[] = [];
   const updated: DirtyRaw[] = [];
   const deleted: string[] = [];
 
   for (const item of items) {
     if (item.isDeleted || item.operation === 2) {
       deleted.push(String(item.id));
-    } else if (isFirstSync || item.operation === 0) {
-      created.push(mapper(item));
     } else {
+      // All records go as 'updated' — sendCreatedAsUpdated: true
+      // WDB creates records that don't exist locally, updates those that do
       updated.push(mapper(item));
     }
   }
 
-  return { created, updated, deleted };
+  return { created: [], updated, deleted };
 }
 
 // ── Entity Mappers (server DTO → WatermelonDB raw) ──
@@ -167,11 +166,8 @@ function extractDetallesPedido(
         updated_at: toTimestamp(pedido.actualizadoEn),
       };
 
-      if (isFirstSync || d.operation === 0) {
-        created.push(raw);
-      } else {
-        updated.push(raw);
-      }
+      // All as 'updated' — sendCreatedAsUpdated: true handles creation
+      updated.push(raw);
     }
   }
 
@@ -218,6 +214,7 @@ function extractDetallesRuta(
         cliente_id: String(d.clienteId),
         cliente_server_id: d.clienteId,
         orden: d.ordenVisita ?? 0,
+        pedido_id: d.pedidoId ? String(d.pedidoId) : null,
         estado: d.estado ?? 0,
         hora_llegada: toTimestamp(d.horaLlegadaReal),
         hora_salida: toTimestamp(d.horaSalidaReal),
@@ -229,11 +226,11 @@ function extractDetallesRuta(
         updated_at: toTimestamp(ruta.actualizadoEn),
       };
 
-      if (isFirstSync || d.operation === 0) {
-        created.push(raw);
-      } else {
+      if (isFirstSync) {
+        // All as 'updated' — sendCreatedAsUpdated: true handles creation
         updated.push(raw);
       }
+      // Delta sync: skip — mobile push handles updating the server
     }
   }
 
@@ -295,6 +292,8 @@ export async function mapPushFromWatermelon(changes: SyncDatabaseChangeSet): Pro
   const dp = (changes as any).detalle_pedidos;
   const v = (changes as any).visitas;
   const co = (changes as any).cobros;
+  const r = (changes as any).rutas;
+  const rd = (changes as any).ruta_detalles;
 
   // Build pedidos with their detalles included
   const pedidos = [
@@ -346,7 +345,12 @@ export async function mapPushFromWatermelon(changes: SyncDatabaseChangeSet): Pro
       ...mapPushEntities(co?.updated, 1, rawToCobroDto),
       ...mapDeleteIds(co?.deleted),
     ],
-    // Rutas are read-only for vendors (admin-assigned)
+    rutas: [
+      ...mapPushEntities(r?.updated, 1, rawToRutaDto),
+    ],
+    rutaDetalles: [
+      ...mapPushEntities(rd?.updated, 1, rawToRutaDetalleDto),
+    ],
   };
 }
 
@@ -418,6 +422,44 @@ function rawToVisitaDto(raw: DirtyRaw, operation: number): any {
     estado: raw.resultado ?? 0,
     notas: raw.notas,
     activo: raw.activo ?? true,
+    version: raw.version ?? 1,
+    operation,
+  };
+}
+
+function rawToRutaDto(raw: DirtyRaw, operation: number): any {
+  return {
+    id: raw.server_id ?? 0,
+    localId: raw.id,
+    nombre: raw.nombre ?? '',
+    fecha: raw.fecha ? new Date(raw.fecha).toISOString() : new Date().toISOString(),
+    estado: raw.estado ?? 0,
+    horaInicioReal: raw.hora_inicio ? new Date(raw.hora_inicio).toISOString() : null,
+    horaFinReal: raw.hora_fin ? new Date(raw.hora_fin).toISOString() : null,
+    kilometrosReales: raw.km_recorridos ?? null,
+    notas: raw.notas,
+    activo: raw.activo ?? true,
+    version: raw.version ?? 1,
+    operation,
+  };
+}
+
+function rawToRutaDetalleDto(raw: DirtyRaw, operation: number): any {
+  console.log('[Sync] rawToRutaDetalleDto — id:', raw.id, 'server_id:', raw.server_id, 'estado:', raw.estado);
+  return {
+    id: raw.server_id ?? 0,
+    localId: raw.id,
+    clienteId: raw.cliente_server_id ?? (parseInt(String(raw.cliente_id), 10) || 0),
+    ordenVisita: raw.orden ?? 0,
+    horaLlegadaReal: raw.hora_llegada ? new Date(raw.hora_llegada).toISOString() : null,
+    horaSalidaReal: raw.hora_salida ? new Date(raw.hora_salida).toISOString() : null,
+    latitudLlegada: raw.latitud_llegada ?? null,
+    longitudLlegada: raw.longitud_llegada ?? null,
+    estado: raw.estado ?? 0,
+    razonOmision: raw.notas ?? null,
+    visitaId: null,
+    pedidoId: raw.pedido_id ? (parseInt(String(raw.pedido_id), 10) || null) : null,
+    notas: raw.notas,
     version: raw.version ?? 1,
     operation,
   };

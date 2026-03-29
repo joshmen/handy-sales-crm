@@ -1,4 +1,4 @@
-import { Platform } from 'react-native';
+import { Platform, View, StyleSheet } from 'react-native';
 import { Tabs, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Calendar, Map, Users, ShoppingBag, CreditCard, MoreHorizontal } from 'lucide-react-native';
@@ -8,6 +8,7 @@ import { useUnreadNotificationCount } from '@/hooks/useNotificationCount';
 import { usePendingCount } from '@/hooks';
 import { useAuthStore } from '@/stores';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
+import { OfflineBanner } from '@/components/ui/OfflineBanner';
 import { COLORS } from '@/theme/colors';
 
 export default function TabsLayout() {
@@ -32,6 +33,7 @@ export default function TabsLayout() {
 
   return (
     <ErrorBoundary componentName="TabsRoot">
+    <View style={{ flex: 1 }}>
     <Tabs
       screenOptions={{
         headerShown: false,
@@ -85,6 +87,12 @@ export default function TabsLayout() {
       />
       <Tabs.Screen
         name="vender"
+        listeners={{
+          tabPress: (e) => {
+            // Reset vender stack to index when tab is pressed
+            router.replace('/(tabs)/vender' as any);
+          },
+        }}
         options={{
           title: 'Vender',
           tabBarIcon: ({ color, size }) => <ShoppingBag size={size} color={color} />,
@@ -124,6 +132,8 @@ export default function TabsLayout() {
       <Tabs.Screen name="ayuda" options={{ href: null }} />
       <Tabs.Screen name="acerca" options={{ href: null }} />
     </Tabs>
+    <OfflineBanner />
+    </View>
     </ErrorBoundary>
   );
 }

@@ -2,6 +2,7 @@ import { Stack } from 'expo-router';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 
 export default function RutaLayout() {
+
   return (
     <ErrorBoundary componentName="RutaStack">
     <Stack
@@ -12,10 +13,10 @@ export default function RutaLayout() {
         animation: 'slide_from_right',
       }}
     >
-      <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="parada/[detalleId]" options={{ headerShown: false }} />
-      <Stack.Screen name="visita-activa" options={{ headerShown: false }} />
-      <Stack.Screen name="resumen" options={{ headerShown: false }} />
+      <Stack.Screen name="index" options={{ headerShown: false, gestureEnabled: false }} />
+      <Stack.Screen name="parada/[detalleId]" options={{ headerShown: false, gestureEnabled: false }} />
+      <Stack.Screen name="visita-activa" options={{ headerShown: false, gestureEnabled: false }} />
+      <Stack.Screen name="resumen" options={{ headerShown: false, gestureEnabled: false }} />
     </Stack>
     </ErrorBoundary>
   );

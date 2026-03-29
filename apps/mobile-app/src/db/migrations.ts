@@ -43,5 +43,16 @@ export const migrations = schemaMigrations({
         }),
       ],
     },
+    {
+      toVersion: 5,
+      steps: [
+        addColumns({
+          table: 'ruta_detalles',
+          columns: [
+            { name: 'pedido_id', type: 'string', isOptional: true },
+          ],
+        }),
+      ],
+    },
   ],
 });

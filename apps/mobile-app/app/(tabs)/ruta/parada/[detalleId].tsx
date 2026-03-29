@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { View, Text, ScrollView, Alert, Linking, StyleSheet, TouchableOpacity } from 'react-native';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { View, Text, ScrollView, Linking, StyleSheet, TouchableOpacity, Modal, TextInput, Dimensions, Keyboard, Animated as RNAnimated } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker, Circle } from 'react-native-maps';
@@ -8,23 +8,30 @@ import {
   useOfflineRutaHoy,
   useOfflineRutaDetalles,
   useOfflineClientById,
+  useOfflineOrderById,
+  useOfflineOrderDetalles,
 } from '@/hooks';
 import { useUserLocation } from '@/hooks/useLocation';
-import { useAuthStore } from '@/stores';
-import { performCheckIn, formatDistance } from '@/services/geoCheckin';
-import { createVisitaOffline } from '@/db/actions';
-import { performSync } from '@/sync/syncEngine';
+import { formatDistance } from '@/services/geoCheckin';
+import { database } from '@/db/database';
+import { Q } from '@nozbe/watermelondb';
+import RutaDetalle from '@/db/models/RutaDetalle';
+import Ruta from '@/db/models/Ruta';
 import { getGeofenceColor } from '@/utils/mapColors';
 import { Card, Button, LoadingSpinner, ConfirmModal } from '@/components/ui';
 import { Badge } from '@/components/ui';
 import { COLORS } from '@/theme/colors';
-import { formatTime } from '@/utils/format';
+import { formatTime, formatCurrency } from '@/utils/format';
 import {
   MapPin,
   Clock,
   ChevronLeft,
+  Package,
+  CircleAlert,
+  Phone,
+  Navigation,
 } from 'lucide-react-native';
-import { SbVisit } from '@/components/icons/DashboardIcons';
+import { SbRoute, SbWarning } from '@/components/icons/DashboardIcons';
 
 const STOP_STATUS_COLORS: Record<number, string> = {
   0: '#6b7280', 1: '#f59e0b', 2: '#22c55e', 3: '#ef4444',
@@ -37,12 +44,27 @@ export default function ParadaDetailScreen() {
   const insets = useSafeAreaInsets();
   const { detalleId } = useLocalSearchParams<{ detalleId: string }>();
   const router = useRouter();
-  const user = useAuthStore((s) => s.user);
   const { location } = useUserLocation();
 
-  const [checkingIn, setCheckingIn] = useState(false);
-  const [distance, setDistance] = useState<number | null>(null);
-  const [showConfirmVisita, setShowConfirmVisita] = useState(false);
+  const [showError, setShowError] = useState<string | null>(null);
+  const [showConfirmEntrega, setShowConfirmEntrega] = useState(false);
+  const [showNoEntrega, setShowNoEntrega] = useState(false);
+  const [noEntregaReason, setNoEntregaReason] = useState('');
+  const [delivering, setDelivering] = useState(false);
+  const [showNoVisito, setShowNoVisito] = useState(false);
+  const [noVisitoReason, setNoVisitoReason] = useState('');
+
+  // Keyboard offset for modals — moves card up when keyboard appears
+  const keyboardOffset = useRef(new RNAnimated.Value(0)).current;
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
+      RNAnimated.timing(keyboardOffset, { toValue: -(e.endCoordinates.height / 2.5), duration: 200, useNativeDriver: true }).start();
+    });
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+      RNAnimated.timing(keyboardOffset, { toValue: 0, duration: 200, useNativeDriver: true }).start();
+    });
+    return () => { showSub.remove(); hideSub.remove(); };
+  }, []);
 
   // Get route + stop from WDB
   const { data: rutas, isLoading: rutaLoading } = useOfflineRutaHoy();
@@ -53,12 +75,16 @@ export default function ParadaDetailScreen() {
   // Get client from WDB
   const { data: client } = useOfflineClientById(stop?.clienteId ?? '');
 
+  // Get order data for delivery stops
+  const isDeliveryStop = !!stop?.pedidoId;
+  const { data: pedido } = useOfflineOrderById(isDeliveryStop ? stop?.pedidoId ?? undefined : undefined);
+  const { data: orderDetalles } = useOfflineOrderDetalles(stop?.pedidoId ?? '');
+
   const clientLat = client?.latitud ?? null;
   const clientLng = client?.longitud ?? null;
 
   // Compute distance when location and client coords available
   const userDistance = (() => {
-    if (distance != null) return distance;
     if (!location || !clientLat || !clientLng) return null;
     const { haversineDistance } = require('@/services/geoCheckin');
     return Math.round(haversineDistance(location, { latitude: clientLat, longitude: clientLng }));
@@ -72,43 +98,109 @@ export default function ParadaDetailScreen() {
     }
   }, [clientLat, clientLng]);
 
-  const handleLlegar = useCallback(() => {
-    if (!stop || !client) return;
-    setShowConfirmVisita(true);
-  }, [stop, client]);
+  // Auto-start route if still Planificada (offline-first, sync will push later)
+  useEffect(() => {
+    if (!route) return;
+    database.get<Ruta>('rutas').find(route.id).then((freshRoute) => {
+      if (freshRoute.estado === 0) freshRoute.startRoute().catch(() => {});
+    }).catch(() => {});
+  }, [route?.id]);
 
-  const executeIniciarVisita = useCallback(async () => {
-    setShowConfirmVisita(false);
-    if (!stop || !client) return;
-    setCheckingIn(true);
-    try {
-      if (!clientLat || !clientLng) {
-        Alert.alert('Error', 'El cliente no tiene ubicación registrada');
-        return;
-      }
+  // Auto GPS check-in on mount for Pendiente stops
+  useEffect(() => {
+    if (!stop || !location || stop.estado !== 0) return;
+    stop.arrive(location.latitude, location.longitude).catch(() => {});
+  }, [stop?.id, location]);
 
-      const result = await performCheckIn({ latitude: clientLat, longitude: clientLng });
-      setDistance(result.distance);
-
-      await createVisitaOffline(
-        stop.clienteId,
-        client.serverId,
-        Number(user?.id ?? 0),
-        result.coords.latitude,
-        result.coords.longitude,
-        result.distance,
-        route?.id
-      );
-
-      await stop.arrive(result.coords.latitude, result.coords.longitude);
-      performSync().catch(() => {});
-      router.push('/(tabs)/ruta/visita-activa' as any);
-    } catch {
-      Alert.alert('Error', 'No se pudo iniciar la visita');
-    } finally {
-      setCheckingIn(false);
+  const handleLlamar = useCallback(() => {
+    if (client?.telefono) {
+      Linking.openURL(`tel:${client.telefono}`);
     }
-  }, [stop, client, clientLat, clientLng, user, route, router]);
+  }, [client]);
+
+  // Auto-complete route when all stops are attended (visited or skipped)
+  const checkAutoCompleteRoute = useCallback(async () => {
+    if (!route || route.estado === 2) return;
+    const allStops = await database.get<RutaDetalle>('ruta_detalles')
+      .query(Q.where('ruta_id', route.id), Q.sortBy('orden', Q.asc)).fetch();
+    const allAttended = allStops.length > 0 && allStops.every((s) => s.estado === 2 || s.estado === 3);
+    if (allAttended) {
+      // Calculate km from GPS coords of visited stops
+      const { haversineDistance: hd } = require('@/services/geoCheckin');
+      const visited = allStops.filter((s) => s.latitudLlegada != null && s.longitudLlegada != null);
+      let totalMeters = 0;
+      for (let i = 1; i < visited.length; i++) {
+        totalMeters += hd(
+          { latitude: visited[i - 1].latitudLlegada!, longitude: visited[i - 1].longitudLlegada! },
+          { latitude: visited[i].latitudLlegada!, longitude: visited[i].longitudLlegada! },
+        );
+      }
+      const km = Math.round((totalMeters / 1000) * 10) / 10;
+      const freshRoute = await database.get<Ruta>('rutas').find(route.id);
+      await freshRoute.completeRoute(km);
+    }
+  }, [route?.id, route?.estado]);
+
+  const executeNoVisito = useCallback(async () => {
+    setShowNoVisito(false);
+    const reason = noVisitoReason || 'No se visitó';
+    try {
+      const freshStop = await database.get<RutaDetalle>('ruta_detalles').find(detalleId);
+      await freshStop.skip(reason);
+      await checkAutoCompleteRoute();
+      setNoVisitoReason('');
+      router.back();
+    } catch {
+      setShowError('No se pudo marcar la parada.');
+    }
+  }, [detalleId, noVisitoReason, router, checkAutoCompleteRoute]);
+
+  const executeConfirmarEntrega = useCallback(async () => {
+    setShowConfirmEntrega(false);
+    setDelivering(true);
+    try {
+      // 1. Update local (WDB sync will push to server automatically)
+      if (stop) await stop.depart();
+      await checkAutoCompleteRoute();
+
+      // 2. Navigate to receipt screen with order data
+      router.replace({
+        pathname: '/(tabs)/cobrar/recibo',
+        params: {
+          clienteNombre: encodeURIComponent(client?.nombre || 'Cliente'),
+          monto: String(pedido?.total ?? 0),
+          metodoPago: '0',
+          referencia: '',
+          notas: encodeURIComponent(`Entrega pedido ${pedido?.numeroPedido ?? ''}`),
+          fecha: new Date().toISOString(),
+          fromVentaDirecta: '1',
+          fromEntrega: '1',
+          pedidoId: pedido?.id ?? '',
+        },
+      } as any);
+    } catch {
+      setShowError('No se pudo confirmar la entrega. Intenta de nuevo.');
+    } finally {
+      setDelivering(false);
+    }
+  }, [pedido, stop, router, checkAutoCompleteRoute]);
+
+  const executeNoEntrega = useCallback(async () => {
+    setShowNoEntrega(false);
+    const reason = noEntregaReason || 'No se entregó';
+    setDelivering(true);
+    try {
+      const freshStop = await database.get<RutaDetalle>('ruta_detalles').find(detalleId);
+      await freshStop.skip(reason);
+      await checkAutoCompleteRoute();
+      setNoEntregaReason('');
+      router.back();
+    } catch {
+      setShowError('No se pudo omitir la parada.');
+    } finally {
+      setDelivering(false);
+    }
+  }, [detalleId, noEntregaReason, router, checkAutoCompleteRoute]);
 
   if (rutaLoading || !route) {
     return <View style={styles.container}><LoadingSpinner message="Cargando..." /></View>;
@@ -218,52 +310,132 @@ export default function ParadaDetailScreen() {
       </Card>
       </Animated.View>
 
-      {/* Navigation */}
-      {clientLat && clientLng && (
+      {/* Llamar + Navegar buttons */}
+      {(client?.telefono || (clientLat && clientLng)) && (
         <Animated.View entering={FadeInDown.duration(400).delay(300)}>
+        <View style={styles.actionRow}>
+          {client?.telefono && (
+            <TouchableOpacity
+              style={[styles.outlineButtonGray, { flex: 1 }]}
+              onPress={handleLlamar}
+              activeOpacity={0.7}
+            >
+              <Phone size={16} color="#64748b" />
+              <Text style={styles.outlineButtonGrayText}>Llamar</Text>
+            </TouchableOpacity>
+          )}
+          {clientLat && clientLng && (
+            <TouchableOpacity
+              style={[styles.outlineButtonGray, { flex: 1 }]}
+              onPress={handleNavegar}
+              activeOpacity={0.7}
+            >
+              <Navigation size={16} color="#64748b" />
+              <Text style={styles.outlineButtonGrayText}>Navegar</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        </Animated.View>
+      )}
+
+      {/* === DELIVERY STOP: Order details + delivery buttons === */}
+      {isDeliveryStop && (isPendiente || isEnProgreso) && (
+        <Animated.View entering={FadeInDown.duration(400).delay(400)}>
         <Card className="mx-4 mb-3">
-          <Button
-            title="Navegar con Google Maps"
-            onPress={handleNavegar}
-            variant="secondary"
-            fullWidth
-          />
+          {/* Order Header */}
+          <View style={styles.orderHeader}>
+            <View style={styles.orderIconCircle}>
+              <Package size={18} color="#1565C0" />
+            </View>
+            <Text style={styles.orderHeaderTitle}>
+              PEDIDO #{pedido?.numeroPedido ?? '---'}
+            </Text>
+          </View>
+
+          {/* Product List */}
+          {orderDetalles && orderDetalles.length > 0 ? (
+            <View style={styles.productList}>
+              {orderDetalles.map((item) => (
+                <View key={item.id} style={styles.productRow}>
+                  <View style={styles.productInfo}>
+                    <Text style={styles.productName} numberOfLines={2}>
+                      {item.productoNombre}
+                    </Text>
+                    <Text style={styles.productQty}>
+                      {item.cantidad} × {formatCurrency(item.precioUnitario)}
+                    </Text>
+                  </View>
+                  <Text style={styles.productSubtotal}>
+                    {formatCurrency(item.subtotal)}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <Text style={styles.emptyProducts}>Cargando productos...</Text>
+          )}
+
+          {/* Total */}
+          <View style={styles.orderTotalRow}>
+            <Text style={styles.orderTotalLabel}>Total</Text>
+            <Text style={styles.orderTotalValue}>
+              {formatCurrency(pedido?.total ?? 0)}
+            </Text>
+          </View>
         </Card>
         </Animated.View>
       )}
 
-      {/* Quick Actions */}
-      {(isPendiente || isEnProgreso) && (
+      {/* Delivery Action Buttons */}
+      {isDeliveryStop && (isPendiente || isEnProgreso) && (
+        <Animated.View entering={FadeInDown.duration(400).delay(500)}>
+        <View style={styles.quickActions}>
+          {/* Primary: Confirmar Entrega */}
+          <Button
+            title="Confirmar Entrega"
+            onPress={() => setShowConfirmEntrega(true)}
+            loading={delivering}
+            fullWidth
+            icon={<Package size={18} color="#ffffff" />}
+          />
+          {/* No se entregó */}
+          <TouchableOpacity
+            style={styles.outlineButtonRed}
+            onPress={() => setShowNoEntrega(true)}
+            activeOpacity={0.7}
+          >
+            <CircleAlert size={16} color="#E11D48" />
+            <Text style={styles.outlineButtonRedText}>No se entregó</Text>
+          </TouchableOpacity>
+        </View>
+        </Animated.View>
+      )}
+
+      {/* === PREVENTA STOP: Original quick actions === */}
+      {!isDeliveryStop && (isPendiente || isEnProgreso) && (
         <Animated.View entering={FadeInDown.duration(400).delay(400)}>
         <View style={styles.quickActions}>
           <Button
             title="Nuevo Pedido"
             onPress={() => {
-              const { setCliente } = require('@/stores').useOrderDraftStore.getState();
-              setCliente(stop.clienteId, client?.serverId ?? Number(stop.clienteId), client?.nombre || 'Cliente');
-              router.push(`/(tabs)/vender/crear/productos?fromParada=${detalleId}` as any);
+              const store = require('@/stores').useOrderDraftStore.getState();
+              store.setCliente(stop.clienteId, client?.serverId ?? Number(stop.clienteId), client?.nombre || 'Cliente');
+              store.setFromParada(detalleId);
+              router.push(`/(tabs)/vender/crear/modo?fromParada=${detalleId}` as any);
             }}
             variant="secondary"
             fullWidth
           />
           <Button
             title="Registrar Cobro"
-            onPress={() => router.push(`/(tabs)/cobrar/registrar?clienteId=${stop.clienteId}&clienteNombre=${encodeURIComponent(client?.nombre ?? '')}&saldo=0` as any)}
+            onPress={() => router.push(`/(tabs)/cobrar/registrar?clienteId=${stop.clienteId}&clienteNombre=${encodeURIComponent(client?.nombre ?? '')}&saldo=0&fromRuta=1&paradaId=${detalleId}` as any)}
             variant="secondary"
             fullWidth
           />
-        </View>
-        </Animated.View>
-      )}
-
-      {/* Check-in Button */}
-      {isPendiente && (
-        <Animated.View entering={FadeInDown.duration(400).delay(500)}>
-        <View style={styles.mainActions}>
           <Button
-            title="Llegué — Iniciar Visita"
-            onPress={handleLlegar}
-            loading={checkingIn}
+            title="No se visitó"
+            onPress={() => setShowNoVisito(true)}
+            variant="outline"
             fullWidth
           />
         </View>
@@ -277,14 +449,120 @@ export default function ParadaDetailScreen() {
         </Card>
       )}
 
+      {/* No se visitó Modal (preventa) */}
+      <Modal
+        visible={showNoVisito}
+        transparent
+        animationType="fade"
+        onRequestClose={() => { setShowNoVisito(false); setNoVisitoReason(''); }}
+        statusBarTranslucent
+      >
+        <View style={styles.modalOverlay}>
+          <RNAnimated.View style={[styles.modalCard, { transform: [{ translateY: keyboardOffset }] }]}>
+            <SbWarning size={48} />
+            <Text style={styles.modalTitle}>No se visitó</Text>
+            <Text style={styles.modalMessage}>Indica el motivo (minimo 10 caracteres):</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Ej: Cliente cerrado, no habia quien recibiera..."
+              placeholderTextColor="#94a3b8"
+              value={noVisitoReason}
+              onChangeText={setNoVisitoReason}
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+            />
+            {noVisitoReason.length > 0 && noVisitoReason.length < 10 && (
+              <Text style={{ fontSize: 11, color: '#94a3b8', marginTop: -14, marginBottom: 10, alignSelf: 'flex-end' }}>
+                {10 - noVisitoReason.length} caracteres mas
+              </Text>
+            )}
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.modalCancelBtn}
+                onPress={() => { setShowNoVisito(false); setNoVisitoReason(''); }}
+              >
+                <Text style={styles.modalCancelText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalConfirmBtn, noVisitoReason.length < 10 && { opacity: 0.4 }]}
+                onPress={executeNoVisito}
+                disabled={noVisitoReason.length < 10}
+              >
+                <Text style={styles.modalConfirmText}>Confirmar</Text>
+              </TouchableOpacity>
+            </View>
+          </RNAnimated.View>
+        </View>
+      </Modal>
+
+      {/* Confirm Entrega Modal (delivery) */}
       <ConfirmModal
-        visible={showConfirmVisita}
-        title="Iniciar Visita"
-        message={`¿Llegaste a ${client?.nombre ?? 'este cliente'}?`}
-        confirmText="Sí, llegué"
-        onConfirm={executeIniciarVisita}
-        onCancel={() => setShowConfirmVisita(false)}
-        icon={<SbVisit size={48} />}
+        visible={showConfirmEntrega}
+        title="Confirmar Entrega"
+        message={`¿Confirmas la entrega del pedido #${pedido?.numeroPedido ?? ''} a ${client?.nombre ?? 'este cliente'}?`}
+        confirmText="Sí, entregar"
+        onConfirm={executeConfirmarEntrega}
+        onCancel={() => setShowConfirmEntrega(false)}
+      />
+
+      {/* No Entrega Modal — custom with TextInput */}
+      <Modal
+        visible={showNoEntrega}
+        transparent
+        animationType="fade"
+        onRequestClose={() => { setShowNoEntrega(false); setNoEntregaReason(''); }}
+        statusBarTranslucent
+      >
+        <View style={styles.modalOverlay}>
+          <RNAnimated.View style={[styles.modalCard, { transform: [{ translateY: keyboardOffset }] }]}>
+            <SbWarning size={48} />
+            <Text style={styles.modalTitle}>No se entregó</Text>
+            <Text style={styles.modalMessage}>Indica el motivo (minimo 10 caracteres):</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Ej: Cliente cerrado, no habia quien recibiera..."
+              placeholderTextColor="#94a3b8"
+              value={noEntregaReason}
+              onChangeText={setNoEntregaReason}
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+            />
+            {noEntregaReason.length > 0 && noEntregaReason.length < 10 && (
+              <Text style={{ fontSize: 11, color: '#94a3b8', marginTop: -14, marginBottom: 10, alignSelf: 'flex-end' }}>
+                {10 - noEntregaReason.length} caracteres mas
+              </Text>
+            )}
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.modalCancelBtn}
+                onPress={() => { setShowNoEntrega(false); setNoEntregaReason(''); }}
+              >
+                <Text style={styles.modalCancelText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalConfirmBtn, noEntregaReason.length < 10 && { opacity: 0.4 }]}
+                onPress={executeNoEntrega}
+                disabled={noEntregaReason.length < 10}
+              >
+                <Text style={styles.modalConfirmText}>Confirmar</Text>
+              </TouchableOpacity>
+            </View>
+          </RNAnimated.View>
+        </View>
+      </Modal>
+
+      {/* Error/Aviso Modal */}
+      <ConfirmModal
+        visible={!!showError}
+        title="Aviso"
+        message={showError ?? ''}
+        confirmText="Aceptar"
+        onConfirm={() => setShowError(null)}
+        onCancel={() => setShowError(null)}
+        cancelText=""
+        icon={<SbRoute size={48} />}
       />
     </ScrollView>
     </View>
@@ -332,6 +610,215 @@ const styles = StyleSheet.create({
   infoRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 8 },
   infoText: { fontSize: 13, color: '#64748b', flex: 1 },
   quickActions: { paddingHorizontal: 16, gap: 8, marginBottom: 12 },
-  mainActions: { paddingHorizontal: 16, marginBottom: 12 },
+  actionRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginBottom: 12 },
   notesText: { fontSize: 13, color: '#64748b', lineHeight: 20 },
+
+  // Delivery stop — order card
+  orderHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 14,
+  },
+  orderIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#DBEAFE',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  orderHeaderTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1565C0',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  productList: {
+    gap: 10,
+    marginBottom: 14,
+  },
+  productRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  productInfo: {
+    flex: 1,
+    marginRight: 12,
+  },
+  productName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#0f172a',
+    marginBottom: 2,
+  },
+  productQty: {
+    fontSize: 12,
+    color: '#94a3b8',
+  },
+  productSubtotal: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#334155',
+  },
+  emptyProducts: {
+    fontSize: 13,
+    color: '#94a3b8',
+    textAlign: 'center',
+    paddingVertical: 12,
+  },
+  orderTotalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 10,
+    borderTopWidth: 1.5,
+    borderTopColor: '#e2e8f0',
+  },
+  orderTotalLabel: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  orderTotalValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#059669',
+  },
+
+  // Delivery action buttons
+  outlineButtonRed: {
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#E11D48',
+    backgroundColor: '#ffffff',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  outlineButtonRedText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#E11D48',
+  },
+
+  outlineButtonGray: {
+    height: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    backgroundColor: '#ffffff',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  outlineButtonGrayText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#64748b',
+  },
+
+  // Custom modal for "No se entrego" with TextInput
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: '#00000050',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+  },
+  modalCard: {
+    width: Math.min(Dimensions.get('window').width - 64, 340),
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    paddingTop: 28,
+    paddingBottom: 20,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 8,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1e293b',
+    textAlign: 'center',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  modalMessage: {
+    fontSize: 14,
+    color: '#64748b',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  modalInput: {
+    width: '100%',
+    minHeight: 80,
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 14,
+    color: '#1e293b',
+    marginBottom: 20,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  modalCancelBtn: {
+    flex: 1,
+    height: 46,
+    borderRadius: 12,
+    backgroundColor: '#f1f5f9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalCancelText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  modalConfirmBtn: {
+    flex: 1,
+    height: 46,
+    borderRadius: 12,
+    backgroundColor: '#E11D48',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#E11D48',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  modalConfirmText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
 });

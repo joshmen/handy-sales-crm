@@ -27,7 +27,9 @@ export default function ReciboScreen() {
     notas: string;
     fecha: string;
     fromVentaDirecta?: string;
+    fromEntrega?: string;
     pedidoId?: string;
+    fromRuta?: string;
   }>();
 
   const clienteNombre = decodeURIComponent(params.clienteNombre || '');
@@ -103,7 +105,9 @@ export default function ReciboScreen() {
   };
 
   const handleDone = () => {
-    if (isFromVD) {
+    if (params.fromEntrega === '1' || params.fromRuta === '1') {
+      router.replace('/(tabs)/ruta' as any);
+    } else if (isFromVD) {
       router.replace('/(tabs)' as any);
     } else {
       router.replace('/(tabs)/cobrar' as any);

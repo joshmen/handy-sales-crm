@@ -50,6 +50,7 @@ export async function performSync(options?: SyncOptions): Promise<void> {
   syncCursors.setSyncInProgress(true);
 
   let pullCount = 0;
+  const pendingIdMappings: any[] = [];
   let pushCount = 0;
   let conflictCount = 0;
 
@@ -127,6 +128,13 @@ export async function performSync(options?: SyncOptions): Promise<void> {
           if (Array.isArray(arr)) pushCount += arr.length;
         }
 
+        // Log what's being pushed
+        const summary = Object.entries(payload)
+          .filter(([, v]) => Array.isArray(v) && (v as any[]).length > 0)
+          .map(([k, v]) => `${k}:${(v as any[]).length}`)
+          .join(', ');
+        if (summary) console.log('[Sync] Pushing:', summary);
+
         // Only push if there are actual changes
         const hasChanges = pushCount > 0;
         if (!hasChanges) return;
@@ -139,13 +147,27 @@ export async function performSync(options?: SyncOptions): Promise<void> {
           conflictCount = Array.isArray(body.conflicts) ? body.conflicts.length : 0;
         }
 
-        // Server IDs for new records are now assigned directly
-        // in revision.tsx via pedidosApi.create() + pedido.setServerId()
+        // Store ID mappings to apply after sync completes
+        const mappings = body?.data?.createdIdMappings ?? body?.createdIdMappings ?? [];
+        if (mappings.length) pendingIdMappings.push(...mappings);
       },
 
-      sendCreatedAsUpdated: false,
+      sendCreatedAsUpdated: true,
       _unsafeBatchPerCollection: true,
     });
+
+    // Phase 2b: Apply server ID mappings for records created during push
+    if (pendingIdMappings.length) {
+      await database.write(async () => {
+        for (const m of pendingIdMappings) {
+          try {
+            const record = await database.get(m.entityType).find(m.localId);
+            await (record as any).update((r: any) => { r.server_id = m.serverId; });
+          } catch { /* record not found — ignore */ }
+        }
+      });
+      console.log('[Sync] Applied', pendingIdMappings.length, 'ID mappings');
+    }
 
     // Phase 3: Upload pending attachments (deferred, non-fatal)
     try {
