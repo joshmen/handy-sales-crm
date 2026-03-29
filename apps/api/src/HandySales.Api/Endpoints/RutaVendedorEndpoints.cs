@@ -73,39 +73,30 @@ public static class RutaVendedorEndpoints
             var id = await servicio.CrearAsync(dto);
 
             // Push notification to assigned vendedor
-            var pushEnabled = true;
-            try { pushEnabled = await notifSettings.IsEnabledAsync(tenantContext.TenantId, "route.published"); } catch { /* default: send */ }
-            if (dto.UsuarioId > 0 && pushEnabled)
+            // Send push notification directly (not fire-and-forget — avoids scope disposal issues)
+            if (dto.UsuarioId > 0)
             {
-                var tenantId = tenantContext.TenantId;
-                var usuarioId = dto.UsuarioId;
-                var nombre = dto.Nombre;
-                var routeId = id;
-
-                _ = Task.Run(async () =>
+                try
                 {
-                    try
+                    var isEnabled = await notifSettings.IsEnabledAsync(tenantContext.TenantId, "route.published");
+                    if (isEnabled)
                     {
                         var client = httpClientFactory.CreateClient("MobileApi");
-                        var response = await client.PostAsJsonAsync("/api/internal/push-notify", new
+                        await client.PostAsJsonAsync("/api/internal/push-notify", new
                         {
-                            tenantId,
-                            userIds = new[] { usuarioId },
+                            tenantId = tenantContext.TenantId,
+                            userIds = new[] { dto.UsuarioId },
                             title = "Nueva ruta asignada",
-                            body = $"Se te asigno la ruta: {nombre}",
+                            body = $"Se te asigno la ruta: {dto.Nombre}",
                             data = new Dictionary<string, string>
                             {
                                 ["type"] = "route.published",
-                                ["entityId"] = routeId.ToString()
+                                ["entityId"] = id.ToString()
                             }
                         });
-                        Console.WriteLine($"[Push] Route {routeId} -> user {usuarioId}: {response.StatusCode}");
                     }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"[Push] Route push FAILED: {ex.Message}");
-                    }
-                });
+                }
+                catch { /* push failure should not block route creation */ }
             }
 
             return Results.Created($"/rutas/{id}", new { id });
