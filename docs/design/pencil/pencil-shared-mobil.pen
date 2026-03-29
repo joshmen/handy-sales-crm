@@ -11361,6 +11361,52 @@
                   ]
                 }
               ]
+            },
+            {
+              "type": "text",
+              "id": "VSMIR",
+              "name": "gpsLabel",
+              "fill": "#94a3b8",
+              "content": "UBICACION GPS",
+              "fontFamily": "DM Sans",
+              "fontSize": 12,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "M8l2N",
+              "name": "ccGpsBtn",
+              "width": "fill_container",
+              "height": 48,
+              "cornerRadius": 12,
+              "stroke": {
+                "align": "inside",
+                "thickness": 1.5,
+                "fill": "#e2e8f0"
+              },
+              "gap": 8,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "Pf7tO",
+                  "width": 18,
+                  "height": 18,
+                  "iconFontName": "map-pin",
+                  "iconFontFamily": "lucide",
+                  "fill": "#4338CA"
+                },
+                {
+                  "type": "text",
+                  "id": "Zc0f7",
+                  "fill": "#4338CA",
+                  "content": "Seleccionar en mapa",
+                  "fontFamily": "DM Sans",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                }
+              ]
             }
           ]
         },
@@ -13562,6 +13608,243 @@
                   "fontWeight": "500"
                 }
               ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "5oQrx",
+      "x": 1479,
+      "y": 1904,
+      "name": "Modal GPS Mapa",
+      "width": 393,
+      "height": 852,
+      "fill": "#ffffff",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "y738N",
+          "x": 0,
+          "y": 0,
+          "name": "gmH",
+          "width": 393,
+          "height": 118,
+          "fill": "#1565C0",
+          "padding": [
+            54,
+            20,
+            16,
+            20
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "SZqZ5",
+              "fill": "#ffffff",
+              "content": "Ubicacion del cliente",
+              "fontFamily": "DM Sans",
+              "fontSize": 18,
+              "fontWeight": "700"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "GWFoR",
+          "x": 16,
+          "y": 128,
+          "name": "gmSearch",
+          "width": 361,
+          "height": 44,
+          "fill": "#f1f5f9",
+          "cornerRadius": 12,
+          "stroke": {
+            "align": "inside",
+            "thickness": 1,
+            "fill": "#e2e8f0"
+          },
+          "padding": [
+            0,
+            14
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "icon_font",
+              "id": "pOeIy",
+              "width": 16,
+              "height": 16,
+              "iconFontName": "search",
+              "iconFontFamily": "lucide",
+              "fill": "#94a3b8"
+            },
+            {
+              "type": "text",
+              "id": "BMtue",
+              "fill": "#94a3b8",
+              "content": "Buscar tienda, direccion...",
+              "fontFamily": "DM Sans",
+              "fontSize": 14,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "Iz2ZR",
+          "x": 0,
+          "y": 182,
+          "name": "gmMap",
+          "width": 393,
+          "height": 490,
+          "fill": "#e2e8f0",
+          "children": [
+            {
+              "type": "text",
+              "id": "NRCaB",
+              "layoutPosition": "absolute",
+              "x": 0,
+              "y": 230,
+              "fill": "#94a3b8",
+              "content": "Google Maps",
+              "textAlign": "center",
+              "fontFamily": "DM Sans",
+              "fontSize": 16,
+              "fontWeight": "600"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ikG4r",
+          "layoutPosition": "absolute",
+          "x": 176,
+          "y": 407,
+          "name": "gmPin",
+          "width": 40,
+          "height": 40,
+          "fill": "#4338CA",
+          "cornerRadius": 20,
+          "stroke": {
+            "align": "outside",
+            "thickness": 3,
+            "fill": "#ffffff"
+          },
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "icon_font",
+              "id": "03vr3",
+              "width": 20,
+              "height": 20,
+              "iconFontName": "map-pin",
+              "iconFontFamily": "lucide",
+              "fill": "#ffffff"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "1PHzC",
+          "layoutPosition": "absolute",
+          "x": 0,
+          "y": 690,
+          "name": "gmActions",
+          "width": 393,
+          "layout": "vertical",
+          "gap": 8,
+          "padding": [
+            16,
+            20
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "8AjTh",
+              "name": "gmConfirm",
+              "width": "fill_container",
+              "height": 50,
+              "fill": "#1565C0",
+              "cornerRadius": 14,
+              "gap": 8,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "G2Qqo",
+                  "width": 18,
+                  "height": 18,
+                  "iconFontName": "map-pin",
+                  "iconFontFamily": "lucide",
+                  "fill": "#ffffff"
+                },
+                {
+                  "type": "text",
+                  "id": "GGHYF",
+                  "fill": "#ffffff",
+                  "content": "Guardar ubicacion",
+                  "fontFamily": "DM Sans",
+                  "fontSize": 16,
+                  "fontWeight": "700"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "zEivH",
+              "name": "gmCancel",
+              "width": "fill_container",
+              "height": 44,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "gBT0W",
+                  "fill": "#64748b",
+                  "content": "Cancelar",
+                  "fontFamily": "DM Sans",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "mUsUu",
+          "layoutPosition": "absolute",
+          "x": 0,
+          "y": 0,
+          "name": "gmSb",
+          "width": 393,
+          "height": 44,
+          "fill": "#1565C0",
+          "padding": [
+            10,
+            20,
+            0,
+            20
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "MDyvw",
+              "fill": "#ffffff",
+              "content": "9:41",
+              "fontFamily": "DM Sans",
+              "fontSize": 14,
+              "fontWeight": "600"
             }
           ]
         }

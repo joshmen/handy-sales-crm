@@ -203,26 +203,38 @@ export default function CrearClienteScreen() {
           />
         </View>
 
-        {/* GPS Location Button */}
-        <TouchableOpacity
-          style={[styles.gpsButton, location && styles.gpsButtonSuccess]}
-          onPress={() => {
-            setShowMapModal(true);
-          }}
-          activeOpacity={0.7}
-        >
-          <MapPin size={16} color={location ? '#16a34a' : '#64748b'} />
-          {locationStatus === 'loading' ? (
-            <>
-              <ActivityIndicator size="small" color={COLORS.textTertiary} style={{ marginRight: 4 }} />
-              <Text style={styles.gpsButtonText}>Obteniendo ubicacion...</Text>
-            </>
-          ) : location ? (
-            <Text style={[styles.gpsButtonText, { color: '#16a34a' }]}>Ubicacion capturada — toca para ajustar</Text>
+        {/* GPS Location */}
+        <View style={styles.field}>
+          <Text style={styles.label}>Ubicacion GPS</Text>
+          {location ? (
+            <TouchableOpacity style={styles.gpsPreview} onPress={() => setShowMapModal(true)} activeOpacity={0.8}>
+              <View style={styles.gpsPreviewIcon}>
+                <MapPin size={20} color={COLORS.success} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.gpsPreviewText}>Ubicacion registrada</Text>
+                <Text style={styles.gpsPreviewCoords}>
+                  {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
+                </Text>
+              </View>
+              <Text style={{ fontSize: 12, color: COLORS.primary, fontWeight: '600' }}>Editar</Text>
+            </TouchableOpacity>
           ) : (
-            <Text style={styles.gpsButtonText}>Agregar ubicacion en mapa</Text>
+            <TouchableOpacity style={styles.gpsAddBtn} onPress={() => setShowMapModal(true)} activeOpacity={0.8}>
+              {locationStatus === 'loading' ? (
+                <>
+                  <ActivityIndicator size="small" color={COLORS.textTertiary} />
+                  <Text style={styles.gpsAddText}>Detectando ubicacion...</Text>
+                </>
+              ) : (
+                <>
+                  <MapPin size={18} color={COLORS.primary} />
+                  <Text style={[styles.gpsAddText, { color: COLORS.primary }]}>Seleccionar en mapa</Text>
+                </>
+              )}
+            </TouchableOpacity>
           )}
-        </TouchableOpacity>
+        </View>
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom || 16 }]}>
@@ -322,14 +334,24 @@ const styles = StyleSheet.create({
   chipText: { fontSize: 13, fontWeight: '600', color: COLORS.textSecondary },
   chipTextActive: { color: COLORS.headerText },
 
-  /* GPS button */
-  gpsButton: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    padding: 14, borderRadius: 12, marginBottom: 16,
-    backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e2e8f0',
+  /* GPS */
+  gpsPreview: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    padding: 14, borderRadius: 12,
+    backgroundColor: COLORS.onlineBg, borderWidth: 1, borderColor: COLORS.brandLight,
   },
-  gpsButtonSuccess: { backgroundColor: COLORS.onlineBg, borderColor: COLORS.brandLight },
-  gpsButtonText: { fontSize: 13, color: '#64748b', fontWeight: '500' },
+  gpsPreviewIcon: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: COLORS.brandLight, alignItems: 'center', justifyContent: 'center',
+  },
+  gpsPreviewText: { fontSize: 14, fontWeight: '600', color: COLORS.success },
+  gpsPreviewCoords: { fontSize: 11, color: COLORS.textTertiary, marginTop: 1 },
+  gpsAddBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    height: 48, borderRadius: 12,
+    borderWidth: 1.5, borderColor: COLORS.borderMedium, borderStyle: 'dashed',
+  },
+  gpsAddText: { fontSize: 14, fontWeight: '600', color: COLORS.textTertiary },
 
   /* Footer */
   footer: {
