@@ -4,7 +4,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineRutaHoy, useOfflineRutaDetalles, useClientNameMap } from '@/hooks';
 import { LoadingSpinner, EmptyState } from '@/components/ui';
-import { COLORS } from '@/theme/colors';
+import { COLORS, STATUS_PALETTES } from '@/theme/colors';
 import { ChevronLeft, Navigation, Map } from 'lucide-react-native';
 import { formatTime } from '@/utils/format';
 import { performSync } from '@/sync/syncEngine';
@@ -129,11 +129,11 @@ export default function RutaScreen() {
 
             {/* Stat pills */}
             <View style={styles.pillsRow}>
-              <View style={[styles.pill, { backgroundColor: '#f0fdf4' }]}>
-                <Text style={[styles.pillText, { color: '#16a34a' }]}>{stats.atendidas} Hechas</Text>
+              <View style={[styles.pill, { backgroundColor: STATUS_PALETTES.delivered.bg }]}>
+                <Text style={[styles.pillText, { color: COLORS.success }]}>{stats.atendidas} Atendidas</Text>
               </View>
-              <View style={[styles.pill, { backgroundColor: '#fffbeb' }]}>
-                <Text style={[styles.pillText, { color: '#d97706' }]}>{stats.pendientes} Pendientes</Text>
+              <View style={[styles.pill, { backgroundColor: STATUS_PALETTES.pending.bg }]}>
+                <Text style={[styles.pillText, { color: COLORS.warning }]}>{stats.pendientes} Pendientes</Text>
               </View>
               <View style={[styles.pill, { backgroundColor: '#eff6ff' }]}>
                 <Text style={[styles.pillText, { color: COLORS.headerBg }]}>{stats.total} Total</Text>

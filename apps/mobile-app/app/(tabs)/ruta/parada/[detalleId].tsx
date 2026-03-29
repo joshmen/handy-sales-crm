@@ -21,7 +21,7 @@ import Ruta from '@/db/models/Ruta';
 import { getGeofenceColor } from '@/utils/mapColors';
 import { Card, Button, LoadingSpinner, ConfirmModal } from '@/components/ui';
 import { Badge } from '@/components/ui';
-import { COLORS } from '@/theme/colors';
+import { COLORS, STATUS_PALETTES } from '@/theme/colors';
 import { formatTime, formatCurrency } from '@/utils/format';
 import {
   MapPin,
@@ -621,9 +621,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 8,
     marginHorizontal: 16, marginTop: 12, marginBottom: 8,
     paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10,
-    backgroundColor: '#fef2f2', borderWidth: 1, borderColor: '#fecaca',
+    backgroundColor: COLORS.destructiveLight, borderWidth: 1, borderColor: STATUS_PALETTES.cancelled.border,
   },
-  gpsBannerText: { flex: 1, fontSize: 12, color: '#991b1b', fontWeight: '500' },
+  gpsBannerText: { flex: 1, fontSize: 12, color: STATUS_PALETTES.cancelled.text, fontWeight: '500' },
   gpsBannerAction: { fontSize: 12, fontWeight: '700', color: COLORS.primary },
   miniMapContainer: { marginHorizontal: 16, marginTop: 12, marginBottom: 8, borderRadius: 16, overflow: 'hidden', position: 'relative' },
   miniMap: { height: 160, borderRadius: 16 },

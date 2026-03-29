@@ -10,7 +10,7 @@ import { Phone, ChevronRight, ChevronLeft, Users, Plus } from 'lucide-react-nati
 import { performSync } from '@/sync/syncEngine';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import type Cliente from '@/db/models/Cliente';
-import { COLORS } from '@/theme/colors';
+import { COLORS, STATUS_PALETTES } from '@/theme/colors';
 
 export default function ClientsListScreen() {
   const insets = useSafeAreaInsets();
@@ -59,14 +59,14 @@ export default function ClientsListScreen() {
                 {item.esProspecto && (
                   <Badge
                     label="Prospecto"
-                    color="#d97706"
-                    bgColor="#fef3c7"
+                    color={COLORS.warning}
+                    bgColor={STATUS_PALETTES.pending.bg}
                   />
                 )}
                 <Badge
                   label={item.activo ? 'Activo' : 'Inactivo'}
-                  color={item.activo ? '#16a34a' : '#94a3b8'}
-                  bgColor={item.activo ? '#dcfce7' : '#f1f5f9'}
+                  color={item.activo ? COLORS.success : COLORS.textTertiary}
+                  bgColor={item.activo ? STATUS_PALETTES.delivered.bg : COLORS.border}
                 />
               </View>
             </View>

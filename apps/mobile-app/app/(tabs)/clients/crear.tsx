@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
     padding: 14, borderRadius: 12, marginBottom: 16,
     backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e2e8f0',
   },
-  gpsButtonSuccess: { backgroundColor: '#f0fdf4', borderColor: '#bbf7d0' },
+  gpsButtonSuccess: { backgroundColor: COLORS.onlineBg, borderColor: COLORS.brandLight },
   gpsButtonText: { fontSize: 13, color: '#64748b', fontWeight: '500' },
 
   /* Footer */
