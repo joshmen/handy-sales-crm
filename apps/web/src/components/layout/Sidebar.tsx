@@ -193,16 +193,16 @@ const sidebarItems: SidebarItem[] = [
     submenu: [
       {
         id: 'routes-list',
-        label: 'Listado de rutas',
+        label: 'Rutas',
         icon: SbRoutes,
         href: '/routes',
         permission: 'view_routes',
       },
       {
-        id: 'routes-manage',
-        label: 'Administrar rutas',
+        id: 'routes-templates',
+        label: 'Plantillas',
         icon: SbForms,
-        href: '/routes/manage',
+        href: '/routes/admin',
         permission: 'view_routes',
       },
     ],

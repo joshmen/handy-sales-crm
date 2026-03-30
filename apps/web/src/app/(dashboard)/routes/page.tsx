@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-// import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -67,6 +67,7 @@ const routeSchema = z.object({
 type RouteFormData = z.infer<typeof routeSchema>;
 
 export default function RoutesPage() {
+  const router = useRouter();
   const { formatDateOnly } = useFormatters();
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN';
@@ -537,6 +538,7 @@ export default function RoutesPage() {
             <div className="w-[80px] text-[11px] font-medium text-gray-500 text-center">Paradas</div>
             <div className="w-[50px] text-[11px] font-medium text-gray-500 text-center">Activo</div>
             <div className="w-8"></div>
+            <div className="w-[80px] text-[11px] font-medium text-gray-500 text-center">Acción</div>
           </div>
 
           {/* Table Body */}
@@ -579,9 +581,9 @@ export default function RoutesPage() {
                         </button>
                       </div>
 
-                      {/* Nombre */}
-                      <div className="flex-1 min-w-[160px]">
-                        <span className="text-[13px] font-medium text-gray-900 truncate block">
+                      {/* Nombre — click to view detail */}
+                      <div className="flex-1 min-w-[160px]" onClick={(e) => { e.stopPropagation(); router.push(`/routes/${route.id}`); }}>
+                        <span className="text-[13px] font-medium text-blue-600 hover:text-blue-800 cursor-pointer truncate block">
                           {route.nombre}
                         </span>
                       </div>
@@ -644,6 +646,22 @@ export default function RoutesPage() {
                         >
                           <Pencil className="w-4 h-4" />
                         </button>
+                      </div>
+
+                      {/* Acción contextual */}
+                      <div className="w-[80px] flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                        {(route.estado === 0) && (
+                          <button onClick={() => router.push(`/routes/manage/${route.id}/load`)} className="text-[11px] font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-md transition-colors">Cargar</button>
+                        )}
+                        {(route.estado === 1 || route.estado === 4 || route.estado === 5) && (
+                          <button onClick={() => router.push(`/routes/manage/${route.id}/load`)} className="text-[11px] font-medium text-gray-600 hover:text-gray-800 bg-gray-50 hover:bg-gray-100 px-2.5 py-1 rounded-md transition-colors">Ver carga</button>
+                        )}
+                        {route.estado === 2 && (
+                          <button onClick={() => router.push(`/routes/manage/${route.id}/close`)} className="text-[11px] font-medium text-green-600 hover:text-green-800 bg-green-50 hover:bg-green-100 px-2.5 py-1 rounded-md transition-colors">Cerrar</button>
+                        )}
+                        {route.estado === 6 && (
+                          <button onClick={() => router.push(`/routes/manage/${route.id}/close`)} className="text-[11px] font-medium text-gray-500 bg-gray-50 px-2.5 py-1 rounded-md">Cerrado</button>
+                        )}
                       </div>
                     </div>
                   );

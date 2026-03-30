@@ -325,9 +325,9 @@ export default function RouteAdminPage() {
       breadcrumbs={[
         { label: 'Inicio', href: '/dashboard' },
         { label: 'Rutas', href: '/routes' },
-        { label: 'Administrar Rutas' },
+        { label: 'Plantillas de Rutas' },
       ]}
-      title="Administrar Rutas"
+      title="Plantillas de Rutas"
       subtitle={
         totalTemplates > 0
           ? `${totalTemplates} template${totalTemplates !== 1 ? 's' : ''}`
