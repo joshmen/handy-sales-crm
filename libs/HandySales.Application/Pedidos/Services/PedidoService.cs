@@ -32,9 +32,25 @@ public class PedidoService
         var usuarioId = int.Parse(_tenant.UserId);
         var pedidoId = await _repository.CrearAsync(dto, usuarioId, _tenant.TenantId);
 
-        // Venta Directa: crear movimientos de inventario SALIDA automáticos
+        // Venta Directa: validar stock y crear movimientos de inventario SALIDA
         if (dto.TipoVenta == TipoVenta.VentaDirecta)
         {
+            // Validate stock availability before creating inventory movements
+            var stockErrors = new List<string>();
+            foreach (var detalle in dto.Detalles)
+            {
+                var stock = await _repository.ObtenerStockDisponibleAsync(detalle.ProductoId, _tenant.TenantId);
+                if (stock < detalle.Cantidad)
+                {
+                    var producto = await _repository.ObtenerNombreProductoAsync(detalle.ProductoId, _tenant.TenantId);
+                    stockErrors.Add($"{producto}: solo {stock} disponibles, solicitado {detalle.Cantidad}");
+                }
+            }
+            if (stockErrors.Count > 0)
+            {
+                throw new InvalidOperationException($"Stock insuficiente: {string.Join("; ", stockErrors)}");
+            }
+
             foreach (var detalle in dto.Detalles)
             {
                 await _movimientoService.CrearMovimientoAsync(new MovimientoInventarioCreateDto

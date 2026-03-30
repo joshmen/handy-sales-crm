@@ -44,7 +44,9 @@ export default function CrearPedidoStep2() {
   const addItem = useOrderDraftStore(s => s.addItem);
   const updateQuantity = useOrderDraftStore(s => s.updateQuantity);
   const removeItem = useOrderDraftStore(s => s.removeItem);
+  const tipoVenta = useOrderDraftStore(s => s.tipoVenta);
   const { itemCount, total } = useOrderDraftStore();
+  const isDirecta = tipoVenta === 1;
   const categorias = useCategoriasProducto();
 
   const { data: productos, isLoading } = useOfflineProducts(busqueda || undefined, categoriaId);
@@ -57,29 +59,31 @@ export default function CrearPedidoStep2() {
   const renderItem = useCallback(
     ({ item }: { item: Producto }) => {
       const qty = getItemQuantity(item.id);
+      const stock = item.stockDisponible ?? 0;
+      const noStock = stock <= 0;
+      const lowStock = stock > 0 && stock <= (item.stockMinimo || 0);
+      // VD: block if no stock. Preventa: allow with warning
+      const blocked = isDirecta && noStock;
+      const maxQty = isDirecta ? stock : undefined;
 
       return (
-        <View style={styles.productCard}>
+        <View style={[styles.productCard, blocked && { opacity: 0.5 }]}>
           <View style={styles.productRow}>
             <Package size={20} color={COLORS.textTertiary} style={{ marginRight: 10 }} />
             <View style={styles.productInfo}>
               <Text style={styles.productName} numberOfLines={1}>{item.nombre}</Text>
               <Text style={styles.productPrice}>{formatCurrency(item.precio)}</Text>
-              <Text
-                style={[
-                  styles.stockLabel,
-                  item.stockDisponible <= (item.stockMinimo || 0)
-                    ? styles.stockLow
-                    : styles.stockOk,
-                ]}
-              >
-                Stock: {item.stockDisponible}
+              <Text style={[styles.stockLabel, noStock ? styles.stockOut : lowStock ? styles.stockLow : styles.stockOk]}>
+                {noStock ? 'Sin stock' : `Stock: ${stock}`}
               </Text>
             </View>
             <View style={styles.productActions}>
-              {qty > 0 ? (
+              {blocked ? (
+                <Text style={styles.blockedText}>Sin stock</Text>
+              ) : qty > 0 ? (
                 <QuantityStepper
                   value={qty}
+                  max={maxQty}
                   onChange={(val) => {
                     if (val <= 0) removeItem(item.id);
                     else updateQuantity(item.id, val);
@@ -100,7 +104,7 @@ export default function CrearPedidoStep2() {
         </View>
       );
     },
-    [items, addItem, updateQuantity, removeItem]
+    [items, addItem, updateQuantity, removeItem, isDirecta]
   );
 
   return (
@@ -229,7 +233,9 @@ const styles = StyleSheet.create({
   productPrice: { fontSize: 13, fontWeight: '700', color: COLORS.salesGreen, marginTop: 2 },
   stockLabel: { fontSize: 10, fontWeight: '600', marginTop: 2 },
   stockOk: { color: '#16a34a' },
-  stockLow: { color: '#ef4444' },
+  stockLow: { color: '#d97706' },
+  stockOut: { color: '#ef4444', fontWeight: '600' },
+  blockedText: { fontSize: 11, color: '#94a3b8', fontWeight: '600' },
   productActions: { marginLeft: 8 },
   addButton: {
     flexDirection: 'row',

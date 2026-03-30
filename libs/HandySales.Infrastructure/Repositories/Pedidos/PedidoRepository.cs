@@ -553,6 +553,25 @@ public class PedidoRepository : IPedidoRepository
             .Sum();
     }
 
+    public async Task<decimal> ObtenerStockDisponibleAsync(int productoId, int tenantId)
+    {
+        var inventario = await _db.Inventarios
+            .AsNoTracking()
+            .Where(i => i.ProductoId == productoId && i.TenantId == tenantId)
+            .Select(i => i.CantidadActual)
+            .FirstOrDefaultAsync();
+        return inventario;
+    }
+
+    public async Task<string> ObtenerNombreProductoAsync(int productoId, int tenantId)
+    {
+        return await _db.Productos
+            .AsNoTracking()
+            .Where(p => p.Id == productoId && p.TenantId == tenantId)
+            .Select(p => p.Nombre)
+            .FirstOrDefaultAsync() ?? $"Producto #{productoId}";
+    }
+
     private async Task RecalcularTotalesAsync(int pedidoId)
     {
         var pedido = await _db.Pedidos.FindAsync(pedidoId);

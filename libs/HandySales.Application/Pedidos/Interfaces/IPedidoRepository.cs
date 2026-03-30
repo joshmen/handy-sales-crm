@@ -19,4 +19,6 @@ public interface IPedidoRepository
     Task<bool> EliminarDetalleAsync(int pedidoId, int detalleId, int tenantId);
     Task<string> GenerarNumeroPedidoAsync(int tenantId, string tipo = "PED");
     Task<decimal> CalcularTotalAsync(int pedidoId, int tenantId);
+    Task<decimal> ObtenerStockDisponibleAsync(int productoId, int tenantId);
+    Task<string> ObtenerNombreProductoAsync(int productoId, int tenantId);
 }
