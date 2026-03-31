@@ -84,27 +84,27 @@ body {
   }
 
   .dark {
-    /* Warm Graphite palette — layered depth, not cold blue-black */
-    --background: 228 12% 8%;
-    --foreground: 210 15% 93%;
+    /* Teal-Black palette — WhatsApp-inspired dark mode, hue 200 (teal) */
+    --background: 200 20% 7%;        /* #0e1518 — deepest layer */
+    --foreground: 200 12% 92%;       /* #e4eaed — warm white text */
 
-    --card: 228 10% 12%;
-    --card-foreground: 210 15% 93%;
+    --card: 200 18% 11%;             /* #172025 — cards, panels, drawers */
+    --card-foreground: 200 12% 92%;
 
-    --popover: 228 12% 14%;
-    --popover-foreground: 210 15% 93%;
+    --popover: 200 16% 14%;          /* #1e2a30 — dropdowns, popovers */
+    --popover-foreground: 200 12% 92%;
 
     --primary: 142 64% 48%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 228 10% 16%;
-    --secondary-foreground: 210 15% 90%;
+    --secondary: 200 14% 16%;        /* #232e34 — secondary surfaces */
+    --secondary-foreground: 200 12% 88%;
 
-    --muted: 228 10% 15%;
-    --muted-foreground: 220 8% 56%;
+    --muted: 200 14% 15%;            /* #212b31 — muted backgrounds */
+    --muted-foreground: 200 10% 55%; /* #7b9099 — secondary text */
 
-    --accent: 228 10% 18%;
-    --accent-foreground: 210 15% 93%;
+    --accent: 200 16% 19%;           /* #283338 — hover, active states */
+    --accent-foreground: 200 12% 92%;
 
     --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 100%;
@@ -112,8 +112,8 @@ body {
     --success: 142 64% 48%;
     --success-foreground: 0 0% 100%;
 
-    --border: 228 10% 19%;
-    --input: 228 10% 19%;
+    --border: 200 14% 20%;           /* #2b3539 — subtle borders */
+    --input: 200 16% 22%;            /* #2f3b40 — input bg (lighter than card!) */
 
     --ring: 142 64% 48%;
 
@@ -245,6 +245,41 @@ body {
 .dark .bg-indigo-50 { background-color: hsl(230 70% 60% / 0.08); }
 .dark .bg-indigo-100 { background-color: hsl(230 70% 60% / 0.12); }
 .dark .bg-orange-50 { background-color: hsl(25 85% 58% / 0.08); }
+.dark .bg-amber-50 { background-color: hsl(38 92% 50% / 0.08); }
+.dark .bg-amber-100 { background-color: hsl(38 92% 50% / 0.12); }
+.dark .bg-teal-50 { background-color: hsl(166 64% 45% / 0.08); }
+.dark .bg-teal-100 { background-color: hsl(166 64% 45% / 0.12); }
+.dark .bg-cyan-50 { background-color: hsl(190 82% 48% / 0.08); }
+.dark .bg-cyan-100 { background-color: hsl(190 82% 48% / 0.12); }
+.dark .bg-emerald-50 { background-color: hsl(152 60% 48% / 0.08); }
+.dark .bg-emerald-100 { background-color: hsl(152 60% 48% / 0.12); }
+
+/* Inputs in dark mode — visible borders and readable text */
+.dark input[type="text"],
+.dark input[type="email"],
+.dark input[type="password"],
+.dark input[type="number"],
+.dark input[type="search"],
+.dark input[type="tel"],
+.dark input[type="url"],
+.dark input[type="date"],
+.dark input[type="time"],
+.dark textarea,
+.dark select {
+  background-color: hsl(var(--input));
+  border-color: hsl(var(--border));
+  color: hsl(var(--foreground));
+}
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: hsl(var(--muted-foreground) / 0.6);
+}
+.dark input:focus,
+.dark textarea:focus,
+.dark select:focus {
+  border-color: hsl(var(--ring));
+  box-shadow: 0 0 0 2px hsl(var(--ring) / 0.15);
+}
 
 /* Auth components — dark */
 .dark .auth-input:focus {
