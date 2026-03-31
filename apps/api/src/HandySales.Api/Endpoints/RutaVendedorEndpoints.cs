@@ -175,36 +175,37 @@ public static class RutaVendedorEndpoints
             var actualizado = await servicio.ActualizarAsync(id, dto);
             if (!actualizado) return Results.NotFound();
 
-            // Push notification if vendedor was reassigned (and route.published is enabled)
+            // Push notification to vendedor (contextual message based on route estado)
             var nuevoUsuarioId = dto.UsuarioId ?? rutaAntes?.UsuarioId ?? 0;
             var tenantId = tenantContext.TenantId;
             var rutaNombre = dto.Nombre ?? rutaAntes?.Nombre ?? "Ruta";
+            var rutaDespues = await servicio.ObtenerPorIdAsync(id);
             if (nuevoUsuarioId > 0 && await notifSettings.IsEnabledAsync(tenantId, "route.published"))
             {
-                _ = Task.Run(async () =>
+                try
                 {
-                    try
+                    // Contextual title/body based on estado
+                    var isPendienteAceptar = rutaDespues?.Estado == HandySales.Domain.Entities.EstadoRuta.PendienteAceptar;
+                    var title = isPendienteAceptar ? "Ruta pendiente de aceptar" : "Ruta actualizada";
+                    var body = isPendienteAceptar
+                        ? $"Tienes una ruta asignada: {rutaNombre}. Acéptala para comenzar."
+                        : $"Tu ruta fue actualizada: {rutaNombre}";
+
+                    var client = httpClientFactory.CreateClient("MobileApi");
+                    await client.PostAsJsonAsync("/api/internal/push-notify", new
                     {
-                        var client = httpClientFactory.CreateClient("MobileApi");
-                        var response = await client.PostAsJsonAsync("/api/internal/push-notify", new
+                        tenantId,
+                        userIds = new[] { nuevoUsuarioId },
+                        title,
+                        body,
+                        data = new Dictionary<string, string>
                         {
-                            tenantId,
-                            userIds = new[] { nuevoUsuarioId },
-                            title = "Ruta actualizada",
-                            body = $"Tu ruta fue actualizada: {rutaNombre}",
-                            data = new Dictionary<string, string>
-                            {
-                                ["type"] = "route.published",
-                                ["entityId"] = id.ToString()
-                            }
-                        });
-                        Console.WriteLine($"[Push] Route PUT {id} -> user {nuevoUsuarioId}: {response.StatusCode}");
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"[Push] Route PUT push FAILED: {ex.Message}");
-                    }
-                });
+                            ["type"] = "route.published",
+                            ["entityId"] = id.ToString()
+                        }
+                    });
+                }
+                catch { /* push failure should not block route update */ }
             }
 
             return Results.NoContent();
