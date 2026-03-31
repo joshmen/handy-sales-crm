@@ -48,4 +48,4 @@ GoogleService-Info.plist
 
 # Maestro screenshot artifacts
 *.png
-!assets/*.png
+!assets/**/*.png
