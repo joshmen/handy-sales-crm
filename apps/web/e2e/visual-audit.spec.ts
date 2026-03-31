@@ -205,9 +205,9 @@ const PAGES: PageAudit[] = [
     hasCheckbox: false,
   },
   {
-    name: 'Usuarios',
-    path: '/users',
-    expectedTitle: 'Usuarios',
+    name: 'Equipo',
+    path: '/team',
+    expectedTitle: 'Equipo',
     expectedButton: 'Nuevo usuario',
     hasSearch: false,
     hasTable: false,

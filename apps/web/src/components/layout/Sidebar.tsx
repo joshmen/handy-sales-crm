@@ -148,7 +148,7 @@ const sidebarItems: SidebarItem[] = [
         id: 'units',
         label: 'Unidades de medida',
         icon: SbUnits,
-        href: '/units',
+        href: '/products/units',
         permission: 'manage_catalogs',
       },
     ],
@@ -245,29 +245,6 @@ const sidebarItems: SidebarItem[] = [
   },
 
   // — HERRAMIENTAS —
-  {
-    id: 'forms',
-    label: 'Formularios',
-    icon: SbForms,
-    permission: 'view_dashboard',
-    section: 'Herramientas',
-    submenu: [
-      {
-        id: 'form-builder',
-        label: 'Constructor',
-        icon: SbForms,
-        href: '/forms/builder',
-        permission: 'view_dashboard',
-      },
-      {
-        id: 'form-list',
-        label: 'Mis formularios',
-        icon: SbForms,
-        href: '/forms',
-        permission: 'view_dashboard',
-      },
-    ],
-  },
   {
     id: 'reports',
     label: 'Reportes',
