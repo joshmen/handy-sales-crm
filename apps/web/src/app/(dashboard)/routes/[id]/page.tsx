@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { routeService, RouteDetail, RouteStop, AddStopRequest, PedidoAsignado } from '@/services/api/routes';
+import { routeService, RouteDetail, RouteStop, AddStopRequest, PedidoAsignado, ESTADO_RUTA, ESTADO_RUTA_LABELS, ESTADO_RUTA_COLORS } from '@/services/api/routes';
 import { api } from '@/lib/api';
 import { clientService } from '@/services/api/clients';
 import { toast } from '@/hooks/useToast';
@@ -25,6 +25,9 @@ import {
   Loader2,
   Package,
   Search,
+  ExternalLink,
+  Truck,
+  FileCheck,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useFormatters } from '@/hooks/useFormatters';
@@ -252,16 +255,11 @@ export default function RouteDetailPage() {
     }
   };
 
-  // Badges
-  const getEstadoBadge = (estado: number) => {
-    switch (estado) {
-      case 0: return { label: 'Planificada', cls: 'bg-gray-100 text-gray-600' };
-      case 1: return { label: 'En progreso', cls: 'bg-yellow-100 text-yellow-600' };
-      case 2: return { label: 'Completada', cls: 'bg-green-100 text-green-600' };
-      case 3: return { label: 'Cancelada', cls: 'bg-red-100 text-red-600' };
-      default: return { label: 'Desconocido', cls: 'bg-gray-100 text-gray-600' };
-    }
-  };
+  // Badges — use shared constants for all 7 states
+  const getEstadoBadge = (estado: number) => ({
+    label: ESTADO_RUTA_LABELS[estado] || 'Desconocido',
+    cls: ESTADO_RUTA_COLORS[estado] || 'bg-gray-100 text-gray-600',
+  });
 
   const getParadaBadge = (estado: number) => {
     switch (estado) {
@@ -355,6 +353,52 @@ export default function RouteDetailPage() {
                   Cancelar
                 </button>
               </>
+            )}
+            {isPendienteAceptar && (
+              <>
+                <Link
+                  href={`/routes/manage/${route.id}/load`}
+                  className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+                >
+                  <Truck className="w-4 h-4" />
+                  Ver carga
+                </Link>
+                <button
+                  onClick={() => setIsCancelOpen(true)}
+                  disabled={actionLoading}
+                  className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-red-600 border border-red-200 rounded hover:bg-red-50 transition-colors disabled:opacity-50"
+                >
+                  <XCircle className="w-4 h-4" />
+                  Cancelar
+                </button>
+              </>
+            )}
+            {route?.estado === ESTADO_RUTA.CargaAceptada && (
+              <Link
+                href={`/routes/manage/${route.id}/load`}
+                className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+              >
+                <Truck className="w-4 h-4" />
+                Ver carga
+              </Link>
+            )}
+            {route?.estado === ESTADO_RUTA.Completada && (
+              <Link
+                href={`/routes/manage/${route.id}/close`}
+                className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-emerald-600 border border-emerald-200 rounded-lg hover:bg-emerald-50 transition-colors"
+              >
+                <FileCheck className="w-4 h-4" />
+                Cerrar ruta
+              </Link>
+            )}
+            {route?.estado === ESTADO_RUTA.Cerrada && (
+              <Link
+                href={`/routes/manage/${route.id}/close`}
+                className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Ver cierre
+              </Link>
             )}
           </div>
         </div>

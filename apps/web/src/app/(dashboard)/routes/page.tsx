@@ -534,6 +534,7 @@ export default function RoutesPage() {
             <div className="w-[120px] text-[11px] font-medium text-gray-500">Zona</div>
             <div className="w-[140px] text-[11px] font-medium text-gray-500">Usuario</div>
             <div className="w-[100px] text-[11px] font-medium text-gray-500">Fecha</div>
+            <div className="w-[110px] text-[11px] font-medium text-gray-500 text-center">Horario</div>
             <div className="w-[110px] text-[11px] font-medium text-gray-500 text-center">Estado</div>
             <div className="w-[80px] text-[11px] font-medium text-gray-500 text-center">Paradas</div>
             <div className="w-[50px] text-[11px] font-medium text-gray-500 text-center">Activo</div>
@@ -606,6 +607,15 @@ export default function RoutesPage() {
                       <div className="w-[100px]">
                         <span className="text-[13px] text-gray-900">
                           {formatDateOnly(route.fecha)}
+                        </span>
+                      </div>
+
+                      {/* Horario */}
+                      <div className="w-[110px] text-center">
+                        <span className="text-[12px] text-gray-500">
+                          {route.horaInicioEstimada
+                            ? `${route.horaInicioEstimada.substring(0, 5)} - ${route.horaFinEstimada?.substring(0, 5) || '--:--'}`
+                            : '--'}
                         </span>
                       </div>
 

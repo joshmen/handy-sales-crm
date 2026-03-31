@@ -13,6 +13,8 @@ export interface RutaListaDto {
   totalParadas: number;
   paradasCompletadas: number;
   kilometrosEstimados?: number;
+  horaInicioEstimada?: string;
+  horaFinEstimada?: string;
   activo: boolean;
 }
 
@@ -34,6 +36,8 @@ export interface RouteListItem {
   totalParadas: number;
   paradasCompletadas: number;
   kilometrosEstimados?: number;
+  horaInicioEstimada?: string;
+  horaFinEstimada?: string;
   activo: boolean;
 }
 
@@ -69,6 +73,8 @@ function mapRutaToRouteItem(dto: RutaListaDto): RouteListItem {
     totalParadas: dto.totalParadas,
     paradasCompletadas: dto.paradasCompletadas,
     kilometrosEstimados: dto.kilometrosEstimados,
+    horaInicioEstimada: dto.horaInicioEstimada,
+    horaFinEstimada: dto.horaFinEstimada,
     activo: dto.activo,
   };
 }
@@ -338,6 +344,15 @@ class RouteService {
     }
   }
 
+  async duplicateTemplate(id: number): Promise<{ id: number }> {
+    try {
+      const response = await api.post<{ id: number }>(`${this.basePath}/templates/${id}/duplicar`, {});
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  }
+
   async instantiateTemplate(id: number, data: InstantiateTemplateRequest): Promise<{ id: number }> {
     try {
       const response = await api.post<{ id: number }>(`${this.basePath}/templates/${id}/instanciar`, data);
@@ -555,7 +570,7 @@ export const ESTADO_RUTA = {
 export const ESTADO_RUTA_LABELS: Record<number, string> = {
   0: 'Planificada',
   1: 'En progreso',
-  2: 'Terminada',
+  2: 'Completada',
   3: 'Cancelada',
   4: 'Pendiente de aceptar',
   5: 'Carga aceptada',

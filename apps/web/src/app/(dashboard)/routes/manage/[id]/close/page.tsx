@@ -19,13 +19,13 @@ import {
 } from 'lucide-react';
 import { useFormatters } from '@/hooks/useFormatters';
 
-type TabKey = 'pendiente' | 'aceptada' | 'terminada' | 'cerrada';
-
-const TABS: { key: TabKey; label: string; estados: number[] }[] = [
-  { key: 'pendiente', label: 'Pendiente de aceptar', estados: [ESTADO_RUTA.PendienteAceptar] },
-  { key: 'aceptada', label: 'Carga aceptada', estados: [ESTADO_RUTA.CargaAceptada, ESTADO_RUTA.EnProgreso] },
-  { key: 'terminada', label: 'Terminada', estados: [ESTADO_RUTA.Completada] },
-  { key: 'cerrada', label: 'Cerrada', estados: [ESTADO_RUTA.Cerrada] },
+// Lifecycle steps for route status timeline
+const LIFECYCLE_STEPS = [
+  { estado: ESTADO_RUTA.PendienteAceptar, label: 'Pendiente' },
+  { estado: ESTADO_RUTA.CargaAceptada, label: 'Carga aceptada' },
+  { estado: ESTADO_RUTA.EnProgreso, label: 'En progreso' },
+  { estado: ESTADO_RUTA.Completada, label: 'Completada' },
+  { estado: ESTADO_RUTA.Cerrada, label: 'Cerrada' },
 ];
 
 export default function CloseRoutePage() {
@@ -39,7 +39,6 @@ export default function CloseRoutePage() {
   const [retorno, setRetorno] = useState<RetornoItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [closing, setClosing] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabKey>('terminada');
   const [montoRecibido, setMontoRecibido] = useState<string>('');
 
   const isReadonly = ruta?.estado === ESTADO_RUTA.Cerrada;
@@ -56,10 +55,6 @@ export default function CloseRoutePage() {
       setResumen(resumenData);
       setRetorno(retornoData);
       setMontoRecibido(rutaData.montoRecibido?.toString() || '');
-
-      // Set active tab based on estado
-      const tab = TABS.find(t => t.estados.includes(rutaData.estado));
-      if (tab) setActiveTab(tab.key);
     } catch (err) {
       console.error('Error:', err);
       toast.error('Error al cargar datos del cierre');
@@ -118,15 +113,15 @@ export default function CloseRoutePage() {
     setRetorno(updated);
 
     // Batch update
-    updated.forEach(async (item) => {
-      try {
-        await routeService.updateRetorno(rutaId, item.productoId, {
+    Promise.all(
+      updated.map((item) =>
+        routeService.updateRetorno(rutaId, item.productoId, {
           mermas: item.mermas,
           recAlmacen: item.recAlmacen,
           cargaVehiculo: item.cargaVehiculo,
-        });
-      } catch { /* silent */ }
-    });
+        }).catch(() => { /* silent */ })
+      )
+    );
   };
 
   const handleCerrarRuta = async () => {
@@ -184,8 +179,8 @@ export default function CloseRoutePage() {
       {/* Header */}
       <div className="bg-white px-8 py-6 border-b border-gray-200">
         <Breadcrumb items={[
-          { label: 'Rutas', href: '/routes/manage' },
-          { label: 'Admin. rutas', href: '/routes/manage' },
+          { label: 'Rutas', href: '/routes' },
+          { label: ruta.nombre, href: `/routes/${ruta.id}` },
           { label: 'Cierre de ruta' },
         ]} />
 
@@ -211,7 +206,7 @@ export default function CloseRoutePage() {
               </button>
             )}
             <button
-              onClick={() => router.push('/routes/manage')}
+              onClick={() => router.push('/routes')}
               className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium text-gray-600 border border-gray-200 rounded hover:bg-gray-50"
             >
               <X className="w-4 h-4" />
@@ -220,22 +215,33 @@ export default function CloseRoutePage() {
           </div>
         </div>
 
-        {/* Tabs */}
-        <div data-tour="routes-close-tabs" className="flex mt-4 border-b border-gray-200 -mb-6">
-          {TABS.map((tab) => {
-            const isActive = activeTab === tab.key;
+        {/* Status Timeline */}
+        <div data-tour="routes-close-tabs" className="flex items-center mt-4 -mb-6">
+          {LIFECYCLE_STEPS.map((step, idx) => {
+            const stepOrder = LIFECYCLE_STEPS.findIndex(s => s.estado === ruta.estado);
+            const currentIdx = LIFECYCLE_STEPS.findIndex(s => s.estado === step.estado);
+            const isCompleted = currentIdx < stepOrder;
+            const isCurrent = step.estado === ruta.estado;
             return (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${
-                  isActive
-                    ? 'border-green-600 text-green-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                {tab.label}
-              </button>
+              <React.Fragment key={step.estado}>
+                <div className="flex items-center gap-1.5">
+                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                    isCompleted ? 'bg-green-600 text-white' :
+                    isCurrent ? 'bg-green-100 border-2 border-green-600 text-green-700' :
+                    'bg-gray-100 text-gray-400'
+                  }`}>
+                    {isCompleted ? '✓' : idx + 1}
+                  </div>
+                  <span className={`text-[11px] font-medium ${
+                    isCurrent ? 'text-green-700' : isCompleted ? 'text-gray-600' : 'text-gray-400'
+                  }`}>
+                    {step.label}
+                  </span>
+                </div>
+                {idx < LIFECYCLE_STEPS.length - 1 && (
+                  <div className={`flex-1 h-px mx-2 ${isCompleted ? 'bg-green-400' : 'bg-gray-200'}`} />
+                )}
+              </React.Fragment>
             );
           })}
         </div>

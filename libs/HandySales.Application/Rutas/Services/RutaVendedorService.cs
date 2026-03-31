@@ -187,8 +187,8 @@ public class RutaVendedorService
         if (ruta == null || ruta.TenantId != _tenant.TenantId)
             throw new InvalidOperationException("Ruta no encontrada");
 
-        if (ruta.Estado != EstadoRuta.Planificada)
-            throw new InvalidOperationException("No se pueden agregar paradas a una ruta en progreso o completada");
+        if (ruta.Estado != EstadoRuta.Planificada && ruta.Estado != EstadoRuta.PendienteAceptar)
+            throw new InvalidOperationException("Solo se pueden agregar paradas a rutas planificadas o pendientes de aceptar");
 
         var detalle = new RutaDetalle
         {
@@ -332,6 +332,51 @@ public class RutaVendedorService
         }
 
         return rutaId;
+    }
+
+    public async Task<int> DuplicarTemplateAsync(int templateId)
+    {
+        var template = await _repo.ObtenerTemplateConDetallesAsync(templateId, _tenant.TenantId);
+        if (template == null)
+            throw new InvalidOperationException("Template no encontrado");
+
+        var copia = new RutaVendedor
+        {
+            TenantId = _tenant.TenantId,
+            ZonaId = template.ZonaId,
+            Nombre = $"{template.Nombre} (Copia)",
+            Descripcion = template.Descripcion,
+            HoraInicioEstimada = template.HoraInicioEstimada,
+            HoraFinEstimada = template.HoraFinEstimada,
+            Notas = template.Notas,
+            KilometrosEstimados = template.KilometrosEstimados,
+            EsTemplate = true,
+            Estado = EstadoRuta.Planificada,
+            CreadoEn = DateTime.UtcNow,
+            CreadoPor = _tenant.UserId
+        };
+
+        var copiaId = await _repo.CrearAsync(copia);
+
+        // Copy paradas from original template
+        foreach (var detalle in template.Detalles.OrderBy(d => d.OrdenVisita))
+        {
+            var nuevoDetalle = new RutaDetalle
+            {
+                RutaId = copiaId,
+                ClienteId = detalle.ClienteId,
+                OrdenVisita = detalle.OrdenVisita,
+                HoraEstimadaLlegada = detalle.HoraEstimadaLlegada,
+                DuracionEstimadaMinutos = detalle.DuracionEstimadaMinutos,
+                Notas = detalle.Notas,
+                Estado = EstadoParada.Pendiente,
+                CreadoEn = DateTime.UtcNow,
+                CreadoPor = _tenant.UserId
+            };
+            await _repo.AgregarDetalleAsync(nuevoDetalle);
+        }
+
+        return copiaId;
     }
 
     // Toggle activo

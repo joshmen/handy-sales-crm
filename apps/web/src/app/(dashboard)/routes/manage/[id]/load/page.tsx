@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { routeService, RouteDetail, RutaCargaItem, PedidoAsignado, ESTADO_RUTA_LABELS, ESTADO_RUTA_COLORS } from '@/services/api/routes';
+import { routeService, RouteDetail, RutaCargaItem, PedidoAsignado, ESTADO_RUTA, ESTADO_RUTA_LABELS, ESTADO_RUTA_COLORS } from '@/services/api/routes';
 import { api } from '@/lib/api';
 import { toast } from '@/hooks/useToast';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
@@ -199,7 +199,7 @@ export default function LoadInventoryPage() {
       await routeService.updateEfectivoInicial(rutaId, parseFloat(efectivoInicial) || 0, comentarios || undefined);
       await routeService.enviarACarga(rutaId);
       toast.success('Ruta enviada a carga exitosamente');
-      router.push('/routes/manage');
+      router.push('/routes');
     } catch (err: unknown) {
       toast.error((err instanceof Error ? err.message : null) || 'Error al enviar a carga');
     } finally {
@@ -211,6 +211,9 @@ export default function LoadInventoryPage() {
   const totalEntregas = pedidos.length;
   const totalProductos = carga.length;
   const totalAsignado = carga.reduce((sum, c) => sum + c.cantidadTotal * c.precioUnitario, 0);
+  // Read-only once the vendor has accepted the load or route is in progress/completed/closed
+  const isReadOnly = ruta ? ruta.estado >= ESTADO_RUTA.CargaAceptada : false;
+  const canSendToCarga = ruta ? (ruta.estado === ESTADO_RUTA.Planificada || ruta.estado === ESTADO_RUTA.PendienteAceptar) : false;
 
   if (loading) {
     return (
@@ -239,9 +242,9 @@ export default function LoadInventoryPage() {
       {/* Header */}
       <div className="bg-white px-8 py-6 border-b border-gray-200">
         <Breadcrumb items={[
-          { label: 'Rutas', href: '/routes/manage' },
-          { label: 'Admin. rutas', href: '/routes/manage' },
-          { label: 'Cargar inventario de ruta' },
+          { label: 'Rutas', href: '/routes' },
+          { label: ruta.nombre, href: `/routes/${ruta.id}` },
+          { label: 'Cargar inventario' },
         ]} />
 
         <div className="flex items-center justify-between mt-2">
@@ -254,14 +257,16 @@ export default function LoadInventoryPage() {
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={handleSaveEfectivo}
-              disabled={saving}
-              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
-            >
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              Guardar
-            </button>
+            {!isReadOnly && (
+              <button
+                onClick={handleSaveEfectivo}
+                disabled={saving}
+                className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+              >
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                Guardar
+              </button>
+            )}
             <button
               onClick={fetchData}
               disabled={loading}
@@ -313,7 +318,8 @@ export default function LoadInventoryPage() {
                 value={efectivoInicial}
                 onChange={(e) => setEfectivoInicial(e.target.value)}
                 placeholder="0.00"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                disabled={isReadOnly}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-500"
               />
             </div>
             <div>
@@ -323,7 +329,8 @@ export default function LoadInventoryPage() {
                 value={comentarios}
                 onChange={(e) => setComentarios(e.target.value)}
                 placeholder="Comentarios de la carga..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                disabled={isReadOnly}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-500"
               />
             </div>
           </div>
@@ -338,13 +345,15 @@ export default function LoadInventoryPage() {
                 {pedidos.length}
               </span>
             </div>
-            <button
-              onClick={handleOpenAddPedido}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-600 border border-green-200 rounded hover:bg-green-50 transition-colors"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Agregar pedidos
-            </button>
+            {!isReadOnly && (
+              <button
+                onClick={handleOpenAddPedido}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-600 border border-green-200 rounded hover:bg-green-50 transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Agregar pedidos
+              </button>
+            )}
           </div>
 
           {pedidos.length === 0 ? (
@@ -358,19 +367,22 @@ export default function LoadInventoryPage() {
                     <span className="text-xs text-gray-500 ml-2">{p.clienteNombre}</span>
                     <span className="text-xs text-gray-400 ml-2">{formatCurrency(p.montoTotal)}</span>
                   </div>
-                  <button
-                    onClick={() => handleRemovePedido(p.pedidoId)}
-                    className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  {!isReadOnly && (
+                    <button
+                      onClick={() => handleRemovePedido(p.pedidoId)}
+                      className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        {/* Section 3: Add Products */}
+        {/* Section 3: Add Products (hidden when read-only) */}
+        {!isReadOnly && (
         <div data-tour="routes-load-add-products" className="bg-white border border-gray-200 rounded-lg p-6">
           <h2 className="text-sm font-semibold text-gray-900 mb-4">Asignar productos para venta</h2>
 
@@ -417,6 +429,7 @@ export default function LoadInventoryPage() {
             </button>
           </div>
         </div>
+        )}
 
         {/* Section 4: Consolidated Table */}
         <div data-tour="routes-load-consolidated" className="bg-white border border-gray-200 rounded-lg p-6">
@@ -469,12 +482,14 @@ export default function LoadInventoryPage() {
                         {formatCurrency(item.cantidadTotal * item.precioUnitario)}
                       </td>
                       <td className="py-2 px-3 text-center">
-                        <button
-                          onClick={() => handleRemoveProducto(item.productoId)}
-                          className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        {!isReadOnly && (
+                          <button
+                            onClick={() => handleRemoveProducto(item.productoId)}
+                            className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -499,7 +514,7 @@ export default function LoadInventoryPage() {
         </div>
 
         {/* Footer: Enviar a carga */}
-        {ruta.estado === 0 && (
+        {canSendToCarga && (
           <div className="flex justify-end pt-4">
             <button
               data-tour="routes-load-submit"

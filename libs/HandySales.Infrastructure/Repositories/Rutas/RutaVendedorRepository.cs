@@ -114,6 +114,8 @@ public class RutaVendedorRepository : IRutaVendedorRepository
                 TotalParadas = r.Detalles.Count,
                 ParadasCompletadas = r.Detalles.Count(d => d.Estado == EstadoParada.Visitado || d.Estado == EstadoParada.Omitido),
                 KilometrosEstimados = r.KilometrosEstimados,
+                HoraInicioEstimada = r.HoraInicioEstimada,
+                HoraFinEstimada = r.HoraFinEstimada,
                 Activo = r.Activo
             })
             .ToListAsync();
@@ -207,6 +209,10 @@ public class RutaVendedorRepository : IRutaVendedorRepository
     {
         var ruta = await _db.RutasVendedor.FindAsync(id);
         if (ruta == null) return false;
+
+        // Only allow cancellation from states that haven't started or completed
+        if (ruta.Estado is EstadoRuta.EnProgreso or EstadoRuta.Completada or EstadoRuta.Cerrada)
+            return false;
 
         ruta.Estado = EstadoRuta.Cancelada;
         ruta.Notas = string.IsNullOrEmpty(ruta.Notas)

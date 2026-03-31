@@ -230,14 +230,8 @@ export default function RouteAdminPage() {
   const handleDuplicate = async (template: RouteTemplate) => {
     try {
       setActionLoading(true);
-      const createData: RouteTemplateCreate = {
-        nombre: `${template.nombre} (Copia)`,
-        descripcion: template.descripcion || undefined,
-        zonaId: template.zonaId,
-        esTemplate: true,
-      };
-      await routeService.createTemplate(createData);
-      toast.success('Template duplicado');
+      await routeService.duplicateTemplate(template.id);
+      toast.success('Template duplicado (con paradas)');
       fetchTemplates();
     } catch {
       toast.error('Error al duplicar template');

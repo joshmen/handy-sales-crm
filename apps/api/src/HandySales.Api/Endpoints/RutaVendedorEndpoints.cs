@@ -46,14 +46,59 @@ public static class RutaVendedorEndpoints
             return eliminado ? Results.NoContent() : Results.NotFound();
         });
 
-        group.MapPost("/templates/{id:int}/instanciar", async (
+        group.MapPost("/templates/{id:int}/duplicar", async (
             int id,
-            InstanciarTemplateDto dto,
             [FromServices] RutaVendedorService servicio) =>
         {
             try
             {
+                var copiaId = await servicio.DuplicarTemplateAsync(id);
+                return Results.Created($"/rutas/templates/{copiaId}", new { id = copiaId });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
+        });
+
+        group.MapPost("/templates/{id:int}/instanciar", async (
+            int id,
+            InstanciarTemplateDto dto,
+            [FromServices] RutaVendedorService servicio,
+            [FromServices] IHttpClientFactory httpClientFactory,
+            [FromServices] ICurrentTenant tenantContext,
+            [FromServices] HandySales.Infrastructure.Notifications.Services.NotificationSettingsService notifSettings) =>
+        {
+            try
+            {
                 var rutaId = await servicio.InstanciarTemplateAsync(id, dto);
+
+                // Push notification to assigned vendedor (same pattern as route creation)
+                if (dto.UsuarioId > 0)
+                {
+                    try
+                    {
+                        var isEnabled = await notifSettings.IsEnabledAsync(tenantContext.TenantId, "route.published");
+                        if (isEnabled)
+                        {
+                            var client = httpClientFactory.CreateClient("MobileApi");
+                            await client.PostAsJsonAsync("/api/internal/push-notify", new
+                            {
+                                tenantId = tenantContext.TenantId,
+                                userIds = new[] { dto.UsuarioId },
+                                title = "Nueva ruta asignada",
+                                body = "Se te asignó una ruta desde plantilla",
+                                data = new Dictionary<string, string>
+                                {
+                                    ["type"] = "route.published",
+                                    ["entityId"] = rutaId.ToString()
+                                }
+                            });
+                        }
+                    }
+                    catch { /* push failure should not block template instantiation */ }
+                }
+
                 return Results.Created($"/rutas/{rutaId}", new { id = rutaId });
             }
             catch (InvalidOperationException ex)

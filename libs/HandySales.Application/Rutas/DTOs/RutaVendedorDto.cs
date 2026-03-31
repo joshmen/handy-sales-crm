@@ -115,6 +115,8 @@ public class RutaListaDto
     public int TotalParadas { get; set; }
     public int ParadasCompletadas { get; set; }
     public double? KilometrosEstimados { get; set; }
+    public TimeSpan? HoraInicioEstimada { get; set; }
+    public TimeSpan? HoraFinEstimada { get; set; }
     public bool Activo { get; set; }
     public bool EsTemplate { get; set; }
 }
