@@ -1,15 +1,99 @@
-import { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TextInput, Alert, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { useState, useEffect, useMemo } from 'react';
+import { View, Text, ScrollView, TextInput, Alert, StyleSheet, TouchableOpacity, ActivityIndicator, Modal, FlatList } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Location from 'expo-location';
 import { clientesApi } from '@/api';
 import { useZonas, useCategoriasCliente } from '@/hooks';
-import { Save, ChevronLeft, MapPin } from 'lucide-react-native';
+import { Save, ChevronLeft, MapPin, ChevronDown, Search, X, Check } from 'lucide-react-native';
 import { COLORS } from '@/theme/colors';
 import { GpsMapModal } from '@/components/shared/GpsMapModal';
 import type { ClienteCreateRequest } from '@/types/client';
+
+// ── Inline SearchableDropdown ────────────────────────────────
+function SearchableDropdown({
+  label, required, items, selectedId, onSelect, placeholder,
+}: {
+  label: string;
+  required?: boolean;
+  items: { id: number; nombre: string }[];
+  selectedId: number | undefined;
+  onSelect: (id: number | undefined) => void;
+  placeholder?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const selected = items.find(i => i.id === selectedId);
+  const filtered = useMemo(() => {
+    if (!search) return items;
+    const q = search.toLowerCase();
+    return items.filter(i => i.nombre.toLowerCase().includes(q));
+  }, [items, search]);
+
+  return (
+    <>
+      <TouchableOpacity style={styles.dropdown} onPress={() => setOpen(true)} activeOpacity={0.7}>
+        <Text style={[styles.dropdownText, !selected && { color: COLORS.textTertiary }]}>
+          {selected?.nombre || placeholder || 'Seleccionar...'}
+        </Text>
+        <ChevronDown size={16} color={COLORS.textTertiary} />
+      </TouchableOpacity>
+      <Modal visible={open} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{label}{required ? ' *' : ''}</Text>
+              <TouchableOpacity onPress={() => { setOpen(false); setSearch(''); }}>
+                <X size={20} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.modalSearch}>
+              <Search size={16} color={COLORS.textTertiary} />
+              <TextInput
+                style={styles.modalSearchInput}
+                placeholder={`Buscar ${label.toLowerCase()}...`}
+                placeholderTextColor={COLORS.textTertiary}
+                value={search}
+                onChangeText={setSearch}
+                autoFocus
+              />
+            </View>
+            <FlatList
+              data={filtered}
+              keyExtractor={i => String(i.id)}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[styles.modalItem, item.id === selectedId && styles.modalItemActive]}
+                  onPress={() => { onSelect(item.id); setOpen(false); setSearch(''); }}
+                >
+                  <Text style={[styles.modalItemText, item.id === selectedId && { color: COLORS.headerBg, fontWeight: '700' }]}>
+                    {item.nombre}
+                  </Text>
+                  {item.id === selectedId && <Check size={16} color={COLORS.headerBg} />}
+                </TouchableOpacity>
+              )}
+              ListEmptyComponent={<Text style={styles.modalEmpty}>Sin resultados</Text>}
+              style={{ maxHeight: 300 }}
+            />
+          </View>
+        </View>
+      </Modal>
+    </>
+  );
+}
+
+// ── Validation helpers ───────────────────────────────────────
+const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+const isValidPhone = (phone: string) => /^\d{10}$/.test(phone);
+
+// ── Error label ──────────────────────────────────────────────
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
+  return <Text style={styles.errorText}>{message}</Text>;
+}
+
+// ══════════════════════════════════════════════════════════════
 
 export default function CrearClienteScreen() {
   const router = useRouter();
@@ -23,10 +107,12 @@ export default function CrearClienteScreen() {
   const [correo, setCorreo] = useState('');
   const [rfc, setRfc] = useState('');
   const [direccion, setDireccion] = useState('');
+  const [numeroExterior, setNumeroExterior] = useState('');
   const [zonaId, setZonaId] = useState<number | undefined>(undefined);
   const [categoriaId, setCategoriaId] = useState<number | undefined>(undefined);
+  const [touched, setTouched] = useState(false);
 
-  // GPS auto-capture
+  // GPS
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationStatus, setLocationStatus] = useState<'loading' | 'success' | 'denied' | 'error'>('loading');
   const [showMapModal, setShowMapModal] = useState(false);
@@ -34,17 +120,12 @@ export default function CrearClienteScreen() {
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setLocationStatus('denied');
-        return;
-      }
+      if (status !== 'granted') { setLocationStatus('denied'); return; }
       try {
         const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
         setLocation({ lat: loc.coords.latitude, lng: loc.coords.longitude });
         setLocationStatus('success');
-      } catch {
-        setLocationStatus('error');
-      }
+      } catch { setLocationStatus('error'); }
     })();
   }, []);
 
@@ -56,23 +137,44 @@ export default function CrearClienteScreen() {
         { text: 'OK', onPress: () => router.back() },
       ]);
     },
-    onError: () => {
-      Alert.alert('Error', 'No se pudo crear el cliente');
+    onError: (err: any) => {
+      const msg = err?.response?.data?.errors
+        ? Object.values(err.response.data.errors).flat().join('\n')
+        : 'No se pudo crear el cliente. Verifica los datos.';
+      Alert.alert('Error', msg);
     },
   });
 
-  const isValid = nombre.trim().length >= 2;
+  // Validation
+  const errors = useMemo(() => {
+    const e: Record<string, string> = {};
+    if (!nombre.trim() || nombre.trim().length < 2) e.nombre = 'Mínimo 2 caracteres';
+    if (!telefono) e.telefono = 'Obligatorio';
+    else if (!isValidPhone(telefono)) e.telefono = 'Debe ser 10 dígitos';
+    if (!correo) e.correo = 'Obligatorio';
+    else if (!isValidEmail(correo)) e.correo = 'Formato inválido';
+    if (rfc && (rfc.length < 12 || rfc.length > 13)) e.rfc = 'Debe ser 12-13 caracteres';
+    if (!direccion.trim()) e.direccion = 'Obligatorio';
+    if (!numeroExterior.trim()) e.numeroExterior = 'Obligatorio';
+    if (!zonaId) e.zona = 'Selecciona una zona';
+    if (!categoriaId) e.categoria = 'Selecciona una categoría';
+    return e;
+  }, [nombre, telefono, correo, rfc, direccion, numeroExterior, zonaId, categoriaId]);
+
+  const isValid = Object.keys(errors).length === 0;
 
   const handleGuardar = () => {
+    setTouched(true);
     if (!isValid) return;
     crearMutation.mutate({
       nombre: nombre.trim(),
-      telefono: telefono || undefined,
-      correo: correo || undefined,
+      telefono: telefono,
+      correo: correo.trim().toLowerCase(),
       rfc: rfc || undefined,
-      direccion: direccion || undefined,
-      idZona: zonaId,
-      categoriaClienteId: categoriaId,
+      direccion: direccion.trim(),
+      numeroExterior: numeroExterior.trim(),
+      idZona: zonaId as number,
+      categoriaClienteId: categoriaId as number,
       latitud: location?.lat,
       longitud: location?.lng,
     });
@@ -80,7 +182,6 @@ export default function CrearClienteScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.headerBack}>
           <ChevronLeft size={24} color={COLORS.headerText} />
@@ -89,148 +190,101 @@ export default function CrearClienteScreen() {
         <View style={styles.headerBack} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Section: Información General */}
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <Text style={styles.sectionLabel}>INFORMACIÓN GENERAL</Text>
 
-        {/* Name */}
+        {/* Nombre */}
         <View style={styles.field}>
           <Text style={styles.label}>Nombre *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Nombre del cliente"
-            placeholderTextColor={COLORS.textTertiary}
-            value={nombre}
-            onChangeText={setNombre}
-          />
+          <TextInput style={[styles.input, touched && errors.nombre && styles.inputError]} placeholder="Nombre del cliente" placeholderTextColor={COLORS.textTertiary} value={nombre} onChangeText={setNombre} />
+          {touched && <FieldError message={errors.nombre} />}
         </View>
 
-        {/* Phone */}
+        {/* Teléfono */}
         <View style={styles.field}>
-          <Text style={styles.label}>Teléfono</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="10 dígitos"
-            placeholderTextColor={COLORS.textTertiary}
-            keyboardType="phone-pad"
-            value={telefono}
-            onChangeText={setTelefono}
-          />
+          <Text style={styles.label}>Teléfono *</Text>
+          <TextInput style={[styles.input, touched && errors.telefono && styles.inputError]} placeholder="10 dígitos" placeholderTextColor={COLORS.textTertiary} keyboardType="phone-pad" maxLength={10} value={telefono} onChangeText={setTelefono} />
+          {touched && <FieldError message={errors.telefono} />}
         </View>
 
-        {/* Email */}
+        {/* Correo */}
         <View style={styles.field}>
-          <Text style={styles.label}>Correo electrónico</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="correo@ejemplo.com"
-            placeholderTextColor={COLORS.textTertiary}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            value={correo}
-            onChangeText={setCorreo}
-          />
+          <Text style={styles.label}>Correo electrónico *</Text>
+          <TextInput style={[styles.input, touched && errors.correo && styles.inputError]} placeholder="correo@ejemplo.com" placeholderTextColor={COLORS.textTertiary} keyboardType="email-address" autoCapitalize="none" value={correo} onChangeText={setCorreo} />
+          {touched && <FieldError message={errors.correo} />}
         </View>
 
         {/* RFC */}
         <View style={styles.field}>
-          <Text style={styles.label}>RFC (opcional)</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="RFC del cliente"
-            placeholderTextColor={COLORS.textTertiary}
-            autoCapitalize="characters"
-            value={rfc}
-            onChangeText={setRfc}
-          />
+          <Text style={styles.label}>RFC</Text>
+          <TextInput style={[styles.input, touched && errors.rfc && styles.inputError]} placeholder="Opcional — 12 o 13 caracteres" placeholderTextColor={COLORS.textTertiary} autoCapitalize="characters" maxLength={13} value={rfc} onChangeText={setRfc} />
+          {touched && <FieldError message={errors.rfc} />}
         </View>
 
-        {/* Zone Picker */}
-        {zonas.data && zonas.data.length > 0 && (
-          <View style={styles.field}>
-            <Text style={styles.label}>Zona</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipScroll}>
-              {zonas.data.map((zona) => (
-                <TouchableOpacity
-                  key={zona.id}
-                  style={[styles.chip, zonaId === zona.id && styles.chipActive]}
-                  onPress={() => setZonaId(zona.id === zonaId ? undefined : zona.id)}
-                >
-                  <Text style={[styles.chipText, zonaId === zona.id && styles.chipTextActive]}>
-                    {zona.nombre}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        )}
+        {/* Zona — SearchableDropdown */}
+        <View style={styles.field}>
+          <Text style={styles.label}>Zona *</Text>
+          <SearchableDropdown
+            label="Zona"
+            required
+            items={zonas.data || []}
+            selectedId={zonaId}
+            onSelect={setZonaId}
+            placeholder="Seleccionar zona..."
+          />
+          {touched && <FieldError message={errors.zona} />}
+        </View>
 
-        {/* Category Picker */}
-        {categorias.data && categorias.data.length > 0 && (
-          <View style={styles.field}>
-            <Text style={styles.label}>Categoría</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipScroll}>
-              {categorias.data.map((cat) => (
-                <TouchableOpacity
-                  key={cat.id}
-                  style={[styles.chip, categoriaId === cat.id && styles.chipActive]}
-                  onPress={() => setCategoriaId(cat.id === categoriaId ? undefined : cat.id)}
-                >
-                  <Text style={[styles.chipText, categoriaId === cat.id && styles.chipTextActive]}>
-                    {cat.nombre}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        )}
+        {/* Categoría — SearchableDropdown */}
+        <View style={styles.field}>
+          <Text style={styles.label}>Categoría *</Text>
+          <SearchableDropdown
+            label="Categoría"
+            required
+            items={categorias.data || []}
+            selectedId={categoriaId}
+            onSelect={setCategoriaId}
+            placeholder="Seleccionar categoría..."
+          />
+          {touched && <FieldError message={errors.categoria} />}
+        </View>
 
-        {/* Section: Dirección */}
         <Text style={styles.sectionLabel}>DIRECCIÓN</Text>
 
-        {/* Address */}
+        {/* Dirección */}
         <View style={styles.field}>
-          <Text style={styles.label}>Dirección</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            placeholder="Calle, número, colonia, ciudad"
-            placeholderTextColor={COLORS.textTertiary}
-            multiline
-            numberOfLines={2}
-            value={direccion}
-            onChangeText={setDireccion}
-            textAlignVertical="top"
-          />
+          <Text style={styles.label}>Calle *</Text>
+          <TextInput style={[styles.input, touched && errors.direccion && styles.inputError]} placeholder="Nombre de la calle" placeholderTextColor={COLORS.textTertiary} value={direccion} onChangeText={setDireccion} />
+          {touched && <FieldError message={errors.direccion} />}
         </View>
 
-        {/* GPS Location */}
+        {/* Número Exterior */}
         <View style={styles.field}>
-          <Text style={styles.label}>Ubicacion GPS</Text>
+          <Text style={styles.label}>Número exterior *</Text>
+          <TextInput style={[styles.input, { width: 120 }, touched && errors.numeroExterior && styles.inputError]} placeholder="# Ext" placeholderTextColor={COLORS.textTertiary} maxLength={20} value={numeroExterior} onChangeText={setNumeroExterior} />
+          {touched && <FieldError message={errors.numeroExterior} />}
+        </View>
+
+        {/* GPS */}
+        <View style={styles.field}>
+          <Text style={styles.label}>Ubicación GPS</Text>
           {location ? (
             <TouchableOpacity style={styles.gpsPreview} onPress={() => setShowMapModal(true)} activeOpacity={0.8}>
               <View style={styles.gpsPreviewIcon}>
                 <MapPin size={20} color={COLORS.success} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.gpsPreviewText}>Ubicacion registrada</Text>
-                <Text style={styles.gpsPreviewCoords}>
-                  {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
-                </Text>
+                <Text style={styles.gpsPreviewText}>Ubicación registrada</Text>
+                <Text style={styles.gpsPreviewCoords}>{location.lat.toFixed(4)}, {location.lng.toFixed(4)}</Text>
               </View>
               <Text style={{ fontSize: 12, color: COLORS.primary, fontWeight: '600' }}>Editar</Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity style={styles.gpsAddBtn} onPress={() => setShowMapModal(true)} activeOpacity={0.8}>
               {locationStatus === 'loading' ? (
-                <>
-                  <ActivityIndicator size="small" color={COLORS.textTertiary} />
-                  <Text style={styles.gpsAddText}>Detectando ubicacion...</Text>
-                </>
+                <><ActivityIndicator size="small" color={COLORS.textTertiary} /><Text style={styles.gpsAddText}>Detectando ubicación...</Text></>
               ) : (
-                <>
-                  <MapPin size={18} color={COLORS.primary} />
-                  <Text style={[styles.gpsAddText, { color: COLORS.primary }]}>Seleccionar en mapa</Text>
-                </>
+                <><MapPin size={18} color={COLORS.primary} /><Text style={[styles.gpsAddText, { color: COLORS.primary }]}>Seleccionar en mapa</Text></>
               )}
             </TouchableOpacity>
           )}
@@ -239,9 +293,9 @@ export default function CrearClienteScreen() {
 
       <View style={[styles.footer, { paddingBottom: insets.bottom || 16 }]}>
         <TouchableOpacity
-          style={[styles.submitButton, !isValid && styles.submitButtonDisabled]}
+          style={[styles.submitButton, (!isValid && touched) && styles.submitButtonDisabled]}
           onPress={handleGuardar}
-          disabled={!isValid || crearMutation.isPending}
+          disabled={crearMutation.isPending}
           activeOpacity={0.8}
         >
           <Save size={18} color={COLORS.headerText} />
@@ -251,19 +305,11 @@ export default function CrearClienteScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Map Modal */}
       <GpsMapModal
         visible={showMapModal}
-        initialCoord={location
-          ? { latitude: location.lat, longitude: location.lng }
-          : { latitude: 25.79, longitude: -108.99 }
-        }
+        initialCoord={location ? { latitude: location.lat, longitude: location.lng } : { latitude: 25.79, longitude: -108.99 }}
         clientName={nombre || undefined}
-        onConfirm={(coord) => {
-          setLocation({ lat: coord.latitude, lng: coord.longitude });
-          setLocationStatus('success');
-          setShowMapModal(false);
-        }}
+        onConfirm={(coord) => { setLocation({ lat: coord.latitude, lng: coord.longitude }); setLocationStatus('success'); setShowMapModal(false); }}
         onCancel={() => setShowMapModal(false)}
       />
     </View>
@@ -272,111 +318,44 @@ export default function CrearClienteScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-
-  /* Header */
-  header: {
-    backgroundColor: COLORS.headerBg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 14,
-  },
+  header: { backgroundColor: COLORS.headerBg, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 14 },
   headerBack: { width: 32, alignItems: 'center' },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: COLORS.headerText,
-    textAlign: 'center',
-    flex: 1,
-  },
-
-  /* Content */
+  headerTitle: { fontSize: 17, fontWeight: '700', color: COLORS.headerText, textAlign: 'center', flex: 1 },
   content: { padding: 16, paddingBottom: 100 },
-
-  /* Section labels */
-  sectionLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.textTertiary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 12,
-    marginTop: 8,
-  },
-
-  /* Fields */
+  sectionLabel: { fontSize: 12, fontWeight: '600', color: COLORS.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12, marginTop: 8 },
   field: { marginBottom: 16 },
   label: { fontSize: 13, fontWeight: '600', color: '#475569', marginBottom: 6 },
-  input: {
-    backgroundColor: COLORS.card,
-    height: 48,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    fontSize: 15,
-    color: COLORS.foreground,
-    borderWidth: 1,
-    borderColor: COLORS.borderMedium,
-  },
-  textArea: { minHeight: 60, height: undefined, paddingVertical: 12 },
+  input: { backgroundColor: COLORS.card, height: 48, borderRadius: 12, paddingHorizontal: 14, fontSize: 15, color: COLORS.foreground, borderWidth: 1, borderColor: COLORS.borderMedium },
+  inputError: { borderColor: '#ef4444' },
+  errorText: { fontSize: 12, color: '#ef4444', marginTop: 4 },
 
-  /* Chips */
-  chipScroll: { gap: 8 },
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 16,
-    backgroundColor: COLORS.border,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  chipActive: { backgroundColor: COLORS.headerBg, borderColor: COLORS.headerBg },
-  chipText: { fontSize: 13, fontWeight: '600', color: COLORS.textSecondary },
-  chipTextActive: { color: COLORS.headerText },
+  // Dropdown
+  dropdown: { backgroundColor: COLORS.card, height: 48, borderRadius: 12, paddingHorizontal: 14, borderWidth: 1, borderColor: COLORS.borderMedium, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  dropdownText: { fontSize: 15, color: COLORS.foreground },
 
-  /* GPS */
-  gpsPreview: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    padding: 14, borderRadius: 12,
-    backgroundColor: COLORS.onlineBg, borderWidth: 1, borderColor: COLORS.brandLight,
-  },
-  gpsPreviewIcon: {
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: COLORS.brandLight, alignItems: 'center', justifyContent: 'center',
-  },
+  // Modal
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  modalContent: { backgroundColor: COLORS.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16, maxHeight: '60%' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  modalTitle: { fontSize: 16, fontWeight: '700', color: COLORS.foreground },
+  modalSearch: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.background, borderRadius: 10, paddingHorizontal: 12, height: 40, gap: 8, marginBottom: 8 },
+  modalSearchInput: { flex: 1, fontSize: 14, color: COLORS.foreground },
+  modalItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 8, borderBottomWidth: 1, borderBottomColor: COLORS.border },
+  modalItemActive: { backgroundColor: `${COLORS.headerBg}10` },
+  modalItemText: { fontSize: 15, color: COLORS.foreground },
+  modalEmpty: { textAlign: 'center', color: COLORS.textTertiary, paddingVertical: 20, fontSize: 14 },
+
+  // GPS
+  gpsPreview: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 12, backgroundColor: COLORS.onlineBg, borderWidth: 1, borderColor: COLORS.brandLight },
+  gpsPreviewIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.brandLight, alignItems: 'center', justifyContent: 'center' },
   gpsPreviewText: { fontSize: 14, fontWeight: '600', color: COLORS.success },
   gpsPreviewCoords: { fontSize: 11, color: COLORS.textTertiary, marginTop: 1 },
-  gpsAddBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    height: 48, borderRadius: 12,
-    borderWidth: 1.5, borderColor: COLORS.borderMedium, borderStyle: 'dashed',
-  },
+  gpsAddBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 48, borderRadius: 12, borderWidth: 1.5, borderColor: COLORS.borderMedium, borderStyle: 'dashed' },
   gpsAddText: { fontSize: 14, fontWeight: '600', color: COLORS.textTertiary },
 
-  /* Footer */
-  footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 16,
-    backgroundColor: COLORS.card,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-  },
-  submitButton: {
-    backgroundColor: COLORS.headerBg,
-    height: 48,
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
+  // Footer
+  footer: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 16, backgroundColor: COLORS.card, borderTopWidth: 1, borderTopColor: COLORS.border },
+  submitButton: { backgroundColor: COLORS.headerBg, height: 48, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   submitButtonDisabled: { opacity: 0.5 },
-  submitButtonText: {
-    color: COLORS.headerText,
-    fontSize: 16,
-    fontWeight: '700',
-  },
+  submitButtonText: { color: COLORS.headerText, fontSize: 16, fontWeight: '700' },
 });

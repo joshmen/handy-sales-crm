@@ -37,12 +37,13 @@ export type ClienteLocation = z.infer<typeof ClienteLocationSchema>;
 // Request types (outgoing — no Zod validation needed)
 export interface ClienteCreateRequest {
   nombre: string;
+  telefono: string;
+  correo: string;
   rfc?: string;
-  correo?: string;
-  telefono?: string;
-  direccion?: string;
-  idZona?: number;
-  categoriaClienteId?: number;
+  direccion: string;
+  numeroExterior: string;
+  idZona: number;
+  categoriaClienteId: number;
   latitud?: number;
   longitud?: number;
 }
