@@ -33,6 +33,9 @@ public class SyncChangesDto
     public List<SyncProductoDto>? Productos { get; set; }
     public List<SyncCobroDto>? Cobros { get; set; }
     public List<SyncRutaDetalleDto>? RutaDetalles { get; set; }
+    public List<SyncPrecioPorProductoDto>? PreciosPorProducto { get; set; }
+    public List<SyncDescuentoDto>? Descuentos { get; set; }
+    public List<SyncPromocionDto>? Promociones { get; set; }
 }
 
 /// <summary>
@@ -127,6 +130,7 @@ public class SyncClienteDto
     public string Direccion { get; set; } = string.Empty;
     public int IdZona { get; set; }
     public int CategoriaClienteId { get; set; }
+    public int? ListaPreciosId { get; set; }
     public double? Latitud { get; set; }
     public double? Longitud { get; set; }
     public bool Activo { get; set; } = true;
@@ -290,6 +294,41 @@ public class IdMappingDto
     public string EntityType { get; set; } = string.Empty;
     public string LocalId { get; set; } = string.Empty;
     public int ServerId { get; set; }
+}
+
+// === Pricing catalog DTOs (read-only on mobile) ===
+
+public class SyncPrecioPorProductoDto
+{
+    public int Id { get; set; }
+    public int ProductoId { get; set; }
+    public int ListaPrecioId { get; set; }
+    public decimal Precio { get; set; }
+    public bool Activo { get; set; } = true;
+    public DateTime? ActualizadoEn { get; set; }
+}
+
+public class SyncDescuentoDto
+{
+    public int Id { get; set; }
+    public int? ProductoId { get; set; }
+    public decimal CantidadMinima { get; set; }
+    public decimal DescuentoPorcentaje { get; set; }
+    public string TipoAplicacion { get; set; } = string.Empty;
+    public bool Activo { get; set; } = true;
+    public DateTime? ActualizadoEn { get; set; }
+}
+
+public class SyncPromocionDto
+{
+    public int Id { get; set; }
+    public string Nombre { get; set; } = string.Empty;
+    public decimal DescuentoPorcentaje { get; set; }
+    public DateTime FechaInicio { get; set; }
+    public DateTime FechaFin { get; set; }
+    public List<int> ProductoIds { get; set; } = new();
+    public bool Activo { get; set; } = true;
+    public DateTime? ActualizadoEn { get; set; }
 }
 
 public enum SyncOperation

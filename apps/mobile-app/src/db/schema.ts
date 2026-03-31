@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export const schema = appSchema({
-  version: 5,
+  version: 7,
   tables: [
     // ─── Clientes ──────────────────────────────────────────
     tableSchema({
@@ -25,6 +25,7 @@ export const schema = appSchema({
         { name: 'limite_credito', type: 'number' },
         { name: 'dias_credito', type: 'number' },
         { name: 'notas', type: 'string', isOptional: true },
+        { name: 'lista_precios_id', type: 'number', isOptional: true },
         { name: 'es_prospecto', type: 'boolean' },
         { name: 'activo', type: 'boolean' },
         { name: 'version', type: 'number' },
@@ -112,6 +113,8 @@ export const schema = appSchema({
         { name: 'km_recorridos', type: 'number', isOptional: true },
         { name: 'hora_inicio', type: 'number', isOptional: true },
         { name: 'hora_fin', type: 'number', isOptional: true },
+        { name: 'hora_inicio_estimada', type: 'string', isOptional: true },
+        { name: 'hora_fin_estimada', type: 'string', isOptional: true },
         { name: 'notas', type: 'string', isOptional: true },
         { name: 'activo', type: 'boolean' },
         { name: 'version', type: 'number' },
@@ -198,6 +201,54 @@ export const schema = appSchema({
         { name: 'remote_url', type: 'string', isOptional: true },
         { name: 'upload_status', type: 'string' }, // 'pending', 'uploading', 'uploaded', 'failed'
         { name: 'retry_count', type: 'number' },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+      ],
+    }),
+
+    // ─── Precios por producto (read-only, pricing catalogs) ──
+    tableSchema({
+      name: 'precios_por_producto',
+      columns: [
+        { name: 'server_id', type: 'number' },
+        { name: 'producto_server_id', type: 'number', isIndexed: true },
+        { name: 'lista_precio_id', type: 'number', isIndexed: true },
+        { name: 'precio', type: 'number' },
+        { name: 'activo', type: 'boolean' },
+        { name: 'version', type: 'number' },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+      ],
+    }),
+
+    // ─── Descuentos por cantidad (read-only) ─────────────────
+    tableSchema({
+      name: 'descuentos',
+      columns: [
+        { name: 'server_id', type: 'number' },
+        { name: 'producto_server_id', type: 'number', isOptional: true },
+        { name: 'cantidad_minima', type: 'number' },
+        { name: 'descuento_porcentaje', type: 'number' },
+        { name: 'tipo_aplicacion', type: 'string' }, // 'Global' | 'Producto'
+        { name: 'activo', type: 'boolean' },
+        { name: 'version', type: 'number' },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+      ],
+    }),
+
+    // ─── Promociones (read-only, time-bound) ─────────────────
+    tableSchema({
+      name: 'promociones',
+      columns: [
+        { name: 'server_id', type: 'number' },
+        { name: 'nombre', type: 'string' },
+        { name: 'descuento_porcentaje', type: 'number' },
+        { name: 'fecha_inicio', type: 'number' },
+        { name: 'fecha_fin', type: 'number' },
+        { name: 'producto_ids', type: 'string' }, // JSON array of server IDs
+        { name: 'activo', type: 'boolean' },
+        { name: 'version', type: 'number' },
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
       ],

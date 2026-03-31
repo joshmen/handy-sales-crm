@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineRutaHoy, useOfflineRutaDetalles, useClientNameMap } from '@/hooks';
 import { LoadingSpinner, EmptyState } from '@/components/ui';
 import { COLORS, STATUS_PALETTES } from '@/theme/colors';
-import { ChevronLeft, Navigation, Map, CheckCircle } from 'lucide-react-native';
+import { ChevronLeft, Navigation, Map, CheckCircle, Clock } from 'lucide-react-native';
 import Ruta from '@/db/models/Ruta';
 import { formatTime } from '@/utils/format';
 import { performSync } from '@/sync/syncEngine';
@@ -149,6 +149,16 @@ export default function RutaScreen() {
           <View style={styles.progressSection}>
             <Text style={styles.routeName}>{route.nombre}</Text>
 
+            {/* Horario estimado */}
+            {(route.horaInicioEstimada || route.horaFinEstimada) && (
+              <View style={styles.horarioRow}>
+                <Clock size={13} color="#94a3b8" />
+                <Text style={styles.horarioText}>
+                  {(route.horaInicioEstimada || '--:--').substring(0, 5)} - {(route.horaFinEstimada || '--:--').substring(0, 5)}
+                </Text>
+              </View>
+            )}
+
             {/* Progress bar */}
             <View style={styles.progressTrack}>
               <View style={[styles.progressFill, { width: `${progress}%` }]} />
@@ -267,6 +277,8 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.border,
   },
   routeName: { fontSize: 16, fontWeight: '700', color: COLORS.foreground },
+  horarioRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 4, marginTop: 2 },
+  horarioText: { fontSize: 12, color: '#94a3b8' },
   progressTrack: { height: 8, borderRadius: 4, backgroundColor: '#e2e8f0', overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: 4, backgroundColor: COLORS.headerBg },
   progressLabel: { fontSize: 12, color: COLORS.textSecondary },

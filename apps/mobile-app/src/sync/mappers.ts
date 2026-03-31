@@ -32,6 +32,9 @@ export function mapPullToWatermelon(
     ruta_detalles: extractDetallesRuta(server.rutas, isFirstSync),
     visitas: splitByOperation(server.visitas, isFirstSync, mapVisitaToRaw),
     cobros: splitByOperation(server.cobros, isFirstSync, mapCobroToRaw),
+    precios_por_producto: splitByOperation(server.preciosPorProducto, isFirstSync, mapPrecioPorProductoToRaw),
+    descuentos: splitByOperation(server.descuentos, isFirstSync, mapDescuentoToRaw),
+    promociones: splitByOperation(server.promociones, isFirstSync, mapPromocionToRaw),
     attachments: { created: [], updated: [], deleted: [] },
   };
 }
@@ -82,6 +85,7 @@ function mapClienteToRaw(c: any): DirtyRaw {
     limite_credito: c.limiteCredito ?? 0,
     dias_credito: c.diasCredito ?? 0,
     notas: null,
+    lista_precios_id: c.listaPreciosId ?? null,
     es_prospecto: c.esProspecto ?? false,
     activo: c.activo ?? true,
     version: c.version ?? 1,
@@ -185,6 +189,8 @@ function mapRutaToRaw(r: any): DirtyRaw {
     km_recorridos: r.kilometrosReales ?? null,
     hora_inicio: toTimestamp(r.horaInicioReal),
     hora_fin: toTimestamp(r.horaFinReal),
+    hora_inicio_estimada: r.horaInicioEstimada ?? null,
+    hora_fin_estimada: r.horaFinEstimada ?? null,
     notas: r.notas ?? null,
     activo: r.activo ?? true,
     version: r.version ?? 1,
@@ -276,6 +282,53 @@ function mapCobroToRaw(c: any): DirtyRaw {
     version: c.version ?? 1,
     created_at: toTimestamp(c.fechaCobro ?? c.actualizadoEn),
     updated_at: toTimestamp(c.actualizadoEn),
+  };
+}
+
+// ── Pricing catalog mappers (read-only) ──
+
+function mapPrecioPorProductoToRaw(p: any): DirtyRaw {
+  return {
+    id: String(p.id),
+    server_id: p.id,
+    producto_server_id: p.productoId ?? 0,
+    lista_precio_id: p.listaPrecioId ?? 0,
+    precio: p.precio ?? 0,
+    activo: p.activo ?? true,
+    version: 1,
+    created_at: toTimestamp(p.actualizadoEn),
+    updated_at: toTimestamp(p.actualizadoEn),
+  };
+}
+
+function mapDescuentoToRaw(d: any): DirtyRaw {
+  return {
+    id: String(d.id),
+    server_id: d.id,
+    producto_server_id: d.productoId ?? null,
+    cantidad_minima: d.cantidadMinima ?? 0,
+    descuento_porcentaje: d.descuentoPorcentaje ?? 0,
+    tipo_aplicacion: d.tipoAplicacion || 'Global',
+    activo: d.activo ?? true,
+    version: 1,
+    created_at: toTimestamp(d.actualizadoEn),
+    updated_at: toTimestamp(d.actualizadoEn),
+  };
+}
+
+function mapPromocionToRaw(p: any): DirtyRaw {
+  return {
+    id: String(p.id),
+    server_id: p.id,
+    nombre: p.nombre || '',
+    descuento_porcentaje: p.descuentoPorcentaje ?? 0,
+    fecha_inicio: toTimestamp(p.fechaInicio),
+    fecha_fin: toTimestamp(p.fechaFin),
+    producto_ids: JSON.stringify(p.productoIds || []),
+    activo: p.activo ?? true,
+    version: 1,
+    created_at: toTimestamp(p.actualizadoEn),
+    updated_at: toTimestamp(p.actualizadoEn),
   };
 }
 

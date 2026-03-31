@@ -35,7 +35,7 @@ export default function CrearPedidoStep1() {
 
   const handleSelect = useCallback(
     (cliente: Cliente) => {
-      setCliente(cliente.id, cliente.serverId, cliente.nombre);
+      setCliente(cliente.id, cliente.serverId, cliente.nombre, cliente.listaPreciosId);
     },
     [setCliente]
   );

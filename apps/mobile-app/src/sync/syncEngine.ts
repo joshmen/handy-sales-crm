@@ -86,6 +86,9 @@ export async function performSync(options?: SyncOptions): Promise<void> {
               visitas:   filterByTenant(rawServerChanges.visitas,   currentTenantId),
               rutas:     rawServerChanges.rutas,     // Rutas don't have tenantId in DTO — already filtered server-side by user
               cobros:    filterByTenant(rawServerChanges.cobros,    currentTenantId),
+              preciosPorProducto: rawServerChanges.preciosPorProducto,  // Read-only catalogs — already tenant-filtered server-side
+              descuentos:         rawServerChanges.descuentos,
+              promociones:        rawServerChanges.promociones,
             }
           : rawServerChanges;
 

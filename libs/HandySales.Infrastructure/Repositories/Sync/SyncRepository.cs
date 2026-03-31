@@ -532,6 +532,65 @@ public class SyncRepository : ISyncRepository
         return await query.OrderBy(c => c.Id).ToListAsync();
     }
 
+    // === Pricing catalog pulls (read-only on mobile) ===
+
+    public async Task<List<SyncPrecioPorProductoDto>> GetPreciosPorProductoAsync(int tenantId, DateTime? since)
+    {
+        var query = _db.PreciosPorProducto.AsNoTracking().Where(p => p.TenantId == tenantId);
+        if (since.HasValue)
+            query = query.Where(p => p.ActualizadoEn > since || p.CreadoEn > since);
+
+        return await query.Select(p => new SyncPrecioPorProductoDto
+        {
+            Id = p.Id,
+            ProductoId = p.ProductoId,
+            ListaPrecioId = p.ListaPrecioId,
+            Precio = p.Precio,
+            Activo = p.Activo,
+            ActualizadoEn = p.ActualizadoEn,
+        }).OrderBy(p => p.Id).ToListAsync();
+    }
+
+    public async Task<List<SyncDescuentoDto>> GetDescuentosAsync(int tenantId, DateTime? since)
+    {
+        var query = _db.DescuentosPorCantidad.AsNoTracking().Where(d => d.TenantId == tenantId);
+        if (since.HasValue)
+            query = query.Where(d => d.ActualizadoEn > since || d.CreadoEn > since);
+
+        return await query.Select(d => new SyncDescuentoDto
+        {
+            Id = d.Id,
+            ProductoId = d.ProductoId,
+            CantidadMinima = d.CantidadMinima,
+            DescuentoPorcentaje = d.DescuentoPorcentaje,
+            TipoAplicacion = d.TipoAplicacion,
+            Activo = d.Activo,
+            ActualizadoEn = d.ActualizadoEn,
+        }).OrderBy(d => d.Id).ToListAsync();
+    }
+
+    public async Task<List<SyncPromocionDto>> GetPromocionesAsync(int tenantId, DateTime? since)
+    {
+        var query = _db.Promociones.AsNoTracking()
+            .Include(p => p.PromocionProductos)
+            .Where(p => p.TenantId == tenantId && p.Activo && p.FechaFin >= DateTime.UtcNow);
+
+        if (since.HasValue)
+            query = query.Where(p => p.ActualizadoEn > since || p.CreadoEn > since);
+
+        return await query.Select(p => new SyncPromocionDto
+        {
+            Id = p.Id,
+            Nombre = p.Nombre,
+            DescuentoPorcentaje = p.DescuentoPorcentaje,
+            FechaInicio = p.FechaInicio,
+            FechaFin = p.FechaFin,
+            ProductoIds = p.PromocionProductos.Select(pp => pp.ProductoId).ToList(),
+            Activo = p.Activo,
+            ActualizadoEn = p.ActualizadoEn,
+        }).OrderBy(p => p.Id).ToListAsync();
+    }
+
     public async Task<(Cobro entity, bool wasConflict)> UpsertCobroAsync(int tenantId, int usuarioId, SyncCobroDto dto, string userId)
     {
         bool wasConflict = false;

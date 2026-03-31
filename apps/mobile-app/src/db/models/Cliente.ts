@@ -29,6 +29,7 @@ export default class Cliente extends Model {
   @field('limite_credito') limiteCredito!: number;
   @field('dias_credito') diasCredito!: number;
   @text('notas') notas!: string | null;
+  @field('lista_precios_id') listaPreciosId!: number | null;
   @field('es_prospecto') esProspecto!: boolean;
   @field('activo') activo!: boolean;
   @field('version') version!: number;

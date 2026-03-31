@@ -31,6 +31,11 @@ public interface ISyncRepository
     Task<List<Cobro>> GetCobrosModifiedSinceAsync(int tenantId, int usuarioId, DateTime? since);
     Task<(Cobro entity, bool wasConflict)> UpsertCobroAsync(int tenantId, int usuarioId, SyncCobroDto dto, string userId);
 
+    // Pull - Pricing catalogs (read-only on mobile)
+    Task<List<SyncPrecioPorProductoDto>> GetPreciosPorProductoAsync(int tenantId, DateTime? since);
+    Task<List<SyncDescuentoDto>> GetDescuentosAsync(int tenantId, DateTime? since);
+    Task<List<SyncPromocionDto>> GetPromocionesAsync(int tenantId, DateTime? since);
+
     // Batch operations
     Task<int> SaveChangesAsync();
 }

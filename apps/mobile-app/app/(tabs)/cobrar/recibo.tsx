@@ -95,6 +95,16 @@ export default function ReciboScreen() {
         fecha,
         vendedorName: user?.name || 'Vendedor',
         logoUri: empresa?.logoUrl || user?.tenantLogo || undefined,
+        isVentaDirecta: isFromVD,
+        items: isFromVD && detalles ? detalles.map((d: any) => ({
+          nombre: d.productoNombre,
+          cantidad: d.cantidad,
+          precioUnitario: d.precioUnitario,
+          subtotal: d.subtotal,
+        })) : undefined,
+        subtotal: isFromVD && order ? order.subtotal : undefined,
+        descuento: isFromVD && order ? order.descuento : undefined,
+        impuesto: isFromVD && order ? order.impuesto : undefined,
       });
       if (!ok) Toast.show({ type: 'error', text1: 'Error de impresora', text2: 'Verifica la conexión' });
     } catch {

@@ -310,6 +310,7 @@ public class SyncService
                 Direccion = c.Direccion,
                 IdZona = c.IdZona,
                 CategoriaClienteId = c.CategoriaClienteId,
+                ListaPreciosId = c.ListaPreciosId,
                 Latitud = c.Latitud,
                 Longitud = c.Longitud,
                 Activo = c.Activo,
@@ -480,6 +481,14 @@ public class SyncService
                 IsDeleted = !c.Activo
             }).ToList();
             response.Summary.CobrosPulled = cobros.Count;
+        }
+
+        // Pull pricing catalogs (read-only on mobile)
+        if (syncAll || entityTypes.Contains("precios", StringComparer.OrdinalIgnoreCase))
+        {
+            response.ServerChanges.PreciosPorProducto = await _repo.GetPreciosPorProductoAsync(tenantId, since);
+            response.ServerChanges.Descuentos = await _repo.GetDescuentosAsync(tenantId, since);
+            response.ServerChanges.Promociones = await _repo.GetPromocionesAsync(tenantId, since);
         }
     }
 }

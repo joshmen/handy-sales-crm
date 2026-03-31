@@ -16,6 +16,8 @@ export default class Ruta extends Model {
   @field('km_recorridos') kmRecorridos!: number | null;
   @date('hora_inicio') horaInicio!: Date | null;
   @date('hora_fin') horaFin!: Date | null;
+  @text('hora_inicio_estimada') horaInicioEstimada!: string | null;
+  @text('hora_fin_estimada') horaFinEstimada!: string | null;
   @text('notas') notas!: string | null;
   @field('activo') activo!: boolean;
   @field('version') version!: number;

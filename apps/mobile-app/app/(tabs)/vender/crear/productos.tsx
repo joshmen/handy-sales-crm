@@ -4,6 +4,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineProducts, useCategoriasProducto } from '@/hooks';
 import { useOrderDraftStore } from '@/stores';
+import { usePricingMap } from '@/hooks/usePricing';
 import { ProgressSteps } from '@/components/shared/ProgressSteps';
 import { QuantityStepper } from '@/components/shared/QuantityStepper';
 import { CartBar } from '@/components/shared/CartBar';
@@ -47,6 +48,8 @@ export default function CrearPedidoStep2() {
   const tipoVenta = useOrderDraftStore(s => s.tipoVenta);
   const { itemCount, total } = useOrderDraftStore();
   const isDirecta = tipoVenta === 1;
+  const clienteListaPreciosId = useOrderDraftStore(s => s.clienteListaPreciosId);
+  const { getPricing, loading: pricingLoading } = usePricingMap(clienteListaPreciosId);
   const categorias = useCategoriasProducto();
 
   const { data: productos, isLoading } = useOfflineProducts(busqueda || undefined, categoriaId);
@@ -62,9 +65,11 @@ export default function CrearPedidoStep2() {
       const stock = item.stockDisponible ?? 0;
       const noStock = stock <= 0;
       const lowStock = stock > 0 && stock <= (item.stockMinimo || 0);
-      // VD: block if no stock. Preventa: allow with warning
       const blocked = isDirecta && noStock;
       const maxQty = isDirecta ? stock : undefined;
+
+      // Dynamic pricing
+      const pricing = getPricing(item.serverId ?? 0, item.precio, qty || 1);
 
       return (
         <View style={[styles.productCard, blocked && { opacity: 0.5 }]}>
@@ -72,10 +77,31 @@ export default function CrearPedidoStep2() {
             <Package size={20} color={COLORS.textTertiary} style={{ marginRight: 10 }} />
             <View style={styles.productInfo}>
               <Text style={styles.productName} numberOfLines={1}>{item.nombre}</Text>
-              <Text style={styles.productPrice}>{formatCurrency(item.precio)}</Text>
-              <Text style={[styles.stockLabel, noStock ? styles.stockOut : lowStock ? styles.stockLow : styles.stockOk]}>
-                {noStock ? 'Sin stock' : `Stock: ${stock}`}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                {pricing.tieneListaPrecios ? (
+                  <>
+                    <Text style={[styles.productPrice, { color: '#16a34a' }]}>{formatCurrency(pricing.precioFinal)}</Text>
+                    <Text style={{ fontSize: 11, color: '#94a3b8', textDecorationLine: 'line-through' }}>{formatCurrency(item.precio)}</Text>
+                  </>
+                ) : (
+                  <Text style={styles.productPrice}>{formatCurrency(pricing.precioFinal)}</Text>
+                )}
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+                <Text style={[styles.stockLabel, noStock ? styles.stockOut : lowStock ? styles.stockLow : styles.stockOk]}>
+                  {noStock ? 'Sin stock' : `Stock: ${stock}`}
+                </Text>
+                {pricing.promo && (
+                  <Text style={{ fontSize: 10, color: '#d97706', fontWeight: '600', backgroundColor: '#fef3c7', paddingHorizontal: 4, paddingVertical: 1, borderRadius: 4 }}>
+                    -{pricing.promo.porcentaje}% {pricing.promo.nombre}
+                  </Text>
+                )}
+                {pricing.descuentoVolumen && (
+                  <Text style={{ fontSize: 10, color: '#7c3aed', fontWeight: '500' }}>
+                    {pricing.descuentoVolumen.porcentaje}% x{pricing.descuentoVolumen.cantidadMinima}+
+                  </Text>
+                )}
+              </View>
             </View>
             <View style={styles.productActions}>
               {blocked ? (
@@ -92,7 +118,7 @@ export default function CrearPedidoStep2() {
               ) : (
                 <TouchableOpacity
                   style={styles.addButton}
-                  onPress={() => addItem(item)}
+                  onPress={() => addItem(item, 1, pricing.precioFinal)}
                   activeOpacity={0.7}
                 >
                   <Plus size={16} color="#ffffff" />
@@ -104,7 +130,7 @@ export default function CrearPedidoStep2() {
         </View>
       );
     },
-    [items, addItem, updateQuantity, removeItem, isDirecta]
+    [items, addItem, updateQuantity, removeItem, isDirecta, getPricing]
   );
 
   return (

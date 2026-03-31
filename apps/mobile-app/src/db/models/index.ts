@@ -7,6 +7,9 @@ import RutaDetalle from './RutaDetalle';
 import Visita from './Visita';
 import Cobro from './Cobro';
 import Attachment from './Attachment';
+import PrecioPorProducto from './PrecioPorProducto';
+import Descuento from './Descuento';
+import Promocion from './Promocion';
 
 export {
   Cliente,
@@ -18,6 +21,9 @@ export {
   Visita,
   Cobro,
   Attachment,
+  PrecioPorProducto,
+  Descuento,
+  Promocion,
 };
 
 export const modelClasses = [
@@ -30,4 +36,7 @@ export const modelClasses = [
   Visita,
   Cobro,
   Attachment,
+  PrecioPorProducto,
+  Descuento,
+  Promocion,
 ];

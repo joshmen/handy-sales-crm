@@ -15,15 +15,16 @@ interface OrderDraftState {
   clienteId: string | null;
   clienteServerId: number | null;
   clienteNombre: string;
+  clienteListaPreciosId: number | null;
   items: DraftItem[];
   notas: string;
   tipoVenta: number; // 0=Preventa, 1=VentaDirecta
   metodoPago: number; // 0=Efectivo, 1=Transferencia, 2=Cheque, 3=T.Crédito, 4=T.Débito, 5=Otro
   fromParadaId: string | null; // Track which route stop originated this order
 
-  setCliente: (id: string, serverId: number | null, nombre: string) => void;
+  setCliente: (id: string, serverId: number | null, nombre: string, listaPreciosId?: number | null) => void;
   setFromParada: (paradaId: string | null) => void;
-  addItem: (producto: Producto, cantidad?: number) => void;
+  addItem: (producto: Producto, cantidad?: number, precioOverride?: number) => void;
   removeItem: (productoId: string) => void;
   updateQuantity: (productoId: string, cantidad: number) => void;
   setNotas: (notas: string) => void;
@@ -44,25 +45,27 @@ export const useOrderDraftStore = create<OrderDraftState>((set, get) => ({
   clienteId: null,
   clienteServerId: null,
   clienteNombre: '',
+  clienteListaPreciosId: null,
   items: [],
   notas: '',
   tipoVenta: 0,
   metodoPago: 0,
   fromParadaId: null,
 
-  setCliente: (id, serverId, nombre) =>
-    set({ clienteId: id, clienteServerId: serverId, clienteNombre: nombre }),
+  setCliente: (id, serverId, nombre, listaPreciosId) =>
+    set({ clienteId: id, clienteServerId: serverId, clienteNombre: nombre, clienteListaPreciosId: listaPreciosId ?? null }),
 
   setFromParada: (paradaId) => set({ fromParadaId: paradaId }),
 
-  addItem: (producto, cantidad = 1) => {
+  addItem: (producto, cantidad = 1, precioOverride) => {
     const items = get().items;
+    const precio = precioOverride ?? producto.precio;
     const existing = items.find((i) => i.productoId === producto.id);
     if (existing) {
       set({
         items: items.map((i) =>
           i.productoId === producto.id
-            ? { ...i, cantidad: i.cantidad + cantidad }
+            ? { ...i, cantidad: i.cantidad + cantidad, precioUnitario: precio }
             : i
         ),
       });
@@ -74,7 +77,7 @@ export const useOrderDraftStore = create<OrderDraftState>((set, get) => ({
             productoId: producto.id,
             productoServerId: producto.serverId,
             nombre: producto.nombre,
-            precioUnitario: producto.precio,
+            precioUnitario: precio,
             cantidad,
             imagenUrl: producto.imagenUrl ?? undefined,
             unidadNombre: producto.unidadMedidaNombre ?? undefined,
@@ -106,7 +109,7 @@ export const useOrderDraftStore = create<OrderDraftState>((set, get) => ({
   setMetodoPago: (metodoPago) => set({ metodoPago }),
 
   reset: () =>
-    set({ clienteId: null, clienteServerId: null, clienteNombre: '', items: [], notas: '', tipoVenta: 0, metodoPago: 0, fromParadaId: null }),
+    set({ clienteId: null, clienteServerId: null, clienteNombre: '', clienteListaPreciosId: null, items: [], notas: '', tipoVenta: 0, metodoPago: 0, fromParadaId: null }),
 
   itemCount: () => get().items.reduce((sum, i) => sum + i.cantidad, 0),
   subtotal: () =>

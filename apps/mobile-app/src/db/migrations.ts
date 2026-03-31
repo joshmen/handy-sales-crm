@@ -1,4 +1,4 @@
-import { schemaMigrations, addColumns } from '@nozbe/watermelondb/Schema/migrations';
+import { schemaMigrations, addColumns, createTable } from '@nozbe/watermelondb/Schema/migrations';
 
 export const migrations = schemaMigrations({
   migrations: [
@@ -50,6 +50,71 @@ export const migrations = schemaMigrations({
           table: 'ruta_detalles',
           columns: [
             { name: 'pedido_id', type: 'string', isOptional: true },
+          ],
+        }),
+      ],
+    },
+    {
+      toVersion: 6,
+      steps: [
+        addColumns({
+          table: 'rutas',
+          columns: [
+            { name: 'hora_inicio_estimada', type: 'string', isOptional: true },
+            { name: 'hora_fin_estimada', type: 'string', isOptional: true },
+          ],
+        }),
+      ],
+    },
+    {
+      toVersion: 7,
+      steps: [
+        addColumns({
+          table: 'clientes',
+          columns: [
+            { name: 'lista_precios_id', type: 'number', isOptional: true },
+          ],
+        }),
+        createTable({
+          name: 'precios_por_producto',
+          columns: [
+            { name: 'server_id', type: 'number' },
+            { name: 'producto_server_id', type: 'number', isIndexed: true },
+            { name: 'lista_precio_id', type: 'number', isIndexed: true },
+            { name: 'precio', type: 'number' },
+            { name: 'activo', type: 'boolean' },
+            { name: 'version', type: 'number' },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+        createTable({
+          name: 'descuentos',
+          columns: [
+            { name: 'server_id', type: 'number' },
+            { name: 'producto_server_id', type: 'number', isOptional: true },
+            { name: 'cantidad_minima', type: 'number' },
+            { name: 'descuento_porcentaje', type: 'number' },
+            { name: 'tipo_aplicacion', type: 'string' },
+            { name: 'activo', type: 'boolean' },
+            { name: 'version', type: 'number' },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+        createTable({
+          name: 'promociones',
+          columns: [
+            { name: 'server_id', type: 'number' },
+            { name: 'nombre', type: 'string' },
+            { name: 'descuento_porcentaje', type: 'number' },
+            { name: 'fecha_inicio', type: 'number' },
+            { name: 'fecha_fin', type: 'number' },
+            { name: 'producto_ids', type: 'string' },
+            { name: 'activo', type: 'boolean' },
+            { name: 'version', type: 'number' },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
           ],
         }),
       ],
