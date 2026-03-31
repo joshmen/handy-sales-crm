@@ -194,8 +194,17 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
+      // Close DeviceSession on backend (marks session as LoggedOut)
+      try {
+        const { api: apiClient } = await import('@/lib/api');
+        await apiClient.post('/auth/logout', {});
+      } catch { /* best-effort — proceed with client-side logout even if API fails */ }
+
       await signOut({ redirect: false, callbackUrl: '/' });
       if (typeof window !== 'undefined') {
+        // Reset to light mode before clearing — landing page should never be dark
+        document.documentElement.classList.remove('dark');
+        document.documentElement.classList.add('light');
         localStorage.clear();
         // Clear PWA API cache to prevent stale tenant data on shared devices
         caches?.delete('api-cache').catch(() => {});

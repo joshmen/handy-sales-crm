@@ -729,6 +729,35 @@ public class AuthService
 
         var (_, plainRefreshToken) = await CreateRefreshTokenAsync(usuario.Id);
 
+        // Create DeviceSession record (required for single-session enforcement)
+        try
+        {
+            var httpContext = _httpContextAccessor.HttpContext;
+            var userAgent = httpContext?.Request.Headers["User-Agent"].ToString() ?? "";
+            var ipAddress = httpContext != null ? GetClientIpAddress(httpContext) : "Unknown";
+
+            var session = new DeviceSession
+            {
+                TenantId = usuario.TenantId,
+                UsuarioId = usuario.Id,
+                DeviceId = Guid.NewGuid().ToString(),
+                DeviceName = ParseDeviceInfo(userAgent),
+                DeviceType = userAgent.Contains("Mobile") || userAgent.Contains("Android") || userAgent.Contains("iPhone")
+                    ? DeviceType.Android : DeviceType.Web,
+                UserAgent = userAgent,
+                IpAddress = ipAddress,
+                Status = SessionStatus.Active,
+                LastActivity = DateTime.UtcNow,
+                CreadoEn = DateTime.UtcNow,
+            };
+            _db.DeviceSessions.Add(session);
+            await _db.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error creating DeviceSession for user {UserId}", usuario.Id);
+        }
+
         await LogActivityAsync(usuario.TenantId, usuario.Id, "login", "auth",
             $"Usuario {usuario.Email} inició sesión exitosamente");
 

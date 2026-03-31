@@ -596,75 +596,41 @@ function LoginContent() {
           {/* ═══ STEP: Session Conflict Dialog ═══ */}
           {loginStep === 'session-conflict' && conflictInfo && (
             <>
-              <div className="space-y-2 text-center auth-animate auth-animate-delay-1">
-                <h1 className="text-[28px] font-bold text-[#0F172A] tracking-tight">
-                  Sesión activa
+              <div className="space-y-3 text-center auth-animate auth-animate-delay-1">
+                <div className="w-14 h-14 mx-auto bg-amber-100 rounded-full flex items-center justify-center">
+                  <Monitor className="h-7 w-7 text-amber-600" />
+                </div>
+                <h1 className="text-[24px] font-bold text-[#0F172A] tracking-tight">
+                  Ya tienes una sesión abierta
                 </h1>
-                <p className="text-[15px] text-[#64748B]">
-                  Ya tienes una sesión abierta en otro dispositivo
+                <p className="text-[14px] text-[#64748B] leading-relaxed">
+                  Tu cuenta está conectada en <strong className="text-[#334155]">{conflictInfo.activeDevice || 'otro dispositivo'}</strong>
+                  {conflictInfo.lastActivity ? ` (${conflictInfo.lastActivity.toLowerCase()})` : ''}.
+                  Solo puedes usar una sesión a la vez.
                 </p>
               </div>
 
-              <div className="space-y-6">
-                <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-3 auth-animate auth-animate-delay-2">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center">
-                      <Monitor className="h-5 w-5 text-gray-600" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm text-[#0F172A]">
-                        {conflictInfo.activeDevice || 'Dispositivo desconocido'}
-                      </p>
-                      {conflictInfo.lastActivity && (
-                        <p className="text-xs text-[#64748B]">
-                          Última actividad: {conflictInfo.lastActivity}
-                        </p>
-                      )}
-                      {conflictInfo.ip && (
-                        <p className="text-xs text-[#64748B]">IP: {conflictInfo.ip}</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
+              <div className="space-y-4 auth-animate auth-animate-delay-2">
+                <button
+                  type="button"
+                  onClick={handleForceLogin}
+                  disabled={forcingLogin}
+                  className="w-full h-12 bg-[#16A34A] hover:bg-[#15803D] text-white text-[15px] font-semibold rounded-[10px] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center shadow-sm hover:shadow-md active:scale-[0.98]"
+                >
+                  {forcingLogin ? (<>{spinnerSvg}Conectando...</>) : 'Continuar aquí'}
+                </button>
 
-                {conflictInfo.suggest2FA && (
-                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg auth-animate auth-animate-delay-3">
-                    <div className="flex items-start gap-2">
-                      <Shield className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                      <p className="text-sm text-blue-800">
-                        Activa la autenticación de dos factores (2FA) en Configuración &gt; Seguridad para proteger tu cuenta.
-                      </p>
-                    </div>
-                  </div>
-                )}
+                <p className="text-xs text-center text-[#94A3B8]">
+                  La otra sesión se cerrará automáticamente
+                </p>
 
-                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg auth-animate auth-animate-delay-4">
-                  <div className="flex items-start gap-2">
-                    <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-amber-800">
-                      Al continuar, la sesión en el otro dispositivo se cerrará inmediatamente.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-3 auth-animate auth-animate-delay-5">
-                  <button
-                    type="button"
-                    onClick={handleForceLogin}
-                    disabled={forcingLogin}
-                    className="w-full h-12 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white text-[15px] font-semibold rounded-[10px] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center shadow-sm hover:shadow-md active:scale-[0.98]"
-                  >
-                    {forcingLogin ? (<>{spinnerSvg}Iniciando sesión...</>) : 'Cerrar sesión anterior e iniciar aquí'}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleBackToCredentials}
-                    className="w-full h-12 border border-[#D1D5DB] text-sm font-medium text-[#374151] rounded-[10px] hover:bg-gray-50 hover:border-gray-400 transition-all active:scale-[0.98]"
-                  >
-                    Cancelar
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={handleBackToCredentials}
+                  className="w-full h-11 text-sm font-medium text-[#64748B] rounded-[10px] hover:bg-gray-50 transition-all active:scale-[0.98]"
+                >
+                  Usar otra cuenta
+                </button>
               </div>
             </>
           )}
