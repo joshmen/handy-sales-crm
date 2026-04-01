@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
-import { View, Text, ScrollView, TextInput, Alert, StyleSheet, TouchableOpacity, ActivityIndicator, Modal, FlatList } from 'react-native';
+import { useState, useMemo } from 'react';
+import { View, Text, ScrollView, TextInput, StyleSheet, TouchableOpacity, Modal, FlatList } from 'react-native';
+import Toast from 'react-native-toast-message';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import * as Location from 'expo-location';
 import { clientesApi } from '@/api';
 import { useZonas, useCategoriasCliente } from '@/hooks';
 import { Save, ChevronLeft, MapPin, ChevronDown, Search, X, Check } from 'lucide-react-native';
@@ -112,47 +112,31 @@ export default function CrearClienteScreen() {
   const [categoriaId, setCategoriaId] = useState<number | undefined>(undefined);
   const [touched, setTouched] = useState(false);
 
-  // GPS
+  // GPS — no auto-detect, user picks from map
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [locationStatus, setLocationStatus] = useState<'loading' | 'success' | 'denied' | 'error'>('loading');
   const [showMapModal, setShowMapModal] = useState(false);
-
-  useEffect(() => {
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') { setLocationStatus('denied'); return; }
-      try {
-        const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-        setLocation({ lat: loc.coords.latitude, lng: loc.coords.longitude });
-        setLocationStatus('success');
-      } catch { setLocationStatus('error'); }
-    })();
-  }, []);
 
   const crearMutation = useMutation({
     mutationFn: (data: ClienteCreateRequest) => clientesApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
-      Alert.alert('Cliente Creado', 'El cliente se registró exitosamente', [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
+      Toast.show({ type: 'success', text1: 'Cliente creado', text2: 'Se registró exitosamente' });
+      router.back();
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.errors
         ? Object.values(err.response.data.errors).flat().join('\n')
         : 'No se pudo crear el cliente. Verifica los datos.';
-      Alert.alert('Error', msg);
+      Toast.show({ type: 'error', text1: 'Error', text2: msg });
     },
   });
 
-  // Validation
+  // Validation — correo and telefono are optional
   const errors = useMemo(() => {
     const e: Record<string, string> = {};
     if (!nombre.trim() || nombre.trim().length < 2) e.nombre = 'Mínimo 2 caracteres';
-    if (!telefono) e.telefono = 'Obligatorio';
-    else if (!isValidPhone(telefono)) e.telefono = 'Debe ser 10 dígitos';
-    if (!correo) e.correo = 'Obligatorio';
-    else if (!isValidEmail(correo)) e.correo = 'Formato inválido';
+    if (telefono && !isValidPhone(telefono)) e.telefono = 'Debe ser 10 dígitos';
+    if (correo && !isValidEmail(correo)) e.correo = 'Formato inválido';
     if (rfc && (rfc.length < 12 || rfc.length > 13)) e.rfc = 'Debe ser 12-13 caracteres';
     if (!direccion.trim()) e.direccion = 'Obligatorio';
     if (!numeroExterior.trim()) e.numeroExterior = 'Obligatorio';
@@ -168,8 +152,8 @@ export default function CrearClienteScreen() {
     if (!isValid) return;
     crearMutation.mutate({
       nombre: nombre.trim(),
-      telefono: telefono,
-      correo: correo.trim().toLowerCase(),
+      telefono: telefono || undefined,
+      correo: correo ? correo.trim().toLowerCase() : undefined,
       rfc: rfc || undefined,
       direccion: direccion.trim(),
       numeroExterior: numeroExterior.trim(),
@@ -191,83 +175,10 @@ export default function CrearClienteScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        <Text style={styles.sectionLabel}>INFORMACIÓN GENERAL</Text>
+        {/* ═══ UBICACIÓN — first so vendor can search client on map ═══ */}
+        <Text style={styles.sectionLabel}>UBICACIÓN</Text>
 
-        {/* Nombre */}
         <View style={styles.field}>
-          <Text style={styles.label}>Nombre *</Text>
-          <TextInput style={[styles.input, touched && errors.nombre && styles.inputError]} placeholder="Nombre del cliente" placeholderTextColor={COLORS.textTertiary} value={nombre} onChangeText={setNombre} />
-          {touched && <FieldError message={errors.nombre} />}
-        </View>
-
-        {/* Teléfono */}
-        <View style={styles.field}>
-          <Text style={styles.label}>Teléfono *</Text>
-          <TextInput style={[styles.input, touched && errors.telefono && styles.inputError]} placeholder="10 dígitos" placeholderTextColor={COLORS.textTertiary} keyboardType="phone-pad" maxLength={10} value={telefono} onChangeText={setTelefono} />
-          {touched && <FieldError message={errors.telefono} />}
-        </View>
-
-        {/* Correo */}
-        <View style={styles.field}>
-          <Text style={styles.label}>Correo electrónico *</Text>
-          <TextInput style={[styles.input, touched && errors.correo && styles.inputError]} placeholder="correo@ejemplo.com" placeholderTextColor={COLORS.textTertiary} keyboardType="email-address" autoCapitalize="none" value={correo} onChangeText={setCorreo} />
-          {touched && <FieldError message={errors.correo} />}
-        </View>
-
-        {/* RFC */}
-        <View style={styles.field}>
-          <Text style={styles.label}>RFC</Text>
-          <TextInput style={[styles.input, touched && errors.rfc && styles.inputError]} placeholder="Opcional — 12 o 13 caracteres" placeholderTextColor={COLORS.textTertiary} autoCapitalize="characters" maxLength={13} value={rfc} onChangeText={setRfc} />
-          {touched && <FieldError message={errors.rfc} />}
-        </View>
-
-        {/* Zona — SearchableDropdown */}
-        <View style={styles.field}>
-          <Text style={styles.label}>Zona *</Text>
-          <SearchableDropdown
-            label="Zona"
-            required
-            items={zonas.data || []}
-            selectedId={zonaId}
-            onSelect={setZonaId}
-            placeholder="Seleccionar zona..."
-          />
-          {touched && <FieldError message={errors.zona} />}
-        </View>
-
-        {/* Categoría — SearchableDropdown */}
-        <View style={styles.field}>
-          <Text style={styles.label}>Categoría *</Text>
-          <SearchableDropdown
-            label="Categoría"
-            required
-            items={categorias.data || []}
-            selectedId={categoriaId}
-            onSelect={setCategoriaId}
-            placeholder="Seleccionar categoría..."
-          />
-          {touched && <FieldError message={errors.categoria} />}
-        </View>
-
-        <Text style={styles.sectionLabel}>DIRECCIÓN</Text>
-
-        {/* Dirección */}
-        <View style={styles.field}>
-          <Text style={styles.label}>Calle *</Text>
-          <TextInput style={[styles.input, touched && errors.direccion && styles.inputError]} placeholder="Nombre de la calle" placeholderTextColor={COLORS.textTertiary} value={direccion} onChangeText={setDireccion} />
-          {touched && <FieldError message={errors.direccion} />}
-        </View>
-
-        {/* Número Exterior */}
-        <View style={styles.field}>
-          <Text style={styles.label}>Número exterior *</Text>
-          <TextInput style={[styles.input, { width: 120 }, touched && errors.numeroExterior && styles.inputError]} placeholder="# Ext" placeholderTextColor={COLORS.textTertiary} maxLength={20} value={numeroExterior} onChangeText={setNumeroExterior} />
-          {touched && <FieldError message={errors.numeroExterior} />}
-        </View>
-
-        {/* GPS */}
-        <View style={styles.field}>
-          <Text style={styles.label}>Ubicación GPS</Text>
           {location ? (
             <TouchableOpacity style={styles.gpsPreview} onPress={() => setShowMapModal(true)} activeOpacity={0.8}>
               <View style={styles.gpsPreviewIcon}>
@@ -277,17 +188,72 @@ export default function CrearClienteScreen() {
                 <Text style={styles.gpsPreviewText}>Ubicación registrada</Text>
                 <Text style={styles.gpsPreviewCoords}>{location.lat.toFixed(4)}, {location.lng.toFixed(4)}</Text>
               </View>
-              <Text style={{ fontSize: 12, color: COLORS.primary, fontWeight: '600' }}>Editar</Text>
+              <Text style={{ fontSize: 12, color: COLORS.primary, fontWeight: '600' }}>Cambiar</Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity style={styles.gpsAddBtn} onPress={() => setShowMapModal(true)} activeOpacity={0.8}>
-              {locationStatus === 'loading' ? (
-                <><ActivityIndicator size="small" color={COLORS.textTertiary} /><Text style={styles.gpsAddText}>Detectando ubicación...</Text></>
-              ) : (
-                <><MapPin size={18} color={COLORS.primary} /><Text style={[styles.gpsAddText, { color: COLORS.primary }]}>Seleccionar en mapa</Text></>
-              )}
+              <MapPin size={18} color={COLORS.primary} />
+              <Text style={[styles.gpsAddText, { color: COLORS.primary }]}>Buscar en mapa</Text>
             </TouchableOpacity>
           )}
+          <Text style={styles.gpsHint}>Busca al cliente en el mapa para llenar la dirección automáticamente</Text>
+        </View>
+
+        {/* ═══ DIRECCIÓN ═══ */}
+        <Text style={styles.sectionLabel}>DIRECCIÓN</Text>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Calle *</Text>
+          <TextInput style={[styles.input, touched && errors.direccion && styles.inputError]} placeholder="Nombre de la calle" placeholderTextColor={COLORS.textTertiary} value={direccion} onChangeText={setDireccion} />
+          {touched && <FieldError message={errors.direccion} />}
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Número exterior *</Text>
+          <TextInput style={[styles.input, { width: 120 }, touched && errors.numeroExterior && styles.inputError]} placeholder="# Ext" placeholderTextColor={COLORS.textTertiary} maxLength={20} value={numeroExterior} onChangeText={setNumeroExterior} />
+          {touched && <FieldError message={errors.numeroExterior} />}
+        </View>
+
+        {/* ═══ INFORMACIÓN GENERAL ═══ */}
+        <Text style={styles.sectionLabel}>INFORMACIÓN GENERAL</Text>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Nombre *</Text>
+          <TextInput style={[styles.input, touched && errors.nombre && styles.inputError]} placeholder="Nombre del cliente o negocio" placeholderTextColor={COLORS.textTertiary} value={nombre} onChangeText={setNombre} />
+          {touched && <FieldError message={errors.nombre} />}
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Teléfono</Text>
+          <TextInput style={[styles.input, touched && errors.telefono && styles.inputError]} placeholder="10 dígitos (opcional)" placeholderTextColor={COLORS.textTertiary} keyboardType="phone-pad" maxLength={10} value={telefono} onChangeText={setTelefono} />
+          {touched && <FieldError message={errors.telefono} />}
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Correo electrónico</Text>
+          <TextInput style={[styles.input, touched && errors.correo && styles.inputError]} placeholder="correo@ejemplo.com (opcional)" placeholderTextColor={COLORS.textTertiary} keyboardType="email-address" autoCapitalize="none" value={correo} onChangeText={setCorreo} />
+          {touched && <FieldError message={errors.correo} />}
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>RFC</Text>
+          <TextInput style={[styles.input, touched && errors.rfc && styles.inputError]} placeholder="12 o 13 caracteres (opcional)" placeholderTextColor={COLORS.textTertiary} autoCapitalize="characters" maxLength={13} value={rfc} onChangeText={setRfc} />
+          {touched && <FieldError message={errors.rfc} />}
+        </View>
+
+        {/* ═══ CLASIFICACIÓN ═══ */}
+        <Text style={styles.sectionLabel}>CLASIFICACIÓN</Text>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Zona *</Text>
+          <SearchableDropdown label="Zona" required items={zonas.data || []} selectedId={zonaId} onSelect={setZonaId} placeholder="Seleccionar zona..." />
+          {touched && <FieldError message={errors.zona} />}
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Categoría *</Text>
+          <SearchableDropdown label="Categoría" required items={categorias.data || []} selectedId={categoriaId} onSelect={setCategoriaId} placeholder="Seleccionar categoría..." />
+          {touched && <FieldError message={errors.categoria} />}
         </View>
       </ScrollView>
 
@@ -309,7 +275,27 @@ export default function CrearClienteScreen() {
         visible={showMapModal}
         initialCoord={location ? { latitude: location.lat, longitude: location.lng } : { latitude: 25.79, longitude: -108.99 }}
         clientName={nombre || undefined}
-        onConfirm={(coord) => { setLocation({ lat: coord.latitude, lng: coord.longitude }); setLocationStatus('success'); setShowMapModal(false); }}
+        onConfirm={(coord, placeInfo) => {
+          setLocation({ lat: coord.latitude, lng: coord.longitude });
+          setShowMapModal(false);
+          if (placeInfo?.address) {
+            const addr = placeInfo.address;
+            const numMatch = addr.match(/\b(\d{1,6})\b/);
+            if (numMatch) {
+              setNumeroExterior(numMatch[1]);
+              const street = addr.split(',')[0].replace(numMatch[0], '').trim();
+              setDireccion(street || addr.split(',')[0]);
+            } else {
+              setDireccion(addr.split(',')[0]);
+            }
+          }
+          if (placeInfo?.name) {
+            setNombre(placeInfo.name);
+          }
+          if (placeInfo?.phone) {
+            setTelefono(placeInfo.phone);
+          }
+        }}
         onCancel={() => setShowMapModal(false)}
       />
     </View>
@@ -352,6 +338,7 @@ const styles = StyleSheet.create({
   gpsPreviewCoords: { fontSize: 11, color: COLORS.textTertiary, marginTop: 1 },
   gpsAddBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 48, borderRadius: 12, borderWidth: 1.5, borderColor: COLORS.borderMedium, borderStyle: 'dashed' },
   gpsAddText: { fontSize: 14, fontWeight: '600', color: COLORS.textTertiary },
+  gpsHint: { fontSize: 12, color: COLORS.textTertiary, marginTop: 6, textAlign: 'center' },
 
   // Footer
   footer: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 16, backgroundColor: COLORS.card, borderTopWidth: 1, borderTopColor: COLORS.border },

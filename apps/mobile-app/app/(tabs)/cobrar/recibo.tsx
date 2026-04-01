@@ -62,13 +62,22 @@ export default function ReciboScreen() {
   }, []);
 
   const handleShare = async () => {
-    if (!receiptRef.current) return;
+    if (!receiptRef.current) {
+      Toast.show({ type: 'error', text1: 'Error', text2: 'No se pudo capturar el recibo' });
+      return;
+    }
     setSharing(true);
     try {
       const uri = await captureRef(receiptRef, { format: 'png', quality: 1 });
+      const isAvailable = await Sharing.isAvailableAsync();
+      if (!isAvailable) {
+        Toast.show({ type: 'error', text1: 'Error', text2: 'Compartir no disponible en este dispositivo' });
+        return;
+      }
       await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Compartir recibo' });
     } catch (e) {
       console.warn('[Recibo] Share failed:', e);
+      Toast.show({ type: 'error', text1: 'Error al compartir', text2: 'Intenta de nuevo o genera el APK para esta función' });
     } finally {
       setSharing(false);
     }
@@ -250,12 +259,34 @@ export default function ReciboScreen() {
 
       {/* Action Buttons */}
       <View style={styles.actions}>
-        <TouchableOpacity style={styles.btnPrint} onPress={printerAvailable ? handlePrint : handleShare} disabled={printing || sharing} activeOpacity={0.8}>
-          {printerAvailable ? <Printer size={18} color="#ffffff" /> : <Share2 size={18} color="#ffffff" />}
-          <Text style={styles.btnPrintText}>
-            {printing ? 'Imprimiendo...' : sharing ? 'Compartiendo...' : printerAvailable ? 'Imprimir' : 'Compartir'}
-          </Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <TouchableOpacity
+            style={[styles.btnPrint, { flex: 1 }]}
+            onPress={() => {
+              if (!isNativeAvailable()) {
+                Toast.show({ type: 'error', text1: 'No disponible', text2: 'La impresión requiere el APK instalado, no funciona en Expo Go' });
+              } else if (!connectedDevice) {
+                Toast.show({ type: 'error', text1: 'Sin impresora', text2: 'Configura una impresora en Más → Impresora' });
+              } else {
+                handlePrint();
+              }
+            }}
+            disabled={printing}
+            activeOpacity={0.8}
+          >
+            <Printer size={18} color="#ffffff" />
+            <Text style={styles.btnPrintText}>{printing ? 'Imprimiendo...' : 'Imprimir'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.btnShare, { flex: 1 }]}
+            onPress={handleShare}
+            disabled={sharing}
+            activeOpacity={0.8}
+          >
+            <Share2 size={18} color={COLORS.headerBg} />
+            <Text style={styles.btnShareText}>{sharing ? 'Compartiendo...' : 'Compartir'}</Text>
+          </TouchableOpacity>
+        </View>
         <TouchableOpacity style={styles.btnDone} onPress={handleDone} activeOpacity={0.8}>
           <Text style={styles.btnDoneText}>Listo</Text>
         </TouchableOpacity>
@@ -415,6 +446,20 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   btnPrintText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+
+  btnShare: {
+    flex: 1,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: 6,
+    height: 48,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: COLORS.headerBg,
+  },
+  btnShareText: { color: COLORS.headerBg, fontWeight: '700' as const, fontSize: 14 },
 
   btnDone: {
     flex: 1,

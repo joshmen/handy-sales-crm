@@ -21,9 +21,9 @@ public class ClienteRepository : IClienteRepository
         {
             TenantId = tenantId,
             Nombre = dto.Nombre,
-            RFC = dto.RFC,
-            Correo = dto.Correo,
-            Telefono = dto.Telefono,
+            RFC = dto.RFC ?? string.Empty,
+            Correo = dto.Correo ?? string.Empty,
+            Telefono = dto.Telefono ?? string.Empty,
             Direccion = dto.Direccion,
             NumeroExterior = dto.NumeroExterior,
             IdZona = dto.IdZona,

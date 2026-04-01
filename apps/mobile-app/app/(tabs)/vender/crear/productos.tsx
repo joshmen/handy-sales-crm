@@ -189,6 +189,10 @@ export default function CrearPedidoStep2() {
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
+        initialNumToRender={15}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        removeClippedSubviews
         ListEmptyComponent={
           !isLoading ? (
             <EmptyState

@@ -10,9 +10,9 @@ import {
   ImageBackground,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLogin } from '@/hooks';
 import { Button, Input } from '@/components/ui';
-import { ScreenWrapper } from '@/components/shared/ScreenWrapper';
 import { Mail, Lock, AlertCircle } from 'lucide-react-native';
 import { HandyLogo } from '@/components/shared/HandyLogo';
 import { COLORS } from '@/theme/colors';
@@ -22,6 +22,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const loginMutation = useLogin();
 
@@ -62,7 +63,7 @@ export default function LoginScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
       >
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 24 }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
@@ -244,6 +245,9 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 12,
-    color: '#94a3b8',
+    color: '#ffffffcc',
+    textShadowColor: '#00000060',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
 });

@@ -1,5 +1,6 @@
-import { View, Text, ScrollView, Linking, StyleSheet } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { View, Text, ScrollView, Linking, StyleSheet, TouchableOpacity } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineClientById } from '@/hooks';
 import { Card, Button, LoadingSpinner } from '@/components/ui';
 import { Badge } from '@/components/ui';
@@ -10,12 +11,15 @@ import {
   FileText,
   Building2,
   User,
+  ChevronLeft,
 } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { COLORS } from '@/theme/colors';
 
 export default function ClientDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { data: client, isLoading } = useOfflineClientById(id!);
 
   if (isLoading || !client) {
@@ -27,13 +31,20 @@ export default function ClientDetailScreen() {
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Blue header background */}
-      <View style={styles.headerBg} />
+    <View style={styles.container}>
+      {/* Blue Header */}
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.headerBack}>
+          <ChevronLeft size={22} color={COLORS.headerText} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>{client.nombre}</Text>
+        <View style={{ width: 22 }} />
+      </View>
+
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
 
       {/* Overlapping avatar + profile info */}
       <Animated.View entering={FadeInDown.duration(400).delay(100)}>
@@ -124,6 +135,7 @@ export default function ClientDetailScreen() {
       </View>
       </Animated.View>
     </ScrollView>
+    </View>
   );
 }
 
@@ -137,16 +149,33 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   content: {
+    paddingTop: 16,
+    paddingHorizontal: 16,
     paddingBottom: 32,
+  },
+  header: {
+    backgroundColor: COLORS.headerBg,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+    paddingHorizontal: 16,
+    paddingBottom: 14,
+  },
+  headerBack: { width: 32, alignItems: 'center' as const },
+  headerTitle: {
+    fontSize: 17,
+    fontWeight: '700' as const,
+    color: COLORS.headerText,
+    textAlign: 'center' as const,
+    flex: 1,
   },
   headerBg: {
     backgroundColor: COLORS.headerBg,
-    height: 120,
+    height: 60,
   },
   profileHeader: {
     alignItems: 'center',
     paddingHorizontal: 16,
-    marginTop: -45,
     marginBottom: 16,
   },
   avatarLarge: {

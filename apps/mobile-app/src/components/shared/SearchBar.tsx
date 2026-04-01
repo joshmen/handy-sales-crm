@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useCallback, useRef } from 'react';
 import { View, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { Search, X } from 'lucide-react-native';
 import { COLORS } from '@/theme/colors';
@@ -14,13 +14,16 @@ export function SearchBar({
   onSearch,
   debounceMs = 300,
 }: SearchBarProps) {
-  const [value, setValue] = useState('');
-  const [isFocused, setIsFocused] = useState(false);
+  // Use ref for value to avoid re-renders on every keystroke
+  const valueRef = useRef('');
+  const inputRef = useRef<TextInput>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [displayValue, setDisplayValue] = React.useState('');
 
   const handleChange = useCallback(
     (text: string) => {
-      setValue(text);
+      valueRef.current = text;
+      setDisplayValue(text);
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => {
         onSearch(text);
@@ -30,28 +33,26 @@ export function SearchBar({
   );
 
   const handleClear = useCallback(() => {
-    setValue('');
+    valueRef.current = '';
+    setDisplayValue('');
     onSearch('');
+    inputRef.current?.focus();
   }, [onSearch]);
 
   return (
-    <View style={[
-      styles.container,
-      isFocused && styles.containerFocused,
-    ]}>
-      <Search size={18} color={isFocused ? COLORS.primary : '#94a3b8'} />
+    <View style={styles.container}>
+      <Search size={18} color="#94a3b8" />
       <TextInput
+        ref={inputRef}
         style={styles.input}
         placeholder={placeholder}
         placeholderTextColor="#94a3b8"
-        value={value}
+        value={displayValue}
         onChangeText={handleChange}
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => setIsFocused(false)}
         autoCapitalize="none"
         autoCorrect={false}
       />
-      {value.length > 0 && (
+      {displayValue.length > 0 && (
         <TouchableOpacity
           onPress={handleClear}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}

@@ -115,6 +115,10 @@ export default function ActividadEquipoScreen() {
         keyExtractor={(item) => `${item.tipo}-${item.id}`}
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
+        initialNumToRender={15}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        removeClippedSubviews
         refreshControl={
           <RefreshControl
             refreshing={refreshing}

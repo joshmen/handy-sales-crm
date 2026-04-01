@@ -7,12 +7,9 @@ public class ClienteCreateDto
     public int TenandId { get; set; }
     [Required]
     public required string Nombre { get; set; }
-    [Required]
-    public required string RFC { get; set; }
-    [Required]
-    public required string Correo { get; set; }
-    [Required]
-    public required string Telefono { get; set; }
+    public string? RFC { get; set; }
+    public string? Correo { get; set; }
+    public string? Telefono { get; set; }
     [Required]
     public required string Direccion { get; set; }
     [Required]

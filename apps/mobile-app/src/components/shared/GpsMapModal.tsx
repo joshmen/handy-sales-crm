@@ -1,17 +1,56 @@
 import { useState, useRef, useCallback } from 'react';
-import { View, Text, Modal, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Modal, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker } from 'react-native-maps';
-import { MapPin } from 'lucide-react-native';
+import { MapPin, Phone, Globe, Clock, X } from 'lucide-react-native';
 import { COLORS } from '@/theme/colors';
+
+interface PlaceDetails {
+  name?: string;
+  address?: string;
+  phone?: string;
+  website?: string;
+  openNow?: boolean;
+  placeId?: string;
+}
 
 interface GpsMapModalProps {
   visible: boolean;
   initialCoord: { latitude: number; longitude: number };
   title?: string;
   clientName?: string;
-  onConfirm: (coord: { latitude: number; longitude: number }) => void;
+  onConfirm: (coord: { latitude: number; longitude: number }, placeInfo?: { address?: string; name?: string; phone?: string }) => void;
   onCancel: () => void;
+}
+
+const API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+
+async function fetchPlaceDetails(placeId: string): Promise<PlaceDetails> {
+  try {
+    const fields = 'name,formatted_address,formatted_phone_number,website,opening_hours';
+    const res = await fetch(`https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=${fields}&key=${API_KEY}`);
+    const data = await res.json();
+    const r = data.result;
+    if (!r) return {};
+    return {
+      name: r.name,
+      address: r.formatted_address,
+      phone: r.formatted_phone_number,
+      website: r.website,
+      openNow: r.opening_hours?.open_now,
+      placeId,
+    };
+  } catch { return {}; }
+}
+
+async function reverseGeocode(lat: number, lng: number): Promise<PlaceDetails> {
+  try {
+    const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${API_KEY}`);
+    const data = await res.json();
+    const result = data.results?.[0];
+    if (!result) return {};
+    return { address: result.formatted_address };
+  } catch { return {}; }
 }
 
 export function GpsMapModal({ visible, initialCoord, title, clientName, onConfirm, onCancel }: GpsMapModalProps) {
@@ -19,14 +58,17 @@ export function GpsMapModal({ visible, initialCoord, title, clientName, onConfir
   const [coord, setCoord] = useState(initialCoord);
   const [search, setSearch] = useState('');
   const [results, setResults] = useState<any[]>([]);
+  const [preview, setPreview] = useState<PlaceDetails | null>(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
   const mapRef = useRef<MapView | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Reset coord when modal opens with new initialCoord
+  // Reset when modal opens with new initialCoord
   const [lastInit, setLastInit] = useState(initialCoord);
   if (visible && (lastInit.latitude !== initialCoord.latitude || lastInit.longitude !== initialCoord.longitude)) {
     setCoord(initialCoord);
     setLastInit(initialCoord);
+    setPreview(null);
   }
 
   const searchPlaces = useCallback((query: string) => {
@@ -35,9 +77,8 @@ export function GpsMapModal({ visible, initialCoord, title, clientName, onConfir
     if (query.length < 3) { setResults([]); return; }
     timer.current = setTimeout(async () => {
       try {
-        const key = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
         const loc = `${coord.latitude},${coord.longitude}`;
-        const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&location=${loc}&radius=5000&key=${key}`;
+        const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&location=${loc}&radius=5000&key=${API_KEY}`;
         const res = await fetch(url);
         const data = await res.json();
         setResults(data.results?.slice(0, 5) ?? []);
@@ -45,7 +86,7 @@ export function GpsMapModal({ visible, initialCoord, title, clientName, onConfir
     }, 500);
   }, [coord]);
 
-  const selectPlace = useCallback((place: any) => {
+  const selectPlace = useCallback(async (place: any) => {
     const loc = place.geometry?.location;
     if (loc) {
       const c = { latitude: loc.lat, longitude: loc.lng };
@@ -54,33 +95,73 @@ export function GpsMapModal({ visible, initialCoord, title, clientName, onConfir
     }
     setSearch(place.name);
     setResults([]);
+    // Fetch full details
+    if (place.place_id) {
+      setLoadingDetails(true);
+      const details = await fetchPlaceDetails(place.place_id);
+      setPreview(details);
+      setLoadingDetails(false);
+    }
+  }, []);
+
+  // Handle POI click on map (tap on business icon)
+  const handlePoiClick = useCallback(async (e: any) => {
+    const { coordinate, name, placeId } = e.nativeEvent;
+    setCoord(coordinate);
+    setSearch(name ?? '');
+    setResults([]);
+    mapRef.current?.animateToRegion({ ...coordinate, latitudeDelta: 0.002, longitudeDelta: 0.002 }, 500);
+    if (placeId) {
+      setLoadingDetails(true);
+      const details = await fetchPlaceDetails(placeId);
+      setPreview(details);
+      setLoadingDetails(false);
+    } else {
+      setPreview({ name: name ?? undefined });
+    }
+  }, []);
+
+  // Handle map tap (empty area)
+  const handleMapPress = useCallback(async (e: any) => {
+    const c = e.nativeEvent.coordinate;
+    setCoord(c);
+    setResults([]);
+    setLoadingDetails(true);
+    const details = await reverseGeocode(c.latitude, c.longitude);
+    setPreview(details.address ? details : null);
+    setLoadingDetails(false);
   }, []);
 
   const handleClose = useCallback(() => {
     setSearch('');
     setResults([]);
+    setPreview(null);
     onCancel();
   }, [onCancel]);
 
-  const handleConfirm = useCallback(() => {
+  const handleConfirm = useCallback(async () => {
+    const p = preview;
     setSearch('');
     setResults([]);
-    onConfirm(coord);
-  }, [coord, onConfirm]);
+    setPreview(null);
+
+    const phone = p?.phone?.replace(/\D/g, '').slice(-10);
+    onConfirm(coord, p ? { address: p.address, name: p.name, phone } : undefined);
+  }, [coord, preview, onConfirm]);
 
   return (
     <Modal visible={visible} transparent={false} animationType="slide" onRequestClose={handleClose}>
       <View style={styles.container}>
         {/* Header */}
         <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-          <Text style={styles.headerTitle}>{title ?? 'Ubicacion del cliente'}</Text>
+          <Text style={styles.headerTitle}>{title ?? 'Ubicación del cliente'}</Text>
         </View>
 
         {/* Search */}
         <View style={styles.searchBar}>
           <TextInput
             style={styles.searchInput}
-            placeholder="Buscar tienda, direccion..."
+            placeholder="Buscar tienda, dirección..."
             placeholderTextColor="#94a3b8"
             value={search}
             onChangeText={searchPlaces}
@@ -88,12 +169,12 @@ export function GpsMapModal({ visible, initialCoord, title, clientName, onConfir
           />
           {search.length > 0 && (
             <TouchableOpacity onPress={() => { setSearch(''); setResults([]); }} style={{ padding: 4 }}>
-              <Text style={{ color: '#94a3b8', fontSize: 16 }}>✕</Text>
+              <X size={16} color="#94a3b8" />
             </TouchableOpacity>
           )}
         </View>
 
-        {/* Results */}
+        {/* Search Results */}
         {results.length > 0 && (
           <View style={styles.resultsList}>
             {results.map((place: any) => (
@@ -113,31 +194,70 @@ export function GpsMapModal({ visible, initialCoord, title, clientName, onConfir
           ref={mapRef}
           style={{ flex: 1 }}
           initialRegion={{ ...initialCoord, latitudeDelta: 0.003, longitudeDelta: 0.003 }}
-          onPress={(e) => { setCoord(e.nativeEvent.coordinate); setResults([]); }}
-          onPoiClick={(e) => {
-            const { coordinate, name } = e.nativeEvent;
-            setCoord(coordinate);
-            setSearch(name ?? '');
-            setResults([]);
-            mapRef.current?.animateToRegion({ ...coordinate, latitudeDelta: 0.002, longitudeDelta: 0.002 }, 500);
-          }}
+          onPress={handleMapPress}
+          onPoiClick={handlePoiClick}
           showsUserLocation
           showsPointsOfInterest
           showsBuildings
           showsMyLocationButton
         >
-          <Marker coordinate={coord} draggable onDragEnd={(e) => setCoord(e.nativeEvent.coordinate)} title={clientName}>
+          <Marker coordinate={coord} draggable onDragEnd={handleMapPress} title={clientName}>
             <View style={styles.customMarker}>
               <MapPin size={20} color="#ffffff" />
             </View>
           </Marker>
         </MapView>
 
+        {/* Place Preview Card — shows details of selected place */}
+        {(preview || loadingDetails) && (
+          <View style={styles.previewCard}>
+            {loadingDetails ? (
+              <View style={styles.previewLoading}>
+                <ActivityIndicator size="small" color={COLORS.primary} />
+                <Text style={styles.previewLoadingText}>Obteniendo información...</Text>
+              </View>
+            ) : preview && (
+              <>
+                {preview.name && (
+                  <Text style={styles.previewName}>{preview.name}</Text>
+                )}
+                {preview.address && (
+                  <Text style={styles.previewAddress} numberOfLines={2}>{preview.address}</Text>
+                )}
+                <View style={styles.previewDetails}>
+                  {preview.phone && (
+                    <View style={styles.previewRow}>
+                      <Phone size={13} color="#16a34a" />
+                      <Text style={styles.previewText}>{preview.phone}</Text>
+                    </View>
+                  )}
+                  {preview.website && (
+                    <View style={styles.previewRow}>
+                      <Globe size={13} color="#2563eb" />
+                      <Text style={[styles.previewText, { color: '#2563eb' }]} numberOfLines={1}>
+                        {preview.website.replace(/^https?:\/\/(www\.)?/, '').slice(0, 30)}
+                      </Text>
+                    </View>
+                  )}
+                  {preview.openNow !== undefined && (
+                    <View style={styles.previewRow}>
+                      <Clock size={13} color={preview.openNow ? '#16a34a' : '#ef4444'} />
+                      <Text style={[styles.previewText, { color: preview.openNow ? '#16a34a' : '#ef4444' }]}>
+                        {preview.openNow ? 'Abierto ahora' : 'Cerrado'}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </>
+            )}
+          </View>
+        )}
+
         {/* Actions */}
         <View style={[styles.actions, { paddingBottom: insets.bottom + 16 }]}>
           <TouchableOpacity style={styles.confirmBtn} onPress={handleConfirm} activeOpacity={0.8}>
             <MapPin size={18} color="#ffffff" />
-            <Text style={styles.confirmText}>Guardar ubicacion</Text>
+            <Text style={styles.confirmText}>Guardar ubicación</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.cancelBtn} onPress={handleClose} activeOpacity={0.7}>
             <Text style={styles.cancelText}>Cancelar</Text>
@@ -180,6 +300,25 @@ const styles = StyleSheet.create({
     borderWidth: 3, borderColor: '#ffffff',
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 6,
   },
+
+  // Preview card
+  previewCard: {
+    position: 'absolute', bottom: 140, left: 16, right: 16,
+    backgroundColor: '#ffffff', borderRadius: 14, padding: 14,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 8, elevation: 8,
+    borderWidth: 1, borderColor: '#f1f5f9',
+  },
+  previewLoading: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 4,
+  },
+  previewLoadingText: { fontSize: 13, color: '#94a3b8' },
+  previewName: { fontSize: 15, fontWeight: '700', color: '#1e293b', marginBottom: 2 },
+  previewAddress: { fontSize: 12, color: '#64748b', lineHeight: 17, marginBottom: 6 },
+  previewDetails: { gap: 4 },
+  previewRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  previewText: { fontSize: 13, color: '#475569' },
+
+  // Actions
   actions: { paddingHorizontal: 16, paddingTop: 12, gap: 8, backgroundColor: '#ffffff', borderTopWidth: 1, borderTopColor: '#e2e8f0' },
   confirmBtn: {
     height: 50, borderRadius: 14, backgroundColor: COLORS.button,

@@ -8,7 +8,6 @@ import { SearchBar } from '@/components/shared/SearchBar';
 import { Badge } from '@/components/ui';
 import { Phone, ChevronRight, ChevronLeft, Users, Plus } from 'lucide-react-native';
 import { performSync } from '@/sync/syncEngine';
-import Animated, { FadeInDown } from 'react-native-reanimated';
 import type Cliente from '@/db/models/Cliente';
 import { COLORS, STATUS_PALETTES } from '@/theme/colors';
 
@@ -32,8 +31,7 @@ export default function ClientsListScreen() {
   }, []);
 
   const renderItem = useCallback(
-    ({ item, index }: { item: Cliente; index: number }) => (
-      <Animated.View entering={FadeInDown.delay(Math.min(index, 10) * 50).duration(300)}>
+    ({ item }: { item: Cliente }) => (
       <Card
         className="mx-4 mb-3"
         onPress={() => router.push(`/(tabs)/clients/${item.id}`)}
@@ -82,7 +80,6 @@ export default function ClientsListScreen() {
           <ChevronRight size={18} color="#cbd5e1" style={styles.chevron} />
         </View>
       </Card>
-      </Animated.View>
     ),
     [router]
   );
@@ -130,6 +127,11 @@ export default function ClientsListScreen() {
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
+        keyboardShouldPersistTaps="handled"
+        initialNumToRender={15}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        removeClippedSubviews
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -196,6 +198,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: COLORS.headerBg,
+    zIndex: 10,
   },
   countRow: {
     flexDirection: 'row',

@@ -82,13 +82,14 @@ export default function NewClientPage() {
     formState: { errors, isDirty },
     watch,
     setValue,
+    getValues,
   } = useForm<ClientFormInput>({
     resolver: zodResolver(clientSchema),
     defaultValues: clientDefaultValues as ClientFormInput,
   });
 
-  // Handle Google Places autocomplete
-  const handlePlaceSelected = useCallback(() => {
+  // Handle Google Places autocomplete — auto-fill address, name, and phone
+  const handlePlaceSelected = useCallback(async () => {
     if (!autocompleteRef.current) return;
     const place = autocompleteRef.current.getPlace();
     if (place.formatted_address) {
@@ -114,7 +115,21 @@ export default function NewClientPage() {
         }
       }
     }
-  }, [setValue]);
+    // Auto-fill business name if empty
+    if (place.name && !getValues('descripcion')) {
+      setValue('descripcion', place.name, { shouldValidate: true });
+    }
+    // Fetch phone from Place Details (not available in Autocomplete response)
+    if (place.place_id && !getValues('telefono')) {
+      try {
+        const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+        const res = await fetch(`https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=formatted_phone_number&key=${key}`);
+        const data = await res.json();
+        const phone = data.result?.formatted_phone_number?.replace(/\D/g, '').slice(-10);
+        if (phone) setValue('telefono', phone, { shouldValidate: true });
+      } catch { /* non-fatal — phone auto-fill is optional */ }
+    }
+  }, [setValue, getValues]);
 
   // Warn on unsaved changes
   useEffect(() => {
@@ -451,7 +466,7 @@ export default function NewClientPage() {
                         onLoad={(ac) => { autocompleteRef.current = ac; }}
                         onPlaceChanged={handlePlaceSelected}
                         restrictions={{ country: 'mx' }}
-                        fields={['formatted_address', 'geometry', 'address_components']}
+                        fields={['formatted_address', 'geometry', 'address_components', 'name', 'place_id']}
                       >
                         <input
                           type="text"
@@ -522,9 +537,25 @@ export default function NewClientPage() {
                 <ClientLocationMap
                   lat={watch('latitud') || 0}
                   lng={watch('longitud') || 0}
-                  onLocationChange={(lat, lng) => {
+                  onLocationChange={async (lat, lng) => {
                     setValue('latitud', lat);
                     setValue('longitud', lng);
+                    // Reverse geocode to fill address fields from map click
+                    try {
+                      const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+                      const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${key}`);
+                      const data = await res.json();
+                      const result = data.results?.[0];
+                      if (result) {
+                        if (!getValues('direccion')) setValue('direccion', result.formatted_address, { shouldValidate: true });
+                        for (const comp of result.address_components || []) {
+                          if (comp.types.includes('locality') && !getValues('ciudad')) setValue('ciudad', comp.long_name);
+                          if ((comp.types.includes('sublocality_level_1') || comp.types.includes('neighborhood')) && !getValues('colonia')) setValue('colonia', comp.long_name);
+                          if (comp.types.includes('postal_code') && !getValues('codigoPostal')) setValue('codigoPostal', comp.long_name);
+                          if (comp.types.includes('street_number') && !getValues('numeroExterior')) setValue('numeroExterior', comp.long_name, { shouldValidate: true });
+                        }
+                      }
+                    } catch { /* non-fatal */ }
                   }}
                   selectedZone={zonas.find(z => z.id === watch('zonaId')) as ZoneGeo | undefined}
                   onOutOfZone={setIsOutOfZone}

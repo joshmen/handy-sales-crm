@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert, Image, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
+import Toast from 'react-native-toast-message';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/stores';
@@ -169,7 +170,7 @@ export default function RegistrarCobroScreen() {
       setReceiptPhoto(null);
       setSelectedClient(null);
     } catch {
-      Alert.alert('Error', 'No se pudo registrar el cobro');
+      Toast.show({ type: 'error', text1: 'Error', text2: 'No se pudo registrar el cobro' });
     } finally {
       setSending(false);
     }

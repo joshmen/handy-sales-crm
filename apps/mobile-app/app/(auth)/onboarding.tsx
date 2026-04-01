@@ -20,10 +20,6 @@ import { COLORS } from '@/theme/colors';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// Pencil design: slides 1-2 have photo ~66% top + white card bottom
-// Slide 3 is full dark with gradient overlay + bullet points
-const IMAGE_HEIGHT = SCREEN_HEIGHT * 0.66;
-
 // Pencil design images — exported from pencil-shared-mobil.pen
 const SLIDE1_IMAGE = require('@/../assets/images/onboarding/slide1-hero.png');
 const SLIDE2_IMAGE = require('@/../assets/images/onboarding/slide2-hero.png');
@@ -57,7 +53,7 @@ const SLIDES: SlideData[] = [
   },
   {
     id: '3',
-    title: 'Administra\ntu día',
+    title: 'Administra tu día',
     subtitle:
       'Ruta optimizada, visitas con check-in, reportes de rendimiento y sincronización offline.',
     variant: 'dark',
@@ -174,27 +170,25 @@ export default function OnboardingScreen() {
       );
     }
 
-    // Light variant — photo placeholder top + white card bottom
+    // Light variant — full-bleed image + white card overlaying bottom
     return (
       <View style={[styles.slideWrap, { width: SCREEN_WIDTH }]}>
-        {/* Photo area */}
-        <View style={styles.imageArea}>
-          <Image source={item.image} style={StyleSheet.absoluteFill} resizeMode="cover" />
-          <View style={styles.imageOverlay} />
+        {/* Full-bleed image background */}
+        <Image source={item.image} style={StyleSheet.absoluteFill} resizeMode="cover" />
+        <View style={[StyleSheet.absoluteFill, styles.imageOverlay]} />
 
-          {/* Skip chip overlaying the image */}
-          <View style={[styles.skipChipWrap, { top: insets.top + 12 }]}>
-            <Pressable
-              testID="skip-onboarding"
-              style={styles.skipChip}
-              onPress={handleComplete}
-            >
-              <Text style={styles.skipChipText}>Omitir</Text>
-            </Pressable>
-          </View>
+        {/* Skip chip — top right */}
+        <View style={[styles.skipChipWrap, { top: insets.top + 12 }]}>
+          <Pressable
+            testID="skip-onboarding"
+            style={styles.skipChip}
+            onPress={handleComplete}
+          >
+            <Text style={styles.skipChipText}>Omitir</Text>
+          </Pressable>
         </View>
 
-        {/* White content card */}
+        {/* White content card — anchored to bottom */}
         <View style={[styles.cardArea, { paddingBottom: insets.bottom + 24 }]}>
           <View style={styles.cardInner}>
             <Text style={styles.lightTitle}>{item.title}</Text>
@@ -245,13 +239,7 @@ const styles = StyleSheet.create({
   },
 
   // ─── Light variant (slides 1-2) ───
-  imageArea: {
-    height: IMAGE_HEIGHT,
-    backgroundColor: '#e2e8f0',
-    overflow: 'hidden',
-  },
   imageOverlay: {
-    ...StyleSheet.absoluteFillObject,
     backgroundColor: '#0f172a1a',
   },
 
@@ -274,9 +262,14 @@ const styles = StyleSheet.create({
   },
 
   cardArea: {
-    flex: 1,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     backgroundColor: '#ffffff',
-    paddingTop: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 24,
     paddingHorizontal: 24,
   },
   cardInner: {

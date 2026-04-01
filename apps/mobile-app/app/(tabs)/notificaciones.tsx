@@ -177,6 +177,10 @@ function NotificacionesContent() {
         data={notifications}
         keyExtractor={item => item.id}
         renderItem={renderNotification}
+        initialNumToRender={15}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        removeClippedSubviews
         contentContainerStyle={[
           styles.list,
           notifications.length === 0 && styles.emptyList,

@@ -66,9 +66,16 @@ export default function CrearPedidoStep1() {
             <Text style={[styles.clientName, isSelected && styles.clientNameSelected]}>
               {item.nombre}
             </Text>
-            {item.telefono && (
-              <Text style={styles.clientPhone}>{item.telefono}</Text>
-            )}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              {item.telefono && (
+                <Text style={styles.clientPhone}>{item.telefono}</Text>
+              )}
+              {item.listaPreciosId ? (
+                <Text style={{ fontSize: 10, color: '#16a34a', fontWeight: '600', backgroundColor: '#dcfce7', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 }}>
+                  Precio especial
+                </Text>
+              ) : null}
+            </View>
           </View>
           {isSelected && (
             <View style={styles.checkBadge}>
@@ -110,6 +117,11 @@ export default function CrearPedidoStep1() {
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
+          initialNumToRender={15}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+          removeClippedSubviews
+          keyboardShouldPersistTaps="handled"
           ListEmptyComponent={
             <EmptyState
               icon={<User size={48} color="#cbd5e1" />}

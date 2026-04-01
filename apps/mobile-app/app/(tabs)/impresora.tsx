@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Alert, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, ActivityIndicator } from 'react-native';
+import Toast from 'react-native-toast-message';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -67,22 +68,20 @@ export default function ImpresoraScreen() {
     try {
       const btOn = await enableBluetooth();
       if (!btOn) {
-        Alert.alert(
-          'Bluetooth',
-          'No se pudo activar el Bluetooth.\n\n' +
-          '1. Verifica que el Bluetooth esté encendido\n' +
-          '2. Acepta los permisos de Bluetooth cuando aparezcan\n' +
-          '3. Si los denegaste, ve a Ajustes > Apps > Handy Suites > Permisos',
-        );
+        Toast.show({
+          type: 'error',
+          text1: 'Bluetooth',
+          text2: 'No se pudo activar el Bluetooth. Verifica que esté encendido y acepta los permisos.',
+        });
         return;
       }
       const found = await scanBluetoothDevices();
       setDevices(found);
       if (found.length === 0) {
-        Alert.alert('Sin dispositivos', 'No se encontraron impresoras emparejadas.\nEmpareja tu impresora desde Ajustes de Android primero.');
+        Toast.show({ type: 'error', text1: 'Sin dispositivos', text2: 'No se encontraron impresoras emparejadas. Empareja tu impresora desde Ajustes de Android primero.' });
       }
     } catch {
-      Alert.alert('Error', 'Error al escanear dispositivos');
+      Toast.show({ type: 'error', text1: 'Error', text2: 'Error al escanear dispositivos' });
     } finally {
       setScanning(false);
     }
@@ -96,12 +95,12 @@ export default function ImpresoraScreen() {
       if (ok) {
         setConnectedDevice(device);
         setSavedDevice(device);
-        Alert.alert('Conectada', `"${device.name}" conectada exitosamente`);
+        Toast.show({ type: 'success', text1: 'Conectada', text2: `"${device.name}" conectada exitosamente` });
       } else {
-        Alert.alert('Error', 'No se pudo conectar');
+        Toast.show({ type: 'error', text1: 'Error', text2: 'No se pudo conectar' });
       }
     } catch {
-      Alert.alert('Error', 'Error de conexión');
+      Toast.show({ type: 'error', text1: 'Error', text2: 'Error de conexión' });
     } finally {
       setConnecting(false);
     }
@@ -111,7 +110,7 @@ export default function ImpresoraScreen() {
   const handleWifiConnect = useCallback(() => {
     const host = wifiHost.trim();
     if (!host) {
-      Alert.alert('Error', 'Ingresa la dirección IP de la impresora');
+      Toast.show({ type: 'error', text1: 'Error', text2: 'Ingresa la dirección IP de la impresora' });
       return;
     }
     const port = parseInt(wifiPort, 10) || 9100;
@@ -145,12 +144,12 @@ export default function ImpresoraScreen() {
         logoUri: user?.tenantLogo || undefined,
       });
       if (ok) {
-        Alert.alert('Listo', 'Impresión de prueba enviada');
+        Toast.show({ type: 'success', text1: 'Listo', text2: 'Impresión de prueba enviada' });
       } else {
-        Alert.alert('Error', 'No se pudo imprimir. Verifica la conexión.');
+        Toast.show({ type: 'error', text1: 'Error', text2: 'No se pudo imprimir. Verifica la conexión.' });
       }
     } catch {
-      Alert.alert('Error', 'Error al imprimir');
+      Toast.show({ type: 'error', text1: 'Error', text2: 'Error al imprimir' });
     } finally {
       setPrinting(false);
     }

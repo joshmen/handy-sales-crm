@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import Toast from 'react-native-toast-message';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import _ClusteredMapView from 'react-native-map-clustering';
@@ -158,7 +159,7 @@ function MapaScreenContent() {
             lng: result.coords.longitude,
           });
         } catch {
-          Alert.alert('Error', 'No se pudo obtener tu ubicación');
+          Toast.show({ type: 'error', text1: 'Error', text2: 'No se pudo obtener tu ubicación' });
         }
       } else {
         const client = mappableClients.find((c) => c.id === stopData.stop.clienteId);
@@ -187,7 +188,7 @@ function MapaScreenContent() {
         lng: result.coords.longitude,
       });
     } catch {
-      Alert.alert('Error', 'No se pudo obtener tu ubicación');
+      Toast.show({ type: 'error', text1: 'Error', text2: 'No se pudo obtener tu ubicación' });
     }
   }, [nextStop]);
 
@@ -215,7 +216,7 @@ function MapaScreenContent() {
       performSync().catch(() => {});
       router.push('/(tabs)/ruta/visita-activa' as any);
     } catch {
-      Alert.alert('Error', 'No se pudo iniciar la visita');
+      Toast.show({ type: 'error', text1: 'Error', text2: 'No se pudo iniciar la visita' });
     } finally {
       setCheckInLoading(false);
     }

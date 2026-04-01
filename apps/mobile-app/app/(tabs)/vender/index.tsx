@@ -151,6 +151,10 @@ export default function VenderListScreen() {
         data={orders}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
+        initialNumToRender={15}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        removeClippedSubviews
         getItemLayout={(_data, index) => ({
           length: ITEM_SLOT,
           offset: ITEM_SLOT * index,

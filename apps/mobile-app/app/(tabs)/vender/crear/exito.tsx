@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, Alert, Image } from 'react-native';
+import { View, Text, StyleSheet, Image } from 'react-native';
+import Toast from 'react-native-toast-message';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui';
@@ -58,9 +59,9 @@ export default function PedidoExitoScreen() {
         vendedorName: user?.name || 'Vendedor',
         tipoVenta: 'Preventa',
       });
-      if (!success) Alert.alert('Error', 'No se pudo imprimir. Verifica la conexión con la impresora.');
+      if (!success) Toast.show({ type: 'error', text1: 'Error', text2: 'No se pudo imprimir. Verifica la conexión con la impresora.' });
     } catch {
-      Alert.alert('Error', 'Error al imprimir el ticket.');
+      Toast.show({ type: 'error', text1: 'Error', text2: 'Error al imprimir el ticket.' });
     } finally {
       setPrinting(false);
     }

@@ -56,6 +56,10 @@ export default function EstadoCuentaScreen() {
         keyExtractor={(item) => String(item.id)}
         renderItem={renderMovimiento}
         contentContainerStyle={styles.listContent}
+        initialNumToRender={15}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        removeClippedSubviews
         ListHeaderComponent={
           <View>
             {/* Blue Header */}

@@ -5,11 +5,11 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
-  Alert,
   Image,
   Modal,
   StyleSheet,
 } from 'react-native';
+import Toast from 'react-native-toast-message';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -103,7 +103,7 @@ export default function VisitaActivaScreen() {
       performSync().catch(() => {});
       router.back();
     } catch {
-      Alert.alert('Error', 'No se pudo finalizar la visita');
+      Toast.show({ type: 'error', text1: 'Error', text2: 'No se pudo finalizar la visita' });
     } finally {
       setEnding(false);
     }

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, Text, ScrollView, TextInput, Alert, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import Toast from 'react-native-toast-message';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOrderDraftStore } from '@/stores';
@@ -12,8 +13,9 @@ import { Card, Button, ConfirmModal } from '@/components/ui';
 import { QuantityStepper } from '@/components/shared/QuantityStepper';
 import { COLORS } from '@/theme/colors';
 import { formatCurrency } from '@/utils/format';
-import { User, Package, Send, Zap, Banknote, Building2, FileText, CreditCard, Wallet, MoreHorizontal } from 'lucide-react-native';
+import { User, Package, Send, Zap, Banknote, Building2, FileText, CreditCard, Wallet, MoreHorizontal, ChevronLeft } from 'lucide-react-native';
 import { SbOrders } from '@/components/icons/DashboardIcons';
+import { usePricingMap } from '@/hooks/usePricing';
 
 const STEPS = ['Cliente', 'Productos', 'Revisar'];
 
@@ -52,6 +54,9 @@ export default function CrearPedidoStep3() {
   } = useOrderDraftStore();
 
   const isDirecta = tipoVenta === 1;
+  const clienteListaPreciosId = useOrderDraftStore(s => s.clienteListaPreciosId);
+  const { getPricing } = usePricingMap(clienteListaPreciosId);
+  const hasSpecialPricing = !!clienteListaPreciosId;
 
   const handleEnviar = () => {
     if (!clienteId || items.length === 0) return;
@@ -135,7 +140,7 @@ export default function CrearPedidoStep3() {
         // WDB sync will push pedido + ruta_detalle to server automatically
       }
     } catch {
-      Alert.alert('Error', 'No se pudo crear el pedido. Intenta de nuevo.');
+      Toast.show({ type: 'error', text1: 'Error', text2: 'No se pudo crear el pedido. Intenta de nuevo.' });
     } finally {
       setSending(false);
     }
@@ -145,7 +150,11 @@ export default function CrearPedidoStep3() {
     <View style={styles.container}>
       {/* Blue Header */}
       <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
+        <TouchableOpacity onPress={() => router.back()} style={{ width: 32, alignItems: 'center' as const }}>
+          <ChevronLeft size={22} color={COLORS.headerText} />
+        </TouchableOpacity>
         <Text style={styles.blueHeaderTitle}>Revisar Pedido</Text>
+        <View style={{ width: 32 }} />
       </View>
       <ProgressSteps steps={STEPS} currentStep={2} />
 
@@ -156,9 +165,16 @@ export default function CrearPedidoStep3() {
             <View style={styles.clientAvatar}>
               <User size={18} color={COLORS.textTertiary} />
             </View>
-            <View>
+            <View style={{ flex: 1 }}>
               <Text style={styles.clientLabel}>Cliente</Text>
-              <Text style={styles.clientName}>{clienteNombre}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Text style={styles.clientName}>{clienteNombre}</Text>
+                {hasSpecialPricing && (
+                  <Text style={{ fontSize: 10, color: '#16a34a', fontWeight: '600', backgroundColor: '#dcfce7', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 }}>
+                    Precio especial
+                  </Text>
+                )}
+              </View>
             </View>
           </View>
         </Card>
@@ -169,26 +185,41 @@ export default function CrearPedidoStep3() {
           <Text style={styles.sectionTitle}>Productos ({items.length})</Text>
         </View>
 
-        {items.map((item) => (
-          <View key={item.productoId} style={styles.lineItem}>
-            <View style={styles.lineContent}>
-              <Text style={styles.lineName} numberOfLines={1}>{item.nombre}</Text>
-              <Text style={styles.linePrice}>
-                {formatCurrency(item.precioUnitario)} c/u
+        {items.map((item) => {
+          const pricing = getPricing(item.productoServerId ?? 0, item.precioUnitario, item.cantidad);
+          return (
+            <View key={item.productoId} style={styles.lineItem}>
+              <View style={styles.lineContent}>
+                <Text style={styles.lineName} numberOfLines={1}>{item.nombre}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={[styles.linePrice, pricing.tieneListaPrecios && { color: '#16a34a' }]}>
+                    {formatCurrency(item.precioUnitario)} c/u
+                  </Text>
+                  {pricing.tieneListaPrecios && pricing.precioBase !== item.precioUnitario && (
+                    <Text style={{ fontSize: 11, color: '#94a3b8', textDecorationLine: 'line-through' }}>
+                      {formatCurrency(pricing.precioBase)}
+                    </Text>
+                  )}
+                  {pricing.promo && (
+                    <Text style={{ fontSize: 9, color: '#d97706', fontWeight: '600', backgroundColor: '#fef3c7', paddingHorizontal: 4, paddingVertical: 1, borderRadius: 3 }}>
+                      -{pricing.promo.porcentaje}%
+                    </Text>
+                  )}
+                </View>
+              </View>
+              <QuantityStepper
+                value={item.cantidad}
+                onChange={(val) => {
+                  if (val <= 0) removeItem(item.productoId);
+                  else updateQuantity(item.productoId, val);
+                }}
+              />
+              <Text style={styles.lineTotal}>
+                {formatCurrency(item.precioUnitario * item.cantidad)}
               </Text>
             </View>
-            <QuantityStepper
-              value={item.cantidad}
-              onChange={(val) => {
-                if (val <= 0) removeItem(item.productoId);
-                else updateQuantity(item.productoId, val);
-              }}
-            />
-            <Text style={styles.lineTotal}>
-              {formatCurrency(item.precioUnitario * item.cantidad)}
-            </Text>
-          </View>
-        ))}
+          );
+        })}
 
         {/* Totals */}
         <Card className="mx-4 mt-3 mb-3">
@@ -292,8 +323,8 @@ export default function CrearPedidoStep3() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  blueHeader: { backgroundColor: COLORS.headerBg, paddingHorizontal: 20, paddingBottom: 12, alignItems: 'center' as const },
-  blueHeaderTitle: { fontSize: 20, fontWeight: '700' as const, color: COLORS.headerText, textAlign: 'center' as const },
+  blueHeader: { backgroundColor: COLORS.headerBg, flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'space-between' as const, paddingHorizontal: 16, paddingBottom: 14 },
+  blueHeaderTitle: { fontSize: 17, fontWeight: '700' as const, color: COLORS.headerText, textAlign: 'center' as const, flex: 1 },
   content: { paddingTop: 12, paddingBottom: 100 },
   clientRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   clientAvatar: {

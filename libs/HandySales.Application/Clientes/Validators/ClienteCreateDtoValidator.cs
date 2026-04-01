@@ -15,12 +15,12 @@ namespace HandySales.Application.Clientes.Validators
                 .When(x => !string.IsNullOrEmpty(x.RFC));
 
             RuleFor(x => x.Correo)
-                .NotEmpty().WithMessage("El correo es obligatorio.")
-                .EmailAddress().WithMessage("El formato del correo es inválido.");
+                .EmailAddress().WithMessage("El formato del correo es inválido.")
+                .When(x => !string.IsNullOrEmpty(x.Correo));
 
             RuleFor(x => x.Telefono)
-                .NotEmpty().WithMessage("El teléfono es obligatorio.")
-                .Matches(@"^\d{10}$").WithMessage("El teléfono debe tener exactamente 10 dígitos.");
+                .Matches(@"^\d{10}$").WithMessage("El teléfono debe tener exactamente 10 dígitos.")
+                .When(x => !string.IsNullOrEmpty(x.Telefono));
 
             RuleFor(x => x.Direccion)
                 .NotEmpty().WithMessage("La dirección es obligatoria.");

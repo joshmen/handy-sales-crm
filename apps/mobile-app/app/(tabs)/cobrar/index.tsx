@@ -196,6 +196,11 @@ export default function CobrarScreen() {
         keyExtractor={(item) => item.clienteId}
         renderItem={renderItem}
         ListHeaderComponent={renderHeader}
+        initialNumToRender={15}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        removeClippedSubviews
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl
