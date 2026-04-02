@@ -36,14 +36,12 @@ export function BottomSheet({
       Animated.parallel([
         Animated.timing(overlayOpacity, {
           toValue: 1,
-          duration: 250,
+          duration: 200,
           useNativeDriver: true,
         }),
-        Animated.spring(translateY, {
+        Animated.timing(translateY, {
           toValue: 0,
-          damping: 20,
-          stiffness: 200,
-          mass: 1,
+          duration: 200,
           useNativeDriver: true,
         }),
       ]).start();
@@ -94,7 +92,7 @@ export function BottomSheet({
             </TouchableOpacity>
           </View>
 
-          <View style={styles.content}>{children}</View>
+          <View style={styles.content} onStartShouldSetResponder={() => true}>{children}</View>
         </Animated.View>
       </View>
     </Modal>

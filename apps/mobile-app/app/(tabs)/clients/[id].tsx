@@ -116,11 +116,17 @@ export default function ClientDetailScreen() {
       {/* Actions */}
       <Animated.View entering={FadeInDown.duration(400).delay(300)}>
       <View style={styles.actions}>
+        <Button
+          title="Editar Cliente"
+          onPress={() => router.push(`/(tabs)/clients/crear?editId=${client.id}` as any)}
+          variant="primary"
+          fullWidth
+        />
         {client.telefono && (
           <Button
             title="Llamar"
             onPress={() => Linking.openURL(`tel:${client.telefono}`)}
-            variant="primary"
+            variant="outline"
             fullWidth
           />
         )}

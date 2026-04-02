@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { View, Text, FlatList, TextInput, RefreshControl, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, FlatList, TextInput, RefreshControl, ScrollView, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineProducts, useCategoriasProducto } from '@/hooks';
@@ -26,9 +26,13 @@ export default function ProductosListScreen() {
         onPress={() => router.push(`/(tabs)/vender/producto/${item.id}` as any)}
       >
         <View style={styles.productRow}>
-          <View style={styles.productIcon}>
-            <Package size={20} color={COLORS.textTertiary} />
-          </View>
+          {item.imagenUrl ? (
+            <Image source={{ uri: item.imagenUrl }} style={styles.productImage} resizeMode="cover" />
+          ) : (
+            <View style={styles.productIcon}>
+              <Package size={20} color={COLORS.textTertiary} />
+            </View>
+          )}
           <View style={styles.productContent}>
             <Text style={styles.productName} numberOfLines={1}>{item.nombre}</Text>
             <Text style={styles.productSku}>{item.codigoBarras || 'Sin SKU'}</Text>
@@ -174,6 +178,7 @@ const styles = StyleSheet.create({
   chipTextActive: { color: '#ffffff' },
   listContent: { paddingTop: 12, paddingBottom: 24 },
   productRow: { flexDirection: 'row', alignItems: 'center' },
+  productImage: { width: 100, height: 100, borderRadius: 14, marginRight: 12, backgroundColor: '#f1f5f9' },
   productIcon: {
     width: 44,
     height: 44,

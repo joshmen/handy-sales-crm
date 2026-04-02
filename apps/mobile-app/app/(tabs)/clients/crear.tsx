@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { View, Text, ScrollView, TextInput, StyleSheet, TouchableOpacity, Modal, FlatList } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { useRouter } from 'expo-router';
@@ -101,6 +101,8 @@ export default function CrearClienteScreen() {
   const queryClient = useQueryClient();
   const zonas = useZonas();
   const categorias = useCategoriasCliente();
+  const { editId } = require('expo-router').useLocalSearchParams<{ editId?: string }>();
+  const isEditing = !!editId;
 
   const [nombre, setNombre] = useState('');
   const [telefono, setTelefono] = useState('');
@@ -111,16 +113,39 @@ export default function CrearClienteScreen() {
   const [zonaId, setZonaId] = useState<number | undefined>(undefined);
   const [categoriaId, setCategoriaId] = useState<number | undefined>(undefined);
   const [touched, setTouched] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
   // GPS — no auto-detect, user picks from map
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [showMapModal, setShowMapModal] = useState(false);
 
+  // Load existing client data when editing
+  useEffect(() => {
+    if (!editId || loaded) return;
+    (async () => {
+      try {
+        const client = await clientesApi.getById(Number(editId));
+        setNombre(client.nombre || '');
+        setTelefono(client.telefono || '');
+        setCorreo(client.correo || '');
+        setRfc(client.rfc || '');
+        setDireccion(client.direccion || '');
+        setZonaId(client.idZona || undefined);
+        setCategoriaId(client.categoriaClienteId || undefined);
+        if (client.latitud && client.longitud) {
+          setLocation({ lat: client.latitud, lng: client.longitud });
+        }
+      } catch { /* ignore load errors */ }
+      setLoaded(true);
+    })();
+  }, [editId, loaded]);
+
   const crearMutation = useMutation({
-    mutationFn: (data: ClienteCreateRequest) => clientesApi.create(data),
+    mutationFn: (data: ClienteCreateRequest) =>
+      isEditing ? clientesApi.update(Number(editId), data) : clientesApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
-      Toast.show({ type: 'success', text1: 'Cliente creado', text2: 'Se registró exitosamente' });
+      Toast.show({ type: 'success', text1: isEditing ? 'Cliente actualizado' : 'Cliente creado', text2: 'Se guardó exitosamente' });
       router.back();
     },
     onError: (err: any) => {
@@ -170,7 +195,7 @@ export default function CrearClienteScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.headerBack}>
           <ChevronLeft size={24} color={COLORS.headerText} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Crear Cliente</Text>
+        <Text style={styles.headerTitle}>{isEditing ? 'Editar Cliente' : 'Crear Cliente'}</Text>
         <View style={styles.headerBack} />
       </View>
 
@@ -266,7 +291,7 @@ export default function CrearClienteScreen() {
         >
           <Save size={18} color={COLORS.headerText} />
           <Text style={styles.submitButtonText}>
-            {crearMutation.isPending ? 'Guardando...' : 'Guardar Cliente'}
+            {crearMutation.isPending ? 'Guardando...' : isEditing ? 'Actualizar Cliente' : 'Guardar Cliente'}
           </Text>
         </TouchableOpacity>
       </View>

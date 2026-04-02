@@ -7,7 +7,7 @@ import { useOrderDraftStore } from '@/stores';
 import { ProgressSteps } from '@/components/shared/ProgressSteps';
 import { LoadingSpinner, EmptyState, Button } from '@/components/ui';
 import { COLORS } from '@/theme/colors';
-import { User, Search, Check } from 'lucide-react-native';
+import { User, Search, Check, ChevronLeft } from 'lucide-react-native';
 import type Cliente from '@/db/models/Cliente';
 
 const STEPS = ['Cliente', 'Productos', 'Revisar'];
@@ -21,14 +21,14 @@ export default function CrearPedidoStep1() {
 
   // If coming from parada with clienteId, auto-select and skip to products
   // If coming normally (no params), reset the draft so old selection is cleared
+  const tipoVenta = useOrderDraftStore(s => s.tipoVenta);
   useEffect(() => {
     if (params.clienteId) {
       const nombre = params.clienteNombre ? decodeURIComponent(params.clienteNombre) : 'Cliente';
       setCliente(params.clienteId, Number(params.clienteId), nombre);
       router.push('/(tabs)/vender/crear/productos' as any);
-    } else {
-      resetDraft();
     }
+    // Don't resetDraft here — tipoVenta was already set by the BottomSheet
   }, []);
 
   const { data: clientes, isLoading } = useOfflineClients(busqueda || undefined);
@@ -92,7 +92,11 @@ export default function CrearPedidoStep1() {
     <View style={styles.container}>
       {/* Blue Header */}
       <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
+        <TouchableOpacity onPress={() => router.back()} style={{ width: 32, alignItems: 'center' as const }}>
+          <ChevronLeft size={22} color={COLORS.headerText} />
+        </TouchableOpacity>
         <Text style={styles.blueHeaderTitle}>Seleccionar Cliente</Text>
+        <View style={{ width: 32 }} />
       </View>
       <ProgressSteps steps={STEPS} currentStep={0} />
 
@@ -146,8 +150,8 @@ export default function CrearPedidoStep1() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  blueHeader: { backgroundColor: COLORS.headerBg, paddingHorizontal: 20, paddingBottom: 12, alignItems: 'center' as const },
-  blueHeaderTitle: { fontSize: 20, fontWeight: '700' as const, color: COLORS.headerText, textAlign: 'center' as const },
+  blueHeader: { backgroundColor: COLORS.headerBg, flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'space-between' as const, paddingHorizontal: 16, paddingBottom: 14 },
+  blueHeaderTitle: { fontSize: 17, fontWeight: '700' as const, color: COLORS.headerText, textAlign: 'center' as const, flex: 1 },
   searchSection: { paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#ffffff' },
   searchBar: {
     flexDirection: 'row',

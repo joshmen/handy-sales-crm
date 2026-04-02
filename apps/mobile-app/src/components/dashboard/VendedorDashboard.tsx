@@ -14,6 +14,8 @@ import { MapPin } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { performSync } from '@/sync/syncEngine';
 import { COLORS } from '@/theme/colors';
+import { api } from '@/api/client';
+import { Target } from 'lucide-react-native';
 
 export function VendedorDashboard() {
   const insets = useSafeAreaInsets();
@@ -65,8 +67,35 @@ export function VendedorDashboard() {
     return facturado - cobrado;
   }, [pedidos, cobros]);
 
+  // Metas activas
+  const [metas, setMetas] = useState<any[]>([]);
+  useFocusEffect(useCallback(() => {
+    api.get<any>('/api/mobile/metas').then(res => setMetas(res.data?.data || [])).catch(() => {});
+  }, []));
+
   const stats = routeStats;
   const progress = stats.total > 0 ? (stats.atendidas / stats.total) * 100 : 0;
+
+  // Additional KPIs — orders and sales today
+  const pedidosHoy = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return (pedidos ?? []).filter(p => {
+      const created = p.createdAt ? new Date(p.createdAt) : null;
+      return created && created >= today;
+    }).length;
+  }, [pedidos]);
+
+  const ventasHoy = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return (pedidos ?? [])
+      .filter(p => {
+        const created = p.createdAt ? new Date(p.createdAt) : null;
+        return created && created >= today && p.estado >= 1 && p.estado !== 6;
+      })
+      .reduce((sum, p) => sum + (p.total || 0), 0);
+  }, [pedidos]);
 
   const initials = (user?.name ?? 'V')
     .split(' ')
@@ -122,6 +151,24 @@ export function VendedorDashboard() {
       </Animated.View>
       <Animated.View entering={FadeInDown.delay(200).duration(400)} style={styles.kpiRow}>
         <View style={styles.kpiCard}>
+          <Text style={styles.kpiValue}>{pedidosHoy}</Text>
+          <Text style={styles.kpiLabel}>Pedidos hoy</Text>
+        </View>
+        <View style={styles.kpiCard}>
+          <Text style={[styles.kpiValue, { color: COLORS.salesGreen }]}>
+            {formatCurrency(ventasHoy)}
+          </Text>
+          <Text style={styles.kpiLabel}>Ventas hoy</Text>
+        </View>
+        <View style={styles.kpiCard}>
+          <Text style={[styles.kpiValue, { color: '#d97706' }]}>
+            {formatCurrency(totalPendiente > 0 ? totalPendiente : 0)}
+          </Text>
+          <Text style={styles.kpiLabel}>Pendiente</Text>
+        </View>
+      </Animated.View>
+      <Animated.View entering={FadeInDown.delay(250).duration(400)} style={styles.kpiRow}>
+        <View style={styles.kpiCard}>
           <Text style={styles.kpiValue}>{visitasConVenta}</Text>
           <Text style={styles.kpiLabel}>Visitas</Text>
         </View>
@@ -130,12 +177,47 @@ export function VendedorDashboard() {
           <Text style={styles.kpiLabel}>Completadas</Text>
         </View>
         <View style={styles.kpiCard}>
-          <Text style={[styles.kpiValue, { color: COLORS.salesGreen }]}>
-            {formatCurrency(totalPendiente > 0 ? totalPendiente : 0)}
-          </Text>
-          <Text style={styles.kpiLabel}>Pendiente</Text>
+          <Text style={styles.kpiValue}>{stats.atendidas}/{stats.total}</Text>
+          <Text style={styles.kpiLabel}>Paradas</Text>
         </View>
       </Animated.View>
+
+      {/* Metas — compact inline cards */}
+      {metas.length > 0 && (
+        <Animated.View entering={FadeInDown.delay(280).duration(400)}>
+          <Text style={styles.sectionLabel}>MIS METAS</Text>
+          {metas.map((meta: any) => {
+            const isVentas = meta.tipo === 'ventas';
+            const progressPct = `${Math.min(100, meta.porcentaje)}%`;
+            const color = meta.porcentaje >= 100 ? '#16a34a' : isVentas ? COLORS.salesGreen : '#2563eb';
+            return (
+              <View key={meta.id} style={styles.metaCard}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Target size={14} color={color} />
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.foreground }}>
+                      {meta.tipo === 'ventas' ? 'Ventas' : meta.tipo === 'pedidos' ? 'Pedidos' : 'Visitas'}
+                    </Text>
+                    <Text style={{ fontSize: 11, color: '#94a3b8' }}>{meta.diasRestantes}d</Text>
+                  </View>
+                  <Text style={{ fontSize: 15, fontWeight: '800', color }}>{meta.porcentaje}%</Text>
+                </View>
+                <View style={{ height: 6, borderRadius: 3, backgroundColor: '#f1f5f9', overflow: 'hidden' }}>
+                  <View style={{ height: '100%', borderRadius: 3, backgroundColor: color, width: progressPct as any }} />
+                </View>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
+                  <Text style={{ fontSize: 11, color: '#94a3b8' }}>
+                    {isVentas ? formatCurrency(meta.progreso) : Math.round(meta.progreso)}
+                  </Text>
+                  <Text style={{ fontSize: 11, color: '#94a3b8' }}>
+                    Meta: {isVentas ? formatCurrency(meta.meta) : Math.round(meta.meta)}
+                  </Text>
+                </View>
+              </View>
+            );
+          })}
+        </Animated.View>
+      )}
 
       {/* Route Progress */}
       <Animated.View entering={FadeInDown.delay(300).duration(400)}>
@@ -265,6 +347,12 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   kpiRow: { flexDirection: 'row', gap: 10, marginBottom: 24 },
+  metaCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+  },
   kpiCard: {
     flex: 1,
     backgroundColor: COLORS.card,

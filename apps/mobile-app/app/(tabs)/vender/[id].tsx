@@ -7,7 +7,6 @@ import { LoadingSpinner, ConfirmModal } from '@/components/ui';
 import { formatCurrency, formatDateTime } from '@/utils/format';
 import { XCircle, Package, CheckCircle, Truck, ArrowRight, ChevronLeft } from 'lucide-react-native';
 import { SbOrders } from '@/components/icons/DashboardIcons';
-import { useAuthStore } from '@/stores/authStore';
 import { ORDER_STATUS_COLORS } from '@/constants/colors';
 import { COLORS } from '@/theme/colors';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -25,9 +24,6 @@ export default function OrderDetailScreen() {
   const { data: order, isLoading } = useOfflineOrderById(id!);
   const { data: detalles } = useOfflineOrderDetalles(id!);
   const clientNames = useClientNameMap();
-  const user = useAuthStore((s) => s.user);
-  const isSupervisor = user?.role === 'SUPERVISOR' || user?.role === 'ADMIN';
-
   const confirmarMutation = useConfirmarPedido();
   const enRutaMutation = useEnRutaPedido();
   const entregarMutation = useEntregarPedido();

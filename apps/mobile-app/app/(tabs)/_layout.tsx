@@ -131,6 +131,8 @@ export default function TabsLayout() {
       <Tabs.Screen name="notificaciones" options={{ href: null }} />
       <Tabs.Screen name="ayuda" options={{ href: null }} />
       <Tabs.Screen name="acerca" options={{ href: null }} />
+      <Tabs.Screen name="anuncios" options={{ href: null }} />
+      <Tabs.Screen name="inventario" options={{ href: null }} />
     </Tabs>
     <OfflineBanner />
     </View>

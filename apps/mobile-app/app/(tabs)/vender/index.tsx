@@ -35,7 +35,7 @@ export default function VenderListScreen() {
   const role = useAuthStore(s => s.user?.role);
   const { setTipoVenta, reset: resetDraft } = useOrderDraftStore();
 
-  const isVendedor = role === 'VENDEDOR';
+  const _role = role; // kept for future role-based filtering
 
   const { data: allOrders, isLoading } = useOfflineOrders();
   const clientNames = useClientNameMap();
@@ -49,11 +49,7 @@ export default function VenderListScreen() {
   const total = orders.length;
 
   const handleFabPress = () => {
-    if (isVendedor) {
-      router.push('/(tabs)/vender/crear/modo' as any);
-    } else {
-      setShowOrderTypeSheet(true);
-    }
+    setShowOrderTypeSheet(true);
   };
 
   const handleOrderTypeSelect = (tipo: number) => {

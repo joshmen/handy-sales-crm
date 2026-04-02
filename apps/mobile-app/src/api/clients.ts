@@ -83,6 +83,19 @@ class MobileClientesApi {
     return validated.data;
   }
 
+  async update(id: number, data: ClienteCreateRequest): Promise<MobileCliente> {
+    const response = await api.put<ApiResponse<MobileCliente>>(
+      `${this.basePath}/${id}`,
+      data
+    );
+    const validated = validateResponse(
+      ClienteResponseSchema,
+      response.data,
+      `PUT /api/mobile/clientes/${id}`
+    );
+    return validated.data;
+  }
+
   async getNearby(latitud: number, longitud: number, radioKm: number) {
     const response = await api.get<ApiResponse<MobileCliente[]>>(
       `${this.basePath}/cercanos?latitud=${latitud}&longitud=${longitud}&radioKm=${radioKm}`

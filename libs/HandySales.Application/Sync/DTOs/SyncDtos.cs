@@ -265,6 +265,8 @@ public class SyncProductoDto
     public int? FamiliaProductoId { get; set; }
     public int? UnidadMedidaId { get; set; }
     public string? ImagenUrl { get; set; }
+    public decimal StockDisponible { get; set; }
+    public decimal StockMinimo { get; set; }
     public bool Activo { get; set; } = true;
     public long Version { get; set; }
     public DateTime? ActualizadoEn { get; set; }

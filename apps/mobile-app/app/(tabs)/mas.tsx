@@ -20,6 +20,10 @@ import {
   Printer,
   Bell,
   Info,
+  Megaphone,
+  Target,
+  TrendingUp,
+  Package,
 } from 'lucide-react-native';
 import { SbClients, SbOrders, SbRoute } from '@/components/icons/DashboardIcons';
 import { HandyLogo } from '@/components/shared/HandyLogo';
@@ -71,6 +75,18 @@ function MasScreenContent() {
       icon: <SbOrders size={20} />,
       iconBg: COLORS.background,
       onPress: () => router.push('/(tabs)/vender' as any),
+    },
+    {
+      label: 'Inventario',
+      icon: <Package size={20} color="#6b7280" />,
+      iconBg: COLORS.background,
+      onPress: () => router.push('/(tabs)/inventario' as any),
+    },
+    {
+      label: 'Anuncios',
+      icon: <Megaphone size={20} color="#6b7280" />,
+      iconBg: COLORS.background,
+      onPress: () => router.push('/(tabs)/anuncios' as any),
     },
     {
       label: 'Ruta del Día',

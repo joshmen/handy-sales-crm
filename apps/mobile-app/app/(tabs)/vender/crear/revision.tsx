@@ -299,10 +299,7 @@ export default function CrearPedidoStep3() {
           loading={sending}
           disabled={items.length === 0 || sending}
           fullWidth
-          icon={!sending ? (isDirecta
-            ? <Zap size={18} color="#ffffff" />
-            : <Send size={18} color="#ffffff" />
-          ) : undefined}
+          icon={!sending ? <Send size={18} color="#ffffff" /> : undefined}
         />
       </View>
 

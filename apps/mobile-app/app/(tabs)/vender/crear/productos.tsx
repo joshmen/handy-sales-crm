@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { View, Text, FlatList, TextInput, ScrollView, TouchableOpacity, StyleSheet, BackHandler } from 'react-native';
+import { View, Text, FlatList, TextInput, ScrollView, TouchableOpacity, StyleSheet, BackHandler, Image } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineProducts, useCategoriasProducto } from '@/hooks';
@@ -74,7 +74,13 @@ export default function CrearPedidoStep2() {
       return (
         <View style={[styles.productCard, blocked && { opacity: 0.5 }]}>
           <View style={styles.productRow}>
-            <Package size={20} color={COLORS.textTertiary} style={{ marginRight: 10 }} />
+            {item.imagenUrl ? (
+              <Image source={{ uri: item.imagenUrl }} style={styles.productImage} resizeMode="cover" />
+            ) : (
+              <View style={styles.productImagePlaceholder}>
+                <Package size={20} color={COLORS.textTertiary} />
+              </View>
+            )}
             <View style={styles.productInfo}>
               <Text style={styles.productName} numberOfLines={1}>{item.nombre}</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -250,17 +256,19 @@ const styles = StyleSheet.create({
   listContent: { paddingTop: 8, paddingBottom: 100 },
   productCard: {
     marginHorizontal: 16,
-    marginBottom: 8,
+    marginBottom: 10,
     backgroundColor: '#ffffff',
     borderRadius: 14,
-    padding: 12,
+    padding: 14,
     borderWidth: 1,
     borderColor: '#f1f5f9',
   },
   productRow: { flexDirection: 'row', alignItems: 'center' },
+  productImage: { width: 100, height: 100, borderRadius: 14, marginRight: 12, backgroundColor: '#f1f5f9' },
+  productImagePlaceholder: { width: 100, height: 100, borderRadius: 14, marginRight: 12, backgroundColor: '#f1f5f9', alignItems: 'center' as const, justifyContent: 'center' as const },
   productInfo: { flex: 1 },
-  productName: { fontSize: 14, fontWeight: '600', color: COLORS.foreground },
-  productPrice: { fontSize: 13, fontWeight: '700', color: COLORS.salesGreen, marginTop: 2 },
+  productName: { fontSize: 15, fontWeight: '600', color: COLORS.foreground },
+  productPrice: { fontSize: 14, fontWeight: '700', color: COLORS.salesGreen, marginTop: 3 },
   stockLabel: { fontSize: 10, fontWeight: '600', marginTop: 2 },
   stockOk: { color: '#16a34a' },
   stockLow: { color: '#d97706' },

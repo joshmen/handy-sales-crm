@@ -39,6 +39,16 @@ public class SyncRepository : ISyncRepository
         return await query.OrderBy(p => p.Id).ToListAsync();
     }
 
+    public async Task<Dictionary<int, (decimal cantidad, decimal minimo)>> GetStockMapAsync(int tenantId)
+    {
+        return await _db.Set<HandySales.Domain.Entities.Inventario>()
+            .AsNoTracking()
+            .Where(i => i.TenantId == tenantId)
+            .ToDictionaryAsync(
+                i => i.ProductoId,
+                i => (i.CantidadActual, i.StockMinimo));
+    }
+
     public async Task<List<Pedido>> GetPedidosModifiedSinceAsync(int tenantId, int usuarioId, DateTime? since)
     {
         var query = _db.Pedidos

@@ -325,20 +325,27 @@ public class SyncService
         if (syncAll || entityTypes.Contains("productos", StringComparer.OrdinalIgnoreCase))
         {
             var productos = await _repo.GetProductosModifiedSinceAsync(tenantId, since);
-            response.ServerChanges.Productos = productos.Select(p => new SyncProductoDto
-            {
-                Id = p.Id,
-                Nombre = p.Nombre,
-                Descripcion = p.Descripcion,
-                SKU = p.CodigoBarra, // Using CodigoBarra as SKU
-                Precio = p.PrecioBase, // Using PrecioBase as Precio
-                CategoriaProductoId = p.CategoraId, // Using CategoraId as CategoriaProductoId
-                FamiliaProductoId = p.FamiliaId, // Using FamiliaId as FamiliaProductoId
-                UnidadMedidaId = p.UnidadMedidaId,
-                ImagenUrl = null, // Producto doesn't have ImagenUrl
-                Activo = p.Activo,
-                Version = p.Version,
-                ActualizadoEn = p.ActualizadoEn
+            // Get stock levels for all products
+            var stockMap = await _repo.GetStockMapAsync(tenantId);
+            response.ServerChanges.Productos = productos.Select(p => {
+                stockMap.TryGetValue(p.Id, out var stock);
+                return new SyncProductoDto
+                {
+                    Id = p.Id,
+                    Nombre = p.Nombre,
+                    Descripcion = p.Descripcion,
+                    SKU = p.CodigoBarra,
+                    Precio = p.PrecioBase,
+                    CategoriaProductoId = p.CategoraId,
+                    FamiliaProductoId = p.FamiliaId,
+                    UnidadMedidaId = p.UnidadMedidaId,
+                    ImagenUrl = p.ImagenUrl,
+                    StockDisponible = stock.cantidad,
+                    StockMinimo = stock.minimo,
+                    Activo = p.Activo,
+                    Version = p.Version,
+                    ActualizadoEn = p.ActualizadoEn
+                };
             }).ToList();
             response.Summary.ProductosPulled = productos.Count;
         }
