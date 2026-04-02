@@ -123,7 +123,7 @@ export default function InventarioScreen() {
         keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} colors={[COLORS.primary]} />}
         ListEmptyComponent={
-          isLoading ? null : (
+          isLoading ? <View style={{ paddingTop: 40, alignItems: 'center' }}><Text style={{ color: '#94a3b8' }}>Cargando...</Text></View> : (
             <EmptyState
               icon={<Package size={48} color="#cbd5e1" />}
               title="Sin productos"

@@ -44,20 +44,8 @@ export function AdminDashboard() {
   const topVendedores = vendedores?.filter(v => v.rol === 'VENDEDOR').slice(0, 3) ?? [];
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          tintColor={COLORS.primary}
-          colors={[COLORS.primary]}
-        />
-      }
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Blue Header */}
+    <View style={styles.container}>
+      {/* Blue Header — fixed outside scroll */}
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <View style={styles.headerRow}>
           <View style={styles.headerTextContainer}>
@@ -78,6 +66,18 @@ export function AdminDashboard() {
         </View>
       </View>
 
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={COLORS.primary}
+            colors={[COLORS.primary]}
+          />
+        }
+        showsVerticalScrollIndicator={false}
+      >
       {/* KPI Cards */}
       <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.kpiRow}>
         <View style={styles.kpiCard}>
@@ -171,6 +171,7 @@ export function AdminDashboard() {
         </View>
       </Animated.View>
     </ScrollView>
+    </View>
   );
 }
 

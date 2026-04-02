@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { View, Text, ScrollView, Linking, StyleSheet, TouchableOpacity, Modal, TextInput, Dimensions, Keyboard, Animated as RNAnimated } from 'react-native';
+import { View, Text, ScrollView, Linking, StyleSheet, TouchableOpacity, Modal, TextInput, Dimensions, Keyboard, Animated as RNAnimated, RefreshControl } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker, Circle } from 'react-native-maps';
@@ -22,6 +22,7 @@ import { getGeofenceColor } from '@/utils/mapColors';
 import { Card, Button, LoadingSpinner, ConfirmModal } from '@/components/ui';
 import { Badge } from '@/components/ui';
 import { COLORS, STATUS_PALETTES } from '@/theme/colors';
+import { performSync } from '@/sync/syncEngine';
 import { formatTime, formatCurrency } from '@/utils/format';
 import {
   MapPin,
@@ -231,7 +232,7 @@ export default function ParadaDetailScreen() {
         size="md"
       />
     </View>
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={false} onRefresh={() => performSync()} tintColor={COLORS.primary} colors={[COLORS.primary]} />}>
       {/* GPS Missing Banner */}
       {!clientLat && !clientLng && location && (
         <Animated.View entering={FadeInDown.duration(400)}>

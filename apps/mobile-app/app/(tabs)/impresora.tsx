@@ -197,6 +197,7 @@ export default function ImpresoraScreen() {
       style={styles.container}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
     >
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>

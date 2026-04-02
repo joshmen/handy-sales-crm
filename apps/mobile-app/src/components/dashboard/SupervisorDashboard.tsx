@@ -39,20 +39,8 @@ export function SupervisorDashboard() {
     .toUpperCase();
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          tintColor={COLORS.primary}
-          colors={[COLORS.primary]}
-        />
-      }
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Blue Header */}
+    <View style={styles.container}>
+      {/* Blue Header — fixed outside scroll */}
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <View style={styles.headerRow}>
           <View style={styles.headerTextContainer}>
@@ -73,6 +61,18 @@ export function SupervisorDashboard() {
         </View>
       </View>
 
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={COLORS.primary}
+            colors={[COLORS.primary]}
+          />
+        }
+        showsVerticalScrollIndicator={false}
+      >
       {/* KPI Cards */}
       <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.kpiRow}>
         <View style={styles.kpiCard}>
@@ -146,6 +146,7 @@ export function SupervisorDashboard() {
         </View>
       </Animated.View>
     </ScrollView>
+    </View>
   );
 }
 

@@ -1,16 +1,16 @@
 import { View, Text, StyleSheet, ActivityIndicator, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Marker, type Region } from 'react-native-maps';
-import _ClusteredMapView from 'react-native-map-clustering';
+import MapView, { Marker, type Region } from 'react-native-maps';
 import { useUbicacionesEquipo } from '@/hooks/useSupervisor';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
-import { MapPin, Clock } from 'lucide-react-native';
+import { MapPin, Clock, ChevronLeft } from 'lucide-react-native';
+import { TouchableOpacity } from 'react-native';
 import { useState } from 'react';
 import { COLORS } from '@/theme/colors';
 import type { UbicacionVendedor } from '@/api/schemas/supervisor';
 
-const ClusteredMapView = _ClusteredMapView as any;
+// Using standard MapView instead of MapView for Expo Go compatibility
 
 // Default: Mexico City center
 const DEFAULT_REGION: Region = {
@@ -58,16 +58,18 @@ function MapaEquipoContent() {
     <View style={styles.container}>
       {/* Blue Header */}
       <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
+        <TouchableOpacity onPress={() => router.back()} style={{ width: 32, alignItems: 'center' as const }}>
+          <ChevronLeft size={22} color={COLORS.headerText} />
+        </TouchableOpacity>
         <Text style={styles.blueHeaderTitle}>Mapa del Equipo</Text>
+        <View style={{ width: 32 }} />
       </View>
 
-      <ClusteredMapView
+      <MapView
         style={styles.map}
         initialRegion={initialRegion}
-        clusterColor={COLORS.headerBg}
-        clusterTextColor={COLORS.headerText}
-        clusterFontFamily="System"
-        animationEnabled={false}
+        showsUserLocation
+        showsPointsOfInterest
       >
         {ubicaciones?.map(u => (
           <Marker
@@ -79,7 +81,7 @@ function MapaEquipoContent() {
             onPress={() => setSelectedId(u.usuarioId)}
           />
         ))}
-      </ClusteredMapView>
+      </MapView>
 
       {/* Bottom card for selected vendedor */}
       {selectedId && ubicaciones && (
@@ -126,8 +128,8 @@ function MapaEquipoContent() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  blueHeader: { backgroundColor: COLORS.headerBg, paddingHorizontal: 20, paddingBottom: 12, alignItems: 'center' as const },
-  blueHeaderTitle: { fontSize: 20, fontWeight: '700' as const, color: COLORS.headerText, textAlign: 'center' as const },
+  blueHeader: { backgroundColor: COLORS.headerBg, flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'space-between' as const, paddingHorizontal: 16, paddingBottom: 14 },
+  blueHeaderTitle: { fontSize: 17, fontWeight: '700' as const, color: COLORS.headerText, textAlign: 'center' as const, flex: 1 },
   center: { alignItems: 'center', justifyContent: 'center' },
   loadingText: { marginTop: 12, fontSize: 14, color: COLORS.textSecondary },
   map: { flex: 1 },

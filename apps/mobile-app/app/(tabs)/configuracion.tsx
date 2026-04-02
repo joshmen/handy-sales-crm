@@ -128,7 +128,7 @@ export default function ConfiguracionScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  content: { paddingBottom: 32 },
+  content: { paddingBottom: 60 },
   header: {
     backgroundColor: COLORS.headerBg,
     paddingHorizontal: 16,

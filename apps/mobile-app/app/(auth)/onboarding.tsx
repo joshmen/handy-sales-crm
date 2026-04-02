@@ -4,6 +4,7 @@ import {
   Text,
   FlatList,
   Image,
+  ImageBackground,
   Dimensions,
   Pressable,
   StyleSheet,
@@ -60,8 +61,8 @@ const SLIDES: SlideData[] = [
     image: SLIDE3_IMAGE,
     bullets: [
       'Funciona sin internet',
-      'Reduce cartera vencida hasta 40%',
-      'Facturacion SAT en 3 clics',
+      'Control de cobranza en tiempo real',
+      'Reportes y metas de venta',
     ],
   },
 ];
@@ -128,17 +129,12 @@ export default function OnboardingScreen() {
   const renderSlide = ({ item, index }: ListRenderItemInfo<SlideData>) => {
     if (item.variant === 'dark') {
       return (
-        <View style={[styles.slideWrap, { width: SCREEN_WIDTH }]}>
-          {/* Dark background with image + gradient */}
-          <View style={styles.darkBg}>
-            <Image source={item.image} style={StyleSheet.absoluteFill} resizeMode="cover" />
-            <LinearGradient
-              colors={['#0f172a00', '#0f172a40', '#0f172abb', '#0f172af0', '#0f172a']}
-              locations={[0, 0.3, 0.55, 0.75, 1]}
-              style={StyleSheet.absoluteFill}
-            />
-          </View>
-
+        <ImageBackground source={item.image} style={[styles.slideWrap, { width: SCREEN_WIDTH }]} resizeMode="cover">
+          <LinearGradient
+            colors={['transparent', 'rgba(15,23,42,0.85)']}
+            locations={[0.25, 1]}
+            style={StyleSheet.absoluteFill}
+          />
           {/* Content overlay — anchored to bottom */}
           <View style={[styles.darkContent, { paddingBottom: insets.bottom + 70 }]}>
             <Text style={styles.darkTitle}>{item.title}</Text>
@@ -166,16 +162,18 @@ export default function OnboardingScreen() {
               <Text style={styles.buttonText}>Comenzar</Text>
             </Pressable>
           </View>
-        </View>
+        </ImageBackground>
       );
     }
 
-    // Light variant — full-bleed image + white card overlaying bottom
+    // Light variant — same pattern as dark: ImageBackground + gradient + text at bottom
     return (
-      <View style={[styles.slideWrap, { width: SCREEN_WIDTH }]}>
-        {/* Full-bleed image background */}
-        <Image source={item.image} style={StyleSheet.absoluteFill} resizeMode="cover" />
-        <View style={[StyleSheet.absoluteFill, styles.imageOverlay]} />
+      <ImageBackground source={item.image} style={[styles.slideWrap, { width: SCREEN_WIDTH }]} resizeMode="cover">
+        <LinearGradient
+          colors={['transparent', 'rgba(15,23,42,0.85)']}
+          locations={[0.25, 1]}
+          style={StyleSheet.absoluteFill}
+        />
 
         {/* Skip chip — top right */}
         <View style={[styles.skipChipWrap, { top: insets.top + 12 }]}>
@@ -188,29 +186,27 @@ export default function OnboardingScreen() {
           </Pressable>
         </View>
 
-        {/* White content card — anchored to bottom */}
-        <View style={[styles.cardArea, { paddingBottom: insets.bottom + 24 }]}>
-          <View style={styles.cardInner}>
-            <Text style={styles.lightTitle}>{item.title}</Text>
-            <Text style={styles.lightSubtitle}>{item.subtitle}</Text>
-            <Dots activeIndex={index} variant="light" />
-            <Pressable
-              testID="onboarding-action"
-              style={styles.button}
-              onPress={handleNext}
-            >
-              <Text style={styles.buttonText}>Siguiente</Text>
-              <ArrowRight size={18} color="#ffffff" />
-            </Pressable>
-          </View>
+        {/* Content — anchored to bottom */}
+        <View style={[styles.darkContent, { paddingBottom: insets.bottom + 40 }]}>
+          <Text style={styles.darkTitle}>{item.title}</Text>
+          <Text style={styles.darkSubtitle}>{item.subtitle}</Text>
+          <Dots activeIndex={index} variant="dark" />
+          <Pressable
+            testID="onboarding-action"
+            style={styles.button}
+            onPress={handleNext}
+          >
+            <Text style={styles.buttonText}>Siguiente</Text>
+            <ArrowRight size={18} color="#ffffff" />
+          </Pressable>
         </View>
-      </View>
+      </ImageBackground>
     );
   };
 
   return (
     <View style={styles.container}>
-      <StatusBar style={currentVariant === 'dark' ? 'light' : 'dark'} />
+      <StatusBar style="light" />
       <FlatList
         ref={flatListRef}
         data={SLIDES}

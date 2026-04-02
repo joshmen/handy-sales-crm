@@ -1,7 +1,7 @@
-import { View, Text, StyleSheet, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MapPin, Clock } from 'lucide-react-native';
+import { MapPin, Clock, ChevronLeft } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { useVendedorResumen } from '@/hooks/useSupervisor';
@@ -31,6 +31,7 @@ function VendedorDetalleContent() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const vendedorId = parseInt(id, 10);
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { data: resumen, isLoading, refetch } = useVendedorResumen(vendedorId);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -62,16 +63,20 @@ function VendedorDetalleContent() {
   const initials = vendedor.nombre.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 24 }]}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
-    >
-      {/* Blue Header */}
+    <View style={styles.container}>
+      {/* Blue Header — fixed outside scroll */}
       <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
+        <TouchableOpacity onPress={() => router.back()} style={{ width: 32, alignItems: 'center' as const }}>
+          <ChevronLeft size={22} color={COLORS.headerText} />
+        </TouchableOpacity>
         <Text style={styles.blueHeaderTitle}>Detalle Vendedor</Text>
+        <View style={{ width: 32 }} />
       </View>
 
+      <ScrollView
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 24 }]}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
+      >
       {/* Profile header */}
       <Animated.View entering={FadeInDown.duration(400).delay(100)}>
         <View style={styles.profileHeader}>
@@ -130,14 +135,15 @@ function VendedorDetalleContent() {
         </View>
       </Animated.View>
     </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  blueHeader: { backgroundColor: COLORS.headerBg, paddingHorizontal: 20, paddingBottom: 16, alignItems: 'center' },
-  blueHeaderTitle: { fontSize: 20, fontWeight: '700', color: COLORS.headerText, textAlign: 'center' },
+  blueHeader: { backgroundColor: COLORS.headerBg, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 14 },
+  blueHeaderTitle: { fontSize: 17, fontWeight: '700', color: COLORS.headerText, textAlign: 'center', flex: 1 },
   scrollContent: { paddingTop: 8 },
   errorText: { marginTop: 12, fontSize: 15, color: COLORS.textSecondary },
   profileHeader: { alignItems: 'center', paddingVertical: 24 },

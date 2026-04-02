@@ -1,5 +1,5 @@
 {
-  "version": "2.9",
+  "version": "2.10",
   "children": [
     {
       "type": "frame",
@@ -314,7 +314,7 @@
           "y": 0,
           "name": "Hero Image",
           "width": 393,
-          "height": 560,
+          "height": 852,
           "fill": {
             "type": "image",
             "enabled": true,
@@ -672,7 +672,7 @@
           "y": 0,
           "name": "Hero Image Bottom",
           "width": 393,
-          "height": 560,
+          "height": 852,
           "fill": {
             "type": "image",
             "enabled": true,
@@ -13849,6 +13849,44 @@
           ]
         }
       ]
+    },
+    {
+      "type": "frame",
+      "id": "Iy3RU",
+      "x": 3000,
+      "y": 0,
+      "name": "AI Test",
+      "width": 393,
+      "height": 852
+    },
+    {
+      "type": "frame",
+      "id": "yYAWV",
+      "x": 4000,
+      "y": 0,
+      "name": "Test AI Image",
+      "width": 393,
+      "height": 852,
+      "fill": "#ffffff"
+    },
+    {
+      "type": "frame",
+      "id": "102Fr",
+      "x": 5000,
+      "y": 0,
+      "name": "Slide1 AI",
+      "width": 540,
+      "height": 960
+    },
+    {
+      "type": "frame",
+      "id": "HqGw0",
+      "x": 6000,
+      "y": 0,
+      "name": "Gen Slide1 - Vende en ruta",
+      "width": 1080,
+      "height": 2340,
+      "fill": "#0f172a"
     }
   ],
   "variables": {

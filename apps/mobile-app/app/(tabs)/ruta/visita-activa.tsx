@@ -8,6 +8,7 @@ import {
   Image,
   Modal,
   StyleSheet,
+  RefreshControl,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { useRouter } from 'expo-router';
@@ -138,6 +139,7 @@ export default function VisitaActivaScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        refreshControl={<RefreshControl refreshing={false} onRefresh={() => performSync()} tintColor={COLORS.primary} colors={[COLORS.primary]} />}
       >
         {/* Blue Header */}
         <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
