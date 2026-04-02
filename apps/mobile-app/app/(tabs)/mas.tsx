@@ -77,10 +77,22 @@ function MasScreenContent() {
       onPress: () => router.push('/(tabs)/vender' as any),
     },
     {
+      label: 'Productos',
+      icon: <Package size={20} color="#6b7280" />,
+      iconBg: COLORS.background,
+      onPress: () => router.push('/(tabs)/vender/productos' as any),
+    },
+    {
       label: 'Inventario',
       icon: <Package size={20} color="#6b7280" />,
       iconBg: COLORS.background,
       onPress: () => router.push('/(tabs)/inventario' as any),
+    },
+    {
+      label: 'Historial de Rutas',
+      icon: <SbRoute size={20} />,
+      iconBg: COLORS.background,
+      onPress: () => router.push('/(tabs)/historial-rutas' as any),
     },
     {
       label: 'Anuncios',
