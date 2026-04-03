@@ -115,9 +115,22 @@ export default function CrearClienteScreen() {
   const [touched, setTouched] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
-  // GPS — no auto-detect, user picks from map
+  // GPS — auto-detect current position for map initial view
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [showMapModal, setShowMapModal] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const Location = require('expo-location') as typeof import('expo-location');
+        const { status } = await Location.getForegroundPermissionsAsync();
+        if (status !== 'granted') return;
+        const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+      } catch { /* permission denied or unavailable */ }
+    })();
+  }, []);
 
   // Load existing client data when editing
   useEffect(() => {
@@ -300,7 +313,7 @@ export default function CrearClienteScreen() {
 
       <GpsMapModal
         visible={showMapModal}
-        initialCoord={location ? { latitude: location.lat, longitude: location.lng } : { latitude: 25.79, longitude: -108.99 }}
+        initialCoord={location ? { latitude: location.lat, longitude: location.lng } : userLocation ? { latitude: userLocation.lat, longitude: userLocation.lng } : { latitude: 25.79, longitude: -108.99 }}
         clientName={nombre || undefined}
         onConfirm={(coord, placeInfo) => {
           setLocation({ lat: coord.latitude, lng: coord.longitude });
