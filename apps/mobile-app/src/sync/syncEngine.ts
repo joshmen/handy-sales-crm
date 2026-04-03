@@ -140,19 +140,40 @@ export async function performSync(options?: SyncOptions): Promise<void> {
       sendCreatedAsUpdated: true,
     });
 
-    // Phase 2b: Apply server ID mappings for records created during push (batched)
+    // Phase 2b: Apply server ID mappings and clean up duplicates
     if (pendingIdMappings.length) {
       await database.write(async () => {
         const updates: any[] = [];
+        const deletes: any[] = [];
         for (const m of pendingIdMappings) {
           try {
             const record = await database.get(m.entityType).find(m.localId);
-            updates.push(record.prepareUpdate((r: any) => { r.server_id = m.serverId; }));
-          } catch { /* record not found */ }
+            const serverId = String(m.serverId);
+
+            // Try to find a duplicate record created by pull (id = String(serverId))
+            let dupRaw: any = null;
+            if (serverId !== m.localId) {
+              try {
+                const dup = await database.get(m.entityType).find(serverId);
+                dupRaw = dup._raw;
+                deletes.push(dup.prepareDestroyPermanently());
+              } catch { /* no duplicate — good */ }
+            }
+
+            // Update the local record: set server_id + copy fields from server duplicate
+            updates.push(record.prepareUpdate((r: any) => {
+              r.server_id = m.serverId;
+              // Copy server-assigned fields from the duplicate if it exists
+              if (dupRaw) {
+                if (dupRaw.numero_pedido) r.numero_pedido = dupRaw.numero_pedido;
+                if (dupRaw.estado > r.estado) r.estado = dupRaw.estado;
+              }
+            }));
+          } catch { /* local record not found */ }
         }
-        if (updates.length) await database.batch(...updates);
+        if (updates.length || deletes.length) await database.batch(...updates, ...deletes);
       });
-      if (__DEV__) console.log('[Sync] Applied', pendingIdMappings.length, 'ID mappings');
+      if (__DEV__) console.log('[Sync] Applied', pendingIdMappings.length, 'ID mappings, removed', 0, 'duplicates');
     }
 
     // Phase 3: Upload pending attachments (deferred, non-fatal)

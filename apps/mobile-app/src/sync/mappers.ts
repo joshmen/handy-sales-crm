@@ -22,13 +22,23 @@ interface ServerChanges {
 }
 
 // Build a map of server_id → local WDB id for deduplication.
-// Only fetches records that have a server_id (skips brand-new unsynced records).
+// Indexes by server_id AND by numeric WDB id (for records already pulled from server).
+// This handles both cases:
+//   A) Record created locally, pushed, got server_id mapping → map by server_id
+//   B) Record pulled from server (WDB id = String(server_id)) → map by parsing WDB id
 async function buildServerIdMap(table: string): Promise<Map<number, string>> {
-  const records = await database.get(table).query(Q.where('server_id', Q.notEq(null))).fetch();
+  const records = await database.get(table).query().fetch();
   const map = new Map<number, string>();
   for (const r of records as any[]) {
     const sid = r._raw?.server_id ?? r.serverId;
-    if (sid) map.set(Number(sid), r.id);
+    if (sid) {
+      map.set(Number(sid), r.id);
+    } else {
+      // For records without server_id, check if WDB id is a numeric string
+      // (meaning it was already pulled from server in a previous sync)
+      const numId = Number(r.id);
+      if (!isNaN(numId) && numId > 0) map.set(numId, r.id);
+    }
   }
   return map;
 }
