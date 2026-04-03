@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineProductById } from '@/hooks';
@@ -48,11 +48,15 @@ export default function ProductoDetailScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Image placeholder */}
+        {/* Product image */}
         <Animated.View entering={FadeInDown.duration(300)}>
-          <View style={styles.imagePlaceholder}>
-            <ImageIcon size={48} color={COLORS.textTertiary} />
-          </View>
+          {product.imagenUrl ? (
+            <Image source={{ uri: product.imagenUrl }} style={styles.productImage} resizeMode="cover" />
+          ) : (
+            <View style={styles.imagePlaceholder}>
+              <ImageIcon size={48} color={COLORS.textTertiary} />
+            </View>
+          )}
         </Animated.View>
 
         {/* Product name + SKU + Price */}
@@ -139,7 +143,12 @@ const styles = StyleSheet.create({
   backBtn: { padding: 4 },
   headerTitle: { fontSize: 18, fontWeight: '700', color: COLORS.headerText },
   scrollContent: { paddingBottom: 32 },
-  // Image placeholder
+  // Product image
+  productImage: {
+    width: '100%',
+    height: 220,
+    backgroundColor: COLORS.card,
+  },
   imagePlaceholder: {
     alignItems: 'center',
     justifyContent: 'center',
