@@ -309,18 +309,28 @@ export async function printReceipt(data: ReceiptData): Promise<boolean> {
     if (data.items && data.items.length > 0) {
       await P.printText('--------------------------------\n', {});
       const fmt = (n: number) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(n);
+      const W = 32; // thermal printer char width
       for (const item of data.items) {
         await P.printerAlign(ALIGN.LEFT);
-        await P.printText(`${item.nombre}\n`, {});
-        await P.printText(`  ${item.cantidad} x ${fmt(item.precioUnitario)}`, {});
-        await P.printerAlign(ALIGN.RIGHT);
-        await P.printText(`${fmt(item.subtotal)}\n`, {});
+        const left = `${item.nombre} x${item.cantidad}`;
+        const right = fmt(item.subtotal);
+        const pad = Math.max(1, W - left.length - right.length);
+        await P.printText(`${left}${' '.repeat(pad)}${right}\n`, {});
       }
       await P.printerAlign(ALIGN.LEFT);
       await P.printText('--------------------------------\n', {});
-      if (data.subtotal != null) await P.printText(`SUBTOTAL:  ${fmt(data.subtotal)}\n`, {});
-      if (data.descuento && data.descuento > 0) await P.printText(`DESCUENTO: -${fmt(data.descuento)}\n`, {});
-      if (data.impuesto != null) await P.printText(`IVA 16%:   ${fmt(data.impuesto)}\n`, {});
+      if (data.subtotal != null) {
+        const subRight = fmt(data.subtotal);
+        await P.printText(`SUBTOTAL:${' '.repeat(Math.max(1, W - 9 - subRight.length))}${subRight}\n`, {});
+      }
+      if (data.descuento && data.descuento > 0) {
+        const descRight = `-${fmt(data.descuento)}`;
+        await P.printText(`DESCUENTO:${' '.repeat(Math.max(1, W - 10 - descRight.length))}${descRight}\n`, {});
+      }
+      if (data.impuesto != null) {
+        const ivaRight = fmt(data.impuesto);
+        await P.printText(`IVA 16%:${' '.repeat(Math.max(1, W - 8 - ivaRight.length))}${ivaRight}\n`, {});
+      }
     } else {
       await P.printText('--------------------------------\n', {});
     }
@@ -428,33 +438,28 @@ export async function printOrderTicket(data: OrderTicketData): Promise<boolean> 
     await P.printText(`Tipo: ${data.tipoVenta}\n`, {});
     await P.printText('--------------------------------\n', {});
 
-    // Items
+    // Items — single line: "Nombre x3        $55.50"
+    const W = 32; // thermal printer char width
     for (const item of data.items) {
-      await P.printText(`${item.nombre}\n`, {});
-      await P.printText(`  ${item.cantidad} x ${fmt(item.precioUnitario)}`, {});
-      await P.printerAlign(ALIGN.RIGHT);
-      await P.printText(`${fmt(item.subtotal)}\n`, {});
       await P.printerAlign(ALIGN.LEFT);
+      const left = `${item.nombre} x${item.cantidad}`;
+      const right = fmt(item.subtotal);
+      const pad = Math.max(1, W - left.length - right.length);
+      await P.printText(`${left}${' '.repeat(pad)}${right}\n`, {});
     }
 
-    // Totals
+    // Totals — aligned with spaces
+    await P.printerAlign(ALIGN.LEFT);
     await P.printText('--------------------------------\n', {});
-    await P.printText(`Subtotal:`, {});
-    await P.printerAlign(ALIGN.RIGHT);
-    await P.printText(`${fmt(data.subtotal)}\n`, {});
-    await P.printerAlign(ALIGN.LEFT);
 
-    if (data.descuento > 0) {
-      await P.printText(`Descuento:`, {});
-      await P.printerAlign(ALIGN.RIGHT);
-      await P.printText(`-${fmt(data.descuento)}\n`, {});
-      await P.printerAlign(ALIGN.LEFT);
-    }
+    const printRow = async (label: string, value: string) => {
+      const pad = Math.max(1, W - label.length - value.length);
+      await P.printText(`${label}${' '.repeat(pad)}${value}\n`, {});
+    };
 
-    await P.printText(`Impuestos:`, {});
-    await P.printerAlign(ALIGN.RIGHT);
-    await P.printText(`${fmt(data.impuesto)}\n`, {});
-    await P.printerAlign(ALIGN.LEFT);
+    await printRow('Subtotal:', fmt(data.subtotal));
+    if (data.descuento > 0) await printRow('Descuento:', `-${fmt(data.descuento)}`);
+    await printRow('IVA 16%:', fmt(data.impuesto));
 
     await P.printText('================================\n', {});
     await P.printerAlign(ALIGN.CENTER);
