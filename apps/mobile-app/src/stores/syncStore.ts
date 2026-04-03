@@ -4,6 +4,7 @@ import { syncCursors } from '@/sync/cursors';
 import type { SyncSummary } from '@/sync/syncEngine';
 
 type SyncStatus = 'idle' | 'syncing' | 'success' | 'error';
+let _statusTimeout: ReturnType<typeof setTimeout> | null = null;
 
 interface SyncState {
   status: SyncStatus;
@@ -32,8 +33,9 @@ export const useSyncStore = create<SyncState>((set, get) => ({
         onFinish: (summary) => {
           const now = Date.now();
           set({ status: 'success', lastSyncAt: now, lastSummary: summary, error: null });
-          // Reset to idle after 3s
-          setTimeout(() => {
+          if (_statusTimeout) clearTimeout(_statusTimeout);
+          _statusTimeout = setTimeout(() => {
+            _statusTimeout = null;
             if (get().status === 'success') set({ status: 'idle' });
           }, 3000);
         },

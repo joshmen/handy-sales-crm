@@ -1,5 +1,6 @@
 import type { SyncDatabaseChangeSet } from '@nozbe/watermelondb/sync';
 import type { DirtyRaw } from '@nozbe/watermelondb/RawRecord';
+import { Q } from '@nozbe/watermelondb';
 import { database } from '@/db/database';
 
 // ────────────────────────────────────────────────────────────────
@@ -20,9 +21,10 @@ interface ServerChanges {
   promociones?: any[];
 }
 
-// Build a map of server_id → local WDB id for deduplication
+// Build a map of server_id → local WDB id for deduplication.
+// Only fetches records that have a server_id (skips brand-new unsynced records).
 async function buildServerIdMap(table: string): Promise<Map<number, string>> {
-  const records = await database.get(table).query().fetch();
+  const records = await database.get(table).query(Q.where('server_id', Q.notEq(null))).fetch();
   const map = new Map<number, string>();
   for (const r of records as any[]) {
     const sid = r._raw?.server_id ?? r.serverId;

@@ -76,7 +76,7 @@ export default function ReciboScreen() {
       }
       await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Compartir recibo' });
     } catch (e) {
-      console.warn('[Recibo] Share failed:', e);
+      if (__DEV__) console.warn('[Recibo] Share failed:', e);
       Toast.show({ type: 'error', text1: 'Error al compartir', text2: 'Intenta de nuevo o genera el APK para esta función' });
     } finally {
       setSharing(false);

@@ -105,7 +105,7 @@ export async function requestBluetoothWithDialog(): Promise<boolean> {
         (r) => r === PermissionsAndroid.RESULTS.GRANTED,
       );
     } catch (e) {
-      console.warn('[Permissions] BT permission request failed:', e);
+      if (__DEV__) console.warn('[Permissions] BT permission request failed:', e);
       return false;
     }
   }

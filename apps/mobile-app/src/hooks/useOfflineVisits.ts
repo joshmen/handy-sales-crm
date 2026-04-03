@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Q } from '@nozbe/watermelondb';
 import { database } from '@/db/database';
 import Visita from '@/db/models/Visita';
@@ -30,6 +30,17 @@ export function useOfflineVisitById(id: string | undefined) {
 }
 
 export function useOfflineTodayVisits() {
+  // Recompute date key so the query refreshes if mount spans midnight
+  const [dateKey, setDateKey] = useState(() => new Date().toDateString());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date().toDateString();
+      if (now !== dateKey) setDateKey(now);
+    }, 60_000); // check every minute
+    return () => clearInterval(interval);
+  }, [dateKey]);
+
   const observable = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -43,7 +54,7 @@ export function useOfflineTodayVisits() {
         Q.sortBy('check_in_at', Q.desc)
       )
       .observe();
-  }, []);
+  }, [dateKey]);
 
   return useObservable(observable);
 }

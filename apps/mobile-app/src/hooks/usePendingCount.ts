@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { Q } from '@nozbe/watermelondb';
+import { combineLatest, map } from 'rxjs';
 import { database } from '@/db/database';
 import { useObservable } from './useObservable';
 
@@ -7,8 +8,6 @@ const SYNCABLE_TABLES = ['clientes', 'pedidos', 'detalle_pedidos', 'visitas', 'c
 
 export function usePendingCount() {
   const observable = useMemo(() => {
-    // Count records with pending sync status across all syncable tables
-    // WatermelonDB marks records as 'created' or 'updated' when they have local changes
     const queries = SYNCABLE_TABLES.map((table) =>
       database.collections
         .get(table)
@@ -21,8 +20,6 @@ export function usePendingCount() {
         .observeCount()
     );
 
-    // Combine all observables into a single sum
-    const { combineLatest, map } = require('rxjs');
     return combineLatest(queries).pipe(
       map((counts: number[]) => counts.reduce((sum, c) => sum + c, 0))
     );

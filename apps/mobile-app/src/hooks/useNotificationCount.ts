@@ -17,8 +17,9 @@ export function useUnreadNotificationCount() {
     try {
       const c = await notificationStore.getUnreadCount();
       setCount(c);
-    } catch {
+    } catch (e) {
       // Silently ignore storage errors
+      if (__DEV__) console.warn('[NotifCount]', e);
     }
   }, []);
 

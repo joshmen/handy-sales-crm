@@ -54,7 +54,7 @@ export default function AnunciosScreen() {
     try {
       const res = await api.get<any>('/api/mobile/announcements');
       setAnnouncements(res.data?.data || []);
-    } catch { /* silent */ }
+    } catch (e) { /* silent */ if (__DEV__) console.warn('[Anuncios]', e); }
     finally { setLoading(false); }
   };
 
@@ -70,7 +70,7 @@ export default function AnunciosScreen() {
     try {
       await api.post(`/api/mobile/announcements/${id}/dismiss`);
       setAnnouncements(prev => prev.filter(a => a.id !== id));
-    } catch { /* silent */ }
+    } catch (e) { /* silent */ if (__DEV__) console.warn('[Anuncios]', e); }
   };
 
   const renderItem = ({ item }: { item: Announcement }) => {

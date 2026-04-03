@@ -73,7 +73,8 @@ class MobileVisitasApi {
         'GET /api/mobile/visitas/activa'
       );
       return validated.data;
-    } catch {
+    } catch (e) {
+      if (__DEV__) console.warn('[Visits]', e);
       return null;
     }
   }

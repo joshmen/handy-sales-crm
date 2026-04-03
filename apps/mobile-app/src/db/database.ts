@@ -1,18 +1,14 @@
 import { Database } from '@nozbe/watermelondb';
-import LokiJSAdapter from '@nozbe/watermelondb/adapters/lokijs';
+import SQLiteAdapter from '@nozbe/watermelondb/adapters/sqlite';
 import { schema } from './schema';
 import { migrations } from './migrations';
 import { modelClasses } from './models';
 
-// LokiJSAdapter works in Expo Go (no native modules needed).
-// When switching to Expo Dev Client for production, replace with:
-//   import SQLiteAdapter from '@nozbe/watermelondb/adapters/sqlite';
-//   const adapter = new SQLiteAdapter({ schema, migrations, dbName: 'handysuites', jsi: true });
-const adapter = new LokiJSAdapter({
+const adapter = new SQLiteAdapter({
   schema,
   migrations,
-  useWebWorker: false,
-  useIncrementalIndexedDB: true,
+  dbName: 'handysuites',
+  jsi: true,
 });
 
 export const database = new Database({

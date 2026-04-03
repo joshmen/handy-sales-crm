@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, memo } from 'react';
 import { View, Text, FlatList, RefreshControl, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,6 +10,48 @@ import { Phone, ChevronRight, ChevronLeft, Users, Plus } from 'lucide-react-nati
 import { performSync } from '@/sync/syncEngine';
 import type Cliente from '@/db/models/Cliente';
 import { COLORS, STATUS_PALETTES } from '@/theme/colors';
+
+const ClientListItem = memo(({ item, onPress }: { item: Cliente; onPress: () => void }) => (
+  <Card className="mx-4 mb-3" onPress={onPress}>
+    <View style={styles.cardRow}>
+      <View style={[
+        styles.clientAvatar,
+        { backgroundColor: item.activo ? COLORS.primaryLight : '#f1f5f9' },
+      ]}>
+        <Text style={[
+          styles.clientAvatarText,
+          { color: item.activo ? COLORS.primary : '#94a3b8' },
+        ]}>
+          {item.nombre?.[0]?.toUpperCase() || 'C'}
+        </Text>
+      </View>
+      <View style={styles.cardContent}>
+        <View style={styles.cardHeader}>
+          <Text style={styles.clientName} numberOfLines={1}>{item.nombre}</Text>
+          <View style={styles.badgeRow}>
+            {item.esProspecto && (
+              <Badge label="Prospecto" color={COLORS.warning} bgColor={STATUS_PALETTES.pending.bg} />
+            )}
+            <Badge
+              label={item.activo ? 'Activo' : 'Inactivo'}
+              color={item.activo ? COLORS.success : COLORS.textTertiary}
+              bgColor={item.activo ? STATUS_PALETTES.delivered.bg : COLORS.border}
+            />
+          </View>
+        </View>
+        <View style={styles.clientMeta}>
+          {item.telefono && (
+            <View style={styles.metaItem}>
+              <Phone size={12} color="#94a3b8" />
+              <Text style={styles.metaText}>{item.telefono}</Text>
+            </View>
+          )}
+        </View>
+      </View>
+      <ChevronRight size={18} color="#cbd5e1" style={styles.chevron} />
+    </View>
+  </Card>
+), (prev, next) => prev.item.id === next.item.id && prev.item.nombre === next.item.nombre && prev.item.activo === next.item.activo);
 
 export default function ClientsListScreen() {
   const insets = useSafeAreaInsets();
@@ -32,54 +74,7 @@ export default function ClientsListScreen() {
 
   const renderItem = useCallback(
     ({ item }: { item: Cliente }) => (
-      <Card
-        className="mx-4 mb-3"
-        onPress={() => router.push(`/(tabs)/clients/${item.id}`)}
-      >
-        <View style={styles.cardRow}>
-          <View style={[
-            styles.clientAvatar,
-            { backgroundColor: item.activo ? COLORS.primaryLight : '#f1f5f9' },
-          ]}>
-            <Text style={[
-              styles.clientAvatarText,
-              { color: item.activo ? COLORS.primary : '#94a3b8' },
-            ]}>
-              {item.nombre?.[0]?.toUpperCase() || 'C'}
-            </Text>
-          </View>
-          <View style={styles.cardContent}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.clientName} numberOfLines={1}>
-                {item.nombre}
-              </Text>
-              <View style={styles.badgeRow}>
-                {item.esProspecto && (
-                  <Badge
-                    label="Prospecto"
-                    color={COLORS.warning}
-                    bgColor={STATUS_PALETTES.pending.bg}
-                  />
-                )}
-                <Badge
-                  label={item.activo ? 'Activo' : 'Inactivo'}
-                  color={item.activo ? COLORS.success : COLORS.textTertiary}
-                  bgColor={item.activo ? STATUS_PALETTES.delivered.bg : COLORS.border}
-                />
-              </View>
-            </View>
-            <View style={styles.clientMeta}>
-              {item.telefono && (
-                <View style={styles.metaItem}>
-                  <Phone size={12} color="#94a3b8" />
-                  <Text style={styles.metaText}>{item.telefono}</Text>
-                </View>
-              )}
-            </View>
-          </View>
-          <ChevronRight size={18} color="#cbd5e1" style={styles.chevron} />
-        </View>
-      </Card>
+      <ClientListItem item={item} onPress={() => router.push(`/(tabs)/clients/${item.id}`)} />
     ),
     [router]
   );

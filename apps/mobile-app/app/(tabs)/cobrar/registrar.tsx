@@ -107,10 +107,15 @@ export default function RegistrarCobroScreen() {
   };
 
   const montoNum = parseFloat(monto) || 0;
-  const isValid = montoNum > 0 && !!effectiveClienteId;
+  const MAX_MONTO = 999999.99;
+  const isValid = montoNum > 0 && montoNum <= MAX_MONTO && !!effectiveClienteId;
+  const isOverSaldo = effectiveSaldo > 0 && montoNum > effectiveSaldo;
 
   const handleConfirmar = () => {
-    if (!isValid) return;
+    if (!isValid) {
+      if (montoNum > MAX_MONTO) setMontoError(`Máximo ${MAX_MONTO.toLocaleString('es-MX')}`);
+      return;
+    }
     setShowConfirmCobro(true);
   };
 
@@ -144,7 +149,7 @@ export default function RegistrarCobroScreen() {
           const { database } = require('@/db/database');
           const stopRecord = await database.get('ruta_detalles').find(params.paradaId);
           if (stopRecord) await stopRecord.depart();
-        } catch { /* ignore */ }
+        } catch (e) { /* ignore */ if (__DEV__) console.warn('[Registrar]', e); }
       }
 
       performSync().catch(() => {});
@@ -309,6 +314,8 @@ export default function RegistrarCobroScreen() {
           </View>
           {montoError ? (
             <Text style={styles.montoError}>{montoError}</Text>
+          ) : isOverSaldo ? (
+            <Text style={[styles.montoError, { color: '#ea580c' }]}>Monto excede el saldo pendiente (${effectiveSaldo.toFixed(2)})</Text>
           ) : null}
         </View>
 

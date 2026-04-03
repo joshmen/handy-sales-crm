@@ -32,7 +32,7 @@ export const syncCursors = {
 
   setLastPulledAt(timestamp: number): void {
     _cache[`${PREFIX}lastPulledAt`] = String(timestamp);
-    AsyncStorage.setItem(`${PREFIX}lastPulledAt`, String(timestamp));
+    AsyncStorage.setItem(`${PREFIX}lastPulledAt`, String(timestamp)).catch(() => {});
   },
 
   getLastSyncAt(): number | null {
@@ -42,7 +42,7 @@ export const syncCursors = {
 
   setLastSyncAt(timestamp: number): void {
     _cache[`${PREFIX}lastSyncAt`] = String(timestamp);
-    AsyncStorage.setItem(`${PREFIX}lastSyncAt`, String(timestamp));
+    AsyncStorage.setItem(`${PREFIX}lastSyncAt`, String(timestamp)).catch(() => {});
   },
 
   isSyncInProgress(): boolean {
@@ -51,7 +51,7 @@ export const syncCursors = {
 
   setSyncInProgress(inProgress: boolean): void {
     _cache[`${PREFIX}syncInProgress`] = String(inProgress);
-    AsyncStorage.setItem(`${PREFIX}syncInProgress`, String(inProgress));
+    AsyncStorage.setItem(`${PREFIX}syncInProgress`, String(inProgress)).catch(() => {});
   },
 
   getLastSyncSummary(): { pulled: number; pushed: number; conflicts: number } | null {
@@ -67,7 +67,7 @@ export const syncCursors = {
   setLastSyncSummary(summary: { pulled: number; pushed: number; conflicts: number }): void {
     const json = JSON.stringify(summary);
     _cache[`${PREFIX}lastSyncSummary`] = json;
-    AsyncStorage.setItem(`${PREFIX}lastSyncSummary`, json);
+    AsyncStorage.setItem(`${PREFIX}lastSyncSummary`, json).catch(() => {});
   },
 
   clear(): void {
@@ -78,6 +78,6 @@ export const syncCursors = {
       `${PREFIX}lastSyncSummary`,
     ];
     keys.forEach((k) => delete _cache[k]);
-    AsyncStorage.multiRemove(keys);
+    AsyncStorage.multiRemove(keys).catch(() => {});
   },
 };

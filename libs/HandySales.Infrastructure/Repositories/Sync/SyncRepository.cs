@@ -54,6 +54,7 @@ public class SyncRepository : ISyncRepository
         var query = _db.Pedidos
             .AsNoTracking()
             .Include(p => p.Detalles)
+                .ThenInclude(d => d.Producto)
             .Where(p => p.TenantId == tenantId && p.UsuarioId == usuarioId);
 
         if (since.HasValue)

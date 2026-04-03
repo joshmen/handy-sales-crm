@@ -380,6 +380,7 @@ public class SyncService
                 {
                     Id = d.Id,
                     ProductoId = d.ProductoId,
+                    Nombre = d.Producto?.Nombre,
                     Cantidad = d.Cantidad,
                     PrecioUnitario = d.PrecioUnitario,
                     Descuento = d.Descuento,

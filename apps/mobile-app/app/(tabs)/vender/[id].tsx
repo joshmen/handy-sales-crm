@@ -50,7 +50,7 @@ export default function OrderDetailScreen() {
 
   // Update local WatermelonDB immediately after successful transition
   const updateLocalStatus = async (nuevoEstado: number) => {
-    try { await order.updateStatus(nuevoEstado); } catch { /* sync will fix */ }
+    try { await order.updateStatus(nuevoEstado); } catch (e) { if (__DEV__) console.warn('[Order] updateStatus failed:', e); }
   };
 
   const handleCancelar = () => {
@@ -166,19 +166,21 @@ export default function OrderDetailScreen() {
             const normalized = normalizeEstado(estado);
             const isActive = s === normalized;
             const isPast = s < normalized;
-            const dotColor = isActive ? COLORS.button : isPast ? '#16a34a' : '#e2e8f0';
-            const lineColor = isPast ? '#16a34a' : '#e2e8f0';
+            const isLastStep = i === STEPPER_STATES.length - 1;
+            const isCompleted = isPast || (isActive && isLastStep);
+            const dotColor = isCompleted ? '#16a34a' : isActive ? COLORS.button : isPast ? '#16a34a' : '#e2e8f0';
+            const lineColor = (isPast || isActive) ? '#16a34a' : '#e2e8f0';
             return (
               <View key={s} style={styles.stepItem}>
                 <View style={styles.stepDotRow}>
                   {i > 0 && <View style={[styles.stepLine, { backgroundColor: lineColor }]} />}
                   <View style={[styles.stepDot, { backgroundColor: dotColor }]}>
-                    {isPast && <CheckCircle size={10} color="#fff" />}
-                    {isActive && <ArrowRight size={10} color="#fff" />}
+                    {isCompleted && <CheckCircle size={10} color="#fff" />}
+                    {isActive && !isLastStep && <ArrowRight size={10} color="#fff" />}
                   </View>
                   {i < STEPPER_STATES.length - 1 && <View style={[styles.stepLine, { backgroundColor: s < normalized ? '#16a34a' : '#e2e8f0' }]} />}
                 </View>
-                <Text style={[styles.stepLabel, isActive && styles.stepLabelActive, isPast && styles.stepLabelPast]}>{STEPPER_LABELS[i]}</Text>
+                <Text style={[styles.stepLabel, isActive && styles.stepLabelActive, isCompleted && styles.stepLabelPast]}>{STEPPER_LABELS[i]}</Text>
               </View>
             );
           })}

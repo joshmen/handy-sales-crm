@@ -17,7 +17,7 @@ export function useAutoSync() {
       if (net.isConnected && useSyncStore.getState().status !== 'syncing') {
         useSyncStore.getState().sync();
       }
-    }).catch(() => {});
+    }).catch((e) => { if (__DEV__) console.warn('[AutoSync]', e); });
   };
 
   // Core: auto-sync when WDB tables change (official WDB pattern)

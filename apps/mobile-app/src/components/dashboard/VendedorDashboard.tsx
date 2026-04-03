@@ -67,10 +67,14 @@ export function VendedorDashboard() {
     return facturado - cobrado;
   }, [pedidos, cobros]);
 
-  // Metas activas
+  // Metas activas — use direct fetch with abort on unfocus
   const [metas, setMetas] = useState<any[]>([]);
   useFocusEffect(useCallback(() => {
-    api.get<any>('/api/mobile/metas').then(res => setMetas(res.data?.data || [])).catch(() => {});
+    const controller = new AbortController();
+    api.get<any>('/api/mobile/metas', { signal: controller.signal })
+      .then(res => setMetas(res.data?.data || []))
+      .catch(() => {});
+    return () => controller.abort();
   }, []));
 
   const stats = routeStats;

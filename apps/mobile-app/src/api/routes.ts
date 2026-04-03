@@ -26,7 +26,8 @@ class MobileRutasApi {
         'GET /api/mobile/rutas/hoy'
       );
       return validated.data;
-    } catch {
+    } catch (e) {
+      if (__DEV__) console.warn('[Routes]', e);
       return null;
     }
   }
@@ -104,7 +105,8 @@ class MobileRutasApi {
         `GET /api/mobile/rutas/${rutaId}/parada-actual`
       );
       return validated.data;
-    } catch {
+    } catch (e) {
+      if (__DEV__) console.warn('[Routes]', e);
       return null;
     }
   }
@@ -120,7 +122,8 @@ class MobileRutasApi {
         `GET /api/mobile/rutas/${rutaId}/siguiente-parada`
       );
       return validated.data;
-    } catch {
+    } catch (e) {
+      if (__DEV__) console.warn('[Routes]', e);
       return null;
     }
   }

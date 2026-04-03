@@ -149,8 +149,9 @@ apiInstance.interceptors.response.use(
             processQueue(newToken);
             return apiInstance(originalRequest);
           }
-        } catch {
+        } catch (e) {
           // fall through
+          if (__DEV__) console.warn('[API]', e);
         }
 
         processQueueError(new Error('Token refresh failed'));
@@ -180,8 +181,9 @@ async function tryRefreshToken(): Promise<string | null> {
       await secureStorage.set(STORAGE_KEYS.REFRESH_TOKEN, newRefresh);
       return token;
     }
-  } catch {
+  } catch (e) {
     // Token expired or revoked
+    if (__DEV__) console.warn('[API]', e);
   }
 
   return null;

@@ -179,6 +179,7 @@ public class SyncDetallePedidoDto
     public decimal Subtotal { get; set; }
     public decimal Impuesto { get; set; }
     public decimal Total { get; set; }
+    public string? Nombre { get; set; }
     public string? Notas { get; set; }
     public long Version { get; set; }
     public SyncOperation Operation { get; set; } = SyncOperation.Update;

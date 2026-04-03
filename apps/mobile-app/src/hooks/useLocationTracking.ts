@@ -24,8 +24,9 @@ export function useLocationTracking(enabled: boolean) {
         subscription = await watchPosition((coords) => {
           if (mounted) setPosition(coords);
         }, 10000);
-      } catch {
+      } catch (e) {
         // Permission denied or location unavailable — silent fail
+        if (__DEV__) console.warn('[Location]', e);
       }
     })();
 
@@ -40,8 +41,9 @@ export function useLocationTracking(enabled: boolean) {
       const { getCurrentPosition } = await import('@/services/geoCheckin');
       const coords = await getCurrentPosition();
       setPosition(coords);
-    } catch {
+    } catch (e) {
       // silent
+      if (__DEV__) console.warn('[Location]', e);
     }
   }, []);
 

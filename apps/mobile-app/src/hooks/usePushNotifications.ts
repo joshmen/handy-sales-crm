@@ -136,5 +136,5 @@ export function usePushNotifications() {
       notificationListener.current?.remove();
       responseListener.current?.remove();
     };
-  }, [isAuthenticated, queryClient]);
+  }, [isAuthenticated, queryClient, router]);
 }

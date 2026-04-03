@@ -49,7 +49,7 @@ function loadNativeModules() {
     nativeAvailable = true;
     console.log('[Printer] Native modules loaded (BT + Net)');
   } catch (e) {
-    console.warn('[Printer] Native modules not available:', e);
+    if (__DEV__) console.warn('[Printer] Native modules not available:', e);
   }
 }
 
@@ -80,7 +80,7 @@ export async function enableBluetooth(): Promise<boolean> {
     const result = await BluetoothManager.enableBluetooth();
     return !!result;
   } catch (e) {
-    console.warn('[Printer] enableBluetooth failed:', e);
+    if (__DEV__) console.warn('[Printer] enableBluetooth failed:', e);
     return false;
   }
 }
@@ -95,7 +95,7 @@ export async function scanBluetoothDevices(): Promise<PrinterDevice[]> {
       .filter((d: any) => d.name && d.address)
       .map((d: any) => ({ name: d.name, address: d.address, type: 'bluetooth' as const }));
   } catch (e) {
-    console.warn('[Printer] BT scan failed:', e);
+    if (__DEV__) console.warn('[Printer] BT scan failed:', e);
     return [];
   }
 }
@@ -107,7 +107,7 @@ export async function connectBluetooth(address: string): Promise<boolean> {
     await BluetoothManager.connect(address);
     return true;
   } catch (e) {
-    console.warn('[Printer] BT connect failed:', e);
+    if (__DEV__) console.warn('[Printer] BT connect failed:', e);
     return false;
   }
 }
@@ -121,7 +121,7 @@ export async function connectWifi(host: string, port: number): Promise<boolean> 
     await NetPrinter.connectTcp(host, port);
     return true;
   } catch (e) {
-    console.warn('[Printer] WiFi connect failed:', e);
+    if (__DEV__) console.warn('[Printer] WiFi connect failed:', e);
     return false;
   }
 }
@@ -167,7 +167,7 @@ async function getImageBase64(imageUri: string): Promise<string | null> {
       const localPath = imageUri.startsWith('file://') ? imageUri : `file://${imageUri}`;
       const localFile = new File(localPath);
       if (!localFile.exists) {
-        console.warn('[Printer] Local logo file not found:', localPath);
+        if (__DEV__) console.warn('[Printer] Local logo file not found:', localPath);
         return null;
       }
       return await localFile.base64();
@@ -191,13 +191,13 @@ async function getImageBase64(imageUri: string): Promise<string | null> {
     }
 
     if (!cachedFile.exists) {
-      console.warn('[Printer] Logo download did not produce cached file');
+      if (__DEV__) console.warn('[Printer] Logo download did not produce cached file');
       return null;
     }
 
     return await cachedFile.base64();
   } catch (e) {
-    console.warn('[Printer] Failed to get image base64:', e);
+    if (__DEV__) console.warn('[Printer] Failed to get image base64:', e);
     return null;
   }
 }
@@ -217,7 +217,7 @@ export async function printLogo(imageUri: string): Promise<boolean> {
   try {
     const base64 = await getImageBase64(imageUri);
     if (!base64) {
-      console.warn('[Printer] No base64 data for logo, skipping');
+      if (__DEV__) console.warn('[Printer] No base64 data for logo, skipping');
       return false;
     }
 
@@ -237,7 +237,7 @@ export async function printLogo(imageUri: string): Promise<boolean> {
 
     return true;
   } catch (e) {
-    console.warn('[Printer] Logo print failed (non-fatal):', e);
+    if (__DEV__) console.warn('[Printer] Logo print failed (non-fatal):', e);
     return false;
   }
 }
@@ -275,7 +275,7 @@ export async function printReceipt(data: ReceiptData): Promise<boolean> {
       try {
         await printLogo(data.logoUri);
       } catch (e) {
-        console.warn('[Printer] Logo print skipped:', e);
+        if (__DEV__) console.warn('[Printer] Logo print skipped:', e);
       }
     }
 

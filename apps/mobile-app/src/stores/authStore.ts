@@ -4,6 +4,7 @@ import type { AuthUser } from '@/types';
 import { secureStorage } from '@/utils/storage';
 import { STORAGE_KEYS } from '@/utils/constants';
 import { setAccessToken, authEventEmitter } from '@/api/client';
+import { queryClient } from '@/providers/QueryProvider';
 
 interface AuthState {
   user: AuthUser | null;
@@ -35,6 +36,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   logout: async () => {
     setAccessToken(null);
+    queryClient.clear();
     await secureStorage.clear([
       STORAGE_KEYS.ACCESS_TOKEN,
       STORAGE_KEYS.REFRESH_TOKEN,
