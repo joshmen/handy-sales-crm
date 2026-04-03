@@ -33,6 +33,13 @@ import { secureStorage } from '@/utils/storage';
 import { COLORS } from '@/utils/constants';
 import { database } from '@/db/database';
 import Toast from 'react-native-toast-message';
+import { ConfirmModal } from '@/components/ui';
+import { usePermissionDialogStore } from '@/stores/permissionDialogStore';
+
+function GlobalPermissionDialog() {
+  const { visible, title, message, confirmText, cancelText, handleConfirm, handleCancel } = usePermissionDialogStore();
+  return <ConfirmModal visible={visible} title={title} message={message} confirmText={confirmText} cancelText={cancelText} onConfirm={handleConfirm} onCancel={handleCancel} />;
+}
 // SyncLoadingScreen merged into AnimatedSplash (syncMode prop)
 
 const ONBOARDING_KEY = 'onboarding_complete';
@@ -146,6 +153,7 @@ export default function RootLayout() {
               />
             )}
             <Toast />
+            <GlobalPermissionDialog />
           </QueryProvider>
         </DatabaseProvider>
       </ErrorBoundary>

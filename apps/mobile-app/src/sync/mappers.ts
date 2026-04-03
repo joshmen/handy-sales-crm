@@ -15,23 +15,46 @@ interface ServerChanges {
   visitas?: any[];
   rutas?: any[];
   cobros?: any[];
+  preciosPorProducto?: any[];
+  descuentos?: any[];
+  promociones?: any[];
 }
 
-export function mapPullToWatermelon(
+// Build a map of server_id → local WDB id for deduplication
+async function buildServerIdMap(table: string): Promise<Map<number, string>> {
+  const records = await database.get(table).query().fetch();
+  const map = new Map<number, string>();
+  for (const r of records as any[]) {
+    const sid = r._raw?.server_id ?? r.serverId;
+    if (sid) map.set(Number(sid), r.id);
+  }
+  return map;
+}
+
+export async function mapPullToWatermelon(
   server: ServerChanges,
   lastPulledAt: number | null
-): SyncDatabaseChangeSet {
+): Promise<SyncDatabaseChangeSet> {
   const isFirstSync = !lastPulledAt;
 
+  // Pre-load lookup maps for entities created locally (prevents duplicates on pull)
+  const pedidoMap = await buildServerIdMap('pedidos');
+  const detalleMap = await buildServerIdMap('detalle_pedidos');
+  const cobroMap = await buildServerIdMap('cobros');
+  const visitaMap = await buildServerIdMap('visitas');
+  const clienteMap = await buildServerIdMap('clientes');
+  const rutaMap = await buildServerIdMap('rutas');
+  const rutaDetalleMap = await buildServerIdMap('ruta_detalles');
+
   return {
-    clientes: splitByOperation(server.clientes, isFirstSync, mapClienteToRaw),
+    clientes: splitByOperation(server.clientes, isFirstSync, (c) => mapClienteToRaw(c, clienteMap), clienteMap),
     productos: splitByOperation(server.productos, isFirstSync, mapProductoToRaw),
-    pedidos: splitByOperation(server.pedidos, isFirstSync, mapPedidoToRaw),
-    detalle_pedidos: extractDetallesPedido(server.pedidos, isFirstSync),
-    rutas: splitByOperation(server.rutas, isFirstSync, mapRutaToRaw),
-    ruta_detalles: extractDetallesRuta(server.rutas, isFirstSync),
-    visitas: splitByOperation(server.visitas, isFirstSync, mapVisitaToRaw),
-    cobros: splitByOperation(server.cobros, isFirstSync, mapCobroToRaw),
+    pedidos: splitByOperation(server.pedidos, isFirstSync, (p) => mapPedidoToRaw(p, pedidoMap, clienteMap), pedidoMap),
+    detalle_pedidos: extractDetallesPedido(server.pedidos, isFirstSync, detalleMap, pedidoMap),
+    rutas: splitByOperation(server.rutas, isFirstSync, (r) => mapRutaToRaw(r, rutaMap), rutaMap),
+    ruta_detalles: extractDetallesRuta(server.rutas, isFirstSync, rutaDetalleMap, rutaMap, clienteMap, pedidoMap),
+    visitas: splitByOperation(server.visitas, isFirstSync, (v) => mapVisitaToRaw(v, visitaMap, clienteMap), visitaMap),
+    cobros: splitByOperation(server.cobros, isFirstSync, (c) => mapCobroToRaw(c, cobroMap, clienteMap, pedidoMap), cobroMap),
     precios_por_producto: splitByOperation(server.preciosPorProducto, isFirstSync, mapPrecioPorProductoToRaw),
     descuentos: splitByOperation(server.descuentos, isFirstSync, mapDescuentoToRaw),
     promociones: splitByOperation(server.promociones, isFirstSync, mapPromocionToRaw),
@@ -42,7 +65,8 @@ export function mapPullToWatermelon(
 function splitByOperation(
   items: any[] | undefined,
   _isFirstSync: boolean,
-  mapper: (item: any) => DirtyRaw
+  mapper: (item: any) => DirtyRaw,
+  serverMap?: Map<number, string>
 ): { created: DirtyRaw[]; updated: DirtyRaw[]; deleted: string[] } {
   if (!items?.length) return { created: [], updated: [], deleted: [] };
 
@@ -51,7 +75,8 @@ function splitByOperation(
 
   for (const item of items) {
     if (item.isDeleted || item.operation === 2) {
-      deleted.push(String(item.id));
+      // Resolve server ID → local WDB ID for correct deletion
+      deleted.push(serverMap?.get(item.id) || String(item.id));
     } else {
       // All records go as 'updated' — sendCreatedAsUpdated: true
       // WDB creates records that don't exist locally, updates those that do
@@ -64,9 +89,9 @@ function splitByOperation(
 
 // ── Entity Mappers (server DTO → WatermelonDB raw) ──
 
-function mapClienteToRaw(c: any): DirtyRaw {
+function mapClienteToRaw(c: any, clienteMap: Map<number, string>): DirtyRaw {
   return {
-    id: String(c.id),
+    id: clienteMap.get(c.id) || String(c.id),
     server_id: c.id,
     nombre: c.nombre || '',
     nombre_comercial: c.nombreComercial ?? null,
@@ -117,11 +142,11 @@ function mapProductoToRaw(p: any): DirtyRaw {
   };
 }
 
-function mapPedidoToRaw(p: any): DirtyRaw {
+function mapPedidoToRaw(p: any, pedidoMap: Map<number, string>, clienteMap: Map<number, string>): DirtyRaw {
   return {
-    id: String(p.id),
+    id: pedidoMap.get(p.id) || String(p.id),
     server_id: p.id,
-    cliente_id: String(p.clienteId),
+    cliente_id: clienteMap.get(p.clienteId) || String(p.clienteId),
     cliente_server_id: p.clienteId,
     usuario_id: 0,
     numero_pedido: p.numeroPedido ?? null,
@@ -142,7 +167,9 @@ function mapPedidoToRaw(p: any): DirtyRaw {
 
 function extractDetallesPedido(
   pedidos: any[] | undefined,
-  isFirstSync: boolean
+  isFirstSync: boolean,
+  detalleMap: Map<number, string>,
+  pedidoMap: Map<number, string>
 ): { created: DirtyRaw[]; updated: DirtyRaw[]; deleted: string[] } {
   if (!pedidos?.length) return { created: [], updated: [], deleted: [] };
 
@@ -155,9 +182,9 @@ function extractDetallesPedido(
 
     for (const d of pedido.detalles) {
       const raw: DirtyRaw = {
-        id: String(d.id),
+        id: detalleMap.get(d.id) || String(d.id),
         server_id: d.id,
-        pedido_id: String(pedido.id),
+        pedido_id: pedidoMap.get(pedido.id) || String(pedido.id),
         producto_id: String(d.productoId),
         producto_server_id: d.productoId,
         producto_nombre: d.nombre ?? '',
@@ -178,9 +205,9 @@ function extractDetallesPedido(
   return { created, updated, deleted: [] };
 }
 
-function mapRutaToRaw(r: any): DirtyRaw {
+function mapRutaToRaw(r: any, rutaMap: Map<number, string>): DirtyRaw {
   return {
-    id: String(r.id),
+    id: rutaMap.get(r.id) || String(r.id),
     server_id: r.id,
     nombre: r.nombre || '',
     fecha: toTimestamp(r.fecha),
@@ -201,7 +228,11 @@ function mapRutaToRaw(r: any): DirtyRaw {
 
 function extractDetallesRuta(
   rutas: any[] | undefined,
-  isFirstSync: boolean
+  isFirstSync: boolean,
+  rutaDetalleMap: Map<number, string>,
+  rutaMap: Map<number, string>,
+  clienteMap: Map<number, string>,
+  pedidoMap: Map<number, string>
 ): { created: DirtyRaw[]; updated: DirtyRaw[]; deleted: string[] } {
   if (!rutas?.length) return { created: [], updated: [], deleted: [] };
 
@@ -214,13 +245,13 @@ function extractDetallesRuta(
 
     for (const d of ruta.detalles) {
       const raw: DirtyRaw = {
-        id: String(d.id),
+        id: rutaDetalleMap.get(d.id) || String(d.id),
         server_id: d.id,
-        ruta_id: String(ruta.id),
-        cliente_id: String(d.clienteId),
+        ruta_id: rutaMap.get(ruta.id) || String(ruta.id),
+        cliente_id: clienteMap.get(d.clienteId) || String(d.clienteId),
         cliente_server_id: d.clienteId,
         orden: d.ordenVisita ?? 0,
-        pedido_id: d.pedidoId ? String(d.pedidoId) : null,
+        pedido_id: d.pedidoId ? (pedidoMap.get(d.pedidoId) || String(d.pedidoId)) : null,
         estado: d.estado ?? 0,
         hora_llegada: toTimestamp(d.horaLlegadaReal),
         hora_salida: toTimestamp(d.horaSalidaReal),
@@ -243,11 +274,11 @@ function extractDetallesRuta(
   return { created, updated, deleted: [] };
 }
 
-function mapVisitaToRaw(v: any): DirtyRaw {
+function mapVisitaToRaw(v: any, visitaMap: Map<number, string>, clienteMap: Map<number, string>): DirtyRaw {
   return {
-    id: String(v.id),
+    id: visitaMap.get(v.id) || String(v.id),
     server_id: v.id,
-    cliente_id: String(v.clienteId),
+    cliente_id: clienteMap.get(v.clienteId) || String(v.clienteId),
     cliente_server_id: v.clienteId,
     usuario_id: 0,
     ruta_id: null,
@@ -266,14 +297,14 @@ function mapVisitaToRaw(v: any): DirtyRaw {
   };
 }
 
-function mapCobroToRaw(c: any): DirtyRaw {
+function mapCobroToRaw(c: any, cobroMap: Map<number, string>, clienteMap: Map<number, string>, pedidoMap: Map<number, string>): DirtyRaw {
   return {
-    id: String(c.id),
+    id: cobroMap.get(c.id) || String(c.id),
     server_id: c.id,
-    cliente_id: String(c.clienteId),
+    cliente_id: clienteMap.get(c.clienteId) || String(c.clienteId),
     cliente_server_id: c.clienteId,
     usuario_id: 0,
-    pedido_id: c.pedidoId ? String(c.pedidoId) : null,
+    pedido_id: c.pedidoId ? (pedidoMap.get(c.pedidoId) || String(c.pedidoId)) : null,
     monto: c.monto ?? 0,
     metodo_pago: c.metodoPago ?? 0,
     referencia: c.referencia ?? null,

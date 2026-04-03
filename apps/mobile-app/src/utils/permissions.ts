@@ -8,27 +8,23 @@
  * Each helper checks if the permission is already granted — if so,
  * it skips the dialog entirely and returns true.
  */
-import { Alert, Platform, PermissionsAndroid } from 'react-native';
+import { Platform, PermissionsAndroid } from 'react-native';
 import * as Location from 'expo-location';
+import { usePermissionDialogStore } from '@/stores/permissionDialogStore';
 
 // ---------------------------------------------------------------------------
-// Core dialog utility
+// Core dialog utility — uses custom ConfirmModal via global store
 // ---------------------------------------------------------------------------
 
 /**
- * Shows an Alert explaining why a permission is needed.
+ * Shows a custom ConfirmModal explaining why a permission is needed.
  * Returns `true` if the user taps "Permitir", `false` for "Ahora no".
  */
 export function showPrePermissionDialog(
   title: string,
   message: string,
 ): Promise<boolean> {
-  return new Promise((resolve) => {
-    Alert.alert(title, message, [
-      { text: 'Ahora no', style: 'cancel', onPress: () => resolve(false) },
-      { text: 'Permitir', onPress: () => resolve(true) },
-    ]);
-  });
+  return usePermissionDialogStore.getState().show(title, message);
 }
 
 // ---------------------------------------------------------------------------

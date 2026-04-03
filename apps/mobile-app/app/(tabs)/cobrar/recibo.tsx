@@ -422,13 +422,9 @@ const styles = StyleSheet.create({
 
   // Action buttons
   actions: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    gap: 8,
-    padding: 16,
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingTop: 12,
     paddingBottom: 32,
     backgroundColor: '#ffffff',
     borderTopWidth: 1,

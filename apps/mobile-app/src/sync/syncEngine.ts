@@ -98,7 +98,7 @@ export async function performSync(options?: SyncOptions): Promise<void> {
         }
 
         const timestamp = new Date(serverTimestamp).getTime();
-        const changes = mapPullToWatermelon(serverChanges, lastPulledAt ?? null);
+        const changes = await mapPullToWatermelon(serverChanges, lastPulledAt ?? null);
 
         if (__DEV__) console.log('[Sync] Mapped changes for', Object.keys(changes).length, 'tables');
 
