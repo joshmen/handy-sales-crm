@@ -187,10 +187,10 @@ export function VendedorDashboard() {
       </Animated.View>
 
       {/* Metas — compact inline cards */}
-      {metas.length > 0 && (
-        <Animated.View entering={FadeInDown.delay(280).duration(400)}>
-          <Text style={styles.sectionLabel}>MIS METAS</Text>
-          {metas.map((meta: any) => {
+      <Animated.View entering={FadeInDown.delay(280).duration(400)}>
+        <Text style={styles.sectionLabel}>MIS METAS</Text>
+        {metas.length > 0 ? (
+          metas.map((meta: any) => {
             const isVentas = meta.tipo === 'ventas';
             const progressPct = `${Math.min(100, meta.porcentaje)}%`;
             const color = meta.porcentaje >= 100 ? '#16a34a' : isVentas ? COLORS.salesGreen : '#2563eb';
@@ -219,9 +219,16 @@ export function VendedorDashboard() {
                 </View>
               </View>
             );
-          })}
-        </Animated.View>
-      )}
+          })
+        ) : (
+          <View style={styles.metaCard}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Target size={16} color="#94a3b8" />
+              <Text style={{ fontSize: 13, color: '#94a3b8' }}>Sin metas asignadas</Text>
+            </View>
+          </View>
+        )}
+      </Animated.View>
 
       {/* Route Progress */}
       <Animated.View entering={FadeInDown.delay(300).duration(400)}>
