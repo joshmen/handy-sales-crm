@@ -192,7 +192,7 @@ export default function CrearClienteScreen() {
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.headerBack}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.headerBack} accessibilityLabel="Volver" accessibilityRole="button">
           <ChevronLeft size={24} color={COLORS.headerText} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{isEditing ? 'Editar Cliente' : 'Crear Cliente'}</Text>
@@ -205,7 +205,7 @@ export default function CrearClienteScreen() {
 
         <View style={styles.field}>
           {location ? (
-            <TouchableOpacity style={styles.gpsPreview} onPress={() => setShowMapModal(true)} activeOpacity={0.8}>
+            <TouchableOpacity style={styles.gpsPreview} onPress={() => setShowMapModal(true)} activeOpacity={0.8} accessibilityLabel="Cambiar ubicación en mapa" accessibilityRole="button">
               <View style={styles.gpsPreviewIcon}>
                 <MapPin size={20} color={COLORS.success} />
               </View>
@@ -216,7 +216,7 @@ export default function CrearClienteScreen() {
               <Text style={{ fontSize: 12, color: COLORS.primary, fontWeight: '600' }}>Cambiar</Text>
             </TouchableOpacity>
           ) : (
-            <TouchableOpacity style={styles.gpsAddBtn} onPress={() => setShowMapModal(true)} activeOpacity={0.8}>
+            <TouchableOpacity style={styles.gpsAddBtn} onPress={() => setShowMapModal(true)} activeOpacity={0.8} accessibilityLabel="Buscar en mapa" accessibilityRole="button">
               <MapPin size={18} color={COLORS.primary} />
               <Text style={[styles.gpsAddText, { color: COLORS.primary }]}>Buscar en mapa</Text>
             </TouchableOpacity>
@@ -229,13 +229,13 @@ export default function CrearClienteScreen() {
 
         <View style={styles.field}>
           <Text style={styles.label}>Calle *</Text>
-          <TextInput style={[styles.input, touched && errors.direccion && styles.inputError]} placeholder="Nombre de la calle" placeholderTextColor={COLORS.textTertiary} value={direccion} onChangeText={setDireccion} />
+          <TextInput style={[styles.input, touched && errors.direccion && styles.inputError]} placeholder="Nombre de la calle" placeholderTextColor={COLORS.textTertiary} value={direccion} onChangeText={setDireccion} accessibilityLabel="Calle" />
           {touched && <FieldError message={errors.direccion} />}
         </View>
 
         <View style={styles.field}>
           <Text style={styles.label}>Número exterior *</Text>
-          <TextInput style={[styles.input, { width: 120 }, touched && errors.numeroExterior && styles.inputError]} placeholder="# Ext" placeholderTextColor={COLORS.textTertiary} maxLength={20} value={numeroExterior} onChangeText={setNumeroExterior} />
+          <TextInput style={[styles.input, { width: 120 }, touched && errors.numeroExterior && styles.inputError]} placeholder="# Ext" placeholderTextColor={COLORS.textTertiary} maxLength={20} value={numeroExterior} onChangeText={setNumeroExterior} accessibilityLabel="Número exterior" />
           {touched && <FieldError message={errors.numeroExterior} />}
         </View>
 
@@ -244,25 +244,25 @@ export default function CrearClienteScreen() {
 
         <View style={styles.field}>
           <Text style={styles.label}>Nombre *</Text>
-          <TextInput style={[styles.input, touched && errors.nombre && styles.inputError]} placeholder="Nombre del cliente o negocio" placeholderTextColor={COLORS.textTertiary} value={nombre} onChangeText={setNombre} />
+          <TextInput style={[styles.input, touched && errors.nombre && styles.inputError]} placeholder="Nombre del cliente o negocio" placeholderTextColor={COLORS.textTertiary} value={nombre} onChangeText={setNombre} accessibilityLabel="Nombre del cliente" />
           {touched && <FieldError message={errors.nombre} />}
         </View>
 
         <View style={styles.field}>
           <Text style={styles.label}>Teléfono</Text>
-          <TextInput style={[styles.input, touched && errors.telefono && styles.inputError]} placeholder="10 dígitos (opcional)" placeholderTextColor={COLORS.textTertiary} keyboardType="phone-pad" maxLength={10} value={telefono} onChangeText={setTelefono} />
+          <TextInput style={[styles.input, touched && errors.telefono && styles.inputError]} placeholder="10 dígitos (opcional)" placeholderTextColor={COLORS.textTertiary} keyboardType="phone-pad" maxLength={10} value={telefono} onChangeText={setTelefono} accessibilityLabel="Teléfono" />
           {touched && <FieldError message={errors.telefono} />}
         </View>
 
         <View style={styles.field}>
           <Text style={styles.label}>Correo electrónico</Text>
-          <TextInput style={[styles.input, touched && errors.correo && styles.inputError]} placeholder="correo@ejemplo.com (opcional)" placeholderTextColor={COLORS.textTertiary} keyboardType="email-address" autoCapitalize="none" value={correo} onChangeText={setCorreo} />
+          <TextInput style={[styles.input, touched && errors.correo && styles.inputError]} placeholder="correo@ejemplo.com (opcional)" placeholderTextColor={COLORS.textTertiary} keyboardType="email-address" autoCapitalize="none" value={correo} onChangeText={setCorreo} accessibilityLabel="Correo electrónico" />
           {touched && <FieldError message={errors.correo} />}
         </View>
 
         <View style={styles.field}>
           <Text style={styles.label}>RFC</Text>
-          <TextInput style={[styles.input, touched && errors.rfc && styles.inputError]} placeholder="12 o 13 caracteres (opcional)" placeholderTextColor={COLORS.textTertiary} autoCapitalize="characters" maxLength={13} value={rfc} onChangeText={setRfc} />
+          <TextInput style={[styles.input, touched && errors.rfc && styles.inputError]} placeholder="12 o 13 caracteres (opcional)" placeholderTextColor={COLORS.textTertiary} autoCapitalize="characters" maxLength={13} value={rfc} onChangeText={setRfc} accessibilityLabel="RFC" />
           {touched && <FieldError message={errors.rfc} />}
         </View>
 
@@ -288,6 +288,8 @@ export default function CrearClienteScreen() {
           onPress={handleGuardar}
           disabled={crearMutation.isPending}
           activeOpacity={0.8}
+          accessibilityLabel={isEditing ? 'Actualizar Cliente' : 'Guardar Cliente'}
+          accessibilityRole="button"
         >
           <Save size={18} color={COLORS.headerText} />
           <Text style={styles.submitButtonText}>

@@ -273,6 +273,8 @@ export default function ReciboScreen() {
             }}
             disabled={printing}
             activeOpacity={0.8}
+            accessibilityLabel="Imprimir recibo"
+            accessibilityRole="button"
           >
             <Printer size={18} color="#ffffff" />
             <Text style={styles.btnPrintText}>{printing ? 'Imprimiendo...' : 'Imprimir'}</Text>
@@ -282,12 +284,14 @@ export default function ReciboScreen() {
             onPress={handleShare}
             disabled={sharing}
             activeOpacity={0.8}
+            accessibilityLabel="Compartir recibo"
+            accessibilityRole="button"
           >
             <Share2 size={18} color={COLORS.headerBg} />
             <Text style={styles.btnShareText}>{sharing ? 'Compartiendo...' : 'Compartir'}</Text>
           </TouchableOpacity>
         </View>
-        <TouchableOpacity style={styles.btnDone} onPress={handleDone} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.btnDone} onPress={handleDone} activeOpacity={0.8} accessibilityLabel="Listo" accessibilityRole="button">
           <Text style={styles.btnDoneText}>Listo</Text>
         </TouchableOpacity>
       </View>

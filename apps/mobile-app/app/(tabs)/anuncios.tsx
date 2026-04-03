@@ -81,7 +81,7 @@ export default function AnunciosScreen() {
           <PriorityIcon prioridad={item.prioridad} />
           <Text style={[styles.cardTitle, { color: colors.text }]}>{item.titulo}</Text>
           {item.isDismissible && (
-            <TouchableOpacity onPress={() => handleDismiss(item.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <TouchableOpacity onPress={() => handleDismiss(item.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Descartar anuncio" accessibilityRole="button">
               <X size={16} color="#94a3b8" />
             </TouchableOpacity>
           )}
@@ -95,7 +95,7 @@ export default function AnunciosScreen() {
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity onPress={() => router.back()} style={{ width: 32, alignItems: 'center' }}>
+        <TouchableOpacity onPress={() => router.back()} style={{ width: 32, alignItems: 'center' }} accessibilityLabel="Volver" accessibilityRole="button">
           <ChevronLeft size={22} color={COLORS.headerText} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Anuncios</Text>

@@ -221,7 +221,7 @@ export default function ParadaDetailScreen() {
     <View style={styles.container}>
     {/* Blue Header */}
     <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
-      <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+      <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} accessibilityLabel="Volver" accessibilityRole="button">
         <ChevronLeft size={22} color={COLORS.headerText} />
       </TouchableOpacity>
       <Text style={styles.blueHeaderTitle}>Parada #{stop.orden}</Text>
@@ -243,6 +243,8 @@ export default function ParadaDetailScreen() {
             if (!location) return;
             setShowGpsModal(true);
           }}
+          accessibilityLabel="Agregar ubicación GPS del cliente"
+          accessibilityRole="button"
         >
           <MapPin size={16} color="#ef4444" />
           <Text style={styles.gpsBannerText}>Este cliente no tiene ubicacion GPS</Text>
@@ -334,6 +336,8 @@ export default function ParadaDetailScreen() {
               style={[styles.outlineButtonGray, { flex: 1 }]}
               onPress={handleLlamar}
               activeOpacity={0.7}
+              accessibilityLabel="Llamar al cliente"
+              accessibilityRole="button"
             >
               <Phone size={16} color="#64748b" />
               <Text style={styles.outlineButtonGrayText}>Llamar</Text>
@@ -344,6 +348,8 @@ export default function ParadaDetailScreen() {
               style={[styles.outlineButtonGray, { flex: 1 }]}
               onPress={handleNavegar}
               activeOpacity={0.7}
+              accessibilityLabel="Navegar al cliente"
+              accessibilityRole="button"
             >
               <Navigation size={16} color="#64748b" />
               <Text style={styles.outlineButtonGrayText}>Navegar</Text>
@@ -418,6 +424,8 @@ export default function ParadaDetailScreen() {
             style={styles.outlineButtonRed}
             onPress={() => setShowNoEntrega(true)}
             activeOpacity={0.7}
+            accessibilityLabel="No se entregó"
+            accessibilityRole="button"
           >
             <CircleAlert size={16} color="#E11D48" />
             <Text style={styles.outlineButtonRedText}>No se entregó</Text>
@@ -486,6 +494,7 @@ export default function ParadaDetailScreen() {
               multiline
               numberOfLines={3}
               textAlignVertical="top"
+              accessibilityLabel="Motivo de no visita"
             />
             {noVisitoReason.length > 0 && noVisitoReason.length < 10 && (
               <Text style={{ fontSize: 11, color: '#94a3b8', marginTop: -14, marginBottom: 10, alignSelf: 'flex-end' }}>
@@ -543,6 +552,7 @@ export default function ParadaDetailScreen() {
               multiline
               numberOfLines={3}
               textAlignVertical="top"
+              accessibilityLabel="Motivo de no entrega"
             />
             {noEntregaReason.length > 0 && noEntregaReason.length < 10 && (
               <Text style={{ fontSize: 11, color: '#94a3b8', marginTop: -14, marginBottom: 10, alignSelf: 'flex-end' }}>

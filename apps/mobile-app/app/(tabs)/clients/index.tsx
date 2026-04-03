@@ -91,7 +91,7 @@ export default function ClientsListScreen() {
     <View style={styles.container}>
       {/* Header with safe area */}
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} accessibilityLabel="Volver" accessibilityRole="button">
           <ChevronLeft size={22} color={COLORS.headerText} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Clientes</Text>
@@ -162,6 +162,8 @@ export default function ClientsListScreen() {
         style={[styles.fab, { bottom: 24 + insets.bottom }]}
         onPress={() => router.push('/(tabs)/clients/crear' as any)}
         activeOpacity={0.85}
+        accessibilityLabel="Nuevo cliente"
+        accessibilityRole="button"
       >
         <Plus size={24} color={COLORS.headerText} />
       </TouchableOpacity>

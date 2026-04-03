@@ -51,12 +51,16 @@ export function SearchBar({
         onChangeText={handleChange}
         autoCapitalize="none"
         autoCorrect={false}
+        accessibilityLabel="Buscar"
+        accessibilityHint="Escribe para filtrar"
       />
       {displayValue.length > 0 && (
         <TouchableOpacity
           onPress={handleClear}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           style={styles.clearButton}
+          accessibilityLabel="Limpiar búsqueda"
+          accessibilityRole="button"
         >
           <X size={16} color="#94a3b8" />
         </TouchableOpacity>

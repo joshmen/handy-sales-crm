@@ -42,7 +42,7 @@ export default function ConfiguracionScreen() {
     >
       {/* Blue Header */}
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity onPress={() => router.navigate('/(tabs)/mas' as any)} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => router.navigate('/(tabs)/mas' as any)} style={styles.backBtn} accessibilityLabel="Volver" accessibilityRole="button">
           <ChevronLeft size={22} color={COLORS.headerText} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Configuración</Text>
@@ -65,6 +65,8 @@ export default function ConfiguracionScreen() {
               onValueChange={togglePush}
               trackColor={{ false: '#e2e8f0', true: '#86efac' }}
               thumbColor={pushEnabled ? '#16a34a' : '#f1f5f9'}
+              accessibilityLabel="Notificaciones push"
+              accessibilityRole="switch"
             />
           </View>
         </Card>
@@ -85,6 +87,8 @@ export default function ConfiguracionScreen() {
               onValueChange={toggleSync}
               trackColor={{ false: '#e2e8f0', true: '#86efac' }}
               thumbColor={autoSync ? '#16a34a' : '#f1f5f9'}
+              accessibilityLabel="Sincronización automática"
+              accessibilityRole="switch"
             />
           </View>
         </Card>

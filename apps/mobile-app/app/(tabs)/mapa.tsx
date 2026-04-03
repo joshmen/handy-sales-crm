@@ -334,6 +334,8 @@ function MapaScreenContent() {
             style={[styles.centerBtn, { top: 12, right: 12 }]}
             onPress={handleCenterOnMe}
             activeOpacity={0.8}
+            accessibilityLabel="Centrar en mi ubicación"
+            accessibilityRole="button"
           >
             <Locate size={20} color={COLORS.primary} />
           </TouchableOpacity>

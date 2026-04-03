@@ -21,6 +21,7 @@ export function Badge({
     <View
       className={`rounded-full ${paddingClass}`}
       style={{ backgroundColor: bgColor }}
+      accessibilityRole="text"
     >
       <Text className={`font-medium ${textClass}`} style={{ color }}>
         {label}

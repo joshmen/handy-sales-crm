@@ -179,6 +179,10 @@ export function getDeepLinkFromNotification(
     case 'route.published':
     case 'visit.reminder':
       return '/(tabs)/ruta';
+    case 'client.update':
+      return safeEntityId ? `/(tabs)/clients/${safeEntityId}` : '/(tabs)/clients';
+    case 'inventory.alert':
+      return '/(tabs)/inventario';
     case 'sync.required':
       return null; // Triggers sync, no navigation
     default:

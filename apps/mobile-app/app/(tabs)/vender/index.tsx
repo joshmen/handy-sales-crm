@@ -123,6 +123,9 @@ export default function VenderListScreen() {
                 style={[styles.chip, isActive && styles.chipActive]}
                 onPress={() => setStatusFilter(filter.value)}
                 activeOpacity={0.7}
+                accessibilityLabel={`Filtro: ${filter.label}`}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isActive }}
               >
                 <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
                   {filter.label}
@@ -177,6 +180,8 @@ export default function VenderListScreen() {
         style={styles.fab}
         onPress={handleFabPress}
         activeOpacity={0.85}
+        accessibilityLabel="Nuevo pedido"
+        accessibilityRole="button"
       >
         <Plus size={24} color={COLORS.headerText} />
       </TouchableOpacity>
@@ -193,6 +198,8 @@ export default function VenderListScreen() {
             style={styles.orderTypeCard}
             onPress={() => handleOrderTypeSelect(0)}
             activeOpacity={0.85}
+            accessibilityLabel="Preventa"
+            accessibilityRole="button"
           >
             <ClipboardList size={24} color="#6b7280" />
             <View style={styles.orderTypeInfo}>
@@ -205,6 +212,8 @@ export default function VenderListScreen() {
             style={styles.orderTypeCard}
             onPress={() => handleOrderTypeSelect(1)}
             activeOpacity={0.85}
+            accessibilityLabel="Venta Directa"
+            accessibilityRole="button"
           >
             <Truck size={24} color="#6b7280" />
             <View style={styles.orderTypeInfo}>

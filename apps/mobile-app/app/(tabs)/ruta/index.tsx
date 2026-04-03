@@ -78,7 +78,7 @@ export default function RutaScreen() {
     return (
       <View style={styles.container}>
         <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-          <TouchableOpacity onPress={() => router.navigate('/(tabs)' as any)} style={styles.backBtn}>
+          <TouchableOpacity onPress={() => router.navigate('/(tabs)' as any)} style={styles.backBtn} accessibilityLabel="Volver" accessibilityRole="button">
             <ChevronLeft size={22} color={COLORS.headerText} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Ruta del Día</Text>
@@ -99,13 +99,15 @@ export default function RutaScreen() {
     <View style={styles.container}>
       {/* Blue Header — back + title + map icon */}
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity onPress={() => router.navigate('/(tabs)' as any)} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => router.navigate('/(tabs)' as any)} style={styles.backBtn} accessibilityLabel="Volver" accessibilityRole="button">
           <ChevronLeft size={22} color={COLORS.headerText} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Ruta del Día</Text>
         <TouchableOpacity
           onPress={() => router.push('/(tabs)/mapa?mode=route' as any)}
           style={styles.backBtn}
+          accessibilityLabel="Ver mapa de ruta"
+          accessibilityRole="button"
         >
           <Map size={22} color={COLORS.headerText} />
         </TouchableOpacity>
@@ -128,6 +130,8 @@ export default function RutaScreen() {
                 style={styles.acceptBtn}
                 disabled={accepting}
                 activeOpacity={0.8}
+                accessibilityLabel="Aceptar ruta"
+                accessibilityRole="button"
                 onPress={async () => {
                   setAccepting(true);
                   try {
@@ -200,6 +204,8 @@ export default function RutaScreen() {
                   style={styles.stopItem}
                   onPress={() => router.push(`/(tabs)/ruta/parada/${stop.id}` as any)}
                   activeOpacity={0.7}
+                  accessibilityLabel={`Parada ${stop.orden}: ${clientNames.get(stop.clienteId) || 'Cliente'}, ${statusName}`}
+                  accessibilityRole="button"
                 >
                   {/* Numbered dot */}
                   <View style={[

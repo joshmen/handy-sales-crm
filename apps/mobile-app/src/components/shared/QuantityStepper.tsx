@@ -20,6 +20,8 @@ export function QuantityStepper({ value, onChange, min = 0, max = 999 }: Quantit
         onPress={() => canDecrement && onChange(value - 1)}
         activeOpacity={0.7}
         disabled={!canDecrement}
+        accessibilityLabel="Disminuir cantidad"
+        accessibilityRole="button"
       >
         <Minus size={16} color={canDecrement ? COLORS.primary : '#cbd5e1'} />
       </TouchableOpacity>
@@ -31,6 +33,8 @@ export function QuantityStepper({ value, onChange, min = 0, max = 999 }: Quantit
         onPress={() => canIncrement && onChange(value + 1)}
         activeOpacity={0.7}
         disabled={!canIncrement}
+        accessibilityLabel="Aumentar cantidad"
+        accessibilityRole="button"
       >
         <Plus size={16} color={canIncrement ? '#ffffff' : '#cbd5e1'} />
       </TouchableOpacity>

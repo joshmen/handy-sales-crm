@@ -196,6 +196,8 @@ function MasScreenContent() {
             style={styles.menuItem}
             onPress={item.onPress}
             activeOpacity={0.7}
+            accessibilityLabel={item.label}
+            accessibilityRole="button"
           >
             <View style={[styles.menuIcon, { backgroundColor: item.iconBg }]}>
               {item.icon}
@@ -215,6 +217,8 @@ function MasScreenContent() {
             style={styles.menuItem}
             onPress={item.onPress}
             activeOpacity={0.7}
+            accessibilityLabel={item.label}
+            accessibilityRole="button"
           >
             <View style={[styles.menuIcon, { backgroundColor: item.iconBg }]}>
               {item.icon}
@@ -231,6 +235,8 @@ function MasScreenContent() {
           style={styles.logoutItem}
           onPress={handleLogout}
           activeOpacity={0.7}
+          accessibilityLabel="Cerrar Sesión"
+          accessibilityRole="button"
         >
           <LogOut size={20} color={COLORS.headerText} />
           <Text style={styles.logoutLabel}>Cerrar Sesión</Text>

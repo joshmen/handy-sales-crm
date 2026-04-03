@@ -127,7 +127,7 @@ export function usePushNotifications() {
         }
 
         const deepLink = getDeepLinkFromNotification(notification);
-        if (deepLink) {
+        if (deepLink && deepLink.startsWith('/(')) {
           router.push(deepLink as any);
         }
       });

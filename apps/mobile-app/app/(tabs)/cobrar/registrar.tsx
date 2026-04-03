@@ -185,7 +185,7 @@ export default function RegistrarCobroScreen() {
     <KeyboardAvoidingView style={styles.container} behavior="padding" keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
       {/* Blue Header */}
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} accessibilityLabel="Volver" accessibilityRole="button">
           <ChevronLeft size={22} color={COLORS.headerText} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Registrar Cobro</Text>
@@ -226,7 +226,7 @@ export default function RegistrarCobroScreen() {
                 <Text style={styles.clientMeta}>{selectedClient.telefono}</Text>
               ) : null}
             </View>
-            <TouchableOpacity onPress={handleClearClient} style={styles.changeClientBtn}>
+            <TouchableOpacity onPress={handleClearClient} style={styles.changeClientBtn} accessibilityLabel="Cambiar cliente" accessibilityRole="button">
               <X size={16} color="#64748b" />
             </TouchableOpacity>
           </View>
@@ -243,9 +243,10 @@ export default function RegistrarCobroScreen() {
                 value={searchText}
                 onChangeText={setSearchText}
                 autoFocus
+                accessibilityLabel="Buscar cliente"
               />
               {searchText.length > 0 && (
-                <TouchableOpacity onPress={() => setSearchText('')}>
+                <TouchableOpacity onPress={() => setSearchText('')} accessibilityLabel="Limpiar búsqueda" accessibilityRole="button">
                   <X size={16} color="#94a3b8" />
                 </TouchableOpacity>
               )}
@@ -283,6 +284,8 @@ export default function RegistrarCobroScreen() {
             style={styles.pickerTrigger}
             onPress={() => setPickerOpen(true)}
             activeOpacity={0.7}
+            accessibilityLabel="Seleccionar cliente"
+            accessibilityRole="button"
           >
             <View style={styles.pickerTriggerIcon}>
               <User size={18} color="#94a3b8" />
@@ -303,6 +306,7 @@ export default function RegistrarCobroScreen() {
               placeholderTextColor="#cbd5e1"
               keyboardType="decimal-pad"
               value={monto}
+              accessibilityLabel="Monto a cobrar"
               onChangeText={(text) => {
                 const cleaned = text.replace(/[^0-9.]/g, '');
                 if (cleaned.match(/^\d*\.?\d{0,2}$/)) {
@@ -331,6 +335,9 @@ export default function RegistrarCobroScreen() {
                 style={[styles.metodoCard, isSelected && styles.metodoCardSelected]}
                 onPress={() => setMetodoPago(keyNum)}
                 activeOpacity={0.7}
+                accessibilityLabel={`Método de pago: ${label}`}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isSelected }}
               >
                 {METODO_ICONS[keyNum]}
                 <Text style={[styles.metodoLabel, isSelected && styles.metodoLabelSelected]}>
@@ -355,6 +362,7 @@ export default function RegistrarCobroScreen() {
           value={referencia}
           onChangeText={setReferencia}
           onFocus={(e) => scrollToInput(e.target)}
+          accessibilityLabel="Referencia"
         />
 
         {/* Notas */}
@@ -369,6 +377,7 @@ export default function RegistrarCobroScreen() {
           onChangeText={setNotas}
           textAlignVertical="top"
           onFocus={(e) => scrollToInput(e.target)}
+          accessibilityLabel="Notas"
         />
 
         {/* Receipt Photo */}
@@ -379,6 +388,8 @@ export default function RegistrarCobroScreen() {
             <TouchableOpacity
               style={styles.receiptRemove}
               onPress={() => setReceiptPhoto(null)}
+              accessibilityLabel="Eliminar comprobante"
+              accessibilityRole="button"
             >
               <X size={14} color="#ffffff" />
             </TouchableOpacity>
@@ -391,6 +402,8 @@ export default function RegistrarCobroScreen() {
               if (uri) setReceiptPhoto(uri);
             }}
             activeOpacity={0.7}
+            accessibilityLabel="Tomar foto del comprobante"
+            accessibilityRole="button"
           >
             <Camera size={24} color={COLORS.button} />
             <Text style={styles.receiptBtnText}>Tomar foto del comprobante</Text>

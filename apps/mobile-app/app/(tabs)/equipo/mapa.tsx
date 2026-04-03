@@ -58,7 +58,7 @@ function MapaEquipoContent() {
     <View style={styles.container}>
       {/* Blue Header */}
       <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity onPress={() => router.back()} style={{ width: 32, alignItems: 'center' as const }}>
+        <TouchableOpacity onPress={() => router.back()} style={{ width: 32, alignItems: 'center' as const }} accessibilityLabel="Volver" accessibilityRole="button">
           <ChevronLeft size={22} color={COLORS.headerText} />
         </TouchableOpacity>
         <Text style={styles.blueHeaderTitle}>Mapa del Equipo</Text>
@@ -93,6 +93,8 @@ function MapaEquipoContent() {
               <Pressable
                 style={styles.bottomCardContent}
                 onPress={() => router.push(`/(tabs)/equipo/vendedor/${u.usuarioId}` as any)}
+                accessibilityLabel={`Ver detalle de ${u.nombre}`}
+                accessibilityRole="button"
               >
                 <View style={styles.bottomAvatar}>
                   <Text style={styles.bottomAvatarText}>

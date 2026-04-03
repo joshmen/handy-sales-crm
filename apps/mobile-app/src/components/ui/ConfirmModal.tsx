@@ -68,6 +68,8 @@ export function ConfirmModal({
                 style={styles.cancelButton}
                 onPress={onCancel}
                 activeOpacity={0.7}
+                accessibilityLabel={cancelText}
+                accessibilityRole="button"
               >
                 <Text style={styles.cancelText}>{cancelText}</Text>
               </TouchableOpacity>
@@ -77,6 +79,8 @@ export function ConfirmModal({
               style={[styles.confirmButton, { backgroundColor: confirmBg }, cancelText === '' && { flex: 1 }]}
               onPress={onConfirm}
               activeOpacity={0.7}
+              accessibilityLabel={confirmText}
+              accessibilityRole="button"
             >
               <Text style={styles.confirmText}>{confirmText}</Text>
             </TouchableOpacity>

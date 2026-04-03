@@ -67,6 +67,8 @@ export default function HistorialRutasScreen() {
         style={styles.card}
         onPress={() => router.push(`/(tabs)/ruta` as any)}
         activeOpacity={0.7}
+        accessibilityLabel={`Ruta: ${item.nombre}, ${label}`}
+        accessibilityRole="button"
       >
         <View style={styles.cardRow}>
           <View style={[styles.iconCircle, { backgroundColor: color + '15' }]}>
@@ -90,7 +92,7 @@ export default function HistorialRutasScreen() {
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity onPress={() => router.back()} style={{ width: 32, alignItems: 'center' }}>
+        <TouchableOpacity onPress={() => router.back()} style={{ width: 32, alignItems: 'center' }} accessibilityLabel="Volver" accessibilityRole="button">
           <ChevronLeft size={22} color={COLORS.headerText} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Historial de Rutas</Text>

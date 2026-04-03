@@ -190,6 +190,9 @@ export default function VisitaActivaScreen() {
                   style={[styles.resultCard, isSelected && { borderColor: opt.color, backgroundColor: `${opt.color}10` }]}
                   onPress={() => setResultado(opt.value)}
                   activeOpacity={0.7}
+                  accessibilityLabel={`Resultado: ${opt.label}`}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isSelected }}
                 >
                   <Icon size={20} color={isSelected ? opt.color : '#94a3b8'} />
                   <Text style={[styles.resultLabel, isSelected && { color: opt.color }]}>
@@ -220,6 +223,7 @@ export default function VisitaActivaScreen() {
             value={notas}
             onChangeText={setNotas}
             textAlignVertical="top"
+            accessibilityLabel="Notas de la visita"
           />
         </Card>
         </Animated.View>
@@ -244,6 +248,8 @@ export default function VisitaActivaScreen() {
               <TouchableOpacity
                 style={styles.signatureRemove}
                 onPress={() => setSignatureUri(null)}
+                accessibilityLabel="Eliminar firma"
+                accessibilityRole="button"
               >
                 <X size={14} color="#ffffff" />
               </TouchableOpacity>

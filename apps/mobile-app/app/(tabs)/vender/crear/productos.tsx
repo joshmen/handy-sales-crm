@@ -3,7 +3,7 @@ import { View, Text, FlatList, TextInput, ScrollView, TouchableOpacity, StyleShe
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineProducts, useCategoriasProducto } from '@/hooks';
-import { useOrderDraftStore } from '@/stores';
+import { useOrderDraftStore, useOrderItemCount, useOrderTotal } from '@/stores';
 import { usePricingMap } from '@/hooks/usePricing';
 import { ProgressSteps } from '@/components/shared/ProgressSteps';
 import { QuantityStepper } from '@/components/shared/QuantityStepper';
@@ -46,7 +46,8 @@ export default function CrearPedidoStep2() {
   const updateQuantity = useOrderDraftStore(s => s.updateQuantity);
   const removeItem = useOrderDraftStore(s => s.removeItem);
   const tipoVenta = useOrderDraftStore(s => s.tipoVenta);
-  const { itemCount, total } = useOrderDraftStore();
+  const itemCount = useOrderItemCount();
+  const total = useOrderTotal();
   const isDirecta = tipoVenta === 1;
   const clienteListaPreciosId = useOrderDraftStore(s => s.clienteListaPreciosId);
   const { getPricing, loading: pricingLoading } = usePricingMap(clienteListaPreciosId);
@@ -126,6 +127,8 @@ export default function CrearPedidoStep2() {
                   style={styles.addButton}
                   onPress={() => addItem(item, 1, pricing.precioFinal)}
                   activeOpacity={0.7}
+                  accessibilityLabel={`Agregar ${item.nombre}`}
+                  accessibilityRole="button"
                 >
                   <Plus size={16} color="#ffffff" />
                   <Text style={styles.addButtonText}>Agregar</Text>
@@ -143,7 +146,7 @@ export default function CrearPedidoStep2() {
     <View style={styles.container}>
       {/* Blue Header */}
       <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity onPress={handleBack} style={styles.backBtn}>
+        <TouchableOpacity onPress={handleBack} style={styles.backBtn} accessibilityLabel="Volver" accessibilityRole="button">
           <ChevronLeft size={22} color={COLORS.headerText} />
         </TouchableOpacity>
         <Text style={styles.blueHeaderTitle}>Productos</Text>
@@ -161,6 +164,7 @@ export default function CrearPedidoStep2() {
             placeholderTextColor="#94a3b8"
             value={busqueda}
             onChangeText={setBusqueda}
+            accessibilityLabel="Buscar producto"
           />
         </View>
         {categorias.data && categorias.data.length > 0 && (
@@ -172,6 +176,9 @@ export default function CrearPedidoStep2() {
             <TouchableOpacity
               style={[styles.chip, !categoriaId && styles.chipActive]}
               onPress={() => setCategoriaId(undefined)}
+              accessibilityLabel="Filtro: Todos"
+              accessibilityRole="button"
+              accessibilityState={{ selected: !categoriaId }}
             >
               <Text style={[styles.chipText, !categoriaId && styles.chipTextActive]}>Todos</Text>
             </TouchableOpacity>
@@ -180,6 +187,9 @@ export default function CrearPedidoStep2() {
                 key={cat.id}
                 style={[styles.chip, categoriaId === cat.id && styles.chipActive]}
                 onPress={() => setCategoriaId(cat.id === categoriaId ? undefined : cat.id)}
+                accessibilityLabel={`Filtro: ${cat.nombre}`}
+                accessibilityRole="button"
+                accessibilityState={{ selected: categoriaId === cat.id }}
               >
                 <Text style={[styles.chipText, categoriaId === cat.id && styles.chipTextActive]}>
                   {cat.nombre}
@@ -211,8 +221,8 @@ export default function CrearPedidoStep2() {
       />
 
       <CartBar
-        itemCount={itemCount()}
-        total={total()}
+        itemCount={itemCount}
+        total={total}
         onPress={() => router.push('/(tabs)/vender/crear/revision' as any)}
         label="Revisar pedido"
       />

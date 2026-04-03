@@ -125,6 +125,8 @@ export default function CobrarScreen() {
             style={[styles.actionButton, styles.actionButtonPrimary]}
             onPress={() => router.push('/(tabs)/cobrar/registrar' as any)}
             activeOpacity={0.8}
+            accessibilityLabel="Registrar Cobro"
+            accessibilityRole="button"
           >
             <Text style={styles.actionButtonText}>Registrar Cobro</Text>
           </TouchableOpacity>
@@ -132,6 +134,8 @@ export default function CobrarScreen() {
             style={[styles.actionButton, styles.actionButtonOutline]}
             onPress={() => router.push('/(tabs)/cobrar/historial' as any)}
             activeOpacity={0.8}
+            accessibilityLabel="Historial de cobros"
+            accessibilityRole="button"
           >
             <Text style={[styles.actionButtonText, { color: COLORS.foreground }]}>Historial</Text>
           </TouchableOpacity>

@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet } from 
 import Toast from 'react-native-toast-message';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useOrderDraftStore } from '@/stores';
+import { useOrderDraftStore, useOrderSubtotal, useOrderImpuestos, useOrderTotal } from '@/stores';
 import { useAuthStore } from '@/stores';
 import { createPedidoOffline, createVentaDirectaOffline } from '@/db/actions';
 import { database } from '@/db/database';
@@ -47,11 +47,12 @@ export default function CrearPedidoStep3() {
     removeItem,
     setNotas,
     setMetodoPago,
-    subtotal,
-    impuestos,
-    total,
     reset,
   } = useOrderDraftStore();
+
+  const subtotal = useOrderSubtotal;
+  const impuestos = useOrderImpuestos();
+  const total = useOrderTotal();
 
   const isDirecta = tipoVenta === 1;
   const clienteListaPreciosId = useOrderDraftStore(s => s.clienteListaPreciosId);
@@ -76,7 +77,7 @@ export default function CrearPedidoStep3() {
       }));
 
       if (isDirecta) {
-        const montoTotal = total();
+        const montoTotal = total;
         const metodo = metodoPago ?? 0;
         const nombre = clienteNombre || 'Cliente';
         const { pedido } = await createVentaDirectaOffline(
@@ -150,7 +151,7 @@ export default function CrearPedidoStep3() {
     <View style={styles.container}>
       {/* Blue Header */}
       <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity onPress={() => router.back()} style={{ width: 32, alignItems: 'center' as const }}>
+        <TouchableOpacity onPress={() => router.back()} style={{ width: 32, alignItems: 'center' as const }} accessibilityLabel="Volver" accessibilityRole="button">
           <ChevronLeft size={22} color={COLORS.headerText} />
         </TouchableOpacity>
         <Text style={styles.blueHeaderTitle}>Revisar Pedido</Text>
@@ -225,15 +226,15 @@ export default function CrearPedidoStep3() {
         <Card className="mx-4 mt-3 mb-3">
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Subtotal</Text>
-            <Text style={styles.totalValue}>{formatCurrency(subtotal())}</Text>
+            <Text style={styles.totalValue}>{formatCurrency(subtotal)}</Text>
           </View>
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>IVA (16%)</Text>
-            <Text style={styles.totalValue}>{formatCurrency(impuestos())}</Text>
+            <Text style={styles.totalValue}>{formatCurrency(impuestos)}</Text>
           </View>
           <View style={styles.grandTotalRow}>
             <Text style={styles.grandTotalLabel}>Total</Text>
-            <Text style={styles.grandTotalValue}>{formatCurrency(total())}</Text>
+            <Text style={styles.grandTotalValue}>{formatCurrency(total)}</Text>
           </View>
         </Card>
 
@@ -254,6 +255,9 @@ export default function CrearPedidoStep3() {
                     ]}
                     onPress={() => setMetodoPago(option.value)}
                     activeOpacity={0.7}
+                    accessibilityLabel={`Método de pago: ${option.label}`}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: isSelected }}
                   >
                     <Icon
                       size={20}
@@ -287,6 +291,7 @@ export default function CrearPedidoStep3() {
             value={notas}
             onChangeText={setNotas}
             textAlignVertical="top"
+            accessibilityLabel="Notas del pedido"
           />
         </Card>
       </ScrollView>
@@ -307,8 +312,8 @@ export default function CrearPedidoStep3() {
         visible={showConfirmPedido}
         title={isDirecta ? 'Venta Directa' : 'Levantar Pedido'}
         message={isDirecta
-          ? `¿Confirmar venta directa para ${clienteNombre}?\n\nTotal: ${formatCurrency(total())}`
-          : `¿Confirmar pedido para ${clienteNombre}?\n\nTotal: ${formatCurrency(total())}`}
+          ? `¿Confirmar venta directa para ${clienteNombre}?\n\nTotal: ${formatCurrency(total)}`
+          : `¿Confirmar pedido para ${clienteNombre}?\n\nTotal: ${formatCurrency(total)}`}
         confirmText={isDirecta ? 'Cobrar' : 'Enviar'}
         onConfirm={executeEnviarPedido}
         onCancel={() => setShowConfirmPedido(false)}

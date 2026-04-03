@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Slot, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
+import * as Linking from 'expo-linking';
 import { View, ActivityIndicator, LogBox, BackHandler, Alert, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { DatabaseProvider } from '@nozbe/watermelondb/DatabaseProvider';
@@ -104,6 +105,16 @@ function AuthGate({ onReady }: { onReady: (firstSync?: boolean) => void }) {
       router.replace('/(tabs)');
     }
   }, [isAuthenticated, isLoading, onboardingDone,segments]);
+
+  // Handle cold-start deep links (e.g., from killed notification tap)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    Linking.getInitialURL().then((url) => {
+      if (!url) return;
+      const path = url.replace(/^handysuites:\/\//, '/');
+      if (path.startsWith('/(tabs)/')) router.push(path as any);
+    });
+  }, [isAuthenticated]);
 
   if (isLoading || onboardingDone === null) {
     return (

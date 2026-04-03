@@ -111,9 +111,30 @@ export const useOrderDraftStore = create<OrderDraftState>((set, get) => ({
   reset: () =>
     set({ clienteId: null, clienteServerId: null, clienteNombre: '', clienteListaPreciosId: null, items: [], notas: '', tipoVenta: 0, metodoPago: 0, fromParadaId: null }),
 
+  // Legacy computed functions — prefer selector hooks below
   itemCount: () => get().items.reduce((sum, i) => sum + i.cantidad, 0),
   subtotal: () =>
     get().items.reduce((sum, i) => sum + i.precioUnitario * i.cantidad, 0),
   impuestos: () => get().subtotal() * IVA_RATE,
   total: () => get().subtotal() + get().impuestos(),
 }));
+
+// ── Memoized selector hooks (Zustand auto-memoizes selector results) ──
+
+export const useOrderItemCount = () =>
+  useOrderDraftStore((s) => s.items.reduce((sum, i) => sum + i.cantidad, 0));
+
+export const useOrderSubtotal = () =>
+  useOrderDraftStore((s) => s.items.reduce((sum, i) => sum + i.precioUnitario * i.cantidad, 0));
+
+export const useOrderImpuestos = () =>
+  useOrderDraftStore((s) => {
+    const sub = s.items.reduce((sum, i) => sum + i.precioUnitario * i.cantidad, 0);
+    return sub * IVA_RATE;
+  });
+
+export const useOrderTotal = () =>
+  useOrderDraftStore((s) => {
+    const sub = s.items.reduce((sum, i) => sum + i.precioUnitario * i.cantidad, 0);
+    return sub + sub * IVA_RATE;
+  });

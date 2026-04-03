@@ -49,7 +49,7 @@ export default function ProfileScreen() {
     >
       {/* Blue header background + back button */}
       <View style={[styles.headerBg, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity onPress={() => router.navigate('/(tabs)/mas' as any)} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => router.navigate('/(tabs)/mas' as any)} style={styles.backBtn} accessibilityLabel="Volver" accessibilityRole="button">
           <ChevronLeft size={22} color={COLORS.headerText} />
         </TouchableOpacity>
       </View>

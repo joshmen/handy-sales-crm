@@ -90,6 +90,8 @@ export default function OrderDetailScreen() {
             onPress={() => handleTransition('Confirmar Pedido', '¿Confirmar este pedido?', () => confirmarMutation.mutate(serverId, { onSuccess: () => updateLocalStatus(2) }))}
             disabled={anyLoading}
             activeOpacity={0.8}
+            accessibilityLabel="Confirmar Pedido"
+            accessibilityRole="button"
           >
             <CheckCircle size={18} color="#fff" />
             <Text style={styles.actionBtnText}>Confirmar Pedido</Text>
@@ -103,6 +105,8 @@ export default function OrderDetailScreen() {
             onPress={() => handleTransition('Poner en Ruta', '¿Enviar a ruta de entrega?', () => enRutaMutation.mutate(serverId, { onSuccess: () => updateLocalStatus(4) }))}
             disabled={anyLoading}
             activeOpacity={0.8}
+            accessibilityLabel="Poner en Ruta"
+            accessibilityRole="button"
           >
             <Truck size={18} color="#fff" />
             <Text style={styles.actionBtnText}>Poner en Ruta</Text>
@@ -118,6 +122,7 @@ export default function OrderDetailScreen() {
               value={notasEntrega}
               onChangeText={setNotasEntrega}
               multiline
+              accessibilityLabel="Notas de entrega"
             />
             <TouchableOpacity
               testID="btn-entregar"
@@ -125,6 +130,8 @@ export default function OrderDetailScreen() {
               onPress={() => handleTransition('Marcar Entregado', '¿Confirmar entrega del pedido?', () => entregarMutation.mutate({ id: serverId, notasEntrega }, { onSuccess: () => updateLocalStatus(5) }))}
               disabled={anyLoading}
               activeOpacity={0.8}
+              accessibilityLabel="Marcar Entregado"
+              accessibilityRole="button"
             >
               <CheckCircle size={18} color="#fff" />
               <Text style={styles.actionBtnText}>Marcar Entregado</Text>
@@ -140,7 +147,7 @@ export default function OrderDetailScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       {/* Blue Header — back + title + badge */}
       <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} accessibilityLabel="Volver" accessibilityRole="button">
           <ChevronLeft size={22} color={COLORS.headerText} />
         </TouchableOpacity>
         <Text style={styles.blueHeaderTitle}>
@@ -252,6 +259,8 @@ export default function OrderDetailScreen() {
             onPress={handleCancelar}
             disabled={cancelarMutation.isPending}
             activeOpacity={0.8}
+            accessibilityLabel="Cancelar Pedido"
+            accessibilityRole="button"
           >
             <Text style={styles.cancelBtnText}>Cancelar Pedido</Text>
           </TouchableOpacity>

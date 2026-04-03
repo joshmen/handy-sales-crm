@@ -163,7 +163,7 @@ export default function ImpresoraScreen() {
         contentContainerStyle={styles.content}
       >
         <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-          <TouchableOpacity onPress={() => router.navigate('/(tabs)/mas' as any)} style={styles.backBtn}>
+          <TouchableOpacity onPress={() => router.navigate('/(tabs)/mas' as any)} style={styles.backBtn} accessibilityLabel="Volver" accessibilityRole="button">
             <ChevronLeft size={22} color={COLORS.headerText} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Impresora</Text>
@@ -200,7 +200,7 @@ export default function ImpresoraScreen() {
       keyboardShouldPersistTaps="handled"
     >
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} accessibilityLabel="Volver" accessibilityRole="button">
           <ChevronLeft size={22} color={COLORS.headerText} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Impresora</Text>
@@ -225,7 +225,7 @@ export default function ImpresoraScreen() {
                 {connectedDevice.name} ({connectedDevice.type === 'wifi' ? 'WiFi' : 'Bluetooth'})
               </Text>
             </View>
-            <TouchableOpacity style={styles.disconnectBtn} onPress={handleDisconnect}>
+            <TouchableOpacity style={styles.disconnectBtn} onPress={handleDisconnect} accessibilityLabel="Desconectar impresora" accessibilityRole="button">
               <Text style={styles.disconnectText}>Desconectar</Text>
             </TouchableOpacity>
           </View>
@@ -234,6 +234,8 @@ export default function ImpresoraScreen() {
             onPress={handleTestPrint}
             disabled={printing}
             activeOpacity={0.7}
+            accessibilityLabel="Imprimir prueba"
+            accessibilityRole="button"
           >
             {printing ? (
               <ActivityIndicator size="small" color={COLORS.primary} />
@@ -279,6 +281,9 @@ export default function ImpresoraScreen() {
         <TouchableOpacity
           style={[styles.tab, activeTab === 'bluetooth' && styles.tabActive]}
           onPress={() => setActiveTab('bluetooth')}
+          accessibilityLabel="Bluetooth"
+          accessibilityRole="button"
+          accessibilityState={{ selected: activeTab === 'bluetooth' }}
         >
           <Bluetooth size={16} color={activeTab === 'bluetooth' ? 'COLORS.primary' : '#94a3b8'} />
           <Text style={[styles.tabText, activeTab === 'bluetooth' && styles.tabTextActive]}>
@@ -288,6 +293,9 @@ export default function ImpresoraScreen() {
         <TouchableOpacity
           style={[styles.tab, activeTab === 'wifi' && styles.tabActive]}
           onPress={() => setActiveTab('wifi')}
+          accessibilityLabel="WiFi / Red"
+          accessibilityRole="button"
+          accessibilityState={{ selected: activeTab === 'wifi' }}
         >
           <Wifi size={16} color={activeTab === 'wifi' ? 'COLORS.primary' : '#94a3b8'} />
           <Text style={[styles.tabText, activeTab === 'wifi' && styles.tabTextActive]}>

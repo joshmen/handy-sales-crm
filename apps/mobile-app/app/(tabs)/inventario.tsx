@@ -71,7 +71,7 @@ export default function InventarioScreen() {
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity onPress={() => router.back()} style={{ width: 32, alignItems: 'center' }}>
+        <TouchableOpacity onPress={() => router.back()} style={{ width: 32, alignItems: 'center' }} accessibilityLabel="Volver" accessibilityRole="button">
           <ChevronLeft size={22} color={COLORS.headerText} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Inventario</Text>
@@ -88,6 +88,7 @@ export default function InventarioScreen() {
             placeholderTextColor="#94a3b8"
             value={busqueda}
             onChangeText={setBusqueda}
+            accessibilityLabel="Buscar producto"
           />
         </View>
         {categorias.data && categorias.data.length > 0 && (
@@ -95,6 +96,9 @@ export default function InventarioScreen() {
             <TouchableOpacity
               style={[styles.chip, !categoriaId && styles.chipActive]}
               onPress={() => setCategoriaId(undefined)}
+              accessibilityLabel="Filtro: Todos"
+              accessibilityRole="button"
+              accessibilityState={{ selected: !categoriaId }}
             >
               <Text style={[styles.chipText, !categoriaId && styles.chipTextActive]}>Todos</Text>
             </TouchableOpacity>
@@ -103,6 +107,9 @@ export default function InventarioScreen() {
                 key={cat.id}
                 style={[styles.chip, categoriaId === cat.id && styles.chipActive]}
                 onPress={() => setCategoriaId(cat.id === categoriaId ? undefined : cat.id)}
+                accessibilityLabel={`Filtro: ${cat.nombre}`}
+                accessibilityRole="button"
+                accessibilityState={{ selected: categoriaId === cat.id }}
               >
                 <Text style={[styles.chipText, categoriaId === cat.id && styles.chipTextActive]}>{cat.nombre}</Text>
               </TouchableOpacity>

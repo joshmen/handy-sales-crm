@@ -22,6 +22,7 @@ export function Card({ children, onPress, className = '', variant = 'default' }:
         style={variantStyle}
         onPress={onPress}
         activeOpacity={0.7}
+        accessibilityRole="button"
       >
         {children}
       </TouchableOpacity>
