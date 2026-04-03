@@ -176,7 +176,7 @@ function MasScreenContent() {
               <Mail size={12} color="rgba(255,255,255,0.6)" />
               <Text style={styles.emailText}>{user?.email || ''}</Text>
             </View>
-            <View style={{ marginTop: 6 }}>
+            <View style={{ marginTop: 6, alignSelf: 'flex-start' }}>
               <Badge
                 label={ROLE_LABELS[user?.role || ''] || user?.role || 'Usuario'}
                 color={COLORS.headerText}
