@@ -37,6 +37,7 @@ public class ClienteDto
     public string? Encargado { get; set; }
 
     // Datos fiscales
+    public string? RfcFiscal { get; set; }
     public bool Facturable { get; set; }
     public string? RazonSocial { get; set; }
     public string? CodigoPostalFiscal { get; set; }

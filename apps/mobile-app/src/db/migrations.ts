@@ -119,5 +119,21 @@ export const migrations = schemaMigrations({
         }),
       ],
     },
+    {
+      toVersion: 8,
+      steps: [
+        addColumns({
+          table: 'clientes',
+          columns: [
+            { name: 'rfc_fiscal', type: 'string', isOptional: true },
+            { name: 'razon_social', type: 'string', isOptional: true },
+            { name: 'regimen_fiscal', type: 'string', isOptional: true },
+            { name: 'uso_cfdi', type: 'string', isOptional: true },
+            { name: 'cp_fiscal', type: 'string', isOptional: true },
+            { name: 'requiere_factura', type: 'boolean' },
+          ],
+        }),
+      ],
+    },
   ],
 });

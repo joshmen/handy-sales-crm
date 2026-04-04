@@ -3,6 +3,7 @@ using System;
 using HandySales.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Pgvector;
@@ -12,9 +13,11 @@ using Pgvector;
 namespace HandySales.Infrastructure.Migrations
 {
     [DbContext(typeof(HandySalesDbContext))]
-    partial class HandySalesDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260404040559_AddRfcFiscalCliente")]
+    partial class AddRfcFiscalCliente
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

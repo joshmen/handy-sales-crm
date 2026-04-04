@@ -31,6 +31,12 @@ export default class Cliente extends Model {
   @text('notas') notas!: string | null;
   @field('lista_precios_id') listaPreciosId!: number | null;
   @field('es_prospecto') esProspecto!: boolean;
+  @text('rfc_fiscal') rfcFiscal!: string | null;
+  @text('razon_social') razonSocial!: string | null;
+  @text('regimen_fiscal') regimenFiscal!: string | null;
+  @text('uso_cfdi') usoCfdi!: string | null;
+  @text('cp_fiscal') cpFiscal!: string | null;
+  @field('requiere_factura') requiereFactura!: boolean;
   @field('activo') activo!: boolean;
   @field('version') version!: number;
   @readonly @date('created_at') createdAt!: Date;

@@ -49,6 +49,7 @@ public class ClienteRepository : IClienteRepository
             Latitud = dto.Latitud,
             Longitud = dto.Longitud,
             // Datos fiscales
+            RfcFiscal = dto.RfcFiscal,
             Facturable = dto.Facturable,
             RazonSocial = dto.RazonSocial,
             CodigoPostalFiscal = dto.CodigoPostalFiscal,
@@ -117,6 +118,7 @@ public class ClienteRepository : IClienteRepository
                 // Contacto
                 Encargado = c.Encargado,
                 // Datos fiscales
+                RfcFiscal = c.RfcFiscal,
                 Facturable = c.Facturable,
                 RazonSocial = c.RazonSocial,
                 CodigoPostalFiscal = c.CodigoPostalFiscal,
@@ -160,6 +162,7 @@ public class ClienteRepository : IClienteRepository
         cliente.Latitud = dto.Latitud;
         cliente.Longitud = dto.Longitud;
         // Datos fiscales
+        cliente.RfcFiscal = dto.RfcFiscal;
         cliente.Facturable = dto.Facturable;
         cliente.RazonSocial = dto.RazonSocial;
         cliente.CodigoPostalFiscal = dto.CodigoPostalFiscal;

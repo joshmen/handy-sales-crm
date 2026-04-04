@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { View, Text, ScrollView, TextInput, StyleSheet, TouchableOpacity, Modal, FlatList } from 'react-native';
+import { View, Text, ScrollView, TextInput, StyleSheet, TouchableOpacity, Modal, FlatList, Switch } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,6 +9,7 @@ import { useZonas, useCategoriasCliente } from '@/hooks';
 import { Save, ChevronLeft, MapPin, ChevronDown, Search, X, Check } from 'lucide-react-native';
 import { COLORS } from '@/theme/colors';
 import { GpsMapModal } from '@/components/shared/GpsMapModal';
+import { REGIMEN_FISCAL, USO_CFDI } from '@/constants/sat';
 import type { ClienteCreateRequest } from '@/types/client';
 
 // ── Inline SearchableDropdown ────────────────────────────────
@@ -83,6 +84,77 @@ function SearchableDropdown({
   );
 }
 
+// ── Inline SatDropdown (value-based, for SAT catalogs) ──────
+function SatDropdown({
+  label, items, selectedValue, onSelect, placeholder,
+}: {
+  label: string;
+  items: { value: string; label: string }[];
+  selectedValue: string;
+  onSelect: (value: string) => void;
+  placeholder?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const selected = items.find(i => i.value === selectedValue);
+  const filtered = useMemo(() => {
+    if (!search) return items;
+    const q = search.toLowerCase();
+    return items.filter(i => i.label.toLowerCase().includes(q));
+  }, [items, search]);
+
+  return (
+    <>
+      <TouchableOpacity style={styles.dropdown} onPress={() => setOpen(true)} activeOpacity={0.7}>
+        <Text style={[styles.dropdownText, !selected && { color: COLORS.textTertiary }]} numberOfLines={1}>
+          {selected?.label || placeholder || 'Seleccionar...'}
+        </Text>
+        <ChevronDown size={16} color={COLORS.textTertiary} />
+      </TouchableOpacity>
+      <Modal visible={open} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{label}</Text>
+              <TouchableOpacity onPress={() => { setOpen(false); setSearch(''); }}>
+                <X size={20} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.modalSearch}>
+              <Search size={16} color={COLORS.textTertiary} />
+              <TextInput
+                style={styles.modalSearchInput}
+                placeholder={`Buscar ${label.toLowerCase()}...`}
+                placeholderTextColor={COLORS.textTertiary}
+                value={search}
+                onChangeText={setSearch}
+                autoFocus
+              />
+            </View>
+            <FlatList
+              data={filtered}
+              keyExtractor={i => i.value}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[styles.modalItem, item.value === selectedValue && styles.modalItemActive]}
+                  onPress={() => { onSelect(item.value); setOpen(false); setSearch(''); }}
+                >
+                  <Text style={[styles.modalItemText, item.value === selectedValue && { color: COLORS.headerBg, fontWeight: '700' }]}>
+                    {item.label}
+                  </Text>
+                  {item.value === selectedValue && <Check size={16} color={COLORS.headerBg} />}
+                </TouchableOpacity>
+              )}
+              ListEmptyComponent={<Text style={styles.modalEmpty}>Sin resultados</Text>}
+              style={{ maxHeight: 300 }}
+            />
+          </View>
+        </View>
+      </Modal>
+    </>
+  );
+}
+
 // ── Validation helpers ───────────────────────────────────────
 const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 const isValidPhone = (phone: string) => /^\d{10}$/.test(phone);
@@ -114,6 +186,15 @@ export default function CrearClienteScreen() {
   const [categoriaId, setCategoriaId] = useState<number | undefined>(undefined);
   const [touched, setTouched] = useState(false);
   const [loaded, setLoaded] = useState(false);
+
+  // Datos fiscales
+  const [showFiscal, setShowFiscal] = useState(false);
+  const [rfcFiscal, setRfcFiscal] = useState('');
+  const [razonSocial, setRazonSocial] = useState('');
+  const [regimenFiscal, setRegimenFiscal] = useState('');
+  const [usoCfdi, setUsoCfdi] = useState('');
+  const [cpFiscal, setCpFiscal] = useState('');
+  const [requiereFactura, setRequiereFactura] = useState(false);
 
   // GPS — auto-detect current position for map initial view
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -147,6 +228,16 @@ export default function CrearClienteScreen() {
         setCategoriaId(client.categoriaClienteId || undefined);
         if (client.latitud && client.longitud) {
           setLocation({ lat: client.latitud, lng: client.longitud });
+        }
+        // Fiscal fields
+        if (client.rfcFiscal) setRfcFiscal(client.rfcFiscal);
+        if (client.razonSocial) setRazonSocial(client.razonSocial);
+        if (client.regimenFiscal) setRegimenFiscal(client.regimenFiscal);
+        if (client.usoCFDIPredeterminado) setUsoCfdi(client.usoCFDIPredeterminado);
+        if (client.codigoPostalFiscal) setCpFiscal(client.codigoPostalFiscal);
+        if (client.facturable) {
+          setRequiereFactura(true);
+          setShowFiscal(true);
         }
       } catch { /* ignore load errors */ }
       setLoaded(true);
@@ -199,6 +290,13 @@ export default function CrearClienteScreen() {
       categoriaClienteId: categoriaId as number,
       latitud: location?.lat,
       longitud: location?.lng,
+      // Fiscal
+      rfcFiscal: rfcFiscal || undefined,
+      razonSocial: razonSocial || undefined,
+      regimenFiscal: regimenFiscal || undefined,
+      usoCFDIPredeterminado: usoCfdi || undefined,
+      codigoPostalFiscal: cpFiscal || undefined,
+      facturable: requiereFactura,
     });
   };
 
@@ -293,6 +391,92 @@ export default function CrearClienteScreen() {
           <SearchableDropdown label="Categoría" required items={categorias.data || []} selectedId={categoriaId} onSelect={setCategoriaId} placeholder="Seleccionar categoría..." />
           {touched && <FieldError message={errors.categoria} />}
         </View>
+
+        {/* ═══ DATOS FISCALES (colapsable) ═══ */}
+        <TouchableOpacity
+          style={styles.sectionToggle}
+          onPress={() => setShowFiscal(!showFiscal)}
+          activeOpacity={0.7}
+          accessibilityLabel="Datos fiscales"
+        >
+          <Text style={[styles.sectionLabel, { marginBottom: 0, marginTop: 0 }]}>DATOS FISCALES</Text>
+          <ChevronDown size={18} color={COLORS.textTertiary} style={{ transform: [{ rotate: showFiscal ? '180deg' : '0deg' }] }} />
+        </TouchableOpacity>
+
+        {showFiscal && (
+          <View>
+            <View style={styles.field}>
+              <Text style={styles.label}>RFC Fiscal</Text>
+              <TextInput
+                style={styles.input}
+                value={rfcFiscal}
+                onChangeText={setRfcFiscal}
+                placeholder="XAXX010101000"
+                placeholderTextColor={COLORS.textTertiary}
+                autoCapitalize="characters"
+                maxLength={13}
+                accessibilityLabel="RFC fiscal"
+              />
+            </View>
+
+            <View style={styles.field}>
+              <Text style={styles.label}>Razón Social</Text>
+              <TextInput
+                style={styles.input}
+                value={razonSocial}
+                onChangeText={setRazonSocial}
+                placeholder="Nombre o razón social"
+                placeholderTextColor={COLORS.textTertiary}
+                accessibilityLabel="Razón social"
+              />
+            </View>
+
+            <View style={styles.field}>
+              <Text style={styles.label}>Régimen Fiscal</Text>
+              <SatDropdown
+                label="Régimen Fiscal"
+                items={REGIMEN_FISCAL}
+                selectedValue={regimenFiscal}
+                onSelect={setRegimenFiscal}
+                placeholder="Seleccionar régimen..."
+              />
+            </View>
+
+            <View style={styles.field}>
+              <Text style={styles.label}>Uso CFDI</Text>
+              <SatDropdown
+                label="Uso CFDI"
+                items={USO_CFDI}
+                selectedValue={usoCfdi}
+                onSelect={setUsoCfdi}
+                placeholder="Seleccionar uso CFDI..."
+              />
+            </View>
+
+            <View style={styles.field}>
+              <Text style={styles.label}>Código Postal Fiscal</Text>
+              <TextInput
+                style={styles.input}
+                value={cpFiscal}
+                onChangeText={setCpFiscal}
+                placeholder="44100"
+                placeholderTextColor={COLORS.textTertiary}
+                keyboardType="number-pad"
+                maxLength={5}
+                accessibilityLabel="Código postal fiscal"
+              />
+            </View>
+
+            <View style={styles.toggleRow}>
+              <Text style={styles.label}>Requiere factura</Text>
+              <Switch
+                value={requiereFactura}
+                onValueChange={setRequiereFactura}
+                trackColor={{ false: COLORS.borderMedium, true: COLORS.headerBg }}
+              />
+            </View>
+          </View>
+        )}
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom || 16 }]}>
@@ -349,6 +533,8 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 17, fontWeight: '700', color: COLORS.headerText, textAlign: 'center', flex: 1 },
   content: { padding: 16, paddingBottom: 100 },
   sectionLabel: { fontSize: 12, fontWeight: '600', color: COLORS.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12, marginTop: 8 },
+  sectionToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8, marginBottom: 12 },
+  toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, paddingVertical: 4 },
   field: { marginBottom: 16 },
   label: { fontSize: 13, fontWeight: '600', color: '#475569', marginBottom: 6 },
   input: { backgroundColor: COLORS.card, height: 48, borderRadius: 12, paddingHorizontal: 14, fontSize: 15, color: COLORS.foreground, borderWidth: 1, borderColor: COLORS.borderMedium },

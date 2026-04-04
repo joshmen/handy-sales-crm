@@ -133,6 +133,13 @@ public class SyncClienteDto
     public int? ListaPreciosId { get; set; }
     public double? Latitud { get; set; }
     public double? Longitud { get; set; }
+    // Datos fiscales (CFDI)
+    public string? RfcFiscal { get; set; }
+    public string? RazonSocial { get; set; }
+    public string? RegimenFiscal { get; set; }
+    public string? UsoCfdi { get; set; }
+    public string? CpFiscal { get; set; }
+    public bool RequiereFactura { get; set; }
     public bool Activo { get; set; } = true;
     public long Version { get; set; }
     public DateTime? ActualizadoEn { get; set; }

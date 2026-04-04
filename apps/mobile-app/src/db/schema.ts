@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export const schema = appSchema({
-  version: 7,
+  version: 8,
   tables: [
     // ─── Clientes ──────────────────────────────────────────
     tableSchema({
@@ -27,6 +27,12 @@ export const schema = appSchema({
         { name: 'notas', type: 'string', isOptional: true },
         { name: 'lista_precios_id', type: 'number', isOptional: true },
         { name: 'es_prospecto', type: 'boolean' },
+        { name: 'rfc_fiscal', type: 'string', isOptional: true },
+        { name: 'razon_social', type: 'string', isOptional: true },
+        { name: 'regimen_fiscal', type: 'string', isOptional: true },
+        { name: 'uso_cfdi', type: 'string', isOptional: true },
+        { name: 'cp_fiscal', type: 'string', isOptional: true },
+        { name: 'requiere_factura', type: 'boolean' },
         { name: 'activo', type: 'boolean' },
         { name: 'version', type: 'number' },
         { name: 'created_at', type: 'number' },

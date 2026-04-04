@@ -15,6 +15,13 @@ export const MobileClienteSchema = z
     vendedorId: z.number().optional(),
     esProspecto: z.boolean().optional(),
     activo: z.boolean(),
+    // Fiscal
+    rfcFiscal: z.string().nullable().optional(),
+    razonSocial: z.string().nullable().optional(),
+    regimenFiscal: z.string().nullable().optional(),
+    usoCFDIPredeterminado: z.string().nullable().optional(),
+    codigoPostalFiscal: z.string().nullable().optional(),
+    facturable: z.boolean().optional(),
     zonaNombre: z.string().optional(),
     categoriaNombre: z.string().optional(),
     creadoEn: z.string().optional(),
@@ -46,4 +53,11 @@ export interface ClienteCreateRequest {
   categoriaClienteId: number;
   latitud?: number;
   longitud?: number;
+  // Fiscal
+  rfcFiscal?: string;
+  razonSocial?: string;
+  regimenFiscal?: string;
+  usoCFDIPredeterminado?: string;
+  codigoPostalFiscal?: string;
+  facturable?: boolean;
 }

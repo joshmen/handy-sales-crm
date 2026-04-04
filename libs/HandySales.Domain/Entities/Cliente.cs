@@ -82,6 +82,9 @@ public class Cliente : AuditableEntity
     public string? Encargado { get; set; }
 
     // === Datos fiscales (para facturación CFDI 4.0) ===
+    [Column("rfc_fiscal")]
+    public string? RfcFiscal { get; set; }
+
     [Column("razon_social")]
     public string? RazonSocial { get; set; }
 

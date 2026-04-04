@@ -260,6 +260,9 @@ export interface ReceiptData {
   subtotal?: number;
   descuento?: number;
   impuesto?: number;
+  facturaUuid?: string;
+  facturaUrl?: string;
+  paperWidth?: 58 | 80;
 }
 
 export async function printReceipt(data: ReceiptData): Promise<boolean> {
@@ -362,6 +365,17 @@ export async function printReceipt(data: ReceiptData): Promise<boolean> {
     const totalArticulos = data.items?.reduce((s, i) => s + i.cantidad, 0) ?? 1;
     await P.printText(`Total articulos: ${totalArticulos}\n`, {});
     await P.printText(data.isVentaDirecta ? 'Gracias por su compra\n' : 'Gracias por su pago\n', {});
+
+    // QR code for invoice download (if available)
+    if (data.facturaUrl) {
+      await P.printText('--------------------------------\n', {});
+      await P.printerAlign(ALIGN.CENTER);
+      await P.printText('Factura disponible en:\n', {});
+      const qrSize = (data.paperWidth ?? 58) >= 80 ? 8 : 6;
+      await P.printQRCode(data.facturaUrl, qrSize, 1);
+      await P.printText('\nEscanee para descargar\n', {});
+    }
+
     await P.printText('\n\n\n', {}); // feed paper
 
     return true;
@@ -396,6 +410,8 @@ export interface OrderTicketData {
   vendedorName: string;
   tipoVenta: 'Preventa' | 'Venta Directa';
   logoUri?: string;
+  facturaUrl?: string;
+  paperWidth?: 58 | 80;
 }
 
 export async function printOrderTicket(data: OrderTicketData): Promise<boolean> {
@@ -470,6 +486,17 @@ export async function printOrderTicket(data: OrderTicketData): Promise<boolean> 
     await P.printerAlign(ALIGN.CENTER);
     await P.printText(`Atendido por: ${data.vendedorName}\n`, {});
     await P.printText('Gracias por su compra\n', {});
+
+    // QR code for invoice download (if available)
+    if (data.facturaUrl) {
+      await P.printText('--------------------------------\n', {});
+      await P.printerAlign(ALIGN.CENTER);
+      await P.printText('Factura disponible en:\n', {});
+      const qrSize = (data.paperWidth ?? 58) >= 80 ? 8 : 6;
+      await P.printQRCode(data.facturaUrl, qrSize, 1);
+      await P.printText('\nEscanee para descargar\n', {});
+    }
+
     await P.printText('\n\n\n', {}); // feed paper
 
     return true;

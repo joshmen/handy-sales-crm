@@ -137,6 +137,12 @@ public class SyncRepository : ISyncRepository
                 existing.CategoriaClienteId = dto.CategoriaClienteId;
                 existing.Latitud = dto.Latitud;
                 existing.Longitud = dto.Longitud;
+                existing.RfcFiscal = dto.RfcFiscal;
+                existing.RazonSocial = dto.RazonSocial;
+                existing.RegimenFiscal = dto.RegimenFiscal;
+                existing.UsoCFDIPredeterminado = dto.UsoCfdi;
+                existing.CodigoPostalFiscal = dto.CpFiscal;
+                existing.Facturable = dto.RequiereFactura;
                 existing.Activo = dto.Activo;
                 existing.ActualizadoEn = DateTime.UtcNow;
                 existing.ActualizadoPor = userId;
@@ -159,6 +165,12 @@ public class SyncRepository : ISyncRepository
             CategoriaClienteId = dto.CategoriaClienteId,
             Latitud = dto.Latitud,
             Longitud = dto.Longitud,
+            RfcFiscal = dto.RfcFiscal,
+            RazonSocial = dto.RazonSocial,
+            RegimenFiscal = dto.RegimenFiscal,
+            UsoCFDIPredeterminado = dto.UsoCfdi,
+            CodigoPostalFiscal = dto.CpFiscal,
+            Facturable = dto.RequiereFactura,
             Activo = dto.Activo,
             CreadoEn = DateTime.UtcNow,
             CreadoPor = userId,
