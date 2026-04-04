@@ -36,17 +36,17 @@ setup('authenticate as admin', async ({ page }, testInfo) => {
   await page.waitForTimeout(200);
   await page.getByRole('button', { name: /Iniciar Sesión/i }).first().click({ force: true });
 
-  // Handle session conflict (409) — click "Cerrar sesión anterior" if it appears
-  const replaceBtn = page.getByRole('button', { name: /Cerrar sesión anterior/i });
+  // Handle session conflict — click "Continuar aquí" or "Cerrar sesión anterior" if shown
+  const continueBtn = page.getByRole('button', { name: /Continuar aqu[ií]|Cerrar sesi[oó]n anterior/i });
   try {
     await Promise.race([
       page.waitForURL(/dashboard/, { timeout: 15000 }),
-      replaceBtn.waitFor({ state: 'visible', timeout: 15000 }),
+      continueBtn.waitFor({ state: 'visible', timeout: 15000 }),
     ]);
   } catch { /* continue */ }
 
-  if (await replaceBtn.isVisible().catch(() => false)) {
-    await replaceBtn.click();
+  if (await continueBtn.isVisible().catch(() => false)) {
+    await continueBtn.click();
   }
 
   await expect(page).toHaveURL(/dashboard/, { timeout: 20000 });

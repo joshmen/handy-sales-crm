@@ -175,6 +175,7 @@ export default withAuth(
           path === '/set-password' ||
           path.startsWith('/invite') ||
           path.startsWith('/login') ||
+          path.startsWith('/factura') ||
           path === '/register' ||
           path === '/verify-email'
         ) {
@@ -197,6 +198,6 @@ export const config = {
      * - static assets (svg, png, jpg, etc.)
      * - login page
      */
-    '/((?!api/auth|_next/static|_next/image|favicon\\.ico|manifest\\.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?|ttf|eot|css|js|map)$|login|register|verify-email).*)',
+    '/((?!api/auth|_next/static|_next/image|favicon\\.ico|manifest\\.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?|ttf|eot|css|js|map)$|login|register|verify-email|factura).*)',
   ],
 };
