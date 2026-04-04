@@ -88,6 +88,10 @@ internal class StubOrderReaderService : IOrderReaderService
 {
     public Task<OrderForInvoice?> GetOrderForInvoiceAsync(string tenantId, int pedidoId)
         => Task.FromResult<OrderForInvoice?>(null);
+
+    public Task<List<OrderForInvoice>> GetOrdersForFacturaGlobalAsync(
+        string tenantId, DateTime fechaInicio, DateTime fechaFin, List<long> excludedPedidoIds)
+        => Task.FromResult(new List<OrderForInvoice>());
 }
 
 internal class StubTimbreEnforcementService : ITimbreEnforcementService

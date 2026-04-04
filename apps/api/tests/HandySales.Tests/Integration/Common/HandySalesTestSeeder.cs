@@ -108,6 +108,18 @@ public static class HandySalesTestSeeder
 
         db.SaveChanges();
 
+        // Cupones
+        db.Cupones.AddRange(
+            new Cupon { Id = 1, Codigo = "TEST-MESES-GRATIS", Nombre = "3 Meses Gratis", Tipo = TipoCupon.MesesGratis, MesesGratis = 3, MaxUsos = 10, UsosActuales = 0, Activo = true },
+            new Cupon { Id = 2, Codigo = "TEST-UPGRADE-PRO", Nombre = "Upgrade Pro 6m", Tipo = TipoCupon.UpgradePlan, PlanObjetivo = "PRO", MesesUpgrade = 6, MaxUsos = 1, UsosActuales = 0, Activo = true },
+            new Cupon { Id = 3, Codigo = "TEST-DESCUENTO-50", Nombre = "50% Descuento", Tipo = TipoCupon.DescuentoPorcentaje, DescuentoPorcentaje = 50, MaxUsos = 5, UsosActuales = 0, Activo = true },
+            new Cupon { Id = 4, Codigo = "TEST-FREE-FOREVER", Nombre = "Plan Gratis Permanente", Tipo = TipoCupon.PlanGratisPermanente, MaxUsos = 1, UsosActuales = 0, Activo = true },
+            new Cupon { Id = 5, Codigo = "TEST-EXPIRADO", Nombre = "Cupón Expirado", Tipo = TipoCupon.MesesGratis, MesesGratis = 1, MaxUsos = 10, UsosActuales = 0, FechaExpiracion = DateTime.UtcNow.AddDays(-30), Activo = true },
+            new Cupon { Id = 6, Codigo = "TEST-AGOTADO", Nombre = "Cupón Agotado", Tipo = TipoCupon.MesesGratis, MesesGratis = 1, MaxUsos = 1, UsosActuales = 1, Activo = true }
+        );
+
+        db.SaveChanges();
+
         // Assign vendedor 123 to supervisor 200 (after SaveChanges to avoid FK issues)
         var vendedor123 = db.Usuarios.Find(123);
         if (vendedor123 != null)
