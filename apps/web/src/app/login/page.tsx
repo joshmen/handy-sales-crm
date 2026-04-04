@@ -317,9 +317,10 @@ function LoginContent() {
 
     setForcingLogin(true);
     try {
+      const recaptchaToken = executeRecaptcha ? await executeRecaptcha('force_login') : undefined;
       const response = await axios.post(
         `${API_CONFIG.BASE_URL}/auth/force-login`,
-        { email: savedCredentials.email, password: savedCredentials.password },
+        { email: savedCredentials.email, password: savedCredentials.password, recaptchaToken },
         { timeout: API_CONFIG.TIMEOUT, validateStatus: () => true }
       );
 
