@@ -62,6 +62,8 @@ using HandySales.Infrastructure.CategoriasProductos.Repositories;
 using HandySales.Application.FamiliasProductos.Interfaces;
 using HandySales.Application.FamiliasProductos.Services;
 using HandySales.Infrastructure.FamiliasProductos.Repositories;
+using HandySales.Application.SubscriptionPlans.Interfaces;
+using HandySales.Infrastructure.Services;
 using HandySales.Mobile.Api.Services;
 
 namespace HandySales.Mobile.Api.Configuration;
@@ -172,6 +174,9 @@ public static class ServiceRegistrationExtensions
 
         // Crash Reports
         services.AddScoped<HandySales.Application.CrashReporting.ICrashReportRepository, HandySales.Infrastructure.Repositories.CrashReportRepository>();
+
+        // Subscription Enforcement (for billing limits)
+        services.AddScoped<ISubscriptionEnforcementService, SubscriptionEnforcementService>();
 
         // Cobranza
         services.AddScoped<ICobroRepository, CobroRepository>();

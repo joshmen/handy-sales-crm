@@ -505,3 +505,179 @@ export async function printOrderTicket(data: OrderTicketData): Promise<boolean> 
     return false;
   }
 }
+
+// ---------- CFDI Ticket Printing (80mm) ----------
+
+export interface CfdiTicketData {
+  // Emisor
+  emisorRfc: string;
+  emisorNombre: string;
+  emisorRegimenFiscal: string;
+  emisorDireccion?: string;
+  emisorCp: string;
+  // Receptor
+  receptorRfc: string;
+  receptorNombre: string;
+  receptorRegimenFiscal: string;
+  receptorUsoCfdi: string;
+  receptorCp: string;
+  // Comprobante
+  uuid: string;
+  serie?: string;
+  folio?: string;
+  fecha: string;
+  formaPago: string;
+  metodoPago: string;
+  // Items
+  items: Array<{ descripcion: string; cantidad: number; precioUnitario: number; importe: number }>;
+  subtotal: number;
+  iva: number;
+  total: number;
+  totalLetra: string;
+  // Timbrado
+  selloCfdi: string;
+  selloSat: string;
+  cadenaOriginal: string;
+  noCertificadoEmisor: string;
+  noCertificadoSat: string;
+  fechaTimbrado: string;
+  // Extras
+  vendedorName: string;
+  logoUri?: string;
+}
+
+export async function printCfdiTicket(data: CfdiTicketData): Promise<boolean> {
+  loadNativeModules();
+  if (!nativeAvailable || !BluetoothEscposPrinter) return false;
+
+  try {
+    const P = BluetoothEscposPrinter;
+    const ALIGN = P.ALIGN || { LEFT: 0, CENTER: 1, RIGHT: 2 };
+    const W = 48; // 80mm thermal printer char width
+    const fmt = (n: number) =>
+      new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(n);
+    const pad = (l: string, r: string, w = W) =>
+      l + ' '.repeat(Math.max(1, w - l.length - r.length)) + r;
+    const sep = '================================================\n';
+    const sepThin = '------------------------------------------------\n';
+
+    // Logo
+    if (data.logoUri) {
+      try { await printLogo(data.logoUri); } catch { /* skip */ }
+    }
+
+    // ── Emisor header ──
+    await P.printerAlign(ALIGN.CENTER);
+    await P.printText(`${data.emisorNombre}\n`, { widthtimes: 1, heigthtimes: 1 });
+    await P.printText(`RFC: ${data.emisorRfc}\n`, {});
+    await P.printText(`Regimen: ${data.emisorRegimenFiscal}\n`, {});
+    if (data.emisorDireccion) {
+      await P.printText(`${data.emisorDireccion}\n`, {});
+    }
+    await P.printText(`C.P. ${data.emisorCp}\n`, {});
+    await P.printText('\n', {});
+
+    // ── Title ──
+    await P.printText('FACTURA ELECTRONICA\n', { widthtimes: 1, heigthtimes: 1 });
+    await P.printText(sep, {});
+
+    // ── Serie / Folio / Fecha ──
+    await P.printerAlign(ALIGN.LEFT);
+    if (data.serie || data.folio) {
+      await P.printText(`Serie: ${data.serie ?? '-'}  Folio: ${data.folio ?? '-'}\n`, {});
+    }
+    await P.printText(`Fecha: ${data.fecha}\n`, {});
+    await P.printText(`Forma Pago: ${data.formaPago}\n`, {});
+    await P.printText(`Metodo Pago: ${data.metodoPago}\n`, {});
+    await P.printText(sepThin, {});
+
+    // ── Receptor ──
+    await P.printText('RECEPTOR\n', { widthtimes: 0, heigthtimes: 0 });
+    await P.printText(`RFC: ${data.receptorRfc}\n`, {});
+    await P.printText(`Nombre: ${data.receptorNombre}\n`, {});
+    await P.printText(`Regimen: ${data.receptorRegimenFiscal}\n`, {});
+    await P.printText(`Uso CFDI: ${data.receptorUsoCfdi}\n`, {});
+    await P.printText(`C.P. ${data.receptorCp}\n`, {});
+    await P.printText(sepThin, {});
+
+    // ── Items ──
+    await P.printText('CONCEPTOS\n', {});
+    for (const item of data.items) {
+      await P.printerAlign(ALIGN.LEFT);
+      const left = `${item.descripcion} x${item.cantidad}`;
+      const right = fmt(item.importe);
+      // If line is too long, wrap description on first line, total on second
+      if (left.length + right.length + 1 > W) {
+        await P.printText(`${item.descripcion}\n`, {});
+        await P.printText(pad(`  x${item.cantidad} @${fmt(item.precioUnitario)}`, right) + '\n', {});
+      } else {
+        await P.printText(pad(left, right) + '\n', {});
+      }
+    }
+    await P.printText(sepThin, {});
+
+    // ── Totals ──
+    await P.printerAlign(ALIGN.LEFT);
+    await P.printText(pad('SUBTOTAL:', fmt(data.subtotal)) + '\n', {});
+    await P.printText(pad('IVA 16%:', fmt(data.iva)) + '\n', {});
+    await P.printText(sep, {});
+    await P.printerAlign(ALIGN.CENTER);
+    await P.printText(`TOTAL: ${fmt(data.total)}\n`, { widthtimes: 2, heigthtimes: 2 });
+    await P.printText('\n', {});
+
+    // ── Total in words ──
+    await P.printerAlign(ALIGN.LEFT);
+    await P.printText(`${data.totalLetra}\n`, {});
+    await P.printText(sepThin, {});
+
+    // ── Folio fiscal ──
+    await P.printerAlign(ALIGN.CENTER);
+    await P.printText('FOLIO FISCAL\n', {});
+    await P.printText(`${data.uuid}\n`, {});
+    await P.printText('\n', {});
+
+    // ── Certificados ──
+    await P.printerAlign(ALIGN.LEFT);
+    await P.printText(`No. Cert. Emisor: ${data.noCertificadoEmisor}\n`, {});
+    await P.printText(`No. Cert. SAT: ${data.noCertificadoSat}\n`, {});
+    await P.printText(`Fecha Timbrado: ${data.fechaTimbrado}\n`, {});
+    await P.printText(sepThin, {});
+
+    // ── Sellos (truncated for thermal) ──
+    await P.printText('Sello CFDI:\n', {});
+    await P.printText(`${data.selloCfdi.slice(0, 40)}...\n`, {});
+    await P.printText('Sello SAT:\n', {});
+    await P.printText(`${data.selloSat.slice(0, 40)}...\n`, {});
+    await P.printText(sepThin, {});
+
+    // ── Cadena original (wrap at W chars) ──
+    await P.printText('Cadena Original:\n', {});
+    const cadena = data.cadenaOriginal;
+    for (let i = 0; i < cadena.length; i += W) {
+      await P.printText(`${cadena.slice(i, i + W)}\n`, {});
+    }
+    await P.printText(sepThin, {});
+
+    // ── Leyenda ──
+    await P.printerAlign(ALIGN.CENTER);
+    await P.printText('Este documento es una\n', {});
+    await P.printText('representacion impresa\n', {});
+    await P.printText('de un CFDI\n', {});
+    await P.printText('\n', {});
+
+    // ── QR SAT verification ──
+    const qrUrl = `https://verificacfdi.facturaelectronica.sat.gob.mx/default.aspx?id=${data.uuid}&re=${data.emisorRfc}&rr=${data.receptorRfc}&tt=${data.total.toFixed(6)}&fe=${data.selloCfdi.slice(-8)}`;
+    await P.printQRCode(qrUrl, 8, 1);
+    await P.printText('\n', {});
+
+    // ── Vendor ──
+    await P.printText(`Atendido por: ${data.vendedorName}\n`, {});
+
+    await P.printText('\n\n\n', {}); // feed paper
+
+    return true;
+  } catch (e) {
+    console.error('[Printer] CFDI ticket print failed:', e);
+    return false;
+  }
+}

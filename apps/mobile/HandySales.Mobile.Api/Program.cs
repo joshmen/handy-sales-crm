@@ -31,6 +31,14 @@ builder.Services.AddHttpClient("MainApi", client =>
     client.Timeout = TimeSpan.FromSeconds(5);
 });
 
+// HTTP client for Billing API (CFDI invoicing)
+var billingApiUrl = builder.Configuration["BILLING_API_URL"] ?? "http://localhost:5001";
+builder.Services.AddHttpClient("BillingApi", client =>
+{
+    client.BaseAddress = new Uri(billingApiUrl);
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+
 // SignalR for real-time events to web backoffice
 builder.Services.AddSignalR(options =>
 {
@@ -108,6 +116,7 @@ app.MapMobileEmpresaEndpoints();
 app.MapMobileCrashReportEndpoints();
 app.MapMobileAnnouncementEndpoints();
 app.MapMobileMetasEndpoints();
+app.MapMobileFacturaEndpoints();
 app.MapInternalPushEndpoints();
 app.MapHealthEndpoints();
 app.MapHub<MobileNotificationHub>("/hubs/notifications");

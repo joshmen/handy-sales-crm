@@ -949,6 +949,65 @@ public class FacturasController : ControllerBase
             : dt.ToUniversalTime();
     }
 
+    /// <summary>
+    /// Public endpoint — no authentication required.
+    /// Returns limited factura data for the invoice download portal (QR scan).
+    /// </summary>
+    [HttpGet("public/{uuid}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetPublicByUuid(string uuid)
+    {
+        if (string.IsNullOrWhiteSpace(uuid))
+            return BadRequest(new { error = "UUID is required" });
+
+        var factura = await _context.Facturas
+            .AsNoTracking()
+            .Where(f => f.Uuid == uuid)
+            .FirstOrDefaultAsync();
+
+        if (factura == null)
+            return NotFound(new { error = "Factura no encontrada" });
+
+        // Generate presigned download URLs only for timbrada invoices with blob files
+        string? pdfUrl = null;
+        string? xmlUrl = null;
+
+        if (factura.Estado == "TIMBRADA")
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(factura.PdfBlobUrl))
+                    pdfUrl = await _blobService.GenerateSasUrlAsync(factura.PdfBlobUrl, "cfdi-pdf", TimeSpan.FromMinutes(15));
+                if (!string.IsNullOrEmpty(factura.XmlBlobUrl))
+                    xmlUrl = await _blobService.GenerateSasUrlAsync(factura.XmlBlobUrl, "cfdi-xml", TimeSpan.FromMinutes(15));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not generate SAS URLs for public factura {Uuid}", uuid);
+            }
+        }
+
+        var dto = new FacturaPublicDto
+        {
+            Uuid = factura.Uuid,
+            Serie = factura.Serie,
+            Folio = factura.Folio,
+            FechaEmision = factura.FechaEmision,
+            FechaTimbrado = factura.FechaTimbrado,
+            EmisorRfc = factura.EmisorRfc,
+            EmisorNombre = factura.EmisorNombre,
+            ReceptorRfc = factura.ReceptorRfc,
+            ReceptorNombre = factura.ReceptorNombre,
+            Total = factura.Total,
+            Moneda = factura.Moneda,
+            Estado = factura.Estado,
+            PdfUrl = pdfUrl,
+            XmlUrl = xmlUrl
+        };
+
+        return Ok(dto);
+    }
+
     private static string? ExtractSelloCfdi(string? xmlTimbrado)
     {
         if (string.IsNullOrEmpty(xmlTimbrado)) return null;

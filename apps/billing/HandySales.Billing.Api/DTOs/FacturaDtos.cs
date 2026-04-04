@@ -249,3 +249,34 @@ public class PreFacturaLineDto
     /// <summary>"mapping" | "producto" | "default" | "fallback"</summary>
     public string MappingSource { get; set; } = "fallback";
 }
+
+// ─── Public Invoice Portal DTO ────────────────────────────────────────
+
+/// <summary>
+/// Public-facing factura data — no auth required.
+/// Only exposes non-sensitive fields for the invoice download portal.
+/// </summary>
+public class FacturaPublicDto
+{
+    public string? Uuid { get; set; }
+    public string? Serie { get; set; }
+    public int Folio { get; set; }
+    public DateTime FechaEmision { get; set; }
+    public DateTime? FechaTimbrado { get; set; }
+
+    public string EmisorRfc { get; set; } = default!;
+    public string EmisorNombre { get; set; } = default!;
+
+    public string ReceptorRfc { get; set; } = default!;
+    public string ReceptorNombre { get; set; } = default!;
+
+    public decimal Total { get; set; }
+    public string Moneda { get; set; } = "MXN";
+    public string Estado { get; set; } = default!;
+
+    /// <summary>Presigned URL for PDF download (null if not yet generated).</summary>
+    public string? PdfUrl { get; set; }
+
+    /// <summary>Presigned URL for XML download (null if not yet generated).</summary>
+    public string? XmlUrl { get; set; }
+}
