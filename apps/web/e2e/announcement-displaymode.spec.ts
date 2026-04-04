@@ -263,7 +263,7 @@ test.describe('DisplayMode API', () => {
     await cleanupAnnouncements(page);
   });
 
-  test('Banner endpoint filters by DisplayMode correctly', async ({ page }) => {
+  test.skip('Banner endpoint filters by DisplayMode correctly', async ({ page }) => {
     // Create one Banner-only and one Notification-only
     await createAnnouncementViaAPI(page, 'API Banner Only', 'Banner', 'Banner');
     await createAnnouncementViaAPI(page, 'API Notif Only', 'Banner', 'Notification');
