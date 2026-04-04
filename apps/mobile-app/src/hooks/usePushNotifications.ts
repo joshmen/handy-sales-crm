@@ -28,6 +28,10 @@ function invalidateCachesForType(queryClient: ReturnType<typeof useQueryClient>,
   } else if (type.startsWith('stock.')) {
     queryClient.invalidateQueries({ queryKey: ['products'] });
     queryClient.invalidateQueries({ queryKey: ['producto'] });
+  } else if (type.startsWith('invoice.')) {
+    queryClient.invalidateQueries({ queryKey: ['facturas'] });
+    queryClient.invalidateQueries({ queryKey: ['orders'] });
+    queryClient.invalidateQueries({ queryKey: ['dashboard'] });
   } else if (type.startsWith('goal.')) {
     queryClient.invalidateQueries({ queryKey: ['dashboard'] });
   } else {

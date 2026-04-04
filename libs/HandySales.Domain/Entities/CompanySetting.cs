@@ -58,6 +58,12 @@ public class CompanySetting : AuditableEntity
     [Column("notification_config", TypeName = "jsonb")]
     public string? NotificationConfig { get; set; }
 
+    /// <summary>
+    /// When true, delivered orders to clients WITH an RFC are automatically invoiced.
+    /// </summary>
+    [Column("auto_facturar_con_rfc")]
+    public bool AutoFacturarConRfc { get; set; }
+
     // Navigation properties
     public Tenant Tenant { get; set; } = null!;
     public Company? Company { get; set; }

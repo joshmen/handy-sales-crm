@@ -280,3 +280,25 @@ public class FacturaPublicDto
     /// <summary>Presigned URL for XML download (null if not yet generated).</summary>
     public string? XmlUrl { get; set; }
 }
+
+/// <summary>
+/// Request to generate a Factura Global (CFDI 4.0 InformacionGlobal).
+/// Aggregates all delivered orders in a date range for público general (RFC XAXX010101000)
+/// that have not yet been invoiced.
+/// </summary>
+public class FacturaGlobalRequest
+{
+    public int TenantId { get; set; }
+
+    [Required]
+    public DateTime FechaInicio { get; set; }
+
+    [Required]
+    public DateTime FechaFin { get; set; }
+
+    /// <summary>
+    /// SAT Periodicidad: 01=Diario, 02=Semanal, 03=Quincenal, 04=Mensual, 05=Bimestral
+    /// </summary>
+    [MaxLength(2)]
+    public string Periodicidad { get; set; } = "04";
+}

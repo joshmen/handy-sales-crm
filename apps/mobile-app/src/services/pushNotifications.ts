@@ -179,6 +179,9 @@ export function getDeepLinkFromNotification(
     case 'route.published':
     case 'visit.reminder':
       return '/(tabs)/ruta';
+    case 'invoice.timbrado':
+    case 'invoice.created':
+      return safeEntityId ? `/(tabs)/vender/${safeEntityId}` : '/(tabs)/vender';
     case 'client.update':
       return safeEntityId ? `/(tabs)/clients/${safeEntityId}` : '/(tabs)/clients';
     case 'inventory.alert':

@@ -475,6 +475,131 @@ public class FacturasController : ControllerBase
         return CreatedAtAction(nameof(GetFactura), new { id = factura.Id }, MapToDto(factura));
     }
 
+    /// <summary>
+    /// Genera una Factura Global (CFDI InformacionGlobal) que agrupa todos los pedidos
+    /// entregados en un rango de fechas para público general (RFC XAXX010101000)
+    /// que aún no tienen factura. NO timbra automáticamente — el admin decide cuándo timbrar.
+    /// </summary>
+    [HttpPost("global")]
+    [Authorize(Roles = "ADMIN,SUPER_ADMIN")]
+    public async Task<ActionResult<FacturaDto>> GenerarFacturaGlobal([FromBody] FacturaGlobalRequest request)
+    {
+        var tenantId = GetTenantId();
+        var userId = GetUserId();
+
+        // Validate periodicidad (SAT catalog)
+        var periodicidadesValidas = new[] { "01", "02", "03", "04", "05" };
+        if (!periodicidadesValidas.Contains(request.Periodicidad))
+            return BadRequest("Periodicidad inválida. Valores válidos: 01 (Diario), 02 (Semanal), 03 (Quincenal), 04 (Mensual), 05 (Bimestral).");
+
+        if (request.FechaInicio >= request.FechaFin)
+            return BadRequest("FechaInicio debe ser anterior a FechaFin.");
+
+        // Load fiscal config (emisor data)
+        var config = await _context.ConfiguracionesFiscales
+            .Where(c => c.TenantId == tenantId && c.Activo)
+            .FirstOrDefaultAsync();
+
+        if (config == null)
+            return BadRequest("No hay configuración fiscal activa. Configure sus datos fiscales en Facturación → Configuración.");
+
+        // Find pedido IDs that already have a non-cancelled factura in the billing DB
+        var existingPedidoIds = await _context.Facturas
+            .Where(f => f.TenantId == tenantId && f.PedidoId != null && f.Estado != "CANCELADA")
+            .Select(f => f.PedidoId!.Value)
+            .ToListAsync();
+
+        // Query all qualifying orders from main DB
+        var orders = await _orderReaderService.GetOrdersForFacturaGlobalAsync(
+            tenantId, request.FechaInicio, request.FechaFin, existingPedidoIds);
+
+        if (orders.Count == 0)
+            return BadRequest("No se encontraron pedidos entregados sin factura para público general en el rango de fechas indicado.");
+
+        // Build the Factura Global
+        var serie = config.SerieFactura ?? "A";
+        var folio = await GetNextFolio(tenantId, serie);
+
+        var subtotal = orders.Sum(o => o.Subtotal);
+        var descuento = orders.Sum(o => o.Descuento);
+        var impuestos = orders.Sum(o => o.Impuestos);
+        var total = orders.Sum(o => o.Total);
+
+        // Derive mes/año from the period for the Observaciones
+        var mesNames = new[] { "", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+            "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre" };
+        var periodoDesc = $"{request.FechaInicio:yyyy-MM-dd} al {request.FechaFin:yyyy-MM-dd}";
+
+        var factura = new Factura
+        {
+            TenantId = tenantId,
+            Serie = serie,
+            Folio = folio,
+            FechaEmision = DateTime.UtcNow,
+            TipoComprobante = "I", // Ingreso
+            MetodoPago = "PUE",
+            FormaPago = "01", // Efectivo (default for público general)
+            UsoCfdi = "S01", // Sin efectos fiscales (público general)
+            EmisorRfc = config.Rfc ?? "",
+            EmisorNombre = config.RazonSocial ?? "",
+            EmisorRegimenFiscal = config.RegimenFiscal,
+            ReceptorRfc = "XAXX010101000",
+            ReceptorNombre = "PUBLICO EN GENERAL",
+            ReceptorUsoCfdi = "S01",
+            ReceptorDomicilioFiscal = config.CodigoPostal,
+            Subtotal = subtotal,
+            Descuento = descuento,
+            TotalImpuestosTrasladados = impuestos,
+            TotalImpuestosRetenidos = 0,
+            Total = total,
+            Moneda = "MXN",
+            TipoCambio = 1,
+            Observaciones = $"Factura Global — Periodicidad: {request.Periodicidad}, Periodo: {periodoDesc}, Pedidos: {orders.Count}",
+            CreatedBy = userId,
+            Estado = "PENDIENTE"
+        };
+
+        // Add all order line items as factura detalles
+        var lineNum = 1;
+        foreach (var order in orders)
+        {
+            foreach (var line in order.Detalles)
+            {
+                factura.Detalles.Add(new DetalleFactura
+                {
+                    NumeroLinea = lineNum++,
+                    ClaveProdServ = line.ProductoClaveSat ?? "01010101",
+                    NoIdentificacion = line.ProductoCodigoBarra,
+                    Descripcion = $"{line.ProductoNombre} (Pedido {order.NumeroPedido})",
+                    Unidad = line.UnidadAbreviatura ?? line.UnidadNombre,
+                    ClaveUnidad = line.UnidadClaveSat ?? "H87",
+                    Cantidad = line.Cantidad,
+                    ValorUnitario = line.PrecioUnitario,
+                    Importe = line.Subtotal,
+                    Descuento = line.Descuento,
+                    ProductoId = line.ProductoId,
+                });
+            }
+        }
+
+        _context.Facturas.Add(factura);
+        await _context.SaveChangesAsync();
+
+        // Link all pedidos to this factura for tracking (via observaciones since PedidoId is single)
+        // The PedidoId field is nullable/single — for global invoices we leave it null
+        // and track the relationship in the audit log
+        var pedidoIds = string.Join(", ", orders.Select(o => o.PedidoId));
+        RegistrarAuditoria(tenantId, factura.Id, "CREAR",
+            $"Factura Global creada. Periodicidad: {request.Periodicidad}, Periodo: {periodoDesc}, Pedidos incluidos: [{pedidoIds}]", userId);
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "Factura Global {Serie}-{Folio} created for tenant {TenantId}: {OrderCount} orders, total ${Total}",
+            factura.Serie, factura.Folio, tenantId, orders.Count, factura.Total);
+
+        return CreatedAtAction(nameof(GetFactura), new { id = factura.Id }, MapToDto(factura));
+    }
+
     [HttpPost("{id}/timbrar")]
     [Authorize(Roles = "ADMIN,SUPER_ADMIN")]
     public async Task<ActionResult<FacturaDto>> TimbrarFactura(long id)

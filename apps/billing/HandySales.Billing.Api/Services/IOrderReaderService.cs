@@ -7,6 +7,14 @@ namespace HandySales.Billing.Api.Services;
 public interface IOrderReaderService
 {
     Task<OrderForInvoice?> GetOrderForInvoiceAsync(string tenantId, int pedidoId);
+
+    /// <summary>
+    /// Returns all delivered orders (estado=5) in the date range for público general
+    /// (client RFC = XAXX010101000) that have not yet been invoiced.
+    /// The excludedPedidoIds parameter lists pedido IDs that already have a non-cancelled factura.
+    /// </summary>
+    Task<List<OrderForInvoice>> GetOrdersForFacturaGlobalAsync(
+        string tenantId, DateTime fechaInicio, DateTime fechaFin, List<long> excludedPedidoIds);
 }
 
 /// <summary>
