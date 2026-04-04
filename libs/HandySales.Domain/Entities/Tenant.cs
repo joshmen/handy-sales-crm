@@ -57,6 +57,12 @@ public class Tenant : AuditableEntity
     [Column("timbres_extras")]
     public int TimbresExtras { get; set; }
 
+    // Facturas generadas (tracking mensual — igual que timbres)
+    [Column("facturas_generadas_mes")]
+    public int FacturasGeneradasMes { get; set; }
+    [Column("facturas_reset_fecha")]
+    public DateTime? FacturasResetFecha { get; set; }
+
     // Onboarding
     [Column("onboarding_completed")]
     public bool OnboardingCompleted { get; set; } = false;

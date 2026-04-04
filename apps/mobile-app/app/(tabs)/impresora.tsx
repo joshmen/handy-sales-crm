@@ -39,9 +39,11 @@ export default function ImpresoraScreen() {
     connectedDevice,
     savedDevice,
     isConnecting,
+    paperWidth,
     setConnectedDevice,
     setSavedDevice,
     setConnecting,
+    setPaperWidth,
     restoreSaved,
   } = usePrinterStore();
 
@@ -249,6 +251,34 @@ export default function ImpresoraScreen() {
         </View>
         </Animated.View>
       )}
+
+      {/* Paper width toggle */}
+      <Animated.View entering={FadeInDown.duration(400).delay(150)}>
+        <View style={styles.statusCard}>
+          <Text style={[styles.statusTitle, { marginBottom: 8 }]}>Ancho de papel</Text>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <TouchableOpacity
+              style={[styles.widthChip, paperWidth === 58 && styles.widthChipActive]}
+              onPress={() => setPaperWidth(58)}
+              accessibilityLabel="Papel 58 milímetros"
+              accessibilityState={{ selected: paperWidth === 58 }}
+            >
+              <Text style={[styles.widthChipText, paperWidth === 58 && styles.widthChipTextActive]}>58mm</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.widthChip, paperWidth === 80 && styles.widthChipActive]}
+              onPress={() => setPaperWidth(80)}
+              accessibilityLabel="Papel 80 milímetros"
+              accessibilityState={{ selected: paperWidth === 80 }}
+            >
+              <Text style={[styles.widthChipText, paperWidth === 80 && styles.widthChipTextActive]}>80mm</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={{ fontSize: 11, color: COLORS.textTertiary, marginTop: 6 }}>
+            {paperWidth === 80 ? 'Soporta ticket CFDI completo' : 'Solo nota de venta + QR'}
+          </Text>
+        </View>
+      </Animated.View>
 
       {/* Saved device quick-connect */}
       {!connectedDevice && savedDevice && (
@@ -463,6 +493,12 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: COLORS.border,
   },
   testPrintText: { fontSize: 14, fontWeight: '600', color: COLORS.primary },
+
+  // Paper width
+  widthChip: { paddingHorizontal: 20, paddingVertical: 8, borderRadius: 8, backgroundColor: '#f1f5f9', borderWidth: 1, borderColor: COLORS.border },
+  widthChipActive: { backgroundColor: COLORS.primaryLight, borderColor: COLORS.primary },
+  widthChipText: { fontSize: 14, fontWeight: '600', color: COLORS.textSecondary },
+  widthChipTextActive: { color: COLORS.primary },
 
   // Saved
   savedCard: {

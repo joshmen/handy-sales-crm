@@ -152,6 +152,68 @@ public class SubscriptionEnforcementService : ISubscriptionEnforcementService
         return rows > 0;
     }
 
+    public async Task<EnforcementResult> CanGenerarFacturaAsync(int tenantId)
+    {
+        var plan = await GetPlanForTenantAsync(tenantId);
+        if (plan == null) return new EnforcementResult(false, "No se encontró un plan activo para este tenant.");
+
+        if (!plan.IncluyeFacturacion)
+            return new EnforcementResult(false, "Tu plan no incluye facturación electrónica.");
+
+        var tenant = await _db.Tenants
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .FirstOrDefaultAsync(t => t.Id == tenantId);
+
+        if (tenant == null)
+            return new EnforcementResult(false, "Tenant no encontrado.");
+
+        // Normalize: treat stale month as 0 used (atomic reset happens in RegistrarFacturaGeneradaAsync)
+        var now = DateTime.UtcNow;
+        var facturasGeneradas = tenant.FacturasGeneradasMes;
+        if (tenant.FacturasResetFecha == null || tenant.FacturasResetFecha.Value.Month != now.Month || tenant.FacturasResetFecha.Value.Year != now.Year)
+        {
+            facturasGeneradas = 0;
+        }
+
+        if (facturasGeneradas >= plan.MaxFacturasMes)
+        {
+            // Over limit — still allow, Stripe metered billing will handle overage charges
+            return new EnforcementResult(true, "Has excedido tu límite mensual de facturas. Se aplicarán cargos adicionales.", facturasGeneradas, plan.MaxFacturasMes);
+        }
+
+        return new EnforcementResult(true, null, facturasGeneradas, plan.MaxFacturasMes);
+    }
+
+    public async Task<bool> RegistrarFacturaGeneradaAsync(int tenantId)
+    {
+        var plan = await GetPlanForTenantAsync(tenantId);
+        if (plan == null) return false;
+
+        if (!plan.IncluyeFacturacion) return false;
+
+        var now = DateTime.UtcNow;
+        var resetFecha = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        // Atomic: reset counter if new month, then increment (no hard limit — overage billed via Stripe)
+        var sql = @"
+            UPDATE ""Tenants""
+            SET ""FacturasGeneradasMes"" = CASE
+                    WHEN ""FacturasResetFecha"" IS NULL
+                         OR EXTRACT(MONTH FROM ""FacturasResetFecha"") != {1}
+                         OR EXTRACT(YEAR FROM ""FacturasResetFecha"") != {2}
+                    THEN 1
+                    ELSE ""FacturasGeneradasMes"" + 1
+                END,
+                ""FacturasResetFecha"" = {3}
+            WHERE ""Id"" = {0}";
+
+        var rows = await _db.Database.ExecuteSqlRawAsync(sql,
+            tenantId, now.Month, now.Year, resetFecha);
+
+        return rows > 0;
+    }
+
     public async Task AddExtraTimbresAsync(int tenantId, int cantidad)
     {
         await _db.Database.ExecuteSqlInterpolatedAsync(

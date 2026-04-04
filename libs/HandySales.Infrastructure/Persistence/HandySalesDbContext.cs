@@ -90,6 +90,10 @@ public class HandySalesDbContext : DbContext
     public DbSet<TenantIntegration> TenantIntegrations => Set<TenantIntegration>();
     public DbSet<IntegrationLog> IntegrationLogs => Set<IntegrationLog>();
 
+    // Coupon System
+    public DbSet<Cupon> Cupones => Set<Cupon>();
+    public DbSet<CuponRedencion> CuponRedenciones => Set<CuponRedencion>();
+
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         var currentUser = _tenantContext?.CurrentUserEmail;
@@ -894,6 +898,13 @@ public class HandySalesDbContext : DbContext
         modelBuilder.Entity<TimbrePurchase>().ToTable("TimbrePurchases");
         modelBuilder.Entity<TimbrePurchase>()
             .HasQueryFilter(e => !ShouldApplyTenantFilter || e.TenantId == CurrentTenantId);
+
+        // Coupon System
+        modelBuilder.Entity<Cupon>()
+            .HasQueryFilter(e => e.EliminadoEn == null);
+
+        modelBuilder.Entity<CuponRedencion>()
+            .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
 
         // pgvector extension + AiEmbedding config (PostgreSQL only — skipped in SQLite tests)
         if (Database.ProviderName?.Contains("Npgsql") == true)

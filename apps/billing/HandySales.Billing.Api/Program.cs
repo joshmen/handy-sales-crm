@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Azure.Storage.Blobs;
 using HandySales.Billing.Api.Data;
 using HandySales.Billing.Api.Configuration;
 using HandySales.Billing.Api.Services;
@@ -95,11 +94,19 @@ builder.Services.AddRateLimiter(options =>
             }));
 });
 
-// Azure Blob Storage (CFDI XMLs and PDFs)
-var azureStorageConnectionString = builder.Configuration["AZURE_STORAGE_CONNECTION_STRING"]
-    ?? "UseDevelopmentStorage=true";
-builder.Services.AddSingleton(new BlobServiceClient(azureStorageConnectionString));
-builder.Services.AddSingleton<IBlobStorageService, AzureBlobStorageService>();
+// AWS S3 Storage (CFDI XMLs and PDFs)
+var awsRegion = builder.Configuration["AWS_S3_REGION"] ?? "us-east-1";
+builder.Services.AddSingleton<Amazon.S3.IAmazonS3>(sp =>
+{
+    var config = new Amazon.S3.AmazonS3Config
+    {
+        RegionEndpoint = Amazon.RegionEndpoint.GetBySystemName(awsRegion)
+    };
+    var accessKey = builder.Configuration["AWS_ACCESS_KEY_ID"] ?? "";
+    var secretKey = builder.Configuration["AWS_SECRET_ACCESS_KEY"] ?? "";
+    return new Amazon.S3.AmazonS3Client(accessKey, secretKey, config);
+});
+builder.Services.AddSingleton<IBlobStorageService, S3BlobStorageService>();
 
 builder.Services.AddHttpClient("LogoClient", client =>
 {

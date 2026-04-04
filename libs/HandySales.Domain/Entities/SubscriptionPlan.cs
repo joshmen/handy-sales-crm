@@ -47,6 +47,19 @@ public class SubscriptionPlan
     [Column("max_timbres_mes")]
     public int MaxTimbresMes { get; set; }
 
+    // Facturación CFDI (solo MX)
+    [Column("incluye_facturacion")]
+    public bool IncluyeFacturacion { get; set; }
+
+    [Column("max_facturas_mes")]
+    public int MaxFacturasMes { get; set; }
+
+    [Column("costo_extra_factura_bloque")]
+    public decimal CostoExtraFacturaBloque { get; set; }
+
+    [Column("tamano_bloque_facturas")]
+    public int TamanoBloqueFacturas { get; set; } = 100;
+
     [Column("activo")]
     public bool Activo { get; set; } = true;
 
