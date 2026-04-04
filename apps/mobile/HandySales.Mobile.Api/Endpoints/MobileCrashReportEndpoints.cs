@@ -11,6 +11,7 @@ public static class MobileCrashReportEndpoints
         app.MapPost("/api/crash-reports", async (
             [FromBody] CrashReportCreateDto dto,
             [FromServices] ICrashReportRepository repo,
+            ILogger<CrashReportCreateDto> logger,
             HttpContext context) =>
         {
             if (string.IsNullOrWhiteSpace(dto.ErrorMessage))
@@ -41,6 +42,10 @@ public static class MobileCrashReportEndpoints
             };
 
             await repo.CreateAsync(report);
+
+            logger.LogError("MOBILE_CRASH [{Severity}] {DeviceName} ({AppVersion}/{OsVersion}): {ErrorMessage}",
+                dto.Severity, dto.DeviceName, dto.AppVersion, dto.OsVersion, dto.ErrorMessage);
+
             return Results.Created($"/api/crash-reports/{report.Id}", new { id = report.Id });
         })
         .AllowAnonymous()

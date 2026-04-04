@@ -1,6 +1,7 @@
 using Microsoft.ApplicationInsights.Extensibility;
 using Serilog;
 using Serilog.Events;
+using Serilog.Sinks.AwsCloudWatch;
 
 namespace HandySales.Billing.Api.Configuration;
 
@@ -25,6 +26,24 @@ public static class LoggingExtensions
                     rollingInterval: RollingInterval.Day,
                     retainedFileCountLimit: 30,
                     outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}");
+
+            // AWS CloudWatch — errors and warnings only (when AWS credentials are configured)
+            var awsAccessKey = context.Configuration["AWS_ACCESS_KEY_ID"];
+            var awsSecretKey = context.Configuration["AWS_SECRET_ACCESS_KEY"];
+            if (!string.IsNullOrEmpty(awsAccessKey) && !string.IsNullOrEmpty(awsSecretKey))
+            {
+                var cloudWatchClient = new Amazon.CloudWatchLogs.AmazonCloudWatchLogsClient(
+                    awsAccessKey, awsSecretKey,
+                    Amazon.RegionEndpoint.USEast1);
+
+                configuration.WriteTo.AmazonCloudWatch(
+                    logGroup: "/handysuites/api-billing",
+                    logStreamPrefix: $"{Environment.MachineName}-",
+                    restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Warning,
+                    batchSizeLimit: 25,
+                    batchUploadPeriodInSeconds: 10,
+                    cloudWatchClient: cloudWatchClient);
+            }
 
             // Development: Use Seq
             if (context.HostingEnvironment.IsDevelopment())

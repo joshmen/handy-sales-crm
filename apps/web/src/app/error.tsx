@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { AlertTriangle, RotateCcw, Home } from 'lucide-react';
+import { reportError } from '@/services/errorReporter';
 
 export default function GlobalError({
   error,
@@ -12,6 +13,7 @@ export default function GlobalError({
 }) {
   useEffect(() => {
     console.error('[GlobalError]', error);
+    reportError(error);
   }, [error]);
 
   return (

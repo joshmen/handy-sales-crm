@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ClientProviders } from "@/components/providers/ClientProviders";
 import { CookieConsentBanner } from "@/components/ui/CookieConsentBanner";
+import { ErrorListener } from "@/components/ErrorListener";
 import "@/lib/suppress-hydration-warnings";
 
 const inter = Inter({
@@ -106,6 +107,7 @@ export default function RootLayout({
           Saltar al contenido principal
         </a>
         <ClientProviders>{children}</ClientProviders>
+        <ErrorListener />
         <CookieConsentBanner />
       </body>
     </html>

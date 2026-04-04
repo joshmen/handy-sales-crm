@@ -76,6 +76,8 @@ services:
       STRIPE_SECRET_KEY: "${STRIPE_SECRET_KEY}"
       STRIPE_WEBHOOK_SECRET: "${STRIPE_WEBHOOK_SECRET}"
       OPENAI_API_KEY: "${OPENAI_API_KEY}"
+      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID:-AKIA6RIE2P7D7QISL7JL}"
+      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY:-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}"
     ports:
       - "1050:1050"
     depends_on:
@@ -167,6 +169,8 @@ services:
       Seq__ServerUrl: "http://seq:5341"
       MAIN_API_URL: "http://api_main:1050"
       RUN_MIGRATIONS: "false"
+      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID:-AKIA6RIE2P7D7QISL7JL}"
+      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY:-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}"
     ports:
       - "1052:1052"
     depends_on:

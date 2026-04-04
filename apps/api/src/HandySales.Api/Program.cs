@@ -233,6 +233,8 @@ app.MapSubscriptionPlanAdminEndpoints();
 app.MapStripeWebhookEndpoints();
 app.MapInternalEndpoints();
 app.MapCrashReportEndpoints();
+app.MapWebErrorEndpoints();
+app.MapMonitoringEndpoints();
 app.MapActivityLogEndpoints();
 app.MapSupervisorEndpoints();
 app.MapAutomationEndpoints();

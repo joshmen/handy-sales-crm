@@ -14,6 +14,7 @@ public static class CrashReportEndpoints
             CrashReportCreateDto dto,
             ICrashReportRepository repo,
             IHubContext<NotificationHub> hubContext,
+            ILogger<CrashReportCreateDto> logger,
             HttpContext context) =>
         {
             if (string.IsNullOrWhiteSpace(dto.ErrorMessage))
@@ -45,6 +46,9 @@ public static class CrashReportEndpoints
             };
 
             await repo.CreateAsync(report);
+
+            logger.LogError("MOBILE_CRASH [{Severity}] {DeviceName} ({AppVersion}/{OsVersion}): {ErrorMessage}",
+                dto.Severity, dto.DeviceName, dto.AppVersion, dto.OsVersion, dto.ErrorMessage);
 
             // Broadcast to superadmin group only
             await hubContext.Clients.Group("superadmin").SendAsync("CrashReportCreated", new

@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { AlertTriangle, RotateCcw, Home } from 'lucide-react';
+import { reportError } from '@/services/errorReporter';
 
 export default function DashboardError({
   error,
@@ -12,6 +13,7 @@ export default function DashboardError({
 }) {
   useEffect(() => {
     console.error('[DashboardError]', error);
+    reportError(error);
   }, [error]);
 
   return (

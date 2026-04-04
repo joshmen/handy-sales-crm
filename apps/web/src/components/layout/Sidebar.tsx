@@ -407,7 +407,7 @@ const superAdminItems: SidebarItem[] = [
   },
   {
     id: 'sa-crash-reports',
-    label: 'Crash Reports',
+    label: 'Monitor de Errores',
     icon: SbBug,
     href: '/admin/crash-reports',
   },

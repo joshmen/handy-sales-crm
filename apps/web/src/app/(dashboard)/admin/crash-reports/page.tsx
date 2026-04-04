@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   ChevronRight,
+  ChevronDown,
   Loader2,
   RefreshCw,
   Search,
@@ -19,7 +20,21 @@ import {
   User,
   Buildings,
   CalendarDots,
+  CloudArrowUp,
+  ArrowsClockwise,
+  CaretDown,
+  CaretRight,
 } from '@phosphor-icons/react';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+  Legend,
+} from 'recharts';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Drawer } from '@/components/ui/Drawer';
@@ -38,12 +53,20 @@ import {
   CrashReportDto,
   CrashReportEstadisticas,
 } from '@/services/api/crashReports';
+import {
+  monitoringService,
+  MonitoringStats,
+  LogEntry,
+} from '@/services/api/monitoring';
 import { useFormatters } from '@/hooks/useFormatters';
 import { formatDate as libFmtDate } from '@/lib/formatters';
 
 const PAGE_SIZE = 20;
 
 type SeverityFilter = 'ALL' | 'CRASH' | 'ERROR' | 'WARNING';
+type ActiveTab = 'cloudwatch' | 'mobile';
+
+// ============ SHARED HELPERS ============
 
 function getSeverityBadge(severity: string) {
   switch (severity?.toUpperCase()) {
@@ -69,9 +92,7 @@ function getSeverityBadge(severity: string) {
         </span>
       );
     default:
-      return (
-        <Badge variant="secondary">{severity}</Badge>
-      );
+      return <Badge variant="secondary">{severity}</Badge>;
   }
 }
 
@@ -113,8 +134,348 @@ function truncateText(text: string, maxLength: number) {
   return text.substring(0, maxLength) + '...';
 }
 
-export default function CrashReportsPage() {
-  const { formatCurrency } = useFormatters();
+// ============ LOG GROUP COLORS ============
+
+const LOG_GROUP_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
+  'api-main': { bg: 'bg-blue-100', text: 'text-blue-800', dot: '#3b82f6' },
+  'api-billing': { bg: 'bg-purple-100', text: 'text-purple-800', dot: '#8b5cf6' },
+  'api-mobile': { bg: 'bg-cyan-100', text: 'text-cyan-800', dot: '#06b6d4' },
+  web: { bg: 'bg-emerald-100', text: 'text-emerald-800', dot: '#10b981' },
+};
+
+function getLogGroupBadge(logGroup: string) {
+  const colors = LOG_GROUP_COLORS[logGroup] || { bg: 'bg-gray-100', text: 'text-gray-700', dot: '#6b7280' };
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full ${colors.bg} px-2.5 py-0.5 text-xs font-semibold ${colors.text}`}>
+      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: colors.dot }} />
+      {logGroup}
+    </span>
+  );
+}
+
+// ============ CLOUDWATCH TAB ============
+
+function CloudWatchTab() {
+  const [stats, setStats] = useState<MonitoringStats | null>(null);
+  const [recentErrors, setRecentErrors] = useState<LogEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [errorsLoading, setErrorsLoading] = useState(true);
+  const [logGroupFilter, setLogGroupFilter] = useState<string>('ALL');
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const loadStats = useCallback(async () => {
+    try {
+      const data = await monitoringService.getStats();
+      setStats(data);
+    } catch (error) {
+      console.error('Error loading monitoring stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const loadRecentErrors = useCallback(async () => {
+    try {
+      setErrorsLoading(true);
+      const data = await monitoringService.getRecentErrors({
+        logGroup: logGroupFilter === 'ALL' ? undefined : logGroupFilter,
+        limit: 50,
+      });
+      setRecentErrors(data);
+    } catch (error) {
+      console.error('Error loading recent errors:', error);
+    } finally {
+      setErrorsLoading(false);
+    }
+  }, [logGroupFilter]);
+
+  const handleRefresh = useCallback(() => {
+    setLoading(true);
+    loadStats();
+    loadRecentErrors();
+  }, [loadStats, loadRecentErrors]);
+
+  useEffect(() => {
+    loadStats();
+    loadRecentErrors();
+  }, [loadStats, loadRecentErrors]);
+
+  // Auto-refresh
+  useEffect(() => {
+    if (autoRefresh) {
+      intervalRef.current = setInterval(handleRefresh, 30_000);
+    }
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [autoRefresh, handleRefresh]);
+
+  const toggleRow = (index: number) => {
+    setExpandedRows(prev => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  };
+
+  // Prepare chart data — group by hour with log group breakdown
+  const chartData = stats?.errorsByHour ?? [];
+
+  return (
+    <div className="space-y-6">
+      {/* Controls */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          {/* Log group filter */}
+          <div className="w-48">
+            <Select value={logGroupFilter} onValueChange={setLogGroupFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Log Group" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">Todos los servicios</SelectItem>
+                <SelectItem value="api-main">api-main</SelectItem>
+                <SelectItem value="api-billing">api-billing</SelectItem>
+                <SelectItem value="api-mobile">api-mobile</SelectItem>
+                <SelectItem value="web">web</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Auto-refresh toggle */}
+          <button
+            onClick={() => setAutoRefresh(prev => !prev)}
+            className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition-colors ${
+              autoRefresh
+                ? 'bg-green-50 border-green-200 text-green-700'
+                : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'
+            }`}
+          >
+            <ArrowsClockwise size={14} weight={autoRefresh ? 'fill' : 'regular'} className={autoRefresh ? 'animate-spin' : ''} />
+            Auto (30s)
+          </button>
+          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
+            Actualizar
+          </Button>
+        </div>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-500">Errores 24h</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">
+                {loading ? (
+                  <span className="inline-block h-8 w-12 bg-gray-200 rounded-md animate-pulse" />
+                ) : (
+                  stats?.errorsLast24h ?? 0
+                )}
+              </p>
+            </div>
+            <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-orange-100">
+              <Bug size={24} weight="duotone" className="text-orange-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-500">Warnings 24h</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">
+                {loading ? (
+                  <span className="inline-block h-8 w-12 bg-gray-200 rounded-md animate-pulse" />
+                ) : (
+                  stats?.warningsLast24h ?? 0
+                )}
+              </p>
+            </div>
+            <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-yellow-100">
+              <Warning size={24} weight="duotone" className="text-yellow-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-500">Crashes 24h</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">
+                {loading ? (
+                  <span className="inline-block h-8 w-12 bg-gray-200 rounded-md animate-pulse" />
+                ) : (
+                  stats?.crashesLast24h ?? 0
+                )}
+              </p>
+            </div>
+            <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-red-100">
+              <ShieldWarning size={24} weight="duotone" className="text-red-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-500">APIs con errores</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">
+                {loading ? (
+                  <span className="inline-block h-8 w-12 bg-gray-200 rounded-md animate-pulse" />
+                ) : (
+                  stats?.apisWithErrors ?? 0
+                )}
+              </p>
+            </div>
+            <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-blue-100">
+              <CloudArrowUp size={24} weight="duotone" className="text-blue-600" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bar Chart — Errors by Hour */}
+      <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+        <h3 className="text-sm font-semibold text-gray-700 mb-4">Errores por hora (ultimas 24h)</h3>
+        {loading ? (
+          <div className="h-64 w-full bg-gray-50 rounded-lg animate-pulse" />
+        ) : chartData.length === 0 ? (
+          <div className="h-64 flex items-center justify-center text-sm text-gray-400">
+            Sin datos en las ultimas 24 horas
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis dataKey="hour" tick={{ fontSize: 11 }} />
+              <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+              <RechartsTooltip
+                contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                labelStyle={{ fontWeight: 600 }}
+              />
+              <Legend wrapperStyle={{ fontSize: 12 }} />
+              <Bar dataKey="count" name="Errores" fill="#f97316" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
+      </div>
+
+      {/* Recent Errors Table */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100">
+          <h3 className="text-sm font-semibold text-gray-700">Errores recientes</h3>
+        </div>
+
+        {errorsLoading ? (
+          <div className="divide-y divide-gray-100">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="px-6 py-4">
+                <div className="h-4 w-full bg-gray-100 rounded-md animate-pulse" />
+              </div>
+            ))}
+          </div>
+        ) : recentErrors.length === 0 ? (
+          <div className="px-6 py-12 text-center">
+            <CheckCircle size={48} weight="duotone" className="mx-auto text-green-300 mb-3" />
+            <p className="text-gray-500 text-sm">Sin errores recientes</p>
+            <p className="text-gray-400 text-xs mt-1">No se encontraron errores para los filtros seleccionados</p>
+          </div>
+        ) : (
+          <>
+            {/* Desktop table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 w-8" />
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Timestamp</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Log Group</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Mensaje</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {recentErrors.map((entry, idx) => (
+                    <>
+                      <tr
+                        key={`row-${idx}`}
+                        onClick={() => toggleRow(idx)}
+                        className="hover:bg-gray-50 cursor-pointer transition-colors"
+                      >
+                        <td className="px-6 py-3">
+                          {expandedRows.has(idx) ? (
+                            <CaretDown size={14} className="text-gray-400" />
+                          ) : (
+                            <CaretRight size={14} className="text-gray-400" />
+                          )}
+                        </td>
+                        <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-600">
+                          {formatDate(entry.timestamp)}
+                        </td>
+                        <td className="px-6 py-3 whitespace-nowrap">
+                          {getLogGroupBadge(entry.logGroup)}
+                        </td>
+                        <td className="px-6 py-3 text-sm text-gray-900 max-w-md truncate">
+                          {truncateText(entry.message, 100)}
+                        </td>
+                      </tr>
+                      {expandedRows.has(idx) && (
+                        <tr key={`detail-${idx}`}>
+                          <td colSpan={4} className="px-6 py-4 bg-gray-50">
+                            <div className="space-y-2">
+                              <div className="text-xs text-gray-500">
+                                <span className="font-medium">Log Stream:</span> {entry.logStream}
+                              </div>
+                              <pre className="text-xs text-gray-800 bg-gray-900 text-green-400 rounded-lg p-4 overflow-x-auto max-h-48 overflow-y-auto font-mono whitespace-pre-wrap break-all">
+                                {entry.message}
+                              </pre>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile cards */}
+            <div className="md:hidden divide-y divide-gray-100">
+              {recentErrors.map((entry, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => toggleRow(idx)}
+                  className="px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-center justify-between mb-1.5">
+                    {getLogGroupBadge(entry.logGroup)}
+                    <span className="text-xs text-gray-400">{formatDate(entry.timestamp)}</span>
+                  </div>
+                  <p className="text-sm text-gray-900 line-clamp-2">{entry.message}</p>
+                  {expandedRows.has(idx) && (
+                    <pre className="mt-2 text-xs text-green-400 bg-gray-900 rounded-lg p-3 overflow-x-auto max-h-40 overflow-y-auto font-mono whitespace-pre-wrap break-all">
+                      {entry.message}
+                    </pre>
+                  )}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============ MOBILE CRASHES TAB ============
+
+function MobileCrashesTab() {
   const { isConnected, on, off } = useSignalR();
 
   // Data state
@@ -162,9 +523,7 @@ export default function CrashReportsPage() {
     try {
       setLoading(true);
       const resueltoParam =
-        resueltoFilter === 'ALL'
-          ? null
-          : resueltoFilter === 'true';
+        resueltoFilter === 'ALL' ? null : resueltoFilter === 'true';
 
       const result = await crashReportService.getAll({
         page,
@@ -196,7 +555,6 @@ export default function CrashReportsPage() {
     loadReports();
   }, [loadReports]);
 
-  // Reset page when filters change
   useEffect(() => {
     setPage(1);
   }, [severityFilter, resueltoFilter, appliedSearchVersion]);
@@ -211,9 +569,10 @@ export default function CrashReportsPage() {
       const severity = (data?.severity ?? data?.Severity) as string;
       toast({
         title: `Nuevo ${severity || 'crash report'}`,
-        description: ((data?.errorMessage ?? data?.ErrorMessage) as string)?.substring(0, 80) || 'Se recibio un nuevo reporte',
+        description:
+          ((data?.errorMessage ?? data?.ErrorMessage) as string)?.substring(0, 80) ||
+          'Se recibio un nuevo reporte',
       });
-      // Refresh both list and stats
       loadReports();
       loadEstadisticas();
     };
@@ -221,10 +580,7 @@ export default function CrashReportsPage() {
     const handleCrashResolved = (...args: unknown[]) => {
       const data = args[0] as Record<string, unknown>;
       const reportId = (data?.id ?? data?.Id) as number;
-      // Update the report in the current list without full reload
-      setReports(prev =>
-        prev.map(r => r.id === reportId ? { ...r, resuelto: true } : r)
-      );
+      setReports(prev => prev.map(r => (r.id === reportId ? { ...r, resuelto: true } : r)));
       loadEstadisticas();
     };
 
@@ -245,7 +601,6 @@ export default function CrashReportsPage() {
     setResolverOpen(false);
     setResolverNota('');
 
-    // Load fresh detail
     try {
       setDetailLoading(true);
       const detail = await crashReportService.getById(report.id);
@@ -272,11 +627,11 @@ export default function CrashReportsPage() {
       toast.success('Crash report marcado como resuelto');
       setResolverOpen(false);
       setResolverNota('');
-      // Refresh data
       loadReports();
       loadEstadisticas();
-      // Update drawer state
-      setSelectedReport(prev => prev ? { ...prev, resuelto: true, notaResolucion: resolverNota || null } : null);
+      setSelectedReport(prev =>
+        prev ? { ...prev, resuelto: true, notaResolucion: resolverNota || null } : null
+      );
     } catch {
       toast.error('No se pudo marcar como resuelto');
     } finally {
@@ -299,87 +654,10 @@ export default function CrashReportsPage() {
     loadEstadisticas();
   };
 
-  // ---- Render: Loading skeleton ----
-
-  if (loading && reports.length === 0) {
-    return (
-      <div className="space-y-6">
-        {/* Breadcrumb Skeleton */}
-        <div className="h-6 w-64 bg-gray-200 rounded-md animate-pulse" />
-
-        {/* Header Skeleton */}
-        <div>
-          <div className="h-8 w-48 bg-gray-200 rounded-md animate-pulse mb-2" />
-          <div className="h-5 w-96 bg-gray-200 rounded-md animate-pulse" />
-        </div>
-
-        {/* KPI Cards Skeleton */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[1, 2, 3, 4].map(i => (
-            <div key={i} className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="h-4 w-24 bg-gray-200 rounded-md animate-pulse mb-3" />
-                  <div className="h-8 w-20 bg-gray-200 rounded-md animate-pulse" />
-                </div>
-                <div className="h-12 w-12 rounded-lg bg-gray-100 animate-pulse" />
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Table Skeleton */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-          <div className="p-4 border-b border-gray-100">
-            <div className="h-10 w-full bg-gray-100 rounded-md animate-pulse" />
-          </div>
-          <div className="divide-y divide-gray-100">
-            {[1, 2, 3, 4, 5].map(i => (
-              <div key={i} className="p-4">
-                <div className="h-5 w-full bg-gray-100 rounded-md animate-pulse" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
-      {/* Breadcrumb */}
-      <nav className="flex items-center space-x-2 text-sm text-gray-500">
-        <span>Administracion</span>
-        <ChevronRight className="h-4 w-4" />
-        <span className="text-gray-900 font-medium">Crash Reports</span>
-      </nav>
-
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Bug size={28} weight="duotone" className="text-red-500" />
-            Crash Reports
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Errores reportados desde la app movil
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleRefresh}
-          disabled={loading}
-          className="flex items-center gap-2"
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          Actualizar
-        </Button>
-      </div>
-
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Hoy */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
@@ -398,7 +676,6 @@ export default function CrashReportsPage() {
           </div>
         </div>
 
-        {/* Sin resolver */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
@@ -417,7 +694,6 @@ export default function CrashReportsPage() {
           </div>
         </div>
 
-        {/* Crashes */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
@@ -436,7 +712,6 @@ export default function CrashReportsPage() {
           </div>
         </div>
 
-        {/* Errors */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
@@ -456,10 +731,9 @@ export default function CrashReportsPage() {
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Filters + Refresh */}
       <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-          {/* Severity filter */}
           <div className="w-full sm:w-48">
             <Select
               value={severityFilter}
@@ -477,12 +751,8 @@ export default function CrashReportsPage() {
             </Select>
           </div>
 
-          {/* Resuelto filter */}
           <div className="w-full sm:w-44">
-            <Select
-              value={resueltoFilter}
-              onValueChange={setResueltoFilter}
-            >
+            <Select value={resueltoFilter} onValueChange={setResueltoFilter}>
               <SelectTrigger>
                 <SelectValue placeholder="Estado" />
               </SelectTrigger>
@@ -494,7 +764,6 @@ export default function CrashReportsPage() {
             </Select>
           </div>
 
-          {/* Search by version */}
           <form onSubmit={handleSearchSubmit} className="flex-1 flex gap-2 w-full sm:w-auto">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -519,6 +788,10 @@ export default function CrashReportsPage() {
               <Search className="h-4 w-4 text-blue-500" />
             </Button>
           </form>
+
+          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading} className="h-10">
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          </Button>
         </div>
       </div>
 
@@ -528,48 +801,24 @@ export default function CrashReportsPage() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">
-                  Fecha
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">
-                  Severidad
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">
-                  Error
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">
-                  Dispositivo
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">
-                  Version
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">
-                  Estado
-                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Fecha</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Severidad</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Error</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Dispositivo</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Version</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Estado</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-100">
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i}>
-                    <td className="px-6 py-4">
-                      <div className="h-4 w-32 bg-gray-100 rounded-md animate-pulse" />
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="h-5 w-16 bg-gray-100 rounded-full animate-pulse" />
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="h-4 w-48 bg-gray-100 rounded-md animate-pulse" />
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="h-4 w-28 bg-gray-100 rounded-md animate-pulse" />
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="h-4 w-16 bg-gray-100 rounded-md animate-pulse" />
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="h-5 w-20 bg-gray-100 rounded-full animate-pulse" />
-                    </td>
+                    <td className="px-6 py-4"><div className="h-4 w-32 bg-gray-100 rounded-md animate-pulse" /></td>
+                    <td className="px-6 py-4"><div className="h-5 w-16 bg-gray-100 rounded-full animate-pulse" /></td>
+                    <td className="px-6 py-4"><div className="h-4 w-48 bg-gray-100 rounded-md animate-pulse" /></td>
+                    <td className="px-6 py-4"><div className="h-4 w-28 bg-gray-100 rounded-md animate-pulse" /></td>
+                    <td className="px-6 py-4"><div className="h-4 w-16 bg-gray-100 rounded-md animate-pulse" /></td>
+                    <td className="px-6 py-4"><div className="h-5 w-20 bg-gray-100 rounded-full animate-pulse" /></td>
                   </tr>
                 ))
               ) : reports.length === 0 ? (
@@ -598,9 +847,7 @@ export default function CrashReportsPage() {
                         {truncateText(report.errorMessage, 60)}
                       </div>
                       {report.componentName && (
-                        <div className="text-xs text-gray-400 mt-0.5">
-                          en {report.componentName}
-                        </div>
+                        <div className="text-xs text-gray-400 mt-0.5">en {report.componentName}</div>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
@@ -619,7 +866,6 @@ export default function CrashReportsPage() {
           </table>
         </div>
 
-        {/* Pagination */}
         {totalCount > 0 && (
           <div className="border-t border-gray-200 px-4">
             <Pagination
@@ -670,9 +916,7 @@ export default function CrashReportsPage() {
                 {report.errorMessage}
               </p>
               {report.componentName && (
-                <p className="text-xs text-gray-400 mb-2">
-                  en {report.componentName}
-                </p>
+                <p className="text-xs text-gray-400 mb-2">en {report.componentName}</p>
               )}
               <div className="flex items-center justify-between text-xs text-gray-500">
                 <span className="flex items-center gap-1">
@@ -682,15 +926,12 @@ export default function CrashReportsPage() {
                 <span>{formatDate(report.creadoEn)}</span>
               </div>
               {report.appVersion && (
-                <div className="text-xs text-gray-400 mt-1">
-                  v{report.appVersion}
-                </div>
+                <div className="text-xs text-gray-400 mt-1">v{report.appVersion}</div>
               )}
             </div>
           ))
         )}
 
-        {/* Mobile Pagination */}
         {totalCount > 0 && (
           <Pagination
             currentPage={page}
@@ -789,13 +1030,11 @@ export default function CrashReportsPage() {
           </div>
         ) : selectedReport ? (
           <div className="p-6 space-y-6">
-            {/* Status & Severity */}
             <div className="flex items-center gap-3">
               {getSeverityBadge(selectedReport.severity)}
               {getEstadoBadge(selectedReport.resuelto)}
             </div>
 
-            {/* Error Message */}
             <div>
               <h3 className="text-xs font-semibold text-gray-500 mb-2 flex items-center gap-1.5">
                 <Warning size={14} className="text-orange-500" />
@@ -806,7 +1045,6 @@ export default function CrashReportsPage() {
               </p>
             </div>
 
-            {/* Component */}
             {selectedReport.componentName && (
               <div>
                 <h3 className="text-xs font-semibold text-gray-500 mb-2 flex items-center gap-1.5">
@@ -819,7 +1057,6 @@ export default function CrashReportsPage() {
               </div>
             )}
 
-            {/* Stack Trace */}
             {selectedReport.stackTrace && (
               <div>
                 <h3 className="text-xs font-semibold text-gray-500 mb-2 flex items-center gap-1.5">
@@ -832,7 +1069,6 @@ export default function CrashReportsPage() {
               </div>
             )}
 
-            {/* Device Info */}
             <div>
               <h3 className="text-xs font-semibold text-gray-500 mb-3 flex items-center gap-1.5">
                 <DeviceMobile size={14} className="text-cyan-500" />
@@ -841,32 +1077,23 @@ export default function CrashReportsPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-gray-50 rounded-lg px-3 py-2">
                   <p className="text-xs text-gray-400">Nombre</p>
-                  <p className="text-sm text-gray-900 font-medium">
-                    {selectedReport.deviceName || '-'}
-                  </p>
+                  <p className="text-sm text-gray-900 font-medium">{selectedReport.deviceName || '-'}</p>
                 </div>
                 <div className="bg-gray-50 rounded-lg px-3 py-2">
                   <p className="text-xs text-gray-400">Device ID</p>
-                  <p className="text-sm text-gray-900 font-mono truncate">
-                    {selectedReport.deviceId || '-'}
-                  </p>
+                  <p className="text-sm text-gray-900 font-mono truncate">{selectedReport.deviceId || '-'}</p>
                 </div>
                 <div className="bg-gray-50 rounded-lg px-3 py-2">
                   <p className="text-xs text-gray-400">Version App</p>
-                  <p className="text-sm text-gray-900 font-medium">
-                    {selectedReport.appVersion || '-'}
-                  </p>
+                  <p className="text-sm text-gray-900 font-medium">{selectedReport.appVersion || '-'}</p>
                 </div>
                 <div className="bg-gray-50 rounded-lg px-3 py-2">
                   <p className="text-xs text-gray-400">OS Version</p>
-                  <p className="text-sm text-gray-900 font-medium">
-                    {selectedReport.osVersion || '-'}
-                  </p>
+                  <p className="text-sm text-gray-900 font-medium">{selectedReport.osVersion || '-'}</p>
                 </div>
               </div>
             </div>
 
-            {/* Tenant & User */}
             <div>
               <h3 className="text-xs font-semibold text-gray-500 mb-3 flex items-center gap-1.5">
                 <User size={14} className="text-emerald-500" />
@@ -888,24 +1115,21 @@ export default function CrashReportsPage() {
                     Usuario
                   </p>
                   <p className="text-sm text-gray-900 font-medium">
-                    {selectedReport.userNombre || (selectedReport.userId ? `User #${selectedReport.userId}` : '-')}
+                    {selectedReport.userNombre ||
+                      (selectedReport.userId ? `User #${selectedReport.userId}` : '-')}
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Timestamp */}
             <div>
               <h3 className="text-xs font-semibold text-gray-500 mb-2 flex items-center gap-1.5">
                 <CalendarDots size={14} className="text-blue-500" />
                 Fecha de reporte
               </h3>
-              <p className="text-sm text-gray-900">
-                {formatDate(selectedReport.creadoEn)}
-              </p>
+              <p className="text-sm text-gray-900">{formatDate(selectedReport.creadoEn)}</p>
             </div>
 
-            {/* Resolution note */}
             {selectedReport.resuelto && selectedReport.notaResolucion && (
               <div>
                 <h3 className="text-xs font-semibold text-gray-500 mb-2 flex items-center gap-1.5">
@@ -920,6 +1144,69 @@ export default function CrashReportsPage() {
           </div>
         ) : null}
       </Drawer>
+    </div>
+  );
+}
+
+// ============ MAIN PAGE ============
+
+export default function CrashReportsPage() {
+  const [activeTab, setActiveTab] = useState<ActiveTab>('cloudwatch');
+
+  return (
+    <div className="space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center space-x-2 text-sm text-gray-500">
+        <span>Administracion</span>
+        <ChevronRight className="h-4 w-4" />
+        <span className="text-gray-900 font-medium">Monitor de Errores</span>
+      </nav>
+
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <Bug size={28} weight="duotone" className="text-red-500" />
+          Monitor de Errores
+        </h1>
+        <p className="text-sm text-gray-500 mt-1">
+          Monitoreo centralizado de errores en todos los servicios
+        </p>
+      </div>
+
+      {/* Tabs */}
+      <div className="border-b border-gray-200">
+        <nav className="flex gap-6" aria-label="Tabs">
+          <button
+            onClick={() => setActiveTab('cloudwatch')}
+            className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'cloudwatch'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <span className="flex items-center gap-2">
+              <CloudArrowUp size={16} weight="duotone" />
+              Monitor CloudWatch
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveTab('mobile')}
+            className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'mobile'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <span className="flex items-center gap-2">
+              <DeviceMobile size={16} weight="duotone" />
+              Crashes Movil
+            </span>
+          </button>
+        </nav>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'cloudwatch' ? <CloudWatchTab /> : <MobileCrashesTab />}
     </div>
   );
 }
