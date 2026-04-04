@@ -394,6 +394,12 @@ const superAdminItems: SidebarItem[] = [
     href: '/admin/subscription-plans',
   },
   {
+    id: 'sa-cupones',
+    label: 'Cupones',
+    icon: SbDiscounts,
+    href: '/admin/cupones',
+  },
+  {
     id: 'sa-activity-logs',
     label: 'Registro de actividad',
     icon: SbActivityLog,
