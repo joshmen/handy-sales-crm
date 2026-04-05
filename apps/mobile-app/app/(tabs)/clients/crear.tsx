@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { clientesApi } from '@/api';
+import { createClienteOffline } from '@/db/actions';
 import { useZonas, useCategoriasCliente } from '@/hooks';
 import { Save, ChevronLeft, MapPin, ChevronDown, Search, X, Check } from 'lucide-react-native';
 import { COLORS } from '@/theme/colors';
@@ -245,11 +246,44 @@ export default function CrearClienteScreen() {
   }, [editId, loaded]);
 
   const crearMutation = useMutation({
-    mutationFn: (data: ClienteCreateRequest) =>
-      isEditing ? clientesApi.update(Number(editId), data) : clientesApi.create(data),
-    onSuccess: () => {
+    mutationFn: async (data: ClienteCreateRequest) => {
+      if (isEditing) return clientesApi.update(Number(editId), data);
+      try {
+        return await clientesApi.create(data);
+      } catch (apiErr: any) {
+        // Offline fallback — save locally in WatermelonDB
+        if (!apiErr?.response || apiErr.code === 'ERR_NETWORK') {
+          await createClienteOffline({
+            nombre: data.nombre,
+            telefono: data.telefono,
+            correo: data.correo,
+            rfc: data.rfc,
+            direccion: data.direccion || '',
+            numeroExterior: data.numeroExterior,
+            zonaId: data.idZona || 0,
+            categoriaId: data.categoriaClienteId || 0,
+            latitud: data.latitud,
+            longitud: data.longitud,
+            rfcFiscal: data.rfcFiscal,
+            razonSocial: data.razonSocial,
+            regimenFiscal: data.regimenFiscal,
+            usoCfdi: data.usoCFDIPredeterminado,
+            cpFiscal: data.codigoPostalFiscal,
+            requiereFactura: data.facturable,
+          });
+          return { offline: true };
+        }
+        throw apiErr;
+      }
+    },
+    onSuccess: (result: any) => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
-      Toast.show({ type: 'success', text1: isEditing ? 'Cliente actualizado' : 'Cliente creado', text2: 'Se guardó exitosamente' });
+      const isOffline = result?.offline;
+      Toast.show({
+        type: 'success',
+        text1: isEditing ? 'Cliente actualizado' : 'Cliente creado',
+        text2: isOffline ? 'Guardado offline — se sincronizará automáticamente' : 'Se guardó exitosamente',
+      });
       router.back();
     },
     onError: (err: any) => {

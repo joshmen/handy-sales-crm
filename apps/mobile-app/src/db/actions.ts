@@ -3,6 +3,57 @@ import Pedido from './models/Pedido';
 import DetallePedido from './models/DetallePedido';
 import Cobro from './models/Cobro';
 import Visita from './models/Visita';
+import Cliente from './models/Cliente';
+
+/**
+ * Create a cliente offline in WatermelonDB.
+ * WDB marks it as `created` — next sync push sends it to server.
+ */
+export async function createClienteOffline(data: {
+  nombre: string;
+  telefono?: string;
+  correo?: string;
+  rfc?: string;
+  direccion: string;
+  numeroExterior?: string;
+  zonaId: number;
+  categoriaId: number;
+  latitud?: number;
+  longitud?: number;
+  rfcFiscal?: string;
+  razonSocial?: string;
+  regimenFiscal?: string;
+  usoCfdi?: string;
+  cpFiscal?: string;
+  requiereFactura?: boolean;
+}): Promise<Cliente> {
+  return database.write(async () => {
+    return await database.get<Cliente>('clientes').create((record: any) => {
+      record.serverId = null;
+      record.nombre = data.nombre;
+      record.telefono = data.telefono || null;
+      record.email = data.correo || null;
+      record.rfc = data.rfc || null;
+      record.direccion = data.direccion;
+      record.zonaId = data.zonaId;
+      record.categoriaId = data.categoriaId;
+      record.latitud = data.latitud ?? null;
+      record.longitud = data.longitud ?? null;
+      record.limiteCredito = 0;
+      record.diasCredito = 0;
+      record.esProspecto = false;
+      record.rfcFiscal = data.rfcFiscal || null;
+      record.razonSocial = data.razonSocial || null;
+      record.regimenFiscal = data.regimenFiscal || null;
+      record.usoCfdi = data.usoCfdi || null;
+      record.cpFiscal = data.cpFiscal || null;
+      record.requiereFactura = data.requiereFactura ?? false;
+      record.activo = true;
+      record.version = 1;
+      record.updatedAt = new Date();
+    });
+  });
+}
 
 export interface OfflineOrderItem {
   productoId: string;

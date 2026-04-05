@@ -1,8 +1,8 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { View, Text, Modal, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker } from 'react-native-maps';
-import { MapPin, Phone, Globe, Clock, X } from 'lucide-react-native';
+import { MapPin, Phone, Globe, Clock, X, Navigation } from 'lucide-react-native';
 import { COLORS } from '@/theme/colors';
 
 interface PlaceDetails {
@@ -70,6 +70,27 @@ export function GpsMapModal({ visible, initialCoord, title, clientName, onConfir
     setLastInit(initialCoord);
     setPreview(null);
   }
+
+  // Request GPS permission and auto-center when modal opens
+  const [gpsGranted, setGpsGranted] = useState(false);
+  useEffect(() => {
+    if (!visible) return;
+    (async () => {
+      try {
+        const Location = require('expo-location') as typeof import('expo-location');
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') { setGpsGranted(false); return; }
+        setGpsGranted(true);
+        const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        const userCoord = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+        // Auto-center if using fallback coords (no real saved location)
+        if (initialCoord.latitude === 25.79 || initialCoord.latitude === 0) {
+          setCoord(userCoord);
+          mapRef.current?.animateToRegion({ ...userCoord, latitudeDelta: 0.005, longitudeDelta: 0.005 }, 500);
+        }
+      } catch { setGpsGranted(false); }
+    })();
+  }, [visible]);
 
   const searchPlaces = useCallback((query: string) => {
     setSearch(query);
@@ -208,6 +229,14 @@ export function GpsMapModal({ visible, initialCoord, title, clientName, onConfir
           </Marker>
         </MapView>
 
+        {/* GPS permission warning */}
+        {!gpsGranted && (
+          <View style={styles.gpsBanner}>
+            <Navigation size={14} color="#ea580c" />
+            <Text style={styles.gpsBannerText}>Activa la ubicación en ajustes para ver tu posición en el mapa</Text>
+          </View>
+        )}
+
         {/* Place Preview Card — shows details of selected place */}
         {(preview || loadingDetails) && (
           <View style={styles.previewCard}>
@@ -294,6 +323,25 @@ const styles = StyleSheet.create({
   },
   resultName: { fontSize: 14, fontWeight: '600', color: '#1e293b' },
   resultAddr: { fontSize: 12, color: '#64748b' },
+  gpsBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#fff7ed',
+    borderWidth: 1,
+    borderColor: '#fed7aa',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginHorizontal: 12,
+    marginTop: -4,
+    borderRadius: 8,
+  },
+  gpsBannerText: {
+    flex: 1,
+    fontSize: 12,
+    color: '#ea580c',
+    fontWeight: '500',
+  },
   customMarker: {
     width: 40, height: 40, borderRadius: 20,
     backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center',
