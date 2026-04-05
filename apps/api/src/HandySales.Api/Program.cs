@@ -235,6 +235,7 @@ app.MapInternalEndpoints();
 app.MapCrashReportEndpoints();
 app.MapWebErrorEndpoints();
 app.MapMonitoringEndpoints();
+app.MapLogLevelEndpoints();
 app.MapActivityLogEndpoints();
 app.MapSupervisorEndpoints();
 app.MapAutomationEndpoints();

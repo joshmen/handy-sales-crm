@@ -118,6 +118,7 @@ app.MapMobileAnnouncementEndpoints();
 app.MapMobileMetasEndpoints();
 app.MapMobileFacturaEndpoints();
 app.MapInternalPushEndpoints();
+app.MapMobileLogLevelEndpoints();
 app.MapHealthEndpoints();
 app.MapHub<MobileNotificationHub>("/hubs/notifications");
 

@@ -1,5 +1,6 @@
 using Microsoft.ApplicationInsights.Extensibility;
 using Serilog;
+using Serilog.Core;
 using Serilog.Events;
 using Serilog.Sinks.AwsCloudWatch;
 
@@ -7,6 +8,8 @@ namespace HandySales.Billing.Api.Configuration;
 
 public static class LoggingExtensions
 {
+    public static readonly LoggingLevelSwitch CloudWatchLevelSwitch = new(LogEventLevel.Warning);
+
     public static IHostBuilder AddCustomLogging(this IHostBuilder hostBuilder)
     {
         return hostBuilder.UseSerilog((context, services, configuration) =>
@@ -36,13 +39,14 @@ public static class LoggingExtensions
                     awsAccessKey, awsSecretKey,
                     Amazon.RegionEndpoint.USEast1);
 
-                configuration.WriteTo.AmazonCloudWatch(
-                    logGroup: "/handysuites/api-billing",
-                    logStreamPrefix: $"{Environment.MachineName}-",
-                    restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Warning,
-                    batchSizeLimit: 25,
-                    batchUploadPeriodInSeconds: 10,
-                    cloudWatchClient: cloudWatchClient);
+                configuration.WriteTo.Logger(lc => lc
+                    .Filter.ByIncludingOnly(e => e.Level >= CloudWatchLevelSwitch.MinimumLevel)
+                    .WriteTo.AmazonCloudWatch(
+                        logGroup: "/handysuites/api-billing",
+                        logStreamPrefix: $"{Environment.MachineName}-",
+                        batchSizeLimit: 25,
+                        batchUploadPeriodInSeconds: 10,
+                        cloudWatchClient: cloudWatchClient));
             }
 
             // Development: Use Seq

@@ -24,6 +24,8 @@ import {
   ArrowsClockwise,
   CaretDown,
   CaretRight,
+  GearSix,
+  WarningCircle,
 } from '@phosphor-icons/react';
 import {
   BarChart,
@@ -57,6 +59,7 @@ import {
   monitoringService,
   MonitoringStats,
   LogEntry,
+  LogLevels,
 } from '@/services/api/monitoring';
 import { useFormatters } from '@/hooks/useFormatters';
 import { formatDate as libFmtDate } from '@/lib/formatters';
@@ -155,6 +158,169 @@ function getLogGroupBadge(logGroup: string) {
 
 // ============ CLOUDWATCH TAB ============
 
+const LOG_LEVEL_OPTIONS = [
+  { value: 'Warning', label: 'Errores' },
+  { value: 'Information', label: 'Info' },
+  { value: 'Debug', label: 'Debug' },
+] as const;
+
+type LogLevelValue = 'Warning' | 'Information' | 'Debug';
+
+const API_NAMES: { key: keyof LogLevels; label: string }[] = [
+  { key: 'apiMain', label: 'API Principal' },
+  { key: 'apiBilling', label: 'API Facturacion' },
+  { key: 'apiMobile', label: 'API Movil' },
+];
+
+function LogLevelControls() {
+  const [open, setOpen] = useState(false);
+  const [levels, setLevels] = useState<LogLevels | null>(null);
+  const [draft, setDraft] = useState<Record<keyof LogLevels, LogLevelValue>>({
+    apiMain: 'Warning',
+    apiBilling: 'Warning',
+    apiMobile: 'Warning',
+  });
+  const [loadingLevels, setLoadingLevels] = useState(false);
+  const [applying, setApplying] = useState(false);
+
+  useEffect(() => {
+    if (!open || levels) return;
+    setLoadingLevels(true);
+    monitoringService
+      .getLogLevels()
+      .then(data => {
+        setLevels(data);
+        setDraft({
+          apiMain: (data.apiMain as LogLevelValue) || 'Warning',
+          apiBilling: (data.apiBilling as LogLevelValue) || 'Warning',
+          apiMobile: (data.apiMobile as LogLevelValue) || 'Warning',
+        });
+      })
+      .catch(() => {
+        toast.error('No se pudieron cargar los niveles de logging');
+      })
+      .finally(() => setLoadingLevels(false));
+  }, [open, levels]);
+
+  const hasChanges =
+    levels != null &&
+    (draft.apiMain !== levels.apiMain ||
+      draft.apiBilling !== levels.apiBilling ||
+      draft.apiMobile !== levels.apiMobile);
+
+  const hasVerboseLevel =
+    draft.apiMain !== 'Warning' ||
+    draft.apiBilling !== 'Warning' ||
+    draft.apiMobile !== 'Warning';
+
+  const handleApply = async () => {
+    if (!levels) return;
+    setApplying(true);
+    try {
+      const changes: { apiName: string; level: string }[] = [];
+      for (const { key } of API_NAMES) {
+        if (draft[key] !== levels[key]) {
+          changes.push({ apiName: key, level: draft[key] });
+        }
+      }
+      await Promise.all(changes.map(c => monitoringService.setLogLevel(c.apiName, c.level)));
+      setLevels({ ...draft });
+      toast.success(
+        `Nivel de logging actualizado para ${changes.length} servicio${changes.length > 1 ? 's' : ''}`
+      );
+    } catch {
+      toast.error('Error al aplicar los niveles de logging');
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <button
+        onClick={() => setOpen(prev => !prev)}
+        className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 transition-colors"
+      >
+        <span className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+          <GearSix size={18} weight="duotone" className="text-gray-500" />
+          Nivel de Logging
+        </span>
+        {open ? (
+          <CaretDown size={16} className="text-gray-400" />
+        ) : (
+          <CaretRight size={16} className="text-gray-400" />
+        )}
+      </button>
+
+      {open && (
+        <div className="border-t border-gray-100 px-5 py-4 space-y-4">
+          {loadingLevels ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-8 w-full bg-gray-100 rounded-md animate-pulse" />
+              ))}
+            </div>
+          ) : (
+            <>
+              <div className="space-y-3">
+                {API_NAMES.map(({ key, label }) => (
+                  <div key={key} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                    <span className="text-sm font-medium text-gray-600 w-36 shrink-0">{label}</span>
+                    <div className="flex items-center gap-4">
+                      {LOG_LEVEL_OPTIONS.map(opt => (
+                        <label
+                          key={opt.value}
+                          className="flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <input
+                            type="radio"
+                            name={`log-level-${key}`}
+                            value={opt.value}
+                            checked={draft[key] === opt.value}
+                            onChange={() =>
+                              setDraft(prev => ({ ...prev, [key]: opt.value as LogLevelValue }))
+                            }
+                            className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-gray-700">{opt.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {hasVerboseLevel && (
+                <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5 text-xs text-amber-800">
+                  <WarningCircle size={16} weight="fill" className="text-amber-500 shrink-0 mt-0.5" />
+                  <span>
+                    Niveles Info o Debug activos — genera mas logs y aumenta costos de CloudWatch.
+                    Revertir a Errores cuando termine el diagnostico.
+                  </span>
+                </div>
+              )}
+
+              <div className="flex justify-end">
+                <Button
+                  size="sm"
+                  onClick={handleApply}
+                  disabled={!hasChanges || applying}
+                  className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
+                >
+                  {applying ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
+                  ) : null}
+                  Aplicar
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CloudWatchTab() {
   const [stats, setStats] = useState<MonitoringStats | null>(null);
   const [recentErrors, setRecentErrors] = useState<LogEntry[]>([]);
@@ -226,6 +392,9 @@ function CloudWatchTab() {
 
   return (
     <div className="space-y-6">
+      {/* Log Level Controls (collapsible) */}
+      <LogLevelControls />
+
       {/* Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">

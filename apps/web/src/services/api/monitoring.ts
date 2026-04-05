@@ -2,6 +2,12 @@ import { api, handleApiError } from '@/lib/api';
 
 // ============ TIPOS ============
 
+export interface LogLevels {
+  apiMain: string;
+  apiBilling: string;
+  apiMobile: string;
+}
+
 export interface MonitoringStats {
   errorsLast24h: number;
   warningsLast24h: number;
@@ -43,6 +49,23 @@ class MonitoringService {
         : `${this.basePath}/errors/recent`;
       const res = await api.get<LogEntry[]>(url);
       return res.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  }
+
+  async getLogLevels(): Promise<LogLevels> {
+    try {
+      const res = await api.get<LogLevels>(`${this.basePath}/log-levels`);
+      return res.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  }
+
+  async setLogLevel(apiName: string, level: string): Promise<void> {
+    try {
+      await api.post(`${this.basePath}/log-level`, { apiName, level });
     } catch (error) {
       throw handleApiError(error);
     }

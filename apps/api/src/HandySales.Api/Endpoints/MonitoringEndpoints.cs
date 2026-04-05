@@ -1,5 +1,8 @@
+using System.Text.Json;
 using Amazon.CloudWatchLogs;
 using Amazon.CloudWatchLogs.Model;
+using HandySales.Api.Configuration;
+using Serilog.Events;
 
 namespace HandySales.Api.Endpoints;
 
@@ -146,6 +149,90 @@ public static class MonitoringEndpoints
 
             return Results.Ok(new { data = sorted });
         });
+
+        group.MapGet("/log-levels", async (IHttpClientFactory httpClientFactory, HttpContext context) =>
+        {
+            var localLevel = LoggingExtensions.CloudWatchLevelSwitch.MinimumLevel.ToString();
+
+            var billingUrl = context.RequestServices.GetRequiredService<IConfiguration>()["BILLING_API_URL"] ?? "http://localhost:1051";
+            var mobileUrl = context.RequestServices.GetRequiredService<IConfiguration>()["MOBILE_API_URL"] ?? "http://localhost:1052";
+
+            string billingLevel = "Warning", mobileLevel = "Warning";
+            var token = context.Request.Headers["Authorization"].ToString();
+
+            try
+            {
+                var client = httpClientFactory.CreateClient();
+                client.DefaultRequestHeaders.Add("Authorization", token);
+                var res = await client.GetAsync($"{billingUrl}/api/superadmin/log-level");
+                if (res.IsSuccessStatusCode)
+                {
+                    var data = await res.Content.ReadFromJsonAsync<JsonElement>();
+                    billingLevel = data.GetProperty("level").GetString() ?? "Warning";
+                }
+            }
+            catch { }
+
+            try
+            {
+                var client = httpClientFactory.CreateClient();
+                client.DefaultRequestHeaders.Add("Authorization", token);
+                var res = await client.GetAsync($"{mobileUrl}/api/superadmin/log-level");
+                if (res.IsSuccessStatusCode)
+                {
+                    var data = await res.Content.ReadFromJsonAsync<JsonElement>();
+                    mobileLevel = data.GetProperty("level").GetString() ?? "Warning";
+                }
+            }
+            catch { }
+
+            return Results.Ok(new
+            {
+                apiMain = localLevel,
+                apiBilling = billingLevel,
+                apiMobile = mobileLevel,
+            });
+        });
+
+        group.MapPost("/log-level", async (SetLogLevelRequest req, IHttpClientFactory httpClientFactory, HttpContext context) =>
+        {
+            var token = context.Request.Headers["Authorization"].ToString();
+
+            if (req.ApiName == "api-main")
+            {
+                if (Enum.TryParse<LogEventLevel>(req.Level, true, out var level))
+                {
+                    LoggingExtensions.CloudWatchLevelSwitch.MinimumLevel = level;
+                    return Results.Ok(new { apiName = req.ApiName, level = level.ToString() });
+                }
+                return Results.BadRequest("Invalid level");
+            }
+
+            // Proxy to other APIs
+            var baseUrl = req.ApiName switch
+            {
+                "api-billing" => context.RequestServices.GetRequiredService<IConfiguration>()["BILLING_API_URL"] ?? "http://localhost:1051",
+                "api-mobile" => context.RequestServices.GetRequiredService<IConfiguration>()["MOBILE_API_URL"] ?? "http://localhost:1052",
+                _ => null
+            };
+            if (baseUrl == null) return Results.BadRequest("Unknown API");
+
+            try
+            {
+                var client = httpClientFactory.CreateClient();
+                client.DefaultRequestHeaders.Add("Authorization", token);
+                var res = await client.PostAsJsonAsync($"{baseUrl}/api/superadmin/log-level", new { level = req.Level });
+                if (res.IsSuccessStatusCode)
+                {
+                    return Results.Ok(new { apiName = req.ApiName, level = req.Level });
+                }
+                return Results.StatusCode((int)res.StatusCode);
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem($"Failed to reach {req.ApiName}: {ex.Message}");
+            }
+        });
     }
 
     private static AmazonCloudWatchLogsClient? CreateClient(IConfiguration configuration)
@@ -161,3 +248,5 @@ public static class MonitoringEndpoints
             Amazon.RegionEndpoint.USEast1);
     }
 }
+
+public record SetLogLevelRequest(string ApiName, string Level);
