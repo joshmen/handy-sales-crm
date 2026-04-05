@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -1354,9 +1355,9 @@ export default function CobranzaPage() {
                   <p className="text-sm text-amber-700 font-medium">Este cliente no tiene pedidos con saldo pendiente</p>
                   <p className="text-xs text-amber-600 mt-1">
                     Para registrar un cobro, primero debe existir un pedido.{' '}
-                    <a href="/orders" className="underline font-medium hover:text-amber-800">
+                    <Link href="/orders" className="underline font-medium hover:text-amber-800">
                       Ir a crear pedido
-                    </a>
+                    </Link>
                   </p>
                 </div>
               )
