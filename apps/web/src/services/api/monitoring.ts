@@ -31,9 +31,16 @@ class MonitoringService {
   async getStats(): Promise<MonitoringStats> {
     try {
       const res = await api.get<MonitoringStats>(`${this.basePath}/stats`);
-      return res.data;
-    } catch (error) {
-      throw handleApiError(error);
+      const data = res.data;
+      return {
+        errorsLast24h: data?.errorsLast24h ?? 0,
+        warningsLast24h: data?.warningsLast24h ?? 0,
+        crashesLast24h: data?.crashesLast24h ?? 0,
+        apisWithErrors: data?.apisWithErrors ?? 0,
+        errorsByHour: Array.isArray(data?.errorsByHour) ? data.errorsByHour : [],
+      };
+    } catch {
+      return { errorsLast24h: 0, warningsLast24h: 0, crashesLast24h: 0, apisWithErrors: 0, errorsByHour: [] };
     }
   }
 
@@ -48,9 +55,9 @@ class MonitoringService {
         ? `${this.basePath}/errors/recent?${query}`
         : `${this.basePath}/errors/recent`;
       const res = await api.get<LogEntry[]>(url);
-      return res.data;
-    } catch (error) {
-      throw handleApiError(error);
+      return Array.isArray(res.data) ? res.data : [];
+    } catch {
+      return [];
     }
   }
 
