@@ -218,10 +218,15 @@ function LogLevelControls() {
     if (!levels) return;
     setApplying(true);
     try {
+      const keyToApiName: Record<string, string> = {
+        apiMain: 'api-main',
+        apiBilling: 'api-billing',
+        apiMobile: 'api-mobile',
+      };
       const changes: { apiName: string; level: string }[] = [];
       for (const { key } of API_NAMES) {
         if (draft[key] !== levels[key]) {
-          changes.push({ apiName: key, level: draft[key] });
+          changes.push({ apiName: keyToApiName[key] || key, level: draft[key] });
         }
       }
       await Promise.all(changes.map(c => monitoringService.setLogLevel(c.apiName, c.level)));
