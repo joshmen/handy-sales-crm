@@ -603,13 +603,38 @@ function CloudWatchTab() {
                       {expandedRows.has(idx) && (
                         <tr key={`detail-${idx}`}>
                           <td colSpan={4} className="px-6 py-4 bg-gray-50">
-                            <div className="space-y-2">
-                              <div className="text-xs text-gray-500">
-                                <span className="font-medium">Log Stream:</span> {entry.logStream}
+                            <div className="space-y-3">
+                              <div className="flex gap-4 text-xs text-gray-500">
+                                <span><span className="font-medium">Nivel:</span> {entry.level}</span>
+                                <span><span className="font-medium">Log Stream:</span> {entry.logStream}</span>
                               </div>
-                              <pre className="text-xs text-gray-800 bg-gray-900 text-green-400 rounded-lg p-4 overflow-x-auto max-h-48 overflow-y-auto font-mono whitespace-pre-wrap break-all">
-                                {entry.message}
-                              </pre>
+                              <div>
+                                <p className="text-xs font-medium text-gray-600 mb-1">Mensaje:</p>
+                                <pre className="text-xs bg-gray-100 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-all text-gray-800">
+{entry.message}
+                                </pre>
+                              </div>
+                              {entry.exception && (
+                                <div>
+                                  <p className="text-xs font-medium text-red-600 mb-1">Stack Trace:</p>
+                                  <pre className="text-xs bg-gray-900 text-red-400 rounded-lg p-4 overflow-x-auto max-h-64 overflow-y-auto font-mono whitespace-pre-wrap break-all">
+{entry.exception}
+                                  </pre>
+                                </div>
+                              )}
+                              {Object.keys(entry.properties).length > 0 && (
+                                <div>
+                                  <p className="text-xs font-medium text-gray-600 mb-1">Propiedades:</p>
+                                  <div className="grid grid-cols-2 gap-1 text-xs">
+                                    {Object.entries(entry.properties).map(([k, v]) => (
+                                      <div key={k} className="flex gap-1">
+                                        <span className="text-gray-500 font-medium">{k}:</span>
+                                        <span className="text-gray-700 truncate">{v}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -634,9 +659,16 @@ function CloudWatchTab() {
                   </div>
                   <p className="text-sm text-gray-900 line-clamp-2">{entry.message}</p>
                   {expandedRows.has(idx) && (
-                    <pre className="mt-2 text-xs text-green-400 bg-gray-900 rounded-lg p-3 overflow-x-auto max-h-40 overflow-y-auto font-mono whitespace-pre-wrap break-all">
-                      {entry.message}
-                    </pre>
+                    <div className="mt-2 space-y-2">
+                      <pre className="text-xs bg-gray-100 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-all text-gray-800">
+{entry.message}
+                      </pre>
+                      {entry.exception && (
+                        <pre className="text-xs text-red-400 bg-gray-900 rounded-lg p-3 overflow-x-auto max-h-40 overflow-y-auto font-mono whitespace-pre-wrap break-all">
+{entry.exception}
+                        </pre>
+                      )}
+                    </div>
                   )}
                 </div>
               ))}

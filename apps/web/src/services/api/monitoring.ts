@@ -19,8 +19,12 @@ export interface MonitoringStats {
 export interface LogEntry {
   timestamp: string;
   message: string;
+  level: string;
+  exception: string;
+  rawMessage: string;
   logGroup: string;
   logStream: string;
+  properties: Record<string, string>;
 }
 
 // ============ SERVICIO ============
@@ -78,20 +82,34 @@ class MonitoringService {
 
       // Backend returns: { data: [{ logGroup, timestamp, message }] }
       if (Array.isArray(raw)) {
-        return raw.map((entry: any) => {
-          // Parse the JSON message to extract level/details
-          let parsedMsg = entry.message || '';
-          let logStream = entry.logStream || '';
+        return raw.map((entry: any): LogEntry => {
+          const rawMessage = entry.message || '';
+          let message = rawMessage;
+          let level = 'Unknown';
+          let exception = '';
+          let properties: Record<string, string> = {};
+
           try {
-            const json = JSON.parse(entry.message);
-            parsedMsg = json.MessageTemplate || json.Exception?.split('\n')[0] || entry.message;
-            if (json.Level) parsedMsg = `[${json.Level}] ${parsedMsg}`;
+            const json = JSON.parse(rawMessage);
+            level = json.Level || 'Unknown';
+            message = json.MessageTemplate || json.Message || rawMessage;
+            exception = json.Exception || '';
+            if (json.Properties) {
+              properties = Object.fromEntries(
+                Object.entries(json.Properties).map(([k, v]) => [k, String(v)])
+              );
+            }
           } catch { /* not JSON, use raw */ }
+
           return {
             timestamp: entry.timestamp || '',
-            message: parsedMsg,
+            message,
+            level,
+            exception,
+            rawMessage,
             logGroup: (entry.logGroup || '').replace('/handysuites/', ''),
-            logStream,
+            logStream: entry.logStream || '',
+            properties,
           };
         });
       }
