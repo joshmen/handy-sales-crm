@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { toast } from '@/hooks/useToast';
 import { api } from '@/lib/api';
+import { productCategoryService } from '@/services/api';
 import { exportToCsv } from '@/services/api/importExport';
 import { CsvImportModal } from '@/components/shared/CsvImportModal';
 import { ProductCategory } from '@/types/catalogs';
@@ -32,6 +33,8 @@ import {
   Download,
   Upload,
   ChevronDown,
+  Trash2,
+  X,
 } from 'lucide-react';
 import { Tag } from '@phosphor-icons/react';
 
@@ -53,6 +56,8 @@ export default function ProductCategoriesPage() {
   const [showDataMenu, setShowDataMenu] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
+
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
 
   // Drawer ref
   const drawerRef = useRef<DrawerHandle>(null);
@@ -174,6 +179,17 @@ export default function ProductCategoriesPage() {
       toast.error(message);
     } finally {
       setTogglingId(null);
+    }
+  };
+
+  // Delete
+  const handleDelete = async (id: number) => {
+    try {
+      await productCategoryService.delete(id);
+      toast.success('Categoría eliminada');
+      await loadCategories();
+    } catch {
+      toast.error('Error al eliminar la categoría');
     }
   };
 
@@ -348,6 +364,14 @@ export default function ProductCategoriesPage() {
                     <Edit2 className="w-3.5 h-3.5 text-amber-400 hover:text-amber-600" />
                     <span>Editar</span>
                   </button>
+                  {deleteConfirmId === category.id ? (
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => { handleDelete(category.id); setDeleteConfirmId(null); }} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"><Check size={16} /></button>
+                      <button onClick={() => setDeleteConfirmId(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X size={16} /></button>
+                    </div>
+                  ) : (
+                    <button onClick={() => setDeleteConfirmId(category.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"><Trash2 size={16} /></button>
+                  )}
                 </div>
               </div>
             ))
@@ -380,7 +404,7 @@ export default function ProductCategoriesPage() {
             <div className="flex-1 text-[11px] font-medium text-gray-500">Nombre</div>
             <div className="flex-1 text-[11px] font-medium text-gray-500">Descripción</div>
             <div className="w-[50px] text-[11px] font-medium text-gray-500 text-center">Activo</div>
-            <div className="w-8"></div>
+            <div className="w-16"></div>
           </div>
 
           {/* Table Body */}
@@ -432,7 +456,7 @@ export default function ProductCategoriesPage() {
                         isLoading={togglingId === category.id}
                       />
                     </div>
-                    <div className="w-8 flex justify-center">
+                    <div className="w-16 flex items-center justify-center gap-1">
                       <button
                         onClick={() => handleOpenEdit(category)}
                         disabled={loading}
@@ -441,6 +465,14 @@ export default function ProductCategoriesPage() {
                       >
                         <Edit2 className="w-4 h-4 text-amber-400 hover:text-amber-600" />
                       </button>
+                      {deleteConfirmId === category.id ? (
+                        <>
+                          <button onClick={() => { handleDelete(category.id); setDeleteConfirmId(null); }} className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"><Check className="w-4 h-4" /></button>
+                          <button onClick={() => setDeleteConfirmId(null)} className="p-1 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X className="w-4 h-4" /></button>
+                        </>
+                      ) : (
+                        <button onClick={() => setDeleteConfirmId(category.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Eliminar"><Trash2 className="w-4 h-4" /></button>
+                      )}
                     </div>
                   </div>
                 ))}

@@ -27,6 +27,8 @@ import {
   Download,
   ChevronDown,
   Package,
+  Trash2,
+  X,
 } from 'lucide-react';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { ListPagination } from '@/components/ui/ListPagination';
@@ -100,6 +102,7 @@ export default function ProductsPage() {
   const pageSize = 12;
   const [savingProduct, setSavingProduct] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // Catálogos para dropdowns
   const [familias, setFamilias] = useState<FamiliaProducto[]>([]);
@@ -333,6 +336,16 @@ export default function ProductsPage() {
     clearDeps: [currentPage, searchTerm, selectedFamiliaId, selectedCategoriaId, showInactive],
   });
 
+  const handleDelete = async (id: string) => {
+    try {
+      await productService.deleteProduct(id);
+      toast.success('Producto eliminado');
+      fetchProducts();
+    } catch {
+      toast.error('Error al eliminar el producto');
+    }
+  };
+
   const handleBatchToggle = async () => {
     if (batch.selectedCount === 0) return;
 
@@ -560,6 +573,14 @@ export default function ProductsPage() {
                     >
                       <Pencil className="w-3.5 h-3.5 text-amber-400 hover:text-amber-600" /> Editar
                     </button>
+                    {deleteConfirmId === product.id ? (
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => { handleDelete(product.id); setDeleteConfirmId(null); }} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"><Check size={16} /></button>
+                        <button onClick={() => setDeleteConfirmId(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X size={16} /></button>
+                      </div>
+                    ) : (
+                      <button onClick={() => setDeleteConfirmId(product.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"><Trash2 size={16} /></button>
+                    )}
                   </div>
                 </div>
               ))
@@ -596,7 +617,7 @@ export default function ProductsPage() {
               <div className="w-[100px] text-[11px] font-medium text-gray-500 hidden md:block">Familia</div>
               <div className="w-[130px] text-[11px] font-medium text-gray-500 hidden lg:block">Categoría</div>
               <div className="w-[50px] text-[11px] font-medium text-gray-500 text-center">Activo</div>
-              <div className="w-8"></div>
+              <div className="w-16"></div>
             </div>
 
             {/* Table Body - With loading overlay */}
@@ -673,7 +694,7 @@ export default function ProductsPage() {
                       <div className="w-[50px] flex items-center justify-center">
                         <ActiveToggle isActive={product.isActive} onToggle={() => handleToggleActive(product)} disabled={loading} isLoading={togglingId === product.id} title={product.isActive ? 'Desactivar producto' : 'Activar producto'} />
                       </div>
-                      <div className="w-8 flex items-center justify-center">
+                      <div className="w-16 flex items-center justify-center gap-1">
                         <button
                           onClick={() => handleEditProduct(product)}
                           disabled={loading}
@@ -682,6 +703,14 @@ export default function ProductsPage() {
                         >
                           <Pencil className="w-4 h-4 text-amber-400 hover:text-amber-600" />
                         </button>
+                        {deleteConfirmId === product.id ? (
+                          <>
+                            <button onClick={() => { handleDelete(product.id); setDeleteConfirmId(null); }} className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"><Check className="w-4 h-4" /></button>
+                            <button onClick={() => setDeleteConfirmId(null)} className="p-1 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X className="w-4 h-4" /></button>
+                          </>
+                        ) : (
+                          <button onClick={() => setDeleteConfirmId(product.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Eliminar"><Trash2 className="w-4 h-4" /></button>
+                        )}
                       </div>
                     </div>
                   ))}

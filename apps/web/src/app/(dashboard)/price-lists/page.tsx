@@ -26,6 +26,8 @@ import {
   Download,
   Upload,
   ChevronDown,
+  Trash2,
+  X,
 } from 'lucide-react';
 import { ListPagination } from '@/components/ui/ListPagination';
 import { CurrencyDollar } from '@phosphor-icons/react';
@@ -62,6 +64,7 @@ export default function PriceListsPage() {
   const pageSize = 10;
 
   const [togglingId, setTogglingId] = useState<number | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [showDataMenu, setShowDataMenu] = useState(false);
 
@@ -164,6 +167,16 @@ export default function PriceListsPage() {
       setSavingList(false);
     }
   });
+
+  const handleDelete = async (id: number) => {
+    try {
+      await api.delete(`/listas-precios/${id}`);
+      toast.success('Lista eliminada');
+      await loadPriceLists();
+    } catch {
+      toast.error('Error al eliminar la lista');
+    }
+  };
 
   const handleCancelForm = () => {
     setShowListForm(false);
@@ -391,7 +404,7 @@ export default function PriceListsPage() {
                 </div>
 
                 {/* Row 3: Actions */}
-                <div className="flex justify-end">
+                <div className="flex justify-end gap-1">
                   <button
                     onClick={() => handleOpenEdit(list)}
                     disabled={loading}
@@ -400,6 +413,14 @@ export default function PriceListsPage() {
                     <Pencil className="w-3.5 h-3.5 text-amber-400 hover:text-amber-600" />
                     <span>Editar</span>
                   </button>
+                  {deleteConfirmId === list.id ? (
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => { handleDelete(list.id); setDeleteConfirmId(null); }} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"><Check size={16} /></button>
+                      <button onClick={() => setDeleteConfirmId(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X size={16} /></button>
+                    </div>
+                  ) : (
+                    <button onClick={() => setDeleteConfirmId(list.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"><Trash2 size={16} /></button>
+                  )}
                 </div>
               </div>
             ))
@@ -433,7 +454,7 @@ export default function PriceListsPage() {
             <div className="flex-1 text-[11px] font-medium text-gray-500">Descripción</div>
             <div className="w-[140px] text-[11px] font-medium text-gray-500">Modificación</div>
             <div className="w-[50px] text-[11px] font-medium text-gray-500 text-center">Activo</div>
-            <div className="w-8"></div>
+            <div className="w-16"></div>
           </div>
 
           {/* Table Body */}
@@ -493,7 +514,7 @@ export default function PriceListsPage() {
                         isLoading={togglingId === list.id}
                       />
                     </div>
-                    <div className="w-8 flex justify-center">
+                    <div className="w-16 flex items-center justify-center gap-1">
                       <button
                         onClick={() => handleOpenEdit(list)}
                         disabled={loading}
@@ -502,6 +523,14 @@ export default function PriceListsPage() {
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
+                      {deleteConfirmId === list.id ? (
+                        <>
+                          <button onClick={() => { handleDelete(list.id); setDeleteConfirmId(null); }} className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"><Check className="w-4 h-4" /></button>
+                          <button onClick={() => setDeleteConfirmId(null)} className="p-1 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X className="w-4 h-4" /></button>
+                        </>
+                      ) : (
+                        <button onClick={() => setDeleteConfirmId(list.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Eliminar"><Trash2 className="w-4 h-4" /></button>
+                      )}
                     </div>
                   </div>
                 ))}

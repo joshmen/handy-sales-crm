@@ -20,6 +20,9 @@ import {
   Download,
   ChevronDown,
   RefreshCw,
+  Trash2,
+  Check,
+  X,
 } from 'lucide-react';
 import { ListPagination } from '@/components/ui/ListPagination';
 import { SearchBar } from '@/components/common/SearchBar';
@@ -54,6 +57,7 @@ export default function ClientCategoriesPage() {
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [showDataMenu, setShowDataMenu] = useState(false);
   const [togglingId, setTogglingId] = useState<number | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [showInactive, setShowInactive] = useState(false);
 
   // Form state with react-hook-form
@@ -135,6 +139,16 @@ export default function ClientCategoriesPage() {
       toast.error(apiError.message || 'Error al cambiar estado');
     } finally {
       setTogglingId(null);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    try {
+      await clientCategoryService.delete(id);
+      toast.success('Categoría eliminada');
+      await loadCategories();
+    } catch {
+      toast.error('Error al eliminar la categoría');
     }
   };
 
@@ -277,6 +291,14 @@ export default function ClientCategoriesPage() {
                         <Edit2 className="w-3.5 h-3.5 text-amber-400 hover:text-amber-600" />
                         <span>Editar</span>
                       </button>
+                      {deleteConfirmId === category.id ? (
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => { handleDelete(category.id); setDeleteConfirmId(null); }} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"><Check size={16} /></button>
+                          <button onClick={() => setDeleteConfirmId(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X size={16} /></button>
+                        </div>
+                      ) : (
+                        <button onClick={() => setDeleteConfirmId(category.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"><Trash2 size={16} /></button>
+                      )}
                       <ActiveToggle
                         isActive={category.activo}
                         onToggle={() => handleToggleActive(category)}
@@ -298,7 +320,7 @@ export default function ClientCategoriesPage() {
                 <div className="flex-1 text-[11px] font-medium text-gray-500">Nombre</div>
                 <div className="flex-1 text-[11px] font-medium text-gray-500">Descripción</div>
                 <div className="w-[50px] text-[11px] font-medium text-gray-500 text-center">Activo</div>
-                <div className="w-8"></div>
+                <div className="w-16"></div>
               </div>
 
               {/* Table Body - With loading overlay */}
@@ -342,7 +364,7 @@ export default function ClientCategoriesPage() {
                             title={category.activo ? 'Desactivar categoría' : 'Activar categoría'}
                           />
                         </div>
-                        <div className="w-8 flex justify-center">
+                        <div className="w-16 flex items-center justify-center gap-1">
                           <button
                             onClick={() => handleOpenEdit(category)}
                             disabled={loading}
@@ -351,6 +373,14 @@ export default function ClientCategoriesPage() {
                           >
                             <Edit2 className="w-4 h-4" />
                           </button>
+                          {deleteConfirmId === category.id ? (
+                            <>
+                              <button onClick={() => { handleDelete(category.id); setDeleteConfirmId(null); }} className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"><Check className="w-4 h-4" /></button>
+                              <button onClick={() => setDeleteConfirmId(null)} className="p-1 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X className="w-4 h-4" /></button>
+                            </>
+                          ) : (
+                            <button onClick={() => setDeleteConfirmId(category.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Eliminar"><Trash2 className="w-4 h-4" /></button>
+                          )}
                         </div>
                       </div>
                     ))}

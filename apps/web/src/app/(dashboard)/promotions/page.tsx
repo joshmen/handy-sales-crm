@@ -32,6 +32,7 @@ import {
   Download,
   Upload,
   ChevronDown,
+  Trash2,
 } from 'lucide-react';
 import { ListPagination } from '@/components/ui/ListPagination';
 import { SearchBar } from '@/components/common/SearchBar';
@@ -72,6 +73,7 @@ export default function PromotionsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
   const [togglingId, setTogglingId] = useState<number | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
 
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -192,6 +194,16 @@ export default function PromotionsPage() {
       fechaFin: promo.fechaFin ? promo.fechaFin.split('T')[0] : '',
     });
     setIsModalOpen(true);
+  };
+
+  const handleDelete = async (id: number) => {
+    try {
+      await promotionService.delete(id);
+      toast.success('Promoción eliminada');
+      await fetchPromotions();
+    } catch {
+      toast.error('Error al eliminar la promoción');
+    }
   };
 
   const handleSubmit = rhfSubmit(async (data) => {
@@ -402,6 +414,14 @@ export default function PromotionsPage() {
                   <button onClick={() => handleOpenEdit(promo)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-green-600 hover:bg-green-50 rounded transition-colors">
                     <Pencil className="w-3.5 h-3.5 text-amber-400" /> Editar
                   </button>
+                  {deleteConfirmId === promo.id ? (
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => { handleDelete(promo.id); setDeleteConfirmId(null); }} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"><Check size={16} /></button>
+                      <button onClick={() => setDeleteConfirmId(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X size={16} /></button>
+                    </div>
+                  ) : (
+                    <button onClick={() => setDeleteConfirmId(promo.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"><Trash2 size={16} /></button>
+                  )}
                 </div>
               </div>
             ))
@@ -435,7 +455,7 @@ export default function PromotionsPage() {
             <div className="w-[80px] text-[11px] font-medium text-gray-500 text-center">Descuento</div>
             <div className="w-[200px] text-[11px] font-medium text-gray-500">Vigencia</div>
             <div className="w-[50px] text-[11px] font-medium text-gray-500 text-center">Activo</div>
-            <div className="w-8"></div>
+            <div className="w-16"></div>
           </div>
 
           {/* Table Body */}
@@ -537,8 +557,8 @@ export default function PromotionsPage() {
                       />
                     </div>
 
-                    {/* Editar */}
-                    <div className="w-8 flex items-center justify-center">
+                    {/* Acciones */}
+                    <div className="w-16 flex items-center justify-center gap-1">
                       <button
                         onClick={() => handleOpenEdit(promo)}
                         disabled={loading}
@@ -547,6 +567,14 @@ export default function PromotionsPage() {
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
+                      {deleteConfirmId === promo.id ? (
+                        <>
+                          <button onClick={() => { handleDelete(promo.id); setDeleteConfirmId(null); }} className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"><Check className="w-4 h-4" /></button>
+                          <button onClick={() => setDeleteConfirmId(null)} className="p-1 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X className="w-4 h-4" /></button>
+                        </>
+                      ) : (
+                        <button onClick={() => setDeleteConfirmId(promo.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Eliminar"><Trash2 className="w-4 h-4" /></button>
+                      )}
                     </div>
                   </div>
                 ))}

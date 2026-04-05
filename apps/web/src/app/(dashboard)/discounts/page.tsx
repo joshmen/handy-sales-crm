@@ -28,6 +28,8 @@ import {
   Minus,
   Download,
   Upload,
+  Trash2,
+  X,
 } from 'lucide-react';
 import { Percent as PercentIcon } from '@phosphor-icons/react';
 import { SearchBar } from '@/components/common/SearchBar';
@@ -66,6 +68,7 @@ export default function DiscountsPage() {
   const pageSize = 10;
 
   const [togglingId, setTogglingId] = useState<number | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
 
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -162,6 +165,16 @@ export default function DiscountsPage() {
       toast.error('Error al cambiar el estado del descuento');
     } finally {
       setTogglingId(null);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    try {
+      await api.delete(`/descuentos/${id}`);
+      toast.success('Descuento eliminado');
+      await fetchDiscounts();
+    } catch {
+      toast.error('Error al eliminar el descuento');
     }
   };
 
@@ -490,6 +503,14 @@ export default function DiscountsPage() {
                           <Pencil className="w-3 h-3 text-amber-400" />
                           <span>Editar</span>
                         </button>
+                        {deleteConfirmId === discount.id ? (
+                          <div className="flex items-center gap-1">
+                            <button onClick={() => { handleDelete(discount.id); setDeleteConfirmId(null); }} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"><Check size={16} /></button>
+                            <button onClick={() => setDeleteConfirmId(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X size={16} /></button>
+                          </div>
+                        ) : (
+                          <button onClick={() => setDeleteConfirmId(discount.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"><Trash2 size={16} /></button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -593,7 +614,7 @@ export default function DiscountsPage() {
                       </div>
 
                       {/* Actions */}
-                      <div className="w-[60px] flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                      <div className="w-[60px] flex items-center justify-center gap-1" onClick={(e) => e.stopPropagation()}>
                         <button
                           onClick={() => handleOpenEdit(discount)}
                           disabled={loading}
@@ -602,6 +623,14 @@ export default function DiscountsPage() {
                         >
                           <Pencil className="w-4 h-4" />
                         </button>
+                        {deleteConfirmId === discount.id ? (
+                          <>
+                            <button onClick={() => { handleDelete(discount.id); setDeleteConfirmId(null); }} className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"><Check className="w-4 h-4" /></button>
+                            <button onClick={() => setDeleteConfirmId(null)} className="p-1 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X className="w-4 h-4" /></button>
+                          </>
+                        ) : (
+                          <button onClick={() => setDeleteConfirmId(discount.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Eliminar"><Trash2 className="w-4 h-4" /></button>
+                        )}
                       </div>
                     </div>
                   ))}

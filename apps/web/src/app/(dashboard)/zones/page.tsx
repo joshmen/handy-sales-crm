@@ -35,6 +35,8 @@ import {
   Map,
   RefreshCw,
   ChevronDown,
+  Trash2,
+  X,
 } from 'lucide-react';
 import { ListPagination } from '@/components/ui/ListPagination';
 import { MapPin as MapPinIcon, CaretRight } from '@phosphor-icons/react';
@@ -77,6 +79,7 @@ export default function ZonesPage() {
   const pageSize = 10;
   const [showInactive, setShowInactive] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // Drawer states
   const [showZoneForm, setShowZoneForm] = useState(false);
@@ -306,6 +309,16 @@ export default function ZonesPage() {
     clearDeps: [currentPage, searchTerm, showInactive],
   });
 
+  const handleDelete = async (id: string) => {
+    try {
+      await zoneService.deleteZone(id);
+      toast.success('Zona eliminada');
+      fetchZones();
+    } catch {
+      toast.error('Error al eliminar la zona');
+    }
+  };
+
   const handleBatchToggle = async () => {
     if (batch.selectedIds.size === 0) return;
 
@@ -508,7 +521,7 @@ export default function ZonesPage() {
                 </div>
 
                 {/* Row 3: Actions */}
-                <div className="flex justify-end">
+                <div className="flex justify-end gap-1">
                   <button
                     onClick={() => handleEditZone(zone)}
                     disabled={loading}
@@ -517,6 +530,14 @@ export default function ZonesPage() {
                     <Pencil className="w-3.5 h-3.5 text-amber-400 hover:text-amber-600" />
                     <span>Editar</span>
                   </button>
+                  {deleteConfirmId === zone.id ? (
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => { handleDelete(zone.id); setDeleteConfirmId(null); }} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"><Check size={16} /></button>
+                      <button onClick={() => setDeleteConfirmId(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X size={16} /></button>
+                    </div>
+                  ) : (
+                    <button onClick={() => setDeleteConfirmId(zone.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"><Trash2 size={16} /></button>
+                  )}
                 </div>
               </div>
             ))}
@@ -548,7 +569,7 @@ export default function ZonesPage() {
               <div className="flex-1 text-[11px] font-medium text-gray-500">Nombre</div>
               <div className="w-[100px] text-[11px] font-medium text-gray-500 text-center">Clientes</div>
               <div className="w-[80px] text-[11px] font-medium text-gray-500">Activa</div>
-              <div className="w-8" />
+              <div className="w-16" />
             </div>
 
             {/* Table Body - With loading overlay */}
@@ -620,9 +641,19 @@ export default function ZonesPage() {
                       <ActiveToggle isActive={zone.isEnabled} onToggle={() => handleToggleActive(zone)} disabled={loading} isLoading={togglingId === zone.id} title={zone.isEnabled ? 'Desactivar zona' : 'Activar zona'} />
                     </div>
 
-                    {/* Chevron */}
-                    <div className="w-8 flex items-center justify-center">
-                      <CaretRight className="w-4 h-4 text-gray-300 group-hover:text-amber-500 transition-colors" weight="bold" />
+                    {/* Actions */}
+                    <div className="w-16 flex items-center justify-center gap-1" onClick={(e) => e.stopPropagation()}>
+                      {deleteConfirmId === zone.id ? (
+                        <>
+                          <button onClick={() => { handleDelete(zone.id); setDeleteConfirmId(null); }} className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"><Check className="w-4 h-4" /></button>
+                          <button onClick={() => setDeleteConfirmId(null)} className="p-1 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X className="w-4 h-4" /></button>
+                        </>
+                      ) : (
+                        <>
+                          <button onClick={() => setDeleteConfirmId(zone.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Eliminar"><Trash2 className="w-4 h-4" /></button>
+                          <CaretRight className="w-4 h-4 text-gray-300 group-hover:text-amber-500 transition-colors" weight="bold" />
+                        </>
+                      )}
                     </div>
                   </div>
                   ))}
