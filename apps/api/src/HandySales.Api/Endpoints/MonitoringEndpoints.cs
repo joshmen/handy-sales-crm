@@ -249,4 +249,8 @@ public static class MonitoringEndpoints
     }
 }
 
-public record SetLogLevelRequest(string ApiName, string Level);
+public class SetLogLevelRequest
+{
+    public string ApiName { get; set; } = "";
+    public string Level { get; set; } = "";
+}

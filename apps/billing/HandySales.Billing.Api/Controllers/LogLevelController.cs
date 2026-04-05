@@ -36,4 +36,7 @@ public class LogLevelController : ControllerBase
     }
 }
 
-public record LogLevelRequest(string Level);
+public class LogLevelRequest
+{
+    public string Level { get; set; } = "";
+}

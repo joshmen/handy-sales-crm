@@ -36,4 +36,7 @@ public static class LogLevelEndpoints
     }
 }
 
-public record LogLevelRequest(string Level);
+public class LogLevelRequest
+{
+    public string Level { get; set; } = "";
+}

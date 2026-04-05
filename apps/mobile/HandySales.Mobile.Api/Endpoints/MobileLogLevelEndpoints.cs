@@ -36,4 +36,7 @@ public static class MobileLogLevelEndpoints
     }
 }
 
-public record MobileLogLevelRequest(string Level);
+public class MobileLogLevelRequest
+{
+    public string Level { get; set; } = "";
+}

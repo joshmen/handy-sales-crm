@@ -162,9 +162,10 @@ const LOG_LEVEL_OPTIONS = [
   { value: 'Warning', label: 'Errores' },
   { value: 'Information', label: 'Info' },
   { value: 'Debug', label: 'Debug' },
+  { value: 'Verbose', label: 'Todo' },
 ] as const;
 
-type LogLevelValue = 'Warning' | 'Information' | 'Debug';
+type LogLevelValue = 'Warning' | 'Information' | 'Debug' | 'Verbose';
 
 const API_NAMES: { key: keyof LogLevels; label: string }[] = [
   { key: 'apiMain', label: 'API Principal' },
