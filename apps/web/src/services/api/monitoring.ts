@@ -27,6 +27,19 @@ export interface LogEntry {
   properties: Record<string, string>;
 }
 
+interface CloudWatchStatsGroup {
+  logGroup?: string;
+  status?: string;
+  hourlyData?: { hour: string; count: string }[];
+}
+
+interface CloudWatchLogEntry {
+  logGroup?: string;
+  timestamp?: string;
+  message?: string;
+  logStream?: string;
+}
+
 // ============ SERVICIO ============
 
 class MonitoringService {
@@ -34,24 +47,20 @@ class MonitoringService {
 
   async getStats(): Promise<MonitoringStats> {
     try {
-      const res = await api.get<any>(`${this.basePath}/stats`);
-      const raw = res.data?.data ?? res.data;
+      const res = await api.get<{ data?: CloudWatchStatsGroup[] }>(`${this.basePath}/stats`);
+      const raw: CloudWatchStatsGroup[] = res.data?.data ?? (Array.isArray(res.data) ? res.data as CloudWatchStatsGroup[] : []);
 
-      // Backend returns: { data: [{ logGroup, status, hourlyData: [{hour, count}] }] }
-      // Transform to flat stats
       let totalErrors = 0;
       const errorsByHour: { hour: string; count: number; logGroup: string }[] = [];
       const apisWithErrors = new Set<string>();
 
-      if (Array.isArray(raw)) {
-        for (const group of raw) {
-          const groupName = (group.logGroup || '').replace('/handysuites/', '');
-          for (const h of (group.hourlyData || [])) {
-            const count = parseInt(h.count, 10) || 0;
-            totalErrors += count;
-            if (count > 0) apisWithErrors.add(groupName);
-            errorsByHour.push({ hour: h.hour, count, logGroup: groupName });
-          }
+      for (const group of raw) {
+        const groupName = (group.logGroup || '').replace('/handysuites/', '');
+        for (const h of (group.hourlyData || [])) {
+          const count = parseInt(h.count, 10) || 0;
+          totalErrors += count;
+          if (count > 0) apisWithErrors.add(groupName);
+          errorsByHour.push({ hour: h.hour, count, logGroup: groupName });
         }
       }
 
@@ -77,43 +86,39 @@ class MonitoringService {
       const url = query
         ? `${this.basePath}/errors/recent?${query}`
         : `${this.basePath}/errors/recent`;
-      const res = await api.get<any>(url);
-      const raw = res.data?.data ?? res.data;
+      const res = await api.get<{ data?: CloudWatchLogEntry[] }>(url);
+      const raw: CloudWatchLogEntry[] = res.data?.data ?? (Array.isArray(res.data) ? res.data as CloudWatchLogEntry[] : []);
 
-      // Backend returns: { data: [{ logGroup, timestamp, message }] }
-      if (Array.isArray(raw)) {
-        return raw.map((entry: any): LogEntry => {
-          const rawMessage = entry.message || '';
-          let message = rawMessage;
-          let level = 'Unknown';
-          let exception = '';
-          let properties: Record<string, string> = {};
+      return raw.map((entry): LogEntry => {
+        const rawMessage = entry.message || '';
+        let message = rawMessage;
+        let level = 'Unknown';
+        let exception = '';
+        let properties: Record<string, string> = {};
 
-          try {
-            const json = JSON.parse(rawMessage);
-            level = json.Level || 'Unknown';
-            message = json.MessageTemplate || json.Message || rawMessage;
-            exception = json.Exception || '';
-            if (json.Properties) {
-              properties = Object.fromEntries(
-                Object.entries(json.Properties).map(([k, v]) => [k, String(v)])
-              );
-            }
-          } catch { /* not JSON, use raw */ }
+        try {
+          const json = JSON.parse(rawMessage);
+          level = json.Level || 'Unknown';
+          message = json.MessageTemplate || json.Message || rawMessage;
+          exception = json.Exception || '';
+          if (json.Properties) {
+            properties = Object.fromEntries(
+              Object.entries(json.Properties).map(([k, v]) => [k, String(v)])
+            );
+          }
+        } catch { /* not JSON, use raw */ }
 
-          return {
-            timestamp: entry.timestamp || '',
-            message,
-            level,
-            exception,
-            rawMessage,
-            logGroup: (entry.logGroup || '').replace('/handysuites/', ''),
-            logStream: entry.logStream || '',
-            properties,
-          };
-        });
-      }
-      return [];
+        return {
+          timestamp: entry.timestamp || '',
+          message,
+          level,
+          exception,
+          rawMessage,
+          logGroup: (entry.logGroup || '').replace('/handysuites/', ''),
+          logStream: entry.logStream || '',
+          properties,
+        };
+      });
     } catch {
       return [];
     }
