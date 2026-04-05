@@ -30,14 +30,33 @@ class MonitoringService {
 
   async getStats(): Promise<MonitoringStats> {
     try {
-      const res = await api.get<MonitoringStats>(`${this.basePath}/stats`);
-      const data = res.data;
+      const res = await api.get<any>(`${this.basePath}/stats`);
+      const raw = res.data?.data ?? res.data;
+
+      // Backend returns: { data: [{ logGroup, status, hourlyData: [{hour, count}] }] }
+      // Transform to flat stats
+      let totalErrors = 0;
+      const errorsByHour: { hour: string; count: number; logGroup: string }[] = [];
+      const apisWithErrors = new Set<string>();
+
+      if (Array.isArray(raw)) {
+        for (const group of raw) {
+          const groupName = (group.logGroup || '').replace('/handysuites/', '');
+          for (const h of (group.hourlyData || [])) {
+            const count = parseInt(h.count, 10) || 0;
+            totalErrors += count;
+            if (count > 0) apisWithErrors.add(groupName);
+            errorsByHour.push({ hour: h.hour, count, logGroup: groupName });
+          }
+        }
+      }
+
       return {
-        errorsLast24h: data?.errorsLast24h ?? 0,
-        warningsLast24h: data?.warningsLast24h ?? 0,
-        crashesLast24h: data?.crashesLast24h ?? 0,
-        apisWithErrors: data?.apisWithErrors ?? 0,
-        errorsByHour: Array.isArray(data?.errorsByHour) ? data.errorsByHour : [],
+        errorsLast24h: totalErrors,
+        warningsLast24h: 0,
+        crashesLast24h: 0,
+        apisWithErrors: apisWithErrors.size,
+        errorsByHour,
       };
     } catch {
       return { errorsLast24h: 0, warningsLast24h: 0, crashesLast24h: 0, apisWithErrors: 0, errorsByHour: [] };
@@ -54,8 +73,29 @@ class MonitoringService {
       const url = query
         ? `${this.basePath}/errors/recent?${query}`
         : `${this.basePath}/errors/recent`;
-      const res = await api.get<LogEntry[]>(url);
-      return Array.isArray(res.data) ? res.data : [];
+      const res = await api.get<any>(url);
+      const raw = res.data?.data ?? res.data;
+
+      // Backend returns: { data: [{ logGroup, timestamp, message }] }
+      if (Array.isArray(raw)) {
+        return raw.map((entry: any) => {
+          // Parse the JSON message to extract level/details
+          let parsedMsg = entry.message || '';
+          let logStream = entry.logStream || '';
+          try {
+            const json = JSON.parse(entry.message);
+            parsedMsg = json.MessageTemplate || json.Exception?.split('\n')[0] || entry.message;
+            if (json.Level) parsedMsg = `[${json.Level}] ${parsedMsg}`;
+          } catch { /* not JSON, use raw */ }
+          return {
+            timestamp: entry.timestamp || '',
+            message: parsedMsg,
+            logGroup: (entry.logGroup || '').replace('/handysuites/', ''),
+            logStream,
+          };
+        });
+      }
+      return [];
     } catch {
       return [];
     }
