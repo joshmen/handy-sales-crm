@@ -271,6 +271,7 @@ public static class CuponEndpoints
 public class CuponCreateDto
 {
     public string Nombre { get; set; } = "";
+    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))]
     public TipoCupon Tipo { get; set; }
     public int? MesesGratis { get; set; }
     public string? PlanObjetivo { get; set; }
