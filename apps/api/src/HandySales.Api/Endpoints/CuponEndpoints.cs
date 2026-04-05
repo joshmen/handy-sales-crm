@@ -268,20 +268,27 @@ public static class CuponEndpoints
 }
 
 // DTOs
-public record CuponCreateDto(
-    string Nombre,
-    TipoCupon Tipo,
-    int? MesesGratis,
-    string? PlanObjetivo,
-    int? MesesUpgrade,
-    decimal? DescuentoPorcentaje,
-    int? MaxUsos,
-    DateTime? FechaExpiracion);
+public class CuponCreateDto
+{
+    public string Nombre { get; set; } = "";
+    public TipoCupon Tipo { get; set; }
+    public int? MesesGratis { get; set; }
+    public string? PlanObjetivo { get; set; }
+    public int? MesesUpgrade { get; set; }
+    public decimal? DescuentoPorcentaje { get; set; }
+    public int? MaxUsos { get; set; }
+    public DateTime? FechaExpiracion { get; set; }
+}
 
-public record CuponUpdateDto(
-    string? Nombre,
-    int? MaxUsos,
-    DateTime? FechaExpiracion,
-    bool? Activo);
+public class CuponUpdateDto
+{
+    public string? Nombre { get; set; }
+    public int? MaxUsos { get; set; }
+    public DateTime? FechaExpiracion { get; set; }
+    public bool? Activo { get; set; }
+}
 
-public record RedimirCuponRequest(string Codigo);
+public class RedimirCuponRequest
+{
+    public string Codigo { get; set; } = "";
+}
