@@ -247,7 +247,32 @@ export default function CrearClienteScreen() {
 
   const crearMutation = useMutation({
     mutationFn: async (data: ClienteCreateRequest) => {
-      if (isEditing) return clientesApi.update(Number(editId), data);
+      if (isEditing) {
+        try {
+          return await clientesApi.update(Number(editId), data);
+        } catch (apiErr: any) {
+          if (!apiErr?.response || apiErr.code === 'ERR_NETWORK') {
+            // Offline fallback — update locally in WatermelonDB
+            const { Q } = require('@nozbe/watermelondb');
+            const { database } = require('@/db/database');
+            const records = await database.get('clientes').query(Q.where('server_id', Number(editId))).fetch();
+            if (records[0]) {
+              await (records[0] as any).updateFields({
+                nombre: data.nombre,
+                telefono: data.telefono || null,
+                email: data.correo || null,
+                direccion: data.direccion || '',
+                zonaId: data.idZona || 0,
+                categoriaId: data.categoriaClienteId || 0,
+                latitud: data.latitud ?? null,
+                longitud: data.longitud ?? null,
+              });
+            }
+            return { offline: true };
+          }
+          throw apiErr;
+        }
+      }
       try {
         return await clientesApi.create(data);
       } catch (apiErr: any) {

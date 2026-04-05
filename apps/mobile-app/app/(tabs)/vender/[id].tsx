@@ -1,4 +1,5 @@
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
+import Toast from 'react-native-toast-message';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -62,7 +63,7 @@ export default function OrderDetailScreen() {
       destructive: true,
       onConfirm: () => {
         setConfirmModal((prev) => ({ ...prev, visible: false }));
-        cancelarMutation.mutate({ id: serverId, razon: 'Cancelado desde app móvil' }, { onSuccess: () => updateLocalStatus(6) });
+        cancelarMutation.mutate({ id: serverId, razon: 'Cancelado desde app móvil' }, { onSuccess: () => updateLocalStatus(6), onError: (e: any) => { if (!e?.response || e.code === 'ERR_NETWORK') { updateLocalStatus(6); Toast.show({ type: 'success', text1: 'Guardado offline', text2: 'Se sincronizará automáticamente' }); } } });
       },
     });
   };
@@ -87,7 +88,7 @@ export default function OrderDetailScreen() {
           <TouchableOpacity
             testID="btn-confirmar"
             style={[styles.actionBtn, { backgroundColor: COLORS.button }]}
-            onPress={() => handleTransition('Confirmar Pedido', '¿Confirmar este pedido?', () => confirmarMutation.mutate(serverId, { onSuccess: () => updateLocalStatus(2) }))}
+            onPress={() => handleTransition('Confirmar Pedido', '¿Confirmar este pedido?', () => confirmarMutation.mutate(serverId, { onSuccess: () => updateLocalStatus(2), onError: (e: any) => { if (!e?.response || e.code === 'ERR_NETWORK') { updateLocalStatus(2); Toast.show({ type: 'success', text1: 'Guardado offline', text2: 'Se sincronizará automáticamente' }); } } }))}
             disabled={anyLoading}
             activeOpacity={0.8}
             accessibilityLabel="Confirmar Pedido"
@@ -102,7 +103,7 @@ export default function OrderDetailScreen() {
           <TouchableOpacity
             testID="btn-en-ruta"
             style={[styles.actionBtn, { backgroundColor: '#ea580c' }]}
-            onPress={() => handleTransition('Poner en Ruta', '¿Enviar a ruta de entrega?', () => enRutaMutation.mutate(serverId, { onSuccess: () => updateLocalStatus(4) }))}
+            onPress={() => handleTransition('Poner en Ruta', '¿Enviar a ruta de entrega?', () => enRutaMutation.mutate(serverId, { onSuccess: () => updateLocalStatus(4), onError: (e: any) => { if (!e?.response || e.code === 'ERR_NETWORK') { updateLocalStatus(4); Toast.show({ type: 'success', text1: 'Guardado offline', text2: 'Se sincronizará automáticamente' }); } } }))}
             disabled={anyLoading}
             activeOpacity={0.8}
             accessibilityLabel="Poner en Ruta"
@@ -127,7 +128,7 @@ export default function OrderDetailScreen() {
             <TouchableOpacity
               testID="btn-entregar"
               style={[styles.actionBtn, { backgroundColor: '#16a34a' }]}
-              onPress={() => handleTransition('Marcar Entregado', '¿Confirmar entrega del pedido?', () => entregarMutation.mutate({ id: serverId, notasEntrega }, { onSuccess: () => updateLocalStatus(5) }))}
+              onPress={() => handleTransition('Marcar Entregado', '¿Confirmar entrega del pedido?', () => entregarMutation.mutate({ id: serverId, notasEntrega }, { onSuccess: () => updateLocalStatus(5), onError: (e: any) => { if (!e?.response || e.code === 'ERR_NETWORK') { updateLocalStatus(5); Toast.show({ type: 'success', text1: 'Guardado offline', text2: 'Se sincronizará automáticamente' }); } } }))}
               disabled={anyLoading}
               activeOpacity={0.8}
               accessibilityLabel="Marcar Entregado"
