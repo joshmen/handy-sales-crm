@@ -207,7 +207,7 @@ export function BatchAutocomplete<T extends { clave: string }>({
   }, [query, searchFn]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') { setOpen(false); return; }
+    if (e.key === 'Escape') { e.stopPropagation(); setOpen(false); return; }
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       setActiveIndex(i => Math.min(i + 1, results.length - 1));

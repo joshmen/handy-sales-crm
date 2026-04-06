@@ -32,9 +32,10 @@ export function MapeoEditModal({ product, onSave, onDelete, onClose, saving }: M
   const [claveUnidad, setClaveUnidad] = useState(product.currentUnidad || '');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const [dirty, setDirty] = useState(false);
 
   const canSave = claveProdServ.trim() && claveUnidad.trim();
-  const hasChanges = claveProdServ !== (product.currentProdServ || '') || claveUnidad !== (product.currentUnidad || '');
+  const hasChanges = dirty || claveProdServ !== (product.currentProdServ || '') || claveUnidad !== (product.currentUnidad || '');
 
   const handleClose = () => {
     if (hasChanges) {
@@ -102,7 +103,7 @@ export function MapeoEditModal({ product, onSave, onDelete, onClose, saving }: M
                 {claveProdServ}
               </span>
               <button
-                onClick={() => setClaveProdServ('')}
+                onClick={() => { setClaveProdServ(''); setDirty(true); }}
                 className="text-xs text-muted-foreground hover:text-foreground"
                 aria-label="Quitar clave ProdServ"
               >
@@ -113,7 +114,7 @@ export function MapeoEditModal({ product, onSave, onDelete, onClose, saving }: M
           {!claveProdServ && (
             <BatchAutocomplete<CatalogoProdServItem>
               value={claveProdServ}
-              onChange={setClaveProdServ}
+              onChange={(v) => { setClaveProdServ(v); setDirty(true); }}
               searchFn={searchCatalogoProdServ}
               renderLabel={(item: CatalogoProdServItem) => `${item.clave} — ${item.descripcion}`}
               placeholder="Buscar clave ProdServ..."
@@ -132,7 +133,7 @@ export function MapeoEditModal({ product, onSave, onDelete, onClose, saving }: M
                 {claveUnidad}
               </span>
               <button
-                onClick={() => setClaveUnidad('')}
+                onClick={() => { setClaveUnidad(''); setDirty(true); }}
                 className="text-xs text-muted-foreground hover:text-foreground"
                 aria-label="Quitar clave unidad"
               >
@@ -143,7 +144,7 @@ export function MapeoEditModal({ product, onSave, onDelete, onClose, saving }: M
           {!claveUnidad && (
             <BatchAutocomplete<CatalogoUnidadItem>
               value={claveUnidad}
-              onChange={setClaveUnidad}
+              onChange={(v) => { setClaveUnidad(v); setDirty(true); }}
               searchFn={searchCatalogoUnidad}
               renderLabel={(item: CatalogoUnidadItem) => `${item.clave} — ${item.nombre}`}
               placeholder="Buscar clave unidad..."
