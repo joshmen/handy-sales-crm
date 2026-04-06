@@ -209,25 +209,10 @@ const sidebarItems: SidebarItem[] = [
   },
   {
     id: 'inventory',
-    label: 'Inventarios',
+    label: 'Inventario',
     icon: SbInventory,
+    href: '/inventory',
     permission: 'view_inventory',
-    submenu: [
-      {
-        id: 'inventory-warehouse',
-        label: 'Inventario de almacén',
-        icon: SbInventory,
-        href: '/inventory',
-        permission: 'view_inventory',
-      },
-      {
-        id: 'inventory-movements',
-        label: 'Movimientos de inventario',
-        icon: SbMovements,
-        href: '/inventory/movements',
-        permission: 'view_inventory',
-      },
-    ],
   },
   {
     id: 'zones',

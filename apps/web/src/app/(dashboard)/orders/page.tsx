@@ -462,11 +462,12 @@ export default function OrdersPage() {
       key: 'orderDate',
       label: 'Fecha',
       sortable: true,
-      width: 75,
+      width: 120,
       cellRenderer: (order) => (
-        <span className="text-[12px] text-gray-500 whitespace-nowrap tabular-nums">
-          {order.orderDate.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
-        </span>
+        <div className="text-[12px] text-gray-500 whitespace-nowrap tabular-nums">
+          <div>{order.orderDate.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+          <div className="text-[11px] text-gray-400">{order.orderDate.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}</div>
+        </div>
       ),
     },
     {
@@ -707,7 +708,7 @@ export default function OrdersPage() {
                       <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 mb-2.5">
                         <span className="font-medium text-gray-900">${formatCurrency(order.total)}</span>
                         <span>•</span>
-                        <span>{formatDate(order.orderDate)}</span>
+                        <span>{formatDate(order.orderDate, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
                         <span>•</span>
                         <span>{order.user.name}</span>
                       </div>
