@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useSession } from 'next-auth/react';
 import { toast } from '@/hooks/useToast';
 import { supervisorService } from '@/services/api';
@@ -1154,9 +1155,9 @@ function AdminUsersView() {
         </div>
       )}
 
-      {/* B4: Location Modal */}
-      {isLocationModalOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setIsLocationModalOpen(false)}>
+      {/* B4: Location Modal — rendered via portal to avoid parent overflow/transform issues */}
+      {isLocationModalOpen && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4" onClick={() => setIsLocationModalOpen(false)}>
           <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
               <div>
@@ -1189,12 +1190,13 @@ function AdminUsersView() {
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* B5: Distance Modal */}
-      {isDistanceModalOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setIsDistanceModalOpen(false)}>
+      {/* B5: Distance Modal — rendered via portal */}
+      {isDistanceModalOpen && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4" onClick={() => setIsDistanceModalOpen(false)}>
           <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
               <div>
@@ -1252,7 +1254,8 @@ function AdminUsersView() {
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
