@@ -493,6 +493,7 @@ function AdminUsersView() {
   const [zones, setZones] = useState<{ id: string; name: string }[]>([]);
   const [filterZona, setFilterZona] = useState('all');
   const [filterRole, setFilterRole] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -566,7 +567,10 @@ function AdminUsersView() {
 
   // Local sorting
   const sortedUsers = useMemo(() => {
-    const sorted = [...displayUsers];
+    const filtered = filterStatus === 'all'
+      ? displayUsers
+      : displayUsers.filter(u => u.status === filterStatus);
+    const sorted = [...filtered];
     sorted.sort((a, b) => {
       let cmp = 0;
       switch (sortKey) {
@@ -588,7 +592,7 @@ function AdminUsersView() {
       return sortDir === 'asc' ? cmp : -cmp;
     });
     return sorted;
-  }, [displayUsers, sortKey, sortDir]);
+  }, [displayUsers, sortKey, sortDir, filterStatus]);
 
   const getRoleBadgeColor = (role: UserRole) => {
     switch (role) {
@@ -1130,6 +1134,20 @@ function AdminUsersView() {
               value={filterRole}
               onChange={(val) => setFilterRole(val ? String(val) : 'all')}
               placeholder="Todos los roles"
+            />
+          </div>
+
+          {/* Status Filter */}
+          <div className="flex-1 min-w-[160px]">
+            <SearchableSelect
+              options={[
+                { value: 'all', label: 'Todos los estados' },
+                { value: UserStatus.ACTIVE, label: 'Activo' },
+                { value: UserStatus.INACTIVE, label: 'Inactivo' },
+              ]}
+              value={filterStatus}
+              onChange={(val) => setFilterStatus(val ? String(val) : 'all')}
+              placeholder="Todos los estados"
             />
           </div>
 
