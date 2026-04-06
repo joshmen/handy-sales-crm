@@ -18,8 +18,8 @@ interface SyncState {
 
 export const useSyncStore = create<SyncState>((set, get) => ({
   status: 'idle',
-  lastSyncAt: syncCursors.getLastSyncAt(),
-  lastSummary: syncCursors.getLastSyncSummary(),
+  lastSyncAt: null,
+  lastSummary: null,
   error: null,
 
   sync: async () => {
@@ -54,3 +54,11 @@ export const useSyncStore = create<SyncState>((set, get) => ({
     set({ status: 'idle', lastSyncAt: null, lastSummary: null, error: null });
   },
 }));
+
+// Initialize cursors asynchronously and hydrate the store once loaded
+syncCursors.init().then(() => {
+  useSyncStore.setState({
+    lastSyncAt: syncCursors.getLastSyncAt(),
+    lastSummary: syncCursors.getLastSyncSummary(),
+  });
+});

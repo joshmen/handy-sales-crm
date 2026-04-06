@@ -29,7 +29,12 @@ export const useAuthStore = create<AuthState>((set) => ({
     await Promise.all([
       secureStorage.set(STORAGE_KEYS.ACCESS_TOKEN, token),
       secureStorage.set(STORAGE_KEYS.REFRESH_TOKEN, refreshToken),
-      secureStorage.set(STORAGE_KEYS.USER_DATA, JSON.stringify(user)),
+      secureStorage.set(STORAGE_KEYS.USER_DATA, JSON.stringify({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      })),
     ]);
     set({ user, isAuthenticated: true, isLoading: false, isLoggingIn: false });
   },
@@ -53,8 +58,18 @@ export const useAuthStore = create<AuthState>((set) => ({
       ]);
       if (token && userData) {
         setAccessToken(token);
+        const parsed = JSON.parse(userData);
+        // Ensure restored user has at minimum the essential fields
+        const user: AuthUser = {
+          id: parsed.id,
+          email: parsed.email,
+          name: parsed.name,
+          role: parsed.role,
+          tenantName: parsed.tenantName ?? null,
+          tenantLogo: parsed.tenantLogo ?? null,
+        };
         set({
-          user: JSON.parse(userData),
+          user,
           isAuthenticated: true,
           isLoading: false,
         });

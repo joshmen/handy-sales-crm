@@ -1,10 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { View, Text, ScrollView, TextInput, StyleSheet, TouchableOpacity, Modal, FlatList, Switch } from 'react-native';
 import Toast from 'react-native-toast-message';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { clientesApi } from '@/api';
+import { Q } from '@nozbe/watermelondb';
+import { database } from '@/db/database';
 import { createClienteOffline } from '@/db/actions';
 import { useZonas, useCategoriasCliente } from '@/hooks';
 import { Save, ChevronLeft, MapPin, ChevronDown, Search, X, Check } from 'lucide-react-native';
@@ -174,7 +176,7 @@ export default function CrearClienteScreen() {
   const queryClient = useQueryClient();
   const zonas = useZonas();
   const categorias = useCategoriasCliente();
-  const { editId } = require('expo-router').useLocalSearchParams<{ editId?: string }>();
+  const { editId } = useLocalSearchParams<{ editId?: string }>();
   const isEditing = !!editId;
 
   const [nombre, setNombre] = useState('');
@@ -253,8 +255,6 @@ export default function CrearClienteScreen() {
         } catch (apiErr: any) {
           if (!apiErr?.response || apiErr.code === 'ERR_NETWORK') {
             // Offline fallback — update locally in WatermelonDB
-            const { Q } = require('@nozbe/watermelondb');
-            const { database } = require('@/db/database');
             const records = await database.get('clientes').query(Q.where('server_id', Number(editId))).fetch();
             if (records[0]) {
               await (records[0] as any).updateFields({

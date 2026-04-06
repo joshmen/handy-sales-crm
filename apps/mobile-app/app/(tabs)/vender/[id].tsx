@@ -34,8 +34,26 @@ export default function OrderDetailScreen() {
   const [confirmModal, setConfirmModal] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void; destructive?: boolean; confirmText?: string; icon?: React.ReactNode }>({ visible: false, title: '', message: '', onConfirm: () => {} });
 
 
-  if (isLoading || !order) {
+  if (isLoading) {
     return <View style={styles.container}><LoadingSpinner message="Cargando pedido..." /></View>;
+  }
+
+  if (!order) {
+    return (
+      <View style={styles.container}>
+        <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} accessibilityLabel="Volver" accessibilityRole="button">
+            <ChevronLeft size={22} color={COLORS.headerText} />
+          </TouchableOpacity>
+          <Text style={styles.blueHeaderTitle}>Pedido</Text>
+          <View style={{ width: 22 }} />
+        </View>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <Text style={{ fontSize: 16, fontWeight: '600', color: '#64748b' }}>Pedido no encontrado</Text>
+          <Text style={{ fontSize: 13, color: '#94a3b8', marginTop: 4 }}>Este pedido ya no está disponible</Text>
+        </View>
+      </View>
+    );
   }
 
   const estado = order.estado;

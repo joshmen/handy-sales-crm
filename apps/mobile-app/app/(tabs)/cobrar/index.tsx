@@ -284,7 +284,7 @@ export default function CobrarScreen() {
     [router]
   );
 
-  if (loadingPedidos && loadingCobros) {
+  if (loadingPedidos || loadingCobros) {
     return (
       <View style={styles.container}>
         <LoadingSpinner message="Cargando cartera..." />

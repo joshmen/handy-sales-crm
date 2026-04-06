@@ -26,6 +26,8 @@ interface ServerChanges {
 // This handles both cases:
 //   A) Record created locally, pushed, got server_id mapping → map by server_id
 //   B) Record pulled from server (WDB id = String(server_id)) → map by parsing WDB id
+// TODO: Memory concern — this fetches ALL records per table. For large datasets (10k+),
+// consider using WDB's unsafeFetchRaw() or pagination to reduce memory pressure.
 async function buildServerIdMap(table: string): Promise<Map<number, string>> {
   const records = await database.get(table).query().fetch();
   const map = new Map<number, string>();
@@ -281,11 +283,8 @@ function extractDetallesRuta(
         updated_at: toTimestamp(ruta.actualizadoEn),
       };
 
-      if (isFirstSync) {
-        // All as 'updated' — sendCreatedAsUpdated: true handles creation
-        updated.push(raw);
-      }
-      // Delta sync: skip — mobile push handles updating the server
+      // All as 'updated' — sendCreatedAsUpdated: true handles creation
+      updated.push(raw);
     }
   }
 

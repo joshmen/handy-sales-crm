@@ -5,6 +5,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/stores';
 import { useOfflineClientById, useOfflineClients } from '@/hooks';
+import { database } from '@/db/database';
 import { createCobroOffline } from '@/db/actions';
 import { capturePhoto, saveAttachmentRecord } from '@/services/evidenceManager';
 import { performSync } from '@/sync/syncEngine';
@@ -48,6 +49,7 @@ export default function RegistrarCobroScreen() {
     saldo: string;
     fromRuta?: string;
     paradaId?: string;
+    pedidoId?: string;
   }>();
 
   const paramClienteId = params.clienteId || undefined;
@@ -130,7 +132,8 @@ export default function RegistrarCobroScreen() {
         montoNum,
         metodoPago,
         referencia || undefined,
-        notas || undefined
+        notas || undefined,
+        params.pedidoId || null
       );
 
       // Save receipt photo attachment
@@ -146,7 +149,6 @@ export default function RegistrarCobroScreen() {
       // Mark parada as completed if cobro came from a route stop
       if (params.paradaId) {
         try {
-          const { database } = require('@/db/database');
           const stopRecord = await database.get('ruta_detalles').find(params.paradaId);
           if (stopRecord) await stopRecord.depart();
         } catch (e) { /* ignore */ if (__DEV__) console.warn('[Registrar]', e); }
@@ -412,7 +414,7 @@ export default function RegistrarCobroScreen() {
       </ScrollView>
 
       {/* Confirm Button */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: 16 + insets.bottom }]}>
         <Button
           title={`Confirmar Cobro · ${formatCurrency(montoNum)}`}
           onPress={handleConfirmar}

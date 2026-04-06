@@ -207,7 +207,8 @@ export async function createCobroOffline(
   monto: number,
   metodoPago: number,
   referencia?: string,
-  notas?: string
+  notas?: string,
+  pedidoId?: string | null
 ): Promise<Cobro> {
   return database.write(async () => {
     return database.get<Cobro>('cobros').create((record: any) => {
@@ -215,6 +216,7 @@ export async function createCobroOffline(
       record.clienteId = clienteId;
       record.clienteServerId = clienteServerId;
       record.usuarioId = usuarioId;
+      record.pedidoId = pedidoId || null;
       record.monto = monto;
       record.metodoPago = metodoPago;
       record.referencia = referencia || null;

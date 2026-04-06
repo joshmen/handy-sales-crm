@@ -108,8 +108,10 @@ export default function ParadaDetailScreen() {
   // Route start is now explicit — vendor accepts from ruta/index.tsx banner
 
   // Auto GPS check-in on mount for Pendiente stops
+  const hasArrivedRef = useRef(false);
   useEffect(() => {
-    if (!stop || !location || stop.estado !== 0) return;
+    if (!stop || !location || stop.estado !== 0 || hasArrivedRef.current) return;
+    hasArrivedRef.current = true;
     stop.arrive(location.latitude, location.longitude).catch(() => {});
   }, [stop?.id, location]);
 
@@ -230,6 +232,12 @@ export default function ParadaDetailScreen() {
   if (!stop) {
     return (
       <View style={styles.container}>
+        <View style={[styles.blueHeader, { paddingTop: insets.top + 16 }]}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} accessibilityLabel="Volver" accessibilityRole="button">
+            <ChevronLeft size={22} color={COLORS.headerText} />
+          </TouchableOpacity>
+          <Text style={styles.blueHeaderTitle}>Parada</Text>
+        </View>
         <View style={styles.empty}>
           <Text style={styles.emptyText}>Parada no encontrada</Text>
         </View>
@@ -294,7 +302,7 @@ export default function ParadaDetailScreen() {
             pitchEnabled={false}
             showsUserLocation
           >
-            <Marker coordinate={{ latitude: clientLat, longitude: clientLng }} pinColor="COLORS.primary" />
+            <Marker coordinate={{ latitude: clientLat, longitude: clientLng }} pinColor={COLORS.primary} />
             <Circle
               center={{ latitude: clientLat, longitude: clientLng }}
               radius={200}
@@ -475,7 +483,7 @@ export default function ParadaDetailScreen() {
           />
           <Button
             title="Registrar Cobro"
-            onPress={() => router.push(`/(tabs)/cobrar/registrar?clienteId=${stop.clienteId}&clienteNombre=${encodeURIComponent(client?.nombre ?? '')}&saldo=0&fromRuta=1&paradaId=${detalleId}` as any)}
+            onPress={() => router.push(`/(tabs)/cobrar/registrar?clienteId=${stop.clienteId}&clienteNombre=${encodeURIComponent(client?.nombre ?? '')}&saldo=0&fromRuta=1&paradaId=${detalleId}&pedidoId=${stop.pedidoId || ''}` as any)}
             variant="secondary"
             fullWidth
           />

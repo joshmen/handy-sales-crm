@@ -315,7 +315,7 @@ export default function ImpresoraScreen() {
           accessibilityRole="button"
           accessibilityState={{ selected: activeTab === 'bluetooth' }}
         >
-          <Bluetooth size={16} color={activeTab === 'bluetooth' ? 'COLORS.primary' : '#94a3b8'} />
+          <Bluetooth size={16} color={activeTab === 'bluetooth' ? COLORS.primary : '#94a3b8'} />
           <Text style={[styles.tabText, activeTab === 'bluetooth' && styles.tabTextActive]}>
             Bluetooth
           </Text>
@@ -327,7 +327,7 @@ export default function ImpresoraScreen() {
           accessibilityRole="button"
           accessibilityState={{ selected: activeTab === 'wifi' }}
         >
-          <Wifi size={16} color={activeTab === 'wifi' ? 'COLORS.primary' : '#94a3b8'} />
+          <Wifi size={16} color={activeTab === 'wifi' ? COLORS.primary : '#94a3b8'} />
           <Text style={[styles.tabText, activeTab === 'wifi' && styles.tabTextActive]}>
             WiFi / Red
           </Text>
