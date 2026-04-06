@@ -1,13 +1,17 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useSession } from 'next-auth/react';
 import { toast } from '@/hooks/useToast';
 import { supervisorService } from '@/services/api';
 import type { SupervisorVendedor, SupervisorDashboard } from '@/services/api/supervisor';
+import { deviceSessionService } from '@/services/api';
+import type { DeviceSessionDto } from '@/services/api/deviceSessions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
+import { Drawer } from '@/components/ui/Drawer';
+import { DataGrid, type DataGridColumn, type DataGridSort } from '@/components/ui/DataGrid';
 import {
   Users,
   ShoppingBag,
@@ -21,14 +25,16 @@ import {
   MapPin,
   Ruler,
   Download,
-  ChevronLeft,
-  ChevronRight,
   Edit,
   Check,
-  Minus,
   X,
+  Smartphone,
+  Monitor,
+  HelpCircle,
+  Shield,
+  Trash2,
 } from 'lucide-react';
-import { getInitials } from '@/lib/utils';
+import { getInitials, formatTimeAgo } from '@/lib/utils';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useBatchOperations } from '@/hooks/useBatchOperations';
 import { BatchActionBar } from '@/components/shared/BatchActionBar';
@@ -106,6 +112,34 @@ function PresenceBadge({ isOnline, lastActivity }: { isOnline?: boolean; lastAct
       Desconectado
     </span>
   );
+}
+
+// ============ Device Session Helpers ============
+
+function getDeviceIcon(deviceType: number) {
+  switch (deviceType) {
+    case 2: // Android
+    case 3: // iOS
+      return Smartphone;
+    case 1: // Web
+    case 4: // Desktop
+      return Monitor;
+    default:
+      return HelpCircle;
+  }
+}
+
+function getSessionStatusConfig(status: number) {
+  switch (status) {
+    case 0: return { label: 'Activo', className: 'text-green-700 bg-green-100' };
+    case 1: return { label: 'Cerrada', className: 'text-gray-600 bg-gray-100' };
+    case 2: return { label: 'Expirada', className: 'text-gray-600 bg-gray-100' };
+    case 3: return { label: 'Revocada (Admin)', className: 'text-red-700 bg-red-100' };
+    case 4: return { label: 'Revocada (Usuario)', className: 'text-orange-700 bg-orange-100' };
+    case 5: return { label: 'Desvinculando...', className: 'text-yellow-700 bg-yellow-100 animate-pulse' };
+    case 6: return { label: 'Desvinculado', className: 'text-purple-700 bg-purple-100' };
+    default: return { label: 'Desconocido', className: 'text-gray-600 bg-gray-100' };
+  }
 }
 
 // ============ Supervisor View ============
@@ -471,6 +505,17 @@ function AdminUsersView() {
   // B5: Distance modal
   const [isDistanceModalOpen, setIsDistanceModalOpen] = useState(false);
 
+  // Sort state for DataGrid
+  const [sortKey, setSortKey] = useState('nombre');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  // Device sessions drawer
+  const [drawerUser, setDrawerUser] = useState<User | null>(null);
+  const [drawerSessions, setDrawerSessions] = useState<DeviceSessionDto[]>([]);
+  const [drawerLoading, setDrawerLoading] = useState(false);
+  const [revokingId, setRevokingId] = useState<number | null>(null);
+  const [cleaningExpired, setCleaningExpired] = useState(false);
+
   // Form states
   const [formData, setFormData] = useState({
     email: '',
@@ -519,25 +564,31 @@ function AdminUsersView() {
       }))
     : [];
 
-  // Pagination
-  const startItem = (currentPage - 1) * pageSize + 1;
-  const endItem = Math.min(currentPage * pageSize, totalCount);
-
-  const getPageNumbers = () => {
-    const pages: (number | string)[] = [];
-    if (totalPages <= 5) {
-      for (let i = 1; i <= totalPages; i++) pages.push(i);
-    } else {
-      if (currentPage <= 3) {
-        pages.push(1, 2, 3, '...', totalPages);
-      } else if (currentPage >= totalPages - 2) {
-        pages.push(1, '...', totalPages - 2, totalPages - 1, totalPages);
-      } else {
-        pages.push(1, '...', currentPage, '...', totalPages);
+  // Local sorting
+  const sortedUsers = useMemo(() => {
+    const sorted = [...displayUsers];
+    sorted.sort((a, b) => {
+      let cmp = 0;
+      switch (sortKey) {
+        case 'nombre':
+          cmp = a.name.localeCompare(b.name);
+          break;
+        case 'role':
+          cmp = a.role.localeCompare(b.role);
+          break;
+        case 'lastLogin': {
+          const aTime = a.lastLogin?.getTime() ?? 0;
+          const bTime = b.lastLogin?.getTime() ?? 0;
+          cmp = aTime - bTime;
+          break;
+        }
+        default:
+          cmp = 0;
       }
-    }
-    return pages;
-  };
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+    return sorted;
+  }, [displayUsers, sortKey, sortDir]);
 
   const getRoleBadgeColor = (role: UserRole) => {
     switch (role) {
@@ -565,6 +616,13 @@ function AdminUsersView() {
       default:
         return 'Visor';
     }
+  };
+
+  // Get session count for a user from apiUsers
+  const getSessionCount = (userId: string): number => {
+    if (!Array.isArray(apiUsers)) return 0;
+    const apiUser = apiUsers.find((u: any) => u.id.toString() === userId);
+    return (apiUser as any)?.activeSessionCount ?? 0;
   };
 
   const handleCreateUser = async () => {
@@ -766,9 +824,242 @@ function AdminUsersView() {
     toast.success('Archivo CSV descargado');
   };
 
+  // Device sessions drawer
+  const handleOpenSessionsDrawer = async (user: User) => {
+    setDrawerUser(user);
+    setDrawerLoading(true);
+    try {
+      const sessions = await deviceSessionService.getSessionsByUser(parseInt(user.id));
+      setDrawerSessions(sessions);
+    } catch {
+      toast.error('Error al cargar sesiones del usuario');
+      setDrawerSessions([]);
+    } finally {
+      setDrawerLoading(false);
+    }
+  };
+
+  const handleRevokeSession = async (sessionItem: DeviceSessionDto) => {
+    if (sessionItem.esSesionActual) {
+      toast.warning('No puedes revocar tu propia sesion activa');
+      return;
+    }
+    try {
+      setRevokingId(sessionItem.id);
+      await deviceSessionService.revokeSession(sessionItem.id, 'Revocada por administrador');
+      toast.success(`Sesion de ${sessionItem.usuarioNombre} revocada exitosamente`);
+      // Refresh drawer sessions
+      if (drawerUser) {
+        const sessions = await deviceSessionService.getSessionsByUser(parseInt(drawerUser.id));
+        setDrawerSessions(sessions);
+      }
+      loadUsers();
+    } catch {
+      toast.error('Error al revocar la sesion');
+    } finally {
+      setRevokingId(null);
+    }
+  };
+
+  const handleCleanExpired = async () => {
+    try {
+      setCleaningExpired(true);
+      const count = await deviceSessionService.cleanExpiredSessions(30);
+      toast.success(`${count} sesion${count !== 1 ? 'es' : ''} expirada${count !== 1 ? 's' : ''} eliminada${count !== 1 ? 's' : ''}`);
+      // Refresh drawer if open
+      if (drawerUser) {
+        const sessions = await deviceSessionService.getSessionsByUser(parseInt(drawerUser.id));
+        setDrawerSessions(sessions);
+      }
+    } catch {
+      toast.error('Error al limpiar sesiones expiradas');
+    } finally {
+      setCleaningExpired(false);
+    }
+  };
+
+  // Sort handler
+  const handleSort = (key: string) => {
+    if (sortKey === key) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  };
+
+  const gridSort: DataGridSort = {
+    key: sortKey,
+    direction: sortDir,
+    onSort: handleSort,
+  };
+
+  // DataGrid column renderers
+  const renderRolBadge = (user: User) => (
+    <span className={`px-2 py-0.5 text-[11px] font-medium rounded-lg ${getRoleBadgeColor(user.role)}`}>
+      {getRoleLabel(user.role)}
+    </span>
+  );
+
+  const renderStatusBadge = (user: User) => (
+    <span className={`px-2 py-0.5 text-[11px] font-medium rounded-lg ${
+      user.status === UserStatus.ACTIVE
+        ? 'bg-green-100 text-green-600'
+        : 'bg-gray-100 text-gray-500'
+    }`}>
+      {user.status === UserStatus.ACTIVE ? 'Activo' : 'Inactivo'}
+    </span>
+  );
+
+  const renderLastActivity = (user: User) => (
+    <span className="text-xs text-gray-500">
+      {user.lastLogin ? formatDate(user.lastLogin) : 'Sin actividad'}
+    </span>
+  );
+
+  const renderSesionCount = (user: User) => {
+    const count = getSessionCount(user.id);
+    return (
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          handleOpenSessionsDrawer(user);
+        }}
+        className={`px-2 py-0.5 text-[11px] font-medium rounded-lg transition-colors ${
+          count > 0
+            ? 'bg-blue-100 text-blue-700 hover:bg-blue-200 cursor-pointer'
+            : 'bg-gray-100 text-gray-400'
+        }`}
+      >
+        {count > 0 ? `${count} activa${count !== 1 ? 's' : ''}` : '0'}
+      </button>
+    );
+  };
+
+  const renderActions = (user: User) => (
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        setSelectedUser(user);
+        setIsEditModalOpen(true);
+      }}
+      className="w-8 h-8 flex items-center justify-center border border-border rounded-lg hover:bg-muted/50 transition-colors"
+    >
+      <Edit className="w-4 h-4 text-muted-foreground" />
+    </button>
+  );
+
+  const columns: DataGridColumn<User>[] = [
+    {
+      key: 'nombre',
+      label: 'Nombre',
+      width: 'flex',
+      sortable: true,
+      cellRenderer: (user) => (
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-sm font-semibold text-gray-600">
+            {user.name[0]?.toUpperCase()}
+          </div>
+          <div>
+            <p className="text-[13px] font-medium text-gray-900">{user.name}</p>
+            <p className="text-[11px] text-gray-500">{user.email}</p>
+          </div>
+        </div>
+      ),
+    },
+    { key: 'role', label: 'Rol', width: 120, sortable: true, cellRenderer: renderRolBadge },
+    { key: 'status', label: 'Estado', width: 100, cellRenderer: renderStatusBadge },
+    { key: 'lastLogin', label: 'Ultima actividad', width: 150, sortable: true, hiddenOnMobile: true, cellRenderer: renderLastActivity },
+    { key: 'sesiones', label: 'Sesiones', width: 90, align: 'center', hiddenOnMobile: true, cellRenderer: renderSesionCount },
+    { key: 'actions', label: '', width: 80, align: 'right', cellRenderer: renderActions },
+  ];
+
+  // Mobile card renderer
+  const mobileCardRenderer = (user: User) => {
+    const sessionCount = getSessionCount(user.id);
+    return (
+      <div className="flex items-center gap-3">
+        {/* Checkbox */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            batch.handleToggleSelect(parseInt(user.id));
+          }}
+          className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+            batch.selectedIds.has(parseInt(user.id))
+              ? 'bg-green-600 border-green-600 text-white'
+              : 'border-gray-300 hover:border-green-500'
+          }`}
+        >
+          {batch.selectedIds.has(parseInt(user.id)) && <Check className="w-3 h-3" />}
+        </button>
+
+        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-medium text-sm flex-shrink-0">
+          {getInitials(user.name)}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-semibold text-gray-900">{user.name}</div>
+          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+            <span className={`px-2 py-0.5 text-[11px] font-medium rounded-lg ${getRoleBadgeColor(user.role)}`}>
+              {getRoleLabel(user.role)}
+            </span>
+            <span className={`px-2 py-0.5 text-[11px] font-medium rounded-lg ${
+              user.status === UserStatus.ACTIVE
+                ? 'bg-green-100 text-green-600'
+                : 'bg-gray-100 text-gray-500'
+            }`}>
+              {user.status === UserStatus.ACTIVE ? 'Activo' : 'Inactivo'}
+            </span>
+            {sessionCount > 0 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleOpenSessionsDrawer(user);
+                }}
+                className="px-2 py-0.5 text-[11px] font-medium rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200"
+              >
+                {sessionCount} sesion{sessionCount !== 1 ? 'es' : ''}
+              </button>
+            )}
+          </div>
+        </div>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setSelectedUser(user);
+            setIsEditModalOpen(true);
+          }}
+          className="w-8 h-8 flex items-center justify-center border border-border rounded-lg hover:bg-muted/50 transition-colors flex-shrink-0"
+        >
+          <Edit className="w-4 h-4 text-muted-foreground" />
+        </button>
+      </div>
+    );
+  };
+
   return (
     <>
       <div className="space-y-4">
+        {/* KPI Strip */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <p className="text-[11px] font-medium text-gray-500 uppercase">Total usuarios</p>
+            <p className="text-2xl font-bold text-gray-900 mt-1">{totalCount}</p>
+          </div>
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <p className="text-[11px] font-medium text-gray-500 uppercase">Activos</p>
+            <p className="text-2xl font-bold text-emerald-600 mt-1">{displayUsers.filter(u => u.status === UserStatus.ACTIVE).length}</p>
+          </div>
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <p className="text-[11px] font-medium text-gray-500 uppercase">En linea</p>
+            <p className="text-2xl font-bold text-blue-600 mt-1">{apiUsers.filter((u: any) => u.isOnline).length}</p>
+          </div>
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <p className="text-[11px] font-medium text-gray-500 uppercase">Sesiones activas</p>
+            <p className="text-2xl font-bold text-amber-600 mt-1">{apiUsers.reduce((sum: number, u: any) => sum + (u.activeSessionCount || 0), 0)}</p>
+          </div>
+        </div>
+
         {/* Action buttons */}
         <div className="flex flex-wrap items-center gap-2">
           <button
@@ -781,24 +1072,36 @@ function AdminUsersView() {
           </button>
           <button
             onClick={handleOpenUbicaciones}
-            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-blue-700 border border-blue-300 rounded hover:bg-blue-50 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-blue-700 border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors"
           >
             <MapPin className="w-4 h-4" />
             <span>Ubicacion</span>
           </button>
           <button
             onClick={handleOpenDistancia}
-            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-violet-700 border border-violet-300 rounded hover:bg-violet-50 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-violet-700 border border-violet-300 rounded-lg hover:bg-violet-50 transition-colors"
           >
             <Ruler className="w-4 h-4" />
             <span>Distancia</span>
           </button>
           <button
             onClick={handleDescargar}
-            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-emerald-700 border border-emerald-300 rounded hover:bg-emerald-50 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-emerald-700 border border-emerald-300 rounded-lg hover:bg-emerald-50 transition-colors"
           >
             <Download className="w-4 h-4" />
             <span>Descargar</span>
+          </button>
+          <button
+            onClick={handleCleanExpired}
+            disabled={cleaningExpired}
+            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+          >
+            {cleaningExpired ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Trash2 className="w-4 h-4" />
+            )}
+            <span>Limpiar expiradas</span>
           </button>
         </div>
 
@@ -852,147 +1155,130 @@ function AdminUsersView() {
           className="mb-4"
         />
 
-        {/* Container with loading overlay */}
-        <div className="relative min-h-[200px]">
-          {/* Loading Overlay */}
-          {isLoading && (
-            <div className="absolute inset-0 bg-white/80 backdrop-blur-[1px] z-10 flex items-center justify-center transition-opacity duration-200">
-              <div className="flex flex-col items-center gap-2">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
-                <span className="text-sm text-gray-500">Cargando usuarios...</span>
-              </div>
-            </div>
-          )}
+        {/* DataGrid */}
+        <DataGrid<User>
+          columns={columns}
+          data={sortedUsers}
+          keyExtractor={(u) => u.id}
+          sort={gridSort}
+          selection={{
+            selectedIds: new Set(Array.from(batch.selectedIds).map(String)),
+            onToggle: (id) => batch.handleToggleSelect(Number(id)),
+            onSelectAll: () => {
+              displayUsers.forEach(u => {
+                if (!batch.selectedIds.has(parseInt(u.id))) {
+                  batch.handleToggleSelect(parseInt(u.id));
+                }
+              });
+            },
+            onClearAll: batch.handleClearSelection,
+          }}
+          onRowClick={(user) => handleOpenSessionsDrawer(user)}
+          loading={isLoading}
+          loadingMessage="Cargando usuarios..."
+          emptyIcon={<Users className="w-12 h-12" />}
+          emptyTitle="No hay usuarios"
+          emptyMessage="Crea un nuevo usuario para comenzar"
+          mobileCardRenderer={mobileCardRenderer}
+          pagination={totalCount > pageSize ? {
+            currentPage,
+            totalPages,
+            totalItems: totalCount,
+            pageSize,
+            onPageChange: goToPage,
+          } : undefined}
+        />
+      </div>
 
-          {/* Empty State */}
-          {!isLoading && displayUsers.length === 0 ? (
-            <div className="flex items-center justify-center h-64 text-gray-400">
-              <div className="text-center">
-                <Users className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                <p className="text-lg font-medium">No hay usuarios</p>
-                <p className="text-sm">Crea un nuevo usuario para comenzar</p>
-              </div>
+      {/* Device Sessions Drawer */}
+      <Drawer
+        isOpen={drawerUser !== null}
+        onClose={() => { setDrawerUser(null); setDrawerSessions([]); }}
+        title={drawerUser ? `Sesiones de ${drawerUser.name}` : 'Sesiones'}
+        icon={<Smartphone className="w-5 h-5 text-blue-600" />}
+        width="lg"
+      >
+        <div className="p-6 space-y-4">
+          {drawerLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+              <span className="ml-2 text-sm text-gray-500">Cargando sesiones...</span>
+            </div>
+          ) : drawerSessions.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+              <Smartphone className="w-12 h-12 text-gray-300 mb-3" />
+              <p className="text-sm font-medium">Sin sesiones</p>
+              <p className="text-xs text-gray-400 mt-1">Este usuario no tiene sesiones registradas</p>
             </div>
           ) : (
-            /* User Cards with opacity transition */
-            <div data-tour="users-cards" className={`space-y-4 transition-opacity duration-200 ${isLoading ? 'opacity-50' : 'opacity-100'}`}>
-              {/* User Cards */}
-              {displayUsers.map((user) => (
-              <div
-                key={user.id}
-                className={`bg-white border rounded-lg overflow-hidden ${
-                  batch.selectedIds.has(parseInt(user.id))
-                    ? 'border-green-400 ring-1 ring-green-200'
-                    : 'border-gray-200'
-                }`}
-              >
-                {/* Card Top */}
-                <div className="flex items-center gap-6 p-5">
-                  {/* Checkbox */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      batch.handleToggleSelect(parseInt(user.id));
-                    }}
-                    className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                      batch.selectedIds.has(parseInt(user.id))
-                        ? 'bg-green-600 border-green-600 text-white'
-                        : 'border-gray-300 hover:border-green-500'
+            <div className="space-y-3">
+              <p className="text-sm text-gray-600">
+                {drawerSessions.filter(s => s.status === 0).length} sesion{drawerSessions.filter(s => s.status === 0).length !== 1 ? 'es' : ''} activa{drawerSessions.filter(s => s.status === 0).length !== 1 ? 's' : ''}
+                {' '}de {drawerSessions.length} total
+              </p>
+              {drawerSessions.map((s) => {
+                const DeviceIcon = getDeviceIcon(s.deviceType);
+                const statusCfg = getSessionStatusConfig(s.status);
+                return (
+                  <div
+                    key={s.id}
+                    className={`border rounded-lg p-4 ${
+                      s.esSesionActual ? 'border-green-300 ring-1 ring-green-200 bg-green-50/30' : 'border-gray-200 bg-white'
                     }`}
                   >
-                    {batch.selectedIds.has(parseInt(user.id)) && <Check className="w-3 h-3" />}
-                  </button>
-
-                  {/* Avatar Section */}
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-medium text-sm">
-                      {getInitials(user.name)}
-                    </div>
-                    <div>
-                      <div className="text-sm font-semibold text-gray-900">{user.name}</div>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className={`px-2 py-0.5 text-[11px] font-medium rounded ${getRoleBadgeColor(user.role)}`}>
-                          {getRoleLabel(user.role)}
-                        </span>
-                        <span className={`px-2 py-0.5 text-[11px] font-medium rounded ${
-                          user.status === UserStatus.ACTIVE
-                            ? 'bg-green-100 text-green-600'
-                            : 'bg-gray-100 text-gray-500'
-                        }`}>
-                          {user.status === UserStatus.ACTIVE ? 'Activo' : 'Inactivo'}
-                        </span>
-                        <span className="text-xs text-gray-400">
-                          {user.lastLogin ? `Ultima sesion: ${formatDate(user.lastLogin)}` : 'Sesion no iniciada'}
-                        </span>
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                        <DeviceIcon className="w-5 h-5 text-gray-500" />
                       </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-gray-900 truncate">
+                            {s.deviceName || s.deviceTypeNombre}
+                          </span>
+                          {s.esSesionActual && (
+                            <span className="text-[10px] font-medium text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                              Tu sesion
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-500 truncate">
+                          {[s.osVersion, s.appVersion ? `v${s.appVersion}` : null, s.deviceModel].filter(Boolean).join(' / ')}
+                        </div>
+                      </div>
+                      <span className={`px-2 py-1 text-[11px] font-medium rounded-full ${statusCfg.className}`}>
+                        {statusCfg.label}
+                      </span>
                     </div>
+
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
+                      {s.ipAddress && <span>IP: {s.ipAddress}</span>}
+                      <span>Conectado: {formatDate(s.loggedInAt, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                      <span>Actividad: {formatTimeAgo(s.lastActivity)}</span>
+                    </div>
+
+                    {s.status === 0 && !s.esSesionActual && (
+                      <div className="mt-3 flex justify-end">
+                        <button
+                          onClick={() => handleRevokeSession(s)}
+                          disabled={revokingId === s.id}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50"
+                        >
+                          {revokingId === s.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Shield className="w-3.5 h-3.5" />
+                          )}
+                          <span>Revocar</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
-
-                </div>
-
-                {/* Card Footer */}
-                <div className="flex items-center justify-end px-5 py-3 bg-muted border-t border-border">
-                  <button
-                    onClick={() => {
-                      setSelectedUser(user);
-                      setIsEditModalOpen(true);
-                    }}
-                    className="w-8 h-8 flex items-center justify-center border border-border rounded hover:bg-muted/50 transition-colors"
-                  >
-                    <Edit className="w-4 h-4 text-muted-foreground" />
-                  </button>
-                </div>
-              </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
-
-        {/* Pagination - Always visible when there are users */}
-        {(displayUsers.length > 0 || isLoading) && totalCount > 0 && (
-          <div className={`flex items-center justify-between pt-4 transition-opacity duration-200 ${isLoading ? 'opacity-60' : 'opacity-100'}`}>
-            <span className="text-sm text-gray-500">
-              Mostrando {startItem}-{endItem} de {totalCount} usuarios
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => goToPage(currentPage - 1)}
-                disabled={currentPage === 1 || isLoading}
-                className="px-3 py-2 border border-gray-200 rounded-md text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-
-              <div className="flex items-center gap-1">
-                {getPageNumbers().map((page, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => typeof page === 'number' && !isLoading && goToPage(page)}
-                    disabled={page === '...' || isLoading}
-                    className={`min-w-[32px] px-2 py-1 text-sm rounded-md transition-colors ${
-                      page === currentPage
-                        ? 'bg-green-600 text-white'
-                        : page === '...'
-                        ? 'text-gray-400 cursor-default'
-                        : 'text-gray-600 hover:bg-gray-100'
-                    }`}
-                  >
-                    {page}
-                  </button>
-                ))}
-              </div>
-
-              <button
-                onClick={() => goToPage(currentPage + 1)}
-                disabled={currentPage === totalPages || isLoading}
-                className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+      </Drawer>
 
       {/* Create Modal */}
       {isCreateModalOpen && (
@@ -1057,13 +1343,13 @@ function AdminUsersView() {
             <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
               <button
                 onClick={() => setIsCreateModalOpen(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+                className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleCreateUser}
-                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700"
+                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
               >
                 Crear usuario
               </button>
@@ -1140,13 +1426,13 @@ function AdminUsersView() {
                   setIsEditModalOpen(false);
                   setSelectedUser(null);
                 }}
-                className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+                className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleUpdateUser}
-                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700"
+                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
               >
                 Guardar cambios
               </button>
@@ -1187,7 +1473,7 @@ function AdminUsersView() {
                   </div>
                   <GoogleMapWrapper markers={locationMarkers} height="450px" />
                   <p className="mt-3 text-xs text-gray-400">
-                    Solo se muestran vendedores que han registrado al menos una visita con GPS activo desde la app móvil. Si un vendedor no aparece, es porque aún no ha realizado check-in con ubicación.
+                    Solo se muestran vendedores que han registrado al menos una visita con GPS activo desde la app movil. Si un vendedor no aparece, es porque aun no ha realizado check-in con ubicacion.
                   </p>
                 </>
               )}
@@ -1255,7 +1541,7 @@ function AdminUsersView() {
                   </tbody>
                 </table>
                 <p className="mt-3 text-xs text-gray-400">
-                  Solo se muestran vendedores con al menos una visita GPS registrada desde la app móvil.
+                  Solo se muestran vendedores con al menos una visita GPS registrada desde la app movil.
                 </p>
               </>)}
             </div>
