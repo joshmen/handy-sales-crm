@@ -229,12 +229,14 @@ export function downloadBlob(blob: Blob, filename: string): void {
   URL.revokeObjectURL(url);
 }
 
-export async function downloadFacturaPdf(id: number, folio: string): Promise<void> {
+export async function downloadFacturaPdf(id: number, folio: string, emisorRfc?: string): Promise<void> {
   const blob = await getFacturaPdf(id);
-  downloadBlob(blob, `factura-${folio}.pdf`);
+  const prefix = emisorRfc ? `${emisorRfc}_` : '';
+  downloadBlob(blob, `${prefix}Factura_${folio}.pdf`);
 }
 
-export async function downloadFacturaXml(id: number, folio: string): Promise<void> {
+export async function downloadFacturaXml(id: number, folio: string, emisorRfc?: string): Promise<void> {
   const blob = await getFacturaXml(id);
-  downloadBlob(blob, `factura-${folio}.xml`);
+  const prefix = emisorRfc ? `${emisorRfc}_` : '';
+  downloadBlob(blob, `${prefix}Factura_${folio}.xml`);
 }

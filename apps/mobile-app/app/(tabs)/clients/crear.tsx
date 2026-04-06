@@ -319,7 +319,7 @@ export default function CrearClienteScreen() {
     },
   });
 
-  // Validation — correo and telefono are optional
+  // Validation — correo and telefono are optional, fiscal fields required when requiereFactura
   const errors = useMemo(() => {
     const e: Record<string, string> = {};
     if (!nombre.trim() || nombre.trim().length < 2) e.nombre = 'Mínimo 2 caracteres';
@@ -330,14 +330,26 @@ export default function CrearClienteScreen() {
     if (!numeroExterior.trim()) e.numeroExterior = 'Obligatorio';
     if (!zonaId) e.zona = 'Selecciona una zona';
     if (!categoriaId) e.categoria = 'Selecciona una categoría';
+    // Fiscal fields — obligatorios cuando requiere factura
+    if (requiereFactura) {
+      if (!rfcFiscal.trim() || rfcFiscal.length < 12) e.rfcFiscal = 'RFC fiscal obligatorio (12-13 caracteres)';
+      if (!razonSocial.trim()) e.razonSocial = 'Razón social obligatoria';
+      if (!regimenFiscal) e.regimenFiscal = 'Régimen fiscal obligatorio';
+      if (!cpFiscal.trim() || cpFiscal.length !== 5) e.cpFiscal = 'C.P. fiscal obligatorio (5 dígitos)';
+    }
     return e;
-  }, [nombre, telefono, correo, rfc, direccion, numeroExterior, zonaId, categoriaId]);
+  }, [nombre, telefono, correo, rfc, direccion, numeroExterior, zonaId, categoriaId, requiereFactura, rfcFiscal, razonSocial, regimenFiscal, cpFiscal]);
 
   const isValid = Object.keys(errors).length === 0;
 
   const handleGuardar = () => {
     setTouched(true);
-    if (!isValid) return;
+    if (!isValid) {
+      // Auto-expand fiscal section if fiscal errors exist
+      const hasFiscalErrors = ['rfcFiscal', 'razonSocial', 'regimenFiscal', 'cpFiscal'].some(k => errors[k]);
+      if (hasFiscalErrors && !showFiscal) setShowFiscal(true);
+      return;
+    }
     crearMutation.mutate({
       nombre: nombre.trim(),
       telefono: telefono || undefined,
@@ -465,9 +477,9 @@ export default function CrearClienteScreen() {
         {showFiscal && (
           <View>
             <View style={styles.field}>
-              <Text style={styles.label}>RFC Fiscal</Text>
+              <Text style={styles.label}>RFC Fiscal {requiereFactura ? '*' : ''}</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, touched && errors.rfcFiscal ? styles.inputError : null]}
                 value={rfcFiscal}
                 onChangeText={setRfcFiscal}
                 placeholder="XAXX010101000"
@@ -476,22 +488,24 @@ export default function CrearClienteScreen() {
                 maxLength={13}
                 accessibilityLabel="RFC fiscal"
               />
+              {touched && <FieldError message={errors.rfcFiscal} />}
             </View>
 
             <View style={styles.field}>
-              <Text style={styles.label}>Razón Social</Text>
+              <Text style={styles.label}>Razón Social {requiereFactura ? '*' : ''}</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, touched && errors.razonSocial ? styles.inputError : null]}
                 value={razonSocial}
                 onChangeText={setRazonSocial}
                 placeholder="Nombre o razón social"
                 placeholderTextColor={COLORS.textTertiary}
                 accessibilityLabel="Razón social"
               />
+              {touched && <FieldError message={errors.razonSocial} />}
             </View>
 
             <View style={styles.field}>
-              <Text style={styles.label}>Régimen Fiscal</Text>
+              <Text style={styles.label}>Régimen Fiscal {requiereFactura ? '*' : ''}</Text>
               <SatDropdown
                 label="Régimen Fiscal"
                 items={REGIMEN_FISCAL}
@@ -499,6 +513,7 @@ export default function CrearClienteScreen() {
                 onSelect={setRegimenFiscal}
                 placeholder="Seleccionar régimen..."
               />
+              {touched && <FieldError message={errors.regimenFiscal} />}
             </View>
 
             <View style={styles.field}>
@@ -513,9 +528,9 @@ export default function CrearClienteScreen() {
             </View>
 
             <View style={styles.field}>
-              <Text style={styles.label}>Código Postal Fiscal</Text>
+              <Text style={styles.label}>Código Postal Fiscal {requiereFactura ? '*' : ''}</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, touched && errors.cpFiscal ? styles.inputError : null]}
                 value={cpFiscal}
                 onChangeText={setCpFiscal}
                 placeholder="44100"
@@ -524,6 +539,7 @@ export default function CrearClienteScreen() {
                 maxLength={5}
                 accessibilityLabel="Código postal fiscal"
               />
+              {touched && <FieldError message={errors.cpFiscal} />}
             </View>
 
             <View style={styles.toggleRow}>

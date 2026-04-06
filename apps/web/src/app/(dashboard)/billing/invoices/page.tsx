@@ -197,7 +197,7 @@ export default function InvoicesPage() {
                     {f.estado === 'TIMBRADA' && (
                       <>
                         <button
-                          onClick={() => downloadFacturaPdf(f.id, `${f.serie || ''}${f.folio}`)}
+                          onClick={() => downloadFacturaPdf(f.id, `${f.serie || ''}${f.folio}`, f.emisorRfc)}
                           className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                           aria-label={`Descargar PDF de factura ${f.serie || ''}${f.folio}`}
                           title="Descargar PDF"
@@ -205,7 +205,7 @@ export default function InvoicesPage() {
                           <FileText className="w-4 h-4" aria-hidden="true" />
                         </button>
                         <button
-                          onClick={() => downloadFacturaXml(f.id, `${f.serie || ''}${f.folio}`)}
+                          onClick={() => downloadFacturaXml(f.id, `${f.serie || ''}${f.folio}`, f.emisorRfc)}
                           className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                           aria-label={`Descargar XML de factura ${f.serie || ''}${f.folio}`}
                           title="Descargar XML"

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Search, Loader2 } from 'lucide-react';
 
 // ─── Inline Autocomplete (used in table cells) ───
@@ -25,15 +26,33 @@ export function AutocompleteDropdown<T extends { clave: string }>({
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number; width: number } | null>(null);
 
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
+  // Position dropdown relative to input
+  const updatePosition = useCallback(() => {
+    if (inputRef.current) {
+      const rect = inputRef.current.getBoundingClientRect();
+      setDropdownPos({ top: rect.bottom + 4, left: rect.left, width: Math.max(rect.width, 320) });
+    }
+  }, []);
+
+  useEffect(() => {
+    updatePosition();
+    window.addEventListener('scroll', updatePosition, true);
+    return () => window.removeEventListener('scroll', updatePosition, true);
+  }, [updatePosition]);
+
   // Close on click outside
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (containerRef.current && !containerRef.current.contains(target) &&
+          dropdownRef.current && !dropdownRef.current.contains(target)) {
         onClose();
       }
     }
@@ -61,8 +80,10 @@ export function AutocompleteDropdown<T extends { clave: string }>({
     return () => clearTimeout(timer);
   }, [query, searchFn]);
 
+  const showDropdown = results.length > 0 || loading || (!loading && results.length === 0 && query.trim().length >= 2);
+
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef}>
       <input
         ref={inputRef}
         type="text"
@@ -74,8 +95,12 @@ export function AutocompleteDropdown<T extends { clave: string }>({
         placeholder={placeholder}
         className="w-full px-2 py-1 text-sm border border-green-500 rounded bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-green-500/30"
       />
-      {(results.length > 0 || loading) && (
-        <div className="absolute z-50 top-full left-0 mt-1 w-80 max-h-60 overflow-auto bg-card border border-border rounded-lg shadow-lg">
+      {showDropdown && dropdownPos && createPortal(
+        <div
+          ref={dropdownRef}
+          style={{ position: 'fixed', top: dropdownPos.top, left: dropdownPos.left, width: dropdownPos.width, zIndex: 9999 }}
+          className="max-h-60 overflow-auto bg-card border border-border rounded-lg shadow-lg"
+        >
           {loading && (
             <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -95,7 +120,8 @@ export function AutocompleteDropdown<T extends { clave: string }>({
           {!loading && results.length === 0 && query.trim().length >= 2 && (
             <div className="px-3 py-2 text-sm text-muted-foreground">Sin resultados</div>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

@@ -118,11 +118,13 @@ public class CfdiXmlBuilder : ICfdiXmlBuilder
         w.WriteAttributeString("Rfc", factura.ReceptorRfc);
         w.WriteAttributeString("Nombre", factura.ReceptorNombre);
 
-        // Domicilio fiscal del receptor (C.P.) — required in CFDI 4.0
-        w.WriteAttributeString("DomicilioFiscalReceptor", factura.ReceptorDomicilioFiscal ?? "00000");
+        // Domicilio fiscal del receptor (C.P.) — required in CFDI 4.0, validated before reaching here
+        w.WriteAttributeString("DomicilioFiscalReceptor", factura.ReceptorDomicilioFiscal
+            ?? throw new InvalidOperationException("ReceptorDomicilioFiscal (C.P. fiscal) es obligatorio para CFDI 4.0"));
 
-        // Régimen fiscal del receptor — required in CFDI 4.0
-        w.WriteAttributeString("RegimenFiscalReceptor", factura.ReceptorRegimenFiscal ?? "616");
+        // Régimen fiscal del receptor — required in CFDI 4.0, validated before reaching here
+        w.WriteAttributeString("RegimenFiscalReceptor", factura.ReceptorRegimenFiscal
+            ?? throw new InvalidOperationException("ReceptorRegimenFiscal es obligatorio para CFDI 4.0"));
 
         // Uso CFDI
         w.WriteAttributeString("UsoCFDI", factura.ReceptorUsoCfdi ?? factura.UsoCfdi ?? "G03");

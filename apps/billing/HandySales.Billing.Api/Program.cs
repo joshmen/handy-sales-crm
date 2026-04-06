@@ -63,6 +63,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        options.MapInboundClaims = false; // Don't remap JWT claim names
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -73,7 +74,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Secret"] ??
-                    throw new InvalidOperationException("Jwt:Secret not configured")))
+                    throw new InvalidOperationException("Jwt:Secret not configured"))),
+            RoleClaimType = "role" // JWT emits "role" not ClaimTypes.Role
         };
     });
 

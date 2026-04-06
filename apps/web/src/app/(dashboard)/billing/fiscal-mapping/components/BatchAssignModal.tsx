@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { X as XIcon, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { BatchAutocomplete } from './SatAutocomplete';
@@ -38,8 +39,8 @@ export function BatchAssignModal({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
       <div
         ref={dialogRef}
         role="dialog"
@@ -110,6 +111,7 @@ export function BatchAssignModal({
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

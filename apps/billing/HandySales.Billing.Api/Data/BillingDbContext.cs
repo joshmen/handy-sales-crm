@@ -37,6 +37,7 @@ public class BillingDbContext : DbContext
     public DbSet<CatalogoUnidad> CatalogoUnidad { get; set; }
     public DbSet<MapeoFiscalProducto> MapeosFiscalesProducto { get; set; }
     public DbSet<DefaultsFiscalesTenant> DefaultsFiscalesTenant { get; set; }
+    public DbSet<CfdiErrorCatalog> CfdiErrorCatalog { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

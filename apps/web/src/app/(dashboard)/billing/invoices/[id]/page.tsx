@@ -103,7 +103,7 @@ export default function InvoiceDetailPage() {
     if (!factura) return;
     try {
       setActionLoading('pdf');
-      await downloadFacturaPdf(factura.id, `${factura.serie || 'A'}-${factura.folio}`);
+      await downloadFacturaPdf(factura.id, `${factura.serie || 'A'}${factura.folio}`, factura.emisorRfc);
     } catch {
       toast.error('Error al descargar PDF');
     } finally {
@@ -115,7 +115,7 @@ export default function InvoiceDetailPage() {
     if (!factura) return;
     try {
       setActionLoading('xml');
-      await downloadFacturaXml(factura.id, `${factura.serie || 'A'}-${factura.folio}`);
+      await downloadFacturaXml(factura.id, `${factura.serie || 'A'}${factura.folio}`, factura.emisorRfc);
     } catch {
       toast.error('Error al descargar XML');
     } finally {

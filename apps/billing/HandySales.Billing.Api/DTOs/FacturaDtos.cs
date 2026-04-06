@@ -9,6 +9,7 @@ public class FacturaListDto
     public string? Serie { get; set; }
     public int Folio { get; set; }
     public DateTime FechaEmision { get; set; }
+    public string EmisorRfc { get; set; } = default!;
     public string ReceptorRfc { get; set; } = default!;
     public string ReceptorNombre { get; set; } = default!;
     public decimal Total { get; set; }

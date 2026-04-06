@@ -38,7 +38,7 @@ public class FcmService : IFcmService
         }
         else
         {
-            _logger.LogWarning("Firebase no está configurado. Las notificaciones push no estarán disponibles.");
+            _logger.LogDebug("Firebase no está configurado. Las notificaciones push no estarán disponibles.");
         }
     }
 

@@ -159,6 +159,7 @@ public class FacturasController : ControllerBase
                 Serie = f.Serie,
                 Folio = f.Folio,
                 FechaEmision = f.FechaEmision,
+                EmisorRfc = f.EmisorRfc,
                 ReceptorRfc = f.ReceptorRfc,
                 ReceptorNombre = f.ReceptorNombre,
                 Total = f.Total,
@@ -282,7 +283,16 @@ public class FacturasController : ControllerBase
             return BadRequest($"El cliente '{order.ClienteNombre}' no está marcado como facturable.");
 
         if (string.IsNullOrEmpty(order.ClienteRfc))
-            return BadRequest($"El cliente '{order.ClienteNombre}' no tiene RFC registrado");
+            return BadRequest($"El cliente '{order.ClienteNombre}' no tiene RFC registrado. Edite el cliente y asigne un RFC.");
+
+        if (string.IsNullOrEmpty(order.ClienteRazonSocial))
+            return BadRequest($"El cliente '{order.ClienteNombre}' no tiene razón social fiscal. Edite el cliente y asigne la razón social.");
+
+        if (string.IsNullOrEmpty(order.ClienteRegimenFiscal))
+            return BadRequest($"El cliente '{order.ClienteNombre}' no tiene régimen fiscal. Edite el cliente y asigne un régimen fiscal del SAT.");
+
+        if (string.IsNullOrEmpty(order.ClienteCodigoPostalFiscal))
+            return BadRequest($"El cliente '{order.ClienteNombre}' no tiene código postal fiscal. Edite el cliente y asigne el C.P. de su domicilio fiscal.");
 
         var config = await _context.ConfiguracionesFiscales
             .Where(c => c.TenantId == tenantId && c.Activo)
@@ -374,7 +384,16 @@ public class FacturasController : ControllerBase
             return BadRequest($"El cliente '{order.ClienteNombre}' no está marcado como facturable. Edite el cliente y active la opción 'Facturable'.");
 
         if (string.IsNullOrEmpty(order.ClienteRfc))
-            return BadRequest($"El cliente '{order.ClienteNombre}' no tiene RFC registrado");
+            return BadRequest($"El cliente '{order.ClienteNombre}' no tiene RFC registrado. Edite el cliente y asigne un RFC.");
+
+        if (string.IsNullOrEmpty(order.ClienteRazonSocial))
+            return BadRequest($"El cliente '{order.ClienteNombre}' no tiene razón social fiscal. Edite el cliente y asigne la razón social.");
+
+        if (string.IsNullOrEmpty(order.ClienteRegimenFiscal))
+            return BadRequest($"El cliente '{order.ClienteNombre}' no tiene régimen fiscal. Edite el cliente y asigne un régimen fiscal del SAT.");
+
+        if (string.IsNullOrEmpty(order.ClienteCodigoPostalFiscal))
+            return BadRequest($"El cliente '{order.ClienteNombre}' no tiene código postal fiscal. Edite el cliente y asigne el C.P. de su domicilio fiscal.");
 
         // 5. Load fiscal config (emisor data)
         var config = await _context.ConfiguracionesFiscales
@@ -455,29 +474,50 @@ public class FacturasController : ControllerBase
             });
         }
 
+        // 8. If auto-timbrar: validate everything BEFORE saving to DB
+        //    Only persist the factura if timbrado succeeds (or if not auto-timbrar)
+        if (!request.TimbrarInmediatamente)
+        {
+            _context.Facturas.Add(factura);
+            await _context.SaveChangesAsync();
+            RegistrarAuditoria(tenantId, factura.Id, "CREAR", $"Factura creada desde pedido {order.NumeroPedido}", userId);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Factura {Serie}-{Folio} created (pending) from order {NumeroPedido} for tenant {TenantId}",
+                factura.Serie, factura.Folio, order.NumeroPedido, tenantId);
+
+            return CreatedAtAction(nameof(GetFactura), new { id = factura.Id }, MapToDto(factura));
+        }
+
+        // Auto-timbrar flow: save → timbrar → if fails, rollback
         _context.Facturas.Add(factura);
         await _context.SaveChangesAsync();
 
-        RegistrarAuditoria(tenantId, factura.Id, "CREAR", $"Factura creada desde pedido {order.NumeroPedido}", userId);
-        await _context.SaveChangesAsync();
-
-        _logger.LogInformation("Factura {Serie}-{Folio} created from order {NumeroPedido} for tenant {TenantId}",
-            factura.Serie, factura.Folio, order.NumeroPedido, tenantId);
-
-        // 8. Auto-timbrar if requested
-        if (request.TimbrarInmediatamente)
+        var timbrarResult = await TimbrarFactura(factura.Id);
+        if (timbrarResult.Result is OkObjectResult okResult)
         {
-            var timbrarResult = await TimbrarFactura(factura.Id);
-            if (timbrarResult.Result is OkObjectResult)
-            {
-                var refreshed = await _context.Facturas
-                    .Include(f => f.Detalles).Include(f => f.Impuestos)
-                    .FirstAsync(f => f.Id == factura.Id);
-                return Ok(MapToDto(refreshed));
-            }
+            RegistrarAuditoria(tenantId, factura.Id, "CREAR", $"Factura creada y timbrada desde pedido {order.NumeroPedido}", userId);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Factura {Serie}-{Folio} created and timbrada from order {NumeroPedido} for tenant {TenantId}",
+                factura.Serie, factura.Folio, order.NumeroPedido, tenantId);
+
+            return Ok(okResult.Value);
         }
 
-        return CreatedAtAction(nameof(GetFactura), new { id = factura.Id }, MapToDto(factura));
+        // Timbrado failed — delete the factura so it doesn't leave garbage
+        // But ONLY if it wasn't already timbrada at SAT (has UUID)
+        var reloaded = await _context.Facturas.FindAsync(factura.Id);
+        if (reloaded != null && string.IsNullOrEmpty(reloaded.Uuid))
+        {
+            _context.Facturas.Remove(reloaded);
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("Factura {Serie}-{Folio} deleted after timbrado failure for tenant {TenantId}",
+                factura.Serie, factura.Folio, tenantId);
+        }
+
+        // Return the timbrado error to the user
+        return timbrarResult.Result!;
     }
 
     /// <summary>
@@ -734,9 +774,16 @@ public class FacturasController : ControllerBase
                     $"Error: {resultado.ErrorCode} - {resultado.ErrorMessage}", userId);
                 await _context.SaveChangesAsync();
 
+                // Enrich with user-friendly message from CFDI error catalog
+                var errorHelp = await _context.CfdiErrorCatalog
+                    .Where(e => e.Codigo == resultado.ErrorCode && e.Activo)
+                    .FirstOrDefaultAsync();
+
                 return BadRequest(new
                 {
-                    error = "Error al timbrar la factura",
+                    error = errorHelp != null
+                        ? $"{errorHelp.MensajeUsuario} — {errorHelp.AccionSugerida}"
+                        : $"Error al timbrar la factura — {resultado.ErrorMessage}",
                     code = resultado.ErrorCode,
                     details = resultado.ErrorMessage
                 });
@@ -942,7 +989,7 @@ public class FacturasController : ControllerBase
             try
             {
                 var pdfBytes = await _blobService.GetPdfAsync(factura.PdfBlobUrl);
-                var fileName = $"Factura_{factura.Serie ?? ""}_{factura.Folio}_{factura.FechaEmision:yyyyMMdd}.pdf";
+                var fileName = $"{factura.EmisorRfc}_Factura_{factura.Serie}{factura.Folio}_{factura.FechaEmision:yyyyMMdd}.pdf";
                 return File(pdfBytes, "application/pdf", fileName);
             }
             catch (Exception ex)
@@ -973,7 +1020,7 @@ public class FacturasController : ControllerBase
             }
         }
 
-        var pdfFileName = $"Factura_{factura.Serie ?? ""}_{factura.Folio}_{factura.FechaEmision:yyyyMMdd}.pdf";
+        var pdfFileName = $"{factura.EmisorRfc}_Factura_{factura.Serie}{factura.Folio}_{factura.FechaEmision:yyyyMMdd}.pdf";
         return File(generatedPdf, "application/pdf", pdfFileName);
     }
 
@@ -989,13 +1036,16 @@ public class FacturasController : ControllerBase
         if (factura == null)
             return NotFound();
 
+        var xmlFileName = $"{factura.EmisorRfc}_Factura_{factura.Serie}{factura.Folio}_{factura.Uuid ?? factura.FechaEmision.ToString("yyyyMMdd")}.xml";
+
         // Try Blob Storage first (source of truth)
         if (!string.IsNullOrEmpty(factura.XmlBlobUrl))
         {
             try
             {
                 var xmlContent = await _blobService.GetXmlAsync(factura.XmlBlobUrl);
-                return Content(xmlContent, "application/xml");
+                var xmlBytes = System.Text.Encoding.UTF8.GetBytes(xmlContent);
+                return File(xmlBytes, "application/xml", xmlFileName);
             }
             catch (Exception ex)
             {
@@ -1007,7 +1057,8 @@ public class FacturasController : ControllerBase
         if (string.IsNullOrEmpty(factura.XmlContent))
             return NotFound("XML no disponible");
 
-        return Content(factura.XmlContent, "application/xml");
+        var fallbackBytes = System.Text.Encoding.UTF8.GetBytes(factura.XmlContent);
+        return File(fallbackBytes, "application/xml", xmlFileName);
     }
 
     [HttpPost("{id}/enviar")]
@@ -1040,13 +1091,13 @@ public class FacturasController : ControllerBase
 
             var logoBytes = await ResolveLogoAsync(config?.LogoUrl, tenantId);
             pdfBytes = _pdfService.GeneratePdf(factura, config, logoBytes);
-            pdfFileName = $"Factura_{factura.Serie ?? ""}_{factura.Folio}.pdf";
+            pdfFileName = $"{factura.EmisorRfc}_Factura_{factura.Serie}{factura.Folio}.pdf";
         }
 
         // XML attachment if requested
         string? xmlContent = request.IncluirXml ? factura.XmlContent : null;
-        string? xmlFileName = request.IncluirXml && !string.IsNullOrEmpty(factura.XmlContent)
-            ? $"Factura_{factura.Serie ?? ""}_{factura.Folio}.xml"
+        string? emailXmlFileName = request.IncluirXml && !string.IsNullOrEmpty(factura.XmlContent)
+            ? $"{factura.EmisorRfc}_Factura_{factura.Serie}{factura.Folio}.xml"
             : null;
 
         // Build email
@@ -1065,7 +1116,7 @@ public class FacturasController : ControllerBase
         var sent = await _emailService.SendFacturaAsync(
             request.Email, subject, htmlBody,
             pdfBytes, pdfFileName,
-            xmlContent, xmlFileName);
+            xmlContent, emailXmlFileName);
 
         var attachments = new List<string>();
         if (pdfBytes != null) attachments.Add("PDF");

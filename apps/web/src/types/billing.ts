@@ -262,6 +262,9 @@ export interface ConfiguracionFiscal {
   certificadoSat: string | null;
   llavePrivada: string | null;
   passwordCertificado: string | null;
+  hasCertificado?: boolean;
+  hasLlavePrivada?: boolean;
+  hasPassword?: boolean;
   logoUrl: string | null;
   pacUsuario: string | null;
   pacPassword: string | null;

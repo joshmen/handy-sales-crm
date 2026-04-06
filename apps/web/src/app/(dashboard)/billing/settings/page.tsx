@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Upload, Save, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { Upload, Save, Loader2, CheckCircle, AlertCircle, FileCheck, X } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { toast } from '@/hooks/useToast';
@@ -13,7 +13,13 @@ export default function BillingSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // CSD upload state
+  const [cerFile, setCerFile] = useState<File | null>(null);
+  const [keyFile, setKeyFile] = useState<File | null>(null);
+  const [certPassword, setCertPassword] = useState('');
+  const cerInputRef = useRef<HTMLInputElement>(null);
+  const keyInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     async function load() {
@@ -46,24 +52,34 @@ export default function BillingSettingsPage() {
     }
   };
 
-  const handleUploadCert = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files?.length || !config.id) return;
+  const handleUploadCert = async () => {
+    if (!cerFile || !keyFile || !certPassword.trim() || !config.id) {
+      toast({ title: 'Seleccione ambos archivos (.cer y .key) e ingrese la contraseña', variant: 'destructive' });
+      return;
+    }
 
     setUploading(true);
     try {
       const formData = new FormData();
-      Array.from(files).forEach(f => formData.append('files', f));
+      formData.append('Certificado', cerFile);
+      formData.append('LlavePrivada', keyFile);
+      formData.append('Password', certPassword);
       await uploadCertificado(config.id, formData);
-      toast({ title: 'Certificados subidos exitosamente' });
-      // Reload config
+      toast({ title: 'Certificados CSD subidos exitosamente' });
+      // Reload config & clear form
       const updated = await getConfigFiscal();
       setConfig(updated);
-    } catch {
-      toast({ title: 'Error al subir certificados', variant: 'destructive' });
+      setCerFile(null);
+      setKeyFile(null);
+      setCertPassword('');
+      if (cerInputRef.current) cerInputRef.current.value = '';
+      if (keyInputRef.current) keyInputRef.current.value = '';
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+        || 'Error al subir certificados';
+      toast({ title: msg, variant: 'destructive' });
     } finally {
       setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -78,7 +94,7 @@ export default function BillingSettingsPage() {
     </div>
   );
 
-  const hasCertificates = !!config.certificadoSat && !!config.llavePrivada;
+  const hasCertificates = !!config.hasCertificado && !!config.hasLlavePrivada;
 
   return (
     <PageHeader
@@ -209,11 +225,13 @@ export default function BillingSettingsPage() {
         {/* Certificados CSD */}
         <section className="bg-card border border-border rounded-xl p-5">
           <h2 className="text-sm font-semibold text-foreground mb-4">Certificados CSD</h2>
-          <div className="flex items-center gap-3 mb-4">
+
+          {/* Status indicator */}
+          <div className="flex items-center gap-2 mb-5">
             {hasCertificates ? (
               <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
                 <CheckCircle className="w-4 h-4" />
-                <span className="text-sm font-medium">Certificados cargados</span>
+                <span className="text-sm font-medium">Certificados cargados correctamente</span>
               </div>
             ) : (
               <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
@@ -222,42 +240,125 @@ export default function BillingSettingsPage() {
               </div>
             )}
           </div>
-          <div className="mb-4">
-            <label className="block text-xs font-medium text-muted-foreground mb-1">Contraseña del certificado</label>
-            <input
-              type="password"
-              value={config.passwordCertificado || ''}
-              onChange={e => updateField('passwordCertificado', e.target.value)}
-              placeholder="••••••••"
-              className="w-full max-w-xs px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-green-500/30"
-            />
-          </div>
-          {config.id && (
-            <div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".cer,.key"
-                multiple
-                onChange={handleUploadCert}
-                className="hidden"
-              />
-              <Button
-                variant="outline"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-              >
-                {uploading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Upload className="w-4 h-4 mr-2" />}
-                Subir .cer y .key
-              </Button>
-              <p className="text-xs text-muted-foreground mt-2">
-                Seleccione ambos archivos (.cer y .key) de su CSD. Se almacenan encriptados.
-              </p>
+
+          {config.id ? (
+            <div className="space-y-4">
+              {/* .cer file */}
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">
+                  Certificado (.cer)
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    ref={cerInputRef}
+                    type="file"
+                    accept=".cer"
+                    onChange={e => setCerFile(e.target.files?.[0] || null)}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => cerInputRef.current?.click()}
+                    className="flex-1 flex items-center gap-2 px-3 py-2 text-sm border border-dashed border-border rounded-lg bg-background hover:bg-muted/50 transition-colors text-left"
+                  >
+                    {cerFile ? (
+                      <>
+                        <FileCheck className="w-4 h-4 text-green-600 shrink-0" />
+                        <span className="text-foreground truncate">{cerFile.name}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4 text-muted-foreground shrink-0" />
+                        <span className="text-muted-foreground">Seleccionar archivo .cer</span>
+                      </>
+                    )}
+                  </button>
+                  {cerFile && (
+                    <button
+                      type="button"
+                      onClick={() => { setCerFile(null); if (cerInputRef.current) cerInputRef.current.value = ''; }}
+                      className="p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* .key file */}
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">
+                  Llave privada (.key)
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    ref={keyInputRef}
+                    type="file"
+                    accept=".key"
+                    onChange={e => setKeyFile(e.target.files?.[0] || null)}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => keyInputRef.current?.click()}
+                    className="flex-1 flex items-center gap-2 px-3 py-2 text-sm border border-dashed border-border rounded-lg bg-background hover:bg-muted/50 transition-colors text-left"
+                  >
+                    {keyFile ? (
+                      <>
+                        <FileCheck className="w-4 h-4 text-green-600 shrink-0" />
+                        <span className="text-foreground truncate">{keyFile.name}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4 text-muted-foreground shrink-0" />
+                        <span className="text-muted-foreground">Seleccionar archivo .key</span>
+                      </>
+                    )}
+                  </button>
+                  {keyFile && (
+                    <button
+                      type="button"
+                      onClick={() => { setKeyFile(null); if (keyInputRef.current) keyInputRef.current.value = ''; }}
+                      className="p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Password */}
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">
+                  Contraseña de la llave privada
+                </label>
+                <input
+                  type="password"
+                  value={certPassword}
+                  onChange={e => setCertPassword(e.target.value)}
+                  placeholder="Contraseña del archivo .key"
+                  className="w-full max-w-sm px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-green-500/30"
+                />
+              </div>
+
+              {/* Upload button */}
+              <div className="pt-1">
+                <Button
+                  onClick={handleUploadCert}
+                  disabled={uploading || !cerFile || !keyFile || !certPassword.trim()}
+                  className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
+                >
+                  {uploading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Upload className="w-4 h-4 mr-2" />}
+                  Subir certificados
+                </Button>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Los certificados se almacenan con encriptación AES-256 por tenant.
+                </p>
+              </div>
             </div>
-          )}
-          {!config.id && (
+          ) : (
             <p className="text-xs text-muted-foreground">
-              Guarde la configuración primero para poder subir certificados.
+              Guarde la configuración fiscal primero para poder subir certificados.
             </p>
           )}
         </section>

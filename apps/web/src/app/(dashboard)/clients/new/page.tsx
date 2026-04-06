@@ -228,7 +228,9 @@ export default function NewClientPage() {
               Cancelar
             </button>
             <button
-              onClick={handleSubmit(onSubmit)}
+              onClick={handleSubmit(onSubmit, () => {
+                toast.error('Hay campos obligatorios sin completar. Revisa los datos fiscales si el cliente es facturable.');
+              })}
               disabled={saving || isOutOfZone}
               title={isOutOfZone ? 'El cliente está fuera de la zona asignada' : undefined}
               className="flex items-center gap-2 bg-[#16A34A] hover:bg-green-700 text-white text-[13px] font-semibold px-5 py-2 rounded disabled:opacity-50 transition-colors"
