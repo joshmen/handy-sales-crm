@@ -14,6 +14,8 @@ public class UsuarioDto
     public string Rol { get; set; } = "VENDEDOR";
     public string? AvatarUrl { get; set; }
 
+    public bool Activo { get; set; }
+
     // Session/presence info
     public bool IsOnline { get; set; }
     public int ActiveSessionCount { get; set; }

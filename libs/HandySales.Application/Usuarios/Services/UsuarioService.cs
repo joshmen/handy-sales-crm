@@ -165,7 +165,8 @@ public class UsuarioService
             EsAdmin = u.EsAdmin,
             EsSuperAdmin = u.EsSuperAdmin,
             Rol = u.Rol,
-            AvatarUrl = u.AvatarUrl
+            AvatarUrl = u.AvatarUrl,
+            Activo = u.Activo
         }).ToList();
 
         // SuperAdmin sees all tenants — enrich per-tenant to get correct presence
@@ -218,7 +219,8 @@ public class UsuarioService
                 EsAdmin = u.EsAdmin,
                 EsSuperAdmin = u.EsSuperAdmin,
                 Rol = u.Rol,
-                AvatarUrl = u.AvatarUrl
+                AvatarUrl = u.AvatarUrl,
+                Activo = u.Activo
             })
             .ToList();
 
@@ -255,7 +257,8 @@ public class UsuarioService
             EsAdmin = usuario.EsAdmin,
             EsSuperAdmin = usuario.EsSuperAdmin,
             Rol = usuario.Rol,
-            AvatarUrl = usuario.AvatarUrl
+            AvatarUrl = usuario.AvatarUrl,
+            Activo = usuario.Activo
         };
     }
 
@@ -537,7 +540,8 @@ public class UsuarioService
             EsAdmin = u.EsAdmin,
             EsSuperAdmin = u.EsSuperAdmin,
             Rol = u.Rol,
-            AvatarUrl = u.AvatarUrl
+            AvatarUrl = u.AvatarUrl,
+            Activo = u.Activo
         }).ToList();
 
         return new PaginatedResult<UsuarioDto>(usuariosDto, totalCount, searchDto.Page, searchDto.PageSize);
