@@ -25,8 +25,8 @@ import type {
 import { MappedProductsTable } from './components/MappedProductsTable';
 import { UnmappedProductsTable } from './components/UnmappedProductsTable';
 import { BatchAssignModal } from './components/BatchAssignModal';
+import { MapeoEditModal, type EditingProduct } from './components/MapeoEditModal';
 import { DefaultsPanel } from './components/DefaultsPanel';
-import type { EditingCell } from './components/MappedProductsTable';
 
 // ─── Types ───
 
@@ -53,7 +53,9 @@ export default function FiscalMappingPage() {
   // Shared state
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [editingCell, setEditingCell] = useState<EditingCell | null>(null);
+
+  // Edit modal
+  const [editingProduct, setEditingProduct] = useState<EditingProduct | null>(null);
 
   // Selection for batch operations
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -119,36 +121,6 @@ export default function FiscalMappingPage() {
 
   // ─── Handlers ───
 
-  const handleInlineSelect = async (
-    productoId: number,
-    field: 'claveProdServ' | 'claveUnidad',
-    clave: string,
-    existingMapping?: MapeoFiscalProducto,
-    existingUnmapped?: UnmappedProduct,
-  ) => {
-    setEditingCell(null);
-    setSaving(true);
-    try {
-      const request: UpsertMapeoFiscalRequest = {
-        productoId,
-        claveProdServ: field === 'claveProdServ'
-          ? clave
-          : (existingMapping?.claveProdServ || existingUnmapped?.claveSatActual || defaults.claveProdServDefault || '01010101'),
-        claveUnidad: field === 'claveUnidad'
-          ? clave
-          : (existingMapping?.claveUnidad || existingUnmapped?.unidadClaveSat || defaults.claveUnidadDefault || 'H87'),
-      };
-      await upsertFiscalMapping(request);
-      toast({ title: 'Mapeo actualizado' });
-      await Promise.all([loadMappings(), loadUnmapped()]);
-    } catch (err) {
-      const apiError = extractBillingError(err);
-      toast({ title: 'Error al guardar mapeo', description: apiError.message, variant: 'destructive' });
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const handleSaveDefaults = async () => {
     if (!defaults.claveProdServDefault && !defaults.claveUnidadDefault) {
       toast({ title: 'Ingresa al menos un valor predeterminado', variant: 'destructive' });
@@ -180,6 +152,26 @@ export default function FiscalMappingPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleSaveMapping = async (productoId: number, claveProdServ: string, claveUnidad: string) => {
+    try {
+      setSaving(true);
+      await upsertFiscalMapping({ productoId, claveProdServ, claveUnidad });
+      toast({ title: 'Mapeo guardado' });
+      setEditingProduct(null);
+      await loadAll();
+    } catch (err) {
+      const apiError = extractBillingError(err);
+      toast({ title: 'Error al guardar mapeo', description: apiError.message, variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteAndClose = async (productoId: number) => {
+    await handleDeleteMapping(productoId);
+    setEditingProduct(null);
   };
 
   const handleBatchAssign = async () => {
@@ -261,7 +253,7 @@ export default function FiscalMappingPage() {
         <div className="flex items-center gap-2">
           {selectedIds.size > 0 && (
             <Button
-              onClick={() => { setEditingCell(null); setShowBatchAssign(true); }}
+              onClick={() => setShowBatchAssign(true)}
               className="bg-green-600 hover:bg-green-700 text-white"
             >
               <CheckCheck className="w-4 h-4 mr-2" />
@@ -379,14 +371,10 @@ export default function FiscalMappingPage() {
           mappings={mappings}
           loading={loading}
           selectedIds={selectedIds}
-          editingCell={editingCell}
           mappingsPage={mappingsPage}
           mappingsTotalPages={mappingsTotalPages}
           onToggleSelect={toggleSelect}
-          onSetEditingCell={setEditingCell}
-          onInlineSelect={(productoId, field, clave, existingMapping) =>
-            handleInlineSelect(productoId, field, clave, existingMapping)
-          }
+          onEdit={setEditingProduct}
           onSetMappingsPage={setMappingsPage}
           onDelete={handleDeleteMapping}
         />
@@ -400,17 +388,24 @@ export default function FiscalMappingPage() {
           unmapped={unmapped}
           loading={loading}
           selectedIds={selectedIds}
-          editingCell={editingCell}
           unmappedPage={unmappedPage}
           unmappedTotalPages={unmappedTotalPages}
           onToggleSelect={toggleSelect}
-          onSetEditingCell={setEditingCell}
-          onInlineSelect={(productoId, field, clave, existingUnmapped) =>
-            handleInlineSelect(productoId, field, clave, undefined, existingUnmapped)
-          }
+          onEdit={setEditingProduct}
           onSetUnmappedPage={setUnmappedPage}
         />
         </div>
+      )}
+
+      {/* ─── Edit Modal ─── */}
+      {editingProduct && (
+        <MapeoEditModal
+          product={editingProduct}
+          onSave={handleSaveMapping}
+          onDelete={handleDeleteAndClose}
+          onClose={() => setEditingProduct(null)}
+          saving={saving}
+        />
       )}
 
       {/* Loading overlay */}

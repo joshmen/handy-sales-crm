@@ -1,32 +1,26 @@
 'use client';
 
 import React from 'react';
-import { ChevronLeft, ChevronRight, Check, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, Trash2, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { AutocompleteDropdown } from './SatAutocomplete';
-import { searchCatalogoProdServ, searchCatalogoUnidad } from '@/services/api/billing';
-import type { MapeoFiscalProducto, CatalogoProdServItem, CatalogoUnidadItem } from '@/types/billing';
-
-export interface EditingCell {
-  productoId: number;
-  field: 'claveProdServ' | 'claveUnidad';
-}
+import type { MapeoFiscalProducto } from '@/types/billing';
 
 interface MappedProductsTableProps {
   mappings: MapeoFiscalProducto[];
   loading: boolean;
   selectedIds: Set<number>;
-  editingCell: EditingCell | null;
   mappingsPage: number;
   mappingsTotalPages: number;
   onToggleSelect: (id: number) => void;
-  onSetEditingCell: (cell: EditingCell | null) => void;
-  onInlineSelect: (
-    productoId: number,
-    field: 'claveProdServ' | 'claveUnidad',
-    clave: string,
-    existingMapping?: MapeoFiscalProducto,
-  ) => void;
+  onEdit: (product: {
+    productoId: number;
+    nombre: string;
+    codigoBarra?: string;
+    unidad?: string;
+    currentProdServ?: string;
+    currentUnidad?: string;
+    hasMapping: boolean;
+  }) => void;
   onDelete: (productoId: number) => void;
   onSetMappingsPage: (updater: (p: number) => number) => void;
 }
@@ -35,12 +29,10 @@ export function MappedProductsTable({
   mappings,
   loading,
   selectedIds,
-  editingCell,
   mappingsPage,
   mappingsTotalPages,
   onToggleSelect,
-  onSetEditingCell,
-  onInlineSelect,
+  onEdit,
   onDelete,
   onSetMappingsPage,
 }: MappedProductsTableProps) {
@@ -80,44 +72,14 @@ export function MappedProductsTable({
                   )}
                 </td>
                 <td className="px-4 py-3">
-                  {editingCell?.productoId === m.productoId && editingCell.field === 'claveProdServ' ? (
-                    <AutocompleteDropdown<CatalogoProdServItem>
-                      value={m.claveProdServ}
-                      onSelect={item => onInlineSelect(m.productoId, 'claveProdServ', item.clave, m)}
-                      onClose={() => onSetEditingCell(null)}
-                      searchFn={searchCatalogoProdServ}
-                      renderLabel={item => item.descripcion}
-                      placeholder="Buscar clave..."
-                    />
-                  ) : (
-                    <button
-                      onClick={() => onSetEditingCell({ productoId: m.productoId, field: 'claveProdServ' })}
-                      className="font-mono text-sm hover:text-green-600 dark:hover:text-green-400 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1 rounded"
-                      title="Click para editar"
-                    >
-                      {m.claveProdServ}
-                    </button>
-                  )}
+                  <span className="inline-flex items-center px-2 py-0.5 rounded bg-muted font-mono text-sm">
+                    {m.claveProdServ}
+                  </span>
                 </td>
                 <td className="px-4 py-3">
-                  {editingCell?.productoId === m.productoId && editingCell.field === 'claveUnidad' ? (
-                    <AutocompleteDropdown<CatalogoUnidadItem>
-                      value={m.claveUnidad}
-                      onSelect={item => onInlineSelect(m.productoId, 'claveUnidad', item.clave, m)}
-                      onClose={() => onSetEditingCell(null)}
-                      searchFn={searchCatalogoUnidad}
-                      renderLabel={item => item.nombre}
-                      placeholder="Buscar unidad..."
-                    />
-                  ) : (
-                    <button
-                      onClick={() => onSetEditingCell({ productoId: m.productoId, field: 'claveUnidad' })}
-                      className="font-mono text-sm hover:text-green-600 dark:hover:text-green-400 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1 rounded"
-                      title="Click para editar"
-                    >
-                      {m.claveUnidad}
-                    </button>
-                  )}
+                  <span className="inline-flex items-center px-2 py-0.5 rounded bg-muted font-mono text-sm">
+                    {m.claveUnidad}
+                  </span>
                 </td>
                 <td className="px-4 py-3 text-muted-foreground">
                   {m.descripcionFiscal || '\u2014'}
@@ -132,14 +94,30 @@ export function MappedProductsTable({
                   {new Date(m.updatedAt).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}
                 </td>
                 <td className="px-4 py-3 text-center">
-                  <button
-                    onClick={() => onDelete(m.productoId)}
-                    className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-muted-foreground hover:text-red-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1"
-                    aria-label={`Eliminar mapeo de ${m.productoNombre || m.productoId}`}
-                    title="Eliminar mapeo"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center justify-center gap-1">
+                    <button
+                      onClick={() => onEdit({
+                        productoId: m.productoId,
+                        nombre: m.productoNombre || 'Producto #' + m.productoId,
+                        currentProdServ: m.claveProdServ,
+                        currentUnidad: m.claveUnidad,
+                        hasMapping: true,
+                      })}
+                      className="p-1.5 rounded-md hover:bg-amber-50 dark:hover:bg-amber-900/20 text-muted-foreground hover:text-amber-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1"
+                      aria-label={`Editar mapeo de ${m.productoNombre || m.productoId}`}
+                      title="Editar mapeo"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => onDelete(m.productoId)}
+                      className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-muted-foreground hover:text-red-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1"
+                      aria-label={`Eliminar mapeo de ${m.productoNombre || m.productoId}`}
+                      title="Eliminar mapeo"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -173,42 +151,31 @@ export function MappedProductsTable({
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div>
                 <span className="text-xs text-muted-foreground">ProdServ:</span>
-                <button
-                  onClick={() => onSetEditingCell({ productoId: m.productoId, field: 'claveProdServ' })}
-                  className="block font-mono text-green-600 dark:text-green-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1 rounded"
-                >
+                <span className="block font-mono text-sm px-2 py-0.5 rounded bg-muted w-fit">
                   {m.claveProdServ}
-                </button>
-                {editingCell?.productoId === m.productoId && editingCell.field === 'claveProdServ' && (
-                  <AutocompleteDropdown<CatalogoProdServItem>
-                    value={m.claveProdServ}
-                    onSelect={item => onInlineSelect(m.productoId, 'claveProdServ', item.clave, m)}
-                    onClose={() => onSetEditingCell(null)}
-                    searchFn={searchCatalogoProdServ}
-                    renderLabel={item => item.descripcion}
-                    placeholder="Buscar clave..."
-                  />
-                )}
+                </span>
               </div>
               <div>
                 <span className="text-xs text-muted-foreground">Unidad:</span>
-                <button
-                  onClick={() => onSetEditingCell({ productoId: m.productoId, field: 'claveUnidad' })}
-                  className="block font-mono text-green-600 dark:text-green-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1 rounded"
-                >
+                <span className="block font-mono text-sm px-2 py-0.5 rounded bg-muted w-fit">
                   {m.claveUnidad}
-                </button>
-                {editingCell?.productoId === m.productoId && editingCell.field === 'claveUnidad' && (
-                  <AutocompleteDropdown<CatalogoUnidadItem>
-                    value={m.claveUnidad}
-                    onSelect={item => onInlineSelect(m.productoId, 'claveUnidad', item.clave, m)}
-                    onClose={() => onSetEditingCell(null)}
-                    searchFn={searchCatalogoUnidad}
-                    renderLabel={item => item.nombre}
-                    placeholder="Buscar unidad..."
-                  />
-                )}
+                </span>
               </div>
+            </div>
+            <div className="mt-3 flex justify-end gap-2">
+              <button
+                onClick={() => onEdit({
+                  productoId: m.productoId,
+                  nombre: m.productoNombre || 'Producto #' + m.productoId,
+                  currentProdServ: m.claveProdServ,
+                  currentUnidad: m.claveUnidad,
+                  hasMapping: true,
+                })}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-border hover:bg-amber-50 dark:hover:bg-amber-900/20 text-muted-foreground hover:text-amber-600 transition-colors"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+                Editar
+              </button>
             </div>
           </div>
         ))}

@@ -1,28 +1,26 @@
 'use client';
 
 import React from 'react';
-import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, ClipboardList } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { AutocompleteDropdown } from './SatAutocomplete';
-import { searchCatalogoProdServ, searchCatalogoUnidad } from '@/services/api/billing';
-import type { UnmappedProduct, CatalogoProdServItem, CatalogoUnidadItem } from '@/types/billing';
-import type { EditingCell } from './MappedProductsTable';
+import type { UnmappedProduct } from '@/types/billing';
 
 interface UnmappedProductsTableProps {
   unmapped: UnmappedProduct[];
   loading: boolean;
   selectedIds: Set<number>;
-  editingCell: EditingCell | null;
   unmappedPage: number;
   unmappedTotalPages: number;
   onToggleSelect: (id: number) => void;
-  onSetEditingCell: (cell: EditingCell | null) => void;
-  onInlineSelect: (
-    productoId: number,
-    field: 'claveProdServ' | 'claveUnidad',
-    clave: string,
-    existingUnmapped?: UnmappedProduct,
-  ) => void;
+  onEdit: (product: {
+    productoId: number;
+    nombre: string;
+    codigoBarra?: string;
+    unidad?: string;
+    currentProdServ?: string;
+    currentUnidad?: string;
+    hasMapping: boolean;
+  }) => void;
   onSetUnmappedPage: (updater: (p: number) => number) => void;
 }
 
@@ -30,12 +28,10 @@ export function UnmappedProductsTable({
   unmapped,
   loading,
   selectedIds,
-  editingCell,
   unmappedPage,
   unmappedTotalPages,
   onToggleSelect,
-  onSetEditingCell,
-  onInlineSelect,
+  onEdit,
   onSetUnmappedPage,
 }: UnmappedProductsTableProps) {
   return (
@@ -52,6 +48,7 @@ export function UnmappedProductsTable({
               <th className="text-left px-4 py-3 font-medium text-muted-foreground">Clave ProdServ SAT</th>
               <th className="text-left px-4 py-3 font-medium text-muted-foreground">Clave Unidad SAT</th>
               <th className="text-center px-4 py-3 font-medium text-muted-foreground">Estado</th>
+              <th className="text-center px-4 py-3 font-medium text-muted-foreground">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -79,51 +76,21 @@ export function UnmappedProductsTable({
                   )}
                 </td>
                 <td className="px-4 py-3">
-                  {editingCell?.productoId === u.productoId && editingCell.field === 'claveProdServ' ? (
-                    <AutocompleteDropdown<CatalogoProdServItem>
-                      value={u.claveSatActual || ''}
-                      onSelect={item => onInlineSelect(u.productoId, 'claveProdServ', item.clave, u)}
-                      onClose={() => onSetEditingCell(null)}
-                      searchFn={searchCatalogoProdServ}
-                      renderLabel={item => item.descripcion}
-                      placeholder="Buscar clave ProdServ..."
-                    />
+                  {u.claveSatActual ? (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded bg-muted font-mono text-sm">
+                      {u.claveSatActual}
+                    </span>
                   ) : (
-                    <button
-                      onClick={() => onSetEditingCell({ productoId: u.productoId, field: 'claveProdServ' })}
-                      className="text-sm hover:text-green-600 dark:hover:text-green-400 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1 rounded"
-                      title="Click para asignar"
-                    >
-                      {u.claveSatActual ? (
-                        <span className="font-mono">{u.claveSatActual}</span>
-                      ) : (
-                        <span className="text-amber-600 dark:text-amber-400 text-xs">Asignar...</span>
-                      )}
-                    </button>
+                    <span className="text-amber-600 dark:text-amber-400 text-xs">Sin asignar</span>
                   )}
                 </td>
                 <td className="px-4 py-3">
-                  {editingCell?.productoId === u.productoId && editingCell.field === 'claveUnidad' ? (
-                    <AutocompleteDropdown<CatalogoUnidadItem>
-                      value={u.unidadClaveSat || ''}
-                      onSelect={item => onInlineSelect(u.productoId, 'claveUnidad', item.clave, u)}
-                      onClose={() => onSetEditingCell(null)}
-                      searchFn={searchCatalogoUnidad}
-                      renderLabel={item => item.nombre}
-                      placeholder="Buscar clave unidad..."
-                    />
+                  {u.unidadClaveSat ? (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded bg-muted font-mono text-sm">
+                      {u.unidadClaveSat}
+                    </span>
                   ) : (
-                    <button
-                      onClick={() => onSetEditingCell({ productoId: u.productoId, field: 'claveUnidad' })}
-                      className="text-sm hover:text-green-600 dark:hover:text-green-400 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1 rounded"
-                      title="Click para asignar"
-                    >
-                      {u.unidadClaveSat ? (
-                        <span className="font-mono">{u.unidadClaveSat}</span>
-                      ) : (
-                        <span className="text-amber-600 dark:text-amber-400 text-xs">Asignar...</span>
-                      )}
-                    </button>
+                    <span className="text-amber-600 dark:text-amber-400 text-xs">Sin asignar</span>
                   )}
                 </td>
                 <td className="px-4 py-3 text-center">
@@ -131,11 +98,30 @@ export function UnmappedProductsTable({
                     Sin Mapear
                   </span>
                 </td>
+                <td className="px-4 py-3 text-center">
+                  <button
+                    onClick={() => onEdit({
+                      productoId: u.productoId,
+                      nombre: u.nombre,
+                      codigoBarra: u.codigoBarra ?? undefined,
+                      unidad: u.unidadNombre,
+                      currentProdServ: u.claveSatActual ?? undefined,
+                      currentUnidad: u.unidadClaveSat ?? undefined,
+                      hasMapping: false,
+                    })}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-border hover:bg-green-50 dark:hover:bg-green-900/20 text-muted-foreground hover:text-green-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1"
+                    aria-label={`Asignar mapeo a ${u.nombre}`}
+                    title="Asignar mapeo fiscal"
+                  >
+                    <ClipboardList className="w-3.5 h-3.5" />
+                    Asignar
+                  </button>
+                </td>
               </tr>
             ))}
             {unmapped.length === 0 && !loading && (
               <tr>
-                <td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">
+                <td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">
                   <div className="flex flex-col items-center gap-2">
                     <Check className="w-8 h-8 text-green-500" />
                     <span>Todos los productos tienen mapeo fiscal</span>
@@ -172,42 +158,41 @@ export function UnmappedProductsTable({
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div>
                 <span className="text-xs text-muted-foreground">ProdServ:</span>
-                <button
-                  onClick={() => onSetEditingCell({ productoId: u.productoId, field: 'claveProdServ' })}
-                  className="block text-amber-600 dark:text-amber-400 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1 rounded"
-                >
-                  {u.claveSatActual || 'Asignar...'}
-                </button>
-                {editingCell?.productoId === u.productoId && editingCell.field === 'claveProdServ' && (
-                  <AutocompleteDropdown<CatalogoProdServItem>
-                    value={u.claveSatActual || ''}
-                    onSelect={item => onInlineSelect(u.productoId, 'claveProdServ', item.clave, u)}
-                    onClose={() => onSetEditingCell(null)}
-                    searchFn={searchCatalogoProdServ}
-                    renderLabel={item => item.descripcion}
-                    placeholder="Buscar clave..."
-                  />
+                {u.claveSatActual ? (
+                  <span className="block font-mono text-sm px-2 py-0.5 rounded bg-muted w-fit">
+                    {u.claveSatActual}
+                  </span>
+                ) : (
+                  <span className="block text-amber-600 dark:text-amber-400 text-xs">Sin asignar</span>
                 )}
               </div>
               <div>
                 <span className="text-xs text-muted-foreground">Unidad:</span>
-                <button
-                  onClick={() => onSetEditingCell({ productoId: u.productoId, field: 'claveUnidad' })}
-                  className="block text-amber-600 dark:text-amber-400 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1 rounded"
-                >
-                  {u.unidadClaveSat || 'Asignar...'}
-                </button>
-                {editingCell?.productoId === u.productoId && editingCell.field === 'claveUnidad' && (
-                  <AutocompleteDropdown<CatalogoUnidadItem>
-                    value={u.unidadClaveSat || ''}
-                    onSelect={item => onInlineSelect(u.productoId, 'claveUnidad', item.clave, u)}
-                    onClose={() => onSetEditingCell(null)}
-                    searchFn={searchCatalogoUnidad}
-                    renderLabel={item => item.nombre}
-                    placeholder="Buscar unidad..."
-                  />
+                {u.unidadClaveSat ? (
+                  <span className="block font-mono text-sm px-2 py-0.5 rounded bg-muted w-fit">
+                    {u.unidadClaveSat}
+                  </span>
+                ) : (
+                  <span className="block text-amber-600 dark:text-amber-400 text-xs">Sin asignar</span>
                 )}
               </div>
+            </div>
+            <div className="mt-3 flex justify-end">
+              <button
+                onClick={() => onEdit({
+                  productoId: u.productoId,
+                  nombre: u.nombre,
+                  codigoBarra: u.codigoBarra ?? undefined,
+                  unidad: u.unidadNombre,
+                  currentProdServ: u.claveSatActual ?? undefined,
+                  currentUnidad: u.unidadClaveSat ?? undefined,
+                  hasMapping: false,
+                })}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-border hover:bg-green-50 dark:hover:bg-green-900/20 text-muted-foreground hover:text-green-600 transition-colors"
+              >
+                <ClipboardList className="w-3.5 h-3.5" />
+                Asignar
+              </button>
             </div>
           </div>
         ))}
