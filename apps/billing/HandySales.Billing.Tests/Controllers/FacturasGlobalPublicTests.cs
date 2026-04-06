@@ -94,7 +94,7 @@ public class FacturasGlobalPublicTests : IDisposable
             orderReaderService ?? new StubOrderReaderService(),
             new FiscalCodeResolver(_context),
             new StubHttpClientFactory(), config,
-            new StubEncryptionService());
+            new StubTenantEncryptionService());
 
         // Setup user claims
         var claims = new List<Claim>

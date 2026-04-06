@@ -30,7 +30,7 @@ public class FacturasController : ControllerBase
     private readonly FiscalCodeResolver _fiscalCodeResolver;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IConfiguration _configuration;
-    private readonly ICertificateEncryptionService _encryptionService;
+    private readonly ITenantEncryptionService _encryptionService;
 
     public FacturasController(
         BillingDbContext context,
@@ -47,7 +47,7 @@ public class FacturasController : ControllerBase
         FiscalCodeResolver fiscalCodeResolver,
         IHttpClientFactory httpClientFactory,
         IConfiguration configuration,
-        ICertificateEncryptionService encryptionService)
+        ITenantEncryptionService encryptionService)
     {
         _context = context;
         _logger = logger;
@@ -659,7 +659,8 @@ public class FacturasController : ControllerBase
         else if (!string.IsNullOrEmpty(config.PacPassword))
         {
             // Legacy fallback: decrypt from DB
-            var decryptedBytes = _encryptionService.Decrypt(Convert.FromBase64String(config.PacPassword));
+            var decryptedBytes = await _encryptionService.DecryptAsync(tenantId,
+                Convert.FromBase64String(config.PacPassword), config.EncryptedDek, config.EncryptionVersion);
             decryptedPacPassword = Encoding.UTF8.GetString(decryptedBytes);
             Array.Clear(decryptedBytes);
         }
@@ -688,10 +689,39 @@ public class FacturasController : ControllerBase
             var unsignedXml = _xmlBuilder.BuildXml(factura, config);
 
             // 2. Sign XML with CSD (cadena original → SHA256+RSA → Sello)
-            var signedXml = _cfdiSigner.SignXml(unsignedXml, config);
+            var signedXml = await _cfdiSigner.SignXmlAsync(unsignedXml, config, tenantId);
             _logger.LogDebug("CFDI XML generated for factura {FacturaId} ({Length} chars)", factura.Id, signedXml.Length);
             factura.NoCertificadoEmisor = _cfdiSigner.GetNoCertificado(Convert.FromBase64String(config.CertificadoSat));
             _logger.LogDebug("XML firmado con CSD (NoCertificado: {NoCert})", factura.NoCertificadoEmisor);
+
+            // Lazy migration: re-encrypt CSD with KMS if still on legacy v1
+            if (config.EncryptionVersion < 2 && !string.IsNullOrEmpty(_configuration["KMS_CMK_ARN"]))
+            {
+                try
+                {
+                    var legacyKey = Convert.FromBase64String(config.LlavePrivada!);
+                    var legacyPwd = Convert.FromBase64String(config.PasswordCertificado!);
+                    var plainKey = await _encryptionService.DecryptAsync(tenantId, legacyKey, null, 1);
+                    var plainPwd = await _encryptionService.DecryptAsync(tenantId, legacyPwd, null, 1);
+
+                    var keyResult = await _encryptionService.EncryptAsync(tenantId, plainKey);
+                    var pwdResult = await _encryptionService.EncryptAsync(tenantId, plainPwd);
+
+                    config.LlavePrivada = Convert.ToBase64String(keyResult.Ciphertext);
+                    config.PasswordCertificado = Convert.ToBase64String(pwdResult.Ciphertext);
+                    config.EncryptedDek = keyResult.EncryptedDek;
+                    config.EncryptionVersion = 2;
+                    await _context.SaveChangesAsync();
+
+                    Array.Clear(plainKey);
+                    Array.Clear(plainPwd);
+                    _logger.LogInformation("CSD_AUDIT: Lazy migration to KMS v2 for tenant {TenantId}", tenantId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "CSD_AUDIT: Lazy KMS migration failed for tenant {TenantId} — continuing with v1", tenantId);
+                }
+            }
 
             // 3. Send to PAC (Finkok) for timbrado — using decrypted credentials
             var resultado = await _pacService.TimbrarAsync(signedXml, pacConfig);
@@ -826,7 +856,8 @@ public class FacturasController : ControllerBase
         string? decryptedCsdPassword = null;
         if (!string.IsNullOrEmpty(config.PasswordCertificado))
         {
-            var decryptedBytes = _encryptionService.Decrypt(Convert.FromBase64String(config.PasswordCertificado));
+            var decryptedBytes = await _encryptionService.DecryptAsync(tenantId,
+                Convert.FromBase64String(config.PasswordCertificado), config.EncryptedDek, config.EncryptionVersion);
             decryptedCsdPassword = Encoding.UTF8.GetString(decryptedBytes);
             Array.Clear(decryptedBytes);
         }
@@ -844,7 +875,8 @@ public class FacturasController : ControllerBase
         else if (!string.IsNullOrEmpty(config.PacPassword))
         {
             // Legacy fallback: decrypt from DB
-            var decryptedBytes = _encryptionService.Decrypt(Convert.FromBase64String(config.PacPassword));
+            var decryptedBytes = await _encryptionService.DecryptAsync(tenantId,
+                Convert.FromBase64String(config.PacPassword), config.EncryptedDek, config.EncryptionVersion);
             decryptedPacPassword = Encoding.UTF8.GetString(decryptedBytes);
             Array.Clear(decryptedBytes);
         }

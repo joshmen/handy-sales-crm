@@ -14,17 +14,17 @@ namespace HandySales.Billing.Api.Services;
 public class CfdiSigner : ICfdiSigner
 {
     private readonly ILogger<CfdiSigner> _logger;
-    private readonly ICertificateEncryptionService _encryptionService;
+    private readonly ITenantEncryptionService _encryptionService;
     private static XslCompiledTransform? _cachedXslt;
     private static readonly object _xsltLock = new();
 
-    public CfdiSigner(ILogger<CfdiSigner> logger, ICertificateEncryptionService encryptionService)
+    public CfdiSigner(ILogger<CfdiSigner> logger, ITenantEncryptionService encryptionService)
     {
         _logger = logger;
         _encryptionService = encryptionService;
     }
 
-    public string SignXml(string unsignedXml, ConfiguracionFiscal config)
+    public async Task<string> SignXmlAsync(string unsignedXml, ConfiguracionFiscal config, string tenantId)
     {
         if (string.IsNullOrEmpty(config.CertificadoSat))
             throw new InvalidOperationException("No se encontró el certificado (.cer) en la configuración fiscal");
@@ -39,9 +39,11 @@ public class CfdiSigner : ICfdiSigner
         {
             var cerBytes = Convert.FromBase64String(config.CertificadoSat);
 
-            // Decrypt private key and password using AES-GCM encryption service
-            keyBytes = _encryptionService.Decrypt(Convert.FromBase64String(config.LlavePrivada));
-            pwdBytes = _encryptionService.Decrypt(Convert.FromBase64String(config.PasswordCertificado));
+            // Decrypt private key and password using tenant-aware encryption service
+            keyBytes = await _encryptionService.DecryptAsync(tenantId,
+                Convert.FromBase64String(config.LlavePrivada), config.EncryptedDek, config.EncryptionVersion);
+            pwdBytes = await _encryptionService.DecryptAsync(tenantId,
+                Convert.FromBase64String(config.PasswordCertificado), config.EncryptedDek, config.EncryptionVersion);
             var password = Encoding.UTF8.GetString(pwdBytes);
 
             // 2. Extract NoCertificado from .cer

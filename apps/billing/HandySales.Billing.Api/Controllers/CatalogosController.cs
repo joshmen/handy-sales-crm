@@ -18,13 +18,13 @@ public class CatalogosController : ControllerBase
     private readonly BillingDbContext _context;
     private readonly ILogger<CatalogosController> _logger;
     private readonly IConfiguration _configuration;
-    private readonly ICertificateEncryptionService _encryptionService;
+    private readonly ITenantEncryptionService _encryptionService;
 
     public CatalogosController(
         BillingDbContext context,
         ILogger<CatalogosController> logger,
         IConfiguration configuration,
-        ICertificateEncryptionService encryptionService)
+        ITenantEncryptionService encryptionService)
     {
         _context = context;
         _logger = logger;
@@ -273,12 +273,14 @@ public class CatalogosController : ControllerBase
             // Store .cer as Base64 (public certificate — not sensitive)
             config.CertificadoSat = Convert.ToBase64String(cerBytes);
 
-            // Encrypt private key and password before storing (never store plaintext)
-            var encryptedKey = _encryptionService.Encrypt(keyBytes);
-            config.LlavePrivada = Convert.ToBase64String(encryptedKey);
+            // Encrypt private key and password using per-tenant envelope encryption
+            var keyResult = await _encryptionService.EncryptAsync(tenantId, keyBytes);
+            config.LlavePrivada = Convert.ToBase64String(keyResult.Ciphertext);
+            config.EncryptedDek = keyResult.EncryptedDek;
+            config.EncryptionVersion = string.IsNullOrEmpty(keyResult.EncryptedDek) ? (short)1 : (short)2;
 
-            var encryptedPassword = _encryptionService.Encrypt(passwordBytes);
-            config.PasswordCertificado = Convert.ToBase64String(encryptedPassword);
+            var pwdResult = await _encryptionService.EncryptAsync(tenantId, passwordBytes);
+            config.PasswordCertificado = Convert.ToBase64String(pwdResult.Ciphertext);
 
             config.UpdatedAt = DateTime.UtcNow;
 

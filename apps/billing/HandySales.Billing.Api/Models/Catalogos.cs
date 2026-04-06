@@ -58,10 +58,16 @@ public class ConfiguracionFiscal
     [MaxLength(20)]
     public string PacAmbiente { get; set; } = "sandbox"; // sandbox | production
 
+    /// <summary>KMS-encrypted Data Encryption Key for this tenant (Base64). Null = legacy encryption.</summary>
+    public string? EncryptedDek { get; set; }
+
+    /// <summary>1 = legacy PBKDF2/AES-GCM, 2 = KMS envelope encryption</summary>
+    public short EncryptionVersion { get; set; } = 1;
+
     public bool Activo { get; set; } = true;
-    
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    
+
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }
 

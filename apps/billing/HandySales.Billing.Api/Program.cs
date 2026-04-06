@@ -113,11 +113,33 @@ builder.Services.AddHttpClient("LogoClient", client =>
     client.Timeout = TimeSpan.FromSeconds(5);
 });
 
-// Certificate encryption service (AES-GCM + PBKDF2)
+// Certificate encryption service (AES-GCM + PBKDF2) — legacy, kept for backward compat
 var encKey = builder.Configuration["BILLING_ENCRYPTION_KEY"];
 if (string.IsNullOrEmpty(encKey))
     throw new InvalidOperationException("BILLING_ENCRYPTION_KEY env var is required. Generate with: openssl rand -base64 32");
 builder.Services.AddSingleton<ICertificateEncryptionService, CertificateEncryptionService>();
+
+// KMS envelope encryption (per-tenant DEK) — if CMK ARN configured, use KMS; otherwise legacy adapter
+var cmkArn = builder.Configuration["KMS_CMK_ARN"];
+if (!string.IsNullOrEmpty(cmkArn))
+{
+    builder.Services.AddSingleton<Amazon.KeyManagementService.IAmazonKeyManagementService>(sp =>
+    {
+        var kmsConfig = new Amazon.KeyManagementService.AmazonKeyManagementServiceConfig
+        {
+            RegionEndpoint = Amazon.RegionEndpoint.GetBySystemName(awsRegion)
+        };
+        var accessKey = builder.Configuration["AWS_ACCESS_KEY_ID"] ?? "";
+        var secretKey = builder.Configuration["AWS_SECRET_ACCESS_KEY"] ?? "";
+        return new Amazon.KeyManagementService.AmazonKeyManagementServiceClient(accessKey, secretKey, kmsConfig);
+    });
+    builder.Services.AddMemoryCache();
+    builder.Services.AddSingleton<ITenantEncryptionService, KmsEnvelopeEncryptionService>();
+}
+else
+{
+    builder.Services.AddSingleton<ITenantEncryptionService, LegacyEncryptionAdapter>();
+}
 
 // CFDI 4.0 services (XML generation, signing, PAC timbrado)
 builder.Services.AddSingleton<ICfdiXmlBuilder, CfdiXmlBuilder>();

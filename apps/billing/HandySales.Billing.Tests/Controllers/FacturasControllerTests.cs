@@ -24,7 +24,8 @@ internal class StubXmlBuilder : ICfdiXmlBuilder
 
 internal class StubCfdiSigner : ICfdiSigner
 {
-    public string SignXml(string unsignedXml, ConfiguracionFiscal config) => unsignedXml;
+    public Task<string> SignXmlAsync(string unsignedXml, ConfiguracionFiscal config, string tenantId)
+        => Task.FromResult(unsignedXml);
     public string GetNoCertificado(byte[] cerBytes) => "00001000000412345678";
 }
 
@@ -103,9 +104,16 @@ internal class StubTimbreEnforcementService : ITimbreEnforcementService
 
 internal class StubEncryptionService : ICertificateEncryptionService
 {
-    // For tests: "encrypt" = just return the bytes as-is (no real encryption needed)
     public byte[] Encrypt(byte[] plaintext) => plaintext;
     public byte[] Decrypt(byte[] ciphertext) => ciphertext;
+}
+
+internal class StubTenantEncryptionService : ITenantEncryptionService
+{
+    public Task<EncryptionResult> EncryptAsync(string tenantId, byte[] plaintext)
+        => Task.FromResult(new EncryptionResult(plaintext, ""));
+    public Task<byte[]> DecryptAsync(string tenantId, byte[] ciphertext, string? encryptedDek, short encryptionVersion)
+        => Task.FromResult(ciphertext);
 }
 
 public class FacturasControllerTests : IDisposable
@@ -153,7 +161,7 @@ public class FacturasControllerTests : IDisposable
             new StubTimbreEnforcementService(),
             new StubCompanyLogoService(), new StubOrderReaderService(),
             fiscalCodeResolver, httpClientFactory, config,
-            new StubEncryptionService());
+            new StubTenantEncryptionService());
 
         // Setup user claims
         SetupUserClaims();
