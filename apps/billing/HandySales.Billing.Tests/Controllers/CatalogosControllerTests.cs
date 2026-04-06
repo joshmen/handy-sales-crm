@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using HandySales.Billing.Api.Controllers;
 using HandySales.Billing.Api.Data;
 using HandySales.Billing.Api.Models;
+using HandySales.Billing.Api.Services;
 using System.Security.Claims;
 
 namespace HandySales.Billing.Tests.Controllers;
@@ -38,7 +39,7 @@ public class CatalogosControllerTests : IDisposable
                 ["Jwt:Secret"] = "test-jwt-secret-key-for-encryption-32chars!"
             })
             .Build();
-        _controller = new CatalogosController(_context, logger, config);
+        _controller = new CatalogosController(_context, logger, config, new StubEncryptionService());
 
         SetupUserClaims();
         SeedTestData();

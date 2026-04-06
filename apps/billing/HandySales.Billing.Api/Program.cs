@@ -47,8 +47,8 @@ builder.Services.AddCors(options =>
                 "https://localhost:3000",
                 "http://localhost:1083",           // Next.js dev (HandySales port)
                 "http://localhost:3001",           // Alternative port
-                "https://*.vercel.app",            // Vercel deployments
-                "https://handysales.vercel.app",   // Your production domain
+                "https://handy-sales-crm.vercel.app", // Vercel production deployment
+                "https://handysales.vercel.app",   // Legacy Vercel domain
                 "https://handysales.com",          // Your custom domain
                 "https://www.handysales.com"
             )
@@ -112,6 +112,12 @@ builder.Services.AddHttpClient("LogoClient", client =>
 {
     client.Timeout = TimeSpan.FromSeconds(5);
 });
+
+// Certificate encryption service (AES-GCM + PBKDF2)
+var encKey = builder.Configuration["BILLING_ENCRYPTION_KEY"];
+if (string.IsNullOrEmpty(encKey))
+    throw new InvalidOperationException("BILLING_ENCRYPTION_KEY env var is required. Generate with: openssl rand -base64 32");
+builder.Services.AddSingleton<ICertificateEncryptionService, CertificateEncryptionService>();
 
 // CFDI 4.0 services (XML generation, signing, PAC timbrado)
 builder.Services.AddSingleton<ICfdiXmlBuilder, CfdiXmlBuilder>();

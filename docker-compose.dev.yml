@@ -76,8 +76,8 @@ services:
       STRIPE_SECRET_KEY: "${STRIPE_SECRET_KEY}"
       STRIPE_WEBHOOK_SECRET: "${STRIPE_WEBHOOK_SECRET}"
       OPENAI_API_KEY: "${OPENAI_API_KEY}"
-      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID:-AKIA6RIE2P7D7QISL7JL}"
-      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY:-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}"
+      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
+      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
     ports:
       - "1050:1050"
     depends_on:
@@ -116,17 +116,18 @@ services:
       SAT__CertificadoPath: "/app/certificates"
       SAT__WebServiceUrl: "https://consultaqr.facturaelectronica.sat.gob.mx/ConsultaCFDIService.svc"
       Seq__ServerUrl: "http://seq:5341"
-      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID:-AKIA6RIE2P7D7QISL7JL}"
-      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY:-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}"
+      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
+      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
       AWS_S3_BUCKET: "handysuites-facturas"
       AWS_S3_REGION: "us-east-1"
       SENDGRID_API_KEY: ""
       SENDGRID_FROM_EMAIL: "noreply@handysuites.com"
       SENDGRID_FROM_NAME: "Handy Suites"
       MAIN_API_URL: "http://api_main:1050"
-      FINKOK_USUARIO: "xjoshmenx@gmail.com"
-      FINKOK_PASSWORD: "${FINKOK_PASSWORD:-}"
-      FINKOK_AMBIENTE: "sandbox"
+      FINKOK_USUARIO: "${FINKOK_USUARIO}"
+      FINKOK_PASSWORD: "${FINKOK_PASSWORD}"
+      FINKOK_AMBIENTE: "${FINKOK_AMBIENTE:-sandbox}"
+      BILLING_ENCRYPTION_KEY: "${BILLING_ENCRYPTION_KEY}"
     ports:
       - "1051:1051"
     depends_on:
@@ -169,8 +170,8 @@ services:
       Seq__ServerUrl: "http://seq:5341"
       MAIN_API_URL: "http://api_main:1050"
       RUN_MIGRATIONS: "false"
-      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID:-AKIA6RIE2P7D7QISL7JL}"
-      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY:-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}"
+      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
+      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
     ports:
       - "1052:1052"
     depends_on:

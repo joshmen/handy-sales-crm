@@ -3,6 +3,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using HandySales.Billing.Api.Data;
 using HandySales.Billing.Api.Models;
+using HandySales.Billing.Api.Services;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
+using System.Text;
 
 namespace HandySales.Billing.Api.Controllers;
 
@@ -14,12 +18,18 @@ public class CatalogosController : ControllerBase
     private readonly BillingDbContext _context;
     private readonly ILogger<CatalogosController> _logger;
     private readonly IConfiguration _configuration;
+    private readonly ICertificateEncryptionService _encryptionService;
 
-    public CatalogosController(BillingDbContext context, ILogger<CatalogosController> logger, IConfiguration configuration)
+    public CatalogosController(
+        BillingDbContext context,
+        ILogger<CatalogosController> logger,
+        IConfiguration configuration,
+        ICertificateEncryptionService encryptionService)
     {
         _context = context;
         _logger = logger;
         _configuration = configuration;
+        _encryptionService = encryptionService;
     }
 
     private string GetTenantId() => User.FindFirst("tenant_id")?.Value
@@ -195,7 +205,7 @@ public class CatalogosController : ControllerBase
     }
 
     [HttpPost("configuracion-fiscal/{id}/certificado")]
-    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Authorize(Roles = "ADMIN,SUPER_ADMIN")]
     [Consumes("multipart/form-data")]
     public async Task<ActionResult> UploadCertificado(
         int id,
@@ -224,35 +234,70 @@ public class CatalogosController : ControllerBase
         if (config == null)
             return NotFound();
 
+        byte[]? keyBytes = null;
+        byte[]? passwordBytes = null;
         try
         {
-
             using var msCert = new MemoryStream();
             await request.Certificado.CopyToAsync(msCert);
-            config.CertificadoSat = Convert.ToBase64String(msCert.ToArray());
-
-            // Encrypt certificate password and private key before storing (never store plaintext)
-            var encryptionKey = _configuration["Billing:EncryptionKey"] ?? _configuration["Jwt:Secret"]
-                ?? throw new InvalidOperationException("Jwt:Secret not configured");
+            var cerBytes = msCert.ToArray();
 
             using var msKey = new MemoryStream();
             await request.LlavePrivada.CopyToAsync(msKey);
-            var keyBytes = msKey.ToArray();
-            config.LlavePrivada = EncryptPassword(Convert.ToBase64String(keyBytes), encryptionKey);
+            keyBytes = msKey.ToArray();
+            passwordBytes = Encoding.UTF8.GetBytes(request.Password);
 
-            config.PasswordCertificado = EncryptPassword(request.Password, encryptionKey);
+            // Validate that the .cer is a valid X.509 certificate
+            try
+            {
+                using var cert = X509CertificateLoader.LoadCertificate(cerBytes);
+                _logger.LogInformation("CSD_AUDIT: Certificate validated. Subject={Subject}, NotAfter={NotAfter}",
+                    cert.Subject, cert.NotAfter);
+            }
+            catch (CryptographicException)
+            {
+                return BadRequest("El archivo .cer no es un certificado X.509 válido.");
+            }
+
+            // Validate that the .key can be decrypted with the provided password
+            try
+            {
+                using var rsa = RSA.Create();
+                rsa.ImportEncryptedPkcs8PrivateKey(passwordBytes, keyBytes, out _);
+            }
+            catch (CryptographicException)
+            {
+                return BadRequest("La llave privada no puede descifrarse con el password proporcionado. Verifique el archivo .key y el password.");
+            }
+
+            // Store .cer as Base64 (public certificate — not sensitive)
+            config.CertificadoSat = Convert.ToBase64String(cerBytes);
+
+            // Encrypt private key and password before storing (never store plaintext)
+            var encryptedKey = _encryptionService.Encrypt(keyBytes);
+            config.LlavePrivada = Convert.ToBase64String(encryptedKey);
+
+            var encryptedPassword = _encryptionService.Encrypt(passwordBytes);
+            config.PasswordCertificado = Convert.ToBase64String(encryptedPassword);
+
             config.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation($"Certificado SAT actualizado para tenant {tenantId}");
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            _logger.LogInformation("CSD_AUDIT: Certificate uploaded for tenant {TenantId} by user {UserId}", tenantId, userId);
 
             return Ok(new { message = "Certificado cargado exitosamente" });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al cargar certificado SAT");
+            _logger.LogError(ex, "CSD_AUDIT: Error uploading certificate for tenant {TenantId}", tenantId);
             return StatusCode(500, new { error = "Error al procesar el certificado" });
+        }
+        finally
+        {
+            if (keyBytes != null) Array.Clear(keyBytes);
+            if (passwordBytes != null) Array.Clear(passwordBytes);
         }
     }
 
@@ -302,47 +347,7 @@ public class CatalogosController : ControllerBase
         return CreatedAtAction(nameof(GetNumeracion), numeracion);
     }
 
-    public static string EncryptPassword(string plaintext, string key)
-    {
-        using var sha = System.Security.Cryptography.SHA256.Create();
-        var keyBytes = sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(key));
-
-        using var aes = System.Security.Cryptography.Aes.Create();
-        aes.Key = keyBytes;
-        aes.GenerateIV();
-
-        using var encryptor = aes.CreateEncryptor();
-        var plaintextBytes = System.Text.Encoding.UTF8.GetBytes(plaintext);
-        var cipherBytes = encryptor.TransformFinalBlock(plaintextBytes, 0, plaintextBytes.Length);
-
-        var result = new byte[aes.IV.Length + cipherBytes.Length];
-        Buffer.BlockCopy(aes.IV, 0, result, 0, aes.IV.Length);
-        Buffer.BlockCopy(cipherBytes, 0, result, aes.IV.Length, cipherBytes.Length);
-
-        return Convert.ToBase64String(result);
-    }
-
-    public static string DecryptPassword(string cipherText, string key)
-    {
-        using var sha = System.Security.Cryptography.SHA256.Create();
-        var keyBytes = sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(key));
-
-        var fullCipher = Convert.FromBase64String(cipherText);
-
-        using var aes = System.Security.Cryptography.Aes.Create();
-        aes.Key = keyBytes;
-
-        var iv = new byte[aes.BlockSize / 8];
-        var cipher = new byte[fullCipher.Length - iv.Length];
-        Buffer.BlockCopy(fullCipher, 0, iv, 0, iv.Length);
-        Buffer.BlockCopy(fullCipher, iv.Length, cipher, 0, cipher.Length);
-        aes.IV = iv;
-
-        using var decryptor = aes.CreateDecryptor();
-        var plaintextBytes = decryptor.TransformFinalBlock(cipher, 0, cipher.Length);
-
-        return System.Text.Encoding.UTF8.GetString(plaintextBytes);
-    }
+    // Legacy EncryptPassword/DecryptPassword removed — use ICertificateEncryptionService
 }
 
 // DTOs para Catálogos

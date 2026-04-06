@@ -93,7 +93,8 @@ public class FacturasGlobalPublicTests : IDisposable
             new StubCompanyLogoService(),
             orderReaderService ?? new StubOrderReaderService(),
             new FiscalCodeResolver(_context),
-            new StubHttpClientFactory(), config);
+            new StubHttpClientFactory(), config,
+            new StubEncryptionService());
 
         // Setup user claims
         var claims = new List<Claim>
@@ -194,9 +195,9 @@ public class FacturasGlobalPublicTests : IDisposable
             CodigoPostal = "12345",
             CertificadoSat = Convert.ToBase64String(new byte[] { 1, 2, 3 }),
             LlavePrivada = Convert.ToBase64String(new byte[] { 4, 5, 6 }),
-            PasswordCertificado = CatalogosController.EncryptPassword("testpass", TestJwtSecret),
+            PasswordCertificado = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("testpass")),
             PacUsuario = "test_user",
-            PacPassword = CatalogosController.EncryptPassword("test_pass", TestJwtSecret),
+            PacPassword = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("test_pass")),
             PacAmbiente = "sandbox",
             Activo = true
         });

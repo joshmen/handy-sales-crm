@@ -115,7 +115,8 @@ public class FinkokPacService : IPacService
 
         if (!response.IsSuccessStatusCode)
         {
-            _logger.LogWarning("Finkok returned HTTP {StatusCode}: {Body}", response.StatusCode, responseBody);
+            _logger.LogWarning("Finkok returned HTTP {StatusCode} ({Length} chars)", response.StatusCode, responseBody?.Length ?? 0);
+            _logger.LogDebug("Finkok error response body: {Body}", responseBody);
         }
 
         return responseBody;

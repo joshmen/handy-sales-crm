@@ -101,6 +101,13 @@ internal class StubTimbreEnforcementService : ITimbreEnforcementService
     public Task NotifyTimbreUsedAsync(string authorizationHeader) => Task.CompletedTask;
 }
 
+internal class StubEncryptionService : ICertificateEncryptionService
+{
+    // For tests: "encrypt" = just return the bytes as-is (no real encryption needed)
+    public byte[] Encrypt(byte[] plaintext) => plaintext;
+    public byte[] Decrypt(byte[] ciphertext) => ciphertext;
+}
+
 public class FacturasControllerTests : IDisposable
 {
     private readonly BillingDbContext _context;
@@ -145,7 +152,8 @@ public class FacturasControllerTests : IDisposable
             new StubPacService(), new StubBlobStorageService(),
             new StubTimbreEnforcementService(),
             new StubCompanyLogoService(), new StubOrderReaderService(),
-            fiscalCodeResolver, httpClientFactory, config);
+            fiscalCodeResolver, httpClientFactory, config,
+            new StubEncryptionService());
 
         // Setup user claims
         SetupUserClaims();
@@ -248,9 +256,9 @@ public class FacturasControllerTests : IDisposable
             CodigoPostal = "12345",
             CertificadoSat = Convert.ToBase64String(new byte[] { 1, 2, 3 }),
             LlavePrivada = Convert.ToBase64String(new byte[] { 4, 5, 6 }),
-            PasswordCertificado = CatalogosController.EncryptPassword("testpass", TestJwtSecret),
+            PasswordCertificado = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("testpass")),
             PacUsuario = "test_user",
-            PacPassword = CatalogosController.EncryptPassword("test_pass", TestJwtSecret),
+            PacPassword = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("test_pass")),
             PacAmbiente = "sandbox",
             Activo = true
         });

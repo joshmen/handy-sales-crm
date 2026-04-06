@@ -6,6 +6,8 @@ using HandySales.Billing.Api.Models;
 using HandySales.Billing.Api.DTOs;
 using HandySales.Billing.Api.Services;
 using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace HandySales.Billing.Api.Controllers;
 
@@ -28,6 +30,7 @@ public class FacturasController : ControllerBase
     private readonly FiscalCodeResolver _fiscalCodeResolver;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IConfiguration _configuration;
+    private readonly ICertificateEncryptionService _encryptionService;
 
     public FacturasController(
         BillingDbContext context,
@@ -43,7 +46,8 @@ public class FacturasController : ControllerBase
         IOrderReaderService orderReaderService,
         FiscalCodeResolver fiscalCodeResolver,
         IHttpClientFactory httpClientFactory,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        ICertificateEncryptionService encryptionService)
     {
         _context = context;
         _logger = logger;
@@ -59,6 +63,7 @@ public class FacturasController : ControllerBase
         _fiscalCodeResolver = fiscalCodeResolver;
         _httpClientFactory = httpClientFactory;
         _configuration = configuration;
+        _encryptionService = encryptionService;
     }
 
     private string GetTenantId() => User.FindFirst("tenant_id")?.Value
@@ -654,9 +659,9 @@ public class FacturasController : ControllerBase
         else if (!string.IsNullOrEmpty(config.PacPassword))
         {
             // Legacy fallback: decrypt from DB
-            var encryptionKey = _configuration["Billing:EncryptionKey"] ?? _configuration["Jwt:Secret"]
-                ?? throw new InvalidOperationException("Jwt:Secret not configured");
-            decryptedPacPassword = CatalogosController.DecryptPassword(config.PacPassword, encryptionKey);
+            var decryptedBytes = _encryptionService.Decrypt(Convert.FromBase64String(config.PacPassword));
+            decryptedPacPassword = Encoding.UTF8.GetString(decryptedBytes);
+            Array.Clear(decryptedBytes);
         }
 
         if (string.IsNullOrEmpty(pacUsuario) || string.IsNullOrEmpty(decryptedPacPassword))
@@ -751,6 +756,17 @@ public class FacturasController : ControllerBase
 
             return Ok(MapToDto(factura));
         }
+        catch (CryptographicException)
+        {
+            _logger.LogError("CSD cryptographic error during timbrado for factura {Id}", id);
+            if (string.IsNullOrEmpty(factura.Uuid))
+            {
+                factura.Estado = "ERROR";
+                RegistrarAuditoria(tenantId, factura.Id, "TIMBRAR_ERROR", "Error en la operación de firma", userId);
+                await _context.SaveChangesAsync();
+            }
+            return BadRequest(new { error = "Error en la operación de firma. Verifique los certificados." });
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al timbrar factura {Id}", id);
@@ -760,7 +776,7 @@ public class FacturasController : ControllerBase
             if (string.IsNullOrEmpty(factura.Uuid))
             {
                 factura.Estado = "ERROR";
-                RegistrarAuditoria(tenantId, factura.Id, "TIMBRAR_ERROR", $"Excepcion: {ex.Message}", userId);
+                RegistrarAuditoria(tenantId, factura.Id, "TIMBRAR_ERROR", "Error interno al timbrar", userId);
                 await _context.SaveChangesAsync();
             }
             else
@@ -768,7 +784,7 @@ public class FacturasController : ControllerBase
                 _logger.LogWarning("Post-timbrado error for UUID {Uuid}, but invoice is already TIMBRADA at SAT. Not changing estado.", factura.Uuid);
             }
 
-            return StatusCode(500, new { error = "Error al timbrar la factura", details = FinkokPacService.SanitizeErrorMessage(ex.Message, pacConfig.PacUsuario, decryptedPacPassword) });
+            return StatusCode(500, new { error = "Error al timbrar la factura" });
         }
     }
 
@@ -807,12 +823,13 @@ public class FacturasController : ControllerBase
             return BadRequest("La factura no tiene UUID asignado. No se puede cancelar ante el SAT.");
 
         // Decrypt CSD password into a local variable — never modify the tracked entity
-        var encryptionKey = _configuration["Billing:EncryptionKey"] ?? _configuration["Jwt:Secret"]
-            ?? throw new InvalidOperationException("Jwt:Secret not configured");
-
         string? decryptedCsdPassword = null;
         if (!string.IsNullOrEmpty(config.PasswordCertificado))
-            decryptedCsdPassword = CatalogosController.DecryptPassword(config.PasswordCertificado, encryptionKey);
+        {
+            var decryptedBytes = _encryptionService.Decrypt(Convert.FromBase64String(config.PasswordCertificado));
+            decryptedCsdPassword = Encoding.UTF8.GetString(decryptedBytes);
+            Array.Clear(decryptedBytes);
+        }
 
         // Resolve PAC credentials: env vars take priority, then DB (legacy)
         var pacUsuario = _configuration["FINKOK_USUARIO"] ?? config.PacUsuario;
@@ -827,7 +844,9 @@ public class FacturasController : ControllerBase
         else if (!string.IsNullOrEmpty(config.PacPassword))
         {
             // Legacy fallback: decrypt from DB
-            decryptedPacPassword = CatalogosController.DecryptPassword(config.PacPassword, encryptionKey);
+            var decryptedBytes = _encryptionService.Decrypt(Convert.FromBase64String(config.PacPassword));
+            decryptedPacPassword = Encoding.UTF8.GetString(decryptedBytes);
+            Array.Clear(decryptedBytes);
         }
 
         if (string.IsNullOrEmpty(pacUsuario) || string.IsNullOrEmpty(decryptedPacPassword))

@@ -3,9 +3,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Xml;
 using System.Xml.Xsl;
-using HandySales.Billing.Api.Controllers;
 using HandySales.Billing.Api.Models;
-using Microsoft.Extensions.Configuration;
 
 namespace HandySales.Billing.Api.Services;
 
@@ -16,14 +14,14 @@ namespace HandySales.Billing.Api.Services;
 public class CfdiSigner : ICfdiSigner
 {
     private readonly ILogger<CfdiSigner> _logger;
-    private readonly IConfiguration _configuration;
+    private readonly ICertificateEncryptionService _encryptionService;
     private static XslCompiledTransform? _cachedXslt;
     private static readonly object _xsltLock = new();
 
-    public CfdiSigner(ILogger<CfdiSigner> logger, IConfiguration configuration)
+    public CfdiSigner(ILogger<CfdiSigner> logger, ICertificateEncryptionService encryptionService)
     {
         _logger = logger;
-        _configuration = configuration;
+        _encryptionService = encryptionService;
     }
 
     public string SignXml(string unsignedXml, ConfiguracionFiscal config)
@@ -35,36 +33,46 @@ public class CfdiSigner : ICfdiSigner
         if (string.IsNullOrEmpty(config.PasswordCertificado))
             throw new InvalidOperationException("No se encontró el password del certificado en la configuración fiscal");
 
-        var cerBytes = Convert.FromBase64String(config.CertificadoSat);
-        var encryptionKey = _configuration["Billing:EncryptionKey"] ?? _configuration["Jwt:Secret"]
-            ?? throw new InvalidOperationException("Billing:EncryptionKey or Jwt:Secret not configured");
-        var decryptedKeyBase64 = CatalogosController.DecryptPassword(config.LlavePrivada, encryptionKey);
-        var keyBytes = Convert.FromBase64String(decryptedKeyBase64);
-        var password = CatalogosController.DecryptPassword(config.PasswordCertificado, encryptionKey);
+        byte[]? keyBytes = null;
+        byte[]? pwdBytes = null;
+        try
+        {
+            var cerBytes = Convert.FromBase64String(config.CertificadoSat);
 
-        // 2. Extract NoCertificado from .cer
-        var noCertificado = GetNoCertificado(cerBytes);
+            // Decrypt private key and password using AES-GCM encryption service
+            keyBytes = _encryptionService.Decrypt(Convert.FromBase64String(config.LlavePrivada));
+            pwdBytes = _encryptionService.Decrypt(Convert.FromBase64String(config.PasswordCertificado));
+            var password = Encoding.UTF8.GetString(pwdBytes);
 
-        // 3. Get certificate Base64 for XML (raw DER bytes → Base64 string)
-        var certificadoBase64 = Convert.ToBase64String(cerBytes);
+            // 2. Extract NoCertificado from .cer
+            var noCertificado = GetNoCertificado(cerBytes);
 
-        // 4. Insert NoCertificado and Certificado FIRST (before generating cadena original)
-        //    SAT computes cadena original from XML that already has NoCertificado filled in.
-        //    Sello is left empty — it gets filled after signing.
-        var xmlWithCert = InsertSignatureIntoXml(unsignedXml, "", noCertificado, certificadoBase64);
+            // 3. Get certificate Base64 for XML (raw DER bytes → Base64 string)
+            var certificadoBase64 = Convert.ToBase64String(cerBytes);
 
-        // 5. Generate cadena original via XSLT (from XML with NoCertificado populated)
-        var cadenaOriginal = GenerateCadenaOriginal(xmlWithCert);
-        _logger.LogDebug("Cadena original generated ({Length} chars)", cadenaOriginal.Length);
+            // 4. Insert NoCertificado and Certificado FIRST (before generating cadena original)
+            //    SAT computes cadena original from XML that already has NoCertificado filled in.
+            //    Sello is left empty — it gets filled after signing.
+            var xmlWithCert = InsertSignatureIntoXml(unsignedXml, "", noCertificado, certificadoBase64);
 
-        // 6. Sign cadena original with private key (SHA-256 + RSA PKCS#1)
-        var sello = SignCadenaOriginal(cadenaOriginal, keyBytes, password);
-        _logger.LogDebug("Sello digital generado ({Length} chars)", sello.Length);
+            // 5. Generate cadena original via XSLT (from XML with NoCertificado populated)
+            var cadenaOriginal = GenerateCadenaOriginal(xmlWithCert);
+            _logger.LogDebug("Cadena original generated ({Length} chars)", cadenaOriginal.Length);
 
-        // 7. Insert Sello into the final XML
-        var signedXml = InsertSignatureIntoXml(xmlWithCert, sello, noCertificado, certificadoBase64);
+            // 6. Sign cadena original with private key (SHA-256 + RSA PKCS#1)
+            var sello = SignCadenaOriginal(cadenaOriginal, keyBytes, password);
+            _logger.LogDebug("Sello digital generado ({Length} chars)", sello.Length);
 
-        return signedXml;
+            // 7. Insert Sello into the final XML
+            var signedXml = InsertSignatureIntoXml(xmlWithCert, sello, noCertificado, certificadoBase64);
+
+            return signedXml;
+        }
+        finally
+        {
+            if (keyBytes != null) Array.Clear(keyBytes);
+            if (pwdBytes != null) Array.Clear(pwdBytes);
+        }
     }
 
     public string GetNoCertificado(byte[] cerBytes)
