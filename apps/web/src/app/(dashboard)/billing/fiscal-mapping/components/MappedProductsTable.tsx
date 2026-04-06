@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { AutocompleteDropdown } from './SatAutocomplete';
 import { searchCatalogoProdServ, searchCatalogoUnidad } from '@/services/api/billing';
@@ -27,6 +27,7 @@ interface MappedProductsTableProps {
     clave: string,
     existingMapping?: MapeoFiscalProducto,
   ) => void;
+  onDelete: (productoId: number) => void;
   onSetMappingsPage: (updater: (p: number) => number) => void;
 }
 
@@ -40,6 +41,7 @@ export function MappedProductsTable({
   onToggleSelect,
   onSetEditingCell,
   onInlineSelect,
+  onDelete,
   onSetMappingsPage,
 }: MappedProductsTableProps) {
   return (
@@ -56,6 +58,7 @@ export function MappedProductsTable({
               <th className="text-left px-4 py-3 font-medium text-muted-foreground">Descripción Fiscal</th>
               <th className="text-center px-4 py-3 font-medium text-muted-foreground">Estado</th>
               <th className="text-left px-4 py-3 font-medium text-muted-foreground">Actualizado</th>
+              <th className="text-center px-4 py-3 font-medium text-muted-foreground">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -70,7 +73,12 @@ export function MappedProductsTable({
                     className="rounded border-border text-green-600 focus:ring-green-500"
                   />
                 </td>
-                <td className="px-4 py-3 font-medium tabular-nums">{m.productoId}</td>
+                <td className="px-4 py-3">
+                  <span className="font-medium tabular-nums">{m.productoId}</span>
+                  {m.productoNombre && (
+                    <span className="ml-2 text-muted-foreground text-xs">{m.productoNombre}</span>
+                  )}
+                </td>
                 <td className="px-4 py-3">
                   {editingCell?.productoId === m.productoId && editingCell.field === 'claveProdServ' ? (
                     <AutocompleteDropdown<CatalogoProdServItem>
@@ -84,7 +92,7 @@ export function MappedProductsTable({
                   ) : (
                     <button
                       onClick={() => onSetEditingCell({ productoId: m.productoId, field: 'claveProdServ' })}
-                      className="font-mono text-sm hover:text-green-600 dark:hover:text-green-400 transition-colors cursor-pointer"
+                      className="font-mono text-sm hover:text-green-600 dark:hover:text-green-400 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1 rounded"
                       title="Click para editar"
                     >
                       {m.claveProdServ}
@@ -104,7 +112,7 @@ export function MappedProductsTable({
                   ) : (
                     <button
                       onClick={() => onSetEditingCell({ productoId: m.productoId, field: 'claveUnidad' })}
-                      className="font-mono text-sm hover:text-green-600 dark:hover:text-green-400 transition-colors cursor-pointer"
+                      className="font-mono text-sm hover:text-green-600 dark:hover:text-green-400 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1 rounded"
                       title="Click para editar"
                     >
                       {m.claveUnidad}
@@ -123,11 +131,21 @@ export function MappedProductsTable({
                 <td className="px-4 py-3 text-xs text-muted-foreground">
                   {new Date(m.updatedAt).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}
                 </td>
+                <td className="px-4 py-3 text-center">
+                  <button
+                    onClick={() => onDelete(m.productoId)}
+                    className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-muted-foreground hover:text-red-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1"
+                    aria-label={`Eliminar mapeo de ${m.productoNombre || m.productoId}`}
+                    title="Eliminar mapeo"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </td>
               </tr>
             ))}
             {mappings.length === 0 && !loading && (
               <tr>
-                <td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">
+                <td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">
                   No hay productos con mapeo fiscal
                 </td>
               </tr>
@@ -157,7 +175,7 @@ export function MappedProductsTable({
                 <span className="text-xs text-muted-foreground">ProdServ:</span>
                 <button
                   onClick={() => onSetEditingCell({ productoId: m.productoId, field: 'claveProdServ' })}
-                  className="block font-mono text-green-600 dark:text-green-400"
+                  className="block font-mono text-green-600 dark:text-green-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1 rounded"
                 >
                   {m.claveProdServ}
                 </button>
@@ -176,7 +194,7 @@ export function MappedProductsTable({
                 <span className="text-xs text-muted-foreground">Unidad:</span>
                 <button
                   onClick={() => onSetEditingCell({ productoId: m.productoId, field: 'claveUnidad' })}
-                  className="block font-mono text-green-600 dark:text-green-400"
+                  className="block font-mono text-green-600 dark:text-green-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1 rounded"
                 >
                   {m.claveUnidad}
                 </button>
@@ -213,6 +231,7 @@ export function MappedProductsTable({
               size="sm"
               onClick={() => onSetMappingsPage(p => Math.max(1, p - 1))}
               disabled={mappingsPage <= 1}
+              aria-label="Página anterior"
             >
               <ChevronLeft className="w-4 h-4" />
             </Button>
@@ -221,6 +240,7 @@ export function MappedProductsTable({
               size="sm"
               onClick={() => onSetMappingsPage(p => Math.min(mappingsTotalPages, p + 1))}
               disabled={mappingsPage >= mappingsTotalPages}
+              aria-label="Página siguiente"
             >
               <ChevronRight className="w-4 h-4" />
             </Button>

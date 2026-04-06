@@ -11,6 +11,7 @@ import {
   getUnmappedProducts,
   upsertFiscalMapping,
   batchUpsertFiscalMappings,
+  deleteFiscalMapping,
   getFiscalDefaults,
   setFiscalDefaults,
 } from '@/services/api/billing';
@@ -167,6 +168,20 @@ export default function FiscalMappingPage() {
     }
   };
 
+  const handleDeleteMapping = async (productoId: number) => {
+    try {
+      setSaving(true);
+      await deleteFiscalMapping(productoId);
+      toast({ title: 'Mapeo eliminado' });
+      await loadAll();
+    } catch (err) {
+      const apiError = extractBillingError(err);
+      toast({ title: 'Error al eliminar mapeo', description: apiError.message, variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleBatchAssign = async () => {
     if (selectedIds.size === 0) return;
     if (!batchProdServ && !batchUnidad) {
@@ -246,7 +261,7 @@ export default function FiscalMappingPage() {
         <div className="flex items-center gap-2">
           {selectedIds.size > 0 && (
             <Button
-              onClick={() => setShowBatchAssign(true)}
+              onClick={() => { setEditingCell(null); setShowBatchAssign(true); }}
               className="bg-green-600 hover:bg-green-700 text-white"
             >
               <CheckCheck className="w-4 h-4 mr-2" />
@@ -256,6 +271,8 @@ export default function FiscalMappingPage() {
           <Button
             variant="outline"
             onClick={() => setShowDefaults(!showDefaults)}
+            aria-expanded={showDefaults}
+            aria-controls="defaults-panel"
           >
             <Settings2 className="w-4 h-4 mr-2" />
             Predeterminados
@@ -281,6 +298,13 @@ export default function FiscalMappingPage() {
       {showBatchAssign && (
         <BatchAssignModal
           selectedCount={selectedIds.size}
+          selectedProductNames={
+            Array.from(selectedIds).map(id => {
+              const mapped = mappings.find(m => m.productoId === id);
+              const unmappedItem = unmapped.find(u => u.productoId === id);
+              return mapped?.productoNombre || unmappedItem?.nombre || `Producto #${id}`;
+            })
+          }
           saving={saving}
           batchProdServ={batchProdServ}
           batchUnidad={batchUnidad}
@@ -292,8 +316,12 @@ export default function FiscalMappingPage() {
       )}
 
       {/* ─── Tabs ─── */}
-      <div className="flex items-center gap-1 mb-4 border-b border-border">
+      <div role="tablist" aria-label="Vista de productos" className="flex items-center gap-1 mb-4 border-b border-border">
         <button
+          role="tab"
+          aria-selected={activeTab === 'todos'}
+          aria-controls="panel-todos"
+          id="tab-todos"
           onClick={() => setActiveTab('todos')}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'todos'
@@ -304,6 +332,10 @@ export default function FiscalMappingPage() {
           Todos ({mappingsTotal})
         </button>
         <button
+          role="tab"
+          aria-selected={activeTab === 'sin-mapear'}
+          aria-controls="panel-sin-mapear"
+          id="tab-sin-mapear"
           onClick={() => setActiveTab('sin-mapear')}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'sin-mapear'
@@ -342,6 +374,7 @@ export default function FiscalMappingPage() {
 
       {/* ─── Todos Tab: Mapped Products Table ─── */}
       {activeTab === 'todos' && (
+        <div role="tabpanel" id="panel-todos" aria-labelledby="tab-todos">
         <MappedProductsTable
           mappings={mappings}
           loading={loading}
@@ -355,11 +388,14 @@ export default function FiscalMappingPage() {
             handleInlineSelect(productoId, field, clave, existingMapping)
           }
           onSetMappingsPage={setMappingsPage}
+          onDelete={handleDeleteMapping}
         />
+        </div>
       )}
 
       {/* ─── Sin Mapear Tab: Unmapped Products Table ─── */}
       {activeTab === 'sin-mapear' && (
+        <div role="tabpanel" id="panel-sin-mapear" aria-labelledby="tab-sin-mapear">
         <UnmappedProductsTable
           unmapped={unmapped}
           loading={loading}
@@ -374,6 +410,7 @@ export default function FiscalMappingPage() {
           }
           onSetUnmappedPage={setUnmappedPage}
         />
+        </div>
       )}
 
       {/* Loading overlay */}

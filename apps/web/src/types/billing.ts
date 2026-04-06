@@ -11,6 +11,7 @@ export interface FacturaListItem {
   serie: string | null;
   folio: number;
   fechaEmision: string;
+  emisorRfc: string;
   receptorRfc: string;
   receptorNombre: string;
   total: number;
@@ -201,6 +202,7 @@ export interface CatalogoUnidadItem {
 export interface MapeoFiscalProducto {
   id: number;
   productoId: number;
+  productoNombre?: string;
   claveProdServ: string;
   claveUnidad: string;
   descripcionFiscal: string | null;

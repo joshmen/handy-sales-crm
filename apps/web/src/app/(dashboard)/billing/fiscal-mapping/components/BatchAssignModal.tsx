@@ -10,6 +10,7 @@ import type { CatalogoProdServItem, CatalogoUnidadItem } from '@/types/billing';
 
 interface BatchAssignModalProps {
   selectedCount: number;
+  selectedProductNames?: string[];
   saving: boolean;
   batchProdServ: string;
   batchUnidad: string;
@@ -21,6 +22,7 @@ interface BatchAssignModalProps {
 
 export function BatchAssignModal({
   selectedCount,
+  selectedProductNames,
   saving,
   batchProdServ,
   batchUnidad,
@@ -38,6 +40,14 @@ export function BatchAssignModal({
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const firstInput = dialogRef.current?.querySelector('input');
+      if (firstInput) firstInput.focus();
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
@@ -58,6 +68,13 @@ export function BatchAssignModal({
         <p className="text-sm text-muted-foreground mb-4">
           Asignar la misma clave SAT a {selectedCount} producto{selectedCount > 1 ? 's' : ''} seleccionado{selectedCount > 1 ? 's' : ''}.
         </p>
+        {selectedProductNames && selectedProductNames.length > 0 && (
+          <div className="mb-4 max-h-24 overflow-y-auto rounded-md border border-border bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+            {selectedProductNames.length <= 5
+              ? selectedProductNames.join(', ')
+              : `${selectedProductNames.slice(0, 5).join(', ')} + ${selectedProductNames.length - 5} más`}
+          </div>
+        )}
 
         <div className="space-y-4">
           <div>

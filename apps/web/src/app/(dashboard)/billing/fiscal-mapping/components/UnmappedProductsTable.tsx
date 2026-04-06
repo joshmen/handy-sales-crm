@@ -91,7 +91,7 @@ export function UnmappedProductsTable({
                   ) : (
                     <button
                       onClick={() => onSetEditingCell({ productoId: u.productoId, field: 'claveProdServ' })}
-                      className="text-sm hover:text-green-600 dark:hover:text-green-400 transition-colors cursor-pointer"
+                      className="text-sm hover:text-green-600 dark:hover:text-green-400 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1 rounded"
                       title="Click para asignar"
                     >
                       {u.claveSatActual ? (
@@ -115,7 +115,7 @@ export function UnmappedProductsTable({
                   ) : (
                     <button
                       onClick={() => onSetEditingCell({ productoId: u.productoId, field: 'claveUnidad' })}
-                      className="text-sm hover:text-green-600 dark:hover:text-green-400 transition-colors cursor-pointer"
+                      className="text-sm hover:text-green-600 dark:hover:text-green-400 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1 rounded"
                       title="Click para asignar"
                     >
                       {u.unidadClaveSat ? (
@@ -174,7 +174,7 @@ export function UnmappedProductsTable({
                 <span className="text-xs text-muted-foreground">ProdServ:</span>
                 <button
                   onClick={() => onSetEditingCell({ productoId: u.productoId, field: 'claveProdServ' })}
-                  className="block text-amber-600 dark:text-amber-400 text-xs"
+                  className="block text-amber-600 dark:text-amber-400 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1 rounded"
                 >
                   {u.claveSatActual || 'Asignar...'}
                 </button>
@@ -193,7 +193,7 @@ export function UnmappedProductsTable({
                 <span className="text-xs text-muted-foreground">Unidad:</span>
                 <button
                   onClick={() => onSetEditingCell({ productoId: u.productoId, field: 'claveUnidad' })}
-                  className="block text-amber-600 dark:text-amber-400 text-xs"
+                  className="block text-amber-600 dark:text-amber-400 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1 rounded"
                 >
                   {u.unidadClaveSat || 'Asignar...'}
                 </button>
@@ -231,6 +231,7 @@ export function UnmappedProductsTable({
               size="sm"
               onClick={() => onSetUnmappedPage(p => Math.max(1, p - 1))}
               disabled={unmappedPage <= 1}
+              aria-label="Página anterior"
             >
               <ChevronLeft className="w-4 h-4" />
             </Button>
@@ -239,6 +240,7 @@ export function UnmappedProductsTable({
               size="sm"
               onClick={() => onSetUnmappedPage(p => Math.min(unmappedTotalPages, p + 1))}
               disabled={unmappedPage >= unmappedTotalPages}
+              aria-label="Página siguiente"
             >
               <ChevronRight className="w-4 h-4" />
             </Button>
