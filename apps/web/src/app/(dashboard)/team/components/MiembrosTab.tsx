@@ -515,7 +515,7 @@ function AdminUsersView() {
         isVerified: apiUser.verificado || false,
         createdAt: new Date(apiUser.creadoEn || Date.now()),
         updatedAt: new Date(apiUser.actualizadoEn || Date.now()),
-        lastLogin: apiUser.ultimoAcceso ? new Date(apiUser.ultimoAcceso) : undefined,
+        lastLogin: apiUser.lastActivity ? new Date(apiUser.lastActivity) : apiUser.ultimoAcceso ? new Date(apiUser.ultimoAcceso) : undefined,
       }))
     : [];
 
