@@ -494,6 +494,7 @@ function AdminUsersView() {
   const [filterZona, setFilterZona] = useState('all');
   const [filterRole, setFilterRole] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [filterSession, setFilterSession] = useState('all');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -567,9 +568,20 @@ function AdminUsersView() {
 
   // Local sorting
   const sortedUsers = useMemo(() => {
-    const filtered = filterStatus === 'all'
+    let filtered = filterStatus === 'all'
       ? displayUsers
       : displayUsers.filter(u => u.status === filterStatus);
+    if (filterSession !== 'all') {
+      const apiMap = new Map(apiUsers.map((u: any) => [String(u.id), u]));
+      filtered = filtered.filter(u => {
+        const api = apiMap.get(u.id);
+        if (!api) return false;
+        if (filterSession === 'online') return api.isOnline;
+        if (filterSession === 'with_session') return (api.activeSessionCount || 0) > 0;
+        if (filterSession === 'no_session') return (api.activeSessionCount || 0) === 0;
+        return true;
+      });
+    }
     const sorted = [...filtered];
     sorted.sort((a, b) => {
       let cmp = 0;
@@ -592,7 +604,7 @@ function AdminUsersView() {
       return sortDir === 'asc' ? cmp : -cmp;
     });
     return sorted;
-  }, [displayUsers, sortKey, sortDir, filterStatus]);
+  }, [displayUsers, apiUsers, sortKey, sortDir, filterStatus, filterSession]);
 
   const getRoleBadgeColor = (role: UserRole) => {
     switch (role) {
@@ -1148,6 +1160,21 @@ function AdminUsersView() {
               value={filterStatus}
               onChange={(val) => setFilterStatus(val ? String(val) : 'all')}
               placeholder="Todos los estados"
+            />
+          </div>
+
+          {/* Session Filter */}
+          <div className="flex-1 min-w-[170px]">
+            <SearchableSelect
+              options={[
+                { value: 'all', label: 'Todas las sesiones' },
+                { value: 'online', label: 'En línea' },
+                { value: 'with_session', label: 'Con sesión' },
+                { value: 'no_session', label: 'Sin sesión' },
+              ]}
+              value={filterSession}
+              onChange={(val) => setFilterSession(val ? String(val) : 'all')}
+              placeholder="Todas las sesiones"
             />
           </div>
 
