@@ -1186,6 +1186,9 @@ function AdminUsersView() {
                     {ubicaciones.length} vendedor{ubicaciones.length !== 1 ? 'es' : ''} con ubicacion registrada
                   </div>
                   <GoogleMapWrapper markers={locationMarkers} height="450px" />
+                  <p className="mt-3 text-xs text-gray-400">
+                    Solo se muestran vendedores que han registrado al menos una visita con GPS activo desde la app móvil. Si un vendedor no aparece, es porque aún no ha realizado check-in con ubicación.
+                  </p>
                 </>
               )}
             </div>
@@ -1218,7 +1221,7 @@ function AdminUsersView() {
                   <Ruler className="w-12 h-12 text-gray-300 mb-3" />
                   <p className="font-medium">Sin datos de ubicacion</p>
                 </div>
-              ) : (
+              ) : (<>
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -1251,7 +1254,10 @@ function AdminUsersView() {
                     ))}
                   </tbody>
                 </table>
-              )}
+                <p className="mt-3 text-xs text-gray-400">
+                  Solo se muestran vendedores con al menos una visita GPS registrada desde la app móvil.
+                </p>
+              </>)}
             </div>
           </div>
         </div>,
