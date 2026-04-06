@@ -119,6 +119,23 @@ public class FacturasController : ControllerBase
         return await DownloadLogoAsync(mainLogoUrl);
     }
 
+    [HttpGet("invoiced-orders")]
+    public async Task<ActionResult> GetInvoicedOrders()
+    {
+        var tenantId = GetTenantId();
+        var invoiced = await _context.Facturas
+            .Where(f => f.TenantId == tenantId && f.PedidoId != null && f.Estado != "CANCELADA")
+            .Select(f => new { f.PedidoId, f.Id, f.Serie, f.Folio, f.Estado, f.Uuid })
+            .ToListAsync();
+
+        // Return as dictionary keyed by pedidoId for fast lookup
+        var result = invoiced.ToDictionary(
+            f => f.PedidoId!.Value,
+            f => new { facturaId = f.Id, folio = $"{f.Serie}-{f.Folio}", estado = f.Estado, uuid = f.Uuid }
+        );
+        return Ok(result);
+    }
+
     [HttpGet]
     public async Task<ActionResult<IEnumerable<FacturaListDto>>> GetFacturas(
         [FromQuery] DateTime? desde,

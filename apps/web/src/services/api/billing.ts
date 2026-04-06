@@ -25,6 +25,20 @@ import type {
   DefaultsFiscalesTenant,
 } from '@/types/billing';
 
+// ─── Invoiced Orders lookup ───
+
+export interface InvoicedOrder {
+  facturaId: number;
+  folio: string;
+  estado: string;
+  uuid: string | null;
+}
+
+export async function getInvoicedOrders(): Promise<Record<number, InvoicedOrder>> {
+  const { data } = await billingApi.get<Record<number, InvoicedOrder>>('/api/facturas/invoiced-orders');
+  return data;
+}
+
 // ─── Facturas ───
 
 export interface GetFacturasParams {

@@ -29,6 +29,7 @@ import {
 import { ExportButton } from '@/components/shared/ExportButton';
 import { Button } from '@/components/ui/Button';
 import { ShoppingCart as ShoppingCartIcon, Receipt } from '@phosphor-icons/react';
+import { getInvoicedOrders, type InvoicedOrder } from '@/services/api/billing';
 import { SearchBar } from '@/components/common/SearchBar';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -181,6 +182,7 @@ export default function OrdersPage() {
   const canAdvanceOrders = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN' || session?.user?.role === 'SUPERVISOR';
 
   const [orders, setOrders] = useState<Order[]>([]);
+  const [invoicedOrders, setInvoicedOrders] = useState<Record<number, InvoicedOrder>>({});
   const [clients, setClients] = useState<Client[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [showOrderForm, setShowOrderForm] = useState(false);
@@ -225,6 +227,8 @@ export default function OrdersPage() {
       setOrders(mappedOrders);
       setTotalItems(response.totalCount);
       setTotalPages(Math.ceil(response.totalCount / response.pageSize));
+      // Load invoiced orders (best-effort, don't block)
+      getInvoicedOrders().then(setInvoicedOrders).catch(() => {});
     } catch (err) {
       console.error('Error al cargar pedidos:', err);
       setError('Error al cargar los pedidos. Intenta de nuevo.');
@@ -521,14 +525,25 @@ export default function OrdersPage() {
                 {nextAction.label}
               </button>
             )}
-            {order.status === 'delivered' && (
-              <button
-                onClick={() => handleFacturar(order.id)}
-                className="text-[11px] px-2.5 py-1 rounded font-medium text-emerald-700 border border-emerald-200 hover:bg-emerald-50 transition-colors whitespace-nowrap"
-              >
-                Facturar
-              </button>
-            )}
+            {order.status === 'delivered' && (() => {
+              const inv = invoicedOrders[parseInt(order.id)];
+              return inv ? (
+                <button
+                  onClick={() => router.push(`/billing/invoices/${inv.facturaId}`)}
+                  className="text-[11px] px-2.5 py-1 rounded font-medium text-blue-700 border border-blue-200 hover:bg-blue-50 transition-colors whitespace-nowrap flex items-center gap-1"
+                >
+                  <FileText className="w-3 h-3" />
+                  {inv.folio}
+                </button>
+              ) : (
+                <button
+                  onClick={() => handleFacturar(order.id)}
+                  className="text-[11px] px-2.5 py-1 rounded font-medium text-emerald-700 border border-emerald-200 hover:bg-emerald-50 transition-colors whitespace-nowrap"
+                >
+                  Facturar
+                </button>
+              );
+            })()}
             <div className="flex items-center gap-0.5 border border-gray-200 rounded-md px-0.5 py-0.5">
               {canAdvanceOrders && canCancel && (
                 <button onClick={() => handleCancelOrderStatus(order.id)} className="p-1 hover:bg-red-50 rounded transition-colors" title="Cancelar">
@@ -722,11 +737,18 @@ export default function OrdersPage() {
                         <button onClick={() => handleDeleteOrder(order.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-red-600 hover:bg-red-50 rounded">
                           <Trash2 className="w-3.5 h-3.5 text-red-400" /> Eliminar
                         </button>
-                        {order.status === 'delivered' && (
-                          <button onClick={() => handleFacturar(order.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-emerald-600 hover:bg-emerald-50 rounded">
-                            <Receipt className="w-3.5 h-3.5 text-emerald-500" weight="bold" /> Facturar
-                          </button>
-                        )}
+                        {order.status === 'delivered' && (() => {
+                          const inv = invoicedOrders[parseInt(order.id)];
+                          return inv ? (
+                            <button onClick={() => router.push(`/billing/invoices/${inv.facturaId}`)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded">
+                              <FileText className="w-3.5 h-3.5 text-blue-500" /> {inv.folio}
+                            </button>
+                          ) : (
+                            <button onClick={() => handleFacturar(order.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-emerald-600 hover:bg-emerald-50 rounded">
+                              <Receipt className="w-3.5 h-3.5 text-emerald-500" weight="bold" /> Facturar
+                            </button>
+                          );
+                        })()}
                       </div>
                       {canAdvanceOrders && (nextAction || canCancel) && (
                         <div className="flex items-center gap-2 border-t border-gray-100 pt-2 mt-1" onClick={(e) => e.stopPropagation()}>
