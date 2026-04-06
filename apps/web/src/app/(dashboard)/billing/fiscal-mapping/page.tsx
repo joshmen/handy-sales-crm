@@ -252,11 +252,11 @@ export default function FiscalMappingPage() {
   return (
     <PageHeader
       breadcrumbs={[
-        { label: 'Facturaci\u00f3n', href: '/billing' },
+        { label: 'Facturación', href: '/billing' },
         { label: 'Mapeo Fiscal' },
       ]}
       title="Mapeo Fiscal"
-      subtitle="Asignar c\u00f3digos SAT a productos para facturaci\u00f3n"
+      subtitle="Asignar códigos SAT a productos para facturación"
       actions={
         <div className="flex items-center gap-2">
           {selectedIds.size > 0 && (
