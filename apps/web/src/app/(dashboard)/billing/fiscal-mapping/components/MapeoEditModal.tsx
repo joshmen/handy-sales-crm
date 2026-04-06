@@ -31,14 +31,29 @@ export function MapeoEditModal({ product, onSave, onDelete, onClose, saving }: M
   const [claveProdServ, setClaveProdServ] = useState(product.currentProdServ || '');
   const [claveUnidad, setClaveUnidad] = useState(product.currentUnidad || '');
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+
+  const canSave = claveProdServ.trim() && claveUnidad.trim();
+  const hasChanges = claveProdServ !== (product.currentProdServ || '') || claveUnidad !== (product.currentUnidad || '');
+
+  const handleClose = () => {
+    if (hasChanges) {
+      setConfirmDiscard(true);
+    } else {
+      onClose();
+    }
+  };
+
+  const handleCloseRef = useRef(handleClose);
+  handleCloseRef.current = handleClose;
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') handleCloseRef.current();
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+  }, []);
 
   // Auto-focus first input
   useEffect(() => {
@@ -49,11 +64,8 @@ export function MapeoEditModal({ product, onSave, onDelete, onClose, saving }: M
     return () => clearTimeout(timer);
   }, []);
 
-  const canSave = claveProdServ.trim() && claveUnidad.trim();
-  const hasChanges = claveProdServ !== (product.currentProdServ || '') || claveUnidad !== (product.currentUnidad || '');
-
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={handleClose}>
       <div
         ref={dialogRef}
         role="dialog"
@@ -65,7 +77,7 @@ export function MapeoEditModal({ product, onSave, onDelete, onClose, saving }: M
         {/* Header */}
         <div className="flex items-center justify-between mb-1">
           <h3 id="mapeo-edit-title" className="text-lg font-semibold text-foreground">Mapeo Fiscal</h3>
-          <button onClick={onClose} aria-label="Cerrar" className="text-muted-foreground hover:text-foreground p-1">
+          <button onClick={handleClose} aria-label="Cerrar" className="text-muted-foreground hover:text-foreground p-1">
             <XIcon className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
@@ -187,6 +199,24 @@ export function MapeoEditModal({ product, onSave, onDelete, onClose, saving }: M
           </div>
         </div>
       </div>
+
+      {/* Confirm discard changes */}
+      {confirmDiscard && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40" onClick={() => setConfirmDiscard(false)}>
+          <div className="bg-card border border-border rounded-xl p-5 w-full max-w-sm mx-4 shadow-xl" onClick={e => e.stopPropagation()}>
+            <h4 className="text-sm font-semibold text-foreground mb-2">Cambios sin guardar</h4>
+            <p className="text-sm text-muted-foreground mb-4">Tienes cambios sin guardar. ¿Deseas descartarlos?</p>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => setConfirmDiscard(false)}>
+                Seguir editando
+              </Button>
+              <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white" onClick={onClose}>
+                Descartar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>,
     document.body
   );
