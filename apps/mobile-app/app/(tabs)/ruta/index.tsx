@@ -12,9 +12,17 @@ import { performSync } from '@/sync/syncEngine';
 import { database } from '@/db/database';
 import { Q } from '@nozbe/watermelondb';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import MapView, { Marker, Polyline } from 'react-native-maps';
-import type RutaDetalle from '@/db/models/RutaDetalle';
-import type Cliente from '@/db/models/Cliente';
+let MapView: any = null;
+let Marker: any = null;
+let Polyline: any = null;
+try {
+  const maps = require('react-native-maps');
+  MapView = maps.default || maps.MapView;
+  Marker = maps.Marker;
+  Polyline = maps.Polyline;
+} catch { /* maps not available */ }
+import RutaDetalle from '@/db/models/RutaDetalle';
+import Cliente from '@/db/models/Cliente';
 
 const STOP_DOT_COLORS: Record<number, string> = {
   0: '#e2e8f0', // Pendiente — gray
@@ -208,7 +216,7 @@ export default function RutaScreen() {
         </Animated.View>
 
         {/* Mini Route Map with Polyline */}
-        {routeCoordinates.length > 1 && (
+        {MapView && routeCoordinates.length > 1 && (
           <Animated.View entering={FadeInDown.duration(400).delay(200)}>
             <View style={styles.miniMapContainer}>
               <MapView
