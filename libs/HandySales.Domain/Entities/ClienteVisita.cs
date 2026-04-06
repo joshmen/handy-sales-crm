@@ -32,6 +32,9 @@ public class ClienteVisita : AuditableEntity
     [Column("tenant_id")]
     public int TenantId { get; set; }
 
+    [Column("mobile_record_id")]
+    public string? MobileRecordId { get; set; }
+
     [Column("cliente_id")]
     public int ClienteId { get; set; }
 

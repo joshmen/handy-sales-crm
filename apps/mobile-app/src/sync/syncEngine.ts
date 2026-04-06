@@ -1,5 +1,4 @@
 import { synchronize } from '@nozbe/watermelondb/sync';
-import { Q } from '@nozbe/watermelondb';
 import { database } from '@/db/database';
 import { api } from '@/api/client';
 import { syncCursors } from './cursors';
@@ -141,53 +140,14 @@ export async function performSync(options?: SyncOptions): Promise<void> {
       sendCreatedAsUpdated: true,
     });
 
-    // Phase 2b: Apply server ID mappings and clean up duplicates
-    // WDB runs PULL before PUSH, so the pull creates a duplicate record (id=String(serverId))
-    // before the push can provide the ID mapping. We clean up here.
-    if (pendingIdMappings.length) {
-      let dupCount = 0;
-      await database.write(async () => {
-        const updates: any[] = [];
-        const deletes: any[] = [];
-        for (const m of pendingIdMappings) {
-          try {
-            const record = await database.get(m.entityType).find(m.localId);
-            const serverId = String(m.serverId);
-
-            // Try to find a duplicate record created by pull (id = String(serverId))
-            let dupRaw: any = null;
-            if (serverId !== m.localId) {
-              try {
-                const dup = await database.get(m.entityType).find(serverId);
-                dupRaw = dup._raw;
-                deletes.push(dup.prepareDestroyPermanently());
-                dupCount++;
-
-                // Also delete orphaned child records of the duplicate
-                if (m.entityType === 'pedidos') {
-                  const dupDetalles = await database.get('detalle_pedidos')
-                    .query(Q.where('pedido_id', serverId)).fetch();
-                  for (const d of dupDetalles) {
-                    deletes.push(d.prepareDestroyPermanently());
-                  }
-                }
-              } catch { /* no duplicate — good */ }
-            }
-
-            // Update the local record: set server_id + copy fields from server duplicate
-            updates.push(record.prepareUpdate((r: any) => {
-              r.server_id = m.serverId;
-              // Copy server-assigned fields from the duplicate if it exists
-              if (dupRaw) {
-                if (dupRaw.numero_pedido) r.numero_pedido = dupRaw.numero_pedido;
-                if (dupRaw.estado > r.estado) r.estado = dupRaw.estado;
-              }
-            }));
-          } catch { /* local record not found */ }
-        }
-        if (updates.length || deletes.length) await database.batch(...updates, ...deletes);
-      });
-      if (__DEV__) console.log(`[Sync] Applied ${pendingIdMappings.length} ID mappings, removed ${dupCount} duplicates`);
+    // Phase 2b: Server ID mappings — log only, don't modify records
+    // WDB's prepareUpdate marks records as _status='updated' which causes
+    // an infinite re-push loop. Instead, we rely on the server-side idempotency
+    // check (localId fingerprint) to prevent duplicate creation on re-push.
+    // The duplicate record from pull will be cleaned up on the NEXT sync
+    // when buildServerIdMap correctly maps server_id → local_id.
+    if (pendingIdMappings.length && __DEV__) {
+      console.log(`[Sync] Received ${pendingIdMappings.length} ID mappings (server-side dedup handles cleanup)`);
     }
 
     // Phase 3: Upload pending attachments (deferred, non-fatal)

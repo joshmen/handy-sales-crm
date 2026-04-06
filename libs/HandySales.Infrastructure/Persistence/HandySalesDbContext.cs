@@ -158,6 +158,8 @@ public class HandySalesDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(rt => rt.UserId)
                   .HasPrincipalKey(u => u.Id);
+            // Matching query filter with Usuario (suppresses EF Core warning)
+            entity.HasQueryFilter(rt => rt.Usuario!.EliminadoEn == null);
         });
 
         // Configure Producto relationships explicitly
@@ -584,7 +586,7 @@ public class HandySalesDbContext : DbContext
             entity.HasOne(ims => ims.SuperAdmin)
                   .WithMany()
                   .HasForeignKey(ims => ims.SuperAdminId)
-                  .OnDelete(DeleteBehavior.Restrict); // No eliminar usuario si tiene sesiones
+                  .OnDelete(DeleteBehavior.Restrict);
 
             // Relación con Tenant
             entity.HasOne(ims => ims.TargetTenant)
@@ -599,6 +601,9 @@ public class HandySalesDbContext : DbContext
             entity.HasIndex(ims => ims.StartedAt);
             entity.HasIndex(ims => new { ims.SuperAdminId, ims.Status });
             entity.HasIndex(ims => new { ims.TargetTenantId, ims.Status });
+
+            // Matching query filter with Usuario (suppresses EF Core warning)
+            entity.HasQueryFilter(ims => ims.SuperAdmin!.EliminadoEn == null);
         });
         // Configure Cobro entity
         modelBuilder.Entity<Cobro>(entity =>
@@ -650,6 +655,9 @@ public class HandySalesDbContext : DbContext
                   .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasIndex(rc => rc.UsuarioId);
+
+            // Matching query filter with Usuario (suppresses EF Core warning)
+            entity.HasQueryFilter(rc => rc.Usuario!.EliminadoEn == null);
         });
 
         // Configure Announcement entity (platform-level, no tenant filter)
@@ -683,6 +691,9 @@ public class HandySalesDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(d => d.UsuarioId)
                   .OnDelete(DeleteBehavior.Cascade);
+
+            // Matching query filters with principal entities (suppresses EF Core warnings)
+            entity.HasQueryFilter(d => d.Announcement!.EliminadoEn == null && d.Usuario!.EliminadoEn == null);
 
             entity.HasIndex(d => new { d.AnnouncementId, d.UsuarioId }).IsUnique();
         });

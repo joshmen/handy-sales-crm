@@ -1,16 +1,25 @@
 import { Database } from '@nozbe/watermelondb';
-import SQLiteAdapter from '@nozbe/watermelondb/adapters/sqlite';
-import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 import { schema } from './schema';
 import { migrations } from './migrations';
 import { modelClasses } from './models';
 
-const adapter = new SQLiteAdapter({
-  schema,
-  migrations,
-  dbName: 'handysuites',
-  jsi: Platform.OS !== 'web',
-});
+const isExpoGo = Constants.appOwnership === 'expo';
+
+// Expo Go: LokiJS (no native modules). APK/EAS: SQLiteAdapter (native, fast).
+const adapter = isExpoGo
+  ? new (require('@nozbe/watermelondb/adapters/lokijs').default)({
+      schema,
+      migrations,
+      useWebWorker: false,
+      useIncrementalIndexedDB: true,
+    })
+  : new (require('@nozbe/watermelondb/adapters/sqlite').default)({
+      schema,
+      migrations,
+      dbName: 'handysuites',
+      jsi: true,
+    });
 
 
 export const database = new Database({

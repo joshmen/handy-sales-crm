@@ -19,6 +19,7 @@ export function useObservable<T>(observable: Observable<T> | null): {
     setIsLoading(true);
     subRef.current = observable.subscribe({
       next: (value) => {
+        if (__DEV__) console.log('[useObservable] emit', Array.isArray(value) ? `${value.length} items` : typeof value);
         setData(value);
         setIsLoading(false);
       },

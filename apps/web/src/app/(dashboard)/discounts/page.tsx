@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef  } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -25,7 +25,6 @@ import {
   Pencil,
   Loader2,
   Check,
-  Minus,
   Download,
   Upload,
   Trash2,
@@ -34,8 +33,8 @@ import {
 import { Percent as PercentIcon } from '@phosphor-icons/react';
 import { SearchBar } from '@/components/common/SearchBar';
 import { InactiveToggle } from '@/components/ui/InactiveToggle';
-import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
 import { ActiveToggle } from '@/components/ui/ActiveToggle';
+import { DataGrid, DataGridColumn } from '@/components/ui/DataGrid';
 import { useFormatters } from '@/hooks/useFormatters';
 
 type TipoAplicacion = 'Global' | 'Producto';
@@ -242,7 +241,120 @@ export default function DiscountsPage() {
     currentPage * pageSize
   );
 
-  const visibleIds = paginatedDiscounts.map(d => d.id);
+  // Sort state
+  const [sortKey, setSortKey] = useState('descuentoPorcentaje');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+
+  const handleSort = useCallback((key: string) => {
+    setSortDir(prev => sortKey === key ? (prev === 'asc' ? 'desc' : 'asc') : 'asc');
+    setSortKey(key);
+  }, [sortKey]);
+
+  const sortedDiscounts = useMemo(() => {
+    const sorted = [...paginatedDiscounts];
+    sorted.sort((a, b) => {
+      let cmp = 0;
+      switch (sortKey) {
+        case 'descuentoPorcentaje': cmp = a.descuentoPorcentaje - b.descuentoPorcentaje; break;
+        case 'cantidadMinima': cmp = a.cantidadMinima - b.cantidadMinima; break;
+        default: cmp = 0;
+      }
+      return sortDir === 'desc' ? -cmp : cmp;
+    });
+    return sorted;
+  }, [paginatedDiscounts, sortKey, sortDir]);
+
+  // Column definitions
+  const discountColumns = useMemo<DataGridColumn<DescuentoPorCantidadDto>[]>(() => [
+    {
+      key: 'descuentoPorcentaje',
+      label: 'Descuento',
+      sortable: true,
+      width: 'flex',
+      cellRenderer: (d) => (
+        <div>
+          <div className="text-lg font-semibold text-gray-900">{d.descuentoPorcentaje}%</div>
+        </div>
+      ),
+    },
+    {
+      key: 'cantidadMinima',
+      label: 'Cantidad mín.',
+      sortable: true,
+      width: 'flex',
+      cellRenderer: (d) => (
+        <div className="text-[13px] text-gray-900">{d.cantidadMinima} unidades</div>
+      ),
+    },
+    ...(activeTab === 'product' ? [{
+      key: 'producto',
+      label: 'Producto',
+      width: 'flex' as const,
+      cellRenderer: (d: DescuentoPorCantidadDto) => (
+        <div>
+          <div className="text-[13px] font-medium text-gray-900">{d.productoNombre || '-'}</div>
+          <div className="text-xs text-gray-400">{d.productoCodigo || ''}</div>
+        </div>
+      ),
+    }] : []),
+    {
+      key: 'creadoPor',
+      label: 'Creado por',
+      width: 'flex',
+      hiddenOnMobile: true,
+      cellRenderer: (d) => (
+        <div>
+          <div className="text-[13px] font-medium text-green-600">{d.creadoPor || '-'}</div>
+          <div className="text-xs text-gray-400">{formatRelativeTime(d.creadoEn)}</div>
+        </div>
+      ),
+    },
+    {
+      key: 'actualizadoPor',
+      label: 'Última mod.',
+      width: 'flex',
+      hiddenOnMobile: true,
+      cellRenderer: (d) => (
+        <div>
+          <div className="text-[13px] font-medium text-green-600">{d.actualizadoPor || d.creadoPor || '-'}</div>
+          <div className="text-xs text-gray-400">{formatRelativeTime(d.actualizadoEn || d.creadoEn)}</div>
+        </div>
+      ),
+    },
+    {
+      key: 'activo',
+      label: 'Activo',
+      width: 60,
+      align: 'center' as const,
+      cellRenderer: (d) => (
+        <div onClick={(e) => e.stopPropagation()}>
+          <ActiveToggle isActive={d.activo} onToggle={() => handleToggleActive(d)} disabled={loading} isLoading={togglingId === d.id} />
+        </div>
+      ),
+    },
+    {
+      key: 'actions',
+      label: '',
+      width: 60,
+      cellRenderer: (d) => (
+        <div className="flex items-center justify-center gap-1" onClick={(e) => e.stopPropagation()}>
+          <button onClick={() => handleOpenEdit(d)} disabled={loading} className="p-1.5 text-amber-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors disabled:opacity-50" title="Editar">
+            <Pencil className="w-4 h-4" />
+          </button>
+          {deleteConfirmId === d.id ? (
+            <>
+              <button onClick={() => { handleDelete(d.id); setDeleteConfirmId(null); }} className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"><Check className="w-4 h-4" /></button>
+              <button onClick={() => setDeleteConfirmId(null)} className="p-1 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X className="w-4 h-4" /></button>
+            </>
+          ) : (
+            <button onClick={() => setDeleteConfirmId(d.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Eliminar"><Trash2 className="w-4 h-4" /></button>
+          )}
+        </div>
+      ),
+    },
+  ] as DataGridColumn<DescuentoPorCantidadDto>[], [activeTab, loading, togglingId, deleteConfirmId]);
+
+  const visibleIds = sortedDiscounts.map(d => d.id);
   const batch = useBatchOperations({
     visibleIds,
     clearDeps: [activeTab, showInactiveGlobal, showInactiveProduct, searchGlobal, searchProduct],
@@ -421,234 +533,74 @@ export default function DiscountsPage() {
             className="mb-4"
           />
 
-          {/* Content - Container with loading overlay */}
-          <div className="relative min-h-[200px]" data-tour="discounts-cards">
-            <TableLoadingOverlay loading={loading} message="Cargando descuentos..." />
-
-            {/* Empty State */}
-            {!loading && paginatedDiscounts.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-64 py-20">
-                <Percent className="w-16 h-16 text-orange-300 mb-4" />
-                <h3 className="text-lg font-semibold text-gray-700 mb-2">No hay descuentos</h3>
-                <p className="text-sm text-gray-500 text-center">
-                  Crea tu primer descuento por cantidad para comenzar
-                </p>
-              </div>
-            ) : (
-              <>
-                {/* Mobile Cards */}
-                <div className="sm:hidden space-y-3">
-                  {paginatedDiscounts.map((discount) => (
-                    <div
-                      key={discount.id}
-                      className={`bg-white border rounded-lg p-4 cursor-pointer ${
-                        batch.selectedIds.has(discount.id)
-                          ? 'border-green-400 bg-green-50/50'
-                          : 'border-gray-200'
-                      }`}
-                      onClick={() => handleOpenEdit(discount)}
-                    >
-                      <div className="flex items-start justify-between gap-2 mb-3">
-                        <div className="flex items-start gap-2 min-w-0 flex-1">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); batch.handleToggleSelect(discount.id); }}
-                            className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                              batch.selectedIds.has(discount.id)
-                                ? 'bg-green-600 border-green-600 text-white'
-                                : 'border-gray-300 hover:border-green-500'
-                            }`}
-                          >
-                            {batch.selectedIds.has(discount.id) && <Check className="w-3 h-3" />}
-                          </button>
-                          <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
-                            <PercentIcon className="w-5 h-5 text-orange-600" weight="duotone" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium text-gray-900">
-                              {discount.descuentoPorcentaje}% de descuento
-                            </p>
-                            {discount.tipoAplicacion === 'Producto' && (
-                              <p className="text-xs text-gray-500 truncate">{discount.productoNombre || '-'}</p>
-                            )}
-                          </div>
-                        </div>
-                        <div onClick={(e) => e.stopPropagation()}>
-                          <ActiveToggle
-                            isActive={discount.activo}
-                            onToggle={() => handleToggleActive(discount)}
-                            disabled={loading}
-                            isLoading={togglingId === discount.id}
-                          />
-                        </div>
+          {/* Discounts DataGrid */}
+          <div data-tour="discounts-cards">
+            <DataGrid<DescuentoPorCantidadDto>
+              columns={discountColumns}
+              data={sortedDiscounts}
+              keyExtractor={(d) => d.id}
+              loading={loading}
+              loadingMessage="Cargando descuentos..."
+              emptyIcon={<Percent className="w-16 h-16 text-orange-300" />}
+              emptyTitle="No hay descuentos"
+              emptyMessage="Crea tu primer descuento por cantidad para comenzar"
+              onRowClick={(d) => handleOpenEdit(d)}
+              sort={{
+                key: sortKey,
+                direction: sortDir,
+                onSort: handleSort,
+              }}
+              selection={{
+                selectedIds: batch.selectedIds as unknown as Set<string | number>,
+                onToggle: (id) => batch.handleToggleSelect(id as number),
+                onSelectAll: batch.handleSelectAllVisible,
+                onClearAll: batch.handleClearSelection,
+              }}
+              pagination={{
+                currentPage,
+                totalPages,
+                totalItems,
+                pageSize,
+                onPageChange: setCurrentPage,
+              }}
+              mobileCardRenderer={(discount) => (
+                <>
+                  <div className="flex items-start justify-between gap-2 mb-3">
+                    <div className="flex items-start gap-2 min-w-0 flex-1">
+                      <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
+                        <PercentIcon className="w-5 h-5 text-orange-600" weight="duotone" />
                       </div>
-                      <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
-                        <span className={`inline-flex px-2 py-0.5 rounded-full ${
-                          discount.tipoAplicacion === 'Global'
-                            ? 'bg-blue-100 text-blue-600'
-                            : 'bg-purple-100 text-purple-600'
-                        }`}>
-                          {discount.tipoAplicacion}
-                        </span>
-                        <span>A partir de {discount.cantidadMinima} unidades</span>
-                        {discount.tipoAplicacion === 'Producto' && discount.productoCodigo && (
-                          <span className="text-gray-400">• {discount.productoCodigo}</span>
-                        )}
-                      </div>
-                      <div className="mt-2.5 flex items-center justify-end gap-1 border-t border-gray-100 pt-2" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          onClick={() => handleOpenEdit(discount)}
-                          disabled={loading}
-                          className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded hover:bg-gray-50 transition-colors disabled:opacity-50"
-                        >
-                          <Pencil className="w-3 h-3 text-amber-400" />
-                          <span>Editar</span>
-                        </button>
-                        {deleteConfirmId === discount.id ? (
-                          <div className="flex items-center gap-1">
-                            <button onClick={() => { handleDelete(discount.id); setDeleteConfirmId(null); }} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"><Check size={16} /></button>
-                            <button onClick={() => setDeleteConfirmId(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X size={16} /></button>
-                          </div>
-                        ) : (
-                          <button onClick={() => setDeleteConfirmId(discount.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"><Trash2 size={16} /></button>
-                        )}
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-gray-900">{discount.descuentoPorcentaje}% de descuento</p>
+                        {discount.tipoAplicacion === 'Producto' && <p className="text-xs text-gray-500 truncate">{discount.productoNombre || '-'}</p>}
                       </div>
                     </div>
-                  ))}
-                </div>
-
-                {/* Desktop Cards with opacity transition */}
-                <div className={`hidden sm:block space-y-4 transition-opacity duration-200 ${loading ? 'opacity-50' : 'opacity-100'}`}>
-                  {/* Select All Header */}
-                  <div className="flex items-center gap-3 px-5">
-                    <button
-                      onClick={batch.handleSelectAllVisible}
-                      className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                        batch.allVisibleSelected
-                          ? 'bg-green-600 border-green-600 text-white'
-                          : batch.someVisibleSelected
-                          ? 'bg-green-100 border-green-600'
-                          : 'border-gray-300 hover:border-green-500'
-                      }`}
-                    >
-                      {batch.allVisibleSelected ? (
-                        <Check className="w-3 h-3" />
-                      ) : batch.someVisibleSelected ? (
-                        <Minus className="w-3 h-3 text-green-600" />
-                      ) : null}
-                    </button>
-                    <span className="text-xs text-gray-500">
-                      Seleccionar todos en esta página
-                    </span>
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <ActiveToggle isActive={discount.activo} onToggle={() => handleToggleActive(discount)} disabled={loading} isLoading={togglingId === discount.id} />
+                    </div>
                   </div>
-
-                  {paginatedDiscounts.map((discount) => (
-                    <div
-                      key={discount.id}
-                      className={`flex items-center gap-5 bg-white border rounded-lg p-5 transition-colors cursor-pointer ${
-                        batch.selectedIds.has(discount.id)
-                          ? 'border-green-400 bg-green-50/50'
-                          : 'border-gray-200'
-                      }`}
-                      onClick={() => handleOpenEdit(discount)}
-                    >
-                      {/* Checkbox */}
-                      <button
-                        onClick={(e) => { e.stopPropagation(); batch.handleToggleSelect(discount.id); }}
-                        className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                          batch.selectedIds.has(discount.id)
-                            ? 'bg-green-600 border-green-600 text-white'
-                            : 'border-gray-300 hover:border-green-500'
-                        }`}
-                      >
-                        {batch.selectedIds.has(discount.id) && <Check className="w-3 h-3" />}
-                      </button>
-
-                      {/* Percentage */}
-                      <div className="flex-1">
-                        <div className="text-xs text-gray-400 mb-1">Porcentaje de descuento</div>
-                        <div className="text-2xl font-semibold text-gray-900">
-                          {discount.descuentoPorcentaje}%
-                        </div>
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                    <span className={`inline-flex px-2 py-0.5 rounded-full ${discount.tipoAplicacion === 'Global' ? 'bg-blue-100 text-blue-600' : 'bg-purple-100 text-purple-600'}`}>{discount.tipoAplicacion}</span>
+                    <span>A partir de {discount.cantidadMinima} unidades</span>
+                    {discount.tipoAplicacion === 'Producto' && discount.productoCodigo && <span className="text-gray-400">- {discount.productoCodigo}</span>}
+                  </div>
+                  <div className="mt-2.5 flex items-center justify-end gap-1 border-t border-gray-100 pt-2" onClick={(e) => e.stopPropagation()}>
+                    <button onClick={() => handleOpenEdit(discount)} disabled={loading} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded hover:bg-gray-50 transition-colors disabled:opacity-50">
+                      <Pencil className="w-3 h-3 text-amber-400" /><span>Editar</span>
+                    </button>
+                    {deleteConfirmId === discount.id ? (
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => { handleDelete(discount.id); setDeleteConfirmId(null); }} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"><Check size={16} /></button>
+                        <button onClick={() => setDeleteConfirmId(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X size={16} /></button>
                       </div>
-
-                      {/* Min Quantity */}
-                      <div className="flex-1">
-                        <div className="text-xs text-gray-400 mb-1">A partir de</div>
-                        <div className="text-2xl font-semibold text-gray-900">
-                          {discount.cantidadMinima} unidades
-                        </div>
-                      </div>
-
-                      {/* Product (for product-specific) */}
-                      {discount.tipoAplicacion === 'Producto' && (
-                        <div className="flex-1">
-                          <div className="text-xs text-gray-400 mb-1">Producto</div>
-                          <div className="text-[13px] font-medium text-gray-900">{discount.productoNombre || '-'}</div>
-                          <div className="text-xs text-gray-400">{discount.productoCodigo || ''}</div>
-                        </div>
-                      )}
-
-                      {/* Created By */}
-                      <div className="flex-1">
-                        <div className="text-xs text-gray-400 mb-1">Creado por</div>
-                        <div className="text-[13px] font-medium text-green-600">{discount.creadoPor || '-'}</div>
-                        <div className="text-xs text-gray-400">{formatRelativeTime(discount.creadoEn)}</div>
-                      </div>
-
-                      {/* Modified By */}
-                      <div className="flex-1">
-                        <div className="text-xs text-gray-400 mb-1">Última modificación</div>
-                        <div className="text-[13px] font-medium text-green-600">{discount.actualizadoPor || discount.creadoPor || '-'}</div>
-                        <div className="text-xs text-gray-400">{formatRelativeTime(discount.actualizadoEn || discount.creadoEn)}</div>
-                      </div>
-
-                      {/* Activo Toggle */}
-                      <div className="w-[60px] flex flex-col items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                        <div className="text-xs text-gray-400">Activo</div>
-                        <ActiveToggle
-                          isActive={discount.activo}
-                          onToggle={() => handleToggleActive(discount)}
-                          disabled={loading}
-                          isLoading={togglingId === discount.id}
-                        />
-                      </div>
-
-                      {/* Actions */}
-                      <div className="w-[60px] flex items-center justify-center gap-1" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          onClick={() => handleOpenEdit(discount)}
-                          disabled={loading}
-                          className="p-1.5 text-amber-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors disabled:opacity-50"
-                          title="Editar"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                        {deleteConfirmId === discount.id ? (
-                          <>
-                            <button onClick={() => { handleDelete(discount.id); setDeleteConfirmId(null); }} className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"><Check className="w-4 h-4" /></button>
-                            <button onClick={() => setDeleteConfirmId(null)} className="p-1 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X className="w-4 h-4" /></button>
-                          </>
-                        ) : (
-                          <button onClick={() => setDeleteConfirmId(discount.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Eliminar"><Trash2 className="w-4 h-4" /></button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
+                    ) : (
+                      <button onClick={() => setDeleteConfirmId(discount.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"><Trash2 size={16} /></button>
+                    )}
+                  </div>
+                </>
+              )}
+            />
           </div>
-
-          {/* Pagination - Always visible when there are items */}
-          <ListPagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalItems={totalItems}
-            pageSize={pageSize}
-            onPageChange={setCurrentPage}
-            itemLabel="descuentos"
-            loading={loading}
-          />
 
       {/* Create/Edit Drawer */}
       <Drawer

@@ -281,6 +281,18 @@ public class SyncRepository : ISyncRepository
             }
         }
 
+        // Idempotency: if this mobile_record_id was already pushed, return existing
+        if (!string.IsNullOrEmpty(dto.LocalId))
+        {
+            var existingByMobileId = await _db.Pedidos
+                .Include(p => p.Detalles)
+                .FirstOrDefaultAsync(p => p.TenantId == tenantId && p.MobileRecordId == dto.LocalId);
+            if (existingByMobileId != null)
+            {
+                return (existingByMobileId, false);
+            }
+        }
+
         // Create new pedido — look up server-side prices first
         var newProductoIds = dto.Detalles?.Select(d => d.ProductoId).Distinct().ToList() ?? new List<int>();
         var newServerPrices = newProductoIds.Count > 0
@@ -327,6 +339,7 @@ public class SyncRepository : ISyncRepository
             var pedido = new Pedido
             {
                 TenantId = tenantId,
+                MobileRecordId = dto.LocalId,
                 UsuarioId = usuarioId,
                 ClienteId = dto.ClienteId,
                 NumeroPedido = numeroPedido,

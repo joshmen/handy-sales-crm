@@ -16,6 +16,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { exportToCsv } from '@/services/api/importExport';
 import { CsvImportModal } from '@/components/shared/CsvImportModal';
+import { DataGrid, type DataGridColumn } from '@/components/ui/DataGrid';
 import {
   Download,
   Plus,
@@ -29,9 +30,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { ImageUpload } from '@/components/ui/ImageUpload';
-import { ListPagination } from '@/components/ui/ListPagination';
 import { SearchBar } from '@/components/common/SearchBar';
-import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { Package as PackageIcon, CaretRight } from '@phosphor-icons/react';
 import { HelpTooltip } from '@/components/help/HelpTooltip';
@@ -371,186 +370,85 @@ export default function InventoryPage() {
         {/* Error */}
         <ErrorBanner error={error} onRetry={fetchInventory} />
 
-          {/* Table */}
-          <div data-tour="inventory-table" className="bg-white border border-gray-200 rounded-lg overflow-x-auto">
-            {/* Mobile Cards */}
-            <div className="sm:hidden">
-              {loading && (
-                <div className="flex items-center justify-center py-16">
-                  <div className="flex flex-col items-center gap-2">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
-                    <span className="text-sm text-gray-500">Cargando inventario...</span>
-                  </div>
-                </div>
-              )}
-
-              {!loading && inventoryItems.length === 0 ? (
-                <div className="flex items-center justify-center py-16 text-gray-400">
-                  <div className="text-center px-4">
-                    <Package className="w-12 h-12 mx-auto mb-4 text-indigo-300" />
-                    <p className="text-lg font-medium">No hay inventario</p>
-                    <p className="text-sm">
-                      {searchTerm ? 'No se encontraron resultados para tu búsqueda' : 'Crea tu primer registro de inventario para comenzar'}
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-3 p-3">
-                  {inventoryItems.map((item, index) => {
-                    const color = getProductColor(index);
-                    const lowStock = isLowStock(item);
-                    return (
-                      <div key={item.id} className="bg-white border border-gray-200 rounded-lg p-4">
-                        <div className="flex items-start gap-2.5">
-                          {item.product?.images && item.product.images.length > 0 ? (
-                            <img
-                              src={item.product.images[0]}
-                              alt={item.product.name}
-                              className="w-10 h-10 rounded object-cover flex-shrink-0"
-                            />
-                          ) : (
-                            <div className={`w-10 h-10 rounded ${color.bg} flex items-center justify-center flex-shrink-0`}>
-                              <PackageIcon className={`w-5 h-5 ${color.icon}`} weight="duotone" />
-                            </div>
-                          )}
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium text-gray-900 truncate">
-                              {item.product?.name || `Producto #${item.productId}`}
-                            </p>
-                            <p className="text-xs text-gray-500">{item.product?.code || '-'}</p>
-                          </div>
+          {/* DataGrid */}
+          <div data-tour="inventory-table">
+            <DataGrid<InventoryItem>
+              columns={[
+                { key: 'product', label: 'Producto', width: 'flex', sortable: true, cellRenderer: (item, index) => {
+                  const color = getProductColor(index);
+                  return (
+                    <div className="flex items-center gap-2.5">
+                      {item.product?.images && item.product.images.length > 0 ? (
+                        <img src={item.product.images[0]} alt={item.product.name} className="w-8 h-8 rounded object-cover flex-shrink-0" />
+                      ) : (
+                        <div className={`w-8 h-8 rounded ${color.bg} flex items-center justify-center flex-shrink-0`}>
+                          <PackageIcon className={`w-4 h-4 ${color.icon}`} weight="duotone" />
                         </div>
-                        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-500">
-                          <span className={`font-medium ${lowStock ? 'text-red-600' : 'text-gray-900'}`}>
-                            {item.totalQuantity?.toLocaleString() || 0} {item.product?.unit || 'PZA'}
-                          </span>
-                          {lowStock && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-600 rounded-full">
-                              <AlertTriangle className="w-3 h-3" />
-                              Stock bajo
-                            </span>
-                          )}
-                          <span>Min: {item.minStock || '-'}</span>
-                          <span>Max: {item.maxStock || '-'}</span>
-                        </div>
-                        <div className="mt-2.5 flex items-center justify-end gap-1 border-t border-gray-100 pt-2">
-                          <button
-                            onClick={() => handleOpenEdit(item)}
-                            className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded hover:bg-gray-50 transition-colors"
-                          >
-                            <Pencil className="w-3 h-3 text-amber-400" />
-                            <span>Editar</span>
-                          </button>
-                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <div className="text-[13px] font-medium text-gray-900 truncate">{item.product?.name || `Producto #${item.productId}`}</div>
+                        <div className="text-[11px] text-gray-400">{item.product?.code || '-'}</div>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* Desktop Table */}
-            <div className="hidden sm:block">
-              <div className="flex items-center bg-gray-50 px-5 h-10 border-b border-gray-200 min-w-[750px]">
-                <div className="flex-1 text-[11px] font-medium text-gray-500">Producto</div>
-                <div className="w-[120px] text-[11px] font-medium text-gray-500">Unidad</div>
-                <div className="w-[120px] text-[11px] font-medium text-gray-500 text-center flex items-center justify-center gap-1">Existencias <HelpTooltip tooltipKey="total-quantity" /></div>
-                <div data-tour="inventory-stock-columns" className="w-[100px] text-[11px] font-medium text-gray-500 text-center flex items-center justify-center gap-1">Stock mín. <HelpTooltip tooltipKey="min-stock" /></div>
-                <div className="w-[100px] text-[11px] font-medium text-gray-500 text-center flex items-center justify-center gap-1">Stock máx. <HelpTooltip tooltipKey="max-stock" /></div>
-                <div className="w-8"></div>
-              </div>
-
-              <div className="relative min-h-[200px]">
-                <TableLoadingOverlay loading={loading} message="Cargando inventario..." />
-
-                {!loading && inventoryItems.length === 0 ? (
-                  <div className="flex items-center justify-center h-64 text-gray-400">
-                    <div className="text-center">
-                      <Package className="w-12 h-12 mx-auto mb-4 text-indigo-300" />
-                      <p className="text-lg font-medium">No hay inventario</p>
-                      <p className="text-sm">
-                        {searchTerm ? 'No se encontraron resultados para tu búsqueda' : 'Crea tu primer registro de inventario para comenzar'}
-                      </p>
+                    </div>
+                  );
+                }},
+                { key: 'unit', label: 'Unidad', width: 120, hiddenOnMobile: true, cellRenderer: (item) => <span className="text-gray-700">{item.product?.unit || 'PZA'}</span> },
+                { key: 'totalQuantity', label: 'Existencias', width: 120, align: 'center', sortable: true, headerRenderer: () => <span className="inline-flex items-center gap-1">Existencias <HelpTooltip tooltipKey="total-quantity" /></span>, cellRenderer: (item) => {
+                  const lowStock = isLowStock(item);
+                  return (
+                    <span>
+                      <span className={`text-[13px] font-medium ${lowStock ? 'text-red-600' : 'text-gray-700'}`}>{item.totalQuantity?.toLocaleString() || 0}</span>
+                      {lowStock && <AlertTriangle className="w-3.5 h-3.5 text-amber-500 inline-block ml-1" />}
+                    </span>
+                  );
+                }},
+                { key: 'minStock', label: 'Stock min.', width: 100, align: 'center', hiddenOnMobile: true, headerRenderer: () => <span className="inline-flex items-center gap-1" data-tour="inventory-stock-columns">Stock min. <HelpTooltip tooltipKey="min-stock" /></span>, cellRenderer: (item) => <span className="text-gray-500">{item.minStock || '-'}</span> },
+                { key: 'maxStock', label: 'Stock max.', width: 100, align: 'center', hiddenOnMobile: true, headerRenderer: () => <span className="inline-flex items-center gap-1">Stock max. <HelpTooltip tooltipKey="max-stock" /></span>, cellRenderer: (item) => <span className="text-gray-500">{item.maxStock || '-'}</span> },
+                { key: 'arrow', label: '', width: 32, cellRenderer: () => <CaretRight className="w-4 h-4 text-gray-300 group-hover:text-amber-500 transition-colors" weight="bold" /> },
+              ] as DataGridColumn<InventoryItem>[]}
+              data={inventoryItems}
+              keyExtractor={(item) => item.id}
+              onRowClick={(item) => handleOpenEdit(item)}
+              pagination={{ currentPage, totalPages, totalItems, pageSize, onPageChange: setCurrentPage }}
+              loading={loading}
+              loadingMessage="Cargando inventario..."
+              emptyIcon={<Package className="w-12 h-12 text-indigo-300" />}
+              emptyTitle="No hay inventario"
+              emptyMessage={searchTerm ? 'No se encontraron resultados para tu búsqueda' : 'Crea tu primer registro de inventario para comenzar'}
+              mobileCardRenderer={(item) => {
+                const color = getProductColor(0);
+                const lowStock = isLowStock(item);
+                return (
+                  <div>
+                    <div className="flex items-start gap-2.5">
+                      {item.product?.images && item.product.images.length > 0 ? (
+                        <img src={item.product.images[0]} alt={item.product.name} className="w-10 h-10 rounded object-cover flex-shrink-0" />
+                      ) : (
+                        <div className={`w-10 h-10 rounded ${color.bg} flex items-center justify-center flex-shrink-0`}>
+                          <PackageIcon className={`w-5 h-5 ${color.icon}`} weight="duotone" />
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-gray-900 truncate">{item.product?.name || `Producto #${item.productId}`}</p>
+                        <p className="text-xs text-gray-500">{item.product?.code || '-'}</p>
+                      </div>
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                      <span className={`font-medium ${lowStock ? 'text-red-600' : 'text-gray-900'}`}>{item.totalQuantity?.toLocaleString() || 0} {item.product?.unit || 'PZA'}</span>
+                      {lowStock && <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-600 rounded-full"><AlertTriangle className="w-3 h-3" />Stock bajo</span>}
+                      <span>Min: {item.minStock || '-'}</span>
+                      <span>Max: {item.maxStock || '-'}</span>
+                    </div>
+                    <div className="mt-2.5 flex items-center justify-end gap-1 border-t border-gray-100 pt-2">
+                      <button onClick={() => handleOpenEdit(item)} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded hover:bg-gray-50 transition-colors">
+                        <Pencil className="w-3 h-3 text-amber-400" /><span>Editar</span>
+                      </button>
                     </div>
                   </div>
-                ) : (
-                  <div className={`transition-opacity duration-200 ${loading ? 'opacity-50' : 'opacity-100'}`}>
-                    {inventoryItems.map((item, index) => {
-                      const color = getProductColor(index);
-                      const lowStock = isLowStock(item);
-                      return (
-                        <div
-                          key={item.id}
-                          onClick={() => handleOpenEdit(item)}
-                          className="flex items-center px-5 py-3.5 border-b border-gray-200 bg-white hover:bg-amber-50 cursor-pointer transition-colors group min-w-[750px]"
-                        >
-                          <div className="flex-1 flex items-center gap-2.5">
-                            {item.product?.images && item.product.images.length > 0 ? (
-                              <img
-                                src={item.product.images[0]}
-                                alt={item.product.name}
-                                className="w-8 h-8 rounded object-cover flex-shrink-0"
-                              />
-                            ) : (
-                              <div className={`w-8 h-8 rounded ${color.bg} flex items-center justify-center flex-shrink-0`}>
-                                <PackageIcon className={`w-4 h-4 ${color.icon}`} weight="duotone" />
-                              </div>
-                            )}
-                            <div className="min-w-0">
-                              <div className="text-[13px] font-medium text-gray-900 truncate">
-                                {item.product?.name || `Producto #${item.productId}`}
-                              </div>
-                              <div className="text-[11px] text-gray-400">
-                                {item.product?.code || '-'}
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="w-[120px] text-[13px] text-gray-700">
-                            {item.product?.unit || 'PZA'}
-                          </div>
-
-                          <div className="w-[120px] text-center">
-                            <span className={`text-[13px] font-medium ${lowStock ? 'text-red-600' : 'text-gray-700'}`}>
-                              {item.totalQuantity?.toLocaleString() || 0}
-                            </span>
-                            {lowStock && (
-                              <AlertTriangle className="w-3.5 h-3.5 text-amber-500 inline-block ml-1" />
-                            )}
-                          </div>
-
-                          <div className="w-[100px] text-[13px] text-gray-500 text-center">
-                            {item.minStock || '-'}
-                          </div>
-
-                          <div className="w-[100px] text-[13px] text-gray-500 text-center">
-                            {item.maxStock || '-'}
-                          </div>
-
-                          <div className="w-8 flex items-center justify-center">
-                            <CaretRight className="w-4 h-4 text-gray-300 group-hover:text-amber-500 transition-colors" weight="bold" />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Pagination */}
-          {(inventoryItems.length > 0 || loading) && (
-            <ListPagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              totalItems={totalItems}
-              pageSize={pageSize}
-              onPageChange={setCurrentPage}
-              itemLabel="productos"
-              loading={loading}
+                );
+              }}
             />
-          )}
+          </div>
       </div>
 
       {/* Create/Edit Drawer */}

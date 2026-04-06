@@ -98,6 +98,7 @@ public static class MobileSyncEndpoints
             {
                 success = true,
                 data = response.ServerChanges,
+                createdIdMappings = response.CreatedIdMappings,
                 conflicts = response.Conflicts,
                 errors = response.Errors,
                 summary = response.Summary,

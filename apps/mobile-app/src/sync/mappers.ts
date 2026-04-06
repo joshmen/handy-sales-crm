@@ -164,7 +164,8 @@ function mapProductoToRaw(p: any): DirtyRaw {
 
 function mapPedidoToRaw(p: any, pedidoMap: Map<number, string>, clienteMap: Map<number, string>): DirtyRaw {
   return {
-    id: pedidoMap.get(p.id) || String(p.id),
+    // Use mobile_record_id (original WDB id) if available — prevents duplicates
+    id: p.localId || pedidoMap.get(p.id) || String(p.id),
     server_id: p.id,
     cliente_id: clienteMap.get(p.clienteId) || String(p.clienteId),
     cliente_server_id: p.clienteId,

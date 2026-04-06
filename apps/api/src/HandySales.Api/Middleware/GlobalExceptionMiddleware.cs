@@ -52,14 +52,14 @@ public class GlobalExceptionMiddleware
 
     private static string GetErrorMessage(Exception exception)
     {
-        // NEVER leak technical details to the client — not even in development.
-        // Exception details are already logged above (LogError).
+        // Business logic exceptions: return the actual message (safe, written by us).
+        // System exceptions: return generic message (avoid leaking internals).
         return exception switch
         {
-            ArgumentException => "Parámetros de solicitud inválidos.",
+            InvalidOperationException ex => !string.IsNullOrEmpty(ex.Message) ? ex.Message : "No se pudo completar la operación.",
+            ArgumentException ex => !string.IsNullOrEmpty(ex.Message) ? ex.Message : "Parámetros de solicitud inválidos.",
             UnauthorizedAccessException => "Acceso no autorizado.",
             KeyNotFoundException => "Recurso no encontrado.",
-            InvalidOperationException => "No se pudo completar la operación.",
             _ => "Ocurrió un error al procesar tu solicitud."
         };
     }

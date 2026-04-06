@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -16,19 +16,17 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { SearchBar } from '@/components/common/SearchBar';
 import { InactiveToggle } from '@/components/ui/InactiveToggle';
-import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
 import { ActiveToggle } from '@/components/ui/ActiveToggle';
-import { ListPagination } from '@/components/ui/ListPagination';
 import { useBatchOperations } from '@/hooks/useBatchOperations';
 import { BatchActionBar } from '@/components/shared/BatchActionBar';
 import { BatchConfirmModal } from '@/components/shared/BatchConfirmModal';
+import { DataGrid, type DataGridColumn } from '@/components/ui/DataGrid';
 import {
   Plus,
   Edit2,
   Package,
   Loader2,
   Check,
-  Minus,
   RefreshCw,
   Download,
   Upload,
@@ -103,10 +101,33 @@ export default function ProductCategoriesPage() {
     );
   }, [categories, searchTerm]);
 
-  // Pagination
-  const totalItems = filteredCategories.length;
+  // Sort state
+  const [sortKey, setSortKey] = useState('nombre');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  const handleSort = useCallback((key: string) => {
+    if (sortKey === key) {
+      setSortDir(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  }, [sortKey]);
+
+  // Sorted + paginated categories
+  const sortedCategories = useMemo(() => {
+    const sorted = [...filteredCategories].sort((a, b) => {
+      const aVal = String((a as unknown as Record<string, unknown>)[sortKey] ?? '').toLowerCase();
+      const bVal = String((b as unknown as Record<string, unknown>)[sortKey] ?? '').toLowerCase();
+      return sortDir === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+    });
+    return sorted;
+  }, [filteredCategories, sortKey, sortDir]);
+
+  // Pagination (use sorted data)
+  const totalItems = sortedCategories.length;
   const totalPages = Math.ceil(totalItems / pageSize);
-  const paginatedCategories = filteredCategories.slice(
+  const paginatedCategories = sortedCategories.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   );
@@ -308,27 +329,51 @@ export default function ProductCategoriesPage() {
           loading={batch.batchLoading}
         />
 
-        {/* Mobile Cards */}
-        <div className="sm:hidden space-y-3">
-          {loading && (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-green-600" />
-            </div>
-          )}
-          {!loading && paginatedCategories.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12">
-              <Package className="w-12 h-12 text-purple-300 mb-3" />
-              <p className="text-sm text-gray-500">
-                {searchTerm ? 'No se encontraron categorías' : 'No hay categorías'}
-              </p>
-            </div>
-          ) : (
-            paginatedCategories.map((category) => (
-              <div
-                key={category.id}
-                className="border border-gray-200 rounded-lg p-3 bg-white"
-              >
-                {/* Row 1: Checkbox + Icon + Name/Description */}
+        {/* DataGrid */}
+        <div data-tour="product-categories-table">
+          <DataGrid<ProductCategory>
+            columns={[
+              { key: 'id', label: 'ID', width: 60, sortable: true, cellRenderer: (item) => <span className="font-mono text-gray-500">{item.id}</span> },
+              { key: 'nombre', label: 'Nombre', width: 'flex', sortable: true, cellRenderer: (item) => <span className="font-medium text-gray-900">{item.nombre}</span> },
+              { key: 'descripcion', label: 'Descripción', width: 'flex', sortable: true, hiddenOnMobile: true, cellRenderer: (item) => <span className="text-gray-500 truncate">{item.descripcion || '-'}</span> },
+              { key: 'activo', label: 'Activo', width: 50, align: 'center', cellRenderer: (item) => (
+                <div onClick={e => e.stopPropagation()}>
+                  <ActiveToggle isActive={item.activo} onToggle={() => handleToggleActive(item)} isLoading={togglingId === item.id} />
+                </div>
+              )},
+              { key: 'actions', label: '', width: 80, cellRenderer: (item) => (
+                <div className="flex items-center justify-center gap-1" onClick={e => e.stopPropagation()}>
+                  <button onClick={() => handleOpenEdit(item)} disabled={loading} className="p-1 hover:bg-amber-50 rounded transition-colors disabled:opacity-50" title="Editar">
+                    <Edit2 className="w-4 h-4 text-amber-400 hover:text-amber-600" />
+                  </button>
+                  {deleteConfirmId === item.id ? (
+                    <>
+                      <button onClick={() => { handleDelete(item.id); setDeleteConfirmId(null); }} className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"><Check className="w-4 h-4" /></button>
+                      <button onClick={() => setDeleteConfirmId(null)} className="p-1 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X className="w-4 h-4" /></button>
+                    </>
+                  ) : (
+                    <button onClick={() => setDeleteConfirmId(item.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Eliminar"><Trash2 className="w-4 h-4" /></button>
+                  )}
+                </div>
+              )},
+            ] as DataGridColumn<ProductCategory>[]}
+            data={paginatedCategories}
+            keyExtractor={(item) => item.id}
+            selection={{
+              selectedIds: batch.selectedIds,
+              onToggle: (id) => batch.handleToggleSelect(id as number),
+              onSelectAll: batch.handleSelectAllVisible,
+              onClearAll: batch.handleClearSelection,
+            }}
+            pagination={{ currentPage, totalPages, totalItems, pageSize, onPageChange: setCurrentPage }}
+            sort={{ key: sortKey, direction: sortDir, onSort: handleSort }}
+            loading={loading}
+            loadingMessage="Cargando categorías..."
+            emptyIcon={<Package className="w-16 h-16 text-purple-300" />}
+            emptyTitle={searchTerm ? 'No se encontraron categorías' : 'No hay categorías'}
+            emptyMessage={searchTerm ? 'No se encontraron categorías con ese término' : 'Crea tu primera categoría de productos para comenzar'}
+            mobileCardRenderer={(category) => (
+              <div>
                 <div className="flex items-center gap-3 mb-2">
                   <button
                     onClick={() => batch.handleToggleSelect(category.id)}
@@ -344,25 +389,14 @@ export default function ProductCategoriesPage() {
                     <Tag className="w-5 h-5 text-orange-600" weight="duotone" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-gray-900 truncate">
-                      {category.nombre}
-                    </div>
+                    <div className="text-sm font-medium text-gray-900 truncate">{category.nombre}</div>
                     <div className="text-xs text-gray-500 truncate">{category.descripcion || 'Sin descripción'}</div>
                   </div>
                 </div>
-                {/* Row 2: Toggle + Actions */}
                 <div className="flex items-center justify-between">
-                  <ActiveToggle
-                    isActive={category.activo}
-                    onToggle={() => handleToggleActive(category)}
-                    isLoading={togglingId === category.id}
-                  />
-                  <button
-                    onClick={() => handleOpenEdit(category)}
-                    className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors disabled:opacity-50"
-                  >
-                    <Edit2 className="w-3.5 h-3.5 text-amber-400 hover:text-amber-600" />
-                    <span>Editar</span>
+                  <ActiveToggle isActive={category.activo} onToggle={() => handleToggleActive(category)} isLoading={togglingId === category.id} />
+                  <button onClick={() => handleOpenEdit(category)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors">
+                    <Edit2 className="w-3.5 h-3.5 text-amber-400 hover:text-amber-600" /><span>Editar</span>
                   </button>
                   {deleteConfirmId === category.id ? (
                     <div className="flex items-center gap-1">
@@ -374,123 +408,9 @@ export default function ProductCategoriesPage() {
                   )}
                 </div>
               </div>
-            ))
-          )}
-        </div>
-
-        {/* Table */}
-        <div data-tour="product-categories-table" className="hidden sm:block bg-white border border-gray-200 rounded-lg overflow-x-auto">
-          {/* Table Header */}
-          <div className="min-w-[600px] flex items-center gap-3 bg-gray-50 px-5 h-10 border-b border-gray-200">
-            <div className="w-[28px] flex items-center justify-center">
-              <button
-                onClick={batch.handleSelectAllVisible}
-                className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                  batch.allVisibleSelected
-                    ? 'bg-success border-success text-success-foreground'
-                    : batch.someVisibleSelected
-                    ? 'bg-green-100 border-green-600'
-                    : 'border-gray-300 hover:border-green-500'
-                }`}
-              >
-                {batch.allVisibleSelected ? (
-                  <Check className="w-3 h-3" />
-                ) : batch.someVisibleSelected ? (
-                  <Minus className="w-3 h-3 text-green-600" />
-                ) : null}
-              </button>
-            </div>
-            <div className="w-[60px] text-[11px] font-medium text-gray-500">ID</div>
-            <div className="flex-1 text-[11px] font-medium text-gray-500">Nombre</div>
-            <div className="flex-1 text-[11px] font-medium text-gray-500">Descripción</div>
-            <div className="w-[50px] text-[11px] font-medium text-gray-500 text-center">Activo</div>
-            <div className="w-16"></div>
-          </div>
-
-          {/* Table Body */}
-          <div className="relative min-h-[200px]">
-            <TableLoadingOverlay loading={loading} message="Cargando categorías..." />
-
-            {!loading && paginatedCategories.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-64 py-20">
-                <Package className="w-16 h-16 text-purple-300 mb-4" />
-                <h3 className="text-lg font-semibold text-gray-700 mb-2">No hay categorías</h3>
-                <p className="text-sm text-gray-500 text-center">
-                  {searchTerm
-                    ? 'No se encontraron categorías con ese término'
-                    : 'Crea tu primera categoría de productos para comenzar'}
-                </p>
-              </div>
-            ) : (
-              <div className={`transition-opacity duration-200 ${loading ? 'opacity-50' : 'opacity-100'}`}>
-                {paginatedCategories.map((category) => (
-                  <div
-                    key={category.id}
-                    className="min-w-[600px] flex items-center gap-3 px-5 py-3.5 border-b border-gray-200 bg-white hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="w-[28px] flex items-center justify-center">
-                      <button
-                        onClick={() => batch.handleToggleSelect(category.id)}
-                        className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                          batch.selectedIds.has(category.id)
-                            ? 'bg-success border-success text-success-foreground'
-                            : 'border-gray-300 hover:border-green-500'
-                        }`}
-                      >
-                        {batch.selectedIds.has(category.id) && <Check className="w-3 h-3" />}
-                      </button>
-                    </div>
-                    <div className="w-[60px] text-[13px] font-mono text-gray-500">
-                      {category.id}
-                    </div>
-                    <div className="flex-1 text-[13px] font-medium text-gray-900">
-                      {category.nombre}
-                    </div>
-                    <div className="flex-1 text-[13px] text-gray-500 truncate pr-4">
-                      {category.descripcion || '-'}
-                    </div>
-                    <div className="w-[50px] flex items-center justify-center">
-                      <ActiveToggle
-                        isActive={category.activo}
-                        onToggle={() => handleToggleActive(category)}
-                        isLoading={togglingId === category.id}
-                      />
-                    </div>
-                    <div className="w-16 flex items-center justify-center gap-1">
-                      <button
-                        onClick={() => handleOpenEdit(category)}
-                        disabled={loading}
-                        className="p-1 hover:bg-amber-50 rounded transition-colors disabled:opacity-50"
-                        title="Editar"
-                      >
-                        <Edit2 className="w-4 h-4 text-amber-400 hover:text-amber-600" />
-                      </button>
-                      {deleteConfirmId === category.id ? (
-                        <>
-                          <button onClick={() => { handleDelete(category.id); setDeleteConfirmId(null); }} className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"><Check className="w-4 h-4" /></button>
-                          <button onClick={() => setDeleteConfirmId(null)} className="p-1 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X className="w-4 h-4" /></button>
-                        </>
-                      ) : (
-                        <button onClick={() => setDeleteConfirmId(category.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Eliminar"><Trash2 className="w-4 h-4" /></button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
             )}
-          </div>
+          />
         </div>
-
-        {/* Pagination */}
-        <ListPagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          totalItems={totalItems}
-          pageSize={pageSize}
-          onPageChange={setCurrentPage}
-          itemLabel="categorías"
-          loading={loading}
-        />
       </div>
 
       {/* CSV Import Modal */}

@@ -12,7 +12,7 @@ import { usePrinterStore } from '@/stores/printerStore';
 import { printReceipt, isNativeAvailable } from '@/services/printerService';
 import { useEmpresa } from '@/hooks/useEmpresa';
 import { useOfflineOrderById, useOfflineOrderDetalles } from '@/hooks';
-import { Share2, Printer } from 'lucide-react-native';
+import { Share2, Printer, X } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 
 export default function ReciboScreen() {
@@ -30,6 +30,7 @@ export default function ReciboScreen() {
     fromEntrega?: string;
     pedidoId?: string;
     fromRuta?: string;
+    viewOnly?: string;
   }>();
 
   const clienteNombre = decodeURIComponent(params.clienteNombre || '');
@@ -39,6 +40,7 @@ export default function ReciboScreen() {
   const notas = decodeURIComponent(params.notas || '');
   const fecha = params.fecha || new Date().toISOString();
   const isFromVD = params.fromVentaDirecta === '1';
+  const isViewOnly = params.viewOnly === '1';
   const pedidoId = params.pedidoId;
 
   const receiptRef = useRef<View>(null);
@@ -51,14 +53,16 @@ export default function ReciboScreen() {
   const { data: order } = useOfflineOrderById(pedidoId);
   const { data: detalles } = useOfflineOrderDetalles(pedidoId || '');
 
-  // Show toast on mount
+  // Show toast on mount (only for new cobros, not view-only)
   useEffect(() => {
-    Toast.show({
-      type: 'success',
-      text1: isFromVD ? 'Venta Completada' : 'Cobro Registrado',
-      text2: 'Guardado exitosamente',
-      visibilityTime: 5000,
-    });
+    if (!isViewOnly) {
+      Toast.show({
+        type: 'success',
+        text1: isFromVD ? 'Venta Completada' : 'Cobro Registrado',
+        text2: 'Guardado exitosamente',
+        visibilityTime: 5000,
+      });
+    }
   }, []);
 
   const handleShare = async () => {
@@ -137,9 +141,13 @@ export default function ReciboScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Blue Header — no back arrow, this is a confirmation screen */}
+      {/* Blue Header with close button */}
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+        <View style={{ width: 32 }} />
         <Text style={styles.headerTitle}>Recibo</Text>
+        <TouchableOpacity onPress={handleDone} style={{ padding: 4 }} accessibilityLabel="Cerrar" accessibilityRole="button">
+          <X size={22} color={COLORS.headerText} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -258,7 +266,7 @@ export default function ReciboScreen() {
       </ScrollView>
 
       {/* Action Buttons */}
-      <View style={styles.actions}>
+      <View style={[styles.actions, { paddingBottom: 12 + insets.bottom }]}>
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <TouchableOpacity
             style={[styles.btnPrint, { flex: 1 }]}
@@ -291,8 +299,8 @@ export default function ReciboScreen() {
             <Text style={styles.btnShareText}>{sharing ? 'Compartiendo...' : 'Compartir'}</Text>
           </TouchableOpacity>
         </View>
-        <TouchableOpacity style={styles.btnDone} onPress={handleDone} activeOpacity={0.8} accessibilityLabel="Listo" accessibilityRole="button">
-          <Text style={styles.btnDoneText}>Listo</Text>
+        <TouchableOpacity style={styles.btnDone} onPress={handleDone} activeOpacity={0.8} accessibilityLabel="Cerrar" accessibilityRole="button">
+          <Text style={styles.btnDoneText}>Cerrar</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -305,7 +313,9 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#e5e7eb' },
   header: {
     backgroundColor: COLORS.headerBg,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingBottom: 16,
   },
@@ -462,14 +472,11 @@ const styles = StyleSheet.create({
   btnShareText: { color: COLORS.headerBg, fontWeight: '700' as const, fontSize: 14 },
 
   btnDone: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     height: 48,
-    backgroundColor: COLORS.card,
+    backgroundColor: '#f1f5f9',
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.borderMedium,
   },
-  btnDoneText: { color: COLORS.foreground, fontWeight: '700', fontSize: 14 },
+  btnDoneText: { color: '#475569', fontWeight: '700', fontSize: 15 },
 });

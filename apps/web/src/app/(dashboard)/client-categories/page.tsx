@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -24,11 +24,10 @@ import {
   Check,
   X,
 } from 'lucide-react';
-import { ListPagination } from '@/components/ui/ListPagination';
 import { SearchBar } from '@/components/common/SearchBar';
 import { InactiveToggle } from '@/components/ui/InactiveToggle';
-import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
 import { ActiveToggle } from '@/components/ui/ActiveToggle';
+import { DataGrid, type DataGridColumn } from '@/components/ui/DataGrid';
 import { UsersThree } from '@phosphor-icons/react';
 import { exportToCsv } from '@/services/api/importExport';
 import { CsvImportModal } from '@/components/shared/CsvImportModal';
@@ -101,10 +100,31 @@ export default function ClientCategoriesPage() {
     return filtered;
   }, [categories, searchTerm, showInactive]);
 
+  // Sort state
+  const [sortKey, setSortKey] = useState('nombre');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  const handleSort = useCallback((key: string) => {
+    if (sortKey === key) {
+      setSortDir(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  }, [sortKey]);
+
+  const sortedCategories = useMemo(() => {
+    return [...filteredCategories].sort((a, b) => {
+      const aVal = String((a as unknown as Record<string, unknown>)[sortKey] ?? '').toLowerCase();
+      const bVal = String((b as unknown as Record<string, unknown>)[sortKey] ?? '').toLowerCase();
+      return sortDir === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+    });
+  }, [filteredCategories, sortKey, sortDir]);
+
   // Pagination
-  const totalItems = filteredCategories.length;
+  const totalItems = sortedCategories.length;
   const totalPages = Math.ceil(totalItems / pageSize);
-  const paginatedCategories = filteredCategories.slice(
+  const paginatedCategories = sortedCategories.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   );
@@ -250,46 +270,57 @@ export default function ClientCategoriesPage() {
               </div>
             </div>
 
-            {/* Mobile Cards */}
-            <div className="sm:hidden space-y-3">
-              {loading && (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-green-600" />
-                </div>
-              )}
-              {!loading && paginatedCategories.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12">
-                  <UsersThree className="w-8 h-8 text-muted-foreground mb-3" weight="duotone" />
-                  <p className="text-sm text-gray-500">
-                    {searchTerm ? 'No se encontraron categorías' : 'No hay categorías'}
-                  </p>
-                </div>
-              ) : (
-                paginatedCategories.map((category) => (
-                  <div
-                    key={category.id}
-                    className={`border border-gray-200 rounded-lg p-3 bg-white ${!category.activo ? 'opacity-60' : ''}`}
-                  >
-                    {/* Row 1: Icon + Name/Description */}
+            {/* DataGrid */}
+            <div data-tour="client-categories-table">
+              <DataGrid<ClientCategory>
+                columns={[
+                  { key: 'id', label: 'ID', width: 80, sortable: true, cellRenderer: (item) => <span className="font-mono text-gray-500">{item.id}</span> },
+                  { key: 'nombre', label: 'Nombre', width: 'flex', sortable: true, cellRenderer: (item) => <span className="font-medium text-gray-900">{item.nombre}</span> },
+                  { key: 'descripcion', label: 'Descripción', width: 'flex', sortable: true, hiddenOnMobile: true, cellRenderer: (item) => <span className="text-gray-500 truncate">{item.descripcion || '-'}</span> },
+                  { key: 'activo', label: 'Activo', width: 50, align: 'center', cellRenderer: (item) => (
+                    <div onClick={e => e.stopPropagation()}>
+                      <ActiveToggle isActive={item.activo} onToggle={() => handleToggleActive(item)} disabled={loading} isLoading={togglingId === item.id} title={item.activo ? 'Desactivar categoría' : 'Activar categoría'} />
+                    </div>
+                  )},
+                  { key: 'actions', label: '', width: 80, cellRenderer: (item) => (
+                    <div className="flex items-center justify-center gap-1" onClick={e => e.stopPropagation()}>
+                      <button onClick={() => handleOpenEdit(item)} disabled={loading} className="p-1 text-amber-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors disabled:opacity-50" title="Editar">
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      {deleteConfirmId === item.id ? (
+                        <>
+                          <button onClick={() => { handleDelete(item.id); setDeleteConfirmId(null); }} className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"><Check className="w-4 h-4" /></button>
+                          <button onClick={() => setDeleteConfirmId(null)} className="p-1 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X className="w-4 h-4" /></button>
+                        </>
+                      ) : (
+                        <button onClick={() => setDeleteConfirmId(item.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Eliminar"><Trash2 className="w-4 h-4" /></button>
+                      )}
+                    </div>
+                  )},
+                ] as DataGridColumn<ClientCategory>[]}
+                data={paginatedCategories}
+                keyExtractor={(item) => item.id}
+                pagination={{ currentPage, totalPages, totalItems, pageSize, onPageChange: setCurrentPage }}
+                sort={{ key: sortKey, direction: sortDir, onSort: handleSort }}
+                loading={loading}
+                loadingMessage="Cargando categorías..."
+                emptyIcon={<UsersThree className="w-10 h-10 text-muted-foreground" weight="duotone" />}
+                emptyTitle={searchTerm ? 'No se encontraron categorías' : 'No hay categorías'}
+                emptyMessage={searchTerm ? 'No se encontraron categorías con ese término' : 'Crea tu primera categoría de clientes para comenzar'}
+                mobileCardRenderer={(category) => (
+                  <div className={!category.activo ? 'opacity-60' : ''}>
                     <div className="flex items-center gap-3 mb-2">
                       <div className="w-10 h-10 rounded bg-gray-900 flex items-center justify-center flex-shrink-0">
                         <UsersThree className="w-5 h-5 text-white" weight="duotone" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-gray-900 truncate">
-                          {category.nombre}
-                        </div>
+                        <div className="text-sm font-medium text-gray-900 truncate">{category.nombre}</div>
                         <div className="text-xs text-gray-500 truncate">{category.descripcion || 'Sin descripción'}</div>
                       </div>
                     </div>
-                    {/* Row 2: Actions */}
                     <div className="flex items-center justify-end gap-3">
-                      <button
-                        onClick={() => handleOpenEdit(category)}
-                        className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors disabled:opacity-50"
-                      >
-                        <Edit2 className="w-3.5 h-3.5 text-amber-400 hover:text-amber-600" />
-                        <span>Editar</span>
+                      <button onClick={() => handleOpenEdit(category)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors">
+                        <Edit2 className="w-3.5 h-3.5 text-amber-400 hover:text-amber-600" /><span>Editar</span>
                       </button>
                       {deleteConfirmId === category.id ? (
                         <div className="flex items-center gap-1">
@@ -299,106 +330,12 @@ export default function ClientCategoriesPage() {
                       ) : (
                         <button onClick={() => setDeleteConfirmId(category.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"><Trash2 size={16} /></button>
                       )}
-                      <ActiveToggle
-                        isActive={category.activo}
-                        onToggle={() => handleToggleActive(category)}
-                        disabled={loading}
-                        isLoading={togglingId === category.id}
-                        title={category.activo ? 'Desactivar categoría' : 'Activar categoría'}
-                      />
+                      <ActiveToggle isActive={category.activo} onToggle={() => handleToggleActive(category)} disabled={loading} isLoading={togglingId === category.id} title={category.activo ? 'Desactivar categoría' : 'Activar categoría'} />
                     </div>
                   </div>
-                ))
-              )}
-            </div>
-
-            {/* Table */}
-            <div data-tour="client-categories-table" className="hidden sm:block bg-white border border-gray-200 rounded-lg overflow-x-auto">
-              {/* Table Header - Always visible */}
-              <div className="min-w-[600px] flex items-center gap-3 bg-gray-50 px-5 h-10 border-b border-gray-200">
-                <div className="w-[80px] text-[11px] font-medium text-gray-500">ID</div>
-                <div className="flex-1 text-[11px] font-medium text-gray-500">Nombre</div>
-                <div className="flex-1 text-[11px] font-medium text-gray-500">Descripción</div>
-                <div className="w-[50px] text-[11px] font-medium text-gray-500 text-center">Activo</div>
-                <div className="w-16"></div>
-              </div>
-
-              {/* Table Body - With loading overlay */}
-              <div className="relative min-h-[200px]">
-                <TableLoadingOverlay loading={loading} message="Cargando categorías..." />
-
-                {/* Empty State */}
-                {!loading && paginatedCategories.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-64 py-20">
-                    <UsersThree className="w-10 h-10 text-muted-foreground mb-4" weight="duotone" />
-                    <h3 className="text-lg font-semibold text-gray-700 mb-2">No hay categorías</h3>
-                    <p className="text-sm text-gray-500 text-center">
-                      {searchTerm
-                        ? 'No se encontraron categorías con ese término'
-                        : 'Crea tu primera categoría de clientes para comenzar'}
-                    </p>
-                  </div>
-                ) : (
-                  /* Table Rows - With opacity transition */
-                  <div className={`transition-opacity duration-200 ${loading ? 'opacity-50' : 'opacity-100'}`}>
-                    {paginatedCategories.map((category) => (
-                      <div
-                        key={category.id}
-                        className={`min-w-[600px] flex items-center gap-3 px-5 py-3.5 border-b border-gray-200 bg-white hover:bg-gray-50 transition-colors ${!category.activo ? 'opacity-50' : ''}`}
-                      >
-                        <div className="w-[80px] text-[13px] font-mono text-gray-500">
-                          {category.id}
-                        </div>
-                        <div className="flex-1 text-[13px] font-medium text-gray-900">
-                          {category.nombre}
-                        </div>
-                        <div className="flex-1 text-[13px] text-gray-500 truncate pr-4">
-                          {category.descripcion || '-'}
-                        </div>
-                        <div className="w-[50px] flex items-center justify-center">
-                          <ActiveToggle
-                            isActive={category.activo}
-                            onToggle={() => handleToggleActive(category)}
-                            disabled={loading}
-                            isLoading={togglingId === category.id}
-                            title={category.activo ? 'Desactivar categoría' : 'Activar categoría'}
-                          />
-                        </div>
-                        <div className="w-16 flex items-center justify-center gap-1">
-                          <button
-                            onClick={() => handleOpenEdit(category)}
-                            disabled={loading}
-                            className="p-1 text-amber-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors disabled:opacity-50"
-                            title="Editar"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          {deleteConfirmId === category.id ? (
-                            <>
-                              <button onClick={() => { handleDelete(category.id); setDeleteConfirmId(null); }} className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"><Check className="w-4 h-4" /></button>
-                              <button onClick={() => setDeleteConfirmId(null)} className="p-1 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X className="w-4 h-4" /></button>
-                            </>
-                          ) : (
-                            <button onClick={() => setDeleteConfirmId(category.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Eliminar"><Trash2 className="w-4 h-4" /></button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
                 )}
-              </div>
+              />
             </div>
-
-            <ListPagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              totalItems={totalItems}
-              pageSize={pageSize}
-              onPageChange={setCurrentPage}
-              itemLabel="categorías"
-              loading={loading}
-              className="pt-4"
-            />
 
         {/* Create/Edit Drawer */}
         <Drawer

@@ -21,6 +21,7 @@ public static class LoggingExtensions
                 .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
                 .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Information)
                 .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
+                .MinimumLevel.Override("Microsoft.AspNetCore.DataProtection", LogEventLevel.Error)
                 .Enrich.FromLogContext()
                 .Enrich.WithProperty("Application", appName)
                 .Enrich.WithProperty("Environment", context.HostingEnvironment.EnvironmentName)

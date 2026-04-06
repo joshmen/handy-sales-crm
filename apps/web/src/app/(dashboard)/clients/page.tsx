@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { Client } from '@/types';
@@ -21,19 +21,15 @@ import {
   Download,
   ChevronDown,
   RefreshCw,
-  Check,
-  Minus,
-  Loader2,
   Users,
   CheckCircle,
   XCircle,
 } from 'lucide-react';
-import { ListPagination } from '@/components/ui/ListPagination';
 import { SearchBar } from '@/components/common/SearchBar';
 import { InactiveToggle } from '@/components/ui/InactiveToggle';
-import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { ActiveToggle } from '@/components/ui/ActiveToggle';
+import { DataGrid, DataGridColumn } from '@/components/ui/DataGrid';
 import { getInitials } from '@/lib/utils';
 
 type ProspectFilter = 'todos' | 'clientes' | 'prospectos';
@@ -171,7 +167,140 @@ export default function ClientsPage() {
     }
   };
 
-  const visibleIds = clients.map(c => parseInt(c.id));
+  // Sort state
+  const [sortKey, setSortKey] = useState('name');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  const handleSort = useCallback((key: string) => {
+    setSortDir(prev => sortKey === key ? (prev === 'asc' ? 'desc' : 'asc') : 'asc');
+    setSortKey(key);
+  }, [sortKey]);
+
+  const sortedClients = useMemo(() => {
+    const sorted = [...clients];
+    sorted.sort((a, b) => {
+      let cmp = 0;
+      switch (sortKey) {
+        case 'name': cmp = a.name.localeCompare(b.name); break;
+        case 'zoneName': cmp = (a.zoneName || '').localeCompare(b.zoneName || ''); break;
+        case 'categoryName': cmp = (a.categoryName || '').localeCompare(b.categoryName || ''); break;
+        default: cmp = 0;
+      }
+      return sortDir === 'desc' ? -cmp : cmp;
+    });
+    return sorted;
+  }, [clients, sortKey, sortDir]);
+
+  // Column definitions
+  const columns = useMemo<DataGridColumn<Client>[]>(() => [
+    {
+      key: 'name',
+      label: 'Cliente',
+      sortable: true,
+      width: 'flex',
+      cellRenderer: (client) => (
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded bg-gray-900 flex items-center justify-center flex-shrink-0">
+            <span className="text-white text-[11px] font-medium">{getInitials(client.name)}</span>
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[13px] font-medium text-gray-900 truncate">{client.name} ({client.code})</span>
+              {client.esProspecto && (
+                <span className="text-[11px] font-medium text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded flex-shrink-0">Prospecto</span>
+              )}
+            </div>
+            <div className="text-[11px] text-gray-500 truncate">{client.email || client.phone || '—'}</div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'zoneName',
+      label: 'Zona',
+      sortable: true,
+      width: 100,
+      cellRenderer: (client) => <span className="text-[13px] text-gray-900">{client.zoneName || 'Sin zona'}</span>,
+    },
+    {
+      key: 'categoryName',
+      label: 'Categoría',
+      sortable: true,
+      width: 130,
+      cellRenderer: (client) => <span className="text-[13px] text-gray-900">{client.categoryName || 'Sin categoría'}</span>,
+    },
+    {
+      key: 'balance',
+      label: 'Saldo',
+      width: 90,
+      hiddenOnMobile: true,
+      cellRenderer: () => <span className="text-[13px] text-gray-400">—</span>,
+    },
+    {
+      key: 'creditLimit',
+      label: 'Lim. crédito',
+      width: 110,
+      hiddenOnMobile: true,
+      cellRenderer: () => <span className="text-[13px] text-gray-400">—</span>,
+    },
+    {
+      key: 'isActive',
+      label: 'Activo',
+      width: 50,
+      align: 'center',
+      cellRenderer: (client) => (
+        <div onClick={(e) => e.stopPropagation()}>
+          <ActiveToggle
+            isActive={client.isActive}
+            onToggle={() => handleToggleActive(client)}
+            disabled={loading}
+            isLoading={togglingId === client.id}
+            title={client.isActive ? 'Desactivar cliente' : 'Activar cliente'}
+          />
+        </div>
+      ),
+    },
+    {
+      key: 'actions',
+      label: 'Acciones',
+      width: 100,
+      align: 'center',
+      cellRenderer: (client) => (
+        <div className="flex items-center justify-center gap-1" onClick={(e) => e.stopPropagation()}>
+          {client.esProspecto && canManageProspects && (
+            <>
+              <button
+                onClick={() => handleAprobarProspecto(client)}
+                disabled={loading || prospectActionLoading === client.id}
+                className="p-1 hover:bg-green-50 rounded transition-colors disabled:opacity-50"
+                title="Aprobar prospecto"
+              >
+                <CheckCircle className="w-4 h-4 text-green-600" />
+              </button>
+              <button
+                onClick={() => handleRechazarProspecto(client)}
+                disabled={loading || prospectActionLoading === client.id}
+                className="p-1 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
+                title="Rechazar prospecto"
+              >
+                <XCircle className="w-4 h-4 text-red-500" />
+              </button>
+            </>
+          )}
+          <button
+            onClick={() => handleEditClient(client)}
+            disabled={loading}
+            className="p-1 hover:bg-amber-50 rounded transition-colors disabled:opacity-50"
+            title="Editar"
+          >
+            <Pencil className="w-4 h-4 text-amber-400 hover:text-amber-600" />
+          </button>
+        </div>
+      ),
+    },
+  ], [loading, togglingId, canManageProspects, prospectActionLoading]);
+
+  const visibleIds = sortedClients.map(c => parseInt(c.id));
   const batch = useBatchOperations({
     visibleIds,
     clearDeps: [currentPage, searchTerm, selectedZona, selectedCategoria, showInactive, prospectFilter],
@@ -336,255 +465,51 @@ export default function ClientsPage() {
           loading={batch.batchLoading}
         />
 
-        {/* Mobile Card View */}
-        <div className="sm:hidden space-y-3">
-          {/* Loading State */}
-          {loading && (
-            <div className="flex flex-col items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-green-600" />
-              <span className="text-sm text-gray-500 mt-2">Cargando...</span>
-            </div>
-          )}
-
-          {/* Empty State */}
-          {!loading && clients.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-              <Users className="w-8 h-8 text-muted-foreground mb-3" />
-              <div className="text-center">
-                <p className="text-lg font-medium">No hay clientes</p>
-                <p className="text-sm mt-1">
-                  {searchTerm ? 'No se encontraron resultados para tu búsqueda' : 'Crea tu primer cliente para comenzar'}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Client Cards */}
-          {!loading && clients.map((client) => (
-            <div
-              key={client.id}
-              className={`border border-gray-200 rounded-lg p-3 bg-white ${
-                !client.isActive ? 'opacity-60' : ''
-              }`}
-            >
-              {/* Row 1: Checkbox + Avatar + Name/Code + Toggle */}
-              <div className="flex items-center gap-3 mb-2">
-                {/* Checkbox */}
-                <button
-                  onClick={() => batch.handleToggleSelect(parseInt(client.id))}
-                  className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                    batch.selectedIds.has(parseInt(client.id))
-                      ? 'bg-green-600 border-green-600 text-white'
-                      : 'border-gray-300 hover:border-green-500'
-                  }`}
-                >
-                  {batch.selectedIds.has(parseInt(client.id)) && <Check className="w-3 h-3" />}
-                </button>
-
-                {/* Avatar */}
-                <div className="w-10 h-10 rounded bg-gray-900 text-white flex items-center justify-center text-sm font-medium flex-shrink-0">
-                  {getInitials(client.name)}
-                </div>
-
-                {/* Name and Code */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-sm font-medium text-gray-900 truncate">
-                      {client.name}
-                    </span>
-                    {client.esProspecto && (
-                      <span className="text-[11px] font-medium text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded flex-shrink-0">
-                        Prospecto
-                      </span>
-                    )}
+        {/* Clients DataGrid */}
+        <div data-tour="clients-table">
+          <DataGrid<Client>
+            columns={columns}
+            data={sortedClients}
+            keyExtractor={(c) => parseInt(c.id)}
+            loading={loading}
+            loadingMessage="Cargando clientes..."
+            emptyIcon={<Users className="w-10 h-10" />}
+            emptyTitle="No hay clientes"
+            emptyMessage={searchTerm ? 'No se encontraron resultados para tu búsqueda' : 'Crea tu primer cliente para comenzar'}
+            sort={{
+              key: sortKey,
+              direction: sortDir,
+              onSort: handleSort,
+            }}
+            selection={{
+              selectedIds: batch.selectedIds as unknown as Set<string | number>,
+              onToggle: (id) => batch.handleToggleSelect(id as number),
+              onSelectAll: batch.handleSelectAllVisible,
+              onClearAll: batch.handleClearSelection,
+            }}
+            pagination={{
+              currentPage,
+              totalPages,
+              totalItems: totalClients,
+              pageSize,
+              onPageChange: setCurrentPage,
+            }}
+            mobileCardRenderer={(client) => (
+              <div className={`${!client.isActive ? 'opacity-60' : ''}`}>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 rounded bg-gray-900 text-white flex items-center justify-center text-sm font-medium flex-shrink-0">
+                    {getInitials(client.name)}
                   </div>
-                  <div className="text-xs text-gray-500">{client.code}</div>
-                </div>
-
-                {/* Toggle Active */}
-                <ActiveToggle
-                  isActive={client.isActive}
-                  onToggle={() => handleToggleActive(client)}
-                  disabled={loading}
-                  isLoading={togglingId === client.id}
-                  title={client.isActive ? 'Desactivar cliente' : 'Activar cliente'}
-                />
-              </div>
-
-              {/* Row 2: Badges */}
-              <div className="flex flex-wrap items-center gap-2 mb-2">
-                {/* Zone Badge */}
-                <span className="inline-flex items-center px-2 py-1 rounded-md bg-blue-50 text-blue-700 text-xs font-medium">
-                  {client.zoneName || 'Sin zona'}
-                </span>
-
-                {/* Category Badge */}
-                <span className="inline-flex items-center px-2 py-1 rounded-md bg-purple-50 text-purple-700 text-xs font-medium">
-                  {client.categoryName || 'Sin categoría'}
-                </span>
-              </div>
-
-              {/* Row 3: Actions */}
-              <div className="flex justify-end gap-1">
-                {client.esProspecto && canManageProspects && (
-                  <>
-                    <button
-                      onClick={() => handleAprobarProspecto(client)}
-                      disabled={loading || prospectActionLoading === client.id}
-                      className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-green-700 hover:bg-green-50 rounded disabled:opacity-50 transition-colors"
-                      title="Aprobar prospecto"
-                    >
-                      <CheckCircle className="w-3.5 h-3.5" />
-                      <span>Aprobar</span>
-                    </button>
-                    <button
-                      onClick={() => handleRechazarProspecto(client)}
-                      disabled={loading || prospectActionLoading === client.id}
-                      className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-red-600 hover:bg-red-50 rounded disabled:opacity-50 transition-colors"
-                      title="Rechazar prospecto"
-                    >
-                      <XCircle className="w-3.5 h-3.5" />
-                      <span>Rechazar</span>
-                    </button>
-                  </>
-                )}
-                <button
-                  onClick={() => handleEditClient(client)}
-                  disabled={loading}
-                  className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-amber-600 hover:bg-amber-50 rounded disabled:opacity-50 transition-colors"
-                >
-                  <Pencil className="w-3.5 h-3.5 text-amber-400 hover:text-amber-600" />
-                  <span>Editar</span>
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Clients Table - Desktop */}
-        <div className="hidden sm:block border border-gray-200 rounded-lg overflow-hidden overflow-x-auto" data-tour="clients-table">
-          {/* Table Header - Always visible */}
-          <div className="flex items-center gap-3 bg-gray-50 px-5 h-10 border-b border-gray-200 min-w-[900px]">
-            <div className="w-[28px] flex items-center justify-center">
-              <button
-                onClick={batch.handleSelectAllVisible}
-                className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                  batch.allVisibleSelected
-                    ? 'bg-green-600 border-green-600 text-white'
-                    : batch.someVisibleSelected
-                    ? 'bg-green-100 border-green-600'
-                    : 'border-gray-300 hover:border-green-500'
-                }`}
-              >
-                {batch.allVisibleSelected ? (
-                  <Check className="w-3 h-3" />
-                ) : batch.someVisibleSelected ? (
-                  <Minus className="w-3 h-3 text-green-600" />
-                ) : null}
-              </button>
-            </div>
-            <div className="flex-1 min-w-[250px] text-[11px] font-medium text-gray-500">Cliente</div>
-            <div className="w-[100px] text-[11px] font-medium text-gray-500">Zona</div>
-            <div className="w-[130px] text-[11px] font-medium text-gray-500">Categoría</div>
-            <div className="w-[90px] text-[11px] font-medium text-gray-500 hidden md:block">Saldo</div>
-            <div className="w-[110px] text-[11px] font-medium text-gray-500 hidden lg:block">Lim. crédito</div>
-            <div className="w-[50px] text-[11px] font-medium text-gray-500 text-center">Activo</div>
-            <div className="w-[100px] text-[11px] font-medium text-gray-500 text-center">Acciones</div>
-          </div>
-
-          {/* Table Body - With loading overlay */}
-          <div className="relative min-h-[200px]">
-            <TableLoadingOverlay loading={loading} message="Cargando clientes..." />
-
-            {/* Empty State */}
-            {!loading && clients.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 bg-white text-gray-400">
-                <Users className="w-10 h-10 text-muted-foreground mb-4" />
-                <div className="text-center">
-                  <p className="text-lg font-medium">No hay clientes</p>
-                  <p className="text-sm">
-                    {searchTerm ? 'No se encontraron resultados para tu búsqueda' : 'Crea tu primer cliente para comenzar'}
-                  </p>
-                </div>
-              </div>
-            ) : (
-              /* Table Rows - With opacity transition */
-              <div className={`transition-opacity duration-200 ${loading ? 'opacity-50' : 'opacity-100'}`}>
-                {clients.map((client) => (
-                <div
-                  key={client.id}
-                  className={`flex items-center gap-3 px-5 py-3.5 border-b border-gray-200 bg-white hover:bg-gray-50 transition-colors min-w-[900px] ${
-                    !client.isActive ? 'bg-gray-50' : ''
-                  }`}
-                >
-                  {/* Checkbox column */}
-                  <div className="w-[28px] flex items-center justify-center">
-                    <button
-                      onClick={() => batch.handleToggleSelect(parseInt(client.id))}
-                      className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                        batch.selectedIds.has(parseInt(client.id))
-                          ? 'bg-green-600 border-green-600 text-white'
-                          : 'border-gray-300 hover:border-green-500'
-                      }`}
-                    >
-                      {batch.selectedIds.has(parseInt(client.id)) && <Check className="w-3 h-3" />}
-                    </button>
-                  </div>
-
-                  {/* Cliente column */}
-                  <div className="flex-1 min-w-[250px] flex items-center gap-3">
-                    <div className="w-9 h-9 rounded bg-gray-900 flex items-center justify-center flex-shrink-0">
-                      <span className="text-white text-[11px] font-medium">
-                        {getInitials(client.name)}
-                      </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-medium text-gray-900 truncate">{client.name}</span>
+                      {client.esProspecto && (
+                        <span className="text-[11px] font-medium text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded flex-shrink-0">Prospecto</span>
+                      )}
                     </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[13px] font-medium text-gray-900 truncate">
-                          {client.name} ({client.code})
-                        </span>
-                        {client.esProspecto && (
-                          <span className="text-[11px] font-medium text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded flex-shrink-0">
-                            Prospecto
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-[11px] text-gray-500 truncate">
-                        {client.email || client.phone || '—'}
-                      </div>
-                    </div>
+                    <div className="text-xs text-gray-500">{client.code}</div>
                   </div>
-
-                  {/* Zona column */}
-                  <div className="w-[100px]">
-                    <span className="text-[13px] text-gray-900">
-                      {client.zoneName || 'Sin zona'}
-                    </span>
-                  </div>
-
-                  {/* Categoria column */}
-                  <div className="w-[130px]">
-                    <span className="text-[13px] text-gray-900">
-                      {client.categoryName || 'Sin categoría'}
-                    </span>
-                  </div>
-
-                  {/* Saldo column */}
-                  <div className="w-[90px] hidden md:block">
-                    <span className="text-[13px] text-gray-400">
-                      —
-                    </span>
-                  </div>
-
-                  {/* Limite crédito column */}
-                  <div className="w-[110px] hidden lg:block">
-                    <span className="text-[13px] text-gray-400">
-                      —
-                    </span>
-                  </div>
-
-                  {/* Toggle active column */}
-                  <div className="w-[50px] flex items-center justify-center">
+                  <div onClick={(e) => e.stopPropagation()}>
                     <ActiveToggle
                       isActive={client.isActive}
                       onToggle={() => handleToggleActive(client)}
@@ -593,54 +518,30 @@ export default function ClientsPage() {
                       title={client.isActive ? 'Desactivar cliente' : 'Activar cliente'}
                     />
                   </div>
-
-                  {/* Actions column */}
-                  <div className="w-[100px] flex items-center justify-center gap-1">
-                    {client.esProspecto && canManageProspects && (
-                      <>
-                        <button
-                          onClick={() => handleAprobarProspecto(client)}
-                          disabled={loading || prospectActionLoading === client.id}
-                          className="p-1 hover:bg-green-50 rounded transition-colors disabled:opacity-50"
-                          title="Aprobar prospecto"
-                        >
-                          <CheckCircle className="w-4 h-4 text-green-600" />
-                        </button>
-                        <button
-                          onClick={() => handleRechazarProspecto(client)}
-                          disabled={loading || prospectActionLoading === client.id}
-                          className="p-1 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
-                          title="Rechazar prospecto"
-                        >
-                          <XCircle className="w-4 h-4 text-red-500" />
-                        </button>
-                      </>
-                    )}
-                    <button
-                      onClick={() => handleEditClient(client)}
-                      disabled={loading}
-                      className="p-1 hover:bg-amber-50 rounded transition-colors disabled:opacity-50"
-                      title="Editar"
-                    >
-                      <Pencil className="w-4 h-4 text-amber-400 hover:text-amber-600" />
-                    </button>
-                  </div>
                 </div>
-              ))}
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                  <span className="inline-flex items-center px-2 py-1 rounded-md bg-blue-50 text-blue-700 text-xs font-medium">{client.zoneName || 'Sin zona'}</span>
+                  <span className="inline-flex items-center px-2 py-1 rounded-md bg-purple-50 text-purple-700 text-xs font-medium">{client.categoryName || 'Sin categoría'}</span>
+                </div>
+                <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                  {client.esProspecto && canManageProspects && (
+                    <>
+                      <button onClick={() => handleAprobarProspecto(client)} disabled={loading || prospectActionLoading === client.id} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-green-700 hover:bg-green-50 rounded disabled:opacity-50 transition-colors" title="Aprobar prospecto">
+                        <CheckCircle className="w-3.5 h-3.5" /><span>Aprobar</span>
+                      </button>
+                      <button onClick={() => handleRechazarProspecto(client)} disabled={loading || prospectActionLoading === client.id} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-red-600 hover:bg-red-50 rounded disabled:opacity-50 transition-colors" title="Rechazar prospecto">
+                        <XCircle className="w-3.5 h-3.5" /><span>Rechazar</span>
+                      </button>
+                    </>
+                  )}
+                  <button onClick={() => handleEditClient(client)} disabled={loading} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-amber-600 hover:bg-amber-50 rounded disabled:opacity-50 transition-colors">
+                    <Pencil className="w-3.5 h-3.5 text-amber-400" /><span>Editar</span>
+                  </button>
+                </div>
               </div>
             )}
-          </div>
+          />
         </div>
-
-        <ListPagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          totalItems={totalClients}
-          pageSize={pageSize}
-          onPageChange={setCurrentPage}
-          itemLabel="clientes"
-          loading={loading}
-        />
 
           </div>
 

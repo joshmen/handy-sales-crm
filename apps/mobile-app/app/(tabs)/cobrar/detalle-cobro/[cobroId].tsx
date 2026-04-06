@@ -9,9 +9,7 @@ import { ChevronLeft, Printer, Share2 } from 'lucide-react-native';
 import { usePrinterStore } from '@/stores/printerStore';
 import { printReceipt, isNativeAvailable } from '@/services/printerService';
 import { useEmpresa } from '@/hooks/useEmpresa';
-import { useState, useRef } from 'react';
-import { captureRef } from 'react-native-view-shot';
-import * as Sharing from 'expo-sharing';
+import { useState } from 'react';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { COLORS } from '@/theme/colors';
 import Toast from 'react-native-toast-message';
@@ -26,8 +24,6 @@ export default function DetalleCobroScreen() {
   const { data: empresa } = useEmpresa();
   const { connectedDevice } = usePrinterStore();
   const [printing, setPrinting] = useState(false);
-  const [sharing, setSharing] = useState(false);
-  const detailRef = useRef<View>(null);
 
   if (!cobro) {
     return (
@@ -87,25 +83,19 @@ export default function DetalleCobroScreen() {
     }
   };
 
-  const handleShare = async () => {
-    if (!detailRef.current) {
-      Toast.show({ type: 'error', text1: 'Error', text2: 'No se pudo capturar el recibo' });
-      return;
-    }
-    setSharing(true);
-    try {
-      const uri = await captureRef(detailRef, { format: 'png', quality: 1 });
-      const isAvailable = await Sharing.isAvailableAsync();
-      if (!isAvailable) {
-        Toast.show({ type: 'error', text1: 'Error', text2: 'Compartir no disponible en este dispositivo' });
-        return;
-      }
-      await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Compartir recibo' });
-    } catch {
-      Toast.show({ type: 'error', text1: 'Error al compartir', text2: 'Intenta de nuevo' });
-    } finally {
-      setSharing(false);
-    }
+  const handleShare = () => {
+    router.push({
+      pathname: '/(tabs)/cobrar/recibo',
+      params: {
+        clienteNombre: encodeURIComponent(clienteNombre),
+        monto: String(cobro.monto),
+        metodoPago: String(cobro.metodoPago),
+        referencia: encodeURIComponent(cobro.referencia || cobroId.slice(0, 8)),
+        notas: encodeURIComponent(cobro.notas || ''),
+        fecha: cobro.createdAt ? new Date(cobro.createdAt).toISOString() : new Date().toISOString(),
+        viewOnly: '1',
+      },
+    } as any);
   };
 
   return (
@@ -120,7 +110,7 @@ export default function DetalleCobroScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View ref={detailRef} collapsable={false}>
+        <View>
         {/* Client Row */}
         <Animated.View entering={FadeInDown.duration(300)}>
           <View style={styles.clientRow}>
@@ -191,12 +181,12 @@ export default function DetalleCobroScreen() {
             <TouchableOpacity
               style={styles.btnShare}
               onPress={handleShare}
-              disabled={sharing}
+              disabled={false}
               activeOpacity={0.8}
             >
               <Share2 size={18} color="#64748b" />
               <Text style={styles.btnShareText}>
-                {sharing ? 'Compartiendo...' : 'Compartir'}
+                Compartir
               </Text>
             </TouchableOpacity>
           </View>

@@ -1,12 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, Suspense, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { SearchBar } from '@/components/common/SearchBar';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
-import { ListPagination } from '@/components/ui/ListPagination';
-import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
+import { DataGrid, DataGridColumn } from '@/components/ui/DataGrid';
 import { Drawer } from '@/components/ui/Drawer';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { VisitSummary } from '@/components/visits/VisitSummary';
@@ -237,6 +236,15 @@ function VisitsPageContent() {
     setCurrentPage(1);
   }, [searchTerm, tipoFilter, resultadoFilter, dateFilter]);
 
+  // Sort state
+  const [sortKey, setSortKey] = useState('fechaProgramada');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+
+  const handleSort = useCallback((key: string) => {
+    setSortDir(prev => sortKey === key ? (prev === 'asc' ? 'desc' : 'asc') : 'asc');
+    setSortKey(key);
+  }, [sortKey]);
+
   // Client-side search filter (search is not sent to API)
   const filteredVisits = searchTerm
     ? visits.filter(v =>
@@ -244,6 +252,105 @@ function VisitsPageContent() {
         (v.clienteDireccion && v.clienteDireccion.toLowerCase().includes(searchTerm.toLowerCase()))
       )
     : visits;
+
+  const sortedVisits = useMemo(() => {
+    const sorted = [...filteredVisits];
+    sorted.sort((a, b) => {
+      let cmp = 0;
+      switch (sortKey) {
+        case 'clienteNombre': cmp = a.clienteNombre.localeCompare(b.clienteNombre); break;
+        case 'fechaProgramada': cmp = (a.fechaProgramada || '').localeCompare(b.fechaProgramada || ''); break;
+        default: cmp = 0;
+      }
+      return sortDir === 'desc' ? -cmp : cmp;
+    });
+    return sorted;
+  }, [filteredVisits, sortKey, sortDir]);
+
+  // Column definitions
+  const visitColumns = useMemo<DataGridColumn<ClienteVisitaListaDto>[]>(() => [
+    {
+      key: 'clienteNombre',
+      label: 'Cliente',
+      sortable: true,
+      width: 'flex',
+      cellRenderer: (visit) => (
+        <div>
+          <p className="text-sm font-medium text-gray-900 truncate">{visit.clienteNombre}</p>
+          {visit.clienteDireccion && <p className="text-xs text-gray-500 truncate">{visit.clienteDireccion}</p>}
+        </div>
+      ),
+    },
+    {
+      key: 'tipoVisita',
+      label: 'Tipo',
+      width: 100,
+      cellRenderer: (visit) => {
+        const tipo = getTipo(visit.tipoVisita);
+        return <span className={`text-xs font-medium ${tipo.color}`}>{tipo.label}</span>;
+      },
+    },
+    {
+      key: 'fechaProgramada',
+      label: 'Fecha',
+      sortable: true,
+      width: 110,
+      cellRenderer: (visit) => (
+        <div className="text-xs text-gray-600">
+          {formatDate(visit.fechaProgramada)}
+          {visit.fechaHoraInicio && <span className="block text-gray-400">{formatTime(visit.fechaHoraInicio)}</span>}
+        </div>
+      ),
+    },
+    {
+      key: 'resultado',
+      label: 'Resultado',
+      width: 120,
+      cellRenderer: (visit) => {
+        const res = getResultado(visit.resultado);
+        return (
+          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${res.color}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${res.dotColor}`} />
+            {res.label}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'duracion',
+      label: 'Duración',
+      width: 70,
+      align: 'center',
+      cellRenderer: (visit) => <span className="text-xs text-gray-600">{visit.duracionMinutos ? `${visit.duracionMinutos} min` : '-'}</span>,
+    },
+    {
+      key: 'pedido',
+      label: '',
+      width: 30,
+      cellRenderer: (visit) => visit.tienePedido ? <ShoppingCart className="w-4 h-4 text-green-500" /> : null,
+    },
+    {
+      key: 'actions',
+      label: 'Acciones',
+      width: 130,
+      align: 'right',
+      cellRenderer: (visit) => {
+        const isCompleted = !!visit.fechaHoraFin;
+        return (
+          <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => handleViewDetails(visit.id)} className="p-1.5 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50 transition-colors" title="Ver detalles">
+              <Eye className="w-4 h-4" />
+            </button>
+            {isCompleted && (
+              <span className="flex items-center gap-1 px-2 py-1 text-xs text-green-600">
+                <CheckCircle className="w-3.5 h-3.5" />
+              </span>
+            )}
+          </div>
+        );
+      },
+    },
+  ], []);
 
   // Handlers
   const handleCreateVisit = () => {
@@ -439,31 +546,33 @@ function VisitsPageContent() {
         {/* List View */}
         {currentView === 'list' && (
           <>
-            {/* Mobile Cards */}
-            <div className="sm:hidden space-y-3">
-              {loading && (
-                <div className="space-y-3">
-                  {[1, 2, 3].map(i => (
-                    <div key={i} className="border border-gray-200 rounded-lg p-4 bg-white animate-pulse">
-                      <div className="h-4 bg-gray-200 rounded w-1/3 mb-3" />
-                      <div className="h-3 bg-gray-200 rounded w-2/3 mb-2" />
-                      <div className="h-3 bg-gray-200 rounded w-1/2" />
-                    </div>
-                  ))}
-                </div>
-              )}
-              {!loading && filteredVisits.length === 0 && (
-                <div className="text-center py-12 text-gray-500">
-                  <MapPin className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                  <p className="font-medium">No hay visitas</p>
-                  <p className="text-sm mt-1">Programa una nueva visita para comenzar</p>
-                </div>
-              )}
-              {!loading && filteredVisits.map(visit => {
+            {/* Visits DataGrid */}
+            <DataGrid<ClienteVisitaListaDto>
+              columns={visitColumns}
+              data={sortedVisits}
+              keyExtractor={(v) => v.id}
+              loading={loading}
+              loadingMessage="Cargando visitas..."
+              emptyIcon={<MapPin className="w-12 h-12 text-gray-300" />}
+              emptyTitle="No hay visitas"
+              emptyMessage="Programa una nueva visita para comenzar"
+              sort={{
+                key: sortKey,
+                direction: sortDir,
+                onSort: handleSort,
+              }}
+              pagination={{
+                currentPage,
+                totalPages,
+                totalItems,
+                pageSize: PAGE_SIZE,
+                onPageChange: setCurrentPage,
+              }}
+              mobileCardRenderer={(visit) => {
                 const res = getResultado(visit.resultado);
                 const tipo = getTipo(visit.tipoVisita);
                 return (
-                  <div key={visit.id} className="border border-gray-200 rounded-lg p-3 bg-white">
+                  <>
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${res.color}`}>
@@ -487,112 +596,16 @@ function VisitsPageContent() {
                     <div className="flex items-center gap-2 mb-2">
                       <Calendar className="w-3.5 h-3.5 text-gray-400" />
                       <span className="text-xs text-gray-500">{formatDate(visit.fechaProgramada)}</span>
-                      {visit.duracionMinutos && (
-                        <span className="text-xs text-gray-400 ml-auto">{visit.duracionMinutos} min</span>
-                      )}
+                      {visit.duracionMinutos && <span className="text-xs text-gray-400 ml-auto">{visit.duracionMinutos} min</span>}
                     </div>
-                    <div className="flex justify-end gap-2">
-                      <button
-                        onClick={() => handleViewDetails(visit.id)}
-                        className="flex items-center gap-1 px-3 py-1.5 text-xs border border-gray-200 rounded hover:bg-gray-50"
-                      >
+                    <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                      <button onClick={() => handleViewDetails(visit.id)} className="flex items-center gap-1 px-3 py-1.5 text-xs border border-gray-200 rounded hover:bg-gray-50">
                         <Eye className="w-3.5 h-3.5" /> Ver
                       </button>
-                      {/* Iniciar/Finalizar solo disponible desde la app móvil */}
                     </div>
-                  </div>
+                  </>
                 );
-              })}
-            </div>
-
-            {/* Desktop Table */}
-            <div className="hidden sm:block border border-gray-200 rounded-lg overflow-hidden overflow-x-auto">
-              {/* Table Header */}
-              <div className="flex items-center gap-3 bg-gray-50 px-5 h-10 border-b border-gray-200 min-w-[850px]">
-                <div className="flex-1 min-w-[200px] text-[11px] font-medium text-gray-500">Cliente</div>
-                <div className="w-[100px] text-[11px] font-medium text-gray-500">Tipo</div>
-                <div className="w-[110px] text-[11px] font-medium text-gray-500">Fecha</div>
-                <div className="w-[120px] text-[11px] font-medium text-gray-500">Resultado</div>
-                <div className="w-[70px] text-[11px] font-medium text-gray-500 text-center">Duración</div>
-                <div className="w-[30px]" />
-                <div className="w-[130px] text-[11px] font-medium text-gray-500 text-right">Acciones</div>
-              </div>
-
-              {/* Table Body */}
-              <div className="relative min-h-[200px]">
-                <TableLoadingOverlay loading={loading} message="Cargando visitas..." />
-                {!loading && filteredVisits.length === 0 && (
-                  <div className="flex flex-col items-center justify-center py-16 bg-white text-gray-400">
-                    <MapPin className="w-12 h-12 mb-3 text-gray-300" />
-                    <p className="text-lg font-medium">No hay visitas</p>
-                    <p className="text-sm mt-1">Programa una nueva visita para comenzar</p>
-                  </div>
-                )}
-                {!loading && filteredVisits.length > 0 && (
-                  <div className={`transition-opacity duration-200 ${loading ? 'opacity-50' : 'opacity-100'}`}>
-                {filteredVisits.map(visit => {
-                  const res = getResultado(visit.resultado);
-                  const tipo = getTipo(visit.tipoVisita);
-                  const isCompleted = !!visit.fechaHoraFin;
-                  return (
-                    <div key={visit.id} className="flex items-center gap-3 px-5 py-3.5 border-b border-gray-200 bg-white hover:bg-gray-50 transition-colors min-w-[850px]">
-                      <div className="flex-1 min-w-[200px]">
-                        <p className="text-sm font-medium text-gray-900 truncate">{visit.clienteNombre}</p>
-                        {visit.clienteDireccion && (
-                          <p className="text-xs text-gray-500 truncate">{visit.clienteDireccion}</p>
-                        )}
-                      </div>
-                      <div className="w-[100px]">
-                        <span className={`text-xs font-medium ${tipo.color}`}>{tipo.label}</span>
-                      </div>
-                      <div className="w-[110px] text-xs text-gray-600">
-                        {formatDate(visit.fechaProgramada)}
-                        {visit.fechaHoraInicio && (
-                          <span className="block text-gray-400">{formatTime(visit.fechaHoraInicio)}</span>
-                        )}
-                      </div>
-                      <div className="w-[120px]">
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${res.color}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${res.dotColor}`} />
-                          {res.label}
-                        </span>
-                      </div>
-                      <div className="w-[70px] text-center text-xs text-gray-600">
-                        {visit.duracionMinutos ? `${visit.duracionMinutos} min` : '-'}
-                      </div>
-                      <div className="w-[30px] flex justify-center">
-                        {visit.tienePedido && <ShoppingCart className="w-4 h-4 text-green-500" />}
-                      </div>
-                      <div className="w-[130px] flex items-center justify-end gap-1.5">
-                        <button
-                          onClick={() => handleViewDetails(visit.id)}
-                          className="p-1.5 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50 transition-colors"
-                          title="Ver detalles"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        {isCompleted && (
-                          <span className="flex items-center gap-1 px-2 py-1 text-xs text-green-600">
-                            <CheckCircle className="w-3.5 h-3.5" />
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-                )}
-              </div>
-            </div>
-
-            <ListPagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              totalItems={totalItems}
-              pageSize={PAGE_SIZE}
-              onPageChange={setCurrentPage}
-              itemLabel="visitas"
-              loading={loading}
+              }}
             />
           </>
         )}

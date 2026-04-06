@@ -76,16 +76,16 @@ export function ExpirationBanner() {
 
   const isWarning = bannerType === 'warning';
   const bgClass = isWarning
-    ? 'bg-amber-50 border-amber-200'
-    : 'bg-red-50 border-red-200';
-  const textClass = isWarning ? 'text-amber-800' : 'text-red-800';
-  const iconClass = isWarning ? 'text-amber-500' : 'text-red-500';
+    ? 'bg-orange-600'
+    : 'bg-red-600';
+  const textClass = 'text-white';
+  const iconClass = 'text-white/80';
   const btnClass = isWarning
-    ? 'bg-amber-600 hover:bg-amber-700 text-white'
-    : 'bg-red-600 hover:bg-red-700 text-white';
+    ? 'bg-white text-orange-700 hover:bg-orange-50'
+    : 'bg-white text-red-700 hover:bg-red-50';
 
   return (
-    <div className={`border-b ${bgClass} px-4 py-2.5`}>
+    <div className={`${bgClass} px-4 py-2.5`}>
       <div className="flex items-center gap-3 max-w-7xl mx-auto">
         {isWarning ? (
           <Clock className={`h-4 w-4 flex-shrink-0 ${iconClass}`} />
@@ -101,7 +101,7 @@ export function ExpirationBanner() {
         </button>
         <button
           onClick={() => setDismissed(true)}
-          className={`p-1 rounded hover:bg-black/5 transition-colors flex-shrink-0 ${textClass}`}
+          className="p-1 rounded hover:bg-white/20 transition-colors flex-shrink-0 text-white/80 hover:text-white"
         >
           <X className="h-3.5 w-3.5" />
         </button>

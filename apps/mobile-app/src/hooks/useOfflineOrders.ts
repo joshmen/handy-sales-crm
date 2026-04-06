@@ -15,7 +15,7 @@ export function useOfflineOrders(clienteId?: string) {
 
     conditions.push(Q.sortBy('created_at', Q.desc));
 
-    return database.get<Pedido>('pedidos').query(...conditions).observe();
+    return database.get<Pedido>('pedidos').query(...conditions).observeWithColumns(['numero_pedido', 'estado', 'server_id', 'total']);
   }, [clienteId]);
 
   return useObservable(observable);

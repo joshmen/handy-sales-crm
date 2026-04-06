@@ -22,6 +22,9 @@ public class Cobro : AuditableEntity
     [Column("tenant_id")]
     public int TenantId { get; set; }
 
+    [Column("mobile_record_id")]
+    public string? MobileRecordId { get; set; }
+
     [Column("pedido_id")]
     public int? PedidoId { get; set; }
 

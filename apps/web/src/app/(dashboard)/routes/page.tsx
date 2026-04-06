@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useForm } from 'react-hook-form';
@@ -23,8 +23,6 @@ import {
   RefreshCw,
   MapPin,
   Map,
-  Check,
-  Minus,
   Pencil,
   Loader2,
   Calendar,
@@ -33,12 +31,11 @@ import {
   MapPinned,
 } from 'lucide-react';
 import { exportToCsv } from '@/services/api/importExport';
-import { ListPagination } from '@/components/ui/ListPagination';
 import { SearchBar } from '@/components/common/SearchBar';
 import { InactiveToggle } from '@/components/ui/InactiveToggle';
-import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
 import { ActiveToggle } from '@/components/ui/ActiveToggle';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
+import { DataGrid, DataGridColumn } from '@/components/ui/DataGrid';
 import { Path } from '@phosphor-icons/react';
 import { useFormatters } from '@/hooks/useFormatters';
 import { dateOnlyToUTC } from '@/lib/formatters';
@@ -172,8 +169,148 @@ export default function RoutesPage() {
     toast.success('Las rutas se han actualizado correctamente');
   };
 
+  // Sort state
+  const [sortKey, setSortKey] = useState('fecha');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+
+  const handleSortChange = useCallback((key: string) => {
+    setSortDir(prev => sortKey === key ? (prev === 'asc' ? 'desc' : 'asc') : 'asc');
+    setSortKey(key);
+  }, [sortKey]);
+
+  const sortedRoutes = useMemo(() => {
+    const sorted = [...routes];
+    sorted.sort((a, b) => {
+      let cmp = 0;
+      switch (sortKey) {
+        case 'nombre': cmp = a.nombre.localeCompare(b.nombre); break;
+        case 'fecha': cmp = a.fecha.getTime() - b.fecha.getTime(); break;
+        case 'usuarioNombre': cmp = a.usuarioNombre.localeCompare(b.usuarioNombre); break;
+        default: cmp = 0;
+      }
+      return sortDir === 'desc' ? -cmp : cmp;
+    });
+    return sorted;
+  }, [routes, sortKey, sortDir]);
+
+  // Column definitions for routes
+  const routeColumns = useMemo<DataGridColumn<RouteListItem>[]>(() => [
+    {
+      key: 'nombre',
+      label: 'Nombre',
+      sortable: true,
+      width: 'flex',
+      cellRenderer: (route) => (
+        <div onClick={(e) => { e.stopPropagation(); router.push(`/routes/${route.id}`); }}>
+          <span className="text-[13px] font-medium text-gray-900 hover:underline cursor-pointer truncate block">{route.nombre}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'zonaNombre',
+      label: 'Zona',
+      width: 120,
+      cellRenderer: (route) => <span className="text-[13px] text-gray-600 truncate block">{route.zonaNombre || '-'}</span>,
+    },
+    {
+      key: 'usuarioNombre',
+      label: 'Usuario',
+      sortable: true,
+      width: 140,
+      cellRenderer: (route) => <span className="text-[13px] text-gray-600 truncate block">{route.usuarioNombre}</span>,
+    },
+    {
+      key: 'fecha',
+      label: 'Fecha',
+      sortable: true,
+      width: 100,
+      cellRenderer: (route) => <span className="text-[13px] text-gray-900">{formatDateOnly(route.fecha)}</span>,
+    },
+    {
+      key: 'horario',
+      label: 'Horario',
+      width: 110,
+      align: 'center',
+      cellRenderer: (route) => (
+        <span className="text-[12px] text-gray-500">
+          {route.horaInicioEstimada
+            ? `${route.horaInicioEstimada.substring(0, 5)} - ${route.horaFinEstimada?.substring(0, 5) || '--:--'}`
+            : '--'}
+        </span>
+      ),
+    },
+    {
+      key: 'estado',
+      label: 'Estado',
+      width: 110,
+      align: 'center',
+      cellRenderer: (route) => {
+        const badge = getEstadoBadge(route.estado);
+        return <span className={`inline-flex px-2.5 py-0.5 text-[10px] font-medium rounded-full ${badge.cls}`}>{badge.label}</span>;
+      },
+    },
+    {
+      key: 'paradas',
+      label: 'Paradas',
+      width: 80,
+      align: 'center',
+      cellRenderer: (route) => (
+        <span className="text-[13px] text-gray-600">
+          <span className={route.paradasCompletadas === route.totalParadas && route.totalParadas > 0 ? 'text-green-600 font-medium' : ''}>
+            {route.paradasCompletadas}
+          </span>/{route.totalParadas}
+        </span>
+      ),
+    },
+    {
+      key: 'activo',
+      label: 'Activo',
+      width: 50,
+      align: 'center',
+      cellRenderer: (route) => (
+        <div onClick={(e) => e.stopPropagation()}>
+          <ActiveToggle isActive={route.activo} onToggle={() => handleToggleActive(route)} disabled={loading} isLoading={togglingId === route.id} />
+        </div>
+      ),
+    },
+    {
+      key: 'edit',
+      label: '',
+      width: 32,
+      cellRenderer: (route) => (
+        <div onClick={(e) => e.stopPropagation()}>
+          <button onClick={() => handleOpenEdit(route)} disabled={loading} className="p-1 text-amber-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors disabled:opacity-50" title="Editar">
+            <Pencil className="w-4 h-4" />
+          </button>
+        </div>
+      ),
+    },
+    {
+      key: 'contextAction',
+      label: 'Acción',
+      width: 80,
+      align: 'center',
+      cellRenderer: (route) => (
+        <div onClick={(e) => e.stopPropagation()}>
+          {(route.estado === 0) && (
+            <button onClick={() => router.push(`/routes/manage/${route.id}/load`)} className="text-[11px] font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-md transition-colors">Cargar</button>
+          )}
+          {(route.estado === 1 || route.estado === 4 || route.estado === 5) && (
+            <button onClick={() => router.push(`/routes/manage/${route.id}/load`)} className="text-[11px] font-medium text-gray-600 hover:text-gray-800 bg-gray-50 hover:bg-gray-100 px-2.5 py-1 rounded-md transition-colors">Ver carga</button>
+          )}
+          {route.estado === 2 && (
+            <button onClick={() => router.push(`/routes/manage/${route.id}/close`)} className="text-[11px] font-medium text-green-600 hover:text-green-800 bg-green-50 hover:bg-green-100 px-2.5 py-1 rounded-md transition-colors">Cerrar</button>
+          )}
+          {route.estado === 6 && (
+            <button onClick={() => router.push(`/routes/manage/${route.id}/close`)} className="text-[11px] font-medium text-gray-500 bg-gray-50 px-2.5 py-1 rounded-md">Cerrado</button>
+          )}
+        </div>
+      ),
+    },
+  ], [loading, togglingId, formatDateOnly, router]);
+
   // Batch operations
-  const visibleIds = routes.map(r => r.id);
+  const visibleIds = sortedRoutes.map(r => r.id);
   const batch = useBatchOperations({
     visibleIds,
     clearDeps: [currentPage, estadoFilter, zonaFilter, usuarioFilter, showInactive],
@@ -426,273 +563,66 @@ export default function RoutesPage() {
         {/* Error */}
         <ErrorBanner error={error} onRetry={fetchRoutes} />
 
-        {/* Mobile Cards */}
-        <div className="sm:hidden space-y-3">
-          {loading && (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-green-600" />
-            </div>
-          )}
-          {!loading && routes.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12">
-              <MapPin className="w-12 h-12 text-cyan-300 mb-3" />
-              <p className="text-sm text-gray-500">No hay rutas</p>
-            </div>
-          ) : (
-            routes.map((route) => {
+        {/* Routes DataGrid */}
+        <div data-tour="routes-table">
+          <DataGrid<RouteListItem>
+            columns={routeColumns}
+            data={sortedRoutes}
+            keyExtractor={(r) => r.id}
+            loading={loading}
+            loadingMessage="Cargando rutas..."
+            emptyIcon={<MapPin className="w-16 h-16 text-cyan-300" />}
+            emptyTitle="No hay rutas"
+            emptyMessage={searchTerm || estadoFilter !== 'all' || zonaFilter !== 'all' ? 'No se encontraron resultados con los filtros aplicados' : 'Crea tu primera ruta de venta para comenzar'}
+            onRowClick={(route) => handleOpenEdit(route)}
+            sort={{
+              key: sortKey,
+              direction: sortDir,
+              onSort: handleSortChange,
+            }}
+            selection={{
+              selectedIds: batch.selectedIds as unknown as Set<string | number>,
+              onToggle: (id) => batch.handleToggleSelect(id as number),
+              onSelectAll: batch.handleSelectAllVisible,
+              onClearAll: batch.handleClearSelection,
+            }}
+            pagination={(routes.length > 0 || loading) ? {
+              currentPage,
+              totalPages,
+              totalItems,
+              pageSize,
+              onPageChange: setCurrentPage,
+            } : undefined}
+            mobileCardRenderer={(route) => {
               const badge = getEstadoBadge(route.estado);
               return (
-                <div key={route.id} className="border border-gray-200 rounded-lg p-3 bg-white cursor-pointer" onClick={() => handleOpenEdit(route)}>
-                  {/* Row 1: Checkbox + Icon + Name/Subtitle + Toggle */}
+                <>
                   <div className="flex items-center gap-3 mb-2">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); batch.handleToggleSelect(route.id); }}
-                      className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                        batch.selectedIds.has(route.id)
-                          ? 'bg-green-600 border-green-600 text-white'
-                          : 'border-gray-300 hover:border-green-500'
-                      }`}
-                    >
-                      {batch.selectedIds.has(route.id) && <Check className="w-3 h-3" />}
-                    </button>
                     <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0">
                       <Path className="w-5 h-5 text-teal-600" weight="duotone" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-gray-900 truncate">
-                        {route.nombre}
-                      </div>
-                      <div className="text-xs text-gray-500 truncate">
-                        {route.zonaNombre || 'Sin zona'}
-                      </div>
+                      <div className="text-sm font-medium text-gray-900 truncate">{route.nombre}</div>
+                      <div className="text-xs text-gray-500 truncate">{route.zonaNombre || 'Sin zona'}</div>
                     </div>
                     <div onClick={(e) => e.stopPropagation()}>
-                      <ActiveToggle
-                        isActive={route.activo}
-                        onToggle={() => handleToggleActive(route)}
-                        disabled={loading}
-                        isLoading={togglingId === route.id}
-                      />
+                      <ActiveToggle isActive={route.activo} onToggle={() => handleToggleActive(route)} disabled={loading} isLoading={togglingId === route.id} />
                     </div>
                   </div>
-                  {/* Row 2: Badges */}
                   <div className="flex flex-wrap items-center gap-2 mb-2">
-                    <span className={`inline-flex px-2.5 py-0.5 text-[10px] font-medium rounded-full ${badge.cls}`}>
-                      {badge.label}
-                    </span>
-                    <span className="text-xs text-gray-600">
-                      Paradas: <span className={route.paradasCompletadas === route.totalParadas && route.totalParadas > 0 ? 'text-green-600 font-medium' : ''}>
-                        {route.paradasCompletadas}
-                      </span>/{route.totalParadas}
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      {route.usuarioNombre}
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      {formatDateOnly(route.fecha)}
-                    </span>
+                    <span className={`inline-flex px-2.5 py-0.5 text-[10px] font-medium rounded-full ${badge.cls}`}>{badge.label}</span>
+                    <span className="text-xs text-gray-600">Paradas: <span className={route.paradasCompletadas === route.totalParadas && route.totalParadas > 0 ? 'text-green-600 font-medium' : ''}>{route.paradasCompletadas}</span>/{route.totalParadas}</span>
+                    <span className="text-xs text-gray-500">{route.usuarioNombre}</span>
+                    <span className="text-xs text-gray-500">{formatDateOnly(route.fecha)}</span>
                   </div>
-                  {/* Row 3: Actions */}
                   <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      onClick={() => handleOpenEdit(route)}
-                      disabled={loading}
-                      className="px-3 py-1.5 text-xs font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 transition-colors disabled:opacity-50"
-                    >
-                      Editar
-                    </button>
+                    <button onClick={() => handleOpenEdit(route)} disabled={loading} className="px-3 py-1.5 text-xs font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 transition-colors disabled:opacity-50">Editar</button>
                   </div>
-                </div>
+                </>
               );
-            })
-          )}
-        </div>
-
-        {/* Table */}
-        <div data-tour="routes-table" className="hidden sm:block bg-white border border-gray-200 rounded-lg overflow-x-auto">
-          {/* Table Header */}
-          <div className="flex items-center gap-3 bg-gray-50 px-5 h-10 border-b border-gray-200 min-w-[900px]">
-            <div className="w-[28px] flex items-center justify-center">
-              <button
-                onClick={batch.handleSelectAllVisible}
-                className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                  batch.allVisibleSelected
-                    ? 'bg-green-600 border-green-600 text-white'
-                    : batch.someVisibleSelected
-                    ? 'bg-green-100 border-green-600'
-                    : 'border-gray-300 hover:border-green-500'
-                }`}
-              >
-                {batch.allVisibleSelected ? (
-                  <Check className="w-3 h-3" />
-                ) : batch.someVisibleSelected ? (
-                  <Minus className="w-3 h-3 text-green-600" />
-                ) : null}
-              </button>
-            </div>
-            <div className="flex-1 min-w-[160px] text-[11px] font-medium text-gray-500">Nombre</div>
-            <div className="w-[120px] text-[11px] font-medium text-gray-500">Zona</div>
-            <div className="w-[140px] text-[11px] font-medium text-gray-500">Usuario</div>
-            <div className="w-[100px] text-[11px] font-medium text-gray-500">Fecha</div>
-            <div className="w-[110px] text-[11px] font-medium text-gray-500 text-center">Horario</div>
-            <div className="w-[110px] text-[11px] font-medium text-gray-500 text-center">Estado</div>
-            <div className="w-[80px] text-[11px] font-medium text-gray-500 text-center">Paradas</div>
-            <div className="w-[50px] text-[11px] font-medium text-gray-500 text-center">Activo</div>
-            <div className="w-8"></div>
-            <div className="w-[80px] text-[11px] font-medium text-gray-500 text-center">Acción</div>
-          </div>
-
-          {/* Table Body */}
-          <div className="relative min-h-[200px]">
-            <TableLoadingOverlay loading={loading} message="Cargando rutas..." />
-
-            {!loading && routes.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-64 py-20">
-                <MapPin className="w-16 h-16 text-cyan-300 mb-4" />
-                <h3 className="text-lg font-semibold text-gray-700 mb-2">No hay rutas</h3>
-                <p className="text-sm text-gray-500 text-center mb-4">
-                  {searchTerm || estadoFilter !== 'all' || zonaFilter !== 'all'
-                    ? 'No se encontraron resultados con los filtros aplicados'
-                    : 'Crea tu primera ruta de venta para comenzar'}
-                </p>
-              </div>
-            ) : (
-              <div className={`transition-opacity duration-200 ${loading ? 'opacity-50' : 'opacity-100'}`}>
-                {routes.map((route) => {
-                  const badge = getEstadoBadge(route.estado);
-                  return (
-                    <div
-                      key={route.id}
-                      className={`flex items-center gap-3 px-5 py-3.5 border-b border-gray-200 bg-white hover:bg-gray-50 transition-colors cursor-pointer min-w-[900px] ${
-                        !route.activo ? 'opacity-50' : ''
-                      }`}
-                      onClick={() => handleOpenEdit(route)}
-                    >
-                      {/* Checkbox */}
-                      <div className="w-[28px] flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          onClick={() => batch.handleToggleSelect(route.id)}
-                          className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                            batch.selectedIds.has(route.id)
-                              ? 'bg-green-600 border-green-600 text-white'
-                              : 'border-gray-300 hover:border-green-500'
-                          }`}
-                        >
-                          {batch.selectedIds.has(route.id) && <Check className="w-3 h-3" />}
-                        </button>
-                      </div>
-
-                      {/* Nombre — click to view detail */}
-                      <div className="flex-1 min-w-[160px]" onClick={(e) => { e.stopPropagation(); router.push(`/routes/${route.id}`); }}>
-                        <span className="text-[13px] font-medium text-blue-600 hover:text-blue-800 cursor-pointer truncate block">
-                          {route.nombre}
-                        </span>
-                      </div>
-
-                      {/* Zona */}
-                      <div className="w-[120px]">
-                        <span className="text-[13px] text-gray-600 truncate block">
-                          {route.zonaNombre || '-'}
-                        </span>
-                      </div>
-
-                      {/* Usuario */}
-                      <div className="w-[140px]">
-                        <span className="text-[13px] text-gray-600 truncate block">
-                          {route.usuarioNombre}
-                        </span>
-                      </div>
-
-                      {/* Fecha */}
-                      <div className="w-[100px]">
-                        <span className="text-[13px] text-gray-900">
-                          {formatDateOnly(route.fecha)}
-                        </span>
-                      </div>
-
-                      {/* Horario */}
-                      <div className="w-[110px] text-center">
-                        <span className="text-[12px] text-gray-500">
-                          {route.horaInicioEstimada
-                            ? `${route.horaInicioEstimada.substring(0, 5)} - ${route.horaFinEstimada?.substring(0, 5) || '--:--'}`
-                            : '--'}
-                        </span>
-                      </div>
-
-                      {/* Estado */}
-                      <div className="w-[110px] text-center">
-                        <span className={`inline-flex px-2.5 py-0.5 text-[10px] font-medium rounded-full ${badge.cls}`}>
-                          {badge.label}
-                        </span>
-                      </div>
-
-                      {/* Paradas */}
-                      <div className="w-[80px] text-center">
-                        <span className="text-[13px] text-gray-600">
-                          <span className={route.paradasCompletadas === route.totalParadas && route.totalParadas > 0 ? 'text-green-600 font-medium' : ''}>
-                            {route.paradasCompletadas}
-                          </span>
-                          /{route.totalParadas}
-                        </span>
-                      </div>
-
-                      {/* Toggle Activo */}
-                      <div className="w-[50px] flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-                        <ActiveToggle
-                          isActive={route.activo}
-                          onToggle={() => handleToggleActive(route)}
-                          disabled={loading}
-                          isLoading={togglingId === route.id}
-                        />
-                      </div>
-
-                      {/* Editar */}
-                      <div className="w-8 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          onClick={() => handleOpenEdit(route)}
-                          disabled={loading}
-                          className="p-1 text-amber-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors disabled:opacity-50"
-                          title="Editar"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                      </div>
-
-                      {/* Acción contextual */}
-                      <div className="w-[80px] flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-                        {(route.estado === 0) && (
-                          <button onClick={() => router.push(`/routes/manage/${route.id}/load`)} className="text-[11px] font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-md transition-colors">Cargar</button>
-                        )}
-                        {(route.estado === 1 || route.estado === 4 || route.estado === 5) && (
-                          <button onClick={() => router.push(`/routes/manage/${route.id}/load`)} className="text-[11px] font-medium text-gray-600 hover:text-gray-800 bg-gray-50 hover:bg-gray-100 px-2.5 py-1 rounded-md transition-colors">Ver carga</button>
-                        )}
-                        {route.estado === 2 && (
-                          <button onClick={() => router.push(`/routes/manage/${route.id}/close`)} className="text-[11px] font-medium text-green-600 hover:text-green-800 bg-green-50 hover:bg-green-100 px-2.5 py-1 rounded-md transition-colors">Cerrar</button>
-                        )}
-                        {route.estado === 6 && (
-                          <button onClick={() => router.push(`/routes/manage/${route.id}/close`)} className="text-[11px] font-medium text-gray-500 bg-gray-50 px-2.5 py-1 rounded-md">Cerrado</button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Pagination - Always visible when there are routes */}
-        {(routes.length > 0 || loading) && (
-          <ListPagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalItems={totalItems}
-            pageSize={pageSize}
-            onPageChange={setCurrentPage}
-            itemLabel="rutas"
-            loading={loading}
+            }}
           />
-        )}
+        </div>
       </div>
 
       {/* Batch Confirm Modal */}

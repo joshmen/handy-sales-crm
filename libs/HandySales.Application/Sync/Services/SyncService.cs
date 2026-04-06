@@ -84,6 +84,10 @@ public class SyncService
                     else
                     {
                         response.Summary.ClientesPushed++;
+                        if (!string.IsNullOrEmpty(dto.LocalId) && dto.Id == 0)
+                        {
+                            response.CreatedIdMappings.Add(new IdMappingDto { EntityType = "clientes", LocalId = dto.LocalId, ServerId = entity.Id });
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -124,7 +128,9 @@ public class SyncService
                     {
                         response.Summary.PedidosPushed++;
                         // Return ID mapping for newly created records
-                        if (dto.Operation == SyncOperation.Create && !string.IsNullOrEmpty(dto.LocalId))
+                        // Note: with sendCreatedAsUpdated=true, Operation is always Update,
+                        // so detect new records by Id==0 or presence of LocalId
+                        if (!string.IsNullOrEmpty(dto.LocalId) && (dto.Id == 0 || dto.Operation == SyncOperation.Create))
                         {
                             response.CreatedIdMappings.Add(new IdMappingDto
                             {
@@ -172,6 +178,10 @@ public class SyncService
                     else
                     {
                         response.Summary.VisitasPushed++;
+                        if (!string.IsNullOrEmpty(dto.LocalId) && dto.Id == 0)
+                        {
+                            response.CreatedIdMappings.Add(new IdMappingDto { EntityType = "visitas", LocalId = dto.LocalId, ServerId = entity.Id });
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -250,6 +260,10 @@ public class SyncService
                     else
                     {
                         response.Summary.CobrosPushed++;
+                        if (!string.IsNullOrEmpty(dto.LocalId) && dto.Id == 0)
+                        {
+                            response.CreatedIdMappings.Add(new IdMappingDto { EntityType = "cobros", LocalId = dto.LocalId, ServerId = entity.Id });
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -363,6 +377,7 @@ public class SyncService
             response.ServerChanges.Pedidos = pedidos.Select(p => new SyncPedidoDto
             {
                 Id = p.Id,
+                LocalId = p.MobileRecordId,
                 ClienteId = p.ClienteId,
                 NumeroPedido = p.NumeroPedido,
                 FechaPedido = p.FechaPedido,

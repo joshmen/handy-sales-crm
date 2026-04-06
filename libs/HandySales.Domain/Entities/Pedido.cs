@@ -40,6 +40,9 @@ public class Pedido : AuditableEntity
     [Column("numero_pedido")]
     public string NumeroPedido { get; set; } = null!;
 
+    [Column("mobile_record_id")]
+    public string? MobileRecordId { get; set; }
+
     [Column("fecha_pedido")]
     public DateTime FechaPedido { get; set; } = DateTime.UtcNow;
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
 import { Button } from '@/components/ui/Button';
 import { useBatchOperations } from '@/hooks/useBatchOperations';
@@ -12,6 +12,7 @@ import { toast } from '@/hooks/useToast';
 import { api } from '@/lib/api';
 import { exportToCsv } from '@/services/api/importExport';
 import { CsvImportModal } from '@/components/shared/CsvImportModal';
+import { DataGrid, type DataGridColumn } from '@/components/ui/DataGrid';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -20,7 +21,6 @@ import {
   Pencil,
   Loader2,
   Check,
-  Minus,
   ListOrdered,
   RefreshCw,
   Download,
@@ -29,11 +29,9 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import { ListPagination } from '@/components/ui/ListPagination';
 import { CurrencyDollar } from '@phosphor-icons/react';
 import { SearchBar } from '@/components/common/SearchBar';
 import { InactiveToggle } from '@/components/ui/InactiveToggle';
-import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
 import { ActiveToggle } from '@/components/ui/ActiveToggle';
 import { useFormatters } from '@/hooks/useFormatters';
 
@@ -119,10 +117,31 @@ export default function PriceListsPage() {
     return result;
   }, [priceLists, searchTerm, showInactive]);
 
+  // Sort state
+  const [sortKey, setSortKey] = useState('nombre');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  const handleSortChange = useCallback((key: string) => {
+    if (sortKey === key) {
+      setSortDir(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  }, [sortKey]);
+
+  const sortedLists = useMemo(() => {
+    return [...filteredLists].sort((a, b) => {
+      const aVal = String((a as unknown as Record<string, unknown>)[sortKey] ?? '').toLowerCase();
+      const bVal = String((b as unknown as Record<string, unknown>)[sortKey] ?? '').toLowerCase();
+      return sortDir === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+    });
+  }, [filteredLists, sortKey, sortDir]);
+
   // Pagination
-  const totalItems = filteredLists.length;
+  const totalItems = sortedLists.length;
   const totalPages = Math.ceil(totalItems / pageSize);
-  const paginatedLists = filteredLists.slice(
+  const paginatedLists = sortedLists.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   );
@@ -344,74 +363,71 @@ export default function PriceListsPage() {
           loading={batch.batchLoading}
         />
 
-        {/* Mobile Cards */}
-        <div className="sm:hidden space-y-3">
-          {loading && (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-green-600" />
-            </div>
-          )}
-          {!loading && paginatedLists.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12">
-              <CurrencyDollar className="w-12 h-12 text-green-300 mb-3" weight="duotone" />
-              <p className="text-sm text-gray-500">No hay listas de precios</p>
-            </div>
-          ) : (
-            paginatedLists.map((list) => (
-              <div
-                key={list.id}
-                className={`border border-gray-200 rounded-lg p-3 bg-white ${
-                  !list.activo ? 'opacity-60' : ''
-                }`}
-              >
-                {/* Row 1: Checkbox + Icon + Name/Description + Toggle */}
+        {/* DataGrid */}
+        <div data-tour="pricelists-table">
+          <DataGrid<ListaPrecio>
+            columns={[
+              { key: 'id', label: 'ID', width: 60, sortable: true, cellRenderer: (item) => <span className="font-mono text-gray-500">{item.id}</span> },
+              { key: 'nombre', label: 'Nombre', width: 'flex', sortable: true, cellRenderer: (item) => <span className="font-medium text-gray-900">{item.nombre}</span> },
+              { key: 'descripcion', label: 'Descripción', width: 'flex', sortable: true, hiddenOnMobile: true, cellRenderer: (item) => <span className="text-gray-500 truncate">{item.descripcion || '-'}</span> },
+              { key: 'actualizadoEn', label: 'Modificación', width: 140, sortable: true, hiddenOnMobile: true, cellRenderer: (item) => <span className="text-gray-500">{formatDate(item.actualizadoEn || item.creadoEn)}</span> },
+              { key: 'activo', label: 'Activo', width: 50, align: 'center', cellRenderer: (item) => (
+                <div onClick={e => e.stopPropagation()}>
+                  <ActiveToggle isActive={item.activo} onToggle={() => handleToggleActive(item)} disabled={loading} isLoading={togglingId === item.id} />
+                </div>
+              )},
+              { key: 'actions', label: '', width: 80, cellRenderer: (item) => (
+                <div className="flex items-center justify-center gap-1" onClick={e => e.stopPropagation()}>
+                  <button onClick={() => handleOpenEdit(item)} disabled={loading} className="p-1 text-amber-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors disabled:opacity-50" title="Editar">
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                  {deleteConfirmId === item.id ? (
+                    <>
+                      <button onClick={() => { handleDelete(item.id); setDeleteConfirmId(null); }} className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"><Check className="w-4 h-4" /></button>
+                      <button onClick={() => setDeleteConfirmId(null)} className="p-1 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X className="w-4 h-4" /></button>
+                    </>
+                  ) : (
+                    <button onClick={() => setDeleteConfirmId(item.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Eliminar"><Trash2 className="w-4 h-4" /></button>
+                  )}
+                </div>
+              )},
+            ] as DataGridColumn<ListaPrecio>[]}
+            data={paginatedLists}
+            keyExtractor={(item) => item.id}
+            selection={{
+              selectedIds: batch.selectedIds,
+              onToggle: (id) => batch.handleToggleSelect(id as number),
+              onSelectAll: batch.handleSelectAllVisible,
+              onClearAll: batch.handleClearSelection,
+            }}
+            pagination={{ currentPage, totalPages, totalItems, pageSize, onPageChange: setCurrentPage }}
+            sort={{ key: sortKey, direction: sortDir, onSort: handleSortChange }}
+            loading={loading}
+            loadingMessage="Cargando listas..."
+            emptyIcon={<CurrencyDollar className="w-16 h-16 text-green-300" weight="duotone" />}
+            emptyTitle="No hay listas de precios"
+            emptyMessage={searchTerm ? 'No se encontraron resultados para tu búsqueda' : 'Crea tu primera lista de precios para comenzar'}
+            mobileCardRenderer={(list) => (
+              <div className={!list.activo ? 'opacity-60' : ''}>
                 <div className="flex items-center gap-3 mb-2">
-                  <button
-                    onClick={() => batch.handleToggleSelect(list.id)}
-                    className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                      batch.selectedIds.has(list.id)
-                        ? 'bg-green-600 border-green-600 text-white'
-                        : 'border-gray-300 hover:border-green-500'
-                    }`}
-                  >
+                  <button onClick={() => batch.handleToggleSelect(list.id)} className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${batch.selectedIds.has(list.id) ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300 hover:border-green-500'}`}>
                     {batch.selectedIds.has(list.id) && <Check className="w-3 h-3" />}
                   </button>
-
-                  <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-sm font-medium flex-shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
                     <CurrencyDollar className="w-5 h-5 text-green-600" weight="duotone" />
                   </div>
-
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-gray-900 truncate">
-                      {list.nombre}
-                    </div>
+                    <div className="text-sm font-medium text-gray-900 truncate">{list.nombre}</div>
                     <div className="text-xs text-gray-500 truncate">{list.descripcion || 'Sin descripción'}</div>
                   </div>
-
-                  <ActiveToggle
-                    isActive={list.activo}
-                    onToggle={() => handleToggleActive(list)}
-                    disabled={loading}
-                    isLoading={togglingId === list.id}
-                  />
+                  <ActiveToggle isActive={list.activo} onToggle={() => handleToggleActive(list)} disabled={loading} isLoading={togglingId === list.id} />
                 </div>
-
-                {/* Row 2: Badges */}
                 <div className="flex flex-wrap items-center gap-2 mb-2">
-                  <span className="inline-flex items-center px-2 py-1 rounded-md bg-gray-50 text-gray-600 text-xs font-medium">
-                    {formatDate(list.actualizadoEn || list.creadoEn)}
-                  </span>
+                  <span className="inline-flex items-center px-2 py-1 rounded-md bg-gray-50 text-gray-600 text-xs font-medium">{formatDate(list.actualizadoEn || list.creadoEn)}</span>
                 </div>
-
-                {/* Row 3: Actions */}
                 <div className="flex justify-end gap-1">
-                  <button
-                    onClick={() => handleOpenEdit(list)}
-                    disabled={loading}
-                    className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded disabled:opacity-50 transition-colors"
-                  >
-                    <Pencil className="w-3.5 h-3.5 text-amber-400 hover:text-amber-600" />
-                    <span>Editar</span>
+                  <button onClick={() => handleOpenEdit(list)} disabled={loading} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded disabled:opacity-50 transition-colors">
+                    <Pencil className="w-3.5 h-3.5 text-amber-400 hover:text-amber-600" /><span>Editar</span>
                   </button>
                   {deleteConfirmId === list.id ? (
                     <div className="flex items-center gap-1">
@@ -423,135 +439,9 @@ export default function PriceListsPage() {
                   )}
                 </div>
               </div>
-            ))
-          )}
-        </div>
-
-        {/* Table */}
-        <div className="hidden sm:block bg-white border border-gray-200 rounded-lg overflow-x-auto" data-tour="pricelists-table">
-          {/* Table Header */}
-          <div className="flex items-center gap-3 bg-gray-50 px-5 h-10 border-b border-gray-200 min-w-[700px]">
-            <div className="w-[28px] flex items-center justify-center">
-              <button
-                onClick={batch.handleSelectAllVisible}
-                className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                  batch.allVisibleSelected
-                    ? 'bg-green-600 border-green-600 text-white'
-                    : batch.someVisibleSelected
-                    ? 'bg-green-100 border-green-600'
-                    : 'border-gray-300 hover:border-green-500'
-                }`}
-              >
-                {batch.allVisibleSelected ? (
-                  <Check className="w-3 h-3" />
-                ) : batch.someVisibleSelected ? (
-                  <Minus className="w-3 h-3 text-green-600" />
-                ) : null}
-              </button>
-            </div>
-            <div className="w-[60px] text-[11px] font-medium text-gray-500">ID</div>
-            <div className="flex-1 text-[11px] font-medium text-gray-500">Nombre</div>
-            <div className="flex-1 text-[11px] font-medium text-gray-500">Descripción</div>
-            <div className="w-[140px] text-[11px] font-medium text-gray-500">Modificación</div>
-            <div className="w-[50px] text-[11px] font-medium text-gray-500 text-center">Activo</div>
-            <div className="w-16"></div>
-          </div>
-
-          {/* Table Body */}
-          <div className="relative min-h-[200px]">
-            <TableLoadingOverlay loading={loading} message="Cargando listas..." />
-
-            {/* Empty State */}
-            {!loading && paginatedLists.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-64 py-20">
-                <CurrencyDollar className="w-16 h-16 text-green-300 mb-4" weight="duotone" />
-                <h3 className="text-lg font-semibold text-gray-700 mb-2">No hay listas de precios</h3>
-                <p className="text-sm text-gray-500 text-center">
-                  {searchTerm
-                    ? 'No se encontraron resultados para tu búsqueda'
-                    : 'Crea tu primera lista de precios para comenzar'}
-                </p>
-              </div>
-            ) : (
-              /* Table Rows */
-              <div className={`transition-opacity duration-200 ${loading ? 'opacity-50' : 'opacity-100'}`}>
-                {paginatedLists.map((list) => (
-                  <div
-                    key={list.id}
-                    className={`flex items-center gap-3 px-5 py-3.5 border-b border-gray-200 bg-white hover:bg-gray-50 transition-colors min-w-[700px] ${
-                      !list.activo ? 'opacity-50' : ''
-                    }`}
-                  >
-                    <div className="w-[28px] flex items-center justify-center">
-                      <button
-                        onClick={() => batch.handleToggleSelect(list.id)}
-                        className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                          batch.selectedIds.has(list.id)
-                            ? 'bg-green-600 border-green-600 text-white'
-                            : 'border-gray-300 hover:border-green-500'
-                        }`}
-                      >
-                        {batch.selectedIds.has(list.id) && <Check className="w-3 h-3" />}
-                      </button>
-                    </div>
-                    <div className="w-[60px] text-[13px] font-mono text-gray-500">
-                      {list.id}
-                    </div>
-                    <div className="flex-1 text-[13px] font-medium text-gray-900">
-                      {list.nombre}
-                    </div>
-                    <div className="flex-1 text-[13px] text-gray-500 truncate pr-4">
-                      {list.descripcion || '-'}
-                    </div>
-                    <div className="w-[140px] text-[13px] text-gray-500">
-                      {formatDate(list.actualizadoEn || list.creadoEn)}
-                    </div>
-                    <div className="w-[50px] flex items-center justify-center">
-                      <ActiveToggle
-                        isActive={list.activo}
-                        onToggle={() => handleToggleActive(list)}
-                        disabled={loading}
-                        isLoading={togglingId === list.id}
-                      />
-                    </div>
-                    <div className="w-16 flex items-center justify-center gap-1">
-                      <button
-                        onClick={() => handleOpenEdit(list)}
-                        disabled={loading}
-                        className="p-1 text-amber-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors disabled:opacity-50"
-                        title="Editar"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                      {deleteConfirmId === list.id ? (
-                        <>
-                          <button onClick={() => { handleDelete(list.id); setDeleteConfirmId(null); }} className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"><Check className="w-4 h-4" /></button>
-                          <button onClick={() => setDeleteConfirmId(null)} className="p-1 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X className="w-4 h-4" /></button>
-                        </>
-                      ) : (
-                        <button onClick={() => setDeleteConfirmId(list.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Eliminar"><Trash2 className="w-4 h-4" /></button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
             )}
-          </div>
-        </div>
-
-        {/* Pagination */}
-        {(paginatedLists.length > 0 || loading) && totalItems > 0 && (
-          <ListPagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalItems={totalItems}
-            pageSize={pageSize}
-            onPageChange={setCurrentPage}
-            itemLabel="listas de precios"
-            loading={loading}
-            className="pt-4"
           />
-        )}
+        </div>
       </div>
 
       {/* Batch Confirm Modal */}

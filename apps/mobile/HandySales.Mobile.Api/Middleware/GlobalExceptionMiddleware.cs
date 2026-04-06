@@ -55,10 +55,10 @@ public class GlobalExceptionMiddleware
     {
         return exception switch
         {
-            ArgumentException => "Parámetros inválidos en la solicitud",
+            InvalidOperationException ex => !string.IsNullOrEmpty(ex.Message) ? ex.Message : "Operación no válida",
+            ArgumentException ex => !string.IsNullOrEmpty(ex.Message) ? ex.Message : "Parámetros inválidos en la solicitud",
             UnauthorizedAccessException => "Acceso no autorizado",
             KeyNotFoundException => "Recurso no encontrado",
-            InvalidOperationException => "Operación no válida",
             _ => "Ocurrió un error al procesar tu solicitud"
         };
     }

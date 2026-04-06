@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -13,9 +13,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { SearchBar } from '@/components/common/SearchBar';
 import { InactiveToggle } from '@/components/ui/InactiveToggle';
-import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
 import { ActiveToggle } from '@/components/ui/ActiveToggle';
-import { ListPagination } from '@/components/ui/ListPagination';
+import { DataGrid, type DataGridColumn } from '@/components/ui/DataGrid';
 import { api } from '@/lib/api';
 import {
   Plus,
@@ -94,10 +93,31 @@ export default function UnitsPage() {
     return result;
   }, [units, searchTerm, showInactive]);
 
+  // Sort state
+  const [sortKey, setSortKey] = useState('nombre');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  const handleSortChange = useCallback((key: string) => {
+    if (sortKey === key) {
+      setSortDir(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  }, [sortKey]);
+
+  const sortedUnits = useMemo(() => {
+    return [...filteredUnits].sort((a, b) => {
+      const aVal = String((a as unknown as Record<string, unknown>)[sortKey] ?? '').toLowerCase();
+      const bVal = String((b as unknown as Record<string, unknown>)[sortKey] ?? '').toLowerCase();
+      return sortDir === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+    });
+  }, [filteredUnits, sortKey, sortDir]);
+
   // Pagination
-  const totalItems = filteredUnits.length;
+  const totalItems = sortedUnits.length;
   const totalPages = Math.ceil(totalItems / pageSize);
-  const paginatedUnits = filteredUnits.slice(
+  const paginatedUnits = sortedUnits.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   );
@@ -213,150 +233,71 @@ export default function UnitsPage() {
           </div>
         </div>
 
-        {/* Mobile Cards */}
-        <div className="sm:hidden space-y-3">
-          {loading && (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-green-600" />
-            </div>
-          )}
-          {!loading && paginatedUnits.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12">
-              <Ruler className="w-12 h-12 text-orange-300 mb-3" />
-              <p className="text-sm text-gray-500">
-                {searchTerm ? 'No se encontraron unidades' : 'No hay unidades de medida'}
-              </p>
-            </div>
-          ) : (
-            paginatedUnits.map((unit) => (
-              <div
-                key={unit.id}
-                className={`border border-gray-200 rounded-lg p-3 bg-white ${!unit.activo ? 'opacity-60' : ''}`}
-              >
-                {/* Row 1: Icon + Name */}
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
-                    <Ruler className="w-5 h-5 text-orange-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-gray-900 truncate">
-                      {unit.nombre}
-                    </div>
-                    <div className="text-xs text-gray-500 font-mono">{unit.abreviatura || '-'}</div>
-                  </div>
-                </div>
-                {/* Row 2: Toggle + Actions */}
-                <div className="flex items-center justify-between">
-                  <ActiveToggle
-                    isActive={unit.activo}
-                    onToggle={() => handleToggleActive(unit)}
-                    isLoading={togglingId === unit.id}
-                  />
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => handleOpenEdit(unit)}
-                      className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                    >
-                      <Edit2 className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Editar</span>
-                    </button>
-                    {deleteConfirmId === unit.id ? (
-                      <div className="flex items-center gap-1">
-                        <button onClick={() => { handleDelete(unit.id); setDeleteConfirmId(null); }} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"><Check size={16} /></button>
-                        <button onClick={() => setDeleteConfirmId(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X size={16} /></button>
-                      </div>
-                    ) : (
-                      <button onClick={() => setDeleteConfirmId(unit.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"><Trash2 size={16} /></button>
-                    )}
-                  </div>
-                </div>
+        {/* DataGrid */}
+        <DataGrid<Unit>
+          columns={[
+            { key: 'id', label: 'ID', width: 60, sortable: true, cellRenderer: (item) => <span className="font-mono text-gray-500">{item.id}</span> },
+            { key: 'nombre', label: 'Nombre', width: 'flex', sortable: true, cellRenderer: (item) => <span className="font-medium text-gray-900">{item.nombre}</span> },
+            { key: 'abreviatura', label: 'Abreviatura', width: 120, sortable: true, cellRenderer: (item) => <span className="text-gray-500 font-mono">{item.abreviatura || '-'}</span> },
+            { key: 'activo', label: 'Activo', width: 50, align: 'center', cellRenderer: (item) => (
+              <div onClick={e => e.stopPropagation()}>
+                <ActiveToggle isActive={item.activo} onToggle={() => handleToggleActive(item)} isLoading={togglingId === item.id} />
               </div>
-            ))
-          )}
-        </div>
-
-        {/* Table */}
-        <div className="hidden sm:block bg-white border border-gray-200 rounded-lg overflow-x-auto">
-          {/* Table Header */}
-          <div className="min-w-[500px] flex items-center gap-3 bg-gray-50 px-5 h-10 border-b border-gray-200">
-            <div className="w-[60px] text-[11px] font-medium text-gray-500">ID</div>
-            <div className="flex-1 text-[11px] font-medium text-gray-500">Nombre</div>
-            <div className="w-[120px] text-[11px] font-medium text-gray-500">Abreviatura</div>
-            <div className="w-[50px] text-[11px] font-medium text-gray-500 text-center">Activo</div>
-            <div className="w-16"></div>
-          </div>
-
-          {/* Table Body */}
-          <div className="relative min-h-[200px]">
-            <TableLoadingOverlay loading={loading} message="Cargando unidades..." />
-
-            {!loading && paginatedUnits.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-64 py-20">
-                <Ruler className="w-16 h-16 text-orange-300 mb-4" />
-                <h3 className="text-lg font-semibold text-gray-700 mb-2">No hay unidades</h3>
-                <p className="text-sm text-gray-500 text-center">
-                  {searchTerm
-                    ? 'No se encontraron unidades con ese término'
-                    : 'Crea tu primera unidad de medida para comenzar'}
-                </p>
+            )},
+            { key: 'actions', label: '', width: 80, cellRenderer: (item) => (
+              <div className="flex items-center justify-center gap-1" onClick={e => e.stopPropagation()}>
+                <button onClick={() => handleOpenEdit(item)} disabled={loading} className="p-1 hover:bg-amber-50 rounded transition-colors disabled:opacity-50" title="Editar">
+                  <Edit2 className="w-4 h-4 text-amber-400 hover:text-amber-600" />
+                </button>
+                {deleteConfirmId === item.id ? (
+                  <>
+                    <button onClick={() => { handleDelete(item.id); setDeleteConfirmId(null); }} className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"><Check className="w-4 h-4" /></button>
+                    <button onClick={() => setDeleteConfirmId(null)} className="p-1 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X className="w-4 h-4" /></button>
+                  </>
+                ) : (
+                  <button onClick={() => setDeleteConfirmId(item.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Eliminar"><Trash2 className="w-4 h-4" /></button>
+                )}
               </div>
-            ) : (
-              <div className={`transition-opacity duration-200 ${loading ? 'opacity-50' : 'opacity-100'}`}>
-                {paginatedUnits.map((unit) => (
-                  <div
-                    key={unit.id}
-                    className={`min-w-[500px] flex items-center gap-3 px-5 py-3.5 border-b border-gray-200 bg-white hover:bg-gray-50 transition-colors ${!unit.activo ? 'opacity-50' : ''}`}
-                  >
-                    <div className="w-[60px] text-[13px] font-mono text-gray-500">
-                      {unit.id}
-                    </div>
-                    <div className="flex-1 text-[13px] font-medium text-gray-900">
-                      {unit.nombre}
-                    </div>
-                    <div className="w-[120px] text-[13px] text-gray-500 font-mono">
-                      {unit.abreviatura || '-'}
-                    </div>
-                    <div className="w-[50px] flex items-center justify-center">
-                      <ActiveToggle
-                        isActive={unit.activo}
-                        onToggle={() => handleToggleActive(unit)}
-                        isLoading={togglingId === unit.id}
-                      />
-                    </div>
-                    <div className="w-16 flex items-center justify-center gap-1">
-                      <button
-                        onClick={() => handleOpenEdit(unit)}
-                        disabled={loading}
-                        className="p-1 hover:bg-amber-50 rounded transition-colors disabled:opacity-50"
-                        title="Editar"
-                      >
-                        <Edit2 className="w-4 h-4 text-amber-400 hover:text-amber-600" />
-                      </button>
-                      {deleteConfirmId === unit.id ? (
-                        <>
-                          <button onClick={() => { handleDelete(unit.id); setDeleteConfirmId(null); }} className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"><Check className="w-4 h-4" /></button>
-                          <button onClick={() => setDeleteConfirmId(null)} className="p-1 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X className="w-4 h-4" /></button>
-                        </>
-                      ) : (
-                        <button onClick={() => setDeleteConfirmId(unit.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Eliminar"><Trash2 className="w-4 h-4" /></button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Pagination */}
-        <ListPagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          totalItems={totalItems}
-          pageSize={pageSize}
-          onPageChange={setCurrentPage}
-          itemLabel="unidades"
+            )},
+          ] as DataGridColumn<Unit>[]}
+          data={paginatedUnits}
+          keyExtractor={(item) => item.id}
+          pagination={{ currentPage, totalPages, totalItems, pageSize, onPageChange: setCurrentPage }}
+          sort={{ key: sortKey, direction: sortDir, onSort: handleSortChange }}
           loading={loading}
+          loadingMessage="Cargando unidades..."
+          emptyIcon={<Ruler className="w-16 h-16 text-orange-300" />}
+          emptyTitle={searchTerm ? 'No se encontraron unidades' : 'No hay unidades'}
+          emptyMessage={searchTerm ? 'No se encontraron unidades con ese término' : 'Crea tu primera unidad de medida para comenzar'}
+          mobileCardRenderer={(unit) => (
+            <div className={!unit.activo ? 'opacity-60' : ''}>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
+                  <Ruler className="w-5 h-5 text-orange-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-gray-900 truncate">{unit.nombre}</div>
+                  <div className="text-xs text-gray-500 font-mono">{unit.abreviatura || '-'}</div>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <ActiveToggle isActive={unit.activo} onToggle={() => handleToggleActive(unit)} isLoading={togglingId === unit.id} />
+                <div className="flex items-center gap-1">
+                  <button onClick={() => handleOpenEdit(unit)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors">
+                    <Edit2 className="w-3.5 h-3.5 text-amber-400" /><span>Editar</span>
+                  </button>
+                  {deleteConfirmId === unit.id ? (
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => { handleDelete(unit.id); setDeleteConfirmId(null); }} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"><Check size={16} /></button>
+                      <button onClick={() => setDeleteConfirmId(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X size={16} /></button>
+                    </div>
+                  ) : (
+                    <button onClick={() => setDeleteConfirmId(unit.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"><Trash2 size={16} /></button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         />
       </div>
 

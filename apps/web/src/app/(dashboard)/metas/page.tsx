@@ -10,10 +10,9 @@ import { Button } from '@/components/ui/Button';
 import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { SearchBar } from '@/components/common/SearchBar';
-import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
 import { ActiveToggle } from '@/components/ui/ActiveToggle';
 import { InactiveToggle } from '@/components/ui/InactiveToggle';
-import { ListPagination } from '@/components/ui/ListPagination';
+import { DataGrid, type DataGridColumn } from '@/components/ui/DataGrid';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import {
   metaVendedorService,
@@ -198,12 +197,40 @@ export default function MetasPage() {
     return result;
   }, [metas, showInactive, filterTipo, searchTerm]);
 
+  // Sort state
+  const [sortKey, setSortKey] = useState('usuarioNombre');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  const handleSortChange = useCallback((key: string) => {
+    if (sortKey === key) {
+      setSortDir(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  }, [sortKey]);
+
+  const sorted = useMemo(() => {
+    return [...filtered].sort((a, b) => {
+      let aVal: string | number;
+      let bVal: string | number;
+      if (sortKey === 'monto') {
+        aVal = a.monto;
+        bVal = b.monto;
+        return sortDir === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+      aVal = String((a as unknown as Record<string, unknown>)[sortKey] ?? '').toLowerCase();
+      bVal = String((b as unknown as Record<string, unknown>)[sortKey] ?? '').toLowerCase();
+      return sortDir === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+    });
+  }, [filtered, sortKey, sortDir]);
+
   const paginated = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
-    return filtered.slice(start, start + pageSize);
-  }, [filtered, currentPage, pageSize]);
+    return sorted.slice(start, start + pageSize);
+  }, [sorted, currentPage, pageSize]);
 
-  const totalPages = Math.ceil(filtered.length / pageSize);
+  const totalPages = Math.ceil(sorted.length / pageSize);
 
   // ─── Drawer helpers ────────────────────────────────
   const openCreate = () => {
@@ -371,225 +398,100 @@ export default function MetasPage() {
         </button>
       </div>
 
-      {/* Desktop Table */}
-      <div className="hidden sm:block flex-1 overflow-auto px-6 py-4">
-        <div
-          data-tour="metas-table"
-          className="bg-white rounded-xl border border-gray-200 overflow-hidden page-animate page-animate-delay-1"
-        >
-          {/* Table Header */}
-          <div className="bg-gray-50 border-b border-gray-200 grid" style={{ gridTemplateColumns: 'repeat(' + (isAdmin ? '7' : '6') + ', minmax(0, 1fr))' }}>
-            <div className="text-left px-4 py-3 text-xs font-medium text-gray-500">Vendedor</div>
-            <div className="text-left px-4 py-3 text-xs font-medium text-gray-500">Tipo</div>
-            <div className="text-left px-4 py-3 text-xs font-medium text-gray-500">Período</div>
-            <div className="text-right px-4 py-3 text-xs font-medium text-gray-500">Meta</div>
-            <div className="text-left px-4 py-3 text-xs font-medium text-gray-500">Vigencia</div>
-            <div className="text-center px-4 py-3 text-xs font-medium text-gray-500">Estado</div>
-            {isAdmin && <div className="text-center px-4 py-3 text-xs font-medium text-gray-500">Acciones</div>}
-          </div>
-
-          {/* Table Body */}
-          <div className="relative min-h-[200px]">
-            <TableLoadingOverlay loading={loading} message="Cargando metas..." />
-          <table className="w-full text-sm">
-            <thead className="sr-only">
-              <tr>
-                <th className="text-left px-4 py-3 text-gray-500 font-medium">Vendedor</th>
-                <th className="text-left px-4 py-3 text-gray-500 font-medium">Tipo</th>
-                <th className="text-left px-4 py-3 text-gray-500 font-medium">Período</th>
-                <th className="text-right px-4 py-3 text-gray-500 font-medium">Meta</th>
-                <th className="text-left px-4 py-3 text-gray-500 font-medium">Vigencia</th>
-                <th className="text-center px-4 py-3 text-gray-500 font-medium">Estado</th>
-                {isAdmin && <th className="text-center px-4 py-3 text-gray-500 font-medium">Acciones</th>}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {paginated.length === 0 && !loading ? (
-                <tr>
-                  <td colSpan={isAdmin ? 7 : 6} className="text-center py-12 text-gray-400">
-                    <div className="flex flex-col items-center gap-2">
-                      <Target className="w-8 h-8 text-gray-300" weight="duotone" />
-                      {searchTerm || filterTipo
-                        ? 'Sin resultados para los filtros aplicados'
-                        : 'No hay metas registradas'}
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                paginated.map((meta, i) => (
-                  <tr
-                    key={meta.id}
-                    className={`hover:bg-gray-50 transition-colors page-animate`}
-                    style={{ animationDelay: `${i * 30}ms` }}
-                  >
-                    <td className="px-4 py-3 font-medium text-gray-900">
-                      {meta.usuarioNombre || `Usuario #${meta.usuarioId}`}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${TIPO_COLORS[meta.tipo] ?? 'bg-gray-100 text-gray-700'}`}>
-                        {TIPO_LABELS[meta.tipo] ?? meta.tipo}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">
-                      {PERIODO_LABELS[meta.periodo] ?? meta.periodo}
-                    </td>
-                    <td className="px-4 py-3 text-right font-semibold text-gray-900">
-                      {meta.tipo === 'ventas'
-                        ? formatCurrency(meta.monto)
-                        : formatNumber(meta.monto)}
-                    </td>
-                    <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
-                      <div className="flex items-center gap-1.5">
-                        <span>{formatDate(meta.fechaInicio)} – {formatDate(meta.fechaFin)}</span>
-                        {meta.autoRenovar && (
-                          <RefreshCw className="w-3 h-3 text-blue-500" />
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      {isAdmin ? (
-                        <ActiveToggle
-                          isActive={meta.activo}
-                          isLoading={togglingId === meta.id}
-                          onToggle={() => handleToggle(meta)}
-                        />
-                      ) : (
-                        <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${meta.activo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                          {meta.activo ? 'Activo' : 'Inactivo'}
-                        </span>
-                      )}
-                    </td>
-                    {isAdmin && (
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-center gap-1">
-                          <button
-                            onClick={() => openEdit(meta)}
-                            className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
-                            title="Editar"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => setConfirmDeleteId(meta.id)}
-                            className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                            title="Eliminar"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    )}
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-          </div>
-        </div>
-
-        {totalPages > 1 && (
-          <div className="mt-4">
-            <ListPagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
-              totalItems={filtered.length}
-              pageSize={pageSize}
-            />
-          </div>
-        )}
-      </div>
-
-      {/* Mobile Cards */}
-      <div className="sm:hidden flex-1 overflow-auto px-4 py-3 space-y-3">
-        {loading && (
-          <div className="flex justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-green-600" />
-          </div>
-        )}
-        {!loading && paginated.length === 0 && (
-          <div className="text-center py-12 text-gray-400">
-            <Target className="w-8 h-8 text-gray-300 mx-auto mb-2" weight="duotone" />
-            {searchTerm || filterTipo
-              ? 'Sin resultados para los filtros aplicados'
-              : 'No hay metas registradas'}
-          </div>
-        )}
-        <div className={`transition-opacity duration-200 ${loading ? "opacity-50" : "opacity-100"} space-y-3`}>
-        {paginated.map((meta, i) => (
-          <div
-            key={meta.id}
-            className="bg-white border border-gray-200 rounded-xl p-4 space-y-3 page-animate"
-            style={{ animationDelay: `${i * 40}ms` }}
-          >
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-900 truncate">
-                  {meta.usuarioNombre || `Usuario #${meta.usuarioId}`}
-                </p>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${TIPO_COLORS[meta.tipo] ?? 'bg-gray-100 text-gray-700'}`}>
-                    {TIPO_LABELS[meta.tipo] ?? meta.tipo}
+      {/* DataGrid */}
+      <div className="flex-1 overflow-auto px-4 sm:px-6 py-4" data-tour="metas-table">
+        <DataGrid<MetaVendedor>
+          columns={[
+            { key: 'usuarioNombre', label: 'Vendedor', width: 'flex', sortable: true, cellRenderer: (item) => <span className="font-medium text-gray-900">{item.usuarioNombre || `Usuario #${item.usuarioId}`}</span> },
+            { key: 'tipo', label: 'Tipo', width: 100, sortable: true, cellRenderer: (item) => (
+              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${TIPO_COLORS[item.tipo] ?? 'bg-gray-100 text-gray-700'}`}>
+                {TIPO_LABELS[item.tipo] ?? item.tipo}
+              </span>
+            )},
+            { key: 'periodo', label: 'Periodo', width: 100, sortable: true, hiddenOnMobile: true, cellRenderer: (item) => <span className="text-gray-600">{PERIODO_LABELS[item.periodo] ?? item.periodo}</span> },
+            { key: 'monto', label: 'Meta', width: 120, sortable: true, align: 'right', cellRenderer: (item) => <span className="font-semibold text-gray-900">{item.tipo === 'ventas' ? formatCurrency(item.monto) : formatNumber(item.monto)}</span> },
+            { key: 'fechaInicio', label: 'Vigencia', width: 180, sortable: true, hiddenOnMobile: true, cellRenderer: (item) => (
+              <div className="flex items-center gap-1.5 text-gray-500 text-xs whitespace-nowrap">
+                <span>{formatDate(item.fechaInicio)} - {formatDate(item.fechaFin)}</span>
+                {item.autoRenovar && <RefreshCw className="w-3 h-3 text-blue-500" />}
+              </div>
+            )},
+            { key: 'activo', label: 'Estado', width: 80, align: 'center', cellRenderer: (item) => (
+              <div onClick={e => e.stopPropagation()}>
+                {isAdmin ? (
+                  <ActiveToggle isActive={item.activo} isLoading={togglingId === item.id} onToggle={() => handleToggle(item)} />
+                ) : (
+                  <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${item.activo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                    {item.activo ? 'Activo' : 'Inactivo'}
                   </span>
-                  <span className="text-xs text-gray-500">{PERIODO_LABELS[meta.periodo]}</span>
+                )}
+              </div>
+            )},
+            ...(isAdmin ? [{
+              key: 'actions',
+              label: '',
+              width: 80,
+              align: 'center' as const,
+              cellRenderer: (item: MetaVendedor) => (
+                <div className="flex items-center justify-center gap-1" onClick={e => e.stopPropagation()}>
+                  <button onClick={() => openEdit(item)} className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors" title="Editar">
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={() => setConfirmDeleteId(item.id)} className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Eliminar">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ),
+            }] : []),
+          ] as DataGridColumn<MetaVendedor>[]}
+          data={paginated}
+          keyExtractor={(item) => item.id}
+          pagination={{ currentPage, totalPages, totalItems: sorted.length, pageSize, onPageChange: setCurrentPage }}
+          sort={{ key: sortKey, direction: sortDir, onSort: handleSortChange }}
+          loading={loading}
+          loadingMessage="Cargando metas..."
+          emptyIcon={<Target className="w-8 h-8 text-gray-300" weight="duotone" />}
+          emptyTitle={searchTerm || filterTipo ? 'Sin resultados para los filtros aplicados' : 'No hay metas registradas'}
+          mobileCardRenderer={(meta) => (
+            <div className="space-y-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-gray-900 truncate">{meta.usuarioNombre || `Usuario #${meta.usuarioId}`}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${TIPO_COLORS[meta.tipo] ?? 'bg-gray-100 text-gray-700'}`}>
+                      {TIPO_LABELS[meta.tipo] ?? meta.tipo}
+                    </span>
+                    <span className="text-xs text-gray-500">{PERIODO_LABELS[meta.periodo]}</span>
+                  </div>
+                </div>
+                {isAdmin && <ActiveToggle isActive={meta.activo} isLoading={togglingId === meta.id} onToggle={() => handleToggle(meta)} />}
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-400 mb-0.5">Objetivo</p>
+                  <p className="font-semibold text-gray-900">{meta.tipo === 'ventas' ? formatCurrency(meta.monto) : formatNumber(meta.monto)}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-gray-400 mb-0.5">Vigencia</p>
+                  <div className="flex items-center gap-1">
+                    <p className="text-xs text-gray-600">{formatDate(meta.fechaInicio)} - {formatDate(meta.fechaFin)}</p>
+                    {meta.autoRenovar && <RefreshCw className="w-3 h-3 text-blue-500" />}
+                  </div>
                 </div>
               </div>
               {isAdmin && (
-                <ActiveToggle
-                  isActive={meta.activo}
-                  isLoading={togglingId === meta.id}
-                  onToggle={() => handleToggle(meta)}
-                />
+                <div className="flex gap-2 pt-1 border-t border-gray-100">
+                  <button onClick={() => openEdit(meta)} className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                    <Edit2 className="w-3.5 h-3.5" /> Editar
+                  </button>
+                  <button onClick={() => setConfirmDeleteId(meta.id)} className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                    <Trash2 className="w-3.5 h-3.5" /> Eliminar
+                  </button>
+                </div>
               )}
             </div>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-gray-400 mb-0.5">Objetivo</p>
-                <p className="font-semibold text-gray-900">
-                  {meta.tipo === 'ventas' ? formatCurrency(meta.monto) : formatNumber(meta.monto)}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-xs text-gray-400 mb-0.5">Vigencia</p>
-                <div className="flex items-center gap-1">
-                  <p className="text-xs text-gray-600">{formatDate(meta.fechaInicio)} – {formatDate(meta.fechaFin)}</p>
-                  {meta.autoRenovar && (
-                    <RefreshCw className="w-3 h-3 text-blue-500" />
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {isAdmin && (
-              <div className="flex gap-2 pt-1 border-t border-gray-100">
-                <button
-                  onClick={() => openEdit(meta)}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                >
-                  <Edit2 className="w-3.5 h-3.5" /> Editar
-                </button>
-                <button
-                  onClick={() => setConfirmDeleteId(meta.id)}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                >
-                  <Trash2 className="w-3.5 h-3.5" /> Eliminar
-                </button>
-              </div>
-            )}
-          </div>
-        ))}
-        </div>
-
-        {totalPages > 1 && (
-          <ListPagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-            totalItems={filtered.length}
-            pageSize={pageSize}
-          />
-        )}
+          )}
+        />
       </div>
 
       {/* Create / Edit Drawer */}

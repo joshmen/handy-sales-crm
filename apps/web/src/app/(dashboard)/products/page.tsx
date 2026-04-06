@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
 import { Button } from '@/components/ui/Button';
 import { Product } from '@/types';
@@ -22,7 +22,6 @@ import {
   DollarSign,
   Loader2,
   Check,
-  Minus,
   Upload,
   Download,
   ChevronDown,
@@ -31,13 +30,12 @@ import {
   X,
 } from 'lucide-react';
 import { ImageUpload } from '@/components/ui/ImageUpload';
-import { ListPagination } from '@/components/ui/ListPagination';
 import { Package as PackageIcon } from '@phosphor-icons/react';
 import { SearchBar } from '@/components/common/SearchBar';
 import { InactiveToggle } from '@/components/ui/InactiveToggle';
-import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
 import { ActiveToggle } from '@/components/ui/ActiveToggle';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
+import { DataGrid, DataGridColumn } from '@/components/ui/DataGrid';
 import { useBatchOperations } from '@/hooks/useBatchOperations';
 import { BatchActionBar } from '@/components/shared/BatchActionBar';
 import { BatchConfirmModal } from '@/components/shared/BatchConfirmModal';
@@ -330,7 +328,123 @@ export default function ProductsPage() {
     }
   };
 
-  const visibleIds = products.map(p => parseInt(p.id));
+  // Sort state
+  const [sortKey, setSortKey] = useState('name');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  const handleSort = useCallback((key: string) => {
+    setSortDir(prev => sortKey === key ? (prev === 'asc' ? 'desc' : 'asc') : 'asc');
+    setSortKey(key);
+  }, [sortKey]);
+
+  const sortedProducts = useMemo(() => {
+    const sorted = [...products];
+    sorted.sort((a, b) => {
+      let cmp = 0;
+      switch (sortKey) {
+        case 'name': cmp = a.name.localeCompare(b.name); break;
+        case 'price': cmp = a.price - b.price; break;
+        case 'stock': cmp = a.stock - b.stock; break;
+        default: cmp = 0;
+      }
+      return sortDir === 'desc' ? -cmp : cmp;
+    });
+    return sorted;
+  }, [products, sortKey, sortDir]);
+
+  // Column definitions
+  const productColumns = useMemo<DataGridColumn<Product>[]>(() => [
+    {
+      key: 'image',
+      label: 'Imagen',
+      width: 45,
+      cellRenderer: (product) => product.images[0] ? (
+        <img src={product.images[0]} alt={product.name} className="w-9 h-9 rounded-md object-cover" />
+      ) : (
+        <div className="w-9 h-9 rounded-md bg-green-100 flex items-center justify-center">
+          <PackageIcon className="w-[18px] h-[18px] text-green-600" weight="duotone" />
+        </div>
+      ),
+    },
+    {
+      key: 'code',
+      label: 'Código',
+      width: 95,
+      cellRenderer: (product) => <span className="text-[13px] font-mono text-gray-500 truncate block">{product.code}</span>,
+    },
+    {
+      key: 'name',
+      label: 'Nombre',
+      sortable: true,
+      width: 'flex',
+      cellRenderer: (product) => <span className="text-[13px] font-medium text-gray-900 truncate block">{product.name}</span>,
+    },
+    {
+      key: 'price',
+      label: 'Precio',
+      sortable: true,
+      width: 90,
+      cellRenderer: (product) => <span className="text-[13px] font-medium text-gray-900">{formatCurrency(product.price)}</span>,
+    },
+    {
+      key: 'stock',
+      label: 'Existencia',
+      sortable: true,
+      width: 90,
+      cellRenderer: (product) => (
+        <span className={`text-[13px] font-medium ${product.stock <= product.minStock ? 'text-red-600' : 'text-gray-900'}`}>
+          {product.stock}
+        </span>
+      ),
+    },
+    {
+      key: 'family',
+      label: 'Familia',
+      width: 100,
+      hiddenOnMobile: true,
+      cellRenderer: (product) => <span className="text-[13px] text-blue-600 truncate block">{product.family || '-'}</span>,
+    },
+    {
+      key: 'category',
+      label: 'Categoría',
+      width: 130,
+      hiddenOnMobile: true,
+      cellRenderer: (product) => <span className="text-[13px] text-gray-500 truncate block">{product.category || '-'}</span>,
+    },
+    {
+      key: 'isActive',
+      label: 'Activo',
+      width: 50,
+      align: 'center',
+      cellRenderer: (product) => (
+        <div onClick={(e) => e.stopPropagation()}>
+          <ActiveToggle isActive={product.isActive} onToggle={() => handleToggleActive(product)} disabled={loading} isLoading={togglingId === product.id} title={product.isActive ? 'Desactivar producto' : 'Activar producto'} />
+        </div>
+      ),
+    },
+    {
+      key: 'actions',
+      label: '',
+      width: 64,
+      cellRenderer: (product) => (
+        <div className="flex items-center justify-center gap-1" onClick={(e) => e.stopPropagation()}>
+          <button onClick={() => handleEditProduct(product)} disabled={loading} className="p-1 hover:bg-amber-50 rounded transition-colors disabled:opacity-50" title="Editar">
+            <Pencil className="w-4 h-4 text-amber-400 hover:text-amber-600" />
+          </button>
+          {deleteConfirmId === product.id ? (
+            <>
+              <button onClick={() => { handleDelete(product.id); setDeleteConfirmId(null); }} className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"><Check className="w-4 h-4" /></button>
+              <button onClick={() => setDeleteConfirmId(null)} className="p-1 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X className="w-4 h-4" /></button>
+            </>
+          ) : (
+            <button onClick={() => setDeleteConfirmId(product.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Eliminar"><Trash2 className="w-4 h-4" /></button>
+          )}
+        </div>
+      ),
+    },
+  ], [loading, togglingId, deleteConfirmId, formatCurrency]);
+
+  const visibleIds = sortedProducts.map(p => parseInt(p.id));
   const batch = useBatchOperations({
     visibleIds,
     clearDeps: [currentPage, searchTerm, selectedFamiliaId, selectedCategoriaId, showInactive],
@@ -483,47 +597,42 @@ export default function ProductsPage() {
             loading={batch.batchLoading}
           />
 
-          {/* Mobile Cards */}
-          <div className="sm:hidden space-y-3">
-            {loading && (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-green-600" />
-              </div>
-            )}
-            {!loading && products.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12">
-                <Package className="w-12 h-12 text-purple-300 mb-3" />
-                <p className="text-sm text-gray-500">No hay productos</p>
-                <p className="text-xs text-gray-400 mt-1">
-                  {searchTerm ? 'No se encontraron resultados para tu búsqueda' : 'Crea tu primer producto para comenzar'}
-                </p>
-              </div>
-            ) : (
-              products.map((product) => (
-                <div
-                  key={product.id}
-                  className={`bg-white border border-gray-200 rounded-lg p-3 ${!product.isActive ? 'opacity-60' : ''}`}
-                >
-                  {/* Row 1: checkbox + image + name + toggle */}
+          {/* Products DataGrid */}
+          <div data-tour="products-table">
+            <DataGrid<Product>
+              columns={productColumns}
+              data={sortedProducts}
+              keyExtractor={(p) => parseInt(p.id)}
+              loading={loading}
+              loadingMessage="Cargando productos..."
+              emptyIcon={<Package className="w-16 h-16 text-purple-300" />}
+              emptyTitle="No hay productos"
+              emptyMessage={searchTerm ? 'No se encontraron resultados para tu búsqueda' : 'Crea tu primer producto para comenzar'}
+              sort={{
+                key: sortKey,
+                direction: sortDir,
+                onSort: handleSort,
+              }}
+              selection={{
+                selectedIds: batch.selectedIds as unknown as Set<string | number>,
+                onToggle: (id) => batch.handleToggleSelect(id as number),
+                onSelectAll: batch.handleSelectAllVisible,
+                onClearAll: batch.handleClearSelection,
+              }}
+              pagination={totalProducts > 0 ? {
+                currentPage,
+                totalPages,
+                totalItems: totalProducts,
+                pageSize,
+                onPageChange: setCurrentPage,
+              } : undefined}
+              mobileCardRenderer={(product) => (
+                <div className={`${!product.isActive ? 'opacity-60' : ''}`}>
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <button
-                        onClick={() => batch.handleToggleSelect(parseInt(product.id))}
-                        className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                          batch.selectedIds.has(parseInt(product.id))
-                            ? 'bg-green-600 border-green-600 text-white'
-                            : 'border-gray-300 hover:border-green-500'
-                        }`}
-                      >
-                        {batch.selectedIds.has(parseInt(product.id)) && <Check className="w-3 h-3" />}
-                      </button>
                       <div className="w-10 h-10 flex-shrink-0">
                         {product.images[0] ? (
-                          <img
-                            src={product.images[0]}
-                            alt={product.name}
-                            className="w-10 h-10 rounded-md object-cover"
-                          />
+                          <img src={product.images[0]} alt={product.name} className="w-10 h-10 rounded-md object-cover" />
                         ) : (
                           <div className="w-10 h-10 rounded-md bg-green-100 flex items-center justify-center">
                             <PackageIcon className="w-5 h-5 text-green-600" weight="duotone" />
@@ -535,43 +644,19 @@ export default function ProductsPage() {
                         <p className="text-xs text-gray-500 font-mono">{product.code}</p>
                       </div>
                     </div>
-                    <ActiveToggle isActive={product.isActive} onToggle={() => handleToggleActive(product)} disabled={loading} isLoading={togglingId === product.id} title={product.isActive ? 'Desactivar producto' : 'Activar producto'} />
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <ActiveToggle isActive={product.isActive} onToggle={() => handleToggleActive(product)} disabled={loading} isLoading={togglingId === product.id} title={product.isActive ? 'Desactivar producto' : 'Activar producto'} />
+                    </div>
                   </div>
-                  {/* Row 2: Metrics */}
                   <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-500">
-                    <span className="px-2 py-1 bg-emerald-50 text-emerald-700 rounded-md text-xs font-medium">
-                      {formatCurrency(product.price)}
-                    </span>
-                    <span className={`px-2 py-1 rounded-md text-xs font-medium ${
-                      product.stock <= product.minStock
-                        ? 'bg-red-50 text-red-600'
-                        : 'bg-gray-100 text-gray-700'
-                    }`}>
-                      Stock: {product.stock}
-                    </span>
-                    {product.family && (
-                      <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-md text-xs">
-                        {product.family}
-                      </span>
-                    )}
-                    {product.category && (
-                      <span className="px-2 py-1 bg-purple-50 text-purple-700 rounded-md text-xs">
-                        {product.category}
-                      </span>
-                    )}
-                    {product.unit && (
-                      <span className="px-2 py-1 bg-gray-100 text-gray-500 rounded-md text-xs">
-                        {product.unit}
-                      </span>
-                    )}
+                    <span className="px-2 py-1 bg-emerald-50 text-emerald-700 rounded-md text-xs font-medium">{formatCurrency(product.price)}</span>
+                    <span className={`px-2 py-1 rounded-md text-xs font-medium ${product.stock <= product.minStock ? 'bg-red-50 text-red-600' : 'bg-gray-100 text-gray-700'}`}>Stock: {product.stock}</span>
+                    {product.family && <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-md text-xs">{product.family}</span>}
+                    {product.category && <span className="px-2 py-1 bg-purple-50 text-purple-700 rounded-md text-xs">{product.category}</span>}
                   </div>
-                  {/* Row 3: Actions */}
-                  <div className="mt-2.5 flex items-center justify-end gap-1 border-t border-gray-100 pt-2">
-                    <button
-                      onClick={() => handleEditProduct(product)}
-                      className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-green-600 hover:bg-green-50 rounded"
-                    >
-                      <Pencil className="w-3.5 h-3.5 text-amber-400 hover:text-amber-600" /> Editar
+                  <div className="mt-2.5 flex items-center justify-end gap-1 border-t border-gray-100 pt-2" onClick={(e) => e.stopPropagation()}>
+                    <button onClick={() => handleEditProduct(product)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-green-600 hover:bg-green-50 rounded">
+                      <Pencil className="w-3.5 h-3.5 text-amber-400" /> Editar
                     </button>
                     {deleteConfirmId === product.id ? (
                       <div className="flex items-center gap-1">
@@ -583,155 +668,9 @@ export default function ProductsPage() {
                     )}
                   </div>
                 </div>
-              ))
-            )}
-          </div>
-
-          {/* Products Table */}
-          <div className="hidden sm:block bg-white border border-gray-200 rounded-lg overflow-x-auto" data-tour="products-table">
-            {/* Table Header - Always visible */}
-            <div className="flex items-center gap-3 bg-gray-50 px-5 h-10 border-b border-gray-200 min-w-[900px]">
-              <div className="w-[28px] flex items-center justify-center">
-                <button
-                  onClick={batch.handleSelectAllVisible}
-                  className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                    batch.allVisibleSelected
-                      ? 'bg-green-600 border-green-600 text-white'
-                      : batch.someVisibleSelected
-                      ? 'bg-green-100 border-green-600'
-                      : 'border-gray-300 hover:border-green-500'
-                  }`}
-                >
-                  {batch.allVisibleSelected ? (
-                    <Check className="w-3 h-3" />
-                  ) : batch.someVisibleSelected ? (
-                    <Minus className="w-3 h-3 text-green-600" />
-                  ) : null}
-                </button>
-              </div>
-              <div className="w-[45px] text-[11px] font-medium text-gray-500">Imagen</div>
-              <div className="w-[95px] text-[11px] font-medium text-gray-500">Código</div>
-              <div className="flex-1 min-w-[250px] text-[11px] font-medium text-gray-500">Nombre</div>
-              <div className="w-[90px] text-[11px] font-medium text-gray-500">Precio</div>
-              <div className="w-[90px] text-[11px] font-medium text-gray-500">Existencia</div>
-              <div className="w-[100px] text-[11px] font-medium text-gray-500 hidden md:block">Familia</div>
-              <div className="w-[130px] text-[11px] font-medium text-gray-500 hidden lg:block">Categoría</div>
-              <div className="w-[50px] text-[11px] font-medium text-gray-500 text-center">Activo</div>
-              <div className="w-16"></div>
-            </div>
-
-            {/* Table Body - With loading overlay */}
-            <div className="relative min-h-[200px]">
-              {/* Loading Overlay */}
-              <TableLoadingOverlay loading={loading} message="Cargando productos..." />
-
-              {/* Empty State */}
-              {!loading && products.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-64 py-20">
-                  <Package className="w-16 h-16 text-purple-300 mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-700 mb-2">No hay productos</h3>
-                  <p className="text-sm text-gray-500 text-center">
-                    {searchTerm ? 'No se encontraron resultados para tu búsqueda' : 'Crea tu primer producto para comenzar'}
-                  </p>
-                </div>
-              ) : (
-                /* Table Rows - With opacity transition */
-                <div className={`transition-opacity duration-200 ${loading ? 'opacity-50' : 'opacity-100'}`}>
-                  {products.map((product) => (
-                    <div
-                      key={product.id}
-                      className={`flex items-center gap-3 px-5 py-3.5 border-b border-gray-200 bg-white hover:bg-gray-50 transition-colors min-w-[900px] ${
-                        !product.isActive ? 'bg-gray-50' : ''
-                      }`}
-                    >
-                      <div className="w-[28px] flex items-center justify-center">
-                        <button
-                          onClick={() => batch.handleToggleSelect(parseInt(product.id))}
-                          className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                            batch.selectedIds.has(parseInt(product.id))
-                              ? 'bg-green-600 border-green-600 text-white'
-                              : 'border-gray-300 hover:border-green-500'
-                          }`}
-                        >
-                          {batch.selectedIds.has(parseInt(product.id)) && <Check className="w-3 h-3" />}
-                        </button>
-                      </div>
-                      <div className="w-[45px] flex items-center justify-center">
-                        {product.images[0] ? (
-                          <img
-                            src={product.images[0]}
-                            alt={product.name}
-                            className="w-9 h-9 rounded-md object-cover"
-                          />
-                        ) : (
-                          <div className="w-9 h-9 rounded-md bg-green-100 flex items-center justify-center">
-                            <PackageIcon className="w-[18px] h-[18px] text-green-600" weight="duotone" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="w-[95px] text-[13px] font-mono text-gray-500 truncate">
-                        {product.code}
-                      </div>
-                      <div className="flex-1 min-w-[250px] text-[13px] font-medium text-gray-900 truncate">
-                        {product.name}
-                      </div>
-                      <div className="w-[90px] text-[13px] font-medium text-gray-900">
-                        {formatCurrency(product.price)}
-                      </div>
-                      <div className={`w-[90px] text-[13px] font-medium ${
-                        product.stock <= product.minStock
-                          ? 'text-red-600'
-                          : 'text-gray-900'
-                      }`}>
-                        {product.stock}
-                      </div>
-                      <div className="w-[100px] text-[13px] text-blue-600 truncate hidden md:block">
-                        {product.family || '-'}
-                      </div>
-                      <div className="w-[130px] text-[13px] text-gray-500 truncate hidden lg:block">
-                        {product.category || '-'}
-                      </div>
-                      <div className="w-[50px] flex items-center justify-center">
-                        <ActiveToggle isActive={product.isActive} onToggle={() => handleToggleActive(product)} disabled={loading} isLoading={togglingId === product.id} title={product.isActive ? 'Desactivar producto' : 'Activar producto'} />
-                      </div>
-                      <div className="w-16 flex items-center justify-center gap-1">
-                        <button
-                          onClick={() => handleEditProduct(product)}
-                          disabled={loading}
-                          className="p-1 hover:bg-amber-50 rounded transition-colors disabled:opacity-50"
-                          title="Editar"
-                        >
-                          <Pencil className="w-4 h-4 text-amber-400 hover:text-amber-600" />
-                        </button>
-                        {deleteConfirmId === product.id ? (
-                          <>
-                            <button onClick={() => { handleDelete(product.id); setDeleteConfirmId(null); }} className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"><Check className="w-4 h-4" /></button>
-                            <button onClick={() => setDeleteConfirmId(null)} className="p-1 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X className="w-4 h-4" /></button>
-                          </>
-                        ) : (
-                          <button onClick={() => setDeleteConfirmId(product.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Eliminar"><Trash2 className="w-4 h-4" /></button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
               )}
-            </div>
-          </div>
-
-          {/* Pagination - Always visible when there are products */}
-          {(products.length > 0 || loading) && totalProducts > 0 && (
-            <ListPagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              totalItems={totalProducts}
-              pageSize={pageSize}
-              onPageChange={setCurrentPage}
-              itemLabel="productos"
-              loading={loading}
-              className="pt-4"
             />
-          )}
+          </div>
         </div>
 
         {/* CSV Import Modal */}

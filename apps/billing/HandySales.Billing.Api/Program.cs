@@ -159,16 +159,17 @@ app.UseExceptionHandler(errorApp =>
     errorApp.Run(async context =>
     {
         var ex = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>()?.Error;
-        if (ex is UnauthorizedAccessException)
+        var (statusCode, message) = ex switch
         {
-            context.Response.StatusCode = 401;
-            context.Response.ContentType = "application/json";
-            await context.Response.WriteAsJsonAsync(new { error = ex.Message });
-            return;
-        }
-        context.Response.StatusCode = 500;
+            UnauthorizedAccessException => (401, ex.Message),
+            InvalidOperationException => (400, !string.IsNullOrEmpty(ex.Message) ? ex.Message : "Operación no válida"),
+            ArgumentException => (400, !string.IsNullOrEmpty(ex.Message) ? ex.Message : "Parámetros inválidos"),
+            KeyNotFoundException => (404, "Recurso no encontrado"),
+            _ => (500, "Error interno del servidor")
+        };
+        context.Response.StatusCode = statusCode;
         context.Response.ContentType = "application/json";
-        await context.Response.WriteAsJsonAsync(new { error = "Error interno del servidor" });
+        await context.Response.WriteAsJsonAsync(new { error = message });
     });
 });
 

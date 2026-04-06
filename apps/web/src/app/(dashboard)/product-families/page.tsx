@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useBatchOperations } from '@/hooks/useBatchOperations';
 import { BatchActionBar } from '@/components/shared/BatchActionBar';
 import { BatchConfirmModal } from '@/components/shared/BatchConfirmModal';
@@ -10,14 +10,13 @@ import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { SearchBar } from '@/components/common/SearchBar';
 import { InactiveToggle } from '@/components/ui/InactiveToggle';
-import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
 import { ActiveToggle } from '@/components/ui/ActiveToggle';
-import { ListPagination } from '@/components/ui/ListPagination';
 import { Input } from '@/components/ui/Input';
 import { toast } from '@/hooks/useToast';
 import { api } from '@/lib/api';
 import { exportToCsv } from '@/services/api/importExport';
 import { CsvImportModal } from '@/components/shared/CsvImportModal';
+import { DataGrid, type DataGridColumn } from '@/components/ui/DataGrid';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -28,7 +27,6 @@ import {
   Boxes,
   Loader2,
   Check,
-  Minus,
   X,
   FolderTree,
   RefreshCw,
@@ -118,10 +116,31 @@ export default function ProductFamiliesPage() {
     return result;
   }, [families, searchTerm, showInactive]);
 
+  // Sort state
+  const [sortKey, setSortKey] = useState('nombre');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  const handleSortChange = useCallback((key: string) => {
+    if (sortKey === key) {
+      setSortDir(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  }, [sortKey]);
+
+  const sortedFamilies = useMemo(() => {
+    return [...filteredFamilies].sort((a, b) => {
+      const aVal = String((a as unknown as Record<string, unknown>)[sortKey] ?? '').toLowerCase();
+      const bVal = String((b as unknown as Record<string, unknown>)[sortKey] ?? '').toLowerCase();
+      return sortDir === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+    });
+  }, [filteredFamilies, sortKey, sortDir]);
+
   // Pagination
-  const totalItems = filteredFamilies.length;
+  const totalItems = sortedFamilies.length;
   const totalPages = Math.ceil(totalItems / pageSize);
-  const paginatedFamilies = filteredFamilies.slice(
+  const paginatedFamilies = sortedFamilies.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   );
@@ -346,188 +365,68 @@ export default function ProductFamiliesPage() {
           loading={batch.batchLoading}
         />
 
-        {/* Mobile Cards */}
-        <div className="sm:hidden space-y-3">
-          {loading && (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-green-600" />
-            </div>
-          )}
-          {!loading && paginatedFamilies.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12">
-              <Boxes className="w-12 h-12 text-pink-300 mb-3" />
-              <p className="text-sm text-gray-500">
-                {searchTerm ? 'No se encontraron familias' : 'No hay familias'}
-              </p>
-            </div>
-          ) : (
-            paginatedFamilies.map((family) => (
-              <div
-                key={family.id}
-                className={`border border-gray-200 rounded-lg p-3 bg-white ${
-                  !family.activo ? 'opacity-60' : ''
-                }`}
-              >
-                {/* Row 1: Icon + Name/Description + Checkbox + Toggle */}
+        {/* DataGrid */}
+        <div data-tour="product-families-table">
+          <DataGrid<ProductFamily>
+            columns={[
+              { key: 'id', label: 'ID', width: 60, sortable: true, cellRenderer: (item) => <span className="font-mono text-gray-500">{item.id}</span> },
+              { key: 'nombre', label: 'Nombre', width: 'flex', sortable: true, cellRenderer: (item) => <span className="font-medium text-gray-900">{item.nombre}</span> },
+              { key: 'descripcion', label: 'Descripción', width: 'flex', sortable: true, hiddenOnMobile: true, cellRenderer: (item) => <span className="text-gray-500 truncate">{item.descripcion || '-'}</span> },
+              { key: 'activo', label: 'Activo', width: 50, align: 'center', cellRenderer: (item) => (
+                <div onClick={e => e.stopPropagation()}>
+                  <ActiveToggle isActive={item.activo} onToggle={() => handleToggleActive(item)} disabled={loading} isLoading={togglingId === item.id} />
+                </div>
+              )},
+              { key: 'actions', label: '', width: 40, cellRenderer: (item) => (
+                <div className="flex justify-center" onClick={e => e.stopPropagation()}>
+                  <button onClick={() => handleOpenEdit(item)} disabled={loading} className="p-1 hover:bg-amber-50 rounded transition-colors disabled:opacity-50" title="Editar">
+                    <Pencil className="w-4 h-4 text-amber-400 hover:text-amber-600" />
+                  </button>
+                </div>
+              )},
+            ] as DataGridColumn<ProductFamily>[]}
+            data={paginatedFamilies}
+            keyExtractor={(item) => item.id}
+            selection={{
+              selectedIds: batch.selectedIds,
+              onToggle: (id) => batch.handleToggleSelect(id as number),
+              onSelectAll: batch.handleSelectAllVisible,
+              onClearAll: batch.handleClearSelection,
+            }}
+            pagination={{ currentPage, totalPages, totalItems, pageSize, onPageChange: setCurrentPage }}
+            sort={{ key: sortKey, direction: sortDir, onSort: handleSortChange }}
+            loading={loading}
+            loadingMessage="Cargando familias..."
+            emptyIcon={<Boxes className="w-16 h-16 text-pink-300" />}
+            emptyTitle={searchTerm ? 'No se encontraron familias' : 'No hay familias'}
+            emptyMessage={searchTerm ? 'No se encontraron familias con ese término' : 'Crea tu primera familia de productos para comenzar'}
+            mobileCardRenderer={(family) => (
+              <div className={!family.activo ? 'opacity-60' : ''}>
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
                     <Package className="w-5 h-5 text-purple-600" weight="duotone" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-gray-900 truncate">
-                      {family.nombre}
-                    </div>
+                    <div className="text-sm font-medium text-gray-900 truncate">{family.nombre}</div>
                     <div className="text-xs text-gray-500 truncate">{family.descripcion || 'Sin descripción'}</div>
                   </div>
-                  <button
-                    onClick={() => batch.handleToggleSelect(family.id)}
-                    className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                      batch.selectedIds.has(family.id)
-                        ? 'bg-green-600 border-green-600 text-white'
-                        : 'border-gray-300 hover:border-green-500'
-                    }`}
-                  >
+                  <button onClick={() => batch.handleToggleSelect(family.id)} className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${batch.selectedIds.has(family.id) ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300 hover:border-green-500'}`}>
                     {batch.selectedIds.has(family.id) && <Check className="w-3 h-3" />}
                   </button>
-                  <ActiveToggle
-                    isActive={family.activo}
-                    onToggle={() => handleToggleActive(family)}
-                    disabled={loading}
-                    isLoading={togglingId === family.id}
-                  />
+                  <ActiveToggle isActive={family.activo} onToggle={() => handleToggleActive(family)} disabled={loading} isLoading={togglingId === family.id} />
                 </div>
-                {/* Row 2: Actions */}
                 <div className="flex justify-end">
-                  <button
-                    onClick={() => handleOpenEdit(family)}
-                    className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors disabled:opacity-50"
-                  >
-                    <Pencil className="w-3.5 h-3.5 text-amber-400 hover:text-amber-600" />
-                    <span>Editar</span>
+                  <button onClick={() => handleOpenEdit(family)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors">
+                    <Pencil className="w-3.5 h-3.5 text-amber-400 hover:text-amber-600" /><span>Editar</span>
                   </button>
-                  <button
-                    onClick={() => handleOpenDelete(family)}
-                    className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
-                  >
-                    <Trash2 className="w-3.5 h-3.5 text-red-400 hover:text-red-600" />
-                    <span>Eliminar</span>
+                  <button onClick={() => handleOpenDelete(family)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-red-600 hover:bg-red-50 rounded transition-colors">
+                    <Trash2 className="w-3.5 h-3.5 text-red-400 hover:text-red-600" /><span>Eliminar</span>
                   </button>
                 </div>
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* Table */}
-        <div data-tour="product-families-table" className="hidden sm:block bg-white border border-gray-200 rounded-lg overflow-x-auto">
-          {/* Table Header */}
-          <div className="min-w-[600px] flex items-center gap-3 bg-gray-50 px-5 h-10 border-b border-gray-200">
-            <div className="w-[28px] flex items-center justify-center">
-              <button
-                onClick={batch.handleSelectAllVisible}
-                className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                  batch.allVisibleSelected
-                    ? 'bg-green-600 border-green-600 text-white'
-                    : batch.someVisibleSelected
-                    ? 'bg-green-100 border-green-600'
-                    : 'border-gray-300 hover:border-green-500'
-                }`}
-              >
-                {batch.allVisibleSelected ? (
-                  <Check className="w-3 h-3" />
-                ) : batch.someVisibleSelected ? (
-                  <Minus className="w-3 h-3 text-green-600" />
-                ) : null}
-              </button>
-            </div>
-            <div className="w-[60px] text-[11px] font-medium text-gray-500">ID</div>
-            <div className="flex-1 text-[11px] font-medium text-gray-500">Nombre</div>
-            <div className="flex-1 text-[11px] font-medium text-gray-500">Descripción</div>
-            <div className="w-[50px] text-[11px] font-medium text-gray-500 text-center">Activo</div>
-            <div className="w-8"></div>
-          </div>
-
-          {/* Table Body */}
-          <div className="relative min-h-[200px]">
-            <TableLoadingOverlay loading={loading} message="Cargando familias..." />
-
-            {/* Empty State */}
-            {!loading && paginatedFamilies.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-64 py-20">
-                <Boxes className="w-16 h-16 text-pink-300 mb-4" />
-                <h3 className="text-lg font-semibold text-gray-700 mb-2">No hay familias</h3>
-                <p className="text-sm text-gray-500 text-center">
-                  {searchTerm
-                    ? 'No se encontraron familias con ese término'
-                    : 'Crea tu primera familia de productos para comenzar'}
-                </p>
-              </div>
-            ) : (
-              /* Table Rows */
-              <div className={`transition-opacity duration-200 ${loading ? 'opacity-50' : 'opacity-100'}`}>
-                {paginatedFamilies.map((family) => (
-                  <div
-                    key={family.id}
-                    className={`min-w-[600px] flex items-center gap-3 px-5 py-3.5 border-b border-gray-200 bg-white hover:bg-gray-50 transition-colors ${
-                      !family.activo ? 'bg-gray-50' : ''
-                    }`}
-                  >
-                    <div className="w-[28px] flex items-center justify-center">
-                      <button
-                        onClick={() => batch.handleToggleSelect(family.id)}
-                        className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                          batch.selectedIds.has(family.id)
-                            ? 'bg-green-600 border-green-600 text-white'
-                            : 'border-gray-300 hover:border-green-500'
-                        }`}
-                      >
-                        {batch.selectedIds.has(family.id) && <Check className="w-3 h-3" />}
-                      </button>
-                    </div>
-                    <div className="w-[60px] text-[13px] font-mono text-gray-500">
-                      {family.id}
-                    </div>
-                    <div className="flex-1 text-[13px] font-medium text-gray-900">
-                      {family.nombre}
-                    </div>
-                    <div className="flex-1 text-[13px] text-gray-500 truncate pr-4">
-                      {family.descripcion || '-'}
-                    </div>
-                    <div className="w-[50px] flex items-center justify-center">
-                      <ActiveToggle
-                        isActive={family.activo}
-                        onToggle={() => handleToggleActive(family)}
-                        disabled={loading}
-                        isLoading={togglingId === family.id}
-                      />
-                    </div>
-                    <div className="w-8 flex justify-center">
-                      <button
-                        onClick={() => handleOpenEdit(family)}
-                        disabled={loading}
-                        className="p-1 hover:bg-amber-50 rounded transition-colors disabled:opacity-50"
-                        title="Editar"
-                      >
-                        <Pencil className="w-4 h-4 text-amber-400 hover:text-amber-600" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
               </div>
             )}
-          </div>
+          />
         </div>
-
-        {/* Pagination */}
-        <ListPagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          totalItems={totalItems}
-          pageSize={pageSize}
-          onPageChange={setCurrentPage}
-          itemLabel="familias"
-          loading={loading}
-        />
       </div>
 
       {/* CSV Import Modal */}
