@@ -1,14 +1,15 @@
 import { useState, useCallback, useMemo } from 'react';
-import { View, Text, FlatList, RefreshControl, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, RefreshControl, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOfflineOrders, useOfflineCobros, useClientNameMap } from '@/hooks';
 import { Card, LoadingSpinner, EmptyState } from '@/components/ui';
 import { formatCurrency } from '@/utils/format';
-import { Wallet, ChevronRight, User } from 'lucide-react-native';
+import { Wallet, ChevronRight, User, TrendingUp } from 'lucide-react-native';
 import { performSync } from '@/sync/syncEngine';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { COLORS } from '@/theme/colors';
+import type Cobro from '@/db/models/Cobro';
 
 interface ClienteSaldo {
   clienteId: string;
@@ -18,14 +19,63 @@ interface ClienteSaldo {
   saldoPendiente: number;
 }
 
+type PeriodFilter = 'today' | 'week' | 'month' | 'all';
+
+const PERIOD_FILTERS: { label: string; value: PeriodFilter }[] = [
+  { label: 'Hoy', value: 'today' },
+  { label: 'Esta semana', value: 'week' },
+  { label: 'Este mes', value: 'month' },
+  { label: 'Todo', value: 'all' },
+];
+
+function getPeriodStart(period: PeriodFilter): Date | null {
+  const now = new Date();
+  switch (period) {
+    case 'today': {
+      const d = new Date(now);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    }
+    case 'week': {
+      const d = new Date(now);
+      const day = d.getDay();
+      const diff = day === 0 ? 6 : day - 1; // Monday start
+      d.setDate(d.getDate() - diff);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    }
+    case 'month': {
+      const d = new Date(now.getFullYear(), now.getMonth(), 1);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    }
+    case 'all':
+      return null;
+  }
+}
+
 export default function CobrarScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
+  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('all');
 
   const { data: pedidos, isLoading: loadingPedidos } = useOfflineOrders();
   const { data: cobros, isLoading: loadingCobros } = useOfflineCobros();
   const clientNames = useClientNameMap();
+
+  // Filter cobros by period
+  const { filteredCobros, periodStats } = useMemo(() => {
+    const start = getPeriodStart(periodFilter);
+    const filtered = start
+      ? (cobros ?? []).filter((c: Cobro) => c.createdAt >= start)
+      : (cobros ?? []);
+    const totalCobrado = filtered.reduce((sum: number, c: Cobro) => sum + (c.monto || 0), 0);
+    return {
+      filteredCobros: filtered,
+      periodStats: { totalCobrado, count: filtered.length },
+    };
+  }, [cobros, periodFilter]);
 
   // Compute saldos per client from local WDB data
   const { clientes, resumen } = useMemo(() => {
@@ -141,13 +191,62 @@ export default function CobrarScreen() {
           </TouchableOpacity>
         </Animated.View>
 
+        {/* Period Filter Chips */}
+        <View style={styles.filterSection}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterScroll}
+          >
+            {PERIOD_FILTERS.map((filter) => {
+              const isActive = periodFilter === filter.value;
+              return (
+                <TouchableOpacity
+                  key={filter.value}
+                  style={[styles.chip, isActive && styles.chipActive]}
+                  onPress={() => setPeriodFilter(filter.value)}
+                  activeOpacity={0.7}
+                  accessibilityLabel={`Periodo: ${filter.label}`}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isActive }}
+                >
+                  <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
+                    {filter.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+
+        {/* Period Stats Card */}
+        {periodFilter !== 'all' && (
+          <Animated.View entering={FadeInDown.delay(300).duration(400)} style={styles.periodStatsWrap}>
+            <View style={styles.periodStatsCard}>
+              <TrendingUp size={18} color={COLORS.salesGreen} />
+              <View style={{ flex: 1, marginLeft: 10 }}>
+                <Text style={styles.periodStatsLabel}>
+                  Cobrado ({PERIOD_FILTERS.find(f => f.value === periodFilter)?.label})
+                </Text>
+                <Text style={styles.periodStatsValue}>
+                  {formatCurrency(periodStats.totalCobrado)}
+                </Text>
+              </View>
+              <View style={styles.periodCountBadge}>
+                <Text style={styles.periodCountText}>{periodStats.count}</Text>
+                <Text style={styles.periodCountLabel}>cobros</Text>
+              </View>
+            </View>
+          </Animated.View>
+        )}
+
         {/* Section Header */}
         <View style={styles.listHeader}>
           <Text style={styles.listTitle}>SALDOS POR CLIENTE</Text>
         </View>
       </View>
     );
-  }, [resumen, clientes.length]);
+  }, [resumen, clientes.length, periodFilter, periodStats]);
 
   const renderItem = useCallback(
     ({ item, index }: { item: ClienteSaldo; index: number }) => (
@@ -302,6 +401,34 @@ const styles = StyleSheet.create({
   metaDot: { fontSize: 11, color: '#cbd5e1' },
   clientRight: { alignItems: 'flex-end', marginLeft: 8, gap: 2 },
   saldoAmount: { fontSize: 15, fontWeight: '700', color: '#ef4444' },
+  // Period filter chips
+  filterSection: { paddingBottom: 8 },
+  filterScroll: { paddingHorizontal: 16, gap: 8 },
+  chip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: COLORS.border, borderWidth: 1, borderColor: COLORS.border },
+  chipActive: { backgroundColor: COLORS.button, borderColor: COLORS.button },
+  chipText: { fontSize: 13, fontWeight: '600', color: COLORS.textSecondary },
+  chipTextActive: { color: COLORS.headerText },
+  periodStatsWrap: { paddingHorizontal: 16, paddingBottom: 12 },
+  periodStatsCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.card,
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  periodStatsLabel: { fontSize: 11, color: COLORS.textSecondary, fontWeight: '500' },
+  periodStatsValue: { fontSize: 18, fontWeight: '800', color: COLORS.salesGreen, marginTop: 2 },
+  periodCountBadge: { alignItems: 'center' },
+  periodCountText: { fontSize: 20, fontWeight: '800', color: COLORS.foreground },
+  periodCountLabel: { fontSize: 10, color: COLORS.textTertiary, fontWeight: '500' },
+
   actionsRow: {
     flexDirection: 'row',
     gap: 10,

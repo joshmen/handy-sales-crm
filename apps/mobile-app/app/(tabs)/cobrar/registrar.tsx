@@ -326,7 +326,7 @@ export default function RegistrarCobroScreen() {
         {/* Método de Pago */}
         <Text style={styles.sectionLabel}>Método de Pago</Text>
         <View style={styles.metodosGrid}>
-          {Object.entries(METODO_PAGO).map(([key, label]) => {
+          {Object.entries(METODO_PAGO).filter(([key]) => Number(key) <= 1).map(([key, label]) => {
             const keyNum = Number(key);
             const isSelected = metodoPago === keyNum;
             return (

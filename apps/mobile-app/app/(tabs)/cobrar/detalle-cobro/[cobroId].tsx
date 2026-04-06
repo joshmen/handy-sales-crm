@@ -9,11 +9,12 @@ import { ChevronLeft, Printer, Share2 } from 'lucide-react-native';
 import { usePrinterStore } from '@/stores/printerStore';
 import { printReceipt, isNativeAvailable } from '@/services/printerService';
 import { useEmpresa } from '@/hooks/useEmpresa';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { COLORS } from '@/theme/colors';
+import Toast from 'react-native-toast-message';
 
 export default function DetalleCobroScreen() {
   const insets = useSafeAreaInsets();
@@ -24,9 +25,9 @@ export default function DetalleCobroScreen() {
   const clientNames = useClientNameMap();
   const { data: empresa } = useEmpresa();
   const { connectedDevice } = usePrinterStore();
-  const printerAvailable = isNativeAvailable() && !!connectedDevice;
   const [printing, setPrinting] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const detailRef = useRef<View>(null);
 
   if (!cobro) {
     return (
@@ -49,9 +50,17 @@ export default function DetalleCobroScreen() {
   const metodoLabel = METODO_PAGO[cobro.metodoPago] || 'Otro';
 
   const handlePrint = async () => {
+    if (!isNativeAvailable()) {
+      Toast.show({ type: 'error', text1: 'No disponible', text2: 'La impresion requiere el APK instalado, no funciona en Expo Go' });
+      return;
+    }
+    if (!connectedDevice) {
+      Toast.show({ type: 'error', text1: 'Sin impresora', text2: 'Configura una impresora en Mas -> Impresora' });
+      return;
+    }
     setPrinting(true);
     try {
-      await printReceipt({
+      const ok = await printReceipt({
         companyName: empresa?.razonSocial || user?.tenantName || 'Handy Suites',
         empresa: empresa ? {
           rfc: empresa.rfc,
@@ -70,24 +79,30 @@ export default function DetalleCobroScreen() {
         vendedorName: user?.name || 'Vendedor',
         logoUri: empresa?.logoUrl || user?.tenantLogo || undefined,
       });
+      if (!ok) Toast.show({ type: 'error', text1: 'Error de impresora', text2: 'Verifica la conexion' });
     } catch {
-      // silent
+      Toast.show({ type: 'error', text1: 'Error al imprimir' });
     } finally {
       setPrinting(false);
     }
   };
 
   const handleShare = async () => {
+    if (!detailRef.current) {
+      Toast.show({ type: 'error', text1: 'Error', text2: 'No se pudo capturar el recibo' });
+      return;
+    }
     setSharing(true);
     try {
-      // Generate a simple text to share
-      const text = `Recibo de Cobro\nCliente: ${clienteNombre}\nMonto: ${formatCurrency(cobro.monto)}\nMétodo: ${metodoLabel}\nFecha: ${formatDateTime(cobro.createdAt.toISOString())}\n${cobro.referencia ? `Ref: ${cobro.referencia}\n` : ''}`;
-      await Sharing.shareAsync('data:text/plain;base64,' + btoa(unescape(encodeURIComponent(text))), {
-        mimeType: 'text/plain',
-        dialogTitle: 'Compartir recibo',
-      });
+      const uri = await captureRef(detailRef, { format: 'png', quality: 1 });
+      const isAvailable = await Sharing.isAvailableAsync();
+      if (!isAvailable) {
+        Toast.show({ type: 'error', text1: 'Error', text2: 'Compartir no disponible en este dispositivo' });
+        return;
+      }
+      await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Compartir recibo' });
     } catch {
-      // silent
+      Toast.show({ type: 'error', text1: 'Error al compartir', text2: 'Intenta de nuevo' });
     } finally {
       setSharing(false);
     }
@@ -105,6 +120,7 @@ export default function DetalleCobroScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <View ref={detailRef} collapsable={false}>
         {/* Client Row */}
         <Animated.View entering={FadeInDown.duration(300)}>
           <View style={styles.clientRow}>
@@ -157,6 +173,7 @@ export default function DetalleCobroScreen() {
           </Animated.View>
         ) : null}
 
+        </View>
         {/* Action Buttons — always show both */}
         <Animated.View entering={FadeInDown.duration(300).delay(300)}>
           <View style={styles.btnsRow}>

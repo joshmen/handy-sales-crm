@@ -21,6 +21,8 @@ import Ruta from '@/db/models/Ruta';
 import { getGeofenceColor } from '@/utils/mapColors';
 import { Card, Button, LoadingSpinner, ConfirmModal } from '@/components/ui';
 import { Badge } from '@/components/ui';
+import { PhotoEvidence } from '@/components/evidence/PhotoEvidence';
+import { saveAttachmentRecord } from '@/services/evidenceManager';
 import { COLORS, STATUS_PALETTES } from '@/theme/colors';
 import { performSync } from '@/sync/syncEngine';
 import { formatTime, formatCurrency } from '@/utils/format';
@@ -56,6 +58,8 @@ export default function ParadaDetailScreen() {
   const [delivering, setDelivering] = useState(false);
   const [showNoVisito, setShowNoVisito] = useState(false);
   const [noVisitoReason, setNoVisitoReason] = useState('');
+  const [noVisitoPhotos, setNoVisitoPhotos] = useState<string[]>([]);
+  const [noEntregaPhotos, setNoEntregaPhotos] = useState<string[]>([]);
   const [showGpsModal, setShowGpsModal] = useState(false);
 
   // Keyboard offset for modals — moves card up when keyboard appears
@@ -144,13 +148,23 @@ export default function ParadaDetailScreen() {
     try {
       const freshStop = await database.get<RutaDetalle>('ruta_detalles').find(detalleId);
       await freshStop.skip(reason);
+      // Save photo evidence attachments
+      for (const uri of noVisitoPhotos) {
+        await saveAttachmentRecord({
+          eventType: 'ruta_detalle_skip',
+          eventLocalId: detalleId,
+          tipo: 'evidencia_omision',
+          localUri: uri,
+        });
+      }
       await checkAutoCompleteRoute();
       setNoVisitoReason('');
+      setNoVisitoPhotos([]);
       router.back();
     } catch {
       setShowError('No se pudo marcar la parada.');
     }
-  }, [detalleId, noVisitoReason, router, checkAutoCompleteRoute]);
+  }, [detalleId, noVisitoReason, noVisitoPhotos, router, checkAutoCompleteRoute]);
 
   const executeConfirmarEntrega = useCallback(async () => {
     setShowConfirmEntrega(false);
@@ -189,15 +203,25 @@ export default function ParadaDetailScreen() {
     try {
       const freshStop = await database.get<RutaDetalle>('ruta_detalles').find(detalleId);
       await freshStop.skip(reason);
+      // Save photo evidence attachments
+      for (const uri of noEntregaPhotos) {
+        await saveAttachmentRecord({
+          eventType: 'ruta_detalle_skip',
+          eventLocalId: detalleId,
+          tipo: 'evidencia_no_entrega',
+          localUri: uri,
+        });
+      }
       await checkAutoCompleteRoute();
       setNoEntregaReason('');
+      setNoEntregaPhotos([]);
       router.back();
     } catch {
       setShowError('No se pudo omitir la parada.');
     } finally {
       setDelivering(false);
     }
-  }, [detalleId, noEntregaReason, router, checkAutoCompleteRoute]);
+  }, [detalleId, noEntregaReason, noEntregaPhotos, router, checkAutoCompleteRoute]);
 
   if (rutaLoading || !route) {
     return <View style={styles.container}><LoadingSpinner message="Cargando..." /></View>;
@@ -477,7 +501,7 @@ export default function ParadaDetailScreen() {
         visible={showNoVisito}
         transparent
         animationType="fade"
-        onRequestClose={() => { setShowNoVisito(false); setNoVisitoReason(''); }}
+        onRequestClose={() => { setShowNoVisito(false); setNoVisitoReason(''); setNoVisitoPhotos([]); }}
         statusBarTranslucent
       >
         <View style={styles.modalOverlay}>
@@ -501,10 +525,18 @@ export default function ParadaDetailScreen() {
                 {10 - noVisitoReason.length} caracteres mas
               </Text>
             )}
+            <View style={{ alignSelf: 'stretch' }}>
+              <PhotoEvidence
+                photos={noVisitoPhotos}
+                onAdd={(uri) => setNoVisitoPhotos((prev) => [...prev, uri])}
+                onRemove={(uri) => setNoVisitoPhotos((prev) => prev.filter((p) => p !== uri))}
+                maxPhotos={3}
+              />
+            </View>
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={styles.modalCancelBtn}
-                onPress={() => { setShowNoVisito(false); setNoVisitoReason(''); }}
+                onPress={() => { setShowNoVisito(false); setNoVisitoReason(''); setNoVisitoPhotos([]); }}
               >
                 <Text style={styles.modalCancelText}>Cancelar</Text>
               </TouchableOpacity>
@@ -535,7 +567,7 @@ export default function ParadaDetailScreen() {
         visible={showNoEntrega}
         transparent
         animationType="fade"
-        onRequestClose={() => { setShowNoEntrega(false); setNoEntregaReason(''); }}
+        onRequestClose={() => { setShowNoEntrega(false); setNoEntregaReason(''); setNoEntregaPhotos([]); }}
         statusBarTranslucent
       >
         <View style={styles.modalOverlay}>
@@ -559,10 +591,18 @@ export default function ParadaDetailScreen() {
                 {10 - noEntregaReason.length} caracteres mas
               </Text>
             )}
+            <View style={{ alignSelf: 'stretch' }}>
+              <PhotoEvidence
+                photos={noEntregaPhotos}
+                onAdd={(uri) => setNoEntregaPhotos((prev) => [...prev, uri])}
+                onRemove={(uri) => setNoEntregaPhotos((prev) => prev.filter((p) => p !== uri))}
+                maxPhotos={3}
+              />
+            </View>
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={styles.modalCancelBtn}
-                onPress={() => { setShowNoEntrega(false); setNoEntregaReason(''); }}
+                onPress={() => { setShowNoEntrega(false); setNoEntregaReason(''); setNoEntregaPhotos([]); }}
               >
                 <Text style={styles.modalCancelText}>Cancelar</Text>
               </TouchableOpacity>

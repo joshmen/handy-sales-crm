@@ -1,8 +1,8 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { View, Text, ScrollView, RefreshControl, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useOfflineRutaHoy, useOfflineRutaDetalles, useClientNameMap } from '@/hooks';
+import { useOfflineRutaHoy, useOfflineRutaDetalles, useClientNameMap, useOfflineClients } from '@/hooks';
 import { LoadingSpinner, EmptyState } from '@/components/ui';
 import { COLORS, STATUS_PALETTES } from '@/theme/colors';
 import { ChevronLeft, Navigation, Map, CheckCircle, Clock } from 'lucide-react-native';
@@ -12,7 +12,9 @@ import { performSync } from '@/sync/syncEngine';
 import { database } from '@/db/database';
 import { Q } from '@nozbe/watermelondb';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import MapView, { Marker, Polyline } from 'react-native-maps';
 import type RutaDetalle from '@/db/models/RutaDetalle';
+import type Cliente from '@/db/models/Cliente';
 
 const STOP_DOT_COLORS: Record<number, string> = {
   0: '#e2e8f0', // Pendiente — gray
@@ -44,6 +46,24 @@ export default function RutaScreen() {
 
   const { data: detalles } = useOfflineRutaDetalles(route?.id ?? '');
   const clientNames = useClientNameMap();
+  const { data: allClients } = useOfflineClients();
+
+  // Build coordinate lookup from clients and compute polyline coordinates
+  const routeCoordinates = useMemo(() => {
+    if (!detalles || !allClients) return [];
+    const clientMap = new Map<string, { lat: number; lng: number }>();
+    (allClients as Cliente[]).forEach((c) => {
+      if (c.latitud != null && c.longitud != null) {
+        clientMap.set(c.id, { lat: c.latitud, lng: c.longitud });
+      }
+    });
+    return (detalles as RutaDetalle[])
+      .slice()
+      .sort((a, b) => a.orden - b.orden)
+      .map((d) => clientMap.get(d.clienteId))
+      .filter((c): c is { lat: number; lng: number } => c != null)
+      .map((c) => ({ latitude: c.lat, longitude: c.lng }));
+  }, [detalles, allClients]);
 
   // Direct query for stats on every focus (WDB observable unreliable in Expo Go/LokiJS)
   const [stats, setStats] = useState({ total: 0, atendidas: 0, pendientes: 0, omitidas: 0 });
@@ -187,8 +207,46 @@ export default function RutaScreen() {
           </View>
         </Animated.View>
 
+        {/* Mini Route Map with Polyline */}
+        {routeCoordinates.length > 1 && (
+          <Animated.View entering={FadeInDown.duration(400).delay(200)}>
+            <View style={styles.miniMapContainer}>
+              <MapView
+                style={styles.miniMap}
+                initialRegion={{
+                  latitude: routeCoordinates[0].latitude,
+                  longitude: routeCoordinates[0].longitude,
+                  latitudeDelta: 0.05,
+                  longitudeDelta: 0.05,
+                }}
+                scrollEnabled={false}
+                zoomEnabled={false}
+                rotateEnabled={false}
+                pitchEnabled={false}
+                showsUserLocation
+                onLayout={() => {
+                  // Fit all markers after layout
+                }}
+              >
+                <Polyline
+                  coordinates={routeCoordinates}
+                  strokeColor={COLORS.primary}
+                  strokeWidth={3}
+                />
+                {routeCoordinates.map((coord, idx) => (
+                  <Marker
+                    key={`stop-${idx}`}
+                    coordinate={coord}
+                    pinColor={idx === 0 ? COLORS.headerBg : '#22c55e'}
+                  />
+                ))}
+              </MapView>
+            </View>
+          </Animated.View>
+        )}
+
         {/* Stops — simple list with numbered dots */}
-        <Animated.View entering={FadeInDown.duration(400).delay(200)}>
+        <Animated.View entering={FadeInDown.duration(400).delay(300)}>
           <View style={styles.stopsSection}>
             {detalles?.map((stop: RutaDetalle) => {
               const dotBg = STOP_DOT_COLORS[stop.estado] ?? '#e2e8f0';
@@ -291,6 +349,10 @@ const styles = StyleSheet.create({
   pillsRow: { flexDirection: 'row', gap: 8 },
   pill: { borderRadius: 10, paddingVertical: 4, paddingHorizontal: 12 },
   pillText: { fontSize: 11, fontWeight: '600' },
+
+  // Mini Map
+  miniMapContainer: { marginHorizontal: 16, marginTop: 12, borderRadius: 16, overflow: 'hidden' },
+  miniMap: { height: 160, borderRadius: 16 },
 
   // Stops
   stopsSection: { paddingHorizontal: 20, paddingTop: 12 },

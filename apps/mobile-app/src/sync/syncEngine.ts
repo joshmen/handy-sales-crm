@@ -1,4 +1,5 @@
 import { synchronize } from '@nozbe/watermelondb/sync';
+import { Q } from '@nozbe/watermelondb';
 import { database } from '@/db/database';
 import { api } from '@/api/client';
 import { syncCursors } from './cursors';
@@ -141,7 +142,10 @@ export async function performSync(options?: SyncOptions): Promise<void> {
     });
 
     // Phase 2b: Apply server ID mappings and clean up duplicates
+    // WDB runs PULL before PUSH, so the pull creates a duplicate record (id=String(serverId))
+    // before the push can provide the ID mapping. We clean up here.
     if (pendingIdMappings.length) {
+      let dupCount = 0;
       await database.write(async () => {
         const updates: any[] = [];
         const deletes: any[] = [];
@@ -157,6 +161,16 @@ export async function performSync(options?: SyncOptions): Promise<void> {
                 const dup = await database.get(m.entityType).find(serverId);
                 dupRaw = dup._raw;
                 deletes.push(dup.prepareDestroyPermanently());
+                dupCount++;
+
+                // Also delete orphaned child records of the duplicate
+                if (m.entityType === 'pedidos') {
+                  const dupDetalles = await database.get('detalle_pedidos')
+                    .query(Q.where('pedido_id', serverId)).fetch();
+                  for (const d of dupDetalles) {
+                    deletes.push(d.prepareDestroyPermanently());
+                  }
+                }
               } catch { /* no duplicate — good */ }
             }
 
@@ -173,7 +187,7 @@ export async function performSync(options?: SyncOptions): Promise<void> {
         }
         if (updates.length || deletes.length) await database.batch(...updates, ...deletes);
       });
-      if (__DEV__) console.log('[Sync] Applied', pendingIdMappings.length, 'ID mappings, removed', 0, 'duplicates');
+      if (__DEV__) console.log(`[Sync] Applied ${pendingIdMappings.length} ID mappings, removed ${dupCount} duplicates`);
     }
 
     // Phase 3: Upload pending attachments (deferred, non-fatal)
