@@ -147,6 +147,11 @@ export default function InvoicesPage() {
         </select>
       </div>
 
+      {/* Retention notice */}
+      <div className="mb-4 px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 text-xs text-blue-700 dark:text-blue-400">
+        Sus facturas (XML y PDF) se almacenan en la nube de forma segura por 5 años, conforme al Art. 28 del Código Fiscal de la Federación. Puede descargarlas en cualquier momento.
+      </div>
+
       {/* Desktop table */}
       <div className="hidden md:block bg-card border border-border rounded-xl overflow-hidden">
         <table className="w-full text-sm">

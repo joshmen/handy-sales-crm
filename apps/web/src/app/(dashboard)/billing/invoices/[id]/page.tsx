@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import {
   getFactura,
@@ -195,6 +195,13 @@ export default function InvoiceDetailPage() {
 
         <div className="flex items-center justify-between mt-2">
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.push('/billing/invoices')}
+              className="p-1.5 rounded-md hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
+              aria-label="Volver a facturas"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
             <h1 className="text-[22px] font-bold text-gray-900">
               Factura #{folioDisplay}
             </h1>

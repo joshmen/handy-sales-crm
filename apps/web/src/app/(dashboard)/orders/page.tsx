@@ -228,7 +228,11 @@ export default function OrdersPage() {
       setTotalItems(response.totalCount);
       setTotalPages(Math.ceil(response.totalCount / response.pageSize));
       // Load invoiced orders (best-effort, don't block)
-      getInvoicedOrders().then(setInvoicedOrders).catch(() => {});
+      getInvoicedOrders().then(data => {
+        setInvoicedOrders(data);
+      }).catch(err => {
+        console.warn('Could not load invoiced orders:', err?.response?.status || err?.message);
+      });
     } catch (err) {
       console.error('Error al cargar pedidos:', err);
       setError('Error al cargar los pedidos. Intenta de nuevo.');
@@ -533,7 +537,7 @@ export default function OrdersPage() {
                   className="text-[11px] px-2.5 py-1 rounded font-medium text-blue-700 border border-blue-200 hover:bg-blue-50 transition-colors whitespace-nowrap flex items-center gap-1"
                 >
                   <FileText className="w-3 h-3" />
-                  {inv.folio}
+                  Ver Factura
                 </button>
               ) : (
                 <button
@@ -741,7 +745,7 @@ export default function OrdersPage() {
                           const inv = invoicedOrders[parseInt(order.id)];
                           return inv ? (
                             <button onClick={() => router.push(`/billing/invoices/${inv.facturaId}`)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded">
-                              <FileText className="w-3.5 h-3.5 text-blue-500" /> {inv.folio}
+                              <FileText className="w-3.5 h-3.5 text-blue-500" /> Ver Factura
                             </button>
                           ) : (
                             <button onClick={() => handleFacturar(order.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-emerald-600 hover:bg-emerald-50 rounded">
