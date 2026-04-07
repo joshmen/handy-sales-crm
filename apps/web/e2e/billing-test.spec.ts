@@ -1,33 +1,43 @@
 import { test } from '@playwright/test';
-
 const BASE = 'http://localhost:1083';
 
-test('Debug invoiced orders', async ({ page }) => {
-  const logs: string[] = [];
-  page.on('console', msg => logs.push(`[${msg.type()}] ${msg.text()}`));
-
+test('Debug: check order IDs vs invoiced keys', async ({ page }) => {
   await page.goto(`${BASE}/login`);
   await page.fill('input[type="email"]', 'admin@jeyma.com');
   await page.fill('input[type="password"]', 'test123');
   await page.click('button[type="submit"]');
-  await page.waitForTimeout(3000);
+  await page.waitForTimeout(4000);
 
   await page.goto(`${BASE}/orders`);
-  await page.waitForTimeout(8000);
+  await page.waitForTimeout(10000);
 
-  // Filter console for invoiced/billing
-  const relevant = logs.filter(l => l.includes('invoic') || l.includes('billing') || l.includes('1051') || l.includes('warn'));
-  console.log('=== Relevant console logs ===');
-  relevant.forEach(l => console.log(l));
+  // Inject a check into the page context
+  const debug = await page.evaluate(() => {
+    // Try to find React state — look for __NEXT_DATA__ or React fiber
+    const bodyText = document.body.innerText;
+    const hasVerFactura = bodyText.includes('Ver Factura');
 
-  // Check DOM state
-  const state = await page.evaluate(() => {
-    const btns = Array.from(document.querySelectorAll('button'));
+    // Count all buttons
+    const allButtons = Array.from(document.querySelectorAll('button'));
+    const facturarButtons = allButtons.filter(b => b.textContent?.trim() === 'Facturar');
+    const verFacturaButtons = allButtons.filter(b => b.textContent?.includes('Ver Factura'));
+
+    // Get all order IDs from the page (look for PED- pattern)
+    const pedTexts = Array.from(document.querySelectorAll('*'))
+      .map(el => el.textContent)
+      .filter(t => t?.match(/PED-\d{8}-\d{4}/))
+      .map(t => t?.match(/PED-\d{8}-\d{4}/)?.[0])
+      .filter((v, i, a) => a.indexOf(v) === i)
+      .slice(0, 5);
+
     return {
-      facturar: btns.filter(b => b.textContent?.trim() === 'Facturar').length,
-      aLinks: btns.filter(b => /^A-\d+$/.test(b.textContent?.trim() || '')).length,
-      allBtnTexts: btns.map(b => b.textContent?.trim()).filter(t => t && (t.includes('Factur') || t.includes('A-'))),
+      hasVerFactura,
+      facturarCount: facturarButtons.length,
+      verFacturaCount: verFacturaButtons.length,
+      samplePedidos: pedTexts,
+      totalButtons: allButtons.length,
     };
   });
-  console.log('DOM state:', JSON.stringify(state));
+
+  console.log('Debug result:', JSON.stringify(debug, null, 2));
 });

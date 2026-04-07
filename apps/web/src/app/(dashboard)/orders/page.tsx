@@ -562,7 +562,7 @@ export default function OrdersPage() {
         );
       },
     },
-  ], [canAdvanceOrders, formatCurrency]);
+  ], [canAdvanceOrders, formatCurrency, invoicedOrders]);
 
   return (
     <>
