@@ -15,6 +15,7 @@ import {
   downloadFacturaXml,
   type GetFacturasParams,
 } from '@/services/api/billing';
+import billingAxios from '@/lib/billingApi';
 import { extractBillingError } from '@/lib/billingApi';
 import type { FacturaListItem, FacturaEstado } from '@/types/billing';
 
@@ -67,6 +68,22 @@ export default function InvoicesPage() {
   // Reset to page 1 when filters change
   useEffect(() => { setPage(1); }, [filterEstado, filterRfc]);
 
+  const handleExportAll = async () => {
+    try {
+      toast.info('Preparando descarga...');
+      const response = await billingAxios.get('/api/facturas/export-zip', { responseType: 'blob' });
+      const blob = new Blob([response.data], { type: 'application/zip' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `facturas_${new Date().toISOString().slice(0, 10)}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error('Error al exportar facturas');
+    }
+  };
+
   const handleTimbrar = async (id: number) => {
     setTimbrando(id);
     try {
@@ -108,14 +125,20 @@ export default function InvoicesPage() {
         { label: 'Facturas' },
       ]}
       title="Facturas"
-      subtitle={`${totalCount} facturas`}
+      subtitle={`${totalCount} facturas — Almacenamiento seguro durante su suscripción + 90 días`}
       actions={
-        <Link href="/billing/invoices/new">
-          <Button className="bg-green-600 hover:bg-green-700 text-white">
-            <Plus className="w-4 h-4 mr-2" />
-            Nueva Factura
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={handleExportAll} disabled={totalCount === 0}>
+            <Download className="w-4 h-4 mr-2" />
+            Exportar
           </Button>
-        </Link>
+          <Link href="/billing/invoices/new">
+            <Button className="bg-green-600 hover:bg-green-700 text-white">
+              <Plus className="w-4 h-4 mr-2" />
+              Nueva Factura
+            </Button>
+          </Link>
+        </div>
       }
     >
       {/* Filters */}
@@ -145,11 +168,6 @@ export default function InvoicesPage() {
           <option value="TIMBRADA">Timbrada</option>
           <option value="CANCELADA">Cancelada</option>
         </select>
-      </div>
-
-      {/* Retention notice */}
-      <div className="mb-4 px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 text-xs text-blue-700 dark:text-blue-400">
-        Sus comprobantes fiscales (XML y PDF) se almacenan de forma segura durante toda su suscripción y 90 días después de cancelar. Recomendamos descargar sus archivos periódicamente como respaldo.
       </div>
 
       {/* Desktop table */}

@@ -1078,6 +1078,50 @@ public class FacturasController : ControllerBase
         return File(fallbackBytes, "application/xml", xmlFileName);
     }
 
+    [HttpGet("export-zip")]
+    public async Task<ActionResult> ExportZip()
+    {
+        var tenantId = GetTenantId();
+
+        var facturas = await _context.Facturas
+            .Where(f => f.TenantId == tenantId && f.Estado == "TIMBRADA")
+            .OrderByDescending(f => f.FechaEmision)
+            .Select(f => new { f.Id, f.Serie, f.Folio, f.EmisorRfc, f.Uuid, f.XmlBlobUrl, f.XmlContent, f.FechaEmision })
+            .ToListAsync();
+
+        if (facturas.Count == 0)
+            return BadRequest("No hay facturas timbradas para exportar.");
+
+        using var memoryStream = new MemoryStream();
+        using (var archive = new System.IO.Compression.ZipArchive(memoryStream, System.IO.Compression.ZipArchiveMode.Create, true))
+        {
+            foreach (var f in facturas)
+            {
+                var prefix = $"{f.EmisorRfc}_Factura_{f.Serie}{f.Folio}";
+
+                // XML
+                string? xml = null;
+                if (!string.IsNullOrEmpty(f.XmlBlobUrl))
+                {
+                    try { xml = await _blobService.GetXmlAsync(f.XmlBlobUrl); }
+                    catch { /* fallback to DB */ }
+                }
+                xml ??= f.XmlContent;
+
+                if (!string.IsNullOrEmpty(xml))
+                {
+                    var xmlEntry = archive.CreateEntry($"{prefix}.xml", System.IO.Compression.CompressionLevel.Fastest);
+                    using var writer = new StreamWriter(xmlEntry.Open());
+                    await writer.WriteAsync(xml);
+                }
+            }
+        }
+
+        memoryStream.Position = 0;
+        var date = DateTime.UtcNow.ToString("yyyy-MM-dd");
+        return File(memoryStream.ToArray(), "application/zip", $"facturas_{date}.zip");
+    }
+
     [HttpPost("{id}/enviar")]
     [Authorize(Roles = "ADMIN,SUPER_ADMIN")]
     public async Task<ActionResult> EnviarPorCorreo(long id, [FromBody] EnviarFacturaRequest request)
