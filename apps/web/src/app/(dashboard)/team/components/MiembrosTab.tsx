@@ -572,7 +572,8 @@ function AdminUsersView() {
       ? displayUsers
       : displayUsers.filter(u => u.status === filterStatus);
     if (filterSession !== 'all') {
-      const apiMap = new Map(apiUsers.map((u: Record<string, unknown>) => [String(u.id), u]));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const apiMap = new Map(apiUsers.map((u: any) => [String(u.id), u]));
       filtered = filtered.filter(u => {
         const api = apiMap.get(u.id);
         if (!api) return false;
@@ -637,8 +638,10 @@ function AdminUsersView() {
   // Get session count for a user from apiUsers
   const getSessionCount = (userId: string): number => {
     if (!Array.isArray(apiUsers)) return 0;
-    const apiUser = apiUsers.find((u: Record<string, unknown>) => String(u.id) === userId);
-    return ((apiUser as Record<string, unknown>)?.activeSessionCount as number) ?? 0;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const apiUser = apiUsers.find((u: any) => String(u.id) === userId);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (apiUser as any)?.activeSessionCount ?? 0;
   };
 
   const handleCreateUser = async () => {
@@ -1068,11 +1071,13 @@ function AdminUsersView() {
           </div>
           <div className="bg-white rounded-xl border border-gray-200 p-4">
             <p className="text-[11px] font-medium text-gray-500 uppercase">En linea</p>
-            <p className="text-2xl font-bold text-blue-600 mt-1">{apiUsers.filter((u: Record<string, unknown>) => u.isOnline).length}</p>
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            <p className="text-2xl font-bold text-blue-600 mt-1">{apiUsers.filter((u: any) => u.isOnline).length}</p>
           </div>
           <div className="bg-white rounded-xl border border-gray-200 p-4">
             <p className="text-[11px] font-medium text-gray-500 uppercase">Sesiones activas</p>
-            <p className="text-2xl font-bold text-amber-600 mt-1">{apiUsers.reduce((sum: number, u: Record<string, unknown>) => sum + ((u.activeSessionCount as number) || 0), 0)}</p>
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            <p className="text-2xl font-bold text-amber-600 mt-1">{apiUsers.reduce((sum: number, u: any) => sum + (u.activeSessionCount || 0), 0)}</p>
           </div>
         </div>
 
