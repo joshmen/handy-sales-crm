@@ -124,7 +124,7 @@ export default function InvoicesPage() {
         { label: 'Facturas' },
       ]}
       title="Facturas"
-      subtitle={`${totalCount} facturas · Almacenamiento seguro durante su suscripción y 90 días después de cancelar`}
+      subtitle={`${totalCount} facturas`}
       actions={
         <Button variant="outline" onClick={handleExportAll} disabled={totalCount === 0}>
           <Download className="w-4 h-4 mr-2" />
@@ -161,9 +161,20 @@ export default function InvoicesPage() {
         </select>
       </div>
 
-      <p className="text-xs text-muted-foreground mb-4">
-        Las facturas se generan desde <a href="/orders" className="text-green-600 hover:underline font-medium">Pedidos</a> → Facturar en pedidos entregados.
-      </p>
+      <div className="flex flex-col sm:flex-row gap-3 mb-4">
+        <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800">
+          <FileText className="w-4 h-4 text-green-600 shrink-0" />
+          <p className="text-xs text-green-700 dark:text-green-400">
+            Las facturas se generan desde <a href="/orders" className="text-green-800 dark:text-green-300 hover:underline font-semibold">Pedidos</a> → Facturar en pedidos entregados.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800">
+          <Download className="w-4 h-4 text-amber-600 shrink-0" />
+          <p className="text-xs text-amber-700 dark:text-amber-400">
+            Almacenamiento seguro durante su suscripción y 90 días después de cancelar.
+          </p>
+        </div>
+      </div>
 
       {/* Desktop table */}
       <div className="hidden md:block bg-card border border-border rounded-xl overflow-hidden">
