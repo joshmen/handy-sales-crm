@@ -936,14 +936,19 @@ public class FacturasController : ControllerBase
 
         // ═══ FLUJO DE CANCELACIÓN (según diagrama Finkok) ═══
 
+        _logger.LogWarning("CANCEL_FLOW [{UUID}] ═══ INICIO — Motivo={Motivo}, RFC={RFC}, Total={Total}",
+            factura.Uuid, request.MotivoCancelacion, factura.EmisorRfc, factura.Total);
+
         // Paso 1: Consultar estatus ante el SAT
+        _logger.LogWarning("CANCEL_FLOW [{UUID}] Paso 1: Consultando get_sat_status...", factura.Uuid);
         var satStatus = await _pacService.GetSatStatusAsync(
             factura.Uuid, factura.EmisorRfc, factura.ReceptorRfc, factura.Total, pacConfig);
 
-        _logger.LogInformation("Cancelación {UUID}: SAT status = {Estado}, Cancelable = {EsCancelable}, EstCancelacion = {EstCancelacion}",
-            factura.Uuid, satStatus.Estado, satStatus.EsCancelable, satStatus.EstatusCancelacion);
+        _logger.LogWarning("CANCEL_FLOW [{UUID}] Paso 1 resultado: Success={Success}, Estado={Estado}, EsCancelable={EsCancelable}, EstCancelacion={EstCancelacion}, Error={Error}",
+            factura.Uuid, satStatus.Success, satStatus.Estado, satStatus.EsCancelable, satStatus.EstatusCancelacion, satStatus.ErrorMessage);
 
         // Paso 2: ¿Ya está cancelado?
+        _logger.LogWarning("CANCEL_FLOW [{UUID}] Paso 2: ¿Ya cancelado? Estado={Estado}", factura.Uuid, satStatus.Estado);
         if (satStatus.Success && satStatus.Estado == "Cancelado")
         {
             factura.Estado = "CANCELADA";
@@ -954,13 +959,15 @@ public class FacturasController : ControllerBase
             return Ok(new { estado = "CANCELADA", mensaje = "La factura ya estaba cancelada ante el SAT." });
         }
 
-        // Paso 3: ¿Está en proceso de cancelación?
+        // Paso 3: ¿En proceso de cancelación?
+        _logger.LogWarning("CANCEL_FLOW [{UUID}] Paso 3: ¿En proceso? EstatusCancelacion={Est}", factura.Uuid, satStatus.EstatusCancelacion);
         if (satStatus.Success && satStatus.EstatusCancelacion?.Contains("Proceso") == true)
         {
             return Ok(new { estado = "EN_PROCESO", mensaje = "La factura tiene una solicitud de cancelación en proceso. Espere a que el receptor la acepte o se cumpla el plazo de 72 horas." });
         }
 
         // Paso 4: ¿Es cancelable?
+        _logger.LogWarning("CANCEL_FLOW [{UUID}] Paso 4: ¿Es cancelable? EsCancelable={Canc}", factura.Uuid, satStatus.EsCancelable);
         if (satStatus.Success && satStatus.EsCancelable?.Contains("No cancelable") == true)
         {
             return BadRequest(new
@@ -971,14 +978,19 @@ public class FacturasController : ControllerBase
         }
 
         // Paso 5: Verificar solicitud previa < 72 hrs (código 798 del PAC lo maneja)
+        _logger.LogWarning("CANCEL_FLOW [{UUID}] Paso 5-6: Enviando sign_cancel al PAC...", factura.Uuid);
 
         // Paso 6: Enviar solicitud de cancelación
         var resultado = await _pacService.CancelarAsync(
             factura.Uuid, factura.EmisorRfc,
             request.MotivoCancelacion, request.FolioSustitucion, pacConfig);
 
+        _logger.LogWarning("CANCEL_FLOW [{UUID}] Paso 6 resultado: Success={Success}, Estado={Estado}, Code={Code}, Error={Error}",
+            factura.Uuid, resultado.Success, resultado.EstadoCancelacion, resultado.ErrorCode, resultado.ErrorMessage);
+
         if (!resultado.Success)
         {
+            _logger.LogWarning("CANCEL_FLOW [{UUID}] ═══ FALLÓ — {Code}: {Error}", factura.Uuid, resultado.ErrorCode, resultado.ErrorMessage);
             var errorHelp = !string.IsNullOrEmpty(resultado.ErrorCode)
                 ? await _context.CfdiErrorCatalog
                     .Where(e => e.Codigo == resultado.ErrorCode && e.Activo)
@@ -1014,6 +1026,7 @@ public class FacturasController : ControllerBase
             $"Cancelación: motivo={request.MotivoCancelacion}, estado={factura.EstadoCancelacion}", userId);
         await _context.SaveChangesAsync();
 
+        _logger.LogWarning("CANCEL_FLOW [{UUID}] ═══ ÉXITO — Estado={Estado}, Mensaje={Mensaje}", factura.Uuid, factura.EstadoCancelacion, mensaje);
         return Ok(new { estado = factura.EstadoCancelacion, mensaje });
     }
 
