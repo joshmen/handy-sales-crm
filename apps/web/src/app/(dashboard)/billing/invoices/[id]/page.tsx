@@ -148,11 +148,15 @@ export default function InvoiceDetailPage() {
     }
     try {
       setActionLoading('cancelar');
-      await cancelarFactura(factura.id, {
+      const result = await cancelarFactura(factura.id, {
         motivoCancelacion: cancelMotivo,
         folioSustitucion: cancelMotivo === '01' ? cancelFolioSustitucion.trim() : undefined,
       });
-      toast.success('Factura cancelada ante el SAT');
+      if (result.estado === 'EN_PROCESO') {
+        toast.info(result.mensaje || 'Solicitud en proceso. El receptor tiene 72 hrs para aceptar.');
+      } else {
+        toast.success(result.mensaje || 'Factura cancelada ante la autoridad fiscal.');
+      }
       setShowCancelModal(false);
       setCancelConfirmed(false);
       await loadFactura();

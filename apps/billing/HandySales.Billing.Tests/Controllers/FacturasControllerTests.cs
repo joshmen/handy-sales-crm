@@ -60,6 +60,11 @@ internal class StubPacService : IPacService
     {
         return Task.FromResult(new ConsultaResult { Success = true, Estado = "Vigente" });
     }
+
+    public Task<SatStatusResult> GetSatStatusAsync(string uuid, string rfcEmisor, string rfcReceptor, decimal total, ConfiguracionFiscal config)
+    {
+        return Task.FromResult(new SatStatusResult { Success = true, Estado = "Vigente", EsCancelable = "Cancelable sin aceptación" });
+    }
 }
 
 internal class StubBlobStorageService : IBlobStorageService

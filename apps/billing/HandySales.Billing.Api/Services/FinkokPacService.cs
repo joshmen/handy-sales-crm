@@ -98,6 +98,62 @@ public class FinkokPacService : IPacService
         }
     }
 
+    public async Task<SatStatusResult> GetSatStatusAsync(string uuid, string rfcEmisor, string rfcReceptor, decimal total, ConfiguracionFiscal config)
+    {
+        var url = GetCancelUrl(config.PacAmbiente);
+        var totalStr = total.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+
+        var soapBody = $@"<?xml version=""1.0"" encoding=""UTF-8""?>
+<soapenv:Envelope xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/""
+                  xmlns:cancel=""http://facturacion.finkok.com/cancel"">
+  <soapenv:Header/>
+  <soapenv:Body>
+    <cancel:get_sat_status>
+      <cancel:username>{EscapeXml(config.PacUsuario!)}</cancel:username>
+      <cancel:password>{EscapeXml(config.PacPassword!)}</cancel:password>
+      <cancel:taxpayer_id>{EscapeXml(rfcEmisor)}</cancel:taxpayer_id>
+      <cancel:rtaxpayer_id>{EscapeXml(rfcReceptor)}</cancel:rtaxpayer_id>
+      <cancel:uuid>{EscapeXml(uuid)}</cancel:uuid>
+      <cancel:total>{totalStr}</cancel:total>
+    </cancel:get_sat_status>
+  </soapenv:Body>
+</soapenv:Envelope>";
+
+        try
+        {
+            var response = await SendSoapRequest(url, soapBody, "get_sat_status");
+
+            if (response.TrimStart().StartsWith("<html", StringComparison.OrdinalIgnoreCase) ||
+                response.TrimStart().StartsWith("<!DOCTYPE", StringComparison.OrdinalIgnoreCase))
+            {
+                return new SatStatusResult { Success = false, ErrorMessage = "Servicio del SAT no disponible" };
+            }
+
+            var doc = System.Xml.Linq.XDocument.Parse(response);
+            var codigoEstatus = ExtractElementValue(doc, "CodigoEstatus");
+            var estado = ExtractElementValue(doc, "Estado");
+            var esCancelable = ExtractElementValue(doc, "EsCancelable");
+            var estatusCancelacion = ExtractElementValue(doc, "EstatusCancelacion");
+
+            _logger.LogInformation("get_sat_status: Estado={Estado}, EsCancelable={EsCancelable}, EstatusCancelacion={EstatusCancelacion}",
+                estado, esCancelable, estatusCancelacion);
+
+            return new SatStatusResult
+            {
+                Success = !string.IsNullOrEmpty(estado),
+                CodigoEstatus = codigoEstatus,
+                Estado = estado,
+                EsCancelable = esCancelable,
+                EstatusCancelacion = estatusCancelacion,
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error consultando get_sat_status para UUID {Uuid}", uuid);
+            return new SatStatusResult { Success = false, ErrorMessage = ex.Message };
+        }
+    }
+
     private async Task<string> SendSoapRequest(string url, string soapEnvelope, string soapAction)
     {
         var content = new StringContent(soapEnvelope, Encoding.UTF8, "text/xml");

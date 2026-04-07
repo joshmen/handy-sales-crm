@@ -21,6 +21,22 @@ public interface IPacService
     /// Checks the current status of an invoice with the SAT.
     /// </summary>
     Task<ConsultaResult> ConsultarEstatusAsync(string uuid, string rfcEmisor, ConfiguracionFiscal config);
+
+    /// <summary>
+    /// Gets the full SAT status of an invoice (cancelado, cancelable, en proceso, etc.)
+    /// Used to determine if cancellation is possible before sending the request.
+    /// </summary>
+    Task<SatStatusResult> GetSatStatusAsync(string uuid, string rfcEmisor, string rfcReceptor, decimal total, ConfiguracionFiscal config);
+}
+
+public class SatStatusResult
+{
+    public bool Success { get; set; }
+    public string? CodigoEstatus { get; set; } // "S - Comprobante obtenido satisfactoriamente"
+    public string? Estado { get; set; }         // "Vigente", "Cancelado", "No Encontrado"
+    public string? EsCancelable { get; set; }   // "Cancelable sin aceptación", "Cancelable con aceptación", "No cancelable"
+    public string? EstatusCancelacion { get; set; } // "En proceso", "Cancelado", "Plazo vencido"
+    public string? ErrorMessage { get; set; }
 }
 
 public class TimbradoResult

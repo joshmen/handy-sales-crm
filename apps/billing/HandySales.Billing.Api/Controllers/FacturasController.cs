@@ -893,30 +893,25 @@ public class FacturasController : ControllerBase
             .Where(f => f.Id == id && f.TenantId == tenantId)
             .FirstOrDefaultAsync();
 
-        if (factura == null)
-            return NotFound();
-
+        if (factura == null) return NotFound();
         if (factura.Estado != "TIMBRADA")
-            return BadRequest("Solo se pueden cancelar facturas timbradas");
+            return BadRequest("Solo se pueden cancelar facturas timbradas.");
+        if (string.IsNullOrEmpty(factura.Uuid))
+            return BadRequest("La factura no tiene UUID asignado.");
 
         var motivosValidos = new[] { "01", "02", "03", "04" };
         if (!motivosValidos.Contains(request.MotivoCancelacion))
-            return BadRequest($"Motivo de cancelación inválido. Valores válidos: 01, 02, 03, 04");
+            return BadRequest("Motivo de cancelación inválido. Valores válidos: 01, 02, 03, 04.");
         if (request.MotivoCancelacion == "01" && string.IsNullOrEmpty(request.FolioSustitucion))
-            return BadRequest("El motivo '01' requiere un FolioSustitucion (UUID de la factura sustituta)");
+            return BadRequest("El motivo '01' requiere el UUID de la factura que la sustituye.");
 
-        // Load fiscal config for PAC credentials
+        // Load PAC credentials
         var config = await _context.ConfiguracionesFiscales
             .Where(c => c.TenantId == tenantId && c.Activo)
             .FirstOrDefaultAsync();
-
         if (config == null)
-            return BadRequest("No se encontró configuración fiscal. Configure sus datos fiscales para cancelar facturas timbradas.");
+            return BadRequest("No se encontró configuración fiscal activa.");
 
-        if (string.IsNullOrEmpty(factura.Uuid))
-            return BadRequest("La factura no tiene UUID asignado. No se puede cancelar ante el SAT.");
-
-        // sign_cancel uses PAC credentials only — CSD must be pre-loaded in Finkok panel
         var pacUsuario = _configuration["FINKOK_USUARIO"] ?? config.PacUsuario;
         var pacAmbiente = _configuration["FINKOK_AMBIENTE"] ?? config.PacAmbiente;
         var decryptedPacPassword = _configuration["FINKOK_PASSWORD"];
@@ -932,7 +927,6 @@ public class FacturasController : ControllerBase
         if (string.IsNullOrEmpty(pacUsuario) || string.IsNullOrEmpty(decryptedPacPassword))
             return BadRequest("No se encontraron credenciales del PAC. Configure FINKOK_USUARIO/FINKOK_PASSWORD.");
 
-        // Build detached config with PAC credentials only (no CSD needed for sign_cancel)
         var pacConfig = new ConfiguracionFiscal
         {
             PacUsuario = pacUsuario,
@@ -940,13 +934,51 @@ public class FacturasController : ControllerBase
             PacAmbiente = pacAmbiente,
         };
 
+        // ═══ FLUJO DE CANCELACIÓN (según diagrama Finkok) ═══
+
+        // Paso 1: Consultar estatus ante el SAT
+        var satStatus = await _pacService.GetSatStatusAsync(
+            factura.Uuid, factura.EmisorRfc, factura.ReceptorRfc, factura.Total, pacConfig);
+
+        _logger.LogInformation("Cancelación {UUID}: SAT status = {Estado}, Cancelable = {EsCancelable}, EstCancelacion = {EstCancelacion}",
+            factura.Uuid, satStatus.Estado, satStatus.EsCancelable, satStatus.EstatusCancelacion);
+
+        // Paso 2: ¿Ya está cancelado?
+        if (satStatus.Success && satStatus.Estado == "Cancelado")
+        {
+            factura.Estado = "CANCELADA";
+            factura.EstadoCancelacion = "CANCELADA";
+            factura.FechaCancelacion = DateTime.UtcNow;
+            RegistrarAuditoria(tenantId, factura.Id, "CANCELAR", "Factura ya estaba cancelada ante el SAT", userId);
+            await _context.SaveChangesAsync();
+            return Ok(new { estado = "CANCELADA", mensaje = "La factura ya estaba cancelada ante el SAT." });
+        }
+
+        // Paso 3: ¿Está en proceso de cancelación?
+        if (satStatus.Success && satStatus.EstatusCancelacion?.Contains("Proceso") == true)
+        {
+            return Ok(new { estado = "EN_PROCESO", mensaje = "La factura tiene una solicitud de cancelación en proceso. Espere a que el receptor la acepte o se cumpla el plazo de 72 horas." });
+        }
+
+        // Paso 4: ¿Es cancelable?
+        if (satStatus.Success && satStatus.EsCancelable?.Contains("No cancelable") == true)
+        {
+            return BadRequest(new
+            {
+                error = "La factura no es cancelable en este momento.",
+                details = "Tiene comprobantes relacionados activos. Cancele primero los CFDIs relacionados."
+            });
+        }
+
+        // Paso 5: Verificar solicitud previa < 72 hrs (código 798 del PAC lo maneja)
+
+        // Paso 6: Enviar solicitud de cancelación
         var resultado = await _pacService.CancelarAsync(
             factura.Uuid, factura.EmisorRfc,
             request.MotivoCancelacion, request.FolioSustitucion, pacConfig);
 
         if (!resultado.Success)
         {
-            // Enrich with CFDI error catalog if available
             var errorHelp = !string.IsNullOrEmpty(resultado.ErrorCode)
                 ? await _context.CfdiErrorCatalog
                     .Where(e => e.Codigo == resultado.ErrorCode && e.Activo)
@@ -961,21 +993,28 @@ public class FacturasController : ControllerBase
             });
         }
 
+        // Paso 7: Procesar respuesta (201=exitosa, 202=previa)
         factura.EstadoCancelacion = resultado.EstadoCancelacion;
         factura.AcuseCancelacion = resultado.AcuseXml;
-
-        if (resultado.EstadoCancelacion == "CANCELADA")
-            factura.Estado = "CANCELADA";
-
         factura.FechaCancelacion = DateTime.UtcNow;
         factura.MotivoCancelacion = request.MotivoCancelacion;
         factura.FolioSustitucion = request.FolioSustitucion;
 
+        if (resultado.EstadoCancelacion == "CANCELADA")
+            factura.Estado = "CANCELADA";
+
+        var mensaje = resultado.EstadoCancelacion switch
+        {
+            "CANCELADA" => "Factura cancelada exitosamente ante el SAT.",
+            "EN_PROCESO" => "Solicitud de cancelación enviada. El receptor tiene 72 horas para aceptar o rechazar.",
+            _ => $"Solicitud procesada. Estado: {resultado.EstadoCancelacion}"
+        };
+
         RegistrarAuditoria(tenantId, factura.Id, "CANCELAR",
-            $"Factura cancelada: {request.MotivoCancelacion} (estado: {factura.EstadoCancelacion})", userId);
+            $"Cancelación: motivo={request.MotivoCancelacion}, estado={factura.EstadoCancelacion}", userId);
         await _context.SaveChangesAsync();
 
-        return Ok(new { estado = factura.EstadoCancelacion });
+        return Ok(new { estado = factura.EstadoCancelacion, mensaje });
     }
 
     [HttpGet("{id}/pdf")]

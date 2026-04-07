@@ -71,8 +71,8 @@ export async function timbrarFactura(id: number): Promise<TimbradoResponse> {
   return data;
 }
 
-export async function cancelarFactura(id: number, request: CancelarFacturaRequest): Promise<{ estado: string }> {
-  const { data } = await billingApi.post<{ estado: string }>(`/api/facturas/${id}/cancelar`, request);
+export async function cancelarFactura(id: number, request: CancelarFacturaRequest): Promise<{ estado: string; mensaje?: string }> {
+  const { data } = await billingApi.post<{ estado: string; mensaje?: string }>(`/api/facturas/${id}/cancelar`, request);
   return data;
 }
 
