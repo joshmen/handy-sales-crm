@@ -5,12 +5,11 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 namespace HandySales.Infrastructure.Persistence;
 
 /// <summary>
-/// EF Core interceptor that sets PostgreSQL session variable 'app.tenant_id'
-/// on every connection open. This enables Row Level Security (RLS) policies
-/// to enforce tenant isolation at the database level — a second layer of
-/// protection beyond EF Core's global query filters.
+/// EF Core command interceptor that prepends SET app.tenant_id before every SQL command.
+/// This enables PostgreSQL RLS policies to enforce tenant isolation at the DB level.
+/// Uses CommandInterceptor (not ConnectionInterceptor) to work with connection pooling.
 /// </summary>
-public class TenantRlsInterceptor : DbConnectionInterceptor
+public class TenantRlsInterceptor : DbCommandInterceptor
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
 
@@ -19,25 +18,57 @@ public class TenantRlsInterceptor : DbConnectionInterceptor
         _httpContextAccessor = httpContextAccessor;
     }
 
-    public override void ConnectionOpened(DbConnection connection, ConnectionEndEventData eventData)
+    public override InterceptionResult<DbDataReader> ReaderExecuting(
+        DbCommand command, CommandEventData eventData, InterceptionResult<DbDataReader> result)
     {
-        SetTenantId(connection);
-        base.ConnectionOpened(connection, eventData);
+        SetTenantId(command);
+        return base.ReaderExecuting(command, eventData, result);
     }
 
-    public override async Task ConnectionOpenedAsync(DbConnection connection, ConnectionEndEventData eventData, CancellationToken cancellationToken = default)
+    public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(
+        DbCommand command, CommandEventData eventData, InterceptionResult<DbDataReader> result,
+        CancellationToken cancellationToken = default)
     {
-        SetTenantId(connection);
-        await base.ConnectionOpenedAsync(connection, eventData, cancellationToken);
+        SetTenantId(command);
+        return base.ReaderExecutingAsync(command, eventData, result, cancellationToken);
     }
 
-    private void SetTenantId(DbConnection connection)
+    public override InterceptionResult<int> NonQueryExecuting(
+        DbCommand command, CommandEventData eventData, InterceptionResult<int> result)
+    {
+        SetTenantId(command);
+        return base.NonQueryExecuting(command, eventData, result);
+    }
+
+    public override ValueTask<InterceptionResult<int>> NonQueryExecutingAsync(
+        DbCommand command, CommandEventData eventData, InterceptionResult<int> result,
+        CancellationToken cancellationToken = default)
+    {
+        SetTenantId(command);
+        return base.NonQueryExecutingAsync(command, eventData, result, cancellationToken);
+    }
+
+    public override InterceptionResult<object> ScalarExecuting(
+        DbCommand command, CommandEventData eventData, InterceptionResult<object> result)
+    {
+        SetTenantId(command);
+        return base.ScalarExecuting(command, eventData, result);
+    }
+
+    public override ValueTask<InterceptionResult<object>> ScalarExecutingAsync(
+        DbCommand command, CommandEventData eventData, InterceptionResult<object> result,
+        CancellationToken cancellationToken = default)
+    {
+        SetTenantId(command);
+        return base.ScalarExecutingAsync(command, eventData, result, cancellationToken);
+    }
+
+    private void SetTenantId(DbCommand command)
     {
         var tenantClaim = _httpContextAccessor.HttpContext?.User?.FindFirst("tenant_id");
         if (tenantClaim == null || string.IsNullOrEmpty(tenantClaim.Value)) return;
 
-        using var cmd = connection.CreateCommand();
-        cmd.CommandText = $"SET app.tenant_id = '{tenantClaim.Value}'";
-        cmd.ExecuteNonQuery();
+        // Prepend SET to the actual SQL command — runs in same transaction/connection
+        command.CommandText = $"SET LOCAL app.tenant_id = '{tenantClaim.Value}'; {command.CommandText}";
     }
 }
