@@ -149,7 +149,7 @@ export default function InvoicesPage() {
 
       {/* Retention notice */}
       <div className="mb-4 px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 text-xs text-blue-700 dark:text-blue-400">
-        Sus facturas (XML y PDF) se almacenan en la nube de forma segura por 5 años, conforme al Art. 28 del Código Fiscal de la Federación. Puede descargarlas en cualquier momento.
+        Sus comprobantes fiscales (XML y PDF) se almacenan de forma segura durante toda su suscripción y 90 días después de cancelar. Recomendamos descargar sus archivos periódicamente como respaldo.
       </div>
 
       {/* Desktop table */}
