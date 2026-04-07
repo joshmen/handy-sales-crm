@@ -409,8 +409,8 @@ export default function InvoiceDetailPage() {
 
       {/* Cancel Modal */}
       {showCancelModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => { setShowCancelModal(false); setCancelConfirmed(false); }}>
-          <div className="bg-white dark:bg-card rounded-xl p-6 w-full max-w-md mx-4 shadow-xl border border-border" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-card rounded-xl p-6 w-full max-w-md mx-4 shadow-xl border border-border">
             <h3 className="text-lg font-semibold text-foreground mb-2">Cancelar factura</h3>
             <p className="text-sm text-muted-foreground mb-4">
               Esta acción es <span className="font-semibold text-red-600">irreversible</span>. La factura se cancelará ante la autoridad fiscal.
