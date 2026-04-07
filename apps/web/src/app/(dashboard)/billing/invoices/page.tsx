@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import Link from 'next/link';
-import { Plus, Search, Download, Send, X as XIcon, FileText, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Download, X as XIcon, FileText, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { TimbresModal } from '@/components/billing/TimbresModal';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
@@ -125,20 +124,12 @@ export default function InvoicesPage() {
         { label: 'Facturas' },
       ]}
       title="Facturas"
-      subtitle={`${totalCount} facturas — Almacenamiento seguro durante su suscripción + 90 días`}
+      subtitle={`${totalCount} facturas · Almacenamiento seguro durante su suscripción y 90 días después de cancelar`}
       actions={
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={handleExportAll} disabled={totalCount === 0}>
-            <Download className="w-4 h-4 mr-2" />
-            Exportar
-          </Button>
-          <Link href="/billing/invoices/new">
-            <Button className="bg-green-600 hover:bg-green-700 text-white">
-              <Plus className="w-4 h-4 mr-2" />
-              Nueva Factura
-            </Button>
-          </Link>
-        </div>
+        <Button variant="outline" onClick={handleExportAll} disabled={totalCount === 0}>
+          <Download className="w-4 h-4 mr-2" />
+          Exportar
+        </Button>
       }
     >
       {/* Filters */}
@@ -169,6 +160,12 @@ export default function InvoicesPage() {
           <option value="CANCELADA">Cancelada</option>
         </select>
       </div>
+
+      {totalCount === 0 && !loading && (
+        <p className="text-sm text-muted-foreground mb-4">
+          Para generar una factura, ve a <a href="/orders" className="text-green-600 hover:underline font-medium">Pedidos</a> y selecciona &quot;Facturar&quot; en un pedido entregado.
+        </p>
+      )}
 
       {/* Desktop table */}
       <div className="hidden md:block bg-card border border-border rounded-xl overflow-hidden">
