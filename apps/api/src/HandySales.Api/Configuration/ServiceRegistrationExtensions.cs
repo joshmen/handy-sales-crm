@@ -147,6 +147,7 @@ public static class ServiceRegistrationExtensions
         {
             // No registrar DbContext aquí: los tests usarán Sqlite desde CustomWebApplicationFactory
             services.AddSingleton<HandySales.Api.Middleware.SlowQueryInterceptor>();
+            services.AddScoped<HandySales.Infrastructure.Persistence.TenantRlsInterceptor>();
             services.AddDbContext<HandySalesDbContext>((sp, options) =>
              options.UseNpgsql(
                  config.GetConnectionString("DefaultConnection"),
@@ -159,7 +160,9 @@ public static class ServiceRegistrationExtensions
                          errorCodesToAdd: null);
                      o.CommandTimeout(30);
                  })
-             .AddInterceptors(sp.GetRequiredService<HandySales.Api.Middleware.SlowQueryInterceptor>()));
+             .AddInterceptors(
+                 sp.GetRequiredService<HandySales.Api.Middleware.SlowQueryInterceptor>(),
+                 sp.GetRequiredService<HandySales.Infrastructure.Persistence.TenantRlsInterceptor>()));
         }
         services.AddFluentValidationAutoValidation();
 
