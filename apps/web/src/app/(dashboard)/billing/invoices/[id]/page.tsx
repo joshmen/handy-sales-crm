@@ -68,6 +68,8 @@ export default function InvoiceDetailPage() {
   const [emailTo, setEmailTo] = useState('');
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelMotivo, setCancelMotivo] = useState<'01' | '02' | '03' | '04'>('02');
+  const [cancelFolioSustitucion, setCancelFolioSustitucion] = useState('');
+  const [cancelConfirmed, setCancelConfirmed] = useState(false);
 
   const loadFactura = useCallback(async () => {
     try {
@@ -139,15 +141,24 @@ export default function InvoiceDetailPage() {
   };
 
   const handleCancelar = async () => {
-    if (!factura) return;
+    if (!factura || !cancelConfirmed) return;
+    if (cancelMotivo === '01' && !cancelFolioSustitucion.trim()) {
+      toast.error('El motivo 01 requiere el UUID de la factura que sustituye');
+      return;
+    }
     try {
       setActionLoading('cancelar');
-      await cancelarFactura(factura.id, { motivoCancelacion: cancelMotivo });
-      toast.success('Factura cancelada');
+      await cancelarFactura(factura.id, {
+        motivoCancelacion: cancelMotivo,
+        folioSustitucion: cancelMotivo === '01' ? cancelFolioSustitucion.trim() : undefined,
+      });
+      toast.success('Factura cancelada ante el SAT');
       setShowCancelModal(false);
+      setCancelConfirmed(false);
       await loadFactura();
     } catch (error: unknown) {
-      toast.error((error as { message?: string })?.message || 'Error al cancelar factura');
+      const msg = (error as { response?: { data?: { error?: string; details?: string } } })?.response?.data;
+      toast.error(msg?.error || msg?.details || 'Error al cancelar factura');
     } finally {
       setActionLoading(null);
     }
@@ -394,36 +405,80 @@ export default function InvoiceDetailPage() {
 
       {/* Cancel Modal */}
       {showCancelModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Cancelar factura</h3>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Motivo de cancelacion</label>
-            <select
-              value={cancelMotivo}
-              onChange={(e) => setCancelMotivo(e.target.value as typeof cancelMotivo)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
-            >
-              <option value="01">01 - Comprobante emitido con errores con relacion</option>
-              <option value="02">02 - Comprobante emitido con errores sin relacion</option>
-              <option value="03">03 - No se llevo a cabo la operacion</option>
-              <option value="04">04 - Operacion nominativa relacionada en factura global</option>
-            </select>
-            <div className="flex justify-end gap-2 mt-4">
-              <button
-                onClick={() => setShowCancelModal(false)}
-                className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                Volver
-              </button>
-              <button
-                onClick={handleCancelar}
-                disabled={!!actionLoading}
-                className="flex items-center gap-2 px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
-              >
-                {actionLoading === 'cancelar' && <Loader2 className="w-4 h-4 animate-spin" />}
-                Confirmar cancelacion
-              </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => { setShowCancelModal(false); setCancelConfirmed(false); }}>
+          <div className="bg-white dark:bg-card rounded-xl p-6 w-full max-w-md mx-4 shadow-xl border border-border" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-foreground mb-2">Cancelar factura</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Esta acción es <span className="font-semibold text-red-600">irreversible</span>. La factura se cancelará ante la autoridad fiscal.
+            </p>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Motivo de cancelación *</label>
+                <select
+                  value={cancelMotivo}
+                  onChange={(e) => { setCancelMotivo(e.target.value as typeof cancelMotivo); setCancelConfirmed(false); }}
+                  className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-background text-foreground focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
+                >
+                  <option value="01">01 — Emitido con errores (con factura sustituta)</option>
+                  <option value="02">02 — Emitido con errores (sin relación)</option>
+                  <option value="03">03 — No se llevó a cabo la operación</option>
+                  <option value="04">04 — Operación nominativa en factura global</option>
+                </select>
+              </div>
+
+              {cancelMotivo === '01' && (
+                <div>
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">UUID de factura sustituta *</label>
+                  <input
+                    type="text"
+                    value={cancelFolioSustitucion}
+                    onChange={(e) => setCancelFolioSustitucion(e.target.value.toUpperCase())}
+                    placeholder="XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+                    className="w-full px-3 py-2 border border-border rounded-lg text-sm font-mono bg-background text-foreground focus:ring-2 focus:ring-green-500 outline-none"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">UUID de la nueva factura que sustituye a esta.</p>
+                </div>
+              )}
+
+              {!cancelConfirmed ? (
+                <button
+                  onClick={() => setCancelConfirmed(true)}
+                  className="w-full px-4 py-2 text-sm font-medium text-red-600 border-2 border-red-300 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                >
+                  Quiero cancelar esta factura
+                </button>
+              ) : (
+                <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                  <p className="text-xs text-red-700 dark:text-red-400 mb-3 font-medium">
+                    ¿Estás seguro? Esta factura quedará cancelada ante la autoridad fiscal y no se puede revertir.
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setCancelConfirmed(false)}
+                      className="flex-1 px-3 py-2 text-sm text-muted-foreground border border-border rounded-lg hover:bg-muted transition-colors"
+                    >
+                      No, volver
+                    </button>
+                    <button
+                      onClick={handleCancelar}
+                      disabled={!!actionLoading}
+                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+                    >
+                      {actionLoading === 'cancelar' && <Loader2 className="w-4 h-4 animate-spin" />}
+                      Sí, cancelar
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
+
+            <button
+              onClick={() => { setShowCancelModal(false); setCancelConfirmed(false); }}
+              className="mt-4 w-full text-center text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Cerrar
+            </button>
           </div>
         </div>
       )}

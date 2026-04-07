@@ -193,7 +193,9 @@ export default function InvoicesPage() {
             {facturas.map(f => (
               <tr key={f.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
                 <td className="px-4 py-3 font-medium">
-                  {f.serie ? `${f.serie}-` : ''}{f.folio}
+                  <a href={`/billing/invoices/${f.id}`} className="text-green-600 hover:underline">
+                    {f.serie ? `${f.serie}-` : ''}{f.folio}
+                  </a>
                 </td>
                 <td className="px-4 py-3 text-muted-foreground">
                   {new Date(f.fechaEmision).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}
@@ -263,9 +265,9 @@ export default function InvoicesPage() {
         {facturas.map(f => (
           <div key={f.id} className="bg-card border border-border rounded-xl p-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="font-medium text-sm">
+              <a href={`/billing/invoices/${f.id}`} className="font-medium text-sm text-green-600 hover:underline">
                 {f.serie ? `${f.serie}-` : ''}{f.folio}
-              </span>
+              </a>
               <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${ESTADO_STYLES[f.estado]}`}>
                 {ESTADO_LABELS[f.estado]}
               </span>

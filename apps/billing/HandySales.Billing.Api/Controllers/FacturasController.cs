@@ -948,8 +948,19 @@ public class FacturasController : ControllerBase
         if (string.IsNullOrEmpty(pacUsuario) || string.IsNullOrEmpty(decryptedPacPassword))
             return BadRequest("No se encontraron credenciales del PAC. Configure las variables de entorno FINKOK_USUARIO/FINKOK_PASSWORD o las credenciales en la base de datos.");
 
+        // Decrypt private key for PAC (Finkok needs raw DER bytes in Base64, not our AES-GCM blob)
+        string? decryptedKeyBase64 = null;
+        if (!string.IsNullOrEmpty(config.LlavePrivada))
+        {
+            var decryptedKeyBytes = await _encryptionService.DecryptAsync(tenantId,
+                Convert.FromBase64String(config.LlavePrivada), config.EncryptedDek, config.EncryptionVersion);
+            decryptedKeyBase64 = Convert.ToBase64String(decryptedKeyBytes);
+            Array.Clear(decryptedKeyBytes);
+        }
+
         // Detach config so PAC service can't accidentally persist decrypted values
         _context.Entry(config).State = Microsoft.EntityFrameworkCore.EntityState.Detached;
+        config.LlavePrivada = decryptedKeyBase64;
         config.PasswordCertificado = decryptedCsdPassword;
         config.PacUsuario = pacUsuario;
         config.PacPassword = decryptedPacPassword;

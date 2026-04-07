@@ -196,6 +196,19 @@ public class FinkokPacService : IPacService
     {
         try
         {
+            // Finkok sandbox sometimes returns HTML instead of SOAP XML
+            if (soapResponse.TrimStart().StartsWith("<html", StringComparison.OrdinalIgnoreCase)
+                || soapResponse.TrimStart().StartsWith("<!DOCTYPE", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogWarning("Finkok cancelación returned HTML instead of SOAP — sandbox may not support cancellation");
+                return new CancelacionResult
+                {
+                    Success = false,
+                    ErrorCode = "PAC_HTML",
+                    ErrorMessage = "El servicio de cancelación del PAC no está disponible en este momento. Intente más tarde o verifique la configuración del ambiente (sandbox/producción)."
+                };
+            }
+
             var doc = XDocument.Parse(soapResponse);
 
             var estatusCancelacion = ExtractElementValue(doc, "EstatusCancelacion")
