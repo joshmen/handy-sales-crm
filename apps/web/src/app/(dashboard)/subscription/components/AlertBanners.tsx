@@ -20,7 +20,7 @@ export function AlertBanners({
     <>
       {/* Past due */}
       {subscription.subscriptionStatus === "PastDue" && (
-        <div role="alert" className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+        <div role="alert" className="flex items-start gap-3 p-4 bg-muted/40 dark:bg-muted/30 border-l-4 border-l-amber-500 border border-border rounded-lg">
           <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
           <div>
             <p className="font-medium text-amber-800 dark:text-amber-300">Pago pendiente</p>
@@ -36,7 +36,7 @@ export function AlertBanners({
 
       {/* Expired */}
       {subscription.subscriptionStatus === "Expired" && (
-        <div role="alert" className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg">
+        <div role="alert" className="flex items-start gap-3 p-4 bg-muted/40 dark:bg-muted/30 border-l-4 border-l-red-500 border border-border rounded-lg">
           <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
           <div>
             <p className="font-medium text-red-800 dark:text-red-300">Suscripción expirada</p>
@@ -49,7 +49,7 @@ export function AlertBanners({
 
       {/* Cancellation scheduled */}
       {subscription.cancellationScheduledFor && subscription.subscriptionStatus !== "Cancelled" && (
-        <div role="alert" className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+        <div role="alert" className="flex items-start gap-3 p-4 bg-muted/40 dark:bg-muted/30 border-l-4 border-l-amber-500 border border-border rounded-lg">
           <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
           <div className="flex-1">
             <p className="font-medium text-amber-800 dark:text-amber-300">Cancelación programada</p>
@@ -62,7 +62,7 @@ export function AlertBanners({
             variant="outline"
             onClick={onReactivate}
             disabled={processing}
-            className="border-amber-300 text-amber-700 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-900/40 flex-shrink-0"
+            className="border-border text-amber-700 hover:bg-muted/40 dark:border-border dark:text-amber-300 dark:hover:bg-muted/30 flex-shrink-0"
           >
             {processing ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -78,24 +78,16 @@ export function AlertBanners({
 
       {/* Trial */}
       {subscription.subscriptionStatus === "Trial" && subscription.daysRemaining !== null && (
-        <div className={`flex items-start gap-3 p-4 rounded-lg border ${
+        <div className={`flex items-start gap-3 p-4 rounded-lg border border-border bg-muted/40 dark:bg-muted/30 border-l-4 ${
           subscription.trialCardCollected
-            ? "bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800"
+            ? "border-l-green-500"
             : subscription.daysRemaining > 7
-              ? "bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800"
+              ? "border-l-blue-500"
               : subscription.daysRemaining > 3
-                ? "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800"
-                : "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800"
+                ? "border-l-amber-500"
+                : "border-l-red-500"
         }`}>
-          <div className={`p-1.5 rounded-lg ${
-            subscription.trialCardCollected
-              ? "bg-green-100 dark:bg-green-900/40"
-              : subscription.daysRemaining > 7
-                ? "bg-blue-100 dark:bg-blue-900/40"
-                : subscription.daysRemaining > 3
-                  ? "bg-amber-100 dark:bg-amber-900/40"
-                  : "bg-red-100 dark:bg-red-900/40"
-          }`}>
+          <div className="p-1.5 rounded-lg bg-muted dark:bg-muted/60">
             {subscription.trialCardCollected ? (
               <CreditCard className="h-5 w-5 text-green-600" />
             ) : (

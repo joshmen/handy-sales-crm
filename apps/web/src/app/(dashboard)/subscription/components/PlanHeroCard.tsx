@@ -38,11 +38,11 @@ export function PlanHeroCard({ subscription, currentPlan, onChangePlan }: PlanHe
   const usersOver = subscription.activeUsuarios > subscription.maxUsuarios;
 
   return (
-    <Card className="border-2 border-green-200 dark:border-green-800/40 bg-gradient-to-br from-green-50/80 via-emerald-50/50 to-white dark:from-green-950/30 dark:via-emerald-950/20 dark:to-background overflow-hidden">
+    <Card className="border-l-4 border-l-green-600 bg-card overflow-hidden">
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-6">
           <div className="flex items-center gap-4">
-            <div className="p-2.5 bg-background rounded-xl shadow-sm border border-green-100 dark:border-green-900">
+            <div className="p-2.5 bg-background rounded-xl shadow-sm border border-border">
               <SbSubscription size={32} />
             </div>
             <div>

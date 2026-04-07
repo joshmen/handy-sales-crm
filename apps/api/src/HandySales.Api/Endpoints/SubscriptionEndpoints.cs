@@ -108,6 +108,24 @@ group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("
         if (tenant == null)
             return Results.NotFound(new { message = "Tenant no encontrado" });
 
+        // Look up the plan to get authoritative MaxUsuarios (tenant field can be stale)
+        var plan = !string.IsNullOrEmpty(tenant.PlanTipo)
+            ? await db.SubscriptionPlans.AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Codigo == tenant.PlanTipo)
+            : null;
+        var maxUsuarios = plan?.MaxUsuarios ?? tenant.MaxUsuarios;
+
+        // Sync tenant if stale (fire-and-forget safe: same DbContext, same request)
+        if (plan != null && tenant.MaxUsuarios != plan.MaxUsuarios)
+        {
+            var tenantToUpdate = await db.Tenants.FindAsync(tenant.Id);
+            if (tenantToUpdate != null)
+            {
+                tenantToUpdate.MaxUsuarios = plan.MaxUsuarios;
+                await db.SaveChangesAsync();
+            }
+        }
+
         var activeUsers = await db.Usuarios
             .IgnoreQueryFilters()
             .AsNoTracking()
@@ -127,7 +145,7 @@ group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("
         {
             planTipo = tenant.PlanTipo,
             subscriptionStatus = tenant.SubscriptionStatus,
-            maxUsuarios = tenant.MaxUsuarios,
+            maxUsuarios,
             activeUsuarios = activeUsers,
             activeProductos,
             activeClientes,

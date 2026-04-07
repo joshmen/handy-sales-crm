@@ -35,7 +35,7 @@ export function CancelSection({
       {/* Danger zone banner */}
       {showBanner && (
         <div className="page-animate-delay-2">
-          <div className="flex items-center justify-between p-4 border border-red-200 dark:border-red-900/50 rounded-xl bg-red-50/50 dark:bg-red-950/20">
+          <div className="flex items-center justify-between p-4 border-l-4 border-l-red-600 border border-border rounded-xl bg-muted/40 dark:bg-muted/30">
             <div className="flex items-center gap-3">
               <ShieldAlert className="h-4 w-4 text-red-500 dark:text-red-400" />
               <div>

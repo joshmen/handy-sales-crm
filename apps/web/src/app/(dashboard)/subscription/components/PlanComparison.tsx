@@ -171,7 +171,7 @@ export function QuickPlanComparison({
       <CardContent className="p-5">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-muted-foreground">Planes disponibles</h3>
-          <Button variant="ghost" size="sm" onClick={onShowFullComparison} className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950/30">
+          <Button variant="ghost" size="sm" onClick={onShowFullComparison} className="text-green-600 hover:text-green-700 hover:bg-muted/40 dark:hover:bg-muted/30">
             Ver comparativa completa
             <ChevronRight className="h-4 w-4 ml-1" />
           </Button>
@@ -189,7 +189,7 @@ export function QuickPlanComparison({
                 key={plan.id}
                 className={`flex items-center justify-between p-4 rounded-xl border transition-all ${
                   isCurrent
-                    ? "border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20"
+                    ? "border-green-200 dark:border-green-800 bg-muted/30 dark:bg-muted/20"
                     : "border-border hover:border-green-200 dark:hover:border-green-800 hover:bg-accent/50"
                 }`}
               >
@@ -331,7 +331,7 @@ function PlanCard({
             <div className={`flex items-center gap-2 px-3 py-2 rounded-lg mt-auto ${
               downgrade.isFreeBlocked
                 ? "bg-gray-100 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700"
-                : "bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40"
+                : "bg-muted/40 dark:bg-muted/30 border border-amber-200/60 dark:border-amber-800/40"
             }`}>
               <AlertTriangle className={`h-3.5 w-3.5 flex-shrink-0 ${
                 downgrade.isFreeBlocked ? "text-gray-400" : "text-amber-500"

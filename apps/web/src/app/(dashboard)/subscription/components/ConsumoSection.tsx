@@ -54,7 +54,7 @@ export function ConsumoSection({ timbres }: ConsumoSectionProps) {
                 </div>
                 <Link
                   href="/subscription/buy-timbres"
-                  className="block w-full py-2 px-4 text-sm font-medium text-center text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg transition-colors"
+                  className="block w-full py-2 px-4 text-sm font-medium text-center text-green-600 dark:text-green-400 hover:underline rounded-lg transition-colors"
                 >
                   Comprar timbres &rarr;
                 </Link>
@@ -78,7 +78,7 @@ export function ConsumoSection({ timbres }: ConsumoSectionProps) {
             <p className="text-sm text-muted-foreground mb-4">Disponible en la sección de Asistente IA</p>
             <Link
               href="/ai"
-              className="block w-full py-2 px-4 text-sm font-medium text-center text-violet-700 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20 hover:bg-violet-100 dark:hover:bg-violet-900/30 rounded-lg transition-colors"
+              className="block w-full py-2 px-4 text-sm font-medium text-center text-violet-600 dark:text-violet-400 hover:underline rounded-lg transition-colors"
             >
               Ver créditos IA &rarr;
             </Link>

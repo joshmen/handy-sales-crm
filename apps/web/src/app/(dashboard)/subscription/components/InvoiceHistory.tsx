@@ -83,7 +83,7 @@ export function InvoiceHistory({ invoices, billingLoading }: InvoiceHistoryProps
                               href={inv.hostedInvoiceUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-md bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800 dark:hover:bg-blue-900/50 transition-colors"
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-md text-blue-700 border border-border hover:bg-muted/40 dark:text-blue-300 dark:border-border dark:hover:bg-muted/30 transition-colors"
                               title="Ver factura"
                             >
                               <FileText className="h-3.5 w-3.5" />
@@ -95,7 +95,7 @@ export function InvoiceHistory({ invoices, billingLoading }: InvoiceHistoryProps
                               href={inv.invoicePdfUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-md bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800 dark:hover:bg-red-900/50 transition-colors"
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-md text-red-700 border border-border hover:bg-muted/40 dark:text-red-300 dark:border-border dark:hover:bg-muted/30 transition-colors"
                               title="Descargar PDF"
                             >
                               <Download className="h-3.5 w-3.5" />
@@ -137,7 +137,7 @@ export function InvoiceHistory({ invoices, billingLoading }: InvoiceHistoryProps
                         href={inv.hostedInvoiceUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800 dark:hover:bg-blue-900/50 transition-colors"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md text-blue-700 border border-border hover:bg-muted/40 dark:text-blue-300 dark:border-border dark:hover:bg-muted/30 transition-colors"
                       >
                         <FileText className="h-3.5 w-3.5" />
                         Ver factura
@@ -148,7 +148,7 @@ export function InvoiceHistory({ invoices, billingLoading }: InvoiceHistoryProps
                         href={inv.invoicePdfUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800 dark:hover:bg-red-900/50 transition-colors"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md text-red-700 border border-border hover:bg-muted/40 dark:text-red-300 dark:border-border dark:hover:bg-muted/30 transition-colors"
                       >
                         <Download className="h-3.5 w-3.5" />
                         PDF
