@@ -57,12 +57,11 @@ public class FinkokPacService : IPacService
 
         var soapBody = BuildCancelSoapEnvelope(
             uuid, rfcEmisor, motivo, folioSustitucion,
-            config.PacUsuario!, config.PacPassword!,
-            config.CertificadoSat!, config.LlavePrivada!, config.PasswordCertificado!);
+            config.PacUsuario!, config.PacPassword!);
 
         try
         {
-            var response = await SendSoapRequest(url, soapBody, "cancel");
+            var response = await SendSoapRequest(url, soapBody, "sign_cancel");
             return ParseCancelacionResponse(response);
         }
         catch (Exception ex)
@@ -211,15 +210,21 @@ public class FinkokPacService : IPacService
 
             var doc = XDocument.Parse(soapResponse);
 
+            var estatusUuid = ExtractElementValue(doc, "EstatusUUID");
             var estatusCancelacion = ExtractElementValue(doc, "EstatusCancelacion")
                 ?? ExtractElementValue(doc, "Estatus");
             var acuse = ExtractElementValue(doc, "Acuse");
-            var codigoError = ExtractElementValue(doc, "CodigoError");
+            var codigoError = ExtractElementValue(doc, "CodigoError")
+                ?? ExtractElementValue(doc, "CodEstatus");
 
-            var isCancelled = estatusCancelacion?.Contains("Cancelado") == true
-                || estatusCancelacion?.Contains("201") == true;
+            // Status codes: 201=success, 202=already cancelled, 205=not found, etc.
+            var isCancelled = estatusUuid == "201" || estatusUuid == "202"
+                || estatusCancelacion?.Contains("Cancelado") == true;
             var isPending = estatusCancelacion?.Contains("Proceso") == true
-                || estatusCancelacion?.Contains("202") == true;
+                || estatusCancelacion?.Contains("Plazo") == true;
+
+            _logger.LogInformation("Finkok cancelación: EstatusUUID={EstatusUUID}, EstatusCancelacion={EstatusCancelacion}, CodigoError={CodigoError}",
+                estatusUuid, estatusCancelacion, codigoError);
 
             string mappedStatus;
             if (isCancelled) mappedStatus = "CANCELADA";
@@ -293,19 +298,20 @@ public class FinkokPacService : IPacService
     }
 
     private static string BuildCancelSoapEnvelope(string uuid, string rfcEmisor, string motivo,
-        string? folioSustitucion, string usuario, string password,
-        string cerBase64, string keyBase64, string keyPassword)
+        string? folioSustitucion, string usuario, string password)
     {
         var folioTag = !string.IsNullOrEmpty(folioSustitucion)
             ? $"<cancel:FolioSustitucion>{EscapeXml(folioSustitucion)}</cancel:FolioSustitucion>"
             : "";
 
+        // Use sign_cancel method — CSD must be pre-loaded in Finkok panel
+        // This avoids the DES3 re-encryption requirement of the cancel method
         return $@"<?xml version=""1.0"" encoding=""UTF-8""?>
 <soapenv:Envelope xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/""
                   xmlns:cancel=""http://facturacion.finkok.com/cancel"">
   <soapenv:Header/>
   <soapenv:Body>
-    <cancel:cancel>
+    <cancel:sign_cancel>
       <cancel:UUIDS>
         <cancel:uuids>
           <cancel:UUID>{EscapeXml(uuid)}</cancel:UUID>
@@ -316,11 +322,8 @@ public class FinkokPacService : IPacService
       <cancel:username>{EscapeXml(usuario)}</cancel:username>
       <cancel:password>{EscapeXml(password)}</cancel:password>
       <cancel:taxpayer_id>{EscapeXml(rfcEmisor)}</cancel:taxpayer_id>
-      <cancel:cer>{cerBase64}</cancel:cer>
-      <cancel:key>{keyBase64}</cancel:key>
-      <cancel:key_password>{EscapeXml(keyPassword)}</cancel:key_password>
       <cancel:store_pending>true</cancel:store_pending>
-    </cancel:cancel>
+    </cancel:sign_cancel>
   </soapenv:Body>
 </soapenv:Envelope>";
     }

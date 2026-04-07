@@ -916,29 +916,13 @@ public class FacturasController : ControllerBase
         if (string.IsNullOrEmpty(factura.Uuid))
             return BadRequest("La factura no tiene UUID asignado. No se puede cancelar ante el SAT.");
 
-        // Decrypt CSD password into a local variable — never modify the tracked entity
-        string? decryptedCsdPassword = null;
-        if (!string.IsNullOrEmpty(config.PasswordCertificado))
-        {
-            var decryptedBytes = await _encryptionService.DecryptAsync(tenantId,
-                Convert.FromBase64String(config.PasswordCertificado), config.EncryptedDek, config.EncryptionVersion);
-            decryptedCsdPassword = Encoding.UTF8.GetString(decryptedBytes);
-            Array.Clear(decryptedBytes);
-        }
-
-        // Resolve PAC credentials: env vars take priority, then DB (legacy)
+        // sign_cancel uses PAC credentials only — CSD must be pre-loaded in Finkok panel
         var pacUsuario = _configuration["FINKOK_USUARIO"] ?? config.PacUsuario;
         var pacAmbiente = _configuration["FINKOK_AMBIENTE"] ?? config.PacAmbiente;
+        var decryptedPacPassword = _configuration["FINKOK_PASSWORD"];
 
-        string? decryptedPacPassword = null;
-        var envPacPassword = _configuration["FINKOK_PASSWORD"];
-        if (!string.IsNullOrEmpty(envPacPassword))
+        if (string.IsNullOrEmpty(decryptedPacPassword) && !string.IsNullOrEmpty(config.PacPassword))
         {
-            decryptedPacPassword = envPacPassword;
-        }
-        else if (!string.IsNullOrEmpty(config.PacPassword))
-        {
-            // Legacy fallback: decrypt from DB
             var decryptedBytes = await _encryptionService.DecryptAsync(tenantId,
                 Convert.FromBase64String(config.PacPassword), config.EncryptedDek, config.EncryptionVersion);
             decryptedPacPassword = Encoding.UTF8.GetString(decryptedBytes);
@@ -946,37 +930,34 @@ public class FacturasController : ControllerBase
         }
 
         if (string.IsNullOrEmpty(pacUsuario) || string.IsNullOrEmpty(decryptedPacPassword))
-            return BadRequest("No se encontraron credenciales del PAC. Configure las variables de entorno FINKOK_USUARIO/FINKOK_PASSWORD o las credenciales en la base de datos.");
+            return BadRequest("No se encontraron credenciales del PAC. Configure FINKOK_USUARIO/FINKOK_PASSWORD.");
 
-        // Decrypt private key for PAC (Finkok needs raw DER bytes in Base64, not our AES-GCM blob)
-        string? decryptedKeyBase64 = null;
-        if (!string.IsNullOrEmpty(config.LlavePrivada))
+        // Build detached config with PAC credentials only (no CSD needed for sign_cancel)
+        var pacConfig = new ConfiguracionFiscal
         {
-            var decryptedKeyBytes = await _encryptionService.DecryptAsync(tenantId,
-                Convert.FromBase64String(config.LlavePrivada), config.EncryptedDek, config.EncryptionVersion);
-            decryptedKeyBase64 = Convert.ToBase64String(decryptedKeyBytes);
-            Array.Clear(decryptedKeyBytes);
-        }
-
-        // Detach config so PAC service can't accidentally persist decrypted values
-        _context.Entry(config).State = Microsoft.EntityFrameworkCore.EntityState.Detached;
-        config.LlavePrivada = decryptedKeyBase64;
-        config.PasswordCertificado = decryptedCsdPassword;
-        config.PacUsuario = pacUsuario;
-        config.PacPassword = decryptedPacPassword;
-        config.PacAmbiente = pacAmbiente;
+            PacUsuario = pacUsuario,
+            PacPassword = decryptedPacPassword,
+            PacAmbiente = pacAmbiente,
+        };
 
         var resultado = await _pacService.CancelarAsync(
             factura.Uuid, factura.EmisorRfc,
-            request.MotivoCancelacion, request.FolioSustitucion, config);
+            request.MotivoCancelacion, request.FolioSustitucion, pacConfig);
 
         if (!resultado.Success)
         {
+            // Enrich with CFDI error catalog if available
+            var errorHelp = !string.IsNullOrEmpty(resultado.ErrorCode)
+                ? await _context.CfdiErrorCatalog
+                    .Where(e => e.Codigo == resultado.ErrorCode && e.Activo)
+                    .FirstOrDefaultAsync()
+                : null;
+
             return BadRequest(new
             {
-                error = "Error al cancelar la factura con el SAT",
+                error = errorHelp?.MensajeUsuario ?? resultado.ErrorMessage ?? "Error al cancelar la factura",
                 code = resultado.ErrorCode,
-                details = resultado.ErrorMessage
+                details = errorHelp?.AccionSugerida ?? resultado.ErrorMessage
             });
         }
 
