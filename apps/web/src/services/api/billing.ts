@@ -23,6 +23,7 @@ import type {
   PaginatedUnmapped,
   UpsertMapeoFiscalRequest,
   DefaultsFiscalesTenant,
+  NumeracionDocumento,
 } from '@/types/billing';
 
 // ─── Invoiced Orders lookup ───
@@ -221,6 +222,29 @@ export async function saveConfigFiscal(config: Partial<ConfiguracionFiscal>): Pr
 
 export async function uploadCertificado(configId: number, formData: FormData): Promise<void> {
   await billingApi.post(`/api/catalogos/configuracion-fiscal/${configId}/certificado`, formData);
+}
+
+// ─── Numeración / Series ───
+
+export async function getNumeraciones(incluirInactivos = false): Promise<NumeracionDocumento[]> {
+  const { data } = await billingApi.get<NumeracionDocumento[]>('/api/catalogos/numeracion', {
+    params: incluirInactivos ? { incluirInactivos: true } : undefined,
+  });
+  return data;
+}
+
+export async function createNumeracion(req: { tipoDocumento: string; serie: string; folioInicial: number; folioFinal?: number }): Promise<NumeracionDocumento> {
+  const { data } = await billingApi.post<NumeracionDocumento>('/api/catalogos/numeracion', req);
+  return data;
+}
+
+export async function toggleNumeracion(id: number, activo: boolean): Promise<NumeracionDocumento> {
+  const { data } = await billingApi.patch<NumeracionDocumento>(`/api/catalogos/numeracion/${id}/activo`, { activo });
+  return data;
+}
+
+export async function deleteNumeracion(id: number): Promise<void> {
+  await billingApi.delete(`/api/catalogos/numeracion/${id}`);
 }
 
 // ─── Timbres (Main API) ───

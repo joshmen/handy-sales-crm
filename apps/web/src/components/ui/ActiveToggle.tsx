@@ -20,7 +20,7 @@ export const ActiveToggle: React.FC<ActiveToggleProps> = ({
     <button
       onClick={onToggle}
       disabled={disabled || isLoading}
-      className={`relative w-9 h-5 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1 ${
+      className={`relative w-9 h-5 rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 ${
         isActive ? 'bg-green-500' : 'bg-gray-300'
       } ${isLoading ? 'opacity-50' : ''}`}
       title={title ?? (isActive ? 'Desactivar' : 'Activar')}

@@ -304,12 +304,17 @@ public class CatalogosController : ControllerBase
     }
 
     [HttpGet("numeracion")]
-    public async Task<ActionResult<IEnumerable<NumeracionDocumento>>> GetNumeracion()
+    public async Task<ActionResult<IEnumerable<NumeracionDocumento>>> GetNumeracion([FromQuery] bool incluirInactivos = false)
     {
         var tenantId = GetTenantId();
-        
-        var numeraciones = await _context.NumeracionDocumentos
-            .Where(n => n.TenantId == tenantId && n.Activo)
+
+        var query = _context.NumeracionDocumentos
+            .Where(n => n.TenantId == tenantId);
+
+        if (!incluirInactivos)
+            query = query.Where(n => n.Activo);
+
+        var numeraciones = await query
             .OrderBy(n => n.TipoDocumento)
             .ThenBy(n => n.Serie)
             .ToListAsync();
@@ -347,6 +352,45 @@ public class CatalogosController : ControllerBase
         await _context.SaveChangesAsync();
 
         return CreatedAtAction(nameof(GetNumeracion), numeracion);
+    }
+
+    [HttpPatch("numeracion/{id}/activo")]
+    [Authorize(Roles = "ADMIN,SUPER_ADMIN")]
+    public async Task<ActionResult> ToggleNumeracion(int id, [FromBody] ToggleActivoRequest request)
+    {
+        var tenantId = GetTenantId();
+        var numeracion = await _context.NumeracionDocumentos
+            .Where(n => n.Id == id && n.TenantId == tenantId)
+            .FirstOrDefaultAsync();
+
+        if (numeracion == null) return NotFound();
+
+        numeracion.Activo = request.Activo;
+        await _context.SaveChangesAsync();
+        return Ok(numeracion);
+    }
+
+    [HttpDelete("numeracion/{id}")]
+    [Authorize(Roles = "ADMIN,SUPER_ADMIN")]
+    public async Task<ActionResult> DeleteNumeracion(int id)
+    {
+        var tenantId = GetTenantId();
+        var numeracion = await _context.NumeracionDocumentos
+            .Where(n => n.Id == id && n.TenantId == tenantId)
+            .FirstOrDefaultAsync();
+
+        if (numeracion == null) return NotFound();
+
+        // No permitir eliminar series con facturas existentes
+        var tieneFacturas = await _context.Facturas
+            .AnyAsync(f => f.TenantId == tenantId && f.Serie == numeracion.Serie && f.Estado != "CANCELADA");
+
+        if (tieneFacturas)
+            return BadRequest($"No se puede eliminar la serie '{numeracion.Serie}' porque tiene facturas asociadas.");
+
+        numeracion.Activo = false;
+        await _context.SaveChangesAsync();
+        return NoContent();
     }
 
     // Legacy EncryptPassword/DecryptPassword removed — use ICertificateEncryptionService
@@ -399,4 +443,9 @@ public class UploadCertificadoRequest
     public IFormFile Certificado { get; set; } = default!;
     public IFormFile LlavePrivada { get; set; } = default!;
     public string Password { get; set; } = default!;
+}
+
+public class ToggleActivoRequest
+{
+    public bool Activo { get; set; }
 }

@@ -297,19 +297,19 @@ public class FacturasController : ControllerBase
             return BadRequest("Solo se pueden facturar pedidos con estado 'Entregado'");
 
         if (!order.ClienteFacturable)
-            return BadRequest($"El cliente '{order.ClienteNombre}' no está marcado como facturable.");
+            return BadRequest(new { error = $"El cliente '{order.ClienteNombre}' no está marcado como facturable.", clienteId = order.ClienteId });
 
         if (string.IsNullOrEmpty(order.ClienteRfc))
-            return BadRequest($"El cliente '{order.ClienteNombre}' no tiene RFC registrado. Edite el cliente y asigne un RFC.");
+            return BadRequest(new { error = $"El cliente '{order.ClienteNombre}' no tiene RFC registrado.", clienteId = order.ClienteId });
 
         if (string.IsNullOrEmpty(order.ClienteRazonSocial))
-            return BadRequest($"El cliente '{order.ClienteNombre}' no tiene razón social fiscal. Edite el cliente y asigne la razón social.");
+            return BadRequest(new { error = $"El cliente '{order.ClienteNombre}' no tiene razón social fiscal.", clienteId = order.ClienteId });
 
         if (string.IsNullOrEmpty(order.ClienteRegimenFiscal))
-            return BadRequest($"El cliente '{order.ClienteNombre}' no tiene régimen fiscal. Edite el cliente y asigne un régimen fiscal del SAT.");
+            return BadRequest(new { error = $"El cliente '{order.ClienteNombre}' no tiene régimen fiscal.", clienteId = order.ClienteId });
 
         if (string.IsNullOrEmpty(order.ClienteCodigoPostalFiscal))
-            return BadRequest($"El cliente '{order.ClienteNombre}' no tiene código postal fiscal. Edite el cliente y asigne el C.P. de su domicilio fiscal.");
+            return BadRequest(new { error = $"El cliente '{order.ClienteNombre}' no tiene código postal fiscal.", clienteId = order.ClienteId });
 
         var config = await _context.ConfiguracionesFiscales
             .Where(c => c.TenantId == tenantId && c.Activo)

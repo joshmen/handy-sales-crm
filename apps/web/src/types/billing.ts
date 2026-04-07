@@ -276,6 +276,21 @@ export interface ConfiguracionFiscal {
   updatedAt: string;
 }
 
+// ─── Numeración / Series ───
+
+export interface NumeracionDocumento {
+  id: number;
+  tenantId: string;
+  tipoDocumento: string;
+  serie: string | null;
+  folioInicial: number;
+  folioActual: number;
+  folioFinal: number | null;
+  activo: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ─── Catálogos SAT ───
 
 export interface CatalogoItem {

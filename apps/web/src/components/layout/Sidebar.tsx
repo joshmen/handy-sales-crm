@@ -433,8 +433,28 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
     session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPERVISOR' || session?.user?.role === 'VENDEDOR' || isImpersonating;
   const { open: sidebarOpen, collapsed: sidebarCollapsed, toggle, toggleCollapsed } = useSidebar();
   const pathname = usePathname();
-  const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  const [expandedItems, setExpandedItems] = useState<string[]>(() => {
+    const toExpand: string[] = [];
+    const allItems = [...sidebarItems, ...superAdminItems];
+    allItems.forEach(item => {
+      if (item.submenu?.some(sub => sub.href && pathname === sub.href)) {
+        toExpand.push(item.id);
+      }
+    });
+    return toExpand;
+  });
   const [isDesktop, setIsDesktop] = useState(false);
+
+  // Scroll to active sidebar item on mount
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const activeEl = document.querySelector('[data-sidebar-active="true"]');
+      if (activeEl) {
+        activeEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [pathname]);
 
   useEffect(() => {
     setMounted(true);
@@ -588,7 +608,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
     );
 
     return (
-      <div key={item.id}>
+      <div key={item.id} data-sidebar-active={activeState || undefined}>
         {item.href ? (
           <Link href={item.href} className={wrapperClasses}>
             {itemContent}

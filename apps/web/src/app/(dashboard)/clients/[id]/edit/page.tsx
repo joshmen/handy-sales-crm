@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
+import { scrollToFirstError } from '@/hooks/useScrollToError';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useJsApiLoader, Autocomplete } from '@react-google-maps/api';
 import { clientService } from '@/services/api/clients';
@@ -175,8 +176,8 @@ export default function EditClientPage() {
           saldo: clientData.saldo || 0,
           limiteCredito: clientData.limiteCredito || 0,
           ventaMinimaEfectiva: clientData.ventaMinimaEfectiva || 0,
-          tiposPagoPermitidos: (clientData.tiposPagoPermitidos || 'contado_credito') as ClientFormData['tiposPagoPermitidos'],
-          tipoPagoPredeterminado: (clientData.tipoPagoPredeterminado || 'contado') as ClientFormData['tipoPagoPredeterminado'],
+          tiposPagoPermitidos: (['contado_credito','contado','credito','efectivo','transferencia','cheque','tarjeta_credito','tarjeta_debito','otro'].includes((clientData.tiposPagoPermitidos || '').toLowerCase()) ? (clientData.tiposPagoPermitidos || '').toLowerCase() : 'efectivo') as ClientFormData['tiposPagoPermitidos'],
+          tipoPagoPredeterminado: (['contado','credito','efectivo','transferencia','cheque','tarjeta_credito','tarjeta_debito','otro'].includes((clientData.tipoPagoPredeterminado || '').toLowerCase()) ? (clientData.tipoPagoPredeterminado || '').toLowerCase() : 'efectivo') as ClientFormData['tipoPagoPredeterminado'],
           diasCredito: clientData.diasCredito || 0,
           facturable: clientData.facturable || false,
           rfc: clientData.code || '',
@@ -304,8 +305,17 @@ export default function EditClientPage() {
               Cancelar
             </button>
             <button
-              onClick={handleSubmit(onSubmit, () => {
-                toast.error('Hay campos obligatorios sin completar. Revisa los datos fiscales si el cliente es facturable.');
+              onClick={handleSubmit(onSubmit, (fieldErrors) => {
+                const fields = Object.keys(fieldErrors);
+                const fieldNames: Record<string, string> = {
+                  descripcion: 'Nombre', rfc: 'RFC', razonSocial: 'Razón social',
+                  codigoPostalFiscal: 'C.P. Fiscal', regimenFiscal: 'Régimen fiscal',
+                  direccion: 'Dirección', numeroExterior: 'Num. exterior',
+                  zonaId: 'Zona', categoriaId: 'Categoría', telefono: 'Teléfono', email: 'Email',
+                };
+                const names = fields.map(f => fieldNames[f] || f).join(', ');
+                toast.error(`Campos con error: ${names}`);
+                scrollToFirstError(fieldErrors);
               })}
               disabled={saving || isOutOfZone}
               title={isOutOfZone ? 'El cliente está fuera de la zona asignada' : undefined}
@@ -366,14 +376,17 @@ export default function EditClientPage() {
               <SectionTitle subtitle="Opcional">Precios y descuento</SectionTitle>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField label="Lista de precios">
-                  <SearchableSelect
-                    options={listasPrecios.map(lp => ({ value: lp.id, label: lp.nombre }))}
-                    value={watch('listaPreciosId') || null}
-                    onChange={(val) => setValue('listaPreciosId', val ? String(val) : '', { shouldValidate: true })}
-                    placeholder="Sin asignar"
-                    searchPlaceholder="Buscar lista..."
-                  />
+                <FormField label="Lista de precios" error={errors.listaPreciosId?.message}>
+                  <div data-field="listaPreciosId">
+                    <SearchableSelect
+                      options={listasPrecios.map(lp => ({ value: lp.id, label: lp.nombre }))}
+                      value={watch('listaPreciosId') || null}
+                      onChange={(val) => setValue('listaPreciosId', val ? String(val) : '', { shouldValidate: true })}
+                      placeholder="Sin asignar"
+                      searchPlaceholder="Buscar lista..."
+                      error={!!errors.listaPreciosId}
+                    />
+                  </div>
                 </FormField>
                 <FormField label="Descuento %" hint="Descuento general para este cliente">
                   <input
@@ -431,21 +444,27 @@ export default function EditClientPage() {
               <SectionTitle>Configuración de entregas</SectionTitle>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <FormField label="Tipos de pago permitidos">
+                <FormField label="Tipos de pago permitidos" error={errors.tiposPagoPermitidos?.message}>
+                  <div data-field="tiposPagoPermitidos">
                   <SearchableSelect
                     options={TIPOS_PAGO_OPTIONS}
                     value={watch('tiposPagoPermitidos') || null}
                     onChange={(val) => setValue('tiposPagoPermitidos', (val ? String(val) : 'contado_credito') as ClientFormData['tiposPagoPermitidos'], { shouldValidate: true })}
                     placeholder="Seleccionar..."
+                    error={!!errors.tiposPagoPermitidos}
                   />
+                  </div>
                 </FormField>
-                <FormField label="Pago predeterminado">
-                  <SearchableSelect
-                    options={TIPO_PAGO_PREDETERMINADO_OPTIONS}
-                    value={watch('tipoPagoPredeterminado') || null}
-                    onChange={(val) => setValue('tipoPagoPredeterminado', (val ? String(val) : 'contado') as ClientFormData['tipoPagoPredeterminado'], { shouldValidate: true })}
-                    placeholder="Seleccionar..."
-                  />
+                <FormField label="Pago predeterminado" error={errors.tipoPagoPredeterminado?.message}>
+                  <div data-field="tipoPagoPredeterminado">
+                    <SearchableSelect
+                      options={TIPO_PAGO_PREDETERMINADO_OPTIONS}
+                      value={watch('tipoPagoPredeterminado') || null}
+                      onChange={(val) => setValue('tipoPagoPredeterminado', (val ? String(val) : 'contado') as ClientFormData['tipoPagoPredeterminado'], { shouldValidate: true })}
+                      placeholder="Seleccionar..."
+                      error={!!errors.tipoPagoPredeterminado}
+                    />
+                  </div>
                 </FormField>
               </div>
 
@@ -512,14 +531,17 @@ export default function EditClientPage() {
                     </FormField>
                   </div>
 
-                  <FormField label="Uso CFDI predeterminado" hint="Se usará como valor por defecto al facturar a este cliente">
-                    <SearchableSelect
-                      options={USO_CFDI_OPTIONS.map(u => ({ value: u.value, label: u.label }))}
-                      value={watch('usoCFDIPredeterminado') || null}
-                      onChange={(val) => setValue('usoCFDIPredeterminado', val ? String(val) : '', { shouldValidate: true })}
-                      placeholder="Seleccionar uso CFDI..."
-                      searchPlaceholder="Buscar uso..."
-                    />
+                  <FormField label="Uso CFDI predeterminado" hint="Se usará como valor por defecto al facturar a este cliente" error={errors.usoCFDIPredeterminado?.message}>
+                    <div data-field="usoCFDIPredeterminado">
+                      <SearchableSelect
+                        options={USO_CFDI_OPTIONS.map(u => ({ value: u.value, label: u.label }))}
+                        value={watch('usoCFDIPredeterminado') || null}
+                        onChange={(val) => setValue('usoCFDIPredeterminado', val ? String(val) : '', { shouldValidate: true })}
+                        placeholder="Seleccionar uso CFDI..."
+                        searchPlaceholder="Buscar uso..."
+                        error={!!errors.usoCFDIPredeterminado}
+                      />
+                    </div>
                   </FormField>
                 </div>
               ) : (

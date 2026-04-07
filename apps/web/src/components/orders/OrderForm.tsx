@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useImperativeHandle, forwardRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { scrollToFirstError } from '@/hooks/useScrollToError';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button, Input } from '@/components/ui';
@@ -210,7 +211,7 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
   };
 
   return (
-    <form ref={formRef} onSubmit={handleSubmit(onFormSubmit)} className="flex flex-col gap-5 p-6" data-tour="order-form">
+    <form ref={formRef} onSubmit={handleSubmit(onFormSubmit, scrollToFirstError)} className="flex flex-col gap-5 p-6" data-tour="order-form">
       {/* Tipo de Venta */}
       {!order && (
         <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-gray-50 dark:bg-gray-800/50 dark:border-gray-700">
@@ -282,12 +283,14 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
             <label className="block text-[13px] font-medium text-gray-700 mb-1">
               Prioridad
             </label>
-            <SearchableSelect
-              options={priorityOptions}
-              value={watch('priority') || null}
-              onChange={(val) => setValue('priority', val ? String(val) as 'low' | 'normal' | 'high' | 'urgent' : 'normal', { shouldValidate: true })}
-              placeholder="Seleccionar prioridad"
-            />
+            <div data-field="priority">
+              <SearchableSelect
+                options={priorityOptions}
+                value={watch('priority') || null}
+                onChange={(val) => setValue('priority', val ? String(val) as 'low' | 'normal' | 'high' | 'urgent' : 'normal', { shouldValidate: true })}
+                placeholder="Seleccionar prioridad"
+              />
+            </div>
           </div>
         </div>
 
@@ -296,12 +299,14 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
             <label className="block text-[13px] font-medium text-gray-700 mb-1">
               Método de pago
             </label>
-            <SearchableSelect
-              options={paymentOptions}
-              value={watch('paymentMethod') || null}
-              onChange={(val) => setValue('paymentMethod', val ? String(val) as 'cash' | 'credit' | 'transfer' | 'check' : 'cash', { shouldValidate: true })}
-              placeholder="Seleccionar método de pago"
-            />
+            <div data-field="paymentMethod">
+              <SearchableSelect
+                options={paymentOptions}
+                value={watch('paymentMethod') || null}
+                onChange={(val) => setValue('paymentMethod', val ? String(val) as 'cash' | 'credit' | 'transfer' | 'check' : 'cash', { shouldValidate: true })}
+                placeholder="Seleccionar método de pago"
+              />
+            </div>
           </div>
 
           <div>

@@ -163,6 +163,7 @@ function PreFacturaContent() {
   const [preview, setPreview] = useState<PreFacturaDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [errorClienteId, setErrorClienteId] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [timbresModalOpen, setTimbresModalOpen] = useState(false);
   const [timbresError, setTimbresError] = useState('');
@@ -184,6 +185,11 @@ function PreFacturaContent() {
     } catch (err: unknown) {
       const apiError = extractBillingError(err);
       setError(apiError.message);
+      // Extract clienteId from error response if available
+      const axiosErr = err as { response?: { data?: { clienteId?: number } } };
+      if (axiosErr?.response?.data?.clienteId) {
+        setErrorClienteId(axiosErr.response.data.clienteId);
+      }
     } finally {
       setLoading(false);
     }
@@ -273,7 +279,15 @@ function PreFacturaContent() {
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <AlertTriangle className="w-12 h-12 text-amber-500 mb-4" />
           <h2 className="text-lg font-semibold mb-2">No se pudo cargar la pre-factura</h2>
-          <p className="text-muted-foreground text-sm max-w-md mb-6">{error ?? 'Pedido no encontrado.'}</p>
+          <p className="text-muted-foreground text-sm max-w-md mb-4">{error ?? 'Pedido no encontrado.'}</p>
+          {errorClienteId && (
+            <a
+              href={`/clients/${errorClienteId}/edit`}
+              className="inline-flex items-center gap-2 px-4 py-2 mb-4 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+            >
+              Editar cliente
+            </a>
+          )}
           <Button variant="outline" onClick={() => router.back()}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Regresar

@@ -23,7 +23,7 @@ function toast(props: ToastProps): ToastReturn {
       description: props.description,
     });
   } else {
-    id = sonnerToast(props.title || '', {
+    id = sonnerToast.success(props.title || '', {
       description: props.description,
     });
   }

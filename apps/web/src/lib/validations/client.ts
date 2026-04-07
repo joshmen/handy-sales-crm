@@ -27,8 +27,8 @@ export const clientSchema = z.object({
   ventaMinimaEfectiva: z.number().min(0).default(0),
 
   // === Config entregas ===
-  tiposPagoPermitidos: z.enum(['contado_credito', 'contado', 'credito', 'efectivo', 'transferencia', 'cheque', 'tarjeta_credito', 'tarjeta_debito', 'otro']).default('efectivo'),
-  tipoPagoPredeterminado: z.enum(['contado', 'credito', 'efectivo', 'transferencia', 'cheque', 'tarjeta_credito', 'tarjeta_debito', 'otro']).default('efectivo'),
+  tiposPagoPermitidos: z.enum(['contado_credito', 'contado', 'credito', 'efectivo', 'transferencia', 'cheque', 'tarjeta_credito', 'tarjeta_debito', 'otro'], { errorMap: () => ({ message: 'Seleccione un tipo de pago válido' }) }).default('efectivo'),
+  tipoPagoPredeterminado: z.enum(['contado', 'credito', 'efectivo', 'transferencia', 'cheque', 'tarjeta_credito', 'tarjeta_debito', 'otro'], { errorMap: () => ({ message: 'Seleccione un método de pago válido' }) }).default('efectivo'),
   diasCredito: z.number().min(0).default(0),
 
   // === Datos fiscales ===
