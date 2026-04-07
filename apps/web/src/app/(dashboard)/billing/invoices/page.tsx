@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { Search, Download, X as XIcon, FileText, Loader2, ChevronLeft, ChevronRight, Shield } from 'lucide-react';
 import { TimbresModal } from '@/components/billing/TimbresModal';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -165,7 +166,7 @@ export default function InvoicesPage() {
         <div className="flex-1 flex items-start gap-2.5 px-3 py-2.5 rounded-lg bg-muted/40 border border-border border-l-2 border-l-green-600/50">
           <FileText className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Las facturas se generan desde <a href="/orders" className="text-foreground hover:underline font-medium">Pedidos</a> → Facturar en pedidos entregados.
+            Las facturas se generan desde <Link href="/orders" className="text-foreground hover:underline font-medium">Pedidos</Link> → Facturar en pedidos entregados.
           </p>
         </div>
         <div className="flex-1 flex items-start gap-2.5 px-3 py-2.5 rounded-lg bg-muted/40 border border-border border-l-2 border-l-green-600/50">
