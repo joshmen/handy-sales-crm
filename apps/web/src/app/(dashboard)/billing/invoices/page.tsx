@@ -161,11 +161,9 @@ export default function InvoicesPage() {
         </select>
       </div>
 
-      {totalCount === 0 && !loading && (
-        <p className="text-sm text-muted-foreground mb-4">
-          Para generar una factura, ve a <a href="/orders" className="text-green-600 hover:underline font-medium">Pedidos</a> y selecciona &quot;Facturar&quot; en un pedido entregado.
-        </p>
-      )}
+      <p className="text-xs text-muted-foreground mb-4">
+        Las facturas se generan desde <a href="/orders" className="text-green-600 hover:underline font-medium">Pedidos</a> → Facturar en pedidos entregados.
+      </p>
 
       {/* Desktop table */}
       <div className="hidden md:block bg-card border border-border rounded-xl overflow-hidden">
