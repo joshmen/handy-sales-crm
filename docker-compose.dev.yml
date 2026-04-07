@@ -35,6 +35,11 @@ services:
       # After first startup, seed data manually:
       #   docker exec -i handysales_postgres_dev psql -U handy_user -d handy_erp < infra/database/schema/seed_local_pg.sql
       #   docker exec -i handysales_postgres_dev psql -U handy_user -d handy_erp < infra/database/schema/seed_e2e_pg.sql
+      # After seeding, apply RLS + create app role:
+      #   docker exec -i handysales_postgres_dev psql -U handy_user -d handy_erp < infra/database/init/02_create_app_role.sql
+      #   docker exec -i handysales_postgres_dev psql -U handy_user -d handy_erp < infra/database/schema/rls_enable.sql
+      #   docker exec -i handysales_postgres_dev psql -U handy_user -d handy_billing < infra/database/init/02_create_app_role.sql
+      #   docker exec -i handysales_postgres_dev psql -U handy_user -d handy_billing < infra/database/schema/rls_enable_billing.sql
     command: >
       postgres
       -c shared_buffers=256MB

@@ -23,7 +23,8 @@ builder.Services.AddControllers();
 builder.Services.AddSwaggerConfiguration();
 
 // Database configuration
-builder.Services.AddDbContext<BillingDbContext>(options =>
+builder.Services.AddScoped<HandySales.Billing.Api.Services.BillingTenantRlsInterceptor>();
+builder.Services.AddDbContext<BillingDbContext>((sp, options) =>
 {
     var connectionString = builder.Configuration.GetConnectionString("BillingConnection");
     options.UseNpgsql(connectionString, o =>
@@ -34,7 +35,8 @@ builder.Services.AddDbContext<BillingDbContext>(options =>
                 errorCodesToAdd: null);
             o.CommandTimeout(30);
         })
-        .UseSnakeCaseNamingConvention();
+        .UseSnakeCaseNamingConvention()
+        .AddInterceptors(sp.GetRequiredService<HandySales.Billing.Api.Services.BillingTenantRlsInterceptor>());
 });
 
 // CORS configuration
