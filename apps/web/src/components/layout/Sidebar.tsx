@@ -314,13 +314,7 @@ const sidebarItems: SidebarItem[] = [
     href: '/subscription',
     permission: 'view_settings',
   },
-  {
-    id: 'integrations',
-    label: 'Integraciones',
-    icon: SbIntegrations,
-    href: '/integrations',
-    permission: 'view_settings',
-  },
+  // Integraciones removed — module is non-functional (infrastructure only, no real integrations)
   {
     id: 'company-settings',
     label: 'Configuración',
