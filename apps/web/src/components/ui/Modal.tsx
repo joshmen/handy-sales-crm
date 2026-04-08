@@ -81,12 +81,12 @@ export const Modal: React.FC<ModalProps> = ({
   if (!visible || !mounted) return null;
 
   const modalContent = (
-    <div className="fixed inset-0 z-[60] overflow-y-auto">
+    <div className="fixed inset-0 z-[100] overflow-y-auto">
       <div className="flex min-h-screen items-center justify-center p-4">
         {/* Overlay */}
         <div
-          className={`fixed inset-0 bg-black transition-opacity duration-200 ${
-            entered ? "bg-opacity-50" : "bg-opacity-0"
+          className={`fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-200 ${
+            entered ? "opacity-100" : "opacity-0"
           }`}
           onClick={handleClose}
         />

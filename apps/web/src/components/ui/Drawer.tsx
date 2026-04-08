@@ -110,11 +110,11 @@ export const Drawer = forwardRef<DrawerHandle, DrawerProps>(({
   if (!visible || !mounted) return null;
 
   const drawerContent = (
-    <div className="fixed inset-0 max-sm:top-16 z-[60] flex justify-end" data-drawer-root>
+    <div className="fixed inset-0 max-sm:top-16 z-[100] flex justify-end" data-drawer-root>
       {/* Overlay */}
       <div
         className={cn(
-          'absolute inset-0 bg-black/40 transition-opacity duration-300',
+          'absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300',
           entered ? 'opacity-100' : 'opacity-0'
         )}
         onClick={handleRequestClose}

@@ -92,7 +92,7 @@ export function HelpPanel({ isOpen, onClose }: HelpPanelProps) {
     <>
       {/* Overlay */}
       <div
-        className={`fixed inset-0 z-[60] bg-black/20 transition-opacity duration-300 ${
+        className={`fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm transition-opacity duration-300 ${
           isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         onClick={onClose}
@@ -100,7 +100,7 @@ export function HelpPanel({ isOpen, onClose }: HelpPanelProps) {
 
       {/* Panel */}
       <div
-        className={`fixed top-0 right-0 z-[70] h-screen w-[360px] max-w-[90vw] bg-white shadow-[-4px_0_16px_rgba(0,0,0,0.08)] transform transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 right-0 z-[100] h-screen w-[360px] max-w-[90vw] bg-white shadow-[-4px_0_16px_rgba(0,0,0,0.08)] transform transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
