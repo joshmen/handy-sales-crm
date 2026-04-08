@@ -6,7 +6,7 @@ import { useClientOnly } from '@/hooks/useClientOnly';
 import { useCompany } from '@/contexts/CompanyContext';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
-import { Palette, Database, Building, Building2, Bell, Loader2 } from 'lucide-react';
+import { Palette, Database, Building, Building2, Bell, Shield, Loader2 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 
 // Import tab components (admin-only settings)
@@ -15,6 +15,7 @@ import { PerfilEmpresaTab } from './components/PerfilEmpresaTab';
 import { AppearanceTab } from './components/AppearanceTab';
 import { SystemTab } from './components/SystemTab';
 import { NotificationsTab } from './components/NotificationsTab';
+import { SecurityTab } from './components/SecurityTab';
 
 function SettingsPageContent() {
   const { data: session } = useSession();
@@ -117,6 +118,10 @@ function SettingsPageContent() {
             <Database className="h-4 w-4" />
             <span className="hidden sm:inline">Sistema</span>
           </TabsTrigger>
+          <TabsTrigger value="security" className="flex items-center gap-2">
+            <Shield className="h-4 w-4" />
+            <span className="hidden sm:inline">Seguridad</span>
+          </TabsTrigger>
         </TabsList>
 
         {/* Perfil de Empresa - Datos fiscales y contacto */}
@@ -163,6 +168,11 @@ function SettingsPageContent() {
             isAdmin={isAdmin}
             isSuperAdmin={isSuperAdmin}
           />
+        </TabsContent>
+
+        {/* Security Tab — Password, 2FA, Impersonation History */}
+        <TabsContent value="security" className="space-y-6">
+          <SecurityTab />
         </TabsContent>
       </Tabs>
     </PageHeader>
