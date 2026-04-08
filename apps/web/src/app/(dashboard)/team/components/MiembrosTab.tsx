@@ -1331,9 +1331,9 @@ function AdminUsersView() {
       </Drawer>
 
       {/* Create Modal */}
-      {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+      {isCreateModalOpen && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-card rounded-xl shadow-xl w-full max-w-md mx-4 border border-border">
             <div className="px-6 py-4 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900">Crear nuevo usuario</h2>
             </div>
@@ -1405,7 +1405,8 @@ function AdminUsersView() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Batch Confirm Modal */}
