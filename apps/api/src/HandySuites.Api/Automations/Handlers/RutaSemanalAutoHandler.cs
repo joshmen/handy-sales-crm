@@ -20,7 +20,9 @@ public class RutaSemanalAutoHandler : IAutomationHandler
         if (vendedores.Count == 0)
             return new AutomationResult(true, "Sin vendedores activos");
 
-        var today = DateTime.UtcNow.Date;
+        var tenantTz = await context.GetTenantTimezoneAsync(ct);
+        var tz = TimeZoneInfo.FindSystemTimeZoneById(tenantTz ?? "America/Mexico_City");
+        var today = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz).Date;
         var nextMonday = today.AddDays(((int)DayOfWeek.Monday - (int)today.DayOfWeek + 7) % 7);
         if (nextMonday == today) nextMonday = nextMonday.AddDays(7);
 
@@ -55,7 +57,7 @@ public class RutaSemanalAutoHandler : IAutomationHandler
                 .Select(g => new { ClienteId = g.Key, UltimaVisita = g.Max(v => v.FechaHoraFin) })
                 .ToDictionaryAsync(x => x.ClienteId, x => x.UltimaVisita, ct);
 
-            var now = DateTime.UtcNow;
+            var now = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz);
 
             // Urgency = days since last completed visit (never visited = very high priority)
             var scored = clientes

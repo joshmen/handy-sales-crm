@@ -15,7 +15,10 @@ public class ResumenDiarioHandler : IAutomationHandler
         var culture = await context.GetTenantCultureAsync(ct);
         var tenantTz = await context.GetTenantTimezoneAsync(ct);
         var db = context.Db;
-        var today = DateTime.UtcNow.Date;
+
+        // Use tenant's local date, not UTC — if it's 7pm CST (1am UTC next day), "today" should be the tenant's day
+        var tz = TimeZoneInfo.FindSystemTimeZoneById(tenantTz ?? "America/Mexico_City");
+        var today = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz).Date;
 
         // ── Core KPIs ──
         var ventasHoy = await db.Pedidos

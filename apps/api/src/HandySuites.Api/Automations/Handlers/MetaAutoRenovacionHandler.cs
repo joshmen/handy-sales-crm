@@ -9,7 +9,9 @@ public class MetaAutoRenovacionHandler : IAutomationHandler
 
     public async Task<AutomationResult> ExecuteAsync(AutomationContext context, CancellationToken ct)
     {
-        var today = DateTime.UtcNow.Date;
+        var tenantTz = await context.GetTenantTimezoneAsync(ct);
+        var tz = TimeZoneInfo.FindSystemTimeZoneById(tenantTz ?? "America/Mexico_City");
+        var today = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz).Date;
 
         var expiradas = await context.Db.Set<MetaVendedor>()
             .Where(m => m.TenantId == context.TenantId

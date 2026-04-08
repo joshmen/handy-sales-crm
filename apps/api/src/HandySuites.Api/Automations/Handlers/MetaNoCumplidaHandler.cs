@@ -17,7 +17,8 @@ public class MetaNoCumplidaHandler : IAutomationHandler
         var culture = await context.GetTenantCultureAsync(ct);
         var tenantTz = await context.GetTenantTimezoneAsync(ct);
         var porcentajeAlerta = context.GetParam("porcentaje_alerta", 80);
-        var now = DateTime.UtcNow;
+        var tz = TimeZoneInfo.FindSystemTimeZoneById(tenantTz ?? "America/Mexico_City");
+        var now = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz);
 
         // Pull metas active during the current period
         var metas = await context.Db.Set<MetaVendedor>()
