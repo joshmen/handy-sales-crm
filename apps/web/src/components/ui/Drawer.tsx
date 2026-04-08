@@ -110,7 +110,7 @@ export const Drawer = forwardRef<DrawerHandle, DrawerProps>(({
   if (!visible || !mounted) return null;
 
   const drawerContent = (
-    <div className="fixed inset-0 max-sm:top-16 z-[100] flex justify-end" data-drawer-root>
+    <div className="fixed inset-0 z-[100] flex justify-end" data-drawer-root>
       {/* Overlay */}
       <div
         className={cn(
