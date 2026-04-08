@@ -19,7 +19,7 @@ public class TenantAutomation : AuditableEntity
     public string? ParamsJson { get; set; }
 
     [Column("activated_by")]
-    public int ActivatedBy { get; set; }
+    public int? ActivatedBy { get; set; }
 
     [Column("last_executed_at")]
     public DateTime? LastExecutedAt { get; set; }
@@ -30,5 +30,5 @@ public class TenantAutomation : AuditableEntity
     // Navigation
     public Tenant Tenant { get; set; } = null!;
     public AutomationTemplate Template { get; set; } = null!;
-    public Usuario ActivatedByUser { get; set; } = null!;
+    public Usuario? ActivatedByUser { get; set; }
 }
