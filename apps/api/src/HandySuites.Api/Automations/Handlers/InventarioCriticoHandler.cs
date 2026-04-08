@@ -37,6 +37,21 @@ public class InventarioCriticoHandler : IAutomationHandler
 
         await context.NotifyAsync("Inventario crítico", message, "Alert", Canal, ct, "/inventory?alerta=critico");
 
+        // ── Explicit push to admin (ensure admin always gets notified even if destinatario=vendedores) ──
+        var adminId = await context.GetAdminUserIdAsync(ct);
+        if (adminId.HasValue)
+        {
+            // Check if admin wasn't already notified via NotifyAsync (destinatario might be "vendedores" only)
+            if (context.Destinatario is not ("admin" or "ambos"))
+            {
+                await context.NotifyUserAsync(adminId.Value,
+                    "Inventario crítico — Acción inmediata",
+                    message,
+                    "Alert", Canal, ct,
+                    new Dictionary<string, string> { { "url", "/inventory?alerta=critico" } });
+            }
+        }
+
         // ── Rich email report to admin ──
         var content = new StringBuilder();
         content.Append(EmailTemplateBuilder.DateStamp(DateTime.UtcNow, tenantTz));

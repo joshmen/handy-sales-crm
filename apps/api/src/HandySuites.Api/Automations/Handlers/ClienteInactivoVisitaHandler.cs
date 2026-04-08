@@ -1,4 +1,5 @@
 using System.Text;
+using HandySuites.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace HandySuites.Api.Automations.Handlers;
@@ -40,6 +41,41 @@ public class ClienteInactivoVisitaHandler : IAutomationHandler
 
         if (clientesInactivos.Count == 0)
             return new AutomationResult(true, "Todos los clientes tienen visitas recientes");
+
+        // ── Auto-schedule visits for next business day ──
+        var nextBusinessDay = GetNextBusinessDay(DateTime.UtcNow);
+        var visitasCreadas = 0;
+
+        foreach (var cliente in clientesInactivos)
+        {
+            var vendedorId = cliente.VendedorId;
+            if (!vendedorId.HasValue) continue;
+
+            // Skip if a visit is already scheduled for this client in the future
+            var yaAgendada = await context.Db.ClienteVisitas
+                .AnyAsync(v => v.TenantId == context.TenantId
+                    && v.ClienteId == cliente.Id
+                    && v.FechaProgramada >= DateTime.UtcNow.Date
+                    && v.Resultado == ResultadoVisita.Pendiente, ct);
+
+            if (yaAgendada) continue;
+
+            var visita = new ClienteVisita
+            {
+                TenantId = context.TenantId,
+                ClienteId = cliente.Id,
+                UsuarioId = vendedorId.Value,
+                FechaProgramada = nextBusinessDay,
+                TipoVisita = TipoVisita.Seguimiento,
+                Resultado = ResultadoVisita.Pendiente,
+                Notas = $"Visita agendada automáticamente — cliente sin visitar en {diasInactividad}+ días",
+            };
+            context.Db.ClienteVisitas.Add(visita);
+            visitasCreadas++;
+        }
+
+        if (visitasCreadas > 0)
+            await context.Db.SaveChangesAsync(ct);
 
         // ── Push: ONE aggregated notification per vendedor ──
         var notified = 0;
@@ -93,12 +129,15 @@ public class ClienteInactivoVisitaHandler : IAutomationHandler
         content.Append(EmailTemplateBuilder.DateStamp(DateTime.UtcNow, tenantTz));
         content.Append(EmailTemplateBuilder.KpiRow(
             ("Clientes sin visitar", clientesInactivos.Count.ToString(), "👥"),
+            ("Visitas agendadas", visitasCreadas.ToString(), "📋"),
             ("Días de corte", diasInactividad.ToString(), "📅")
         ));
-        content.Append(EmailTemplateBuilder.Callout(
-            $"<strong>{clientesInactivos.Count}</strong> cliente{(clientesInactivos.Count != 1 ? "s" : "")} no han recibido visita en los últimos <strong>{diasInactividad} días</strong>. " +
-            "Agenda seguimientos para mantener la relación comercial activa.",
-            "info"));
+        var calloutMessage = visitasCreadas > 0
+            ? $"<strong>{clientesInactivos.Count}</strong> cliente{(clientesInactivos.Count != 1 ? "s" : "")} no han recibido visita en los últimos <strong>{diasInactividad} días</strong>. " +
+              $"Se agendaron <strong>{visitasCreadas}</strong> visita{(visitasCreadas != 1 ? "s" : "")} de seguimiento para el <strong>{nextBusinessDay:dd/MM/yyyy}</strong>."
+            : $"<strong>{clientesInactivos.Count}</strong> cliente{(clientesInactivos.Count != 1 ? "s" : "")} no han recibido visita en los últimos <strong>{diasInactividad} días</strong>. " +
+              "No se pudieron agendar visitas porque los clientes no tienen vendedor asignado.";
+        content.Append(EmailTemplateBuilder.Callout(calloutMessage, visitasCreadas > 0 ? "info" : "warning"));
 
         var rows = clientesInactivos.Select(c =>
         {
@@ -108,12 +147,15 @@ public class ClienteInactivoVisitaHandler : IAutomationHandler
             var vendedor = c.VendedorId.HasValue
                 ? System.Net.WebUtility.HtmlEncode(vendedorDict.GetValueOrDefault(c.VendedorId.Value, "Sin asignar"))
                 : "<span style=\"color:#9ca3af;\">Sin asignar</span>";
-            return new[] { System.Net.WebUtility.HtmlEncode(c.Nombre), ultimaVisita, vendedor };
+            var agendada = c.VendedorId.HasValue
+                ? $"<span style=\"color:#16a34a;font-weight:600;\">{nextBusinessDay:dd/MM/yyyy}</span>"
+                : "<span style=\"color:#9ca3af;\">Sin vendedor</span>";
+            return new[] { System.Net.WebUtility.HtmlEncode(c.Nombre), ultimaVisita, vendedor, agendada };
         }).ToList();
 
         content.Append(EmailTemplateBuilder.SectionHeading("Clientes sin visitar"));
         content.Append(EmailTemplateBuilder.Table(
-            new[] { "Cliente", "Última Visita", "Vendedor" }, rows));
+            new[] { "Cliente", "Última Visita", "Vendedor", "Visita Agendada" }, rows));
 
         await context.SendAdminEmailAsync(
             "Reporte de Clientes Inactivos",
@@ -121,6 +163,19 @@ public class ClienteInactivoVisitaHandler : IAutomationHandler
             ct,
             $"{clientesInactivos.Count} clientes sin visitar en {diasInactividad} días");
 
-        return new AutomationResult(true, $"Notificación enviada para {clientesInactivos.Count} clientes inactivos ({notified} notificaciones)");
+        return new AutomationResult(true,
+            $"Clientes inactivos: {clientesInactivos.Count}, visitas agendadas: {visitasCreadas}, notificaciones: {notified}");
+    }
+
+    /// <summary>
+    /// Returns the next business day (Monday–Friday), skipping weekends.
+    /// Sets time to 9:00 AM UTC as a reasonable default.
+    /// </summary>
+    private static DateTime GetNextBusinessDay(DateTime from)
+    {
+        var next = from.Date.AddDays(1);
+        while (next.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
+            next = next.AddDays(1);
+        return next.AddHours(9); // 9 AM UTC ≈ 3 AM CST, will display in tenant TZ
     }
 }
