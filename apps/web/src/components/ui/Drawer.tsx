@@ -149,7 +149,7 @@ export const Drawer = forwardRef<DrawerHandle, DrawerProps>(({
         )}
 
         {/* Scrollable Body */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto px-6 py-4">
           {children}
         </div>
 
