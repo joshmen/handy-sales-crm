@@ -1,0 +1,262 @@
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
+using HandySuites.Mobile.Api.Services;
+using HandySuites.Shared.Security;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+
+namespace HandySuites.Mobile.Tests.Endpoints;
+
+public class MobileAuthEndpointsTests : IDisposable
+{
+    private readonly HandySuitesDbContext _db;
+    private readonly MobileAuthService _authService;
+    private readonly JwtTokenGenerator _jwtGenerator;
+
+    public MobileAuthEndpointsTests()
+    {
+        var options = new DbContextOptionsBuilder<HandySuitesDbContext>()
+            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .Options;
+
+        _db = new HandySuitesDbContext(options);
+
+        var jwtOptions = Options.Create(new JwtSettings
+        {
+            Secret = "test-secret-key-that-is-at-least-32-characters-long-for-testing",
+            Issuer = "HandySuites.Test",
+            Audience = "HandySuites.Test",
+            ExpirationMinutes = 60
+        });
+
+        _jwtGenerator = new JwtTokenGenerator(jwtOptions);
+        _authService = new MobileAuthService(_db, _jwtGenerator);
+
+        SeedTestData();
+    }
+
+    private void SeedTestData()
+    {
+        var passwordHash = BCrypt.Net.BCrypt.HashPassword("Test123!");
+
+        var tenant = new Tenant
+        {
+            Id = 1,
+            NombreEmpresa = "Test Tenant"
+        };
+        _db.Tenants.Add(tenant);
+
+        var usuario = new Usuario
+        {
+            Id = 1,
+            Nombre = "Test Vendedor",
+            Email = "vendedor@test.com",
+            PasswordHash = passwordHash,
+            TenantId = 1,
+            EsAdmin = false,
+            EsSuperAdmin = false,
+            Activo = true
+        };
+        _db.Usuarios.Add(usuario);
+
+        var admin = new Usuario
+        {
+            Id = 2,
+            Nombre = "Test Admin",
+            Email = "admin@test.com",
+            PasswordHash = passwordHash,
+            TenantId = 1,
+            EsAdmin = true,
+            EsSuperAdmin = false,
+            Activo = true
+        };
+        _db.Usuarios.Add(admin);
+
+        _db.SaveChanges();
+    }
+
+    [Fact]
+    public async Task LoginAsync_ReturnsFailed_ForInvalidCredentials()
+    {
+        // Act
+        var result = await _authService.LoginAsync("invalid@test.com", "wrongpassword");
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Success.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task LoginAsync_ReturnsFailed_ForWrongPassword()
+    {
+        // Act
+        var result = await _authService.LoginAsync("vendedor@test.com", "wrongpassword");
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Success.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task LoginAsync_ReturnsSuccess_ForValidCredentials()
+    {
+        // Act
+        var result = await _authService.LoginAsync("vendedor@test.com", "Test123!");
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Success.Should().BeTrue();
+        result.Data.Should().NotBeNull();
+
+        var dataType = result.Data!.GetType();
+        var tokenProp = dataType.GetProperty("token");
+        var refreshTokenProp = dataType.GetProperty("refreshToken");
+        var userProp = dataType.GetProperty("user");
+
+        tokenProp.Should().NotBeNull();
+        refreshTokenProp.Should().NotBeNull();
+        userProp.Should().NotBeNull();
+
+        var token = tokenProp!.GetValue(result.Data) as string;
+        var refreshToken = refreshTokenProp!.GetValue(result.Data) as string;
+
+        token.Should().NotBeNullOrEmpty();
+        refreshToken.Should().NotBeNullOrEmpty();
+    }
+
+    [Fact]
+    public async Task LoginAsync_ReturnsVendedorRole_ForNonAdminUser()
+    {
+        // Act
+        var result = await _authService.LoginAsync("vendedor@test.com", "Test123!");
+
+        // Assert
+        result.Success.Should().BeTrue();
+
+        var userProp = result.Data!.GetType().GetProperty("user");
+        var user = userProp!.GetValue(result.Data);
+        var roleProp = user!.GetType().GetProperty("role");
+        var role = roleProp!.GetValue(user) as string;
+
+        role.Should().Be("VENDEDOR");
+    }
+
+    [Fact]
+    public async Task LoginAsync_ReturnsAdminRole_ForAdminUser()
+    {
+        // Act
+        var result = await _authService.LoginAsync("admin@test.com", "Test123!");
+
+        // Assert
+        result.Success.Should().BeTrue();
+
+        var userProp = result.Data!.GetType().GetProperty("user");
+        var user = userProp!.GetValue(result.Data);
+        var roleProp = user!.GetType().GetProperty("role");
+        var role = roleProp!.GetValue(user) as string;
+
+        role.Should().Be("ADMIN");
+    }
+
+    [Fact]
+    public async Task LoginAsync_CreatesRefreshToken_InDatabase()
+    {
+        // Act
+        await _authService.LoginAsync("vendedor@test.com", "Test123!");
+
+        // Assert
+        var refreshToken = await _db.RefreshTokens.FirstOrDefaultAsync(rt => rt.UserId == 1);
+        refreshToken.Should().NotBeNull();
+        refreshToken!.IsRevoked.Should().BeFalse();
+        refreshToken.ExpiresAt.Should().BeAfter(DateTime.UtcNow);
+    }
+
+    [Fact]
+    public async Task RefreshTokenAsync_ReturnsNull_ForEmptyToken()
+    {
+        // Act
+        var result = await _authService.RefreshTokenAsync("");
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task RefreshTokenAsync_ReturnsNull_ForInvalidToken()
+    {
+        // Act
+        var result = await _authService.RefreshTokenAsync("invalid-token-string");
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task RefreshTokenAsync_ReturnsNewTokens_ForValidToken()
+    {
+        // Arrange
+        var loginResult = await _authService.LoginAsync("vendedor@test.com", "Test123!");
+        var refreshTokenProp = loginResult.Data!.GetType().GetProperty("refreshToken");
+        var originalRefreshToken = refreshTokenProp!.GetValue(loginResult.Data) as string;
+
+        // Act
+        var result = await _authService.RefreshTokenAsync(originalRefreshToken!);
+
+        // Assert
+        result.Should().NotBeNull();
+
+        var newTokenProp = result!.GetType().GetProperty("token");
+        var newRefreshTokenProp = result.GetType().GetProperty("refreshToken");
+
+        var newToken = newTokenProp!.GetValue(result) as string;
+        var newRefreshToken = newRefreshTokenProp!.GetValue(result) as string;
+
+        newToken.Should().NotBeNullOrEmpty();
+        newRefreshToken.Should().NotBeNullOrEmpty();
+        newRefreshToken.Should().NotBe(originalRefreshToken);
+    }
+
+    [Fact]
+    public async Task RefreshTokenAsync_RevokesOldToken_WhenRefreshing()
+    {
+        // Arrange
+        var loginResult = await _authService.LoginAsync("vendedor@test.com", "Test123!");
+        var refreshTokenProp = loginResult.Data!.GetType().GetProperty("refreshToken");
+        var originalRefreshToken = refreshTokenProp!.GetValue(loginResult.Data) as string;
+
+        // Act
+        await _authService.RefreshTokenAsync(originalRefreshToken!);
+
+        // Assert — token stored as SHA-256 hash
+        var tokenHash = Convert.ToBase64String(
+            System.Security.Cryptography.SHA256.HashData(
+                System.Text.Encoding.UTF8.GetBytes(originalRefreshToken!)));
+        var oldToken = await _db.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == tokenHash);
+        oldToken.Should().NotBeNull();
+        oldToken!.IsRevoked.Should().BeTrue();
+        oldToken.RevokedAt.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task RefreshTokenAsync_ReturnsNull_ForRevokedToken()
+    {
+        // Arrange
+        var loginResult = await _authService.LoginAsync("vendedor@test.com", "Test123!");
+        var refreshTokenProp = loginResult.Data!.GetType().GetProperty("refreshToken");
+        var originalRefreshToken = refreshTokenProp!.GetValue(loginResult.Data) as string;
+
+        // Use the token once (which revokes it)
+        await _authService.RefreshTokenAsync(originalRefreshToken!);
+
+        // Act - try to use the revoked token again
+        var result = await _authService.RefreshTokenAsync(originalRefreshToken!);
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    public void Dispose()
+    {
+        _db.Dispose();
+    }
+}

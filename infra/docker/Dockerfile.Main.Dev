@@ -13,25 +13,25 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 # Copiar archivos de proyecto en orden de dependencias (nueva estructura)
-COPY ["libs/HandySales.Shared/HandySales.Shared.csproj", "libs/HandySales.Shared/"]
-COPY ["libs/HandySales.Domain/HandySales.Domain.csproj", "libs/HandySales.Domain/"]
-COPY ["libs/HandySales.Application/HandySales.Application.csproj", "libs/HandySales.Application/"]
-COPY ["libs/HandySales.Infrastructure/HandySales.Infrastructure.csproj", "libs/HandySales.Infrastructure/"]
-COPY ["apps/api/src/HandySales.Api/HandySales.Api.csproj", "apps/api/src/HandySales.Api/"]
+COPY ["libs/HandySuites.Shared/HandySuites.Shared.csproj", "libs/HandySuites.Shared/"]
+COPY ["libs/HandySuites.Domain/HandySuites.Domain.csproj", "libs/HandySuites.Domain/"]
+COPY ["libs/HandySuites.Application/HandySuites.Application.csproj", "libs/HandySuites.Application/"]
+COPY ["libs/HandySuites.Infrastructure/HandySuites.Infrastructure.csproj", "libs/HandySuites.Infrastructure/"]
+COPY ["apps/api/src/HandySuites.Api/HandySuites.Api.csproj", "apps/api/src/HandySuites.Api/"]
 
 # Restaurar dependencias
-RUN dotnet restore "apps/api/src/HandySales.Api/HandySales.Api.csproj"
+RUN dotnet restore "apps/api/src/HandySuites.Api/HandySuites.Api.csproj"
 
 # Copiar código fuente
 COPY libs/ libs/
 COPY apps/api/ apps/api/
 
 # Build de la aplicación en modo Debug para desarrollo
-WORKDIR "/src/apps/api/src/HandySales.Api"
-RUN dotnet build "HandySales.Api.csproj" -c Debug -o /app/build
+WORKDIR "/src/apps/api/src/HandySuites.Api"
+RUN dotnet build "HandySuites.Api.csproj" -c Debug -o /app/build
 
 FROM build AS publish
-RUN dotnet publish "HandySales.Api.csproj" -c Debug -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "HandySuites.Api.csproj" -c Debug -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
 WORKDIR /app
@@ -54,4 +54,4 @@ RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
 RUN chown -R appuser:appgroup /app
 USER appuser
 
-ENTRYPOINT ["dotnet", "HandySales.Api.dll"]
+ENTRYPOINT ["dotnet", "HandySuites.Api.dll"]

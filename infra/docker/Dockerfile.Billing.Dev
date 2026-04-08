@@ -16,20 +16,20 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
 # Copiar archivo de proyecto del microservicio de facturación (nueva estructura)
-COPY ["apps/billing/HandySales.Billing.Api/HandySales.Billing.Api.csproj", "apps/billing/HandySales.Billing.Api/"]
+COPY ["apps/billing/HandySuites.Billing.Api/HandySuites.Billing.Api.csproj", "apps/billing/HandySuites.Billing.Api/"]
 
 # Restaurar dependencias
-RUN dotnet restore "apps/billing/HandySales.Billing.Api/HandySales.Billing.Api.csproj"
+RUN dotnet restore "apps/billing/HandySuites.Billing.Api/HandySuites.Billing.Api.csproj"
 
 # Copiar código fuente
 COPY apps/billing/ apps/billing/
 
 # Build de la aplicación en modo Debug
-WORKDIR "/src/apps/billing/HandySales.Billing.Api"
-RUN dotnet build "HandySales.Billing.Api.csproj" -c Debug -o /app/build
+WORKDIR "/src/apps/billing/HandySuites.Billing.Api"
+RUN dotnet build "HandySuites.Billing.Api.csproj" -c Debug -o /app/build
 
 FROM build AS publish
-RUN dotnet publish "HandySales.Billing.Api.csproj" -c Debug -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "HandySuites.Billing.Api.csproj" -c Debug -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
 WORKDIR /app
@@ -50,4 +50,4 @@ ENV DOTNET_EnableDiagnostics=1
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:5001/health || exit 1
 
-ENTRYPOINT ["dotnet", "HandySales.Billing.Api.dll"]
+ENTRYPOINT ["dotnet", "HandySuites.Billing.Api.dll"]

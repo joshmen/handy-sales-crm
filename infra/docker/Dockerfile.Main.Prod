@@ -1,7 +1,7 @@
 # =============================================================
-# HandySales Main API — Production Dockerfile (.NET 8)
+# HandySuites Main API — Production Dockerfile (.NET 8)
 # Works with: Railway, Azure Container Apps, any Docker host
-# Build context: repository root (HandySales/)
+# Build context: repository root (HandySuites/)
 # =============================================================
 
 # --- Stage 1: Build ---
@@ -9,21 +9,21 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build
 WORKDIR /src
 
 # Copy project files in dependency order for optimal layer caching
-COPY ["libs/HandySales.Shared/HandySales.Shared.csproj", "libs/HandySales.Shared/"]
-COPY ["libs/HandySales.Domain/HandySales.Domain.csproj", "libs/HandySales.Domain/"]
-COPY ["libs/HandySales.Application/HandySales.Application.csproj", "libs/HandySales.Application/"]
-COPY ["libs/HandySales.Infrastructure/HandySales.Infrastructure.csproj", "libs/HandySales.Infrastructure/"]
-COPY ["apps/api/src/HandySales.Api/HandySales.Api.csproj", "apps/api/src/HandySales.Api/"]
+COPY ["libs/HandySuites.Shared/HandySuites.Shared.csproj", "libs/HandySuites.Shared/"]
+COPY ["libs/HandySuites.Domain/HandySuites.Domain.csproj", "libs/HandySuites.Domain/"]
+COPY ["libs/HandySuites.Application/HandySuites.Application.csproj", "libs/HandySuites.Application/"]
+COPY ["libs/HandySuites.Infrastructure/HandySuites.Infrastructure.csproj", "libs/HandySuites.Infrastructure/"]
+COPY ["apps/api/src/HandySuites.Api/HandySuites.Api.csproj", "apps/api/src/HandySuites.Api/"]
 
 # Restore (cached unless .csproj files change)
-RUN dotnet restore "apps/api/src/HandySales.Api/HandySales.Api.csproj"
+RUN dotnet restore "apps/api/src/HandySuites.Api/HandySuites.Api.csproj"
 
 # Copy source code
 COPY libs/ libs/
 COPY apps/api/ apps/api/
 
 # Publish optimized release build
-WORKDIR "/src/apps/api/src/HandySales.Api"
+WORKDIR "/src/apps/api/src/HandySuites.Api"
 RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
 
 # --- Stage 2: Runtime ---
@@ -55,4 +55,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
     CMD curl -f http://localhost:${PORT:-5000}/health || exit 1
 
 # Use shell form so ${PORT} is evaluated at runtime (Railway injects PORT)
-CMD ASPNETCORE_URLS=http://+:${PORT:-5000} exec dotnet HandySales.Api.dll
+CMD ASPNETCORE_URLS=http://+:${PORT:-5000} exec dotnet HandySuites.Api.dll

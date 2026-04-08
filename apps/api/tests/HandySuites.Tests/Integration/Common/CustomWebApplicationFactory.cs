@@ -1,0 +1,158 @@
+using HandySuites.Application.Ai.Interfaces;
+using HandySuites.Application.Notifications.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
+using HandySuites.Infrastructure.Repositories;
+using HandySuites.Shared.Multitenancy;
+using HandySuites.Shared.Security;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+
+/// <summary>
+/// Fake HTTP handler that returns empty responses for HIBP Pwned Passwords API.
+/// This prevents real HTTP calls during tests and marks all passwords as safe.
+/// </summary>
+internal class FakePwnedPasswordHandler : DelegatingHandler
+{
+    protected override Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        // Return empty response — no matching hashes means password is not compromised
+        return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+        {
+            Content = new StringContent("")
+        });
+    }
+}
+
+/// <summary>
+/// No-op HTTP handler that returns 200 OK for any request. Used to stub
+/// service-to-service calls (e.g., MobileApi push notifications) in tests.
+/// </summary>
+internal class FakeNoOpHttpHandler : DelegatingHandler
+{
+    protected override Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+        {
+            Content = new StringContent("{\"success\":true}")
+        });
+    }
+}
+
+public class CustomWebApplicationFactory : WebApplicationFactory<Program>
+{
+    private SqliteConnection? _connection;
+
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        // Establecer ambiente de Testing para evitar conexión MySQL
+        Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Testing");
+        // Skip DatabaseMigrator — EnsureCreated() handles schema for SQLite
+        Environment.SetEnvironmentVariable("RUN_MIGRATIONS", "false");
+        builder.UseEnvironment("Testing");
+
+        // Provide dummy config values for services that require them
+        builder.ConfigureAppConfiguration((context, config) =>
+        {
+            config.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Cloudinary:Url"] = "cloudinary://000000000000000:fake_secret@fake_cloud",
+                ["SendGrid:ApiKey"] = "SG.fake-key-for-testing",
+                ["Ai:ApiKey"] = "sk-fake-key-for-testing",
+            });
+        });
+
+        builder.ConfigureServices(services =>
+        {
+            // Usa SQLite en memoria
+            _connection = new SqliteConnection("DataSource=:memory:");
+            _connection.Open();
+
+            services.AddDbContext<HandySuitesDbContext>(options =>
+            {
+                options.UseSqlite(_connection);
+            });
+
+            // Reemplaza autenticación por la fake
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = FakeJwtAuthHandler.Scheme;
+                options.DefaultChallengeScheme = FakeJwtAuthHandler.Scheme;
+            }).AddScheme<AuthenticationSchemeOptions, FakeJwtAuthHandler>(
+                FakeJwtAuthHandler.Scheme, options => { });
+
+            services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+            // Registra CurrentTenant para pruebas
+            services.AddScoped<ICurrentTenant, CurrentTenant>();
+            services.Configure<JwtSettings>(opts =>
+            {
+                opts.Secret = "12345678901234567890123456789012";
+                opts.Issuer = "TestIssuer";
+                opts.Audience = "TestAudience";
+                opts.ExpirationMinutes = 60;
+            });
+            services.AddScoped<HandySuites.Shared.Security.JwtTokenGenerator>();
+
+            // Replace PwnedPasswordService with a fake that never flags passwords
+            services.AddHttpClient<PwnedPasswordService>()
+                .ConfigurePrimaryHttpMessageHandler(() => new FakePwnedPasswordHandler());
+
+            // Stub MobileApi HttpClient (used for push notifications from Main API → Mobile API)
+            services.AddHttpClient("MobileApi")
+                .ConfigurePrimaryHttpMessageHandler(() => new FakeNoOpHttpHandler());
+
+            // Stub IRealtimePushService so SignalRPushService (which needs IHubContext) is not resolved
+            services.RemoveAll<IRealtimePushService>();
+            services.AddScoped<IRealtimePushService, FakeRealtimePushService>();
+
+            // Stub IAiEmbeddingService — pgvector not available in SQLite tests
+            services.RemoveAll<IAiEmbeddingService>();
+            services.AddScoped<IAiEmbeddingService, FakeAiEmbeddingService>();
+
+            // Crea base de datos
+            var sp = services.BuildServiceProvider();
+            using var scope = sp.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<HandySuitesDbContext>();
+            db.Database.EnsureDeleted();
+            db.Database.EnsureCreated();
+            HandySuitesTestSeeder.SeedTestData(db);
+        });
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+        _connection?.Close();
+        _connection?.Dispose();
+    }
+}
+
+/// <summary>
+/// No-op push service for tests (avoids SignalR/IHubContext dependency).
+/// </summary>
+internal class FakeRealtimePushService : IRealtimePushService
+{
+    public Task SendToUserAsync(int userId, object payload) => Task.CompletedTask;
+    public Task SendToUsersAsync(IEnumerable<int> userIds, object payload) => Task.CompletedTask;
+}
+
+/// <summary>
+/// No-op embedding service for tests (pgvector not available in SQLite).
+/// </summary>
+internal class FakeAiEmbeddingService : IAiEmbeddingService
+{
+    public Task UpsertEmbeddingAsync(int tenantId, string sourceType, int sourceId, string contentText) => Task.CompletedTask;
+    public Task DeleteEmbeddingAsync(int tenantId, string sourceType, int sourceId) => Task.CompletedTask;
+    public Task<List<SemanticSearchResult>> SearchAsync(int tenantId, string query, int topK = 3, double minScore = 0.72)
+        => Task.FromResult(new List<SemanticSearchResult>());
+    public Task SafeUpsertAsync(int tenantId, string sourceType, int sourceId, string contentText) => Task.CompletedTask;
+}
