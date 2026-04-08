@@ -87,8 +87,38 @@ export function AnimatedSplash({ onFinish, syncMode, onSyncComplete }: AnimatedS
     setSyncPhase(0);
     setSyncStarted(true);
 
+    // Check if we can skip sync when offline but have cached data
+    const NetInfo = (await import('@react-native-community/netinfo')).default;
+    const { syncCursors } = await import('../../sync/cursors');
+    await syncCursors.init();
+    const netState = await NetInfo.fetch();
+    const isOffline = !netState.isConnected;
+    const lastSync = syncCursors.getLastSyncAt();
+    const hasCachedData = lastSync !== null && lastSync > 0;
+
+    if (isOffline && hasCachedData) {
+      // Offline but have data — let the user in with cached data
+      const lastSyncDate = new Date(lastSync);
+      const hoursAgo = Math.round((Date.now() - lastSync) / (1000 * 60 * 60));
+      console.log(`[Offline] Skipping sync — last synced ${hoursAgo}h ago (${lastSyncDate.toLocaleString()})`);
+      setSyncPhase(6); // "Listo"
+      onSyncComplete?.();
+      setTimeout(() => {
+        Animated.timing(containerOpacity, { toValue: 0, duration: 400, useNativeDriver: true }).start(() => {
+          onFinish();
+        });
+      }, 800);
+      return;
+    }
+
+    if (isOffline && !hasCachedData) {
+      // Offline and NO data — can't do anything
+      setSyncError('Sin conexión a internet. Necesitas conectarte al menos una vez para sincronizar tus datos.');
+      return;
+    }
+
     try {
-      // Simulate progressive phases during monolithic sync
+      // Online — run full sync
       let phase = 0;
       timerRef.current = setInterval(() => {
         phase++;
