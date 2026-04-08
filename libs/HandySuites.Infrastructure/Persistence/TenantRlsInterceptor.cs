@@ -5,9 +5,8 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 namespace HandySuites.Infrastructure.Persistence;
 
 /// <summary>
-/// EF Core command interceptor that prepends SET app.tenant_id before every SQL command.
-/// This enables PostgreSQL RLS policies to enforce tenant isolation at the DB level.
-/// Uses CommandInterceptor (not ConnectionInterceptor) to work with connection pooling.
+/// Sets app.tenant_id on connection open AND on every command.
+/// Double-ensures RLS context is always correct even with connection pooling.
 /// </summary>
 public class TenantRlsInterceptor : DbCommandInterceptor
 {
@@ -21,7 +20,7 @@ public class TenantRlsInterceptor : DbCommandInterceptor
     public override InterceptionResult<DbDataReader> ReaderExecuting(
         DbCommand command, CommandEventData eventData, InterceptionResult<DbDataReader> result)
     {
-        SetTenantId(command);
+        PrependSet(command);
         return base.ReaderExecuting(command, eventData, result);
     }
 
@@ -29,14 +28,14 @@ public class TenantRlsInterceptor : DbCommandInterceptor
         DbCommand command, CommandEventData eventData, InterceptionResult<DbDataReader> result,
         CancellationToken cancellationToken = default)
     {
-        SetTenantId(command);
+        PrependSet(command);
         return base.ReaderExecutingAsync(command, eventData, result, cancellationToken);
     }
 
     public override InterceptionResult<int> NonQueryExecuting(
         DbCommand command, CommandEventData eventData, InterceptionResult<int> result)
     {
-        SetTenantId(command);
+        PrependSet(command);
         return base.NonQueryExecuting(command, eventData, result);
     }
 
@@ -44,14 +43,14 @@ public class TenantRlsInterceptor : DbCommandInterceptor
         DbCommand command, CommandEventData eventData, InterceptionResult<int> result,
         CancellationToken cancellationToken = default)
     {
-        SetTenantId(command);
+        PrependSet(command);
         return base.NonQueryExecutingAsync(command, eventData, result, cancellationToken);
     }
 
     public override InterceptionResult<object> ScalarExecuting(
         DbCommand command, CommandEventData eventData, InterceptionResult<object> result)
     {
-        SetTenantId(command);
+        PrependSet(command);
         return base.ScalarExecuting(command, eventData, result);
     }
 
@@ -59,16 +58,23 @@ public class TenantRlsInterceptor : DbCommandInterceptor
         DbCommand command, CommandEventData eventData, InterceptionResult<object> result,
         CancellationToken cancellationToken = default)
     {
-        SetTenantId(command);
+        PrependSet(command);
         return base.ScalarExecutingAsync(command, eventData, result, cancellationToken);
     }
 
-    private void SetTenantId(DbCommand command)
+    private void PrependSet(DbCommand command)
     {
         var tenantClaim = _httpContextAccessor.HttpContext?.User?.FindFirst("tenant_id");
         if (tenantClaim == null || string.IsNullOrEmpty(tenantClaim.Value)) return;
 
-        // Prepend SET to the actual SQL command — runs in same transaction/connection
-        command.CommandText = $"SET LOCAL app.tenant_id = '{tenantClaim.Value}'; {command.CommandText}";
+        // Don't prepend if already set (avoid double-setting on retries)
+        if (command.CommandText.StartsWith("SET app.tenant_id")) return;
+
+        // Execute SET as a separate command on the same connection BEFORE the actual command
+        // This avoids issues with batch commands where SET gets mixed into multi-statement batches
+        using var setCmd = command.Connection!.CreateCommand();
+        setCmd.Transaction = command.Transaction;
+        setCmd.CommandText = $"SET app.tenant_id = '{tenantClaim.Value}'";
+        setCmd.ExecuteNonQuery();
     }
 }

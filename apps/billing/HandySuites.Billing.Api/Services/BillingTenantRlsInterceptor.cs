@@ -51,6 +51,11 @@ public class BillingTenantRlsInterceptor : DbCommandInterceptor
         var tenantClaim = _httpContextAccessor.HttpContext?.User?.FindFirst("tenant_id");
         if (tenantClaim == null || string.IsNullOrEmpty(tenantClaim.Value)) return;
 
-        command.CommandText = $"SET LOCAL app.tenant_id = '{tenantClaim.Value}'; {command.CommandText}";
+        if (command.CommandText.StartsWith("SET app.tenant_id")) return;
+
+        using var setCmd = command.Connection!.CreateCommand();
+        setCmd.Transaction = command.Transaction;
+        setCmd.CommandText = $"SET app.tenant_id = '{tenantClaim.Value}'";
+        setCmd.ExecuteNonQuery();
     }
 }
