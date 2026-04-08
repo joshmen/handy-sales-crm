@@ -87,7 +87,7 @@ export function AnimatedSplash({ onFinish, syncMode, onSyncComplete }: AnimatedS
     setSyncPhase(0);
     setSyncStarted(true);
 
-    // Check if we can skip sync when offline but have cached data
+    // Check network + last sync to decide if sync is needed
     const NetInfo = (await import('@react-native-community/netinfo')).default;
     const { syncCursors } = await import('../../sync/cursors');
     await syncCursors.init();
@@ -95,13 +95,20 @@ export function AnimatedSplash({ onFinish, syncMode, onSyncComplete }: AnimatedS
     const isOffline = !netState.isConnected;
     const lastSync = syncCursors.getLastSyncAt();
     const hasCachedData = lastSync !== null && lastSync > 0;
+    const MAX_SYNC_AGE_HOURS = 12;
+    const hoursAgo = hasCachedData ? (Date.now() - lastSync) / (1000 * 60 * 60) : Infinity;
+    const isStale = hoursAgo > MAX_SYNC_AGE_HOURS;
+
+    if (isOffline && !hasCachedData) {
+      // First install, no data, no internet — can't do anything
+      setSyncError('Sin conexión a internet. Necesitas conectarte al menos una vez para sincronizar tus datos.');
+      return;
+    }
 
     if (isOffline && hasCachedData) {
-      // Offline but have data — let the user in with cached data
-      const lastSyncDate = new Date(lastSync);
-      const hoursAgo = Math.round((Date.now() - lastSync) / (1000 * 60 * 60));
-      console.log(`[Offline] Skipping sync — last synced ${hoursAgo}h ago (${lastSyncDate.toLocaleString()})`);
-      setSyncPhase(6); // "Listo"
+      // Offline but have data — let the user in
+      console.log(`[Offline] Skipping sync — last synced ${Math.round(hoursAgo)}h ago`);
+      setSyncPhase(6);
       onSyncComplete?.();
       setTimeout(() => {
         Animated.timing(containerOpacity, { toValue: 0, duration: 400, useNativeDriver: true }).start(() => {
@@ -111,11 +118,21 @@ export function AnimatedSplash({ onFinish, syncMode, onSyncComplete }: AnimatedS
       return;
     }
 
-    if (isOffline && !hasCachedData) {
-      // Offline and NO data — can't do anything
-      setSyncError('Sin conexión a internet. Necesitas conectarte al menos una vez para sincronizar tus datos.');
+    if (!isStale && hasCachedData) {
+      // Online but data is fresh (< 12h) — skip sync, enter fast
+      console.log(`[Fresh] Data is ${Math.round(hoursAgo)}h old (< ${MAX_SYNC_AGE_HOURS}h) — skipping startup sync`);
+      setSyncPhase(6);
+      onSyncComplete?.();
+      setTimeout(() => {
+        Animated.timing(containerOpacity, { toValue: 0, duration: 400, useNativeDriver: true }).start(() => {
+          onFinish();
+        });
+      }, 800);
       return;
     }
+
+    // Online + stale data (or first sync) — run full sync
+    console.log(`[Sync] Data is ${hasCachedData ? Math.round(hoursAgo) + 'h old' : 'empty'} — running sync`);
 
     try {
       // Online — run full sync
