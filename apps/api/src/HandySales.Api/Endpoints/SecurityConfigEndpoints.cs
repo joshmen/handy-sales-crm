@@ -1,7 +1,7 @@
-using HandySales.Shared.Multitenancy;
+using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class SecurityConfigEndpoints
 {

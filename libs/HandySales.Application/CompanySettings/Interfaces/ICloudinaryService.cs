@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Http;
 
-namespace HandySales.Application.CompanySettings.Interfaces
+namespace HandySuites.Application.CompanySettings.Interfaces
 {
     public interface ICloudinaryService
     {

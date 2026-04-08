@@ -1,15 +1,15 @@
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
-using HandySales.Application.GlobalSettings.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
+using HandySuites.Application.GlobalSettings.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Infrastructure.GlobalSettings.Repositories
+namespace HandySuites.Infrastructure.GlobalSettings.Repositories
 {
     public class GlobalSettingsRepository : IGlobalSettingsRepository
     {
-        private readonly HandySalesDbContext _context;
+        private readonly HandySuitesDbContext _context;
 
-        public GlobalSettingsRepository(HandySalesDbContext context)
+        public GlobalSettingsRepository(HandySuitesDbContext context)
         {
             _context = context;
         }

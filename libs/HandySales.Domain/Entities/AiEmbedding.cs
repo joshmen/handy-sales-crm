@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Pgvector;
 
-namespace HandySales.Domain.Entities;
+namespace HandySuites.Domain.Entities;
 
 /// <summary>
 /// Stores vector embeddings for semantic search (RAG).

@@ -1,6 +1,6 @@
 # SuperAdmin - Flujo Completo
 
-Guia para crear, configurar y gestionar usuarios SuperAdmin en HandySales.
+Guia para crear, configurar y gestionar usuarios SuperAdmin en HandySuites.
 
 ---
 
@@ -168,7 +168,7 @@ if (userRole === UserRole.SUPER_ADMIN && !token.isImpersonating) {
 ### ICurrentTenant Service
 
 ```csharp
-// libs/HandySales.Infrastructure/Repositories/Multitenancy/CurrentTenant.cs
+// libs/HandySuites.Infrastructure/Repositories/Multitenancy/CurrentTenant.cs
 public class CurrentTenant : ICurrentTenant
 {
     public int TenantId { get; }       // Del claim "tenant_id"
@@ -331,13 +331,13 @@ Frontend:
 |------------|---------|
 | Schema DB | `infra/database/schema/01_init_schema_multitenant.sql` |
 | Migracion SA | `infra/database/migrations/06_add_super_admin_and_test_companies.sql` |
-| Entity | `libs/HandySales.Domain/Entities/Usuario.cs` |
-| Auth Service | `apps/api/src/HandySales.Api/Auth/AuthService.cs` |
-| JWT Generator | `libs/HandySales.Shared/Security/JwtTokenGenerator.cs` |
-| CurrentTenant | `libs/HandySales.Infrastructure/Repositories/Multitenancy/CurrentTenant.cs` |
-| Tenant Endpoints | `apps/api/src/HandySales.Api/Endpoints/TenantEndpoints.cs` |
-| Impersonation Endpoints | `apps/api/src/HandySales.Api/Endpoints/ImpersonationEndpoints.cs` |
-| Impersonation Service | `libs/HandySales.Application/Impersonation/Services/ImpersonationService.cs` |
+| Entity | `libs/HandySuites.Domain/Entities/Usuario.cs` |
+| Auth Service | `apps/api/src/HandySuites.Api/Auth/AuthService.cs` |
+| JWT Generator | `libs/HandySuites.Shared/Security/JwtTokenGenerator.cs` |
+| CurrentTenant | `libs/HandySuites.Infrastructure/Repositories/Multitenancy/CurrentTenant.cs` |
+| Tenant Endpoints | `apps/api/src/HandySuites.Api/Endpoints/TenantEndpoints.cs` |
+| Impersonation Endpoints | `apps/api/src/HandySuites.Api/Endpoints/ImpersonationEndpoints.cs` |
+| Impersonation Service | `libs/HandySuites.Application/Impersonation/Services/ImpersonationService.cs` |
 | Frontend Middleware | `apps/web/src/middleware.ts` |
 | NextAuth Config | `apps/web/src/lib/auth.ts` |
 | Roles Config | `apps/web/src/lib/roles.ts` |
@@ -352,7 +352,7 @@ Frontend:
 | Campo | Valor |
 |-------|-------|
 | ID | 10 |
-| Email | `superadmin@handysales.com` |
+| Email | `superadmin@handysuites.com` |
 | Nombre | Super Admin |
 | Tenant | 1 |
 | Password | `test123` (dev only) |

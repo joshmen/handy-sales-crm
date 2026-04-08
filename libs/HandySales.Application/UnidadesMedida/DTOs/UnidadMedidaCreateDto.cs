@@ -1,4 +1,4 @@
-namespace HandySales.Application.UnidadesMedida.DTOs;
+namespace HandySuites.Application.UnidadesMedida.DTOs;
 
 public class UnidadMedidaCreateDto
 {

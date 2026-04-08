@@ -1,4 +1,4 @@
-namespace HandySales.Application.Common.Interfaces;
+namespace HandySuites.Application.Common.Interfaces;
 
 public interface ITransactionManager
 {

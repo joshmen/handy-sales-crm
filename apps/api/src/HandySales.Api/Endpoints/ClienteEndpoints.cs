@@ -1,12 +1,12 @@
 using FluentValidation;
-using HandySales.Application.Ai.Interfaces;
-using HandySales.Application.Clientes.DTOs;
-using HandySales.Application.Clientes.Services;
-using HandySales.Application.SubscriptionPlans.Interfaces;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Application.Ai.Interfaces;
+using HandySuites.Application.Clientes.DTOs;
+using HandySuites.Application.Clientes.Services;
+using HandySuites.Application.SubscriptionPlans.Interfaces;
+using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class ClienteEndpoints
 {

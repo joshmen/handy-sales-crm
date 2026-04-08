@@ -1,16 +1,16 @@
-using HandySales.Application.CategoriasProductos.DTOs;
-using HandySales.Application.CategoriasProductos.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.CategoriasProductos.DTOs;
+using HandySuites.Application.CategoriasProductos.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Infrastructure.CategoriasProductos.Repositories;
+namespace HandySuites.Infrastructure.CategoriasProductos.Repositories;
 
 public class CategoriaProductoRepository : ICategoriaProductoRepository
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
 
-    public CategoriaProductoRepository(HandySalesDbContext db)
+    public CategoriaProductoRepository(HandySuitesDbContext db)
     {
         _db = db;
     }

@@ -1,4 +1,4 @@
-namespace HandySales.Shared.Security;
+namespace HandySuites.Shared.Security;
 
 /// <summary>
 /// Blocks registration with known disposable/temporary email domains.

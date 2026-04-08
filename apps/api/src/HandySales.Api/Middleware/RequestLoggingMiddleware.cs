@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace HandySales.Api.Middleware;
+namespace HandySuites.Api.Middleware;
 
 public class RequestLoggingMiddleware
 {

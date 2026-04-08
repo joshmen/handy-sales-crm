@@ -1,4 +1,4 @@
-# HandySales — Deployment Guide
+# HandySuites — Deployment Guide
 
 ## Overview
 
@@ -85,8 +85,8 @@ NO usar `ENV ASPNETCORE_URLS=...` porque se evalua en build-time.
 |----------|-------------|
 | `ConnectionStrings__DefaultConnection` | MySQL connection string (con AllowPublicKeyRetrieval) |
 | `JWT__SecretKey` | DEBE ser identico en todas las APIs |
-| `JWT__Issuer` | `HandySales` |
-| `JWT__Audience` | `HandySalesUsers` |
+| `JWT__Issuer` | `HandySuites` |
+| `JWT__Audience` | `HandySuitesUsers` |
 | `ASPNETCORE_ENVIRONMENT` | `Production` |
 
 ## Production Dockerfiles

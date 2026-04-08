@@ -1,7 +1,7 @@
 using System;
-using HandySales.Domain.Entities;
+using HandySuites.Domain.Entities;
 
-namespace HandySales.Application.Companies.DTOs
+namespace HandySuites.Application.Companies.DTOs
 {
     public class CompanyDto
     {

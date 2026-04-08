@@ -1,6 +1,6 @@
-using HandySales.Application.ListasPrecios.DTOs;
+using HandySuites.Application.ListasPrecios.DTOs;
 
-namespace HandySales.Application.ListasPrecios.Interfaces;
+namespace HandySuites.Application.ListasPrecios.Interfaces;
 
 public interface IListaPrecioRepository
 {

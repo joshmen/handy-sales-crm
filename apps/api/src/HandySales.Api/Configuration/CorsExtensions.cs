@@ -1,4 +1,4 @@
-namespace HandySales.Api.Configuration;
+namespace HandySuites.Api.Configuration;
 
 public static class CorsExtensions
 {
@@ -6,7 +6,7 @@ public static class CorsExtensions
     {
         services.AddCors(options =>
         {
-            options.AddPolicy("HandySalesPolicy", builder =>
+            options.AddPolicy("HandySuitesPolicy", builder =>
             {
                 var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
                 

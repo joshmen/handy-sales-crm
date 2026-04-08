@@ -1,6 +1,6 @@
-using HandySales.Application.UnidadesMedida.DTOs;
+using HandySuites.Application.UnidadesMedida.DTOs;
 
-namespace HandySales.Application.UnidadesMedida.Interfaces;
+namespace HandySuites.Application.UnidadesMedida.Interfaces;
 
 public interface IUnidadMedidaRepository
 {

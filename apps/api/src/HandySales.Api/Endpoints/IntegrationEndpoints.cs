@@ -1,9 +1,9 @@
-using HandySales.Application.Integrations.DTOs;
-using HandySales.Application.Integrations.Services;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Application.Integrations.DTOs;
+using HandySuites.Application.Integrations.Services;
+using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class IntegrationEndpoints
 {
@@ -11,7 +11,7 @@ public static class IntegrationEndpoints
     {
         var group = app.MapGroup("/api/integrations")
             .RequireAuthorization()
-            .RequireCors("HandySalesPolicy");
+            .RequireCors("HandySuitesPolicy");
 
         group.MapGet("/", GetCatalog)
             .WithName("GetIntegrationCatalog")

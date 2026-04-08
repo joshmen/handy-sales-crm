@@ -1,6 +1,6 @@
 using System.Security.Claims;
 
-namespace HandySales.Api.Middleware;
+namespace HandySuites.Api.Middleware;
 
 /// <summary>
 /// Blocks non-read requests for users with the VIEWER role.

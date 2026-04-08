@@ -1,10 +1,10 @@
-using HandySales.Application.Common.Interfaces;
-using HandySales.Application.Inventario.Interfaces;
-using HandySales.Application.MovimientosInventario.DTOs;
-using HandySales.Application.MovimientosInventario.Interfaces;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Application.Common.Interfaces;
+using HandySuites.Application.Inventario.Interfaces;
+using HandySuites.Application.MovimientosInventario.DTOs;
+using HandySuites.Application.MovimientosInventario.Interfaces;
+using HandySuites.Shared.Multitenancy;
 
-namespace HandySales.Application.MovimientosInventario.Services;
+namespace HandySuites.Application.MovimientosInventario.Services;
 
 public class MovimientoInventarioService
 {

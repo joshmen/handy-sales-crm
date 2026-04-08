@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace HandySales.Domain.Entities;
+namespace HandySuites.Domain.Entities;
 
 [Table("subscription_plans")]
 public class SubscriptionPlan

@@ -1,7 +1,7 @@
-using HandySales.Application.Sync.DTOs;
-using HandySales.Domain.Entities;
+using HandySuites.Application.Sync.DTOs;
+using HandySuites.Domain.Entities;
 
-namespace HandySales.Application.Sync.Interfaces;
+namespace HandySuites.Application.Sync.Interfaces;
 
 public interface ISyncRepository
 {

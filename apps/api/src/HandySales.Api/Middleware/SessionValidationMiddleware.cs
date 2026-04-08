@@ -1,9 +1,9 @@
 using System.Security.Claims;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 
-namespace HandySales.Api.Middleware;
+namespace HandySuites.Api.Middleware;
 
 /// <summary>
 /// Validates that the session_version claim in the JWT matches the current value in the database.
@@ -48,8 +48,8 @@ public class SessionValidationMiddleware
                 if (!_cache.TryGetValue<bool>(impCacheKey, out var isSessionActive))
                 {
                     using var scope = context.RequestServices.CreateScope();
-                    var db = scope.ServiceProvider.GetRequiredService<HandySalesDbContext>();
-                    var session = await db.Set<HandySales.Domain.Entities.ImpersonationSession>()
+                    var db = scope.ServiceProvider.GetRequiredService<HandySuitesDbContext>();
+                    var session = await db.Set<HandySuites.Domain.Entities.ImpersonationSession>()
                         .AsNoTracking()
                         .Where(s => s.Id == sessionGuid)
                         .Select(s => new { s.Status, s.ExpiresAt })
@@ -107,7 +107,7 @@ public class SessionValidationMiddleware
         if (!_cache.TryGetValue<int>(cacheKey, out var dbVersion))
         {
             using var scope = context.RequestServices.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<HandySalesDbContext>();
+            var db = scope.ServiceProvider.GetRequiredService<HandySuitesDbContext>();
 
             var usuario = await db.Usuarios
                 .IgnoreQueryFilters()
@@ -145,7 +145,7 @@ public class SessionValidationMiddleware
             if (!_cache.TryGetValue<bool>(tenantCacheKey, out var isTenantActive))
             {
                 using var tenantScope = context.RequestServices.CreateScope();
-                var tenantDb = tenantScope.ServiceProvider.GetRequiredService<HandySalesDbContext>();
+                var tenantDb = tenantScope.ServiceProvider.GetRequiredService<HandySuitesDbContext>();
 
                 var tenant = await tenantDb.Tenants
                     .AsNoTracking()

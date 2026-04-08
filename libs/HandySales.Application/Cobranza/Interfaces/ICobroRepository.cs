@@ -1,6 +1,6 @@
-using HandySales.Application.Cobranza.DTOs;
+using HandySuites.Application.Cobranza.DTOs;
 
-namespace HandySales.Application.Cobranza.Interfaces;
+namespace HandySuites.Application.Cobranza.Interfaces;
 
 public interface ICobroRepository
 {

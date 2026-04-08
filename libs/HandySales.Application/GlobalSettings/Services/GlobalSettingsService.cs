@@ -1,11 +1,11 @@
-using HandySales.Application.GlobalSettings.DTOs;
-using HandySales.Application.GlobalSettings.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Application.Common.Interfaces;
-using HandySales.Application.CompanySettings.Interfaces;
+using HandySuites.Application.GlobalSettings.DTOs;
+using HandySuites.Application.GlobalSettings.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Application.Common.Interfaces;
+using HandySuites.Application.CompanySettings.Interfaces;
 using Microsoft.AspNetCore.Http;
 
-namespace HandySales.Application.GlobalSettings.Services
+namespace HandySuites.Application.GlobalSettings.Services
 {
     public interface IGlobalSettingsService
     {
@@ -18,12 +18,12 @@ namespace HandySales.Application.GlobalSettings.Services
     public class GlobalSettingsService : IGlobalSettingsService
     {
         private readonly IGlobalSettingsRepository _repository;
-        private readonly HandySales.Application.CompanySettings.Interfaces.ICloudinaryService _cloudinaryService;
+        private readonly HandySuites.Application.CompanySettings.Interfaces.ICloudinaryService _cloudinaryService;
         private readonly ICloudinaryFolderService _folderService;
 
         public GlobalSettingsService(
             IGlobalSettingsRepository repository,
-            HandySales.Application.CompanySettings.Interfaces.ICloudinaryService cloudinaryService,
+            HandySuites.Application.CompanySettings.Interfaces.ICloudinaryService cloudinaryService,
             ICloudinaryFolderService folderService)
         {
             _repository = repository;

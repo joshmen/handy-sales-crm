@@ -1,12 +1,12 @@
-using HandySales.Api.Payments;
-using HandySales.Application.SubscriptionPlans.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Api.Payments;
+using HandySuites.Application.SubscriptionPlans.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
+using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class SubscriptionEndpoints
 {
@@ -14,7 +14,7 @@ public static class SubscriptionEndpoints
     {
         var group = app.MapGroup("/api/subscription")
             .RequireAuthorization()
-            .RequireCors("HandySalesPolicy");
+            .RequireCors("HandySuitesPolicy");
 
         group.MapGet("/plans", GetPlans)
             .WithName("GetSubscriptionPlans")
@@ -71,7 +71,7 @@ group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("
     }
 
     private static async Task<IResult> GetPlans(
-        [FromServices] HandySalesDbContext db)
+        [FromServices] HandySuitesDbContext db)
     {
         var plans = await db.SubscriptionPlans
             .AsNoTracking()
@@ -99,7 +99,7 @@ group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("
 
     private static async Task<IResult> GetCurrentSubscription(
         [FromServices] ICurrentTenant currentTenant,
-        [FromServices] HandySalesDbContext db)
+        [FromServices] HandySuitesDbContext db)
     {
         var tenant = await db.Tenants
             .AsNoTracking()
@@ -193,7 +193,7 @@ group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("
     private static async Task<IResult> CreatePortal(
         [FromBody] PortalRequest dto,
         [FromServices] ICurrentTenant currentTenant,
-        [FromServices] HandySalesDbContext db,
+        [FromServices] HandySuitesDbContext db,
         [FromServices] IStripeService stripeService)
     {
         if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
@@ -281,7 +281,7 @@ group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("
 
     private static async Task<IResult> GetInvoices(
         [FromServices] ICurrentTenant currentTenant,
-        [FromServices] HandySalesDbContext db,
+        [FromServices] HandySuitesDbContext db,
         [FromServices] IStripeService stripeService)
     {
         if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
@@ -307,7 +307,7 @@ group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("
 
     private static async Task<IResult> GetPaymentMethods(
         [FromServices] ICurrentTenant currentTenant,
-        [FromServices] HandySalesDbContext db,
+        [FromServices] HandySuitesDbContext db,
         [FromServices] IStripeService stripeService)
     {
         if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
@@ -333,7 +333,7 @@ group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("
 
     private static async Task<IResult> CreateSetupIntent(
         [FromServices] ICurrentTenant currentTenant,
-        [FromServices] HandySalesDbContext db,
+        [FromServices] HandySuitesDbContext db,
         [FromServices] IStripeService stripeService)
     {
         if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
@@ -360,7 +360,7 @@ group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("
     private static async Task<IResult> GetTimbres(
         [FromServices] ICurrentTenant currentTenant,
         [FromServices] ISubscriptionEnforcementService enforcement,
-        [FromServices] HandySalesDbContext db)
+        [FromServices] HandySuitesDbContext db)
     {
         if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
             return Results.Forbid();
@@ -395,7 +395,7 @@ group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("
     private static async Task<IResult> CreateTimbreCheckout(
         [FromBody] TimbreCheckoutRequest request,
         [FromServices] ICurrentTenant currentTenant,
-        [FromServices] HandySalesDbContext db,
+        [FromServices] HandySuitesDbContext db,
         [FromServices] IConfiguration config)
     {
         if (!currentTenant.IsAdmin)
@@ -470,7 +470,7 @@ group.MapPost("/timbres/registrar", RegistrarTimbreUsado)            .WithName("
 
     private static async Task<IResult> GetTimbrePurchases(
         [FromServices] ICurrentTenant currentTenant,
-        [FromServices] HandySalesDbContext db)
+        [FromServices] HandySuitesDbContext db)
     {
         if (!currentTenant.IsAdmin)
             return Results.Forbid();

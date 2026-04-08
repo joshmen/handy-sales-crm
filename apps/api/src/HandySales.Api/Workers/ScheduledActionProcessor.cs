@@ -1,12 +1,12 @@
-using HandySales.Api.Hubs;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
-using HandySales.Shared.Email;
+using HandySuites.Api.Hubs;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
+using HandySuites.Shared.Email;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 
-namespace HandySales.Api.Workers;
+namespace HandySuites.Api.Workers;
 
 /// <summary>
 /// Background worker that processes scheduled actions (e.g., deactivate tenant at a future date).
@@ -45,7 +45,7 @@ public class ScheduledActionProcessor : BackgroundService
     private async Task ProcessPendingActionsAsync(CancellationToken ct)
     {
         using var scope = _services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<HandySalesDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<HandySuitesDbContext>();
 
         var pendingActions = await db.ScheduledActions
             .Where(a => a.Status == "Pending" && a.ScheduledAt <= DateTime.UtcNow)
@@ -90,7 +90,7 @@ public class ScheduledActionProcessor : BackgroundService
     }
 
     private async Task ExecuteDeactivateTenantAsync(
-        ScheduledAction action, HandySalesDbContext db,
+        ScheduledAction action, HandySuitesDbContext db,
         IMemoryCache cache, IHubContext<NotificationHub> hubContext,
         IEmailService emailService, CancellationToken ct)
     {
@@ -156,11 +156,11 @@ public class ScheduledActionProcessor : BackgroundService
             .ToList();
 
         var emailBody = EmailTemplates.TenantDeactivated(tenant.NombreEmpresa);
-        await emailService.SendBulkAsync(adminEmails!, "Cuenta Desactivada - HandySales", emailBody);
+        await emailService.SendBulkAsync(adminEmails!, "Cuenta Desactivada - HandySuites", emailBody);
     }
 
     private async Task ExecuteSendExpirationWarningAsync(
-        ScheduledAction action, HandySalesDbContext db,
+        ScheduledAction action, HandySuitesDbContext db,
         IEmailService emailService, CancellationToken ct)
     {
         var tenant = await db.Tenants.AsNoTracking()
@@ -180,7 +180,7 @@ public class ScheduledActionProcessor : BackgroundService
         var emailBody = EmailTemplates.SubscriptionExpiringWarning(
             tenant.NombreEmpresa, daysLeft, tenant.FechaExpiracion.Value);
 
-        await emailService.SendBulkAsync(adminEmails!, "Su suscripción está por vencer - HandySales", emailBody);
+        await emailService.SendBulkAsync(adminEmails!, "Su suscripción está por vencer - HandySuites", emailBody);
 
         action.NotificationSent = true;
     }

@@ -1,11 +1,11 @@
 using System.Globalization;
 using CsvHelper;
 using CsvHelper.Configuration;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class ImportExportEndpoints
 {
@@ -18,7 +18,7 @@ public static class ImportExportEndpoints
         // ═══════════════════════════════════════════════════════
 
         app.MapGet("/api/export/clientes", async (
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext) =>
         {
             var tenantId = tenantContext.TenantId ?? 0;
@@ -48,7 +48,7 @@ public static class ImportExportEndpoints
         }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapGet("/api/export/productos", async (
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext) =>
         {
             var tenantId = tenantContext.TenantId ?? 0;
@@ -77,7 +77,7 @@ public static class ImportExportEndpoints
         }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapGet("/api/export/inventario", async (
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext) =>
         {
             var tenantId = tenantContext.TenantId ?? 0;
@@ -103,7 +103,7 @@ public static class ImportExportEndpoints
         app.MapGet("/api/export/pedidos", async (
             [FromQuery] string? desde,
             [FromQuery] string? hasta,
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext) =>
         {
             var tenantId = tenantContext.TenantId ?? 0;
@@ -145,7 +145,7 @@ public static class ImportExportEndpoints
         app.MapGet("/api/export/cobros", async (
             [FromQuery] string? desde,
             [FromQuery] string? hasta,
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext) =>
         {
             var tenantId = tenantContext.TenantId ?? 0;
@@ -184,7 +184,7 @@ public static class ImportExportEndpoints
         }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapGet("/api/export/categorias-clientes", async (
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext) =>
         {
             var tenantId = tenantContext.TenantId ?? 0;
@@ -202,7 +202,7 @@ public static class ImportExportEndpoints
         }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapGet("/api/export/unidades-medida", async (
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext) =>
         {
             var tenantId = tenantContext.TenantId ?? 0;
@@ -221,7 +221,7 @@ public static class ImportExportEndpoints
         }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapGet("/api/export/categorias-productos", async (
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext) =>
         {
             var tenantId = tenantContext.TenantId ?? 0;
@@ -240,7 +240,7 @@ public static class ImportExportEndpoints
         }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapGet("/api/export/familias-productos", async (
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext) =>
         {
             var tenantId = tenantContext.TenantId ?? 0;
@@ -259,7 +259,7 @@ public static class ImportExportEndpoints
         }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapGet("/api/export/listas-precios", async (
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext) =>
         {
             var tenantId = tenantContext.TenantId ?? 0;
@@ -278,7 +278,7 @@ public static class ImportExportEndpoints
         }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapGet("/api/export/descuentos", async (
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext) =>
         {
             var tenantId = tenantContext.TenantId ?? 0;
@@ -300,7 +300,7 @@ public static class ImportExportEndpoints
         }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapGet("/api/export/promociones", async (
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext) =>
         {
             var tenantId = tenantContext.TenantId ?? 0;
@@ -327,7 +327,7 @@ public static class ImportExportEndpoints
         app.MapGet("/api/export/rutas", async (
             [FromQuery] string? desde,
             [FromQuery] string? hasta,
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext) =>
         {
             var tenantId = tenantContext.TenantId ?? 0;
@@ -370,7 +370,7 @@ public static class ImportExportEndpoints
         }).RequireAuthorization(policy => policy.RequireRole("ADMIN", "SUPER_ADMIN"));
 
         app.MapGet("/api/export/zonas", async (
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext) =>
         {
             var tenantId = tenantContext.TenantId ?? 0;
@@ -575,7 +575,7 @@ public static class ImportExportEndpoints
 
         app.MapPost("/api/import/clientes", async (
             IFormFile archivo,
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext) =>
         {
             if (archivo == null || archivo.Length == 0)
@@ -706,7 +706,7 @@ public static class ImportExportEndpoints
 
         app.MapPost("/api/import/productos", async (
             IFormFile archivo,
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext) =>
         {
             if (archivo == null || archivo.Length == 0)
@@ -843,7 +843,7 @@ public static class ImportExportEndpoints
         // ─── Import Categorías de Clientes ───
         app.MapPost("/api/import/categorias-clientes", async (
             IFormFile archivo,
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext) =>
         {
             if (archivo == null || archivo.Length == 0)
@@ -918,7 +918,7 @@ public static class ImportExportEndpoints
         // ─── Import Unidades de Medida ───
         app.MapPost("/api/import/unidades-medida", async (
             IFormFile archivo,
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext) =>
         {
             if (archivo == null || archivo.Length == 0)
@@ -993,7 +993,7 @@ public static class ImportExportEndpoints
         // ─── Import Categorías de Productos ───
         app.MapPost("/api/import/categorias-productos", async (
             IFormFile archivo,
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext) =>
         {
             if (archivo == null || archivo.Length == 0)
@@ -1068,7 +1068,7 @@ public static class ImportExportEndpoints
         // ─── Import Familias de Productos ───
         app.MapPost("/api/import/familias-productos", async (
             IFormFile archivo,
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext) =>
         {
             if (archivo == null || archivo.Length == 0)
@@ -1143,7 +1143,7 @@ public static class ImportExportEndpoints
         // ─── Import Listas de Precios ───
         app.MapPost("/api/import/listas-precios", async (
             IFormFile archivo,
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext) =>
         {
             if (archivo == null || archivo.Length == 0)
@@ -1219,7 +1219,7 @@ public static class ImportExportEndpoints
         // ─── Import Descuentos ───
         app.MapPost("/api/import/descuentos", async (
             IFormFile archivo,
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext) =>
         {
             if (archivo == null || archivo.Length == 0)
@@ -1389,7 +1389,7 @@ public static class ImportExportEndpoints
         // ─── Import Promociones ───
         app.MapPost("/api/import/promociones", async (
             IFormFile archivo,
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext) =>
         {
             if (archivo == null || archivo.Length == 0)
@@ -1527,7 +1527,7 @@ public static class ImportExportEndpoints
         // ── IMPORT INVENTARIO ────────────────────────────────
         app.MapPost("/api/import/inventario", async (
             IFormFile archivo,
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext) =>
         {
             var tenantId = tenantContext.TenantId ?? 0;
@@ -1640,7 +1640,7 @@ public static class ImportExportEndpoints
         // ─── Import Zonas ───
         app.MapPost("/api/import/zonas", async (
             IFormFile archivo,
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext) =>
         {
             if (archivo == null || archivo.Length == 0)

@@ -1,6 +1,6 @@
-using HandySales.Application.Descuentos.DTOs;
+using HandySuites.Application.Descuentos.DTOs;
 
-namespace HandySales.Application.Descuentos.Interfaces;
+namespace HandySuites.Application.Descuentos.Interfaces;
 
 public interface IDescuentoPorCantidadRepository
 {

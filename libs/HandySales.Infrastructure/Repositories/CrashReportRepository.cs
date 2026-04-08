@@ -1,15 +1,15 @@
-using HandySales.Application.CrashReporting;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.CrashReporting;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Infrastructure.Repositories;
+namespace HandySuites.Infrastructure.Repositories;
 
 public class CrashReportRepository : ICrashReportRepository
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
 
-    public CrashReportRepository(HandySalesDbContext db)
+    public CrashReportRepository(HandySuitesDbContext db)
     {
         _db = db;
     }

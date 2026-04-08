@@ -1,6 +1,6 @@
-using HandySales.Application.Roles.DTOs;
+using HandySuites.Application.Roles.DTOs;
 
-namespace HandySales.Application.Roles.Interfaces;
+namespace HandySuites.Application.Roles.Interfaces;
 
 public interface IRoleRepository
 {

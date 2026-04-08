@@ -1,4 +1,4 @@
-namespace HandySales.Application.Notifications.Interfaces;
+namespace HandySuites.Application.Notifications.Interfaces;
 
 /// <summary>
 /// Resultado del envío FCM

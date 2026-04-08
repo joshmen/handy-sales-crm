@@ -1,9 +1,9 @@
 using FluentValidation;
-using HandySales.Application.FamiliasProductos.DTOs;
-using HandySales.Application.FamiliasProductos.Services;
+using HandySuites.Application.FamiliasProductos.DTOs;
+using HandySuites.Application.FamiliasProductos.Services;
 using Microsoft.AspNetCore.Mvc;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class FamiliasProductosEndpoints
 {

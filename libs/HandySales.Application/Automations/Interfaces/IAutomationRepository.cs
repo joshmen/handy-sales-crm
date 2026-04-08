@@ -1,7 +1,7 @@
-using HandySales.Application.Automations.DTOs;
-using HandySales.Domain.Entities;
+using HandySuites.Application.Automations.DTOs;
+using HandySuites.Domain.Entities;
 
-namespace HandySales.Application.Automations.Interfaces;
+namespace HandySuites.Application.Automations.Interfaces;
 
 public interface IAutomationRepository
 {

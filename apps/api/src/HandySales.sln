@@ -3,19 +3,19 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HandySales.Api", "HandySales.Api\HandySales.Api.csproj", "{31B46B15-98C3-4CE2-BF5D-19D685A5BEFA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HandySuites.Api", "HandySuites.Api\HandySuites.Api.csproj", "{31B46B15-98C3-4CE2-BF5D-19D685A5BEFA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HandySales.Application", "HandySales.Application\HandySales.Application.csproj", "{9470742D-216B-4817-927B-D3EF61ED9DC6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HandySuites.Application", "HandySuites.Application\HandySuites.Application.csproj", "{9470742D-216B-4817-927B-D3EF61ED9DC6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HandySales.Domain", "HandySales.Domain\HandySales.Domain.csproj", "{9FFFBBC4-719A-46C1-BF85-50C341C098E1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HandySuites.Domain", "HandySuites.Domain\HandySuites.Domain.csproj", "{9FFFBBC4-719A-46C1-BF85-50C341C098E1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HandySales.Infrastructure", "HandySales.Infrastructure\HandySales.Infrastructure.csproj", "{C6B22B79-DD5A-4557-B181-2580A25C3BF0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HandySuites.Infrastructure", "HandySuites.Infrastructure\HandySuites.Infrastructure.csproj", "{C6B22B79-DD5A-4557-B181-2580A25C3BF0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HandySales.Shared", "HandySales.Shared\HandySales.Shared.csproj", "{62C7C75E-02E8-44D3-8AD6-3C71A92CE766}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HandySuites.Shared", "HandySuites.Shared\HandySuites.Shared.csproj", "{62C7C75E-02E8-44D3-8AD6-3C71A92CE766}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HandySales.Tests", "..\tests\HandySales.Tests\HandySales.Tests.csproj", "{76E85491-6AC0-4775-BA2E-F40D882E6C9C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HandySuites.Tests", "..\tests\HandySuites.Tests\HandySuites.Tests.csproj", "{76E85491-6AC0-4775-BA2E-F40D882E6C9C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HandySales.Mobile.Api", "HandySales.Mobile.Api\HandySales.Mobile.Api.csproj", "{A1B2C3D4-E5F6-4789-ABCD-EF0123456789}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HandySuites.Mobile.Api", "HandySuites.Mobile.Api\HandySuites.Mobile.Api.csproj", "{A1B2C3D4-E5F6-4789-ABCD-EF0123456789}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -1,8 +1,8 @@
-using HandySales.Application.Productos.DTOs;
-using HandySales.Application.Productos.Interfaces;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Application.Productos.DTOs;
+using HandySuites.Application.Productos.Interfaces;
+using HandySuites.Shared.Multitenancy;
 
-namespace HandySales.Application.Productos.Services;
+namespace HandySuites.Application.Productos.Services;
 
 public class ProductoService
 {

@@ -1,7 +1,7 @@
 using System.Text;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Api.Automations.Handlers;
+namespace HandySuites.Api.Automations.Handlers;
 
 public class InventarioCriticoHandler : IAutomationHandler
 {

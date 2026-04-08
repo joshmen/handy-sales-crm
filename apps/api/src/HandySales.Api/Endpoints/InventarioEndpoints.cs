@@ -1,9 +1,9 @@
 using FluentValidation;
-using HandySales.Application.Inventario.DTOs;
-using HandySales.Application.Inventario.Services;
+using HandySuites.Application.Inventario.DTOs;
+using HandySuites.Application.Inventario.Services;
 using Microsoft.AspNetCore.Mvc;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class InventarioEndpoints
 {

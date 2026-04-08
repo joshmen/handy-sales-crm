@@ -1,17 +1,17 @@
 using System.Text.Json;
-using HandySales.Application.Notifications.DTOs;
-using HandySales.Application.Notifications.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.Notifications.DTOs;
+using HandySuites.Application.Notifications.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Infrastructure.Notifications.Repositories;
+namespace HandySuites.Infrastructure.Notifications.Repositories;
 
 public class NotificationRepository : INotificationRepository
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
 
-    public NotificationRepository(HandySalesDbContext db)
+    public NotificationRepository(HandySuitesDbContext db)
     {
         _db = db;
     }

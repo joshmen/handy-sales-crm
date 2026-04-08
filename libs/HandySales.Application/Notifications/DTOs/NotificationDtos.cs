@@ -1,4 +1,4 @@
-namespace HandySales.Application.Notifications.DTOs;
+namespace HandySuites.Application.Notifications.DTOs;
 
 /// <summary>
 /// DTO para enviar notificación a un usuario específico

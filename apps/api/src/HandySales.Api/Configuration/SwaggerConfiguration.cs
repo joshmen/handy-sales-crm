@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
 
-namespace HandySales.Api.Configuration;
+namespace HandySuites.Api.Configuration;
 
 public static class SwaggerConfiguration
 {
@@ -12,12 +12,12 @@ public static class SwaggerConfiguration
         {
             options.SwaggerDoc("v1", new OpenApiInfo
             {
-                Title = "HandySales API - Principal",
+                Title = "HandySuites API - Principal",
                 Version = "v1.0.0",
-                Description = "API REST principal para el sistema HandySales CRM - Gestión de clientes, productos, usuarios y ventas",
+                Description = "API REST principal para el sistema HandySuites CRM - Gestión de clientes, productos, usuarios y ventas",
                 Contact = new OpenApiContact
                 {
-                    Name = "HandySales Support",
+                    Name = "HandySuites Support",
                     Email = "support@handysales.com",
                     Url = new Uri("https://handysales.com/support")
                 },
@@ -87,9 +87,9 @@ public static class SwaggerConfiguration
         
         app.UseSwaggerUI(options =>
         {
-            options.SwaggerEndpoint("/swagger/v1/swagger.json", "HandySales API v1");
+            options.SwaggerEndpoint("/swagger/v1/swagger.json", "HandySuites API v1");
             options.RoutePrefix = "swagger";
-            options.DocumentTitle = "HandySales API Documentation";
+            options.DocumentTitle = "HandySuites API Documentation";
             
             // Configuración adicional de UI
             options.EnableDeepLinking();

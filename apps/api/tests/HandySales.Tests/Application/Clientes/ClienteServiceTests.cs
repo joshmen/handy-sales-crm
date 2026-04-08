@@ -1,15 +1,15 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
-using HandySales.Application.Clientes.DTOs;
-using HandySales.Application.Clientes.Interfaces;
-using HandySales.Application.Clientes.Services;
-using HandySales.Application.Usuarios.Interfaces;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Application.Clientes.DTOs;
+using HandySuites.Application.Clientes.Interfaces;
+using HandySuites.Application.Clientes.Services;
+using HandySuites.Application.Usuarios.Interfaces;
+using HandySuites.Shared.Multitenancy;
 using Moq;
 using Xunit;
 
-namespace HandySales.Tests.Application.Clientes
+namespace HandySuites.Tests.Application.Clientes
 {
     public class ClienteServiceTests
     {

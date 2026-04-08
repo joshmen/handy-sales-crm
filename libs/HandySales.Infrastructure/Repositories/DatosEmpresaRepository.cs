@@ -1,16 +1,16 @@
-using HandySales.Application.DatosEmpresa.DTOs;
-using HandySales.Application.DatosEmpresa.Interfaces;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.DatosEmpresa.DTOs;
+using HandySuites.Application.DatosEmpresa.Interfaces;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
-namespace HandySales.Infrastructure.Repositories;
+namespace HandySuites.Infrastructure.Repositories;
 
 public class DatosEmpresaRepository : IDatosEmpresaRepository
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
 
-    public DatosEmpresaRepository(HandySalesDbContext db)
+    public DatosEmpresaRepository(HandySuitesDbContext db)
     {
         _db = db;
     }

@@ -1,8 +1,8 @@
-using HandySales.Application.FamiliasProductos.DTOs;
-using HandySales.Application.FamiliasProductos.Interfaces;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Application.FamiliasProductos.DTOs;
+using HandySuites.Application.FamiliasProductos.Interfaces;
+using HandySuites.Shared.Multitenancy;
 
-namespace HandySales.Application.FamiliasProductos.Services;
+namespace HandySuites.Application.FamiliasProductos.Services;
 
 public record DeleteFamiliaProductoResult(bool Success, string? Error = null, int ProductosCount = 0);
 public record ToggleActivoResult(bool Success, string? Error = null, int ProductosCount = 0);

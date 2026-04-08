@@ -1,6 +1,6 @@
-using HandySales.Application.Clientes.DTOs;
+using HandySuites.Application.Clientes.DTOs;
 
-namespace HandySales.Application.Clientes.Interfaces;
+namespace HandySuites.Application.Clientes.Interfaces;
 
 public interface IClienteRepository
 {

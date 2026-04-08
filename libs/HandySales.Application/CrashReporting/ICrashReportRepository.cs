@@ -1,6 +1,6 @@
-using HandySales.Domain.Entities;
+using HandySuites.Domain.Entities;
 
-namespace HandySales.Application.CrashReporting;
+namespace HandySuites.Application.CrashReporting;
 
 public interface ICrashReportRepository
 {

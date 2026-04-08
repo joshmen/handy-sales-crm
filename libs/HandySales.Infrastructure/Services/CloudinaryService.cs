@@ -2,9 +2,9 @@ using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Http;
-using HandySales.Application.CompanySettings.Interfaces;
+using HandySuites.Application.CompanySettings.Interfaces;
 
-namespace HandySales.Infrastructure.Services
+namespace HandySuites.Infrastructure.Services
 {
     public class CloudinaryService : ICloudinaryService
     {

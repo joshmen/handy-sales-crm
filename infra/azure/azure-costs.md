@@ -1,4 +1,4 @@
-# Análisis de Costos Azure - HandySales (Configuración Económica)
+# Análisis de Costos Azure - HandySuites (Configuración Económica)
 
 ## Resumen de Costos Mensuales Estimados
 

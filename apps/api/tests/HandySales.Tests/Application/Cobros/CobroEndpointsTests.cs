@@ -4,7 +4,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Xunit;
 
-namespace HandySales.Tests.Application.Cobros
+namespace HandySuites.Tests.Application.Cobros
 {
     public class CobroEndpointsTests : IClassFixture<CustomWebApplicationFactory>
     {

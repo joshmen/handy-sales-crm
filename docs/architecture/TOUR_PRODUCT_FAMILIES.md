@@ -44,7 +44,7 @@ The Product Families tour guides new users through import/export, creating a fam
 
 ## Import/Export — Business Rules
 
-**Backend endpoint:** `apps/api/src/HandySales.Api/Endpoints/ImportExportEndpoints.cs`
+**Backend endpoint:** `apps/api/src/HandySuites.Api/Endpoints/ImportExportEndpoints.cs`
 
 | Operation | Endpoint | Details |
 |-----------|----------|---------|
@@ -65,4 +65,4 @@ The Product Families tour guides new users through import/export, creating a fam
 
 - Tour definition: `apps/web/src/data/tours/catalogs.ts` → `/product-families` key
 - Product Families page: `apps/web/src/app/(dashboard)/product-families/page.tsx`
-- Import/Export endpoints: `apps/api/src/HandySales.Api/Endpoints/ImportExportEndpoints.cs` (lines 1037-1106)
+- Import/Export endpoints: `apps/api/src/HandySuites.Api/Endpoints/ImportExportEndpoints.cs` (lines 1037-1106)

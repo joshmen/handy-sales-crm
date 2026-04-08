@@ -1,9 +1,9 @@
-using HandySales.Application.CrashReporting;
-using HandySales.Domain.Entities;
+using HandySuites.Application.CrashReporting;
+using HandySuites.Domain.Entities;
 using Microsoft.AspNetCore.SignalR;
-using HandySales.Api.Hubs;
+using HandySuites.Api.Hubs;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class CrashReportEndpoints
 {

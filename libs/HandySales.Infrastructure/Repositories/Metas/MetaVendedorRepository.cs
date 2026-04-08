@@ -1,16 +1,16 @@
-using HandySales.Application.Metas.DTOs;
-using HandySales.Application.Metas.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.Metas.DTOs;
+using HandySuites.Application.Metas.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Infrastructure.Repositories.Metas;
+namespace HandySuites.Infrastructure.Repositories.Metas;
 
 public class MetaVendedorRepository : IMetaVendedorRepository
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
 
-    public MetaVendedorRepository(HandySalesDbContext db)
+    public MetaVendedorRepository(HandySuitesDbContext db)
     {
         _db = db;
     }

@@ -1,7 +1,7 @@
 using System.Net;
 using System.Text.Json;
 
-namespace HandySales.Api.Middleware;
+namespace HandySuites.Api.Middleware;
 
 public class GlobalExceptionMiddleware
 {

@@ -1,9 +1,9 @@
 using FluentValidation;
-using HandySales.Application.Descuentos.DTOs;
-using HandySales.Application.Descuentos.Services;
+using HandySuites.Application.Descuentos.DTOs;
+using HandySuites.Application.Descuentos.Services;
 using Microsoft.AspNetCore.Mvc;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class DescuentosEndpoints
 {

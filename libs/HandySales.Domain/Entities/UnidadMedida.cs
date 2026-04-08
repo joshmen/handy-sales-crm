@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations.Schema;
-using HandySales.Domain.Common;
-using HandySales.Domain.Entities;
+using HandySuites.Domain.Common;
+using HandySuites.Domain.Entities;
 
 [Table("UnidadesMedida")]
 public class UnidadMedida : AuditableEntity

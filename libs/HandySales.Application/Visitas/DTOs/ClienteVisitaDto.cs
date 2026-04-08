@@ -1,6 +1,6 @@
-using HandySales.Domain.Entities;
+using HandySuites.Domain.Entities;
 
-namespace HandySales.Application.Visitas.DTOs;
+namespace HandySuites.Application.Visitas.DTOs;
 
 public class ClienteVisitaDto
 {

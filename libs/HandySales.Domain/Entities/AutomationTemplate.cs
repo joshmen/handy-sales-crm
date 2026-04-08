@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace HandySales.Domain.Entities;
+namespace HandySuites.Domain.Entities;
 
 public enum AutomationCategory { Cobranza = 0, Ventas = 1, Inventario = 2, Operacion = 3 }
 public enum AutomationTriggerType { Event = 0, Cron = 1, Condition = 2 }

@@ -1,4 +1,4 @@
-namespace HandySales.Application.ListasPrecios.DTOs;
+namespace HandySuites.Application.ListasPrecios.DTOs;
 
 public class ListaPrecioCreateDto
 {

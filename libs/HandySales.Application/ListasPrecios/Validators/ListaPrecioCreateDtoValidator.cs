@@ -1,5 +1,5 @@
 using FluentValidation;
-using HandySales.Application.ListasPrecios.DTOs;
+using HandySuites.Application.ListasPrecios.DTOs;
 
 public class ListaPrecioCreateDtoValidator : AbstractValidator<ListaPrecioCreateDto>
 {

@@ -1,4 +1,4 @@
-namespace HandySales.Application.SubscriptionPlans.Interfaces;
+namespace HandySuites.Application.SubscriptionPlans.Interfaces;
 
 public interface ISubscriptionEnforcementService
 {

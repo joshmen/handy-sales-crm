@@ -1,24 +1,24 @@
 using FluentAssertions;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Xunit;
 
-namespace HandySales.Tests.Api.Endpoints
+namespace HandySuites.Tests.Api.Endpoints
 {
     public class DashboardEndpointsTests : IClassFixture<CustomWebApplicationFactory>
     {
         private readonly HttpClient _client;
-        private readonly HandySalesDbContext _context;
+        private readonly HandySuitesDbContext _context;
 
         public DashboardEndpointsTests(CustomWebApplicationFactory factory)
         {
             _client = factory.CreateClient();
             var scope = factory.Services.CreateScope();
-            _context = scope.ServiceProvider.GetRequiredService<HandySalesDbContext>();
+            _context = scope.ServiceProvider.GetRequiredService<HandySuitesDbContext>();
         }
 
         [Fact]

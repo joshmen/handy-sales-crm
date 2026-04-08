@@ -1,8 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using HandySales.Domain.Common;
+using HandySuites.Domain.Common;
 
-namespace HandySales.Domain.Entities;
+namespace HandySuites.Domain.Entities;
 
 [Table("DatosEmpresa")]
 public class DatosEmpresa : AuditableEntity

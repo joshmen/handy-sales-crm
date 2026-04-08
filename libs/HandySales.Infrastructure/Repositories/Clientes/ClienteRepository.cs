@@ -1,16 +1,16 @@
-using HandySales.Application.Clientes.DTOs;
-using HandySales.Application.Clientes.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.Clientes.DTOs;
+using HandySuites.Application.Clientes.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Infrastructure.Repositories;
+namespace HandySuites.Infrastructure.Repositories;
 
 public class ClienteRepository : IClienteRepository
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
 
-    public ClienteRepository(HandySalesDbContext db)
+    public ClienteRepository(HandySuitesDbContext db)
     {
         _db = db;
     }

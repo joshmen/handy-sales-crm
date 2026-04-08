@@ -4,8 +4,8 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <RootNamespace>HandySales.Mobile.Api</RootNamespace>
-    <AssemblyName>HandySales.Mobile.Api</AssemblyName>
+    <RootNamespace>HandySuites.Mobile.Api</RootNamespace>
+    <AssemblyName>HandySuites.Mobile.Api</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
@@ -25,9 +25,9 @@
 
   <ItemGroup>
     <!-- Shared libraries with Backoffice API -->
-    <ProjectReference Include="..\..\..\libs\HandySales.Application\HandySales.Application.csproj" />
-    <ProjectReference Include="..\..\..\libs\HandySales.Shared\HandySales.Shared.csproj" />
-    <ProjectReference Include="..\..\..\libs\HandySales.Infrastructure\HandySales.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\libs\HandySuites.Application\HandySuites.Application.csproj" />
+    <ProjectReference Include="..\..\..\libs\HandySuites.Shared\HandySuites.Shared.csproj" />
+    <ProjectReference Include="..\..\..\libs\HandySuites.Infrastructure\HandySuites.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

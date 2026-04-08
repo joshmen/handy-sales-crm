@@ -1,16 +1,16 @@
-using HandySales.Application.UnidadesMedida.DTOs;
-using HandySales.Application.UnidadesMedida.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.UnidadesMedida.DTOs;
+using HandySuites.Application.UnidadesMedida.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Infrastructure.UnidadesMedida.Repositories;
+namespace HandySuites.Infrastructure.UnidadesMedida.Repositories;
 
 public class UnidadMedidaRepository : IUnidadMedidaRepository
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
 
-    public UnidadMedidaRepository(HandySalesDbContext db)
+    public UnidadMedidaRepository(HandySuitesDbContext db)
     {
         _db = db;
     }

@@ -1,4 +1,4 @@
-namespace HandySales.Application.Usuarios.DTOs;
+namespace HandySuites.Application.Usuarios.DTOs;
 
 public class CrearUsuarioDto
 {

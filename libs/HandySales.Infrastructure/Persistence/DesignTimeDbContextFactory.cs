@@ -1,15 +1,15 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
-namespace HandySales.Infrastructure.Persistence;
+namespace HandySuites.Infrastructure.Persistence;
 
 /// <summary>
 /// Factory used by 'dotnet ef' CLI tools at design time.
 /// Provides a DbContext without requiring the full application host.
 /// </summary>
-public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<HandySalesDbContext>
+public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<HandySuitesDbContext>
 {
-    public HandySalesDbContext CreateDbContext(string[] args)
+    public HandySuitesDbContext CreateDbContext(string[] args)
     {
         // Suppress timestamp type drift (keeps "timestamp with time zone" consistent with baseline)
         AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
@@ -17,9 +17,9 @@ public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<HandySales
         var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
             ?? "Host=localhost;Port=5432;Database=handy_erp;Username=handy_user;Password=handy_pass";
 
-        var optionsBuilder = new DbContextOptionsBuilder<HandySalesDbContext>();
+        var optionsBuilder = new DbContextOptionsBuilder<HandySuitesDbContext>();
         optionsBuilder.UseNpgsql(connectionString, o => o.UseVector());
 
-        return new HandySalesDbContext(optionsBuilder.Options);
+        return new HandySuitesDbContext(optionsBuilder.Options);
     }
 }

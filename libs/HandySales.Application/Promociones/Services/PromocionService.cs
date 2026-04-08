@@ -1,8 +1,8 @@
-using HandySales.Application.Promociones.DTOs;
-using HandySales.Application.Promociones.Interfaces;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Application.Promociones.DTOs;
+using HandySuites.Application.Promociones.Interfaces;
+using HandySuites.Shared.Multitenancy;
 
-namespace HandySales.Application.Promociones.Services;
+namespace HandySuites.Application.Promociones.Services;
 
 public class PromocionService
 {

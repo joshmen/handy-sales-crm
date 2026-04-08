@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace HandySales.Application.CompanySettings.DTOs
+namespace HandySuites.Application.CompanySettings.DTOs
 {
     public class CompanySettingsDto
     {

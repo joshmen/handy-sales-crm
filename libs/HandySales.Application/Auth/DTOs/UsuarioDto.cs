@@ -1,4 +1,4 @@
-namespace HandySales.Application.Auth.DTOs;
+namespace HandySuites.Application.Auth.DTOs;
 
 public record UsuarioDto(
     int Id,

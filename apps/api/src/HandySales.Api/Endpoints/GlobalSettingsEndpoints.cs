@@ -1,12 +1,12 @@
-using HandySales.Application.GlobalSettings.DTOs;
-using HandySales.Application.GlobalSettings.Services;
-using HandySales.Application.CompanySettings.Interfaces;
-using HandySales.Infrastructure.Persistence;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Application.GlobalSettings.DTOs;
+using HandySuites.Application.GlobalSettings.Services;
+using HandySuites.Application.CompanySettings.Interfaces;
+using HandySuites.Infrastructure.Persistence;
+using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Api.Endpoints
+namespace HandySuites.Api.Endpoints
 {
     public static class GlobalSettingsEndpoints
     {
@@ -108,7 +108,7 @@ namespace HandySales.Api.Endpoints
             group.MapPost("/upload-logo", async (
                 IFormFile logo,
                 ICloudinaryService cloudinaryService,
-                HandySalesDbContext dbContext,
+                HandySuitesDbContext dbContext,
                 [FromServices] ICurrentTenant currentTenant,
                 [FromServices] ILoggerFactory loggerFactory) =>
             {
@@ -187,7 +187,7 @@ namespace HandySales.Api.Endpoints
 
             // DELETE /api/global-settings/delete-logo
             group.MapDelete("/delete-logo", async (
-                HandySalesDbContext dbContext,
+                HandySuitesDbContext dbContext,
                 ICloudinaryService cloudinaryService,
                 [FromServices] ICurrentTenant currentTenant,
                 [FromServices] ILoggerFactory loggerFactory) =>

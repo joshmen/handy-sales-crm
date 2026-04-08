@@ -1,4 +1,4 @@
-namespace HandySales.Application.Pedidos.DTOs;
+namespace HandySuites.Application.Pedidos.DTOs;
 
 public class DetallePedidoDto
 {

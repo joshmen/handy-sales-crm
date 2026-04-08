@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using HandySales.Application.Roles.Services;
-using HandySales.Application.Roles.DTOs;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Application.Roles.Services;
+using HandySuites.Application.Roles.DTOs;
+using HandySuites.Shared.Multitenancy;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class RoleEndpoints
 {
@@ -12,7 +12,7 @@ public static class RoleEndpoints
     {
         var group = app.MapGroup("/api/roles")
             .RequireAuthorization()
-            .RequireCors("HandySalesPolicy");
+            .RequireCors("HandySuitesPolicy");
 
         // GET /api/roles - Obtener todos los roles (Solo Admin/SuperAdmin)
         group.MapGet("/", GetAllRoles)

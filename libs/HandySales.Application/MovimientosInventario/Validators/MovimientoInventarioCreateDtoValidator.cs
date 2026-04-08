@@ -1,7 +1,7 @@
 using FluentValidation;
-using HandySales.Application.MovimientosInventario.DTOs;
+using HandySuites.Application.MovimientosInventario.DTOs;
 
-namespace HandySales.Application.MovimientosInventario.Validators;
+namespace HandySuites.Application.MovimientosInventario.Validators;
 
 public class MovimientoInventarioCreateDtoValidator : AbstractValidator<MovimientoInventarioCreateDto>
 {

@@ -1,4 +1,4 @@
-namespace HandySales.Application.MovimientosInventario.DTOs;
+namespace HandySuites.Application.MovimientosInventario.DTOs;
 
 public class MovimientoInventarioDto
 {

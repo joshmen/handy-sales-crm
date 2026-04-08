@@ -1,10 +1,10 @@
-using HandySales.Application.SubscriptionPlans.DTOs;
-using HandySales.Application.SubscriptionPlans.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Application.SubscriptionPlans.DTOs;
+using HandySuites.Application.SubscriptionPlans.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class SubscriptionPlanAdminEndpoints
 {
@@ -12,7 +12,7 @@ public static class SubscriptionPlanAdminEndpoints
     {
         var group = app.MapGroup("/api/superadmin/subscription-plans")
             .RequireAuthorization()
-            .RequireCors("HandySalesPolicy");
+            .RequireCors("HandySuitesPolicy");
 
         group.MapGet("/", GetAll)
             .WithName("GetAllSubscriptionPlans")

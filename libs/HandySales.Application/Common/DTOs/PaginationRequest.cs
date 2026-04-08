@@ -1,4 +1,4 @@
-namespace HandySales.Application.Common.DTOs;
+namespace HandySuites.Application.Common.DTOs;
 
 public class PaginationRequest
 {

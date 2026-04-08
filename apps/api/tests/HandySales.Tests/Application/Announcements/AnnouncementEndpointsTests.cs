@@ -3,7 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Xunit;
 
-namespace HandySales.Tests.Integration.Announcements;
+namespace HandySuites.Tests.Integration.Announcements;
 
 public class AnnouncementEndpointsTests : IClassFixture<CustomWebApplicationFactory>
 {

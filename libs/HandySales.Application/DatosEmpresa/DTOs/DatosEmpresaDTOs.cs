@@ -1,4 +1,4 @@
-namespace HandySales.Application.DatosEmpresa.DTOs;
+namespace HandySuites.Application.DatosEmpresa.DTOs;
 
 public record DatosEmpresaDto(
     int Id,

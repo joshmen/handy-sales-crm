@@ -1,6 +1,6 @@
-using HandySales.Application.Promociones.DTOs;
+using HandySuites.Application.Promociones.DTOs;
 
-namespace HandySales.Application.Promociones.Interfaces;
+namespace HandySuites.Application.Promociones.Interfaces;
 
 public interface IPromocionRepository
 {

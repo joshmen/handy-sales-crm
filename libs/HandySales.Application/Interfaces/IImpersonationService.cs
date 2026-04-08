@@ -1,6 +1,6 @@
-using HandySales.Application.DTOs;
+using HandySuites.Application.DTOs;
 
-namespace HandySales.Application.Interfaces;
+namespace HandySuites.Application.Interfaces;
 
 /// <summary>
 /// Servicio para gestión de impersonación de tenants.

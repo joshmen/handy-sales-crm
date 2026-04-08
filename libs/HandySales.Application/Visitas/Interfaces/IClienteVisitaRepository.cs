@@ -1,8 +1,8 @@
-using HandySales.Application.Pedidos.DTOs;
-using HandySales.Application.Visitas.DTOs;
-using HandySales.Domain.Entities;
+using HandySuites.Application.Pedidos.DTOs;
+using HandySuites.Application.Visitas.DTOs;
+using HandySuites.Domain.Entities;
 
-namespace HandySales.Application.Visitas.Interfaces;
+namespace HandySuites.Application.Visitas.Interfaces;
 
 public interface IClienteVisitaRepository
 {

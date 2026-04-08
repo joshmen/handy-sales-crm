@@ -1,9 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
-using HandySales.Application.CategoriasProductos.DTOs;
+using HandySuites.Application.CategoriasProductos.DTOs;
 using Xunit;
 
-namespace HandySales.Tests.Application.CategoriasProductos
+namespace HandySuites.Tests.Application.CategoriasProductos
 {
     public class CategoriaProductoEndpointsTests : IClassFixture<CustomWebApplicationFactory>
     {

@@ -1,6 +1,6 @@
-using HandySales.Domain.Entities;
+using HandySuites.Domain.Entities;
 
-namespace HandySales.Application.DeviceSessions.DTOs;
+namespace HandySuites.Application.DeviceSessions.DTOs;
 
 public class DeviceSessionDto
 {

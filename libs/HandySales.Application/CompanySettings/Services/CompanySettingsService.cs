@@ -1,10 +1,10 @@
-using HandySales.Application.CompanySettings.DTOs;
-using HandySales.Application.CompanySettings.Interfaces;
-using HandySales.Domain.Entities;
+using HandySuites.Application.CompanySettings.DTOs;
+using HandySuites.Application.CompanySettings.Interfaces;
+using HandySuites.Domain.Entities;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
-namespace HandySales.Application.CompanySettings.Services
+namespace HandySuites.Application.CompanySettings.Services
 {
     public interface ICompanySettingsService
     {

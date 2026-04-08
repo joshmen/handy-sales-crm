@@ -1,10 +1,10 @@
 using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
-using HandySales.Application.CategoriasClientes.DTOs;
+using HandySuites.Application.CategoriasClientes.DTOs;
 using Xunit;
 
-namespace HandySales.Tests.Integration.CategoriasClientes
+namespace HandySuites.Tests.Integration.CategoriasClientes
 {
     public class CategoriaClienteEndpointsTests : IClassFixture<CustomWebApplicationFactory>
     {

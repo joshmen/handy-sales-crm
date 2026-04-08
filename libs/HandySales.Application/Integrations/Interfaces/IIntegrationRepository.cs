@@ -1,6 +1,6 @@
-using HandySales.Domain.Entities;
+using HandySuites.Domain.Entities;
 
-namespace HandySales.Application.Integrations.Interfaces;
+namespace HandySuites.Application.Integrations.Interfaces;
 
 public interface IIntegrationRepository
 {

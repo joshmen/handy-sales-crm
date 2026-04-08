@@ -1,6 +1,6 @@
-using HandySales.Application.Zonas.DTOs;
+using HandySuites.Application.Zonas.DTOs;
 
-namespace HandySales.Application.Zonas.Interfaces;
+namespace HandySuites.Application.Zonas.Interfaces;
 
 public interface IZonaRepository
 {

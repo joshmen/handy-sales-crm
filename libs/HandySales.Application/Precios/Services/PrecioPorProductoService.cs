@@ -1,8 +1,8 @@
-using HandySales.Application.Precios.DTOs;
-using HandySales.Application.Precios.Interfaces;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Application.Precios.DTOs;
+using HandySuites.Application.Precios.Interfaces;
+using HandySuites.Shared.Multitenancy;
 
-namespace HandySales.Application.Precios.Services;
+namespace HandySuites.Application.Precios.Services;
 
 public class PrecioPorProductoService
 {

@@ -1,16 +1,16 @@
-using HandySales.Application.DeviceSessions.DTOs;
-using HandySales.Application.DeviceSessions.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.DeviceSessions.DTOs;
+using HandySuites.Application.DeviceSessions.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Infrastructure.Repositories.DeviceSessions;
+namespace HandySuites.Infrastructure.Repositories.DeviceSessions;
 
 public class DeviceSessionRepository : IDeviceSessionRepository
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
 
-    public DeviceSessionRepository(HandySalesDbContext db)
+    public DeviceSessionRepository(HandySuitesDbContext db)
     {
         _db = db;
     }

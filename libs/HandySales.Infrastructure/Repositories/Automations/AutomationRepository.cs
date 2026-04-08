@@ -1,16 +1,16 @@
-using HandySales.Application.Automations.DTOs;
-using HandySales.Application.Automations.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.Automations.DTOs;
+using HandySuites.Application.Automations.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Infrastructure.Repositories.Automations;
+namespace HandySuites.Infrastructure.Repositories.Automations;
 
 public class AutomationRepository : IAutomationRepository
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
 
-    public AutomationRepository(HandySalesDbContext db) => _db = db;
+    public AutomationRepository(HandySuitesDbContext db) => _db = db;
 
     public async Task<List<AutomationTemplateDto>> GetTemplatesWithTenantStatusAsync(int tenantId)
     {

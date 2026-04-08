@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace HandySales.Domain.Common;
+namespace HandySuites.Domain.Common;
 
 public abstract class AuditableEntity
 {

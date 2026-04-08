@@ -1,16 +1,16 @@
-using HandySales.Application.Sync.DTOs;
-using HandySales.Application.Sync.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.Sync.DTOs;
+using HandySuites.Application.Sync.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Infrastructure.Repositories.Sync;
+namespace HandySuites.Infrastructure.Repositories.Sync;
 
 public class SyncRepository : ISyncRepository
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
 
-    public SyncRepository(HandySalesDbContext db)
+    public SyncRepository(HandySuitesDbContext db)
     {
         _db = db;
     }
@@ -41,7 +41,7 @@ public class SyncRepository : ISyncRepository
 
     public async Task<Dictionary<int, (decimal cantidad, decimal minimo)>> GetStockMapAsync(int tenantId)
     {
-        return await _db.Set<HandySales.Domain.Entities.Inventario>()
+        return await _db.Set<HandySuites.Domain.Entities.Inventario>()
             .AsNoTracking()
             .Where(i => i.TenantId == tenantId)
             .ToDictionaryAsync(

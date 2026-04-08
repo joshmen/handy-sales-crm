@@ -1,16 +1,16 @@
-using HandySales.Application.DatosFacturacion.DTOs;
-using HandySales.Application.DatosFacturacion.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.DatosFacturacion.DTOs;
+using HandySuites.Application.DatosFacturacion.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Infrastructure.DatosFacturacion.Services
+namespace HandySuites.Infrastructure.DatosFacturacion.Services
 {
     public class DatosFacturacionService : IDatosFacturacionService
     {
-        private readonly HandySalesDbContext _context;
+        private readonly HandySuitesDbContext _context;
 
-        public DatosFacturacionService(HandySalesDbContext context)
+        public DatosFacturacionService(HandySuitesDbContext context)
         {
             _context = context;
         }

@@ -1,9 +1,9 @@
 using FluentValidation;
-using HandySales.Application.Promociones.DTOs;
-using HandySales.Application.Promociones.Services;
+using HandySuites.Application.Promociones.DTOs;
+using HandySuites.Application.Promociones.Services;
 using Microsoft.AspNetCore.Mvc;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class PromocionesEndpoints
 {

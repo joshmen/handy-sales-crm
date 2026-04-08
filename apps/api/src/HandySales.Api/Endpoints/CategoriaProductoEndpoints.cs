@@ -1,9 +1,9 @@
 using FluentValidation;
-using HandySales.Application.CategoriasProductos.DTOs;
-using HandySales.Application.CategoriasProductos.Services;
+using HandySuites.Application.CategoriasProductos.DTOs;
+using HandySuites.Application.CategoriasProductos.Services;
 using Microsoft.AspNetCore.Mvc;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class CategoriaProductoEndpoints
 {

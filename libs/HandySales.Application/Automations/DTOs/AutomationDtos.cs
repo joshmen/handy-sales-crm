@@ -1,4 +1,4 @@
-namespace HandySales.Application.Automations.DTOs;
+namespace HandySuites.Application.Automations.DTOs;
 
 // ═══════════════════════════════════════════════════════
 // READ DTOs

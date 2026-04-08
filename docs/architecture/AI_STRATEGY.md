@@ -64,7 +64,7 @@ Frontend/Mobile → /api/ai/* → AI Gateway → Auth+JWT → Rate Limiter → R
 ## apps/ai/ Structure
 
 ```
-apps/ai/src/HandySales.Ai.Api/
+apps/ai/src/HandySuites.Ai.Api/
 ├── Endpoints/          # Summary, Recommendation, Collections, Document, Search, Usage
 ├── Middleware/          # RateLimit, CreditDeduction, FeatureFlag
 ├── Services/           # LlmRouter, ToolCallExecutor, RagService, CreditManager, ResponseCache

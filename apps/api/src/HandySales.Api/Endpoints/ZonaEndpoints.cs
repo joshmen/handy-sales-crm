@@ -1,9 +1,9 @@
 using FluentValidation;
-using HandySales.Application.Zonas.DTOs;
-using HandySales.Application.Zonas.Services;
+using HandySuites.Application.Zonas.DTOs;
+using HandySuites.Application.Zonas.Services;
 using Microsoft.AspNetCore.Mvc;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class ZonasEndpoints
 {

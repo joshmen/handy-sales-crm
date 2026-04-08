@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace HandySales.Domain.Entities;
+namespace HandySuites.Domain.Entities;
 
 public enum ExecutionStatus { Success = 0, Failed = 1, Skipped = 2 }
 

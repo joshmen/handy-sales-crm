@@ -1,7 +1,7 @@
-using HandySales.Application.CompanySettings.Interfaces;
+using HandySuites.Application.CompanySettings.Interfaces;
 using System.Text.RegularExpressions;
 
-namespace HandySales.Infrastructure.Services
+namespace HandySuites.Infrastructure.Services
 {
     public class CloudinaryFolderService : ICloudinaryFolderService
     {

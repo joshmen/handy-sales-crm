@@ -1,6 +1,6 @@
-using HandySales.Application.Ai.DTOs;
+using HandySuites.Application.Ai.DTOs;
 
-namespace HandySales.Application.Ai.Interfaces;
+namespace HandySuites.Application.Ai.Interfaces;
 
 public interface IAiGatewayService
 {

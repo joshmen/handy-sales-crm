@@ -1,4 +1,4 @@
-namespace HandySales.Application.Ai.Interfaces;
+namespace HandySuites.Application.Ai.Interfaces;
 
 public interface IAiEmbeddingService
 {

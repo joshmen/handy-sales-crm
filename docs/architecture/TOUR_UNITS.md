@@ -44,7 +44,7 @@ The Units tour guides new users through import/export, creating a unit (with dra
 
 ## Import/Export — Business Rules
 
-**Backend endpoint:** `apps/api/src/HandySales.Api/Endpoints/ImportExportEndpoints.cs`
+**Backend endpoint:** `apps/api/src/HandySuites.Api/Endpoints/ImportExportEndpoints.cs`
 
 | Operation | Endpoint | Details |
 |-----------|----------|---------|
@@ -65,4 +65,4 @@ The Units tour guides new users through import/export, creating a unit (with dra
 
 - Tour definition: `apps/web/src/data/tours/catalogs.ts` → `/units` key
 - Units page: `apps/web/src/app/(dashboard)/units/page.tsx`
-- Import/Export endpoints: `apps/api/src/HandySales.Api/Endpoints/ImportExportEndpoints.cs`
+- Import/Export endpoints: `apps/api/src/HandySuites.Api/Endpoints/ImportExportEndpoints.cs`

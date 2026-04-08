@@ -33,13 +33,13 @@ Admin deactivates meta (Activo=false) or deletes it.
 ## Files to Modify
 
 ### Backend
-- libs/HandySales.Domain/Entities/MetaVendedor.cs
-- libs/HandySales.Application/Metas/DTOs/MetaVendedorDto.cs
-- libs/HandySales.Application/Metas/Services/MetaVendedorService.cs
-- libs/HandySales.Infrastructure/Repositories/Metas/MetaVendedorRepository.cs
-- apps/api/src/HandySales.Api/Endpoints/MetaVendedorEndpoints.cs
-- NEW: apps/api/src/HandySales.Api/Automations/Handlers/MetaAutoRenovacionHandler.cs
-- apps/api/src/HandySales.Api/Configuration/ServiceRegistrationExtensions.cs
+- libs/HandySuites.Domain/Entities/MetaVendedor.cs
+- libs/HandySuites.Application/Metas/DTOs/MetaVendedorDto.cs
+- libs/HandySuites.Application/Metas/Services/MetaVendedorService.cs
+- libs/HandySuites.Infrastructure/Repositories/Metas/MetaVendedorRepository.cs
+- apps/api/src/HandySuites.Api/Endpoints/MetaVendedorEndpoints.cs
+- NEW: apps/api/src/HandySuites.Api/Automations/Handlers/MetaAutoRenovacionHandler.cs
+- apps/api/src/HandySuites.Api/Configuration/ServiceRegistrationExtensions.cs
 - EF Migration for auto_renovar column
 
 ### Frontend

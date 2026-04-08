@@ -1,8 +1,8 @@
 using Xunit;
 using FluentValidation.TestHelper;
-using HandySales.Application.Usuarios.Validators;
+using HandySuites.Application.Usuarios.Validators;
 
-namespace HandySales.Tests.Application.Usuarios
+namespace HandySuites.Tests.Application.Usuarios
 {
     public class UsuarioLoginDtoValidatorTests
     {

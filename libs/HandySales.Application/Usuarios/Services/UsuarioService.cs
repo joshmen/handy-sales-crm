@@ -1,15 +1,15 @@
-using HandySales.Domain.Entities;
-using HandySales.Shared.Multitenancy;
-using HandySales.Shared.Security;
+using HandySuites.Domain.Entities;
+using HandySuites.Shared.Multitenancy;
+using HandySuites.Shared.Security;
 using BCrypt.Net;
-using HandySales.Application.Common.DTOs;
-using HandySales.Application.CompanySettings.Interfaces;
-using HandySales.Application.DeviceSessions.Interfaces;
-using HandySales.Application.Usuarios.DTOs;
-using HandySales.Application.Usuarios.Interfaces;
+using HandySuites.Application.Common.DTOs;
+using HandySuites.Application.CompanySettings.Interfaces;
+using HandySuites.Application.DeviceSessions.Interfaces;
+using HandySuites.Application.Usuarios.DTOs;
+using HandySuites.Application.Usuarios.Interfaces;
 using Microsoft.AspNetCore.Http;
 
-namespace HandySales.Application.Usuarios.Services;
+namespace HandySuites.Application.Usuarios.Services;
 
 public class UsuarioService
 {

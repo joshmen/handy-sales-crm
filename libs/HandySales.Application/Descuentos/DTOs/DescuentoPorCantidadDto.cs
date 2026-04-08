@@ -1,4 +1,4 @@
-namespace HandySales.Application.Descuentos.DTOs;
+namespace HandySuites.Application.Descuentos.DTOs;
 
 public class DescuentoPorCantidadDto
 {

@@ -1,4 +1,4 @@
-namespace HandySales.Domain.Common;
+namespace HandySuites.Domain.Common;
 
 /// <summary>
 /// Interfaz marcadora para entidades que pertenecen a un tenant.

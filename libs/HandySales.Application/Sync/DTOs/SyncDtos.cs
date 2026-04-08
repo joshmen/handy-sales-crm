@@ -1,4 +1,4 @@
-namespace HandySales.Application.Sync.DTOs;
+namespace HandySuites.Application.Sync.DTOs;
 
 /// <summary>
 /// Request to sync data from mobile device

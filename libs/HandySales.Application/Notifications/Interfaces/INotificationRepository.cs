@@ -1,7 +1,7 @@
-using HandySales.Application.Notifications.DTOs;
-using HandySales.Domain.Entities;
+using HandySuites.Application.Notifications.DTOs;
+using HandySuites.Domain.Entities;
 
-namespace HandySales.Application.Notifications.Interfaces;
+namespace HandySuites.Application.Notifications.Interfaces;
 
 public interface INotificationRepository
 {

@@ -2,7 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 
-namespace HandySales.Api.Hubs;
+namespace HandySuites.Api.Hubs;
 
 [Authorize]
 public class NotificationHub : Hub

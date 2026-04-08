@@ -1,10 +1,10 @@
-using HandySales.Application.SubscriptionPlans.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.SubscriptionPlans.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class ReportEndpoints
 {
@@ -36,7 +36,7 @@ public static class ReportEndpoints
         // R1: VENTAS POR PERÍODO
         // ═══════════════════════════════════════════════════════
         group.MapGet("/ventas-periodo", async (
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext,
             [FromQuery] DateTime? desde,
             [FromQuery] DateTime? hasta,
@@ -107,7 +107,7 @@ public static class ReportEndpoints
         // R2: VENTAS POR VENDEDOR
         // ═══════════════════════════════════════════════════════
         group.MapGet("/ventas-vendedor", async (
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext,
             [FromQuery] DateTime? desde,
             [FromQuery] DateTime? hasta) =>
@@ -170,7 +170,7 @@ public static class ReportEndpoints
         // R3: VENTAS POR PRODUCTO
         // ═══════════════════════════════════════════════════════
         group.MapGet("/ventas-producto", async (
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext,
             [FromQuery] DateTime? desde,
             [FromQuery] DateTime? hasta,
@@ -238,7 +238,7 @@ public static class ReportEndpoints
         // R4: VENTAS POR ZONA
         // ═══════════════════════════════════════════════════════
         group.MapGet("/ventas-zona", async (
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext,
             [FromQuery] DateTime? desde,
             [FromQuery] DateTime? hasta) =>
@@ -300,7 +300,7 @@ public static class ReportEndpoints
         // R5: ACTIVIDAD DE CLIENTES
         // ═══════════════════════════════════════════════════════
         group.MapGet("/actividad-clientes", async (
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext,
             [FromQuery] DateTime? desde,
             [FromQuery] DateTime? hasta,
@@ -371,7 +371,7 @@ public static class ReportEndpoints
         // R6: NUEVOS CLIENTES
         // ═══════════════════════════════════════════════════════
         group.MapGet("/nuevos-clientes", async (
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext,
             [FromQuery] DateTime? desde,
             [FromQuery] DateTime? hasta,
@@ -432,7 +432,7 @@ public static class ReportEndpoints
         // R7: INVENTARIO ACTUAL
         // ═══════════════════════════════════════════════════════
         group.MapGet("/inventario", async (
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext) =>
         {
             var tenantId = tenantContext.TenantId ?? 0;
@@ -474,7 +474,7 @@ public static class ReportEndpoints
         // R8: DASHBOARD EJECUTIVO
         // ═══════════════════════════════════════════════════════
         group.MapGet("/ejecutivo", async (
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext,
             [FromQuery] string periodo = "mes") =>
         {
@@ -604,7 +604,7 @@ public static class ReportEndpoints
         // R9: CARTERA VENCIDA (AR Aging)
         // ═══════════════════════════════════════════════════════
         group.MapGet("/cartera-vencida", async (
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext,
             [FromQuery] DateTime? desde,
             [FromQuery] DateTime? hasta) =>
@@ -688,7 +688,7 @@ public static class ReportEndpoints
         // R10: CUMPLIMIENTO DE METAS
         // ═══════════════════════════════════════════════════════
         group.MapGet("/cumplimiento-metas", async (
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext,
             [FromQuery] DateTime? desde,
             [FromQuery] DateTime? hasta,
@@ -777,7 +777,7 @@ public static class ReportEndpoints
         // R11: COMPARATIVO DE PERÍODOS
         // ═══════════════════════════════════════════════════════
         group.MapGet("/comparativo", async (
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext,
             [FromQuery] DateTime periodo1Desde,
             [FromQuery] DateTime periodo1Hasta,
@@ -851,7 +851,7 @@ public static class ReportEndpoints
         // R12: AUTO-INSIGHTS (heuristicas estadisticas)
         // ═══════════════════════════════════════════════════════
         group.MapGet("/insights", async (
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext,
             [FromQuery] DateTime? desde,
             [FromQuery] DateTime? hasta) =>
@@ -999,7 +999,7 @@ public static class ReportEndpoints
         // R13: EFECTIVIDAD DE VISITAS
         // ═══════════════════════════════════════════════════════
         group.MapGet("/efectividad-visitas", async (
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext,
             [FromQuery] DateTime? desde,
             [FromQuery] DateTime? hasta) =>
@@ -1074,7 +1074,7 @@ public static class ReportEndpoints
         // R14: COMISIONES
         // ═══════════════════════════════════════════════════════
         group.MapGet("/comisiones", async (
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext,
             [FromQuery] DateTime? desde,
             [FromQuery] DateTime? hasta,
@@ -1140,7 +1140,7 @@ public static class ReportEndpoints
         // R15: RENTABILIDAD POR CLIENTE
         // ═══════════════════════════════════════════════════════
         group.MapGet("/rentabilidad-cliente", async (
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext,
             [FromQuery] DateTime? desde,
             [FromQuery] DateTime? hasta,
@@ -1206,7 +1206,7 @@ public static class ReportEndpoints
         // R16: ANALISIS ABC (Pareto)
         // ═══════════════════════════════════════════════════════
         group.MapGet("/analisis-abc", async (
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ITenantContextService tenantContext,
             [FromQuery] DateTime? desde,
             [FromQuery] DateTime? hasta,

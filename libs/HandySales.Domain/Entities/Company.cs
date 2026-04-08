@@ -1,8 +1,8 @@
-using HandySales.Domain.Common;
+using HandySuites.Domain.Common;
 using System;
 using System.Collections.Generic;
 
-namespace HandySales.Domain.Entities
+namespace HandySuites.Domain.Entities
 {
     /// <summary>
     /// Company entity representing each tenant

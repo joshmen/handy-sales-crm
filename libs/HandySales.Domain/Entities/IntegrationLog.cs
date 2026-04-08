@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace HandySales.Domain.Entities;
+namespace HandySuites.Domain.Entities;
 
 /// <summary>
 /// Audit log for integration actions. Not soft-deletable — permanent record.

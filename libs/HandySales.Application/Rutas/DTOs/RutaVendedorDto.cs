@@ -1,6 +1,6 @@
-using HandySales.Domain.Entities;
+using HandySuites.Domain.Entities;
 
-namespace HandySales.Application.Rutas.DTOs;
+namespace HandySuites.Application.Rutas.DTOs;
 
 public class RutaVendedorDto
 {

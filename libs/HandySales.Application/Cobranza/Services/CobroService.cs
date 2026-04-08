@@ -1,8 +1,8 @@
-using HandySales.Application.Cobranza.DTOs;
-using HandySales.Application.Cobranza.Interfaces;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Application.Cobranza.DTOs;
+using HandySuites.Application.Cobranza.Interfaces;
+using HandySuites.Shared.Multitenancy;
 
-namespace HandySales.Application.Cobranza.Services;
+namespace HandySuites.Application.Cobranza.Services;
 
 public class CobroService
 {

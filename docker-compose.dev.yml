@@ -2,7 +2,7 @@ services:
   # Seq - Centralized Logging (Development)
   seq:
     image: datalust/seq:2024.3
-    container_name: handysales_seq_dev
+    container_name: handysuites_seq_dev
     restart: unless-stopped
     environment:
       ACCEPT_EULA: "Y"
@@ -13,7 +13,7 @@ services:
     volumes:
       - seq_dev_data:/data
     networks:
-      - handysales_dev_network
+      - handysuites_dev_network
 
   # PostgreSQL Database (single instance with multiple databases)
   # Using PostGIS image for spatial queries (ST_Distance, etc.) — same PostgreSQL 16, adds extensions
@@ -21,7 +21,7 @@ services:
     build:
       context: .
       dockerfile: infra/docker/Dockerfile.Postgres.Dev
-    container_name: handysales_postgres_dev
+    container_name: handysuites_postgres_dev
     restart: unless-stopped
     environment:
       POSTGRES_USER: handy_user
@@ -33,13 +33,13 @@ services:
       - postgres_dev_data:/var/lib/postgresql/data
       # EF Core creates all 48 tables via migration on api_main startup.
       # After first startup, seed data manually:
-      #   docker exec -i handysales_postgres_dev psql -U handy_user -d handy_erp < infra/database/schema/seed_local_pg.sql
-      #   docker exec -i handysales_postgres_dev psql -U handy_user -d handy_erp < infra/database/schema/seed_e2e_pg.sql
+      #   docker exec -i handysuites_postgres_dev psql -U handy_user -d handy_erp < infra/database/schema/seed_local_pg.sql
+      #   docker exec -i handysuites_postgres_dev psql -U handy_user -d handy_erp < infra/database/schema/seed_e2e_pg.sql
       # After seeding, apply RLS + create app role:
-      #   docker exec -i handysales_postgres_dev psql -U handy_user -d handy_erp < infra/database/init/02_create_app_role.sql
-      #   docker exec -i handysales_postgres_dev psql -U handy_user -d handy_erp < infra/database/schema/rls_enable.sql
-      #   docker exec -i handysales_postgres_dev psql -U handy_user -d handy_billing < infra/database/init/02_create_app_role.sql
-      #   docker exec -i handysales_postgres_dev psql -U handy_user -d handy_billing < infra/database/schema/rls_enable_billing.sql
+      #   docker exec -i handysuites_postgres_dev psql -U handy_user -d handy_erp < infra/database/init/02_create_app_role.sql
+      #   docker exec -i handysuites_postgres_dev psql -U handy_user -d handy_erp < infra/database/schema/rls_enable.sql
+      #   docker exec -i handysuites_postgres_dev psql -U handy_user -d handy_billing < infra/database/init/02_create_app_role.sql
+      #   docker exec -i handysuites_postgres_dev psql -U handy_user -d handy_billing < infra/database/schema/rls_enable_billing.sql
     command: >
       postgres
       -c shared_buffers=256MB
@@ -53,14 +53,14 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - handysales_dev_network
+      - handysuites_dev_network
 
-  # API Principal (HandySales.Api)
+  # API Principal (HandySuites.Api)
   api_main:
     build:
       context: .
       dockerfile: infra/docker/Dockerfile.Main.Dev
-    container_name: handysales_api_main_dev
+    container_name: handysuites_api_main_dev
     restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: Development
@@ -68,8 +68,8 @@ services:
       ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=handy_erp;Username=handy_app;Password=handy_app_pass;Pooling=true;Minimum Pool Size=5;Maximum Pool Size=50;Connection Lifetime=300;"
       Jwt__Secret: "DevelopmentSecretKeyThatIsAtLeast256BitsLong_1234567890123456789012345678901234567890"
       SocialLogin__SharedSecret: "DevelopmentSecretKeyThatIsAtLeast256BitsLong_1234567890123456789012345678901234567890"
-      Jwt__Issuer: "HandySales"
-      Jwt__Audience: "HandySalesUsers"
+      Jwt__Issuer: "HandySuites"
+      Jwt__Audience: "HandySuitesUsers"
       Jwt__ExpirationMinutes: 60
       Multitenancy__DefaultTenantId: "00000000-0000-0000-0000-000000000001"
       Multitenancy__DefaultTenantName: "Default"
@@ -100,14 +100,14 @@ services:
       retries: 3
       start_period: 40s
     networks:
-      - handysales_dev_network
+      - handysuites_dev_network
 
-  # API de Facturación (HandySales.Billing.Api)
+  # API de Facturación (HandySuites.Billing.Api)
   api_billing:
     build:
       context: .
       dockerfile: infra/docker/Dockerfile.Billing.Dev
-    container_name: handysales_api_billing_dev
+    container_name: handysuites_api_billing_dev
     restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: Development
@@ -115,8 +115,8 @@ services:
       ConnectionStrings__BillingConnection: "Host=postgres;Port=5432;Database=handy_billing;Username=handy_app;Password=handy_app_pass;"
       ConnectionStrings__MainConnection: "Host=postgres;Port=5432;Database=handy_erp;Username=handy_app;Password=handy_app_pass;"
       Jwt__Secret: "DevelopmentSecretKeyThatIsAtLeast256BitsLong_1234567890123456789012345678901234567890"
-      Jwt__Issuer: "HandySales"
-      Jwt__Audience: "HandySalesUsers"
+      Jwt__Issuer: "HandySuites"
+      Jwt__Audience: "HandySuitesUsers"
       Jwt__ExpirationMinutes: 60
       SAT__CertificadoPath: "/app/certificates"
       SAT__WebServiceUrl: "https://consultaqr.facturaelectronica.sat.gob.mx/ConsultaCFDIService.svc"
@@ -154,22 +154,22 @@ services:
       retries: 3
       start_period: 40s
     networks:
-      - handysales_dev_network
+      - handysuites_dev_network
 
-  # API Móvil (HandySales.Mobile.Api)
+  # API Móvil (HandySuites.Mobile.Api)
   api_mobile:
     build:
       context: .
       dockerfile: infra/docker/Dockerfile.Mobile.Dev
-    container_name: handysales_api_mobile_dev
+    container_name: handysuites_api_mobile_dev
     restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:1052
       ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=handy_erp;Username=handy_app;Password=handy_app_pass;Pooling=true;Minimum Pool Size=5;Maximum Pool Size=50;Connection Lifetime=300;"
       Jwt__Secret: "DevelopmentSecretKeyThatIsAtLeast256BitsLong_1234567890123456789012345678901234567890"
-      Jwt__Issuer: "HandySales"
-      Jwt__Audience: "HandySalesUsers"
+      Jwt__Issuer: "HandySuites"
+      Jwt__Audience: "HandySuitesUsers"
       Jwt__ExpirationMinutes: 60
       Multitenancy__DefaultTenantId: "00000000-0000-0000-0000-000000000001"
       Multitenancy__DefaultTenantName: "Default"
@@ -194,7 +194,7 @@ services:
       retries: 3
       start_period: 40s
     networks:
-      - handysales_dev_network
+      - handysuites_dev_network
 
   # Frontend Web (Next.js) — Usar solo si NO corres el frontend localmente
   # Para desarrollo: correr 'npm run dev' localmente es ~15x más rápido
@@ -203,7 +203,7 @@ services:
     build:
       context: .
       dockerfile: infra/docker/Dockerfile.Web.Dev
-    container_name: handysales_web_dev
+    container_name: handysuites_web_dev
     restart: unless-stopped
     environment:
       NODE_ENV: development
@@ -223,14 +223,14 @@ services:
       - ./apps/web/src:/app/src
       - ./apps/web/public:/app/public
     networks:
-      - handysales_dev_network
+      - handysuites_dev_network
     profiles:
       - web  # Solo se ejecuta si usas: docker-compose --profile web up -d
 
   # Nginx Reverse Proxy (opcional para desarrollo)
   nginx:
     image: nginx:alpine
-    container_name: handysales_nginx_dev
+    container_name: handysuites_nginx_dev
     restart: unless-stopped
     ports:
       - "1080:80"
@@ -241,14 +241,14 @@ services:
       - api_billing
       - api_mobile
     networks:
-      - handysales_dev_network
+      - handysuites_dev_network
     profiles:
       - nginx  # Solo se ejecuta si usas: docker-compose --profile nginx up
 
   # Azurite — Azure Storage emulator (for CFDI XML/PDF blob storage)
   azurite:
     image: mcr.microsoft.com/azure-storage/azurite
-    container_name: handysales_azurite_dev
+    container_name: handysuites_azurite_dev
     restart: unless-stopped
     ports:
       - "10000:10000"  # Blob service
@@ -258,15 +258,15 @@ services:
       - azurite_dev_data:/data
     command: "azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0 -l /data"
     networks:
-      - handysales_dev_network
+      - handysuites_dev_network
 
   # pgAdmin (database administration tool, optional)
   pgadmin:
     image: dpage/pgadmin4:8.14
-    container_name: handysales_pgadmin_dev
+    container_name: handysuites_pgadmin_dev
     restart: unless-stopped
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@handysales.com
+      PGADMIN_DEFAULT_EMAIL: admin@handysuites.com
       PGADMIN_DEFAULT_PASSWORD: admin123
       PGADMIN_LISTEN_PORT: 80
     ports:
@@ -275,7 +275,7 @@ services:
       postgres:
         condition: service_healthy
     networks:
-      - handysales_dev_network
+      - handysuites_dev_network
     profiles:
       - admin  # Solo se ejecuta si usas: docker-compose --profile admin up
 
@@ -288,6 +288,6 @@ volumes:
     driver: local
 
 networks:
-  handysales_dev_network:
+  handysuites_dev_network:
     driver: bridge
-    name: handysales_dev_network
+    name: handysuites_dev_network

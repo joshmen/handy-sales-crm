@@ -1,18 +1,18 @@
 using FluentAssertions;
-using HandySales.Infrastructure.Persistence;
-using HandySales.Shared.Security;
-using HandySales.Application.ActivityTracking.Services;
-using HandySales.Application.CompanySettings.Interfaces;
+using HandySuites.Infrastructure.Persistence;
+using HandySuites.Shared.Security;
+using HandySuites.Application.ActivityTracking.Services;
+using HandySuites.Application.CompanySettings.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Http;
 using Xunit;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Tests.Integration.Auth
+namespace HandySuites.Tests.Integration.Auth
 {
     public class AuthServiceTests : IClassFixture<CustomWebApplicationFactory>
     {
-        private readonly HandySalesDbContext _db;
+        private readonly HandySuitesDbContext _db;
         private readonly JwtTokenGenerator _jwt;
         private readonly AuthService _authService;
         private readonly IActivityTrackingService _activityTracking;
@@ -22,7 +22,7 @@ namespace HandySales.Tests.Integration.Auth
         public AuthServiceTests(CustomWebApplicationFactory factory)
         {
             var scope = factory.Services.CreateScope();
-            _db = scope.ServiceProvider.GetRequiredService<HandySalesDbContext>();
+            _db = scope.ServiceProvider.GetRequiredService<HandySuitesDbContext>();
             _jwt = scope.ServiceProvider.GetRequiredService<JwtTokenGenerator>();
             _activityTracking = scope.ServiceProvider.GetRequiredService<IActivityTrackingService>();
             _httpContextAccessor = scope.ServiceProvider.GetRequiredService<IHttpContextAccessor>();
@@ -239,7 +239,7 @@ namespace HandySales.Tests.Integration.Auth
                 usuario = await _db.Usuarios.FirstOrDefaultAsync(u => u.Email == registerDto.Email);
             }
 
-            var revokedToken = new HandySales.Domain.Entities.RefreshToken
+            var revokedToken = new HandySuites.Domain.Entities.RefreshToken
             {
                 Token = "revoked-token",
                 UserId = usuario.Id,

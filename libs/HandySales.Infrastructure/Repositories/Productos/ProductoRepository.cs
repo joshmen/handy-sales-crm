@@ -1,16 +1,16 @@
-using HandySales.Application.Productos.DTOs;
-using HandySales.Application.Productos.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.Productos.DTOs;
+using HandySuites.Application.Productos.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Infrastructure.Productos.Repositories;
+namespace HandySuites.Infrastructure.Productos.Repositories;
 
 public class ProductoRepository : IProductoRepository
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
 
-    public ProductoRepository(HandySalesDbContext db)
+    public ProductoRepository(HandySuitesDbContext db)
     {
         _db = db;
     }

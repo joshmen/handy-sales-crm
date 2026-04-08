@@ -5,7 +5,7 @@ using Microsoft.Extensions.Options;
 using System.Text;
 
 
-namespace HandySales.Shared.Security;
+namespace HandySuites.Shared.Security;
 
 public class JwtTokenGenerator
 {

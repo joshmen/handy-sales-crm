@@ -1,4 +1,4 @@
-namespace HandySales.Application.Tenants.Interfaces;
+namespace HandySuites.Application.Tenants.Interfaces;
 
 public interface ITenantSeedService
 {

@@ -1,6 +1,6 @@
-using HandySales.Application.DatosEmpresa.DTOs;
+using HandySuites.Application.DatosEmpresa.DTOs;
 
-namespace HandySales.Application.Tenants.DTOs;
+namespace HandySuites.Application.Tenants.DTOs;
 
 public record TenantListDto(
     int Id,

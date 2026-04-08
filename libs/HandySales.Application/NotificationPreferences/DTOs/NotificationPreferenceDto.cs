@@ -1,4 +1,4 @@
-namespace HandySales.Application.NotificationPreferences.DTOs
+namespace HandySuites.Application.NotificationPreferences.DTOs
 {
     public class NotificationPreferenceDto
     {

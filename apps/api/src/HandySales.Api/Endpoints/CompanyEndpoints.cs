@@ -1,16 +1,16 @@
 using System.Security.Claims;
-using HandySales.Application.CompanySettings.Services;
-using HandySales.Application.Companies.DTOs;
-using HandySales.Application.Companies.Services;
-using CompanySettingsDto = HandySales.Application.CompanySettings.DTOs.CompanySettingsDto;
-using HandySales.Application.CompanySettings.DTOs;
-using HandySales.Application.DatosFacturacion.DTOs;
-using HandySales.Application.DatosFacturacion.Interfaces;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Application.CompanySettings.Services;
+using HandySuites.Application.Companies.DTOs;
+using HandySuites.Application.Companies.Services;
+using CompanySettingsDto = HandySuites.Application.CompanySettings.DTOs.CompanySettingsDto;
+using HandySuites.Application.CompanySettings.DTOs;
+using HandySuites.Application.DatosFacturacion.DTOs;
+using HandySuites.Application.DatosFacturacion.Interfaces;
+using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace HandySales.Api.Endpoints
+namespace HandySuites.Api.Endpoints
 {
     public static class CompanyEndpoints
     {

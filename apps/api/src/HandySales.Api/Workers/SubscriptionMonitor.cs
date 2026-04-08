@@ -1,12 +1,12 @@
-using HandySales.Api.Hubs;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
-using HandySales.Shared.Email;
+using HandySuites.Api.Hubs;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
+using HandySuites.Shared.Email;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 
-namespace HandySales.Api.Workers;
+namespace HandySuites.Api.Workers;
 
 /// <summary>
 /// Background worker that monitors subscription expiration and trial drip emails.
@@ -57,7 +57,7 @@ public class SubscriptionMonitor : BackgroundService
     private async Task CheckSubscriptionsAsync(CancellationToken ct)
     {
         using var scope = _services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<HandySalesDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<HandySuitesDbContext>();
         var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
         var cache = scope.ServiceProvider.GetRequiredService<IMemoryCache>();
         var hubContext = scope.ServiceProvider.GetRequiredService<IHubContext<NotificationHub>>();
@@ -78,7 +78,7 @@ public class SubscriptionMonitor : BackgroundService
     }
 
     private async Task SendTrialDripEmailsAsync(
-        HandySalesDbContext db, IEmailService emailService,
+        HandySuitesDbContext db, IEmailService emailService,
         DateTime now, CancellationToken ct)
     {
         // Find active trial tenants that haven't collected a card yet
@@ -119,13 +119,13 @@ public class SubscriptionMonitor : BackgroundService
                 var daysLeft = Math.Max(0, (int)(tenant.TrialEndsAt.Value - now).TotalDays);
                 var (subject, body) = dripDay switch
                 {
-                    3 => ("Tip: Configura tu catálogo - HandySales",
+                    3 => ("Tip: Configura tu catálogo - HandySuites",
                           EmailTemplates.TrialValueDay3(tenant.NombreEmpresa)),
-                    7 => ("Tip: Crea tu primera ruta - HandySales",
+                    7 => ("Tip: Crea tu primera ruta - HandySuites",
                           EmailTemplates.TrialValueDay7(tenant.NombreEmpresa)),
-                    10 => ($"Te quedan {daysLeft} días de prueba - HandySales",
+                    10 => ($"Te quedan {daysLeft} días de prueba - HandySuites",
                            EmailTemplates.TrialUrgencyDay10(tenant.NombreEmpresa, daysLeft)),
-                    12 => ($"Solo {daysLeft} días para que termine tu prueba - HandySales",
+                    12 => ($"Solo {daysLeft} días para que termine tu prueba - HandySuites",
                            EmailTemplates.TrialUrgencyDay12(tenant.NombreEmpresa, daysLeft)),
                     _ => (string.Empty, string.Empty)
                 };
@@ -157,7 +157,7 @@ public class SubscriptionMonitor : BackgroundService
     }
 
     private async Task SendExpirationWarningsAsync(
-        HandySalesDbContext db, IEmailService emailService,
+        HandySuitesDbContext db, IEmailService emailService,
         DateTime now, CancellationToken ct)
     {
         foreach (var days in WarningDays)
@@ -199,7 +199,7 @@ public class SubscriptionMonitor : BackgroundService
                 var emailBody = EmailTemplates.SubscriptionExpiringWarning(
                     tenant.NombreEmpresa, daysLeft, tenant.FechaExpiracion.Value);
 
-                await emailService.SendBulkAsync(adminEmails!, "Su suscripción está por vencer - HandySales", emailBody);
+                await emailService.SendBulkAsync(adminEmails!, "Su suscripción está por vencer - HandySuites", emailBody);
 
                 // Record that we sent the warning
                 db.ScheduledActions.Add(new ScheduledAction
@@ -225,7 +225,7 @@ public class SubscriptionMonitor : BackgroundService
     }
 
     private async Task MarkExpiredSubscriptionsAsync(
-        HandySalesDbContext db, IEmailService emailService,
+        HandySuitesDbContext db, IEmailService emailService,
         DateTime now, CancellationToken ct)
     {
         // Find active tenants whose subscription just expired
@@ -266,8 +266,8 @@ public class SubscriptionMonitor : BackgroundService
                 .ToListAsync(ct);
 
             var subject = tenant.TrialEndsAt != null
-                ? "Tu periodo de prueba ha terminado - HandySales"
-                : "Su suscripción ha expirado - HandySales";
+                ? "Tu periodo de prueba ha terminado - HandySuites"
+                : "Su suscripción ha expirado - HandySuites";
             var emailBody = EmailTemplates.SubscriptionExpired(tenant.NombreEmpresa);
             await emailService.SendBulkAsync(adminEmails!, subject, emailBody);
 
@@ -280,7 +280,7 @@ public class SubscriptionMonitor : BackgroundService
     }
 
     private async Task DeactivateExpiredTenantsAsync(
-        HandySalesDbContext db, IMemoryCache cache,
+        HandySuitesDbContext db, IMemoryCache cache,
         IHubContext<NotificationHub> hubContext, IEmailService emailService,
         DateTime now, CancellationToken ct)
     {
@@ -343,7 +343,7 @@ public class SubscriptionMonitor : BackgroundService
                 .ToList();
 
             var emailBody = EmailTemplates.TenantDeactivated(tenant.NombreEmpresa);
-            await emailService.SendBulkAsync(adminEmails!, "Cuenta Desactivada - HandySales", emailBody);
+            await emailService.SendBulkAsync(adminEmails!, "Cuenta Desactivada - HandySuites", emailBody);
 
             _logger.LogInformation("Auto-deactivated tenant {TenantId} ({Name}) — grace period ended",
                 tenant.Id, tenant.NombreEmpresa);

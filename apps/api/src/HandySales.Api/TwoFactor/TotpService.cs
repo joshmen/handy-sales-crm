@@ -1,19 +1,19 @@
 using System.Security.Cryptography;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
-using HandySales.Shared.Security;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
+using HandySuites.Shared.Security;
 using Microsoft.EntityFrameworkCore;
 using OtpNet;
 using QRCoder;
 
-namespace HandySales.Api.TwoFactor;
+namespace HandySuites.Api.TwoFactor;
 
 public class TotpService
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
     private readonly TotpEncryptionService _encryption;
 
-    public TotpService(HandySalesDbContext db, TotpEncryptionService encryption)
+    public TotpService(HandySuitesDbContext db, TotpEncryptionService encryption)
     {
         _db = db;
         _encryption = encryption;
@@ -41,7 +41,7 @@ public class TotpService
         await _db.SaveChangesAsync();
 
         // Generate otpauth URI
-        var issuer = "HandySales";
+        var issuer = "HandySuites";
         var otpauthUri = $"otpauth://totp/{Uri.EscapeDataString(issuer)}:{Uri.EscapeDataString(usuario.Email)}?secret={base32Secret}&issuer={Uri.EscapeDataString(issuer)}&algorithm=SHA1&digits=6&period=30";
 
         // Generate QR code as base64 PNG

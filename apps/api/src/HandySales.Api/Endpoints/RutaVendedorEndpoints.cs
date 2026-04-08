@@ -1,9 +1,9 @@
-using HandySales.Application.Rutas.DTOs;
-using HandySales.Application.Rutas.Services;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Application.Rutas.DTOs;
+using HandySuites.Application.Rutas.Services;
+using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class RutaVendedorEndpoints
 {
@@ -67,7 +67,7 @@ public static class RutaVendedorEndpoints
             [FromServices] RutaVendedorService servicio,
             [FromServices] IHttpClientFactory httpClientFactory,
             [FromServices] ICurrentTenant tenantContext,
-            [FromServices] HandySales.Infrastructure.Notifications.Services.NotificationSettingsService notifSettings) =>
+            [FromServices] HandySuites.Infrastructure.Notifications.Services.NotificationSettingsService notifSettings) =>
         {
             try
             {
@@ -113,7 +113,7 @@ public static class RutaVendedorEndpoints
             [FromServices] RutaVendedorService servicio,
             [FromServices] IHttpClientFactory httpClientFactory,
             [FromServices] ICurrentTenant tenantContext,
-            [FromServices] HandySales.Infrastructure.Notifications.Services.NotificationSettingsService notifSettings) =>
+            [FromServices] HandySuites.Infrastructure.Notifications.Services.NotificationSettingsService notifSettings) =>
         {
             var id = await servicio.CrearAsync(dto);
 
@@ -169,7 +169,7 @@ public static class RutaVendedorEndpoints
             [FromServices] RutaVendedorService servicio,
             [FromServices] IHttpClientFactory httpClientFactory,
             [FromServices] ICurrentTenant tenantContext,
-            [FromServices] HandySales.Infrastructure.Notifications.Services.NotificationSettingsService notifSettings) =>
+            [FromServices] HandySuites.Infrastructure.Notifications.Services.NotificationSettingsService notifSettings) =>
         {
             var rutaAntes = await servicio.ObtenerPorIdAsync(id);
             var actualizado = await servicio.ActualizarAsync(id, dto);
@@ -185,7 +185,7 @@ public static class RutaVendedorEndpoints
                 try
                 {
                     // Contextual title/body based on estado
-                    var isPendienteAceptar = rutaDespues?.Estado == HandySales.Domain.Entities.EstadoRuta.PendienteAceptar;
+                    var isPendienteAceptar = rutaDespues?.Estado == HandySuites.Domain.Entities.EstadoRuta.PendienteAceptar;
                     var title = isPendienteAceptar ? "Ruta pendiente de aceptar" : "Ruta actualizada";
                     var body = isPendienteAceptar
                         ? $"Tienes una ruta asignada: {rutaNombre}. Acéptala para comenzar."

@@ -1,6 +1,6 @@
-using HandySales.Domain.Entities;
+using HandySuites.Domain.Entities;
 
-namespace HandySales.Application.GlobalSettings.Interfaces
+namespace HandySuites.Application.GlobalSettings.Interfaces
 {
     public interface IGlobalSettingsRepository
     {

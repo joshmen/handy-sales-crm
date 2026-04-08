@@ -1,15 +1,15 @@
 using System.Text.Json;
-using HandySales.Api.Hubs;
-using HandySales.Api.Middleware;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Api.Hubs;
+using HandySuites.Api.Middleware;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
+using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class AnnouncementEndpoints
 {
@@ -24,7 +24,7 @@ public static class AnnouncementEndpoints
 
         // GET all announcements (with stats)
         superadmin.MapGet("/", async (
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ICurrentTenant tenant,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 20) =>
@@ -69,7 +69,7 @@ public static class AnnouncementEndpoints
         // GET single announcement with detailed stats
         superadmin.MapGet("/{id:int}", async (
             int id,
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ICurrentTenant tenant) =>
         {
             if (!tenant.IsSuperAdmin)
@@ -108,7 +108,7 @@ public static class AnnouncementEndpoints
         // POST create announcement
         superadmin.MapPost("/", async (
             [FromBody] CreateAnnouncementDto dto,
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ICurrentTenant tenant,
             [FromServices] IMemoryCache cache,
             [FromServices] IHubContext<NotificationHub> hubContext,
@@ -313,7 +313,7 @@ public static class AnnouncementEndpoints
         // DELETE (expire) announcement
         superadmin.MapDelete("/{id:int}", async (
             int id,
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ICurrentTenant tenant,
             [FromServices] IMemoryCache cache,
             [FromServices] IHubContext<NotificationHub> hubContext) =>
@@ -368,7 +368,7 @@ public static class AnnouncementEndpoints
         // POST activate maintenance mode
         maintenance.MapPost("/", async (
             [FromBody] MaintenanceModeDto dto,
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ICurrentTenant tenant,
             [FromServices] IMemoryCache cache,
             [FromServices] IHubContext<NotificationHub> hubContext) =>
@@ -418,7 +418,7 @@ public static class AnnouncementEndpoints
 
         // DELETE deactivate maintenance mode
         maintenance.MapDelete("/", async (
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ICurrentTenant tenant,
             [FromServices] IMemoryCache cache,
             [FromServices] IHubContext<NotificationHub> hubContext) =>
@@ -470,7 +470,7 @@ public static class AnnouncementEndpoints
 
         // GET active banners for current user
         banners.MapGet("/", async (
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ICurrentTenant tenant) =>
         {
             var now = DateTime.UtcNow;
@@ -552,7 +552,7 @@ public static class AnnouncementEndpoints
         // POST dismiss a banner
         banners.MapPost("/{id:int}/dismiss", async (
             int id,
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] ICurrentTenant tenant) =>
         {
             var userId = int.Parse(tenant.UserId);

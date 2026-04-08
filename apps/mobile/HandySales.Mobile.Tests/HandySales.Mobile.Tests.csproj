@@ -30,7 +30,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\HandySales.Mobile.Api\HandySales.Mobile.Api.csproj" />
+    <ProjectReference Include="..\HandySuites.Mobile.Api\HandySuites.Mobile.Api.csproj" />
   </ItemGroup>
 
 </Project>

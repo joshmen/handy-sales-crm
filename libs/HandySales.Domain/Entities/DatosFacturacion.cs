@@ -1,8 +1,8 @@
-using HandySales.Domain.Common;
+using HandySuites.Domain.Common;
 using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace HandySales.Domain.Entities
+namespace HandySuites.Domain.Entities
 {
     /// <summary>
     /// Entidad para almacenar los datos de facturación requeridos por el SAT México (CFDI 4.0)

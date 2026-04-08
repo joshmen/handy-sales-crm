@@ -1,6 +1,6 @@
-using HandySales.Domain.Entities;
+using HandySuites.Domain.Entities;
 
-namespace HandySales.Application.ActivityTracking.Interfaces;
+namespace HandySuites.Application.ActivityTracking.Interfaces;
 
 public interface IActivityTrackingRepository
 {

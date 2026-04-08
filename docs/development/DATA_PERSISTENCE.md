@@ -43,7 +43,7 @@ docker-compose -f docker-compose.dev.yml down -v   # <- NEVER use unless intenti
 docker-compose -f docker-compose.dev.yml down
 
 # Delete PostgreSQL volume
-docker volume rm handysales_postgres_dev_data
+docker volume rm handysuites_postgres_dev_data
 
 # Start fresh (seeds will run again)
 docker-compose -f docker-compose.dev.yml up -d

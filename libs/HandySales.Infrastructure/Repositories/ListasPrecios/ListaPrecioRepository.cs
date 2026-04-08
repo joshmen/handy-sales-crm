@@ -1,16 +1,16 @@
-using HandySales.Application.ListasPrecios.DTOs;
-using HandySales.Application.ListasPrecios.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.ListasPrecios.DTOs;
+using HandySuites.Application.ListasPrecios.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Infrastructure.ListasPrecios.Repositories;
+namespace HandySuites.Infrastructure.ListasPrecios.Repositories;
 
 public class ListaPrecioRepository : IListaPrecioRepository
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
 
-    public ListaPrecioRepository(HandySalesDbContext db)
+    public ListaPrecioRepository(HandySuitesDbContext db)
     {
         _db = db;
     }

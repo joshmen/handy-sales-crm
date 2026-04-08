@@ -82,19 +82,19 @@ jobs:
           needs.detect-changes.outputs.main-api == 'true' ||
           needs.detect-changes.outputs.mobile-api == 'true' ||
           needs.detect-changes.outputs.deploy-all == 'true'
-        run: dotnet test apps/api/tests/HandySales.Tests/HandySales.Tests.csproj --configuration Release --logger "trx;LogFileName=main-api-results.trx" --results-directory ./test-results
+        run: dotnet test apps/api/tests/HandySuites.Tests/HandySuites.Tests.csproj --configuration Release --logger "trx;LogFileName=main-api-results.trx" --results-directory ./test-results
 
       - name: Run Billing API Tests
         if: |
           needs.detect-changes.outputs.billing-api == 'true' ||
           needs.detect-changes.outputs.deploy-all == 'true'
-        run: dotnet test apps/billing/HandySales.Billing.Tests/HandySales.Billing.Tests.csproj --configuration Release --logger "trx;LogFileName=billing-results.trx" --results-directory ./test-results
+        run: dotnet test apps/billing/HandySuites.Billing.Tests/HandySuites.Billing.Tests.csproj --configuration Release --logger "trx;LogFileName=billing-results.trx" --results-directory ./test-results
 
       - name: Run Mobile API Tests
         if: |
           needs.detect-changes.outputs.mobile-api == 'true' ||
           needs.detect-changes.outputs.deploy-all == 'true'
-        run: dotnet test apps/mobile/HandySales.Mobile.Tests/HandySales.Mobile.Tests.csproj --configuration Release --logger "trx;LogFileName=mobile-results.trx" --results-directory ./test-results
+        run: dotnet test apps/mobile/HandySuites.Mobile.Tests/HandySuites.Mobile.Tests.csproj --configuration Release --logger "trx;LogFileName=mobile-results.trx" --results-directory ./test-results
 
       - name: Upload test results
         if: always()
@@ -127,8 +127,8 @@ jobs:
       - name: Build efbundle
         run: |
           dotnet ef migrations bundle \
-            --project libs/HandySales.Infrastructure \
-            --startup-project apps/api/src/HandySales.Api \
+            --project libs/HandySuites.Infrastructure \
+            --startup-project apps/api/src/HandySuites.Api \
             --output ./efbundle \
             --force
 

@@ -3,21 +3,21 @@
 > Extracted from CLAUDE.md — full directory tree reference.
 
 ```
-HandySales/                          # Root
+HandySuites/                          # Root
 ├── apps/                            # All microservices
 │   ├── api/                         # Main API Microservice .NET 8
 │   │   └── src/
-│   │       ├── HandySales.Api/      # Main API endpoints
+│   │       ├── HandySuites.Api/      # Main API endpoints
 │   │       └── Program.cs           # Main API configuration
 │   │
 │   ├── mobile/                      # Mobile API Microservice .NET 8 (SEPARATE)
 │   │   └── src/
-│   │       ├── HandySales.Mobile.Api/ # Mobile API endpoints
+│   │       ├── HandySuites.Mobile.Api/ # Mobile API endpoints
 │   │       └── Program.cs            # Mobile API configuration
 │   │
 │   ├── billing/                     # Billing Microservice .NET 9
 │   │   └── src/
-│   │       ├── HandySales.Billing.Api/ # SAT CFDI invoicing
+│   │       ├── HandySuites.Billing.Api/ # SAT CFDI invoicing
 │   │       └── Program.cs            # Billing API configuration
 │   │
 │   ├── mobile-app/              # React Native App (Expo Dev Client)
@@ -26,7 +26,7 @@ HandySales/                          # Root
 │   │
 │   ├── ai/                      # AI Gateway Microservice .NET 8
 │   │   └── src/
-│   │       └── HandySales.Ai.Api/   # AI endpoints + LLM routing
+│   │       └── HandySuites.Ai.Api/   # AI endpoints + LLM routing
 │   │
 │   └── web/                         # Frontend Next.js 15
 │       ├── src/app/                 # App Router pages
@@ -36,10 +36,10 @@ HandySales/                          # Root
 │       └── src/stores/              # Zustand state management
 │
 ├── libs/                            # Shared Libraries (NuGet packages)
-│   ├── HandySales.Domain/           # 14 entities, business rules, aggregates
-│   ├── HandySales.Application/      # DTOs, validators, services, use cases
-│   ├── HandySales.Infrastructure/   # EF Core, MySQL, repositories, UoW
-│   └── HandySales.Shared/           # Utilities, constants, extensions, exceptions
+│   ├── HandySuites.Domain/           # 14 entities, business rules, aggregates
+│   ├── HandySuites.Application/      # DTOs, validators, services, use cases
+│   ├── HandySuites.Infrastructure/   # EF Core, MySQL, repositories, UoW
+│   └── HandySuites.Shared/           # Utilities, constants, extensions, exceptions
 │
 ├── infra/                           # Infrastructure
 │   ├── docker/                      # Dockerfiles (api, mobile, billing, web)

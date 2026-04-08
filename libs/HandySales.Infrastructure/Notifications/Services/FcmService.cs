@@ -1,8 +1,8 @@
-using HandySales.Application.Notifications.Interfaces;
+using HandySuites.Application.Notifications.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
-namespace HandySales.Infrastructure.Notifications.Services;
+namespace HandySuites.Infrastructure.Notifications.Services;
 
 /// <summary>
 /// Implementación del servicio Firebase Cloud Messaging.

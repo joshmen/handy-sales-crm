@@ -1,8 +1,8 @@
-using HandySales.Application.Zonas.DTOs;
-using HandySales.Application.Zonas.Interfaces;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Application.Zonas.DTOs;
+using HandySuites.Application.Zonas.Interfaces;
+using HandySuites.Shared.Multitenancy;
 
-namespace HandySales.Application.Zonas.Services;
+namespace HandySuites.Application.Zonas.Services;
 
 public record DeleteZonaResult(bool Success, string? Error = null, int ClientesCount = 0);
 public record ToggleZonaActivoResult(bool Success, string? Error = null, int ClientesCount = 0);

@@ -1,16 +1,16 @@
 using System.Globalization;
 using System.Text;
-using HandySales.Application.Ai.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.Ai.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-namespace HandySales.Infrastructure.Ai.Services;
+namespace HandySuites.Infrastructure.Ai.Services;
 
 public class AiDataContextBuilder : IAiDataContextBuilder
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
     private readonly IAiEmbeddingService _embeddingService;
     private readonly ILogger<AiDataContextBuilder> _logger;
 
@@ -102,7 +102,7 @@ public class AiDataContextBuilder : IAiDataContextBuilder
         ["pronostico"] = (2000, 90, 3),
     };
 
-    public AiDataContextBuilder(HandySalesDbContext db, IAiEmbeddingService embeddingService, ILogger<AiDataContextBuilder> logger)
+    public AiDataContextBuilder(HandySuitesDbContext db, IAiEmbeddingService embeddingService, ILogger<AiDataContextBuilder> logger)
     {
         _db = db;
         _embeddingService = embeddingService;

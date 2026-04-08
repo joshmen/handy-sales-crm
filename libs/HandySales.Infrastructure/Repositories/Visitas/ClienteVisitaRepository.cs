@@ -1,18 +1,18 @@
-using HandySales.Application.Pedidos.DTOs;
-using HandySales.Application.Visitas.DTOs;
-using HandySales.Application.Visitas.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.Pedidos.DTOs;
+using HandySuites.Application.Visitas.DTOs;
+using HandySuites.Application.Visitas.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
-namespace HandySales.Infrastructure.Repositories.Visitas;
+namespace HandySuites.Infrastructure.Repositories.Visitas;
 
 public class ClienteVisitaRepository : IClienteVisitaRepository
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
 
-    public ClienteVisitaRepository(HandySalesDbContext db)
+    public ClienteVisitaRepository(HandySuitesDbContext db)
     {
         _db = db;
     }

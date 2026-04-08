@@ -1,7 +1,7 @@
 using FluentValidation;
-using HandySales.Application.Notifications.DTOs;
+using HandySuites.Application.Notifications.DTOs;
 
-namespace HandySales.Application.Notifications.Validators;
+namespace HandySuites.Application.Notifications.Validators;
 
 public class SendNotificationDtoValidator : AbstractValidator<SendNotificationDto>
 {

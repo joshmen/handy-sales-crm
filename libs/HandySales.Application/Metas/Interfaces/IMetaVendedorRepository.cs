@@ -1,6 +1,6 @@
-using HandySales.Application.Metas.DTOs;
+using HandySuites.Application.Metas.DTOs;
 
-namespace HandySales.Application.Metas.Interfaces;
+namespace HandySuites.Application.Metas.Interfaces;
 
 public interface IMetaVendedorRepository
 {

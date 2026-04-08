@@ -1,8 +1,8 @@
-using HandySales.Application.Geo.Interfaces;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.Geo.Interfaces;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class GeoEndpoints
 {

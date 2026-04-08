@@ -1,14 +1,14 @@
 using FluentAssertions;
-using HandySales.Application.ActivityTracking.Services;
-using HandySales.Application.ActivityTracking.Interfaces;
-using HandySales.Domain.Entities;
+using HandySuites.Application.ActivityTracking.Services;
+using HandySuites.Application.ActivityTracking.Interfaces;
+using HandySuites.Domain.Entities;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 using System.Text.Json;
 
-namespace HandySales.Tests.Application.ActivityTracking
+namespace HandySuites.Tests.Application.ActivityTracking
 {
     public class ActivityTrackingServiceTests
     {

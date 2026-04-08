@@ -1,16 +1,16 @@
-using HandySales.Application.Rutas.DTOs;
-using HandySales.Application.Rutas.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.Rutas.DTOs;
+using HandySuites.Application.Rutas.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Infrastructure.Repositories.Rutas;
+namespace HandySuites.Infrastructure.Repositories.Rutas;
 
 public class RutaVendedorRepository : IRutaVendedorRepository
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
 
-    public RutaVendedorRepository(HandySalesDbContext db)
+    public RutaVendedorRepository(HandySuitesDbContext db)
     {
         _db = db;
     }

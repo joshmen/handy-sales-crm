@@ -19,7 +19,7 @@
 - No visible widget (v3 is invisible)
 
 ### Backend
-- `RecaptchaService` in `HandySales.Shared` — validates token via Google API
+- `RecaptchaService` in `HandySuites.Shared` — validates token via Google API
 - `AuthEndpoints`: validate token before processing login/register
 - Reject if score < 0.5
 - Dry-run when `RECAPTCHA_SECRET_KEY` env var missing (dev mode)

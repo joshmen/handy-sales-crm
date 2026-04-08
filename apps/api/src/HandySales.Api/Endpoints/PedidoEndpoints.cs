@@ -1,12 +1,12 @@
-using HandySales.Api.Hubs;
-using HandySales.Application.Ai.Interfaces;
+using HandySuites.Api.Hubs;
+using HandySuites.Application.Ai.Interfaces;
 using Microsoft.AspNetCore.SignalR;
-using HandySales.Infrastructure.Persistence;
-using HandySales.Application.Pedidos.DTOs;
-using HandySales.Application.Pedidos.Services;
+using HandySuites.Infrastructure.Persistence;
+using HandySuites.Application.Pedidos.DTOs;
+using HandySuites.Application.Pedidos.Services;
 using Microsoft.AspNetCore.Mvc;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class PedidoEndpoints
 {

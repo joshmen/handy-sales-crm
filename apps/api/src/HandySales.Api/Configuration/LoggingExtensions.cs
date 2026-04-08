@@ -4,7 +4,7 @@ using Serilog.Core;
 using Serilog.Events;
 using Serilog.Sinks.AwsCloudWatch;
 
-namespace HandySales.Api.Configuration;
+namespace HandySuites.Api.Configuration;
 
 public static class LoggingExtensions
 {
@@ -14,7 +14,7 @@ public static class LoggingExtensions
     {
         return hostBuilder.UseSerilog((context, services, configuration) =>
         {
-            var appName = "HandySales.Api";
+            var appName = "HandySuites.Api";
 
             configuration
                 .MinimumLevel.Information()

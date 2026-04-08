@@ -1,12 +1,12 @@
-using HandySales.Api.Hubs;
-using HandySales.Application.Ai.Interfaces;
+using HandySuites.Api.Hubs;
+using HandySuites.Application.Ai.Interfaces;
 using Microsoft.AspNetCore.SignalR;
-using HandySales.Infrastructure.Persistence;
-using HandySales.Application.Visitas.DTOs;
-using HandySales.Application.Visitas.Services;
+using HandySuites.Infrastructure.Persistence;
+using HandySuites.Application.Visitas.DTOs;
+using HandySuites.Application.Visitas.Services;
 using Microsoft.AspNetCore.Mvc;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class ClienteVisitaEndpoints
 {

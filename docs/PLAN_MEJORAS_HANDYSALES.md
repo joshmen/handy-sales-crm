@@ -1,4 +1,4 @@
-# Plan de Mejoras HandySales - Evaluación Completa
+# Plan de Mejoras HandySuites - Evaluación Completa
 
 **Fecha:** Enero 2026
 **Versión:** 1.0
@@ -8,7 +8,7 @@
 
 ## Resumen Ejecutivo
 
-Después de una evaluación exhaustiva del proyecto HandySales, se identificaron **fortalezas sólidas** en arquitectura y diseño, pero también **gaps críticos** que deben abordarse antes de ir a producción.
+Después de una evaluación exhaustiva del proyecto HandySuites, se identificaron **fortalezas sólidas** en arquitectura y diseño, pero también **gaps críticos** que deben abordarse antes de ir a producción.
 
 ### Scorecard General
 
@@ -136,7 +136,7 @@ Después de una evaluación exhaustiva del proyecto HandySales, se identificaron
 
 ```json
 // appsettings.json - EXPUESTO EN GIT
-"Jwt:Secret": "HandySalesSecretKeyForJWTTokenGeneration2024!"
+"Jwt:Secret": "HandySuitesSecretKeyForJWTTokenGeneration2024!"
 "Cloudinary:Url": "cloudinary://498195422846522:jkqaWAHx0O4b5lpr1-QSvzW_Wp0@dq0o1nbyh"
 
 // appsettings.Development.json
@@ -270,14 +270,14 @@ RequireExpirationTime = false
 ### Backend
 ```
 🔴 CRÍTICO:
-- HandySales.Api/Configuration/JwtExtensions.cs
-- HandySales.Infrastructure/Notifications/Services/FcmService.cs
+- HandySuites.Api/Configuration/JwtExtensions.cs
+- HandySuites.Infrastructure/Notifications/Services/FcmService.cs
 - appsettings.json (SECRETOS)
 - appsettings.Development.json (SECRETOS)
 
 🟡 IMPORTANTE:
-- HandySales.Api/Middleware/GlobalExceptionMiddleware.cs
-- HandySales.Application/Usuarios/Services/UsuarioService.cs
+- HandySuites.Api/Middleware/GlobalExceptionMiddleware.cs
+- HandySuites.Application/Usuarios/Services/UsuarioService.cs
 ```
 
 ### Frontend
@@ -324,7 +324,7 @@ RequireExpirationTime = false
 
 ## 9. Conclusión
 
-El proyecto HandySales tiene una **arquitectura sólida** y **funcionalidad completa** en el backend. Sin embargo, presenta **vulnerabilidades de seguridad críticas** que DEBEN resolverse antes de producción.
+El proyecto HandySuites tiene una **arquitectura sólida** y **funcionalidad completa** en el backend. Sin embargo, presenta **vulnerabilidades de seguridad críticas** que DEBEN resolverse antes de producción.
 
 **Recomendación:** Completar Fase 1 y 2 (4 semanas) antes de:
 1. Desplegar a producción con clientes reales

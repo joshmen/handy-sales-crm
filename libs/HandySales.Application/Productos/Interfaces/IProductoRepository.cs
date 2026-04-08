@@ -1,6 +1,6 @@
-using HandySales.Application.Productos.DTOs;
+using HandySuites.Application.Productos.DTOs;
 
-namespace HandySales.Application.Productos.Interfaces;
+namespace HandySuites.Application.Productos.Interfaces;
 
 public interface IProductoRepository
 {

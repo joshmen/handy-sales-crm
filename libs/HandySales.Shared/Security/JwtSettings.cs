@@ -1,4 +1,4 @@
-namespace HandySales.Shared.Security;
+namespace HandySuites.Shared.Security;
 
 public class JwtSettings
 {

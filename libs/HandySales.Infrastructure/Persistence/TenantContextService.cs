@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 
-namespace HandySales.Infrastructure.Persistence;
+namespace HandySuites.Infrastructure.Persistence;
 
 /// <summary>
 /// Servicio para obtener el tenant del contexto HTTP de forma segura.

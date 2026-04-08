@@ -1,5 +1,5 @@
 using FluentValidation;
-using HandySales.Application.UnidadesMedida.DTOs;
+using HandySuites.Application.UnidadesMedida.DTOs;
 
 public class UnidadMedidaCreateDtoValidator : AbstractValidator<UnidadMedidaCreateDto>
 {

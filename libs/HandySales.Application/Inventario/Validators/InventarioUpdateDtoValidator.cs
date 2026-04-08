@@ -1,5 +1,5 @@
 using FluentValidation;
-using HandySales.Application.Inventario.DTOs;
+using HandySuites.Application.Inventario.DTOs;
 
 public class InventarioUpdateDtoValidator : AbstractValidator<InventarioUpdateDto>
 {

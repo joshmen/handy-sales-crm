@@ -1,22 +1,22 @@
 using System.Text.Json;
-using HandySales.Application.Ai.DTOs;
-using HandySales.Application.Ai.Interfaces;
-using HandySales.Application.Cobranza.DTOs;
-using HandySales.Application.Cobranza.Services;
-using HandySales.Application.Metas.DTOs;
-using HandySales.Application.Metas.Services;
-using HandySales.Application.Productos.Services;
-using HandySales.Application.Rutas.DTOs;
-using HandySales.Application.Rutas.Services;
-using HandySales.Application.Visitas.DTOs;
-using HandySales.Application.Visitas.Services;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.Ai.DTOs;
+using HandySuites.Application.Ai.Interfaces;
+using HandySuites.Application.Cobranza.DTOs;
+using HandySuites.Application.Cobranza.Services;
+using HandySuites.Application.Metas.DTOs;
+using HandySuites.Application.Metas.Services;
+using HandySuites.Application.Productos.Services;
+using HandySuites.Application.Rutas.DTOs;
+using HandySuites.Application.Rutas.Services;
+using HandySuites.Application.Visitas.DTOs;
+using HandySuites.Application.Visitas.Services;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class AiEndpoints
 {
@@ -94,7 +94,7 @@ public static class AiEndpoints
     /// <summary>
     /// Checks if materialized views exist and falls back to EF Core queries if not.
     /// </summary>
-    private static async Task<bool> MaterializedViewExistsAsync(HandySalesDbContext db, string viewName)
+    private static async Task<bool> MaterializedViewExistsAsync(HandySuitesDbContext db, string viewName)
     {
         var result = await db.Database
             .SqlQueryRaw<int>("SELECT COUNT(*)::int AS \"Value\" FROM pg_matviews WHERE matviewname = {0}", viewName)
@@ -144,7 +144,7 @@ public static class AiEndpoints
         IAiCreditService creditService,
         ITenantContextService tenantContext,
         IMemoryCache cache,
-        HandySalesDbContext db,
+        HandySuitesDbContext db,
         IServiceProvider services,
         HttpContext ctx)
     {
@@ -284,7 +284,7 @@ public static class AiEndpoints
     }
 
     private static async Task<IResult> HandleGetUsage(
-        HandySalesDbContext db,
+        HandySuitesDbContext db,
         ITenantContextService tenantContext,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20)
@@ -316,7 +316,7 @@ public static class AiEndpoints
     }
 
     private static async Task<IResult> HandleGetUsageStats(
-        HandySalesDbContext db,
+        HandySuitesDbContext db,
         ITenantContextService tenantContext)
     {
         var tenantId = tenantContext.TenantId ?? 0;
@@ -362,7 +362,7 @@ public static class AiEndpoints
 
     private static async Task<IResult> HandleSuggestedProducts(
         int clienteId,
-        HandySalesDbContext db,
+        HandySuitesDbContext db,
         ITenantContextService tenantContext,
         IMemoryCache cache,
         [FromQuery] int limit = 10,
@@ -435,7 +435,7 @@ public static class AiEndpoints
     // ═══════════════════════════════════════════════════════
 
     private static async Task<IResult> HandleCollectionsPriority(
-        HandySalesDbContext db,
+        HandySuitesDbContext db,
         ITenantContextService tenantContext,
         IMemoryCache cache,
         [FromQuery] int limit = 20)
@@ -478,7 +478,7 @@ public static class AiEndpoints
         return Results.Ok(result);
     }
 
-    private static async Task<object> CollectionsPriorityFallbackAsync(HandySalesDbContext db, int tenantId, int limit)
+    private static async Task<object> CollectionsPriorityFallbackAsync(HandySuitesDbContext db, int tenantId, int limit)
     {
         var now = DateTime.UtcNow;
 #pragma warning disable CS0618 // Legacy enum values still needed for querying existing DB data
@@ -545,7 +545,7 @@ public static class AiEndpoints
         IAiGatewayService gateway,
         IAiCreditService creditService,
         ITenantContextService tenantContext,
-        HandySalesDbContext db,
+        HandySuitesDbContext db,
         HttpContext ctx)
     {
         var (tenantId, userId) = ExtractIdentity(tenantContext, ctx);
@@ -617,7 +617,7 @@ Reglas:
 
     private static async Task<IResult> HandleOrderAnomalies(
         int pedidoId,
-        HandySalesDbContext db,
+        HandySuitesDbContext db,
         ITenantContextService tenantContext,
         IMemoryCache cache)
     {
@@ -767,7 +767,7 @@ Reglas:
 
     private static async Task<IResult> HandleSmartDiscount(
         int clienteId,
-        HandySalesDbContext db,
+        HandySuitesDbContext db,
         ITenantContextService tenantContext,
         IMemoryCache cache,
         [FromQuery] int? productoId = null,
@@ -897,7 +897,7 @@ Reglas:
     // ═══════════════════════════════════════════════════════
 
     private static async Task<IResult> HandleRecommendationsTomorrow(
-        HandySalesDbContext db,
+        HandySuitesDbContext db,
         ITenantContextService tenantContext,
         IMemoryCache cache,
         HttpContext ctx)
@@ -983,7 +983,7 @@ Reglas:
 
     private static async Task<IResult> HandleStopDurations(
         int rutaId,
-        HandySalesDbContext db,
+        HandySuitesDbContext db,
         ITenantContextService tenantContext,
         IMemoryCache cache)
     {
@@ -1097,7 +1097,7 @@ Reglas:
     // ═══════════════════════════════════════════════════════
 
     private static async Task<IResult> HandleDemandForecast(
-        HandySalesDbContext db,
+        HandySuitesDbContext db,
         ITenantContextService tenantContext,
         IMemoryCache cache,
         [FromQuery] int? productoId = null,
@@ -1230,7 +1230,7 @@ Reglas:
 
     private static async Task<IResult> HandlePaymentRisk(
         int clienteId,
-        HandySalesDbContext db,
+        HandySuitesDbContext db,
         ITenantContextService tenantContext,
         IMemoryCache cache)
     {
@@ -1335,7 +1335,7 @@ Reglas:
 
     private static async Task<IResult> HandleGpsAnomaly(
         int visitaId,
-        HandySalesDbContext db,
+        HandySuitesDbContext db,
         ITenantContextService tenantContext)
     {
         var tenantId = tenantContext.TenantId ?? 0;
@@ -1466,7 +1466,7 @@ Reglas:
     // ═══════════════════════════════════════════════════════
 
     private static async Task<IResult> HandleRefreshViews(
-        HandySalesDbContext db,
+        HandySuitesDbContext db,
         ITenantContextService tenantContext,
         HttpContext ctx)
     {
@@ -1593,7 +1593,7 @@ Reglas:
     private static async Task<IResult> HandleBackfillEmbeddings(
         ITenantContextService tenantContext,
         HttpContext ctx,
-        [FromServices] HandySalesDbContext db,
+        [FromServices] HandySuitesDbContext db,
         [FromServices] IAiEmbeddingService embeddingService)
     {
         var (tenantId, _) = ExtractIdentity(tenantContext, ctx);

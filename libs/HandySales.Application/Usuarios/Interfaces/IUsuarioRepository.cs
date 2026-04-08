@@ -1,7 +1,7 @@
-using HandySales.Domain.Entities;
-using HandySales.Application.Usuarios.DTOs;
+using HandySuites.Domain.Entities;
+using HandySuites.Application.Usuarios.DTOs;
 
-namespace HandySales.Application.Usuarios.Interfaces;
+namespace HandySuites.Application.Usuarios.Interfaces;
 
 public interface IUsuarioRepository
 {

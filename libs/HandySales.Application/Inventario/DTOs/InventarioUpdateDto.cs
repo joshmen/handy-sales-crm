@@ -1,4 +1,4 @@
-namespace HandySales.Application.Inventario.DTOs;
+namespace HandySuites.Application.Inventario.DTOs;
 
 public class InventarioUpdateDto
 {

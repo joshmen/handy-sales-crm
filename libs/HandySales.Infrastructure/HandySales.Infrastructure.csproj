@@ -1,9 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\HandySales.Application\HandySales.Application.csproj" />
-    <ProjectReference Include="..\HandySales.Domain\HandySales.Domain.csproj" />
-    <ProjectReference Include="..\HandySales.Shared\HandySales.Shared.csproj" />
+    <ProjectReference Include="..\HandySuites.Application\HandySuites.Application.csproj" />
+    <ProjectReference Include="..\HandySuites.Domain\HandySuites.Domain.csproj" />
+    <ProjectReference Include="..\HandySuites.Shared\HandySuites.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,13 +1,13 @@
 using System.Text.Json;
-using HandySales.Api.Automations;
-using HandySales.Application.Automations.Interfaces;
-using HandySales.Application.Notifications.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
-using HandySales.Shared.Email;
+using HandySuites.Api.Automations;
+using HandySuites.Application.Automations.Interfaces;
+using HandySuites.Application.Notifications.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
+using HandySuites.Shared.Email;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Api.Workers;
+namespace HandySuites.Api.Workers;
 
 public class AutomationEngine : BackgroundService
 {
@@ -70,7 +70,7 @@ public class AutomationEngine : BackgroundService
         Dictionary<int, string> tenantTimezones;
         using (var tzScope = _services.CreateScope())
         {
-            var tzDb = tzScope.ServiceProvider.GetRequiredService<HandySalesDbContext>();
+            var tzDb = tzScope.ServiceProvider.GetRequiredService<HandySuitesDbContext>();
             var tenantIds = automations.Select(a => a.TenantId).Distinct().ToList();
             tenantTimezones = await tzDb.CompanySettings
                 .Where(cs => tenantIds.Contains(cs.TenantId))
@@ -81,7 +81,7 @@ public class AutomationEngine : BackgroundService
         Dictionary<int, string?> tenantStatuses;
         using (var statusScope = _services.CreateScope())
         {
-            var statusDb = statusScope.ServiceProvider.GetRequiredService<HandySalesDbContext>();
+            var statusDb = statusScope.ServiceProvider.GetRequiredService<HandySuitesDbContext>();
             var tenantIds2 = automations.Select(a => a.TenantId).Distinct().ToList();
             tenantStatuses = await statusDb.Tenants
                 .Where(t => tenantIds2.Contains(t.Id))
@@ -116,7 +116,7 @@ public class AutomationEngine : BackgroundService
                 continue;
             }
 
-            var db = execScope.ServiceProvider.GetRequiredService<HandySalesDbContext>();
+            var db = execScope.ServiceProvider.GetRequiredService<HandySuitesDbContext>();
 
             // Re-validate subscription with fresh data (eliminates stale-status race window)
             var freshStatus = await db.Tenants.AsNoTracking()

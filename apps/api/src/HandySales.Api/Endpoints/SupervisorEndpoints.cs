@@ -1,12 +1,12 @@
-using HandySales.Application.DeviceSessions.Interfaces;
-using HandySales.Application.Usuarios.DTOs;
-using HandySales.Application.Usuarios.Interfaces;
-using HandySales.Infrastructure.Persistence;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Application.DeviceSessions.Interfaces;
+using HandySuites.Application.Usuarios.DTOs;
+using HandySuites.Application.Usuarios.Interfaces;
+using HandySuites.Infrastructure.Persistence;
+using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class SupervisorEndpoints
 {
@@ -20,7 +20,7 @@ public static class SupervisorEndpoints
         // GET /api/supervisores/mis-vendedores
         group.MapGet("/mis-vendedores", async (
             ICurrentTenant tenant,
-            HandySalesDbContext db,
+            HandySuitesDbContext db,
             [FromServices] IDeviceSessionRepository sessionRepo) =>
         {
             if (!tenant.IsSupervisor)
@@ -67,7 +67,7 @@ public static class SupervisorEndpoints
         group.MapGet("/{id:int}/vendedores", async (
             int id,
             ICurrentTenant tenant,
-            HandySalesDbContext db) =>
+            HandySuitesDbContext db) =>
         {
             if (!tenant.IsAdmin)
                 return Results.Forbid();
@@ -98,7 +98,7 @@ public static class SupervisorEndpoints
             int id,
             [FromBody] AsignarVendedoresRequest request,
             ICurrentTenant tenant,
-            HandySalesDbContext db) =>
+            HandySuitesDbContext db) =>
         {
             if (!tenant.IsAdmin)
                 return Results.Forbid();
@@ -136,7 +136,7 @@ public static class SupervisorEndpoints
             int id,
             int vendedorId,
             ICurrentTenant tenant,
-            HandySalesDbContext db) =>
+            HandySuitesDbContext db) =>
         {
             if (!tenant.IsAdmin)
                 return Results.Forbid();
@@ -161,7 +161,7 @@ public static class SupervisorEndpoints
         // GET /api/supervisores/dashboard
         group.MapGet("/dashboard", async (
             ICurrentTenant tenant,
-            HandySalesDbContext db) =>
+            HandySuitesDbContext db) =>
         {
             if (!tenant.IsSupervisor)
                 return Results.Forbid();
@@ -228,7 +228,7 @@ public static class SupervisorEndpoints
         // GET /api/supervisores/vendedores-disponibles (admin: vendedores sin supervisor)
         group.MapGet("/vendedores-disponibles", async (
             ICurrentTenant tenant,
-            HandySalesDbContext db) =>
+            HandySuitesDbContext db) =>
         {
             if (!tenant.IsAdmin)
                 return Results.Forbid();

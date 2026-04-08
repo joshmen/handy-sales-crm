@@ -1,4 +1,4 @@
-namespace HandySales.Application.Integrations.DTOs;
+namespace HandySuites.Application.Integrations.DTOs;
 
 public record IntegrationCatalogDto(
     int Id,

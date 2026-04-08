@@ -1,6 +1,6 @@
-using HandySales.Application.MovimientosInventario.DTOs;
+using HandySuites.Application.MovimientosInventario.DTOs;
 
-namespace HandySales.Application.MovimientosInventario.Interfaces;
+namespace HandySuites.Application.MovimientosInventario.Interfaces;
 
 public interface IMovimientoInventarioRepository
 {

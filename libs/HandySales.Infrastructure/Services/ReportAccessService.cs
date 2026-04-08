@@ -1,12 +1,12 @@
-using HandySales.Application.SubscriptionPlans.Interfaces;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.SubscriptionPlans.Interfaces;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Infrastructure.Services;
+namespace HandySuites.Infrastructure.Services;
 
 public class ReportAccessService : IReportAccessService
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
 
     // Tier definitions — hardcoded to avoid migration
     private static readonly Dictionary<string, HashSet<string>> TierReports = new()
@@ -37,7 +37,7 @@ public class ReportAccessService : IReportAccessService
         ["profesional"] = null   // unlimited
     };
 
-    public ReportAccessService(HandySalesDbContext db) => _db = db;
+    public ReportAccessService(HandySuitesDbContext db) => _db = db;
 
     public async Task<ReportAccessResult> CanAccessReportAsync(int tenantId, string reportSlug)
     {

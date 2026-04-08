@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
-using HandySales.Application.Ai.Interfaces;
+using HandySuites.Application.Ai.Interfaces;
 
-namespace HandySales.Infrastructure.Ai.Services;
+namespace HandySuites.Infrastructure.Ai.Services;
 
 public class AiSanitizer : IAiSanitizer
 {

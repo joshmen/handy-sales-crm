@@ -1,7 +1,7 @@
-using HandySales.Application.Integrations.DTOs;
-using HandySales.Application.Integrations.Interfaces;
+using HandySuites.Application.Integrations.DTOs;
+using HandySuites.Application.Integrations.Interfaces;
 
-namespace HandySales.Application.Integrations.Services;
+namespace HandySuites.Application.Integrations.Services;
 
 public class IntegrationService
 {

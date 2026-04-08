@@ -1,16 +1,16 @@
-using HandySales.Application.SubscriptionPlans.DTOs;
-using HandySales.Application.SubscriptionPlans.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.SubscriptionPlans.DTOs;
+using HandySuites.Application.SubscriptionPlans.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Infrastructure.Repositories.SubscriptionPlans;
+namespace HandySuites.Infrastructure.Repositories.SubscriptionPlans;
 
 public class SubscriptionPlanRepository : ISubscriptionPlanRepository
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
 
-    public SubscriptionPlanRepository(HandySalesDbContext db)
+    public SubscriptionPlanRepository(HandySuitesDbContext db)
     {
         _db = db;
     }

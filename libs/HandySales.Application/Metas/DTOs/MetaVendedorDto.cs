@@ -1,4 +1,4 @@
-namespace HandySales.Application.Metas.DTOs;
+namespace HandySuites.Application.Metas.DTOs;
 
 public class MetaVendedorDto
 {

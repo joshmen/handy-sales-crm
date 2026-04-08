@@ -1,7 +1,7 @@
 using FluentValidation;
-using HandySales.Application.FamiliasProductos.DTOs;
+using HandySuites.Application.FamiliasProductos.DTOs;
 
-namespace HandySales.Application.FamiliasProductos.Validators
+namespace HandySuites.Application.FamiliasProductos.Validators
 {
     public class FamiliaProductoCreateDtoValidator : AbstractValidator<FamiliaProductoCreateDto>
     {

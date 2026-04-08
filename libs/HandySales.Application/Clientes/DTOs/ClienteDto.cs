@@ -1,4 +1,4 @@
-namespace HandySales.Application.Clientes.DTOs;
+namespace HandySuites.Application.Clientes.DTOs;
 
 public class ClienteDto
 {

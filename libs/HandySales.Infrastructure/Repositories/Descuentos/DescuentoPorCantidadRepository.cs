@@ -1,16 +1,16 @@
-using HandySales.Application.Descuentos.DTOs;
-using HandySales.Application.Descuentos.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.Descuentos.DTOs;
+using HandySuites.Application.Descuentos.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Infrastructure.Descuentos.Repositories;
+namespace HandySuites.Infrastructure.Descuentos.Repositories;
 
 public class DescuentoPorCantidadRepository : IDescuentoPorCantidadRepository
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
 
-    public DescuentoPorCantidadRepository(HandySalesDbContext db)
+    public DescuentoPorCantidadRepository(HandySuitesDbContext db)
     {
         _db = db;
     }

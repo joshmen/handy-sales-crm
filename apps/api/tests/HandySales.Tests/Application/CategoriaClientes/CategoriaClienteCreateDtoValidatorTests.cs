@@ -1,9 +1,9 @@
 using Xunit;
 using FluentValidation.TestHelper;
-using HandySales.Application.CategoriasClientes.DTOs;
-using HandySales.Application.CategoriasClientes.Validators;
+using HandySuites.Application.CategoriasClientes.DTOs;
+using HandySuites.Application.CategoriasClientes.Validators;
 
-namespace HandySales.Tests.Application.CategoriasClientes
+namespace HandySuites.Tests.Application.CategoriasClientes
 {
     public class CategoriaClienteCreateDtoValidatorTests
     {

@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using System.Data.Common;
 
-namespace HandySales.Api.Middleware;
+namespace HandySuites.Api.Middleware;
 
 public class SlowQueryInterceptor : DbCommandInterceptor
 {

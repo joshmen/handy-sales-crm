@@ -1,6 +1,6 @@
-using HandySales.Domain.Entities;
+using HandySuites.Domain.Entities;
 
-namespace HandySales.Application.Companies.Interfaces
+namespace HandySuites.Application.Companies.Interfaces
 {
     public interface ICompanyRepository
     {

@@ -1,8 +1,8 @@
-using HandySales.Application.CategoriasProductos.DTOs;
-using HandySales.Application.CategoriasProductos.Interfaces;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Application.CategoriasProductos.DTOs;
+using HandySuites.Application.CategoriasProductos.Interfaces;
+using HandySuites.Shared.Multitenancy;
 
-namespace HandySales.Application.CategoriasProductos.Services;
+namespace HandySuites.Application.CategoriasProductos.Services;
 
 public record DeleteCategoriaProductoResult(bool Success, string? Error = null, int ProductosCount = 0);
 public record ToggleCategoriaProductoActivoResult(bool Success, string? Error = null, int ProductosCount = 0);

@@ -3,16 +3,16 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using BCrypt.Net;
-using HandySales.Api.Hubs;
-using HandySales.Application.Tenants.DTOs;
-using HandySales.Application.Tenants.Interfaces;
-using HandySales.Shared.Email;
-using HandySales.Application.Usuarios.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Api.Hubs;
+using HandySuites.Application.Tenants.DTOs;
+using HandySuites.Application.Tenants.Interfaces;
+using HandySuites.Shared.Email;
+using HandySuites.Application.Usuarios.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
+using HandySuites.Shared.Multitenancy;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class TenantEndpoints
 {
@@ -20,7 +20,7 @@ public static class TenantEndpoints
     {
         var group = app.MapGroup("/api/tenants")
             .RequireAuthorization()
-            .RequireCors("HandySalesPolicy");
+            .RequireCors("HandySuitesPolicy");
 
         group.MapGet("/", GetAll)
             .WithName("GetAllTenants")
@@ -62,7 +62,7 @@ public static class TenantEndpoints
     private static async Task<IResult> GetAll(
         [FromServices] ICurrentTenant currentTenant,
         [FromServices] ITenantRepository tenantRepo,
-        [FromServices] HandySalesDbContext context)
+        [FromServices] HandySuitesDbContext context)
     {
         if (!currentTenant.IsSuperAdmin)
             return Results.Forbid();
@@ -103,7 +103,7 @@ public static class TenantEndpoints
         int id,
         [FromServices] ICurrentTenant currentTenant,
         [FromServices] ITenantRepository tenantRepo,
-        [FromServices] HandySalesDbContext context)
+        [FromServices] HandySuitesDbContext context)
     {
         if (!currentTenant.IsSuperAdmin)
             return Results.Forbid();
@@ -157,7 +157,7 @@ public static class TenantEndpoints
         [FromServices] ICurrentTenant currentTenant,
         [FromServices] ITenantRepository tenantRepo,
         [FromServices] ITenantSeedService tenantSeedService,
-        [FromServices] HandySalesDbContext context)
+        [FromServices] HandySuitesDbContext context)
     {
         if (!currentTenant.IsSuperAdmin)
             return Results.Forbid();
@@ -234,7 +234,7 @@ public static class TenantEndpoints
         [FromBody] TenantCambiarActivoDto dto,
         [FromServices] ICurrentTenant currentTenant,
         [FromServices] ITenantRepository tenantRepo,
-        [FromServices] HandySalesDbContext db,
+        [FromServices] HandySuitesDbContext db,
         [FromServices] IMemoryCache cache,
         [FromServices] IHubContext<NotificationHub> hubContext,
         [FromServices] IEmailService emailService)
@@ -334,7 +334,7 @@ public static class TenantEndpoints
         [FromBody] TenantBatchToggleRequest dto,
         [FromServices] ICurrentTenant currentTenant,
         [FromServices] ITenantRepository tenantRepo,
-        [FromServices] HandySalesDbContext db,
+        [FromServices] HandySuitesDbContext db,
         [FromServices] IMemoryCache cache,
         [FromServices] IHubContext<NotificationHub> hubContext)
     {
@@ -391,7 +391,7 @@ public static class TenantEndpoints
     private static async Task<IResult> GetTenantUsers(
         int id,
         [FromServices] ICurrentTenant currentTenant,
-        [FromServices] HandySalesDbContext context)
+        [FromServices] HandySuitesDbContext context)
     {
         if (!currentTenant.IsSuperAdmin)
             return Results.Forbid();
@@ -423,7 +423,7 @@ public static class TenantEndpoints
         int id,
         [FromBody] TenantCreateUserDto dto,
         [FromServices] ICurrentTenant currentTenant,
-        [FromServices] HandySalesDbContext context)
+        [FromServices] HandySuitesDbContext context)
     {
         if (!currentTenant.IsSuperAdmin)
             return Results.Forbid();
@@ -498,7 +498,7 @@ public static class TenantEndpoints
 
     private static async Task<IResult> CompleteOnboarding(
         [FromServices] ICurrentTenant currentTenant,
-        [FromServices] HandySalesDbContext context)
+        [FromServices] HandySuitesDbContext context)
     {
         if (currentTenant.TenantId <= 0)
             return Results.BadRequest(new { message = "Tenant no identificado" });

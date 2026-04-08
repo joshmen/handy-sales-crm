@@ -1,8 +1,8 @@
 using System.Security.Claims;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Http;
 
-namespace HandySales.Infrastructure.Repositories;
+namespace HandySuites.Infrastructure.Repositories;
 
 public class CurrentTenant : ICurrentTenant
 {

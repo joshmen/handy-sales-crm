@@ -55,8 +55,8 @@ ASPNETCORE_ENVIRONMENT=Production
 ASPNETCORE_URLS=http://+:${PORT}
 ConnectionStrings__DefaultConnection=Server=<railway-mysql>;Port=3306;Database=handy_erp;User=root;Password=<auto>;
 JWT__SecretKey=<openssl rand -base64 64>
-JWT__Issuer=HandySales
-JWT__Audience=HandySalesUsers
+JWT__Issuer=HandySuites
+JWT__Audience=HandySuitesUsers
 JWT__ExpirationHours=24
 SENDGRID_API_KEY=<from SendGrid dashboard>
 SENDGRID_FROM_EMAIL=<verified sender, e.g. noreply@handysuites.com>
@@ -89,9 +89,9 @@ railway up --service api_billing
 railway up --service api_mobile
 
 # Build & test production Dockerfiles locally
-docker build -f infra/docker/Dockerfile.Main.Prod -t handysales-api .
-docker build -f infra/docker/Dockerfile.Billing.Prod -t handysales-billing .
-docker build -f infra/docker/Dockerfile.Mobile.Prod -t handysales-mobile .
+docker build -f infra/docker/Dockerfile.Main.Prod -t handysuites-api .
+docker build -f infra/docker/Dockerfile.Billing.Prod -t handysuites-billing .
+docker build -f infra/docker/Dockerfile.Mobile.Prod -t handysuites-mobile .
 ```
 
 ### Cost Breakdown

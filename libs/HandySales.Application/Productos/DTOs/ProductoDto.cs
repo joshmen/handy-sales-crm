@@ -1,4 +1,4 @@
-namespace HandySales.Application.Productos.DTOs;
+namespace HandySuites.Application.Productos.DTOs;
 
 public class ProductoDto
 {

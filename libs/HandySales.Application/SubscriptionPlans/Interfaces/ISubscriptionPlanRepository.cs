@@ -1,7 +1,7 @@
-using HandySales.Application.SubscriptionPlans.DTOs;
-using HandySales.Domain.Entities;
+using HandySuites.Application.SubscriptionPlans.DTOs;
+using HandySuites.Domain.Entities;
 
-namespace HandySales.Application.SubscriptionPlans.Interfaces;
+namespace HandySuites.Application.SubscriptionPlans.Interfaces;
 
 public interface ISubscriptionPlanRepository
 {

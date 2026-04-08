@@ -2,18 +2,18 @@ using System.Diagnostics;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using HandySales.Application.Ai.DTOs;
-using HandySales.Application.Ai.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.Ai.DTOs;
+using HandySuites.Application.Ai.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
-namespace HandySales.Infrastructure.Ai.Services;
+namespace HandySuites.Infrastructure.Ai.Services;
 
 public class AiGatewayService : IAiGatewayService
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
     private readonly IAiCreditService _creditService;
     private readonly IAiSanitizer _sanitizer;
     private readonly IAiDataContextBuilder _contextBuilder;
@@ -29,7 +29,7 @@ public class AiGatewayService : IAiGatewayService
     };
 
     public AiGatewayService(
-        HandySalesDbContext db,
+        HandySuitesDbContext db,
         IAiCreditService creditService,
         IAiSanitizer sanitizer,
         IAiDataContextBuilder contextBuilder,

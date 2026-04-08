@@ -1,15 +1,15 @@
-using HandySales.Application.CategoriasClientes.DTOs;
-using HandySales.Application.CategoriasClientes.Interfaces;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.CategoriasClientes.DTOs;
+using HandySuites.Application.CategoriasClientes.Interfaces;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Infrastructure.CategoriasClientes.Repositories;
+namespace HandySuites.Infrastructure.CategoriasClientes.Repositories;
 
 public class CategoriaClienteRepository : ICategoriaClienteRepository
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
 
-    public CategoriaClienteRepository(HandySalesDbContext db)
+    public CategoriaClienteRepository(HandySuitesDbContext db)
     {
         _db = db;
     }

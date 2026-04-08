@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace HandySales.Application.DatosFacturacion.DTOs
+namespace HandySuites.Application.DatosFacturacion.DTOs
 {
     public class UpdateDatosFacturacionRequest
     {

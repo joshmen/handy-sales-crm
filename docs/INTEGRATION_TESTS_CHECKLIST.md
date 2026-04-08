@@ -1,4 +1,4 @@
-# Checklist de Pruebas Integrales — HandySales
+# Checklist de Pruebas Integrales — HandySuites
 
 > Ejecutar despues de cada sprint/release. Marcar con [x] cada prueba pasada.
 
@@ -6,7 +6,7 @@
 
 | Rol | Email | Password | Tenant |
 |-----|-------|----------|--------|
-| SuperAdmin | superadmin@handysales.com | test123 | Global (all tenants) |
+| SuperAdmin | superadmin@handysuites.com | test123 | Global (all tenants) |
 | Admin | admin@jeyma.com | test123 | Jeyma (id=3) |
 | Vendedor 1 | vendedor1@jeyma.com | test123 | Jeyma (id=3) |
 | Vendedor 2 | vendedor2@jeyma.com | test123 | Jeyma (id=3) |

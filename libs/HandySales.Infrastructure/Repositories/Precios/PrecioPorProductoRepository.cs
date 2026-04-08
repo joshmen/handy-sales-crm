@@ -1,16 +1,16 @@
-using HandySales.Application.Precios.DTOs;
-using HandySales.Application.Precios.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.Precios.DTOs;
+using HandySuites.Application.Precios.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Infrastructure.Precios.Repositories;
+namespace HandySuites.Infrastructure.Precios.Repositories;
 
 public class PrecioPorProductoRepository : IPrecioPorProductoRepository
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
 
-    public PrecioPorProductoRepository(HandySalesDbContext db)
+    public PrecioPorProductoRepository(HandySuitesDbContext db)
     {
         _db = db;
     }

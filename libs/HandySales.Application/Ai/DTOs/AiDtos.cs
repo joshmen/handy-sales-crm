@@ -1,4 +1,4 @@
-namespace HandySales.Application.Ai.DTOs;
+namespace HandySuites.Application.Ai.DTOs;
 
 public record AiRequestDto(
     string TipoAccion,

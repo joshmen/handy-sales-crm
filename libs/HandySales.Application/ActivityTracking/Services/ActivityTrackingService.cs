@@ -1,9 +1,9 @@
-using HandySales.Domain.Entities;
-using HandySales.Application.ActivityTracking.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Application.ActivityTracking.Interfaces;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 
-namespace HandySales.Application.ActivityTracking.Services;
+namespace HandySuites.Application.ActivityTracking.Services;
 
 public interface IActivityTrackingService
 {

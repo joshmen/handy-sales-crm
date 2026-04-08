@@ -2,10 +2,10 @@ using FluentAssertions;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using HandySales.Domain.Entities;
+using HandySuites.Domain.Entities;
 using Xunit;
 
-namespace HandySales.Tests.Application.Cupones
+namespace HandySuites.Tests.Application.Cupones
 {
     public class CuponEndpointsTests : IClassFixture<CustomWebApplicationFactory>
     {

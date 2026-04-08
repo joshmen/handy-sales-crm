@@ -1,8 +1,8 @@
-using HandySales.Application.CompanySettings.Interfaces;
-using HandySales.Shared.Email;
+using HandySuites.Application.CompanySettings.Interfaces;
+using HandySuites.Shared.Email;
 using Microsoft.AspNetCore.Mvc;
 
-namespace HandySales.Api.Endpoints
+namespace HandySuites.Api.Endpoints
 {
     public static class TestEndpoints
     {
@@ -140,14 +140,14 @@ namespace HandySales.Api.Endpoints
 
                     var subject = dto.Template?.ToLower() switch
                     {
-                        "welcome" => "Bienvenido a HandySales",
+                        "welcome" => "Bienvenido a HandySuites",
                         "expired" => "Su suscripción ha expirado",
                         "deactivated" => "Cuenta Desactivada",
                         "warning" => "Su suscripción está por vencer",
                         "payment_failed" => "Error en el pago",
                         "payment_success" => "Pago recibido",
-                        "password_reset" => "Restablecer Contraseña - HandySales",
-                        _ => "Bienvenido a HandySales"
+                        "password_reset" => "Restablecer Contraseña - HandySuites",
+                        _ => "Bienvenido a HandySuites"
                     };
 
                     await emailService.SendAsync(dto.To, subject, template);

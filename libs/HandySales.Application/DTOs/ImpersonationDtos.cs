@@ -1,4 +1,4 @@
-namespace HandySales.Application.DTOs;
+namespace HandySuites.Application.DTOs;
 
 /// <summary>
 /// Request para iniciar una sesión de impersonación

@@ -1,14 +1,14 @@
 # Mexican SME Distribution: Order Workflow Competitor Analysis
 
 > **Date:** 2026-03-24
-> **Purpose:** Understand industry-standard order workflows to validate/improve HandySales order state machine
+> **Purpose:** Understand industry-standard order workflows to validate/improve HandySuites order state machine
 > **Systems analyzed:** Handy.la, SAP Business One, Bind ERP, Aspel SAE, Microsip
 
 ---
 
 ## Executive Summary
 
-All five systems share a common pattern: **documents are the unit of workflow, not statuses**. Mexican ERPs (Aspel SAE, Microsip, Bind) use a document-conversion model (Cotizacion -> Pedido -> Remision -> Factura), where each document type represents a stage. Distribution-specific systems (Handy.la, HandySales) instead use a **status-based model** on a single "Pedido" entity, which is more appropriate for field sales.
+All five systems share a common pattern: **documents are the unit of workflow, not statuses**. Mexican ERPs (Aspel SAE, Microsip, Bind) use a document-conversion model (Cotizacion -> Pedido -> Remision -> Factura), where each document type represents a stage. Distribution-specific systems (Handy.la, HandySuites) instead use a **status-based model** on a single "Pedido" entity, which is more appropriate for field sales.
 
 The critical finding is that **inventory movement timing** varies significantly between preventa and autoventa, and most systems handle this as two fundamentally different paths rather than status variations of the same flow.
 
@@ -254,7 +254,7 @@ When creating a Remision or Factura, the "Documentos Relacionados" tab shows "Pe
 | **Bind ERP** | Hybrid (doc + status) | 5 doc types, few statuses | Remision or Factura |
 | **Aspel SAE** | Document-based (cascade) | 4-5 doc types | Remision or Factura |
 | **Microsip** | Document-based (cascade) | 4 doc types | Remision or Factura |
-| **HandySales** | Status-based (single entity) | 7 statuses on Pedido | VentaDirecta: at creation / Preventa: none yet |
+| **HandySuites** | Status-based (single entity) | 7 statuses on Pedido | VentaDirecta: at creation / Preventa: none yet |
 
 ### Preventa vs Venta Directa Handling
 
@@ -265,7 +265,7 @@ When creating a Remision or Factura, the "Documentos Relacionados" tab shows "Pe
 | **Bind ERP** | Cotizacion->Pedido->Remision->Factura | Direct Factura (skip earlier steps) |
 | **Aspel SAE** | Full flow with Pedido | Direct Factura or Nota de Venta |
 | **Microsip** | Full flow Pedido->Remision->Factura | Direct Factura |
-| **HandySales** | Borrador->Enviado->Confirmado->EnProceso->EnRuta->Entregado | VentaDirecta: instant Entregado + Cobro (atomic) |
+| **HandySuites** | Borrador->Enviado->Confirmado->EnProceso->EnRuta->Entregado | VentaDirecta: instant Entregado + Cobro (atomic) |
 
 ### Clicks from Creation to Delivery
 
@@ -276,13 +276,13 @@ When creating a Remision or Factura, the "Documentos Relacionados" tab shows "Pe
 | **Bind ERP** | Cotizacion(1) + Pedido(1) + Remision(1) + Factura(1) = **4** | Factura = **1** |
 | **Aspel SAE** | Pedido(1) + Remision(1) + Factura(1) = **3** | Factura = **1** |
 | **Microsip** | Pedido(1) + Remision(1) + Factura(1) = **3** | Factura = **1** |
-| **HandySales** | Create(1) + Enviar(1) + Confirmar(1) + Procesar(1) + EnRuta(1) + Entregar(1) = **6** | Create+Pay = **1** (atomic endpoint) |
+| **HandySuites** | Create(1) + Enviar(1) + Confirmar(1) + Procesar(1) + EnRuta(1) + Entregar(1) = **6** | Create+Pay = **1** (atomic endpoint) |
 
 ---
 
-## Gap Analysis: HandySales vs Industry
+## Gap Analysis: HandySuites vs Industry
 
-### Current HandySales State Machine
+### Current HandySuites State Machine
 
 ```
 Borrador(0) -> Enviado(1) -> Confirmado(2) -> EnProceso(3) -> EnRuta(4) -> Entregado(5)
@@ -300,18 +300,18 @@ Borrador(0) -> Enviado(1) -> Confirmado(2) -> EnProceso(3) -> EnRuta(4) -> Entre
 #### 2. NO INVENTORY RESERVATION at Order Creation (Preventa)
 - SAP B1 commits inventory at Sales Order creation (reduces "available")
 - Bind reduces "disponible" when Pedido is created
-- HandySales currently: Preventa orders have ZERO inventory impact until... never (only VentaDirecta triggers SALIDA)
+- HandySuites currently: Preventa orders have ZERO inventory impact until... never (only VentaDirecta triggers SALIDA)
 - **Risk**: Two salespeople sell the same stock to different clients
 
 #### 3. MISSING "Remision" Concept
 - Every Mexican ERP has a Remision (physical dispatch document that is NOT a fiscal document)
 - In distribution: Remision = load the truck = inventory leaves warehouse
-- HandySales jumps from "EnProceso" (vague) to "EnRuta" (delivery) without a clear dispatch/loading step
+- HandySuites jumps from "EnProceso" (vague) to "EnRuta" (delivery) without a clear dispatch/loading step
 
 #### 4. NO PARTIAL FULFILLMENT
 - Aspel SAE and Microsip both support "surtir parcial" (partial fulfillment)
 - Common scenario: client orders 100 units, warehouse only has 80, ship 80 now
-- HandySales: all-or-nothing delivery
+- HandySuites: all-or-nothing delivery
 
 #### 5. VENTA DIRECTA IS WELL IMPLEMENTED
 - The atomic Pedido+Cobro creation (MobileVentaDirectaEndpoints) matches industry pattern
@@ -320,12 +320,12 @@ Borrador(0) -> Enviado(1) -> Confirmado(2) -> EnProceso(3) -> EnRuta(4) -> Entre
 
 #### 6. MISSING ROUTE CLOSURE / RECONCILIATION
 - Handy.la has a formal "Cierre de Ruta" with merma/almacen/carga options
-- HandySales has EstadoRuta with Cerrada but the inventory reconciliation is not as sophisticated
+- HandySuites has EstadoRuta with Cerrada but the inventory reconciliation is not as sophisticated
 - This is critical for autoventa where vehicle stock must be reconciled daily
 
 ---
 
-## Recommended State Machine for HandySales
+## Recommended State Machine for HandySuites
 
 Based on industry analysis, the optimal model for Mexican SME distribution:
 
@@ -392,7 +392,7 @@ ADD:
 
 4. **Route closure reconciliation**: The current Cerrada state on EstadoRuta needs inventory reconciliation logic (merma, almacen return, carry-forward).
 
-5. **Do NOT adopt the document-cascade model**: HandySales' status-based model is correct for field sales apps. The document model (Aspel/Microsip/Bind) is for back-office ERP. Keep a single Pedido entity with statuses.
+5. **Do NOT adopt the document-cascade model**: HandySuites' status-based model is correct for field sales apps. The document model (Aspel/Microsip/Bind) is for back-office ERP. Keep a single Pedido entity with statuses.
 
 6. **Keep the Factura as a separate entity**: The existing Pedido->Factura integration (billing API's from-order endpoint) correctly follows the Mexican pattern where factura is generated after delivery, not as part of the order flow.
 

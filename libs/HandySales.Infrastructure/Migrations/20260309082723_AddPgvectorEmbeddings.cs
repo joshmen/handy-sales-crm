@@ -5,7 +5,7 @@ using Pgvector;
 
 #nullable disable
 
-namespace HandySales.Infrastructure.Migrations
+namespace HandySuites.Infrastructure.Migrations
 {
     /// <inheritdoc />
     public partial class AddPgvectorEmbeddings : Migration

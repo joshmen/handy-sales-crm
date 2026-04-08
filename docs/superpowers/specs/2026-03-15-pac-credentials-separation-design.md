@@ -2,7 +2,7 @@
 
 ## Context
 
-The billing settings page (`/billing/settings`) currently exposes PAC (Finkok) credentials (username + password) to tenant admins. These credentials belong to HandySales as a reseller, not to the tenant. The admin should only see their own fiscal data (RFC, razón social) and CSD certificates (.cer/.key). PAC credentials should come from env vars by default, with SuperAdmin override per country for future multi-PAC support.
+The billing settings page (`/billing/settings`) currently exposes PAC (Finkok) credentials (username + password) to tenant admins. These credentials belong to HandySuites as a reseller, not to the tenant. The admin should only see their own fiscal data (RFC, razón social) and CSD certificates (.cer/.key). PAC credentials should come from env vars by default, with SuperAdmin override per country for future multi-PAC support.
 
 ## Design
 
@@ -23,7 +23,7 @@ Admin page keeps only:
 
 ### 2. Backend: PAC credentials from env vars
 
-**File**: `apps/billing/HandySales.Billing.Api/Controllers/FacturasController.cs`
+**File**: `apps/billing/HandySuites.Billing.Api/Controllers/FacturasController.cs`
 
 Modify `TimbrarFactura` to read PAC credentials from environment instead of ConfiguracionFiscal:
 
@@ -34,7 +34,7 @@ Resolution order:
 3. ConfiguracionFiscal.PacUsuario (legacy fallback, deprecated)
 ```
 
-**File**: `apps/billing/HandySales.Billing.Api/Controllers/CatalogosController.cs`
+**File**: `apps/billing/HandySuites.Billing.Api/Controllers/CatalogosController.cs`
 
 Modify `GET /configuracion-fiscal` response to stop returning `pacUsuario`/`pacPassword` to the frontend. Keep them in the DB for backward compat but don't expose.
 

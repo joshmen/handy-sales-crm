@@ -1,7 +1,7 @@
 using FluentValidation;
-using HandySales.Application.Usuarios.DTOs;
+using HandySuites.Application.Usuarios.DTOs;
 
-namespace HandySales.Application.Usuarios.Validators
+namespace HandySuites.Application.Usuarios.Validators
 {
     public class UsuarioProfileUpdateDtoValidator : AbstractValidator<UsuarioProfileUpdateDto>
     {

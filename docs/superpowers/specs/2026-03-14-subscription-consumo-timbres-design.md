@@ -92,14 +92,14 @@ cancel_url: /subscription/buy-timbres
 ### 5. Files to Create/Modify
 
 **New files:**
-- `libs/HandySales.Domain/Entities/TimbrePurchase.cs`
+- `libs/HandySuites.Domain/Entities/TimbrePurchase.cs`
 - `apps/web/src/app/(dashboard)/subscription/buy-timbres/page.tsx`
 
 **Modified files:**
-- `libs/HandySales.Infrastructure/Persistence/HandySalesDbContext.cs` — add DbSet
-- `libs/HandySales.Infrastructure/Services/SubscriptionEnforcementService.cs` — include extras in balance
-- `apps/api/src/HandySales.Api/Endpoints/SubscriptionEndpoints.cs` — add checkout + purchase history endpoints
-- `apps/api/src/HandySales.Api/Endpoints/StripeWebhookEndpoints.cs` — handle timbre purchase webhook
+- `libs/HandySuites.Infrastructure/Persistence/HandySuitesDbContext.cs` — add DbSet
+- `libs/HandySuites.Infrastructure/Services/SubscriptionEnforcementService.cs` — include extras in balance
+- `apps/api/src/HandySuites.Api/Endpoints/SubscriptionEndpoints.cs` — add checkout + purchase history endpoints
+- `apps/api/src/HandySuites.Api/Endpoints/StripeWebhookEndpoints.cs` — handle timbre purchase webhook
 - `apps/web/src/app/(dashboard)/subscription/page.tsx` — add Consumo section
 - `apps/web/src/types/subscription.ts` — add TimbrePurchase type
 - `apps/web/src/services/api/subscriptions.ts` — add purchase API functions

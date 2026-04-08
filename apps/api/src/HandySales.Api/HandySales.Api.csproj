@@ -26,9 +26,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\libs\HandySales.Application\HandySales.Application.csproj" />
-    <ProjectReference Include="..\..\..\..\libs\HandySales.Shared\HandySales.Shared.csproj" />
-    <ProjectReference Include="..\..\..\..\libs\HandySales.Infrastructure\HandySales.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\..\libs\HandySuites.Application\HandySuites.Application.csproj" />
+    <ProjectReference Include="..\..\..\..\libs\HandySuites.Shared\HandySuites.Shared.csproj" />
+    <ProjectReference Include="..\..\..\..\libs\HandySuites.Infrastructure\HandySuites.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>

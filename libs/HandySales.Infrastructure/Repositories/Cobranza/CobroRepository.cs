@@ -1,21 +1,21 @@
-using HandySales.Application.Cobranza.DTOs;
-using HandySales.Application.Cobranza.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.Cobranza.DTOs;
+using HandySuites.Application.Cobranza.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Infrastructure.Repositories.Cobranza;
+namespace HandySuites.Infrastructure.Repositories.Cobranza;
 
 public class CobroRepository : ICobroRepository
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
 
     private static readonly string[] MetodoPagoNombres = { "Efectivo", "Transferencia", "Cheque", "Tarjeta de Crédito", "Tarjeta de Débito", "Otro" };
 
     private static string GetMetodoPagoNombre(MetodoPago m) =>
         (int)m >= 0 && (int)m < MetodoPagoNombres.Length ? MetodoPagoNombres[(int)m] : "Desconocido";
 
-    public CobroRepository(HandySalesDbContext db) => _db = db;
+    public CobroRepository(HandySuitesDbContext db) => _db = db;
 
     public async Task<List<CobroDto>> ObtenerCobrosAsync(int tenantId, int? clienteId = null, DateTime? desde = null, DateTime? hasta = null, int? usuarioId = null)
     {

@@ -5,7 +5,7 @@
 The CSV import/export system allows bulk data operations across 14 entity types. Export works for all entities; import supports 11 entities (pedidos, cobros, and rutas are export-only).
 
 **Key files:**
-- Backend: `apps/api/src/HandySales.Api/Endpoints/ImportExportEndpoints.cs` (1,931 lines)
+- Backend: `apps/api/src/HandySuites.Api/Endpoints/ImportExportEndpoints.cs` (1,931 lines)
 - Frontend service: `apps/web/src/services/api/importExport.ts`
 - Import wizard: `apps/web/src/components/shared/CsvImportModal.tsx`
 - Export button: `apps/web/src/components/shared/ExportButton.tsx`

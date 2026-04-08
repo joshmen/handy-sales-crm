@@ -1,9 +1,9 @@
 using FluentValidation;
-using HandySales.Application.Precios.DTOs;
-using HandySales.Application.Precios.Services;
+using HandySuites.Application.Precios.DTOs;
+using HandySuites.Application.Precios.Services;
 using Microsoft.AspNetCore.Mvc;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class PrecioPorProductoEndpoints
 {

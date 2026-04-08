@@ -2,12 +2,12 @@ using Xunit;
 using Moq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using HandySales.Application.CategoriasProductos.DTOs;
-using HandySales.Application.CategoriasProductos.Interfaces;
-using HandySales.Application.CategoriasProductos.Services;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Application.CategoriasProductos.DTOs;
+using HandySuites.Application.CategoriasProductos.Interfaces;
+using HandySuites.Application.CategoriasProductos.Services;
+using HandySuites.Shared.Multitenancy;
 
-namespace HandySales.Tests.Application.CategoriasProductos
+namespace HandySuites.Tests.Application.CategoriasProductos
 {
     public class CategoriaProductoServiceTests
     {

@@ -1,4 +1,4 @@
-namespace HandySales.Application.CrashReporting;
+namespace HandySuites.Application.CrashReporting;
 
 public record CrashReportCreateDto(
     string ErrorMessage,

@@ -1,6 +1,6 @@
-using HandySales.Domain.Entities;
+using HandySuites.Domain.Entities;
 
-namespace HandySales.Application.Pedidos.DTOs;
+namespace HandySuites.Application.Pedidos.DTOs;
 
 public class PedidoUpdateDto
 {

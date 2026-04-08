@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Infrastructure.Persistence;
 using System.Reflection;
 using Microsoft.AspNetCore.OpenApi;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class HealthEndpoints
 {
@@ -19,7 +19,7 @@ public static class HealthEndpoints
         {
             status = "healthy",
             timestamp = DateTime.UtcNow,
-            service = "HandySales API Principal",
+            service = "HandySuites API Principal",
             version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0.0"
         }))
         .WithName("GetHealth")
@@ -28,14 +28,14 @@ public static class HealthEndpoints
 
         // Health check detallado (requiere autenticación)
         healthGroup.MapGet("/detailed", [Authorize(Roles = "SUPER_ADMIN")] async (
-            HandySalesDbContext dbContext,
+            HandySuitesDbContext dbContext,
             IConfiguration configuration) =>
         {
             var healthInfo = new
             {
                 status = "healthy",
                 timestamp = DateTime.UtcNow,
-                service = "HandySales API Principal",
+                service = "HandySuites API Principal",
                 version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0.0",
                 environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Unknown",
 
@@ -64,7 +64,7 @@ public static class HealthEndpoints
         .ProducesProblem(401);
 
         // Readiness check para Kubernetes/Docker
-        healthGroup.MapGet("/ready", async (HandySalesDbContext dbContext) =>
+        healthGroup.MapGet("/ready", async (HandySuitesDbContext dbContext) =>
         {
             try
             {
@@ -107,7 +107,7 @@ public static class HealthEndpoints
         .Produces<object>(200);
     }
 
-    private static async Task<object> CheckDatabaseHealth(HandySalesDbContext dbContext)
+    private static async Task<object> CheckDatabaseHealth(HandySuitesDbContext dbContext)
     {
         try
         {

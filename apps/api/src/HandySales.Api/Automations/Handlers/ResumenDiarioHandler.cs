@@ -2,7 +2,7 @@ using System.Globalization;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Api.Automations.Handlers;
+namespace HandySuites.Api.Automations.Handlers;
 
 public class ResumenDiarioHandler : IAutomationHandler
 {

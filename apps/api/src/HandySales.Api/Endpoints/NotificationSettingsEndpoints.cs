@@ -1,9 +1,9 @@
-using HandySales.Application.Notifications.DTOs;
-using HandySales.Infrastructure.Notifications.Services;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.Notifications.DTOs;
+using HandySuites.Infrastructure.Notifications.Services;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class NotificationSettingsEndpoints
 {

@@ -1,9 +1,9 @@
 using FluentValidation;
-using HandySales.Application.UnidadesMedida.DTOs;
-using HandySales.Application.UnidadesMedida.Services;
+using HandySuites.Application.UnidadesMedida.DTOs;
+using HandySuites.Application.UnidadesMedida.Services;
 using Microsoft.AspNetCore.Mvc;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class UnidadMedidaEndpoints
 {

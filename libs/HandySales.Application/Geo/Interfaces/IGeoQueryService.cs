@@ -1,4 +1,4 @@
-namespace HandySales.Application.Geo.Interfaces;
+namespace HandySuites.Application.Geo.Interfaces;
 
 public interface IGeoQueryService
 {

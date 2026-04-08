@@ -33,7 +33,7 @@
 | E5 | Remover `ALLOW_DEV_LOGIN` flag (mock auth bypass risk) | SonarQube VULN-07 | 30m |
 | E6 | Fix IP spoofing via X-Forwarded-For (usar ForwardedHeaders) | SonarQube VULN-09 | 30m |
 | E7 | **Remover/proteger TestEndpoints** (`/api/test` AllowAnonymous en prod) | SonarQube-2 B2 | 15m |
-| E8 | **Eliminar fallback hardcoded TOTP key** (HandySales-Default-TOTP-Key-2026) | SonarQube-2 B3 | 10m |
+| E8 | **Eliminar fallback hardcoded TOTP key** (HandySuites-Default-TOTP-Key-2026) | SonarQube-2 B3 | 10m |
 | E9 | **Fix CORS wildcard Vercel** (`.vercel.app` → URL específica) | SonarQube-2 C4 | 10m |
 | E10 | **Fix fire-and-forget email en password reset** (línea 853 AuthService) | SonarQube-2 C1 | 5m |
 | E11 | **Fix role misattribution en token refresh** (SuperAdmin→ADMIN) | SonarQube-2 C2 | 5m |

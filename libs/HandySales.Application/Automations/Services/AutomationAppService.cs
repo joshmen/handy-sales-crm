@@ -1,8 +1,8 @@
 using System.Text.Json;
-using HandySales.Application.Automations.DTOs;
-using HandySales.Application.Automations.Interfaces;
+using HandySuites.Application.Automations.DTOs;
+using HandySuites.Application.Automations.Interfaces;
 
-namespace HandySales.Application.Automations.Services;
+namespace HandySuites.Application.Automations.Services;
 
 public class AutomationAppService
 {

@@ -1,8 +1,8 @@
-using HandySales.Application.UnidadesMedida.DTOs;
-using HandySales.Application.UnidadesMedida.Interfaces;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Application.UnidadesMedida.DTOs;
+using HandySuites.Application.UnidadesMedida.Interfaces;
+using HandySuites.Shared.Multitenancy;
 
-namespace HandySales.Application.UnidadesMedida.Services;
+namespace HandySuites.Application.UnidadesMedida.Services;
 
 public record DeleteUnidadMedidaResult(bool Success, string? Error = null, int ProductosCount = 0);
 public record ToggleUnidadMedidaActivoResult(bool Success, string? Error = null, int ProductosCount = 0);

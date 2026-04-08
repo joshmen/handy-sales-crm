@@ -1,4 +1,4 @@
-namespace HandySales.Application.Promociones.DTOs;
+namespace HandySuites.Application.Promociones.DTOs;
 
 public class PromocionCreateDto
 {

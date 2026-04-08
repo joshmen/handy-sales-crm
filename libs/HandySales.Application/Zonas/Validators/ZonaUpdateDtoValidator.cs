@@ -1,7 +1,7 @@
 using FluentValidation;
-using HandySales.Application.Zonas.DTOs;
+using HandySuites.Application.Zonas.DTOs;
 
-namespace HandySales.Application.Zonas.Validators
+namespace HandySuites.Application.Zonas.Validators
 {
     public class ZonaUpdateDtoValidator : AbstractValidator<UpdateZonaDto>
     {

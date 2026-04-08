@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace HandySales.Infrastructure.Migrations
+namespace HandySuites.Infrastructure.Migrations
 {
     /// <inheritdoc />
     public partial class AddOnboardingCompletedToTenant : Migration

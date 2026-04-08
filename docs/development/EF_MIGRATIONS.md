@@ -15,8 +15,8 @@ export PATH="$PATH:/c/Users/AW AREA 51M R2/.dotnet/tools"
 # Generate a new migration after changing entities/DbContext
 export PATH="$PATH:/c/Users/AW AREA 51M R2/.dotnet/tools"
 dotnet-ef migrations add DescripcionDelCambio \
-  --project libs/HandySales.Infrastructure \
-  --startup-project apps/api/src/HandySales.Api \
+  --project libs/HandySuites.Infrastructure \
+  --startup-project apps/api/src/HandySuites.Api \
   --output-dir Migrations
 
 # Apply locally (also auto-applies on Main API startup in dev)
@@ -24,13 +24,13 @@ docker-compose -f docker-compose.dev.yml up -d --build api_main
 
 # Revert last migration (if not yet applied)
 dotnet-ef migrations remove \
-  --project libs/HandySales.Infrastructure \
-  --startup-project apps/api/src/HandySales.Api
+  --project libs/HandySuites.Infrastructure \
+  --startup-project apps/api/src/HandySuites.Api
 
 # List migrations and their status
 dotnet-ef migrations list \
-  --project libs/HandySales.Infrastructure \
-  --startup-project apps/api/src/HandySales.Api
+  --project libs/HandySuites.Infrastructure \
+  --startup-project apps/api/src/HandySuites.Api
 ```
 
 ## How It Works
@@ -43,9 +43,9 @@ dotnet-ef migrations list \
 
 ## Key Files
 
-- Migrations: `libs/HandySales.Infrastructure/Migrations/`
-- Migrator: `libs/HandySales.Infrastructure/Persistence/DatabaseMigrator.cs`
-- Factory: `libs/HandySales.Infrastructure/Persistence/DesignTimeDbContextFactory.cs`
+- Migrations: `libs/HandySuites.Infrastructure/Migrations/`
+- Migrator: `libs/HandySuites.Infrastructure/Persistence/DatabaseMigrator.cs`
+- Factory: `libs/HandySuites.Infrastructure/Persistence/DesignTimeDbContextFactory.cs`
 - CI/CD: `.github/workflows/deploy-apis.yml` (`migrate-database` job)
 - Docker baseline: `infra/database/schema/05_ef_migrations_baseline.sql`
 
@@ -59,8 +59,8 @@ dotnet-ef migrations list \
   ```bash
   export PATH="$PATH:/c/Users/AW AREA 51M R2/.dotnet/tools"
   dotnet-ef migrations add NombreDescriptivo \
-    --project libs/HandySales.Infrastructure \
-    --startup-project apps/api/src/HandySales.Api \
+    --project libs/HandySuites.Infrastructure \
+    --startup-project apps/api/src/HandySuites.Api \
     --output-dir Migrations
   ```
   Then rebuild the API container (`docker-compose -f docker-compose.dev.yml up -d --build api_main`) to verify the migration applies cleanly. Never commit DB schema changes without the corresponding migration files.

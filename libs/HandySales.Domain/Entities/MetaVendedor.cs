@@ -1,7 +1,7 @@
-using HandySales.Domain.Common;
+using HandySuites.Domain.Common;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace HandySales.Domain.Entities;
+namespace HandySuites.Domain.Entities;
 
 [Table("MetasVendedor")]
 public class MetaVendedor : AuditableEntity

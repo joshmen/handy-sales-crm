@@ -1,12 +1,12 @@
-using HandySales.Application.MovimientosInventario.DTOs;
-using HandySales.Application.MovimientosInventario.Services;
-using HandySales.Application.Pedidos.DTOs;
-using HandySales.Application.Pedidos.Interfaces;
-using HandySales.Application.Usuarios.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Application.MovimientosInventario.DTOs;
+using HandySuites.Application.MovimientosInventario.Services;
+using HandySuites.Application.Pedidos.DTOs;
+using HandySuites.Application.Pedidos.Interfaces;
+using HandySuites.Application.Usuarios.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Shared.Multitenancy;
 
-namespace HandySales.Application.Pedidos.Services;
+namespace HandySuites.Application.Pedidos.Services;
 
 public class PedidoService
 {

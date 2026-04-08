@@ -1,9 +1,9 @@
-using HandySales.Shared.Multitenancy;
-using HandySales.Application.Pedidos.DTOs;
-using HandySales.Application.Visitas.DTOs;
-using HandySales.Application.Visitas.Interfaces;
+using HandySuites.Shared.Multitenancy;
+using HandySuites.Application.Pedidos.DTOs;
+using HandySuites.Application.Visitas.DTOs;
+using HandySuites.Application.Visitas.Interfaces;
 
-namespace HandySales.Application.Visitas.Services;
+namespace HandySuites.Application.Visitas.Services;
 
 public class ClienteVisitaService
 {

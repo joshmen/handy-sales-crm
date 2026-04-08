@@ -1,13 +1,13 @@
 using System.Globalization;
 using System.Text.Json;
-using HandySales.Application.Notifications.DTOs;
-using HandySales.Application.Notifications.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
-using HandySales.Shared.Email;
+using HandySuites.Application.Notifications.DTOs;
+using HandySuites.Application.Notifications.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
+using HandySuites.Shared.Email;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Api.Automations;
+namespace HandySuites.Api.Automations;
 
 public interface IAutomationHandler
 {
@@ -17,7 +17,7 @@ public interface IAutomationHandler
 
 public record AutomationContext(
     TenantAutomation Automation,
-    HandySalesDbContext Db,
+    HandySuitesDbContext Db,
     INotificationService Notifications,
     IEmailService? EmailService
 )
@@ -163,7 +163,7 @@ public record AutomationContext(
                 var template = await EmailTemplateBuilder.CreateAsync(Db, TenantId, ct);
                 var contentHtml = EmailTemplateBuilder.Text(mensaje.Replace("\n", "<br/>"));
                 var html = template.Build(titulo, contentHtml);
-                await EmailService.SendAsync(email, $"HandySales: {titulo}", html);
+                await EmailService.SendAsync(email, $"HandySuites: {titulo}", html);
             }
         }
     }
@@ -195,7 +195,7 @@ public record AutomationContext(
                 .FirstOrDefaultAsync(ct);
 
             if (!string.IsNullOrEmpty(email))
-                await EmailService.SendAsync(email, $"HandySales: {titulo}", html);
+                await EmailService.SendAsync(email, $"HandySuites: {titulo}", html);
         }
     }
 
@@ -225,7 +225,7 @@ public record AutomationContext(
 
         var template = await EmailTemplateBuilder.CreateAsync(Db, TenantId, ct);
         var html = template.Build(titulo, contentHtml, preheader);
-        await EmailService.SendAsync(email, $"HandySales: {titulo}", html);
+        await EmailService.SendAsync(email, $"HandySuites: {titulo}", html);
     }
 
     /// <summary>

@@ -1,15 +1,15 @@
 using System.Text.Json;
-using HandySales.Application.Notifications.DTOs;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.Notifications.DTOs;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Infrastructure.Notifications.Services;
+namespace HandySuites.Infrastructure.Notifications.Services;
 
 public class NotificationSettingsService
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
 
-    public NotificationSettingsService(HandySalesDbContext db)
+    public NotificationSettingsService(HandySuitesDbContext db)
     {
         _db = db;
     }

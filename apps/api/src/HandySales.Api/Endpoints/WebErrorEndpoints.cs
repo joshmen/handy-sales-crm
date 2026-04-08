@@ -1,4 +1,4 @@
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class WebErrorEndpoints
 {

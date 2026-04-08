@@ -1,8 +1,8 @@
-using HandySales.Application.Descuentos.DTOs;
-using HandySales.Application.Descuentos.Interfaces;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Application.Descuentos.DTOs;
+using HandySuites.Application.Descuentos.Interfaces;
+using HandySuites.Shared.Multitenancy;
 
-namespace HandySales.Application.Descuentos.Services;
+namespace HandySuites.Application.Descuentos.Services;
 
 public class DescuentoPorCantidadService
 {

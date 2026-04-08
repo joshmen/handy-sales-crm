@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace HandySales.Application.Clientes.DTOs;
+namespace HandySuites.Application.Clientes.DTOs;
 
 public class ClienteCreateDto
 {

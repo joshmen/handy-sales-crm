@@ -1,9 +1,9 @@
-using HandySales.Shared.Security;
+using HandySuites.Shared.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
-namespace HandySales.Api.Configuration;
+namespace HandySuites.Api.Configuration;
 
 public static class JwtExtensions
 {

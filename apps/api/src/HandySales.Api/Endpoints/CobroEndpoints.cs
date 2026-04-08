@@ -1,12 +1,12 @@
 using FluentValidation;
-using HandySales.Api.Hubs;
+using HandySuites.Api.Hubs;
 using Microsoft.AspNetCore.SignalR;
-using HandySales.Infrastructure.Persistence;
-using HandySales.Application.Cobranza.DTOs;
-using HandySales.Application.Cobranza.Services;
+using HandySuites.Infrastructure.Persistence;
+using HandySuites.Application.Cobranza.DTOs;
+using HandySuites.Application.Cobranza.Services;
 using Microsoft.AspNetCore.Mvc;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class CobroEndpoints
 {

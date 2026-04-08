@@ -1,11 +1,11 @@
 using System.Text.Json;
-using HandySales.Application.DeviceSessions.Interfaces;
-using HandySales.Application.Notifications.DTOs;
-using HandySales.Application.Notifications.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Application.DeviceSessions.Interfaces;
+using HandySuites.Application.Notifications.DTOs;
+using HandySuites.Application.Notifications.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Shared.Multitenancy;
 
-namespace HandySales.Application.Notifications.Services;
+namespace HandySuites.Application.Notifications.Services;
 
 public class NotificationService : INotificationService
 {

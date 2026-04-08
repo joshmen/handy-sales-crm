@@ -1,6 +1,6 @@
 using System;
 
-namespace HandySales.Application.GlobalSettings.DTOs
+namespace HandySuites.Application.GlobalSettings.DTOs
 {
     public class GlobalSettingsDto
     {

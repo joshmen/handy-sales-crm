@@ -2,7 +2,7 @@ using Microsoft.Extensions.Logging;
 using SendGrid;
 using SendGrid.Helpers.Mail;
 
-namespace HandySales.Shared.Email;
+namespace HandySuites.Shared.Email;
 
 public class SendGridEmailService : IEmailService
 {
@@ -17,7 +17,7 @@ public class SendGridEmailService : IEmailService
 
         var apiKey = Environment.GetEnvironmentVariable("SENDGRID_API_KEY");
         _fromEmail = Environment.GetEnvironmentVariable("SENDGRID_FROM_EMAIL") ?? "no-reply@handysales.com";
-        _fromName = Environment.GetEnvironmentVariable("SENDGRID_FROM_NAME") ?? "HandySales";
+        _fromName = Environment.GetEnvironmentVariable("SENDGRID_FROM_NAME") ?? "HandySuites";
 
         if (string.IsNullOrEmpty(apiKey))
         {

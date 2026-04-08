@@ -13,8 +13,8 @@
 ## Task 1: Add AutoRenovar field to Domain Entity + EF Migration
 
 **Files:**
-- Modify: `libs/HandySales.Domain/Entities/MetaVendedor.cs`
-- Generate: `libs/HandySales.Infrastructure/Migrations/YYYYMMDD_AddAutoRenovarMetaVendedor.cs`
+- Modify: `libs/HandySuites.Domain/Entities/MetaVendedor.cs`
+- Generate: `libs/HandySuites.Infrastructure/Migrations/YYYYMMDD_AddAutoRenovarMetaVendedor.cs`
 
 **Step 1: Add the field to the entity**
 
@@ -30,8 +30,8 @@ public bool AutoRenovar { get; set; }
 ```bash
 export PATH="$PATH:/c/Users/AW AREA 51M R2/.dotnet/tools"
 dotnet-ef migrations add AddAutoRenovarMetaVendedor \
-  --project libs/HandySales.Infrastructure \
-  --startup-project apps/api/src/HandySales.Api \
+  --project libs/HandySuites.Infrastructure \
+  --startup-project apps/api/src/HandySuites.Api \
   --output-dir Migrations
 ```
 
@@ -47,7 +47,7 @@ Expected: Healthy
 **Step 4: Commit**
 
 ```bash
-git add libs/HandySales.Domain/Entities/MetaVendedor.cs libs/HandySales.Infrastructure/Migrations/
+git add libs/HandySuites.Domain/Entities/MetaVendedor.cs libs/HandySuites.Infrastructure/Migrations/
 git commit -m "feat(metas): add auto_renovar column to MetaVendedor entity"
 ```
 
@@ -56,7 +56,7 @@ git commit -m "feat(metas): add auto_renovar column to MetaVendedor entity"
 ## Task 2: Update DTOs to include AutoRenovar
 
 **Files:**
-- Modify: `libs/HandySales.Application/Metas/DTOs/MetaVendedorDto.cs`
+- Modify: `libs/HandySuites.Application/Metas/DTOs/MetaVendedorDto.cs`
 
 **Step 1: Add AutoRenovar to all three DTOs**
 
@@ -86,7 +86,7 @@ public record UpdateMetaVendedorDto(
 **Step 2: Commit**
 
 ```bash
-git add libs/HandySales.Application/Metas/DTOs/MetaVendedorDto.cs
+git add libs/HandySuites.Application/Metas/DTOs/MetaVendedorDto.cs
 git commit -m "feat(metas): add AutoRenovar to MetaVendedor DTOs"
 ```
 
@@ -95,7 +95,7 @@ git commit -m "feat(metas): add AutoRenovar to MetaVendedor DTOs"
 ## Task 3: Update Repository to read/write AutoRenovar
 
 **Files:**
-- Modify: `libs/HandySales.Infrastructure/Repositories/Metas/MetaVendedorRepository.cs`
+- Modify: `libs/HandySuites.Infrastructure/Repositories/Metas/MetaVendedorRepository.cs`
 
 **Step 1:** Add `AutoRenovar = m.AutoRenovar,` to ALL Select projections in GetAllAsync, GetByIdAsync, GetActivasParaPeriodoAsync (after CreadoEn line in each).
 
@@ -106,7 +106,7 @@ git commit -m "feat(metas): add AutoRenovar to MetaVendedor DTOs"
 **Step 4: Commit**
 
 ```bash
-git add libs/HandySales.Infrastructure/Repositories/Metas/MetaVendedorRepository.cs
+git add libs/HandySuites.Infrastructure/Repositories/Metas/MetaVendedorRepository.cs
 git commit -m "feat(metas): repository support for AutoRenovar field"
 ```
 
@@ -115,7 +115,7 @@ git commit -m "feat(metas): repository support for AutoRenovar field"
 ## Task 4: Create MetaAutoRenovacionHandler
 
 **Files:**
-- Create: `apps/api/src/HandySales.Api/Automations/Handlers/MetaAutoRenovacionHandler.cs`
+- Create: `apps/api/src/HandySuites.Api/Automations/Handlers/MetaAutoRenovacionHandler.cs`
 
 **Step 1: Write the handler**
 
@@ -131,10 +131,10 @@ Handler pattern matches MetaNoCumplidaHandler. Key logic:
 - Notify admin via context.NotifyUserAsync
 
 ```csharp
-using HandySales.Domain.Entities;
+using HandySuites.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Api.Automations.Handlers;
+namespace HandySuites.Api.Automations.Handlers;
 
 public class MetaAutoRenovacionHandler : IAutomationHandler
 {
@@ -206,7 +206,7 @@ public class MetaAutoRenovacionHandler : IAutomationHandler
 **Step 2: Commit**
 
 ```bash
-git add apps/api/src/HandySales.Api/Automations/Handlers/MetaAutoRenovacionHandler.cs
+git add apps/api/src/HandySuites.Api/Automations/Handlers/MetaAutoRenovacionHandler.cs
 git commit -m "feat(metas): add MetaAutoRenovacionHandler for automatic goal renewal"
 ```
 
@@ -215,7 +215,7 @@ git commit -m "feat(metas): add MetaAutoRenovacionHandler for automatic goal ren
 ## Task 5: Register handler + add automation template seed
 
 **Files:**
-- Modify: `apps/api/src/HandySales.Api/Configuration/ServiceRegistrationExtensions.cs`
+- Modify: `apps/api/src/HandySuites.Api/Configuration/ServiceRegistrationExtensions.cs`
 - Modify: `infra/database/schema/08_automations_seed.sql`
 
 **Step 1:** In ServiceRegistrationExtensions.cs, add after MetaNoCumplidaHandler (line 328):
@@ -242,7 +242,7 @@ Note: trigger_type=3 (cron), trigger_cron='0 1 * * *' (daily 1AM), tier=1 (PREMI
 **Step 4: Commit**
 
 ```bash
-git add apps/api/src/HandySales.Api/Configuration/ServiceRegistrationExtensions.cs infra/database/schema/08_automations_seed.sql
+git add apps/api/src/HandySuites.Api/Configuration/ServiceRegistrationExtensions.cs infra/database/schema/08_automations_seed.sql
 git commit -m "feat(metas): register MetaAutoRenovacionHandler + automation template seed"
 ```
 
@@ -347,12 +347,12 @@ git commit -m "test(metas): update E2E tests for auto-renovar checkbox"
 
 | File | Action |
 |------|--------|
-| libs/HandySales.Domain/Entities/MetaVendedor.cs | Add AutoRenovar property |
-| libs/HandySales.Infrastructure/Migrations/* | EF migration for auto_renovar column |
-| libs/HandySales.Application/Metas/DTOs/MetaVendedorDto.cs | Add AutoRenovar to all 3 DTOs |
-| libs/HandySales.Infrastructure/Repositories/Metas/MetaVendedorRepository.cs | AutoRenovar in projections + create/update |
-| apps/api/src/HandySales.Api/Automations/Handlers/MetaAutoRenovacionHandler.cs | NEW automation handler |
-| apps/api/src/HandySales.Api/Configuration/ServiceRegistrationExtensions.cs | Register handler |
+| libs/HandySuites.Domain/Entities/MetaVendedor.cs | Add AutoRenovar property |
+| libs/HandySuites.Infrastructure/Migrations/* | EF migration for auto_renovar column |
+| libs/HandySuites.Application/Metas/DTOs/MetaVendedorDto.cs | Add AutoRenovar to all 3 DTOs |
+| libs/HandySuites.Infrastructure/Repositories/Metas/MetaVendedorRepository.cs | AutoRenovar in projections + create/update |
+| apps/api/src/HandySuites.Api/Automations/Handlers/MetaAutoRenovacionHandler.cs | NEW automation handler |
+| apps/api/src/HandySuites.Api/Configuration/ServiceRegistrationExtensions.cs | Register handler |
 | infra/database/schema/08_automations_seed.sql | Add template seed |
 | apps/web/src/services/api/metas.ts | Add autoRenovar to TS interfaces |
 | apps/web/src/app/(dashboard)/metas/page.tsx | Checkbox in drawer + RefreshCw indicator |

@@ -1,14 +1,14 @@
-using HandySales.Application.Tenants.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.Tenants.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 
-namespace HandySales.Infrastructure.Tenants.Services;
+namespace HandySuites.Infrastructure.Tenants.Services;
 
 public class TenantSeedService : ITenantSeedService
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
 
-    public TenantSeedService(HandySalesDbContext db)
+    public TenantSeedService(HandySuitesDbContext db)
     {
         _db = db;
     }

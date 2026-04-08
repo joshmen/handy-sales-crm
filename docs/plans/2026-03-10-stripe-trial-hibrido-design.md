@@ -8,7 +8,7 @@
 
 ## Resumen Ejecutivo
 
-Implementar un sistema de trial de 14 dias para nuevos tenants de HandySales:
+Implementar un sistema de trial de 14 dias para nuevos tenants de HandySuites:
 1. **Registro sin tarjeta** — Cero friccion, maximiza signups (como handy.la, Pipedrive, Kommo)
 2. **Emails de valor + urgencia** — Secuencia automatizada durante el trial
 3. **Pedir tarjeta antes del fin** — Dia 10-12, convertir a opt-out
@@ -25,7 +25,7 @@ Implementar un sistema de trial de 14 dias para nuevos tenants de HandySales:
 | Zoho CRM | No | 15 dias | Opt-in |
 | HubSpot | No | Freemium | Perpetuo gratis |
 
-HandySales usara modelo hibrido: empieza opt-in, convierte a opt-out a mitad del trial.
+HandySuites usara modelo hibrido: empieza opt-in, convierte a opt-out a mitad del trial.
 
 ## Datos de Conversion (Industria SaaS 2026)
 
@@ -59,7 +59,7 @@ Usuario → /register → Crea cuenta + Tenant → subscription_status = "Trial"
 
 | Dia | Email | Proposito |
 |-----|-------|-----------|
-| 0 | Bienvenida | "Tienes 14 dias para explorar HandySales PRO" |
+| 0 | Bienvenida | "Tienes 14 dias para explorar HandySuites PRO" |
 | 3 | Valor #1 | "Tip: Configura tu catalogo de productos" (onboarding) |
 | 7 | Valor #2 | "Tip: Crea tu primera ruta de ventas" (engagement) |
 | 10 | Urgencia #1 | "Te quedan 4 dias — agrega tu metodo de pago para no perder acceso" |
@@ -146,7 +146,7 @@ Si el tenant metio tarjeta:
 Stripe → invoice.paid webhook → Backend actualiza:
   - subscription_status = "Active"
   - fecha_expiracion = siguiente periodo
-  - Envia email "Pago exitoso, bienvenido a HandySales PRO"
+  - Envia email "Pago exitoso, bienvenido a HandySuites PRO"
 ```
 
 Si Stripe no puede cobrar:
@@ -184,7 +184,7 @@ Despues de grace_period_end:
 | Archivo | Cambio |
 |---------|--------|
 | `Tenant.cs` | Agregar `TrialEndsAt`, `TrialCardCollectedAt` |
-| `HandySalesDbContext.cs` | Configurar nuevos campos |
+| `HandySuitesDbContext.cs` | Configurar nuevos campos |
 | EF Migration | Nueva migracion con 2 columnas |
 | `StripeService.cs` | Nuevo metodo `CreateTrialCheckoutSessionAsync()` con `TrialEnd` |
 | `SubscriptionEndpoints.cs` | Nuevo endpoint `POST /api/subscription/trial-checkout` |

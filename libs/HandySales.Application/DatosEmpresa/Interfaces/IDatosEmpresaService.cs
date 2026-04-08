@@ -1,6 +1,6 @@
-using HandySales.Application.DatosEmpresa.DTOs;
+using HandySuites.Application.DatosEmpresa.DTOs;
 
-namespace HandySales.Application.DatosEmpresa.Interfaces;
+namespace HandySuites.Application.DatosEmpresa.Interfaces;
 
 public interface IDatosEmpresaService
 {

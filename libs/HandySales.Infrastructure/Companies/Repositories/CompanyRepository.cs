@@ -1,15 +1,15 @@
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
-using HandySales.Application.Companies.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
+using HandySuites.Application.Companies.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Infrastructure.Companies.Repositories
+namespace HandySuites.Infrastructure.Companies.Repositories
 {
     public class CompanyRepository : ICompanyRepository
     {
-        private readonly HandySalesDbContext _context;
+        private readonly HandySuitesDbContext _context;
 
-        public CompanyRepository(HandySalesDbContext context)
+        public CompanyRepository(HandySuitesDbContext context)
         {
             _context = context;
         }

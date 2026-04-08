@@ -1,6 +1,6 @@
-using HandySales.Application.NotificationPreferences.DTOs;
+using HandySuites.Application.NotificationPreferences.DTOs;
 
-namespace HandySales.Application.NotificationPreferences.Interfaces
+namespace HandySuites.Application.NotificationPreferences.Interfaces
 {
     public interface INotificationPreferenceService
     {

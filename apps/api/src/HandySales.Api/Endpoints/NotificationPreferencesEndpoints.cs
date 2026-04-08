@@ -1,10 +1,10 @@
-using HandySales.Application.NotificationPreferences.DTOs;
-using HandySales.Application.NotificationPreferences.Interfaces;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Application.NotificationPreferences.DTOs;
+using HandySuites.Application.NotificationPreferences.Interfaces;
+using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
-namespace HandySales.Api.Endpoints
+namespace HandySuites.Api.Endpoints
 {
     public static class NotificationPreferencesEndpoints
     {

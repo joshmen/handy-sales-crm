@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace HandySales.Shared.Security;
+namespace HandySuites.Shared.Security;
 
 /// <summary>
 /// Checks passwords against the HIBP Pwned Passwords API using k-anonymity.
@@ -15,7 +15,7 @@ public class PwnedPasswordService
     {
         _http = http;
         _http.BaseAddress = new Uri("https://api.pwnedpasswords.com/");
-        _http.DefaultRequestHeaders.Add("User-Agent", "HandySales-PasswordCheck");
+        _http.DefaultRequestHeaders.Add("User-Agent", "HandySuites-PasswordCheck");
     }
 
     /// <summary>

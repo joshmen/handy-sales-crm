@@ -1,133 +1,133 @@
-using HandySales.Infrastructure.Persistence;
-using HandySales.Shared.Multitenancy;
-using HandySales.Application.Ai.Interfaces;
-using HandySales.Application.Geo.Interfaces;
-using HandySales.Infrastructure.Ai.Services;
-using HandySales.Application.SubscriptionPlans.Interfaces;
-using HandySales.Application.CrashReporting;
-using HandySales.Application.Clientes.Interfaces;
-using HandySales.Application.Clientes.Services;
+using HandySuites.Infrastructure.Persistence;
+using HandySuites.Shared.Multitenancy;
+using HandySuites.Application.Ai.Interfaces;
+using HandySuites.Application.Geo.Interfaces;
+using HandySuites.Infrastructure.Ai.Services;
+using HandySuites.Application.SubscriptionPlans.Interfaces;
+using HandySuites.Application.CrashReporting;
+using HandySuites.Application.Clientes.Interfaces;
+using HandySuites.Application.Clientes.Services;
 using Microsoft.EntityFrameworkCore;
-using HandySales.Shared.Security;
-using HandySales.Application.Inventario.Services;
-using HandySales.Application.Usuarios.Services;
-using HandySales.Application.Usuarios.Interfaces;
-using HandySales.Application.Descuentos.Services;
-using HandySales.Application.ListasPrecios.Services;
-using HandySales.Application.Precios.Services;
-using HandySales.Application.Productos.Services;
-using HandySales.Application.Promociones.Services;
-using HandySales.Infrastructure.Repositories;
-using HandySales.Application.Zonas.Interfaces;
-using HandySales.Infrastructure.Zonas.Repositories;
-using HandySales.Application.Zonas.Services;
-using HandySales.Application.Metas.Interfaces;
-using HandySales.Infrastructure.Repositories.Metas;
-using HandySales.Application.Metas.Services;
-using HandySales.Application.FamiliasProductos.Interfaces;
-using HandySales.Infrastructure.FamiliasProductos.Repositories;
-using HandySales.Application.FamiliasProductos.Services;
-using HandySales.Application.Inventario.Interfaces;
-using HandySales.Infrastructure.Inventario.Repositories;
-using HandySales.Application.Descuentos.Interfaces;
-using HandySales.Infrastructure.Descuentos.Repositories;
-using HandySales.Application.ListasPrecios.Interfaces;
-using HandySales.Infrastructure.ListasPrecios.Repositories;
-using HandySales.Application.Precios.Interfaces;
-using HandySales.Infrastructure.Precios.Repositories;
-using HandySales.Application.Productos.Interfaces;
-using HandySales.Infrastructure.Productos.Repositories;
-using HandySales.Application.Promociones.Interfaces;
-using HandySales.Infrastructure.Promociones.Repositories;
-using HandySales.Application.CategoriasClientes.Interfaces;
-using HandySales.Infrastructure.CategoriasClientes.Repositories;
-using HandySales.Application.CategoriasClientes.Services;
-using HandySales.Application.CategoriasProductos.Interfaces;
-using HandySales.Infrastructure.CategoriasProductos.Repositories;
-using HandySales.Application.CategoriasProductos.Services;
-using HandySales.Application.UnidadesMedida.Interfaces;
-using HandySales.Infrastructure.UnidadesMedida.Repositories;
-using HandySales.Application.UnidadesMedida.Services;
-using HandySales.Application.Integrations.Interfaces;
-using HandySales.Application.Integrations.Services;
-using HandySales.Infrastructure.Repositories.Integrations;
+using HandySuites.Shared.Security;
+using HandySuites.Application.Inventario.Services;
+using HandySuites.Application.Usuarios.Services;
+using HandySuites.Application.Usuarios.Interfaces;
+using HandySuites.Application.Descuentos.Services;
+using HandySuites.Application.ListasPrecios.Services;
+using HandySuites.Application.Precios.Services;
+using HandySuites.Application.Productos.Services;
+using HandySuites.Application.Promociones.Services;
+using HandySuites.Infrastructure.Repositories;
+using HandySuites.Application.Zonas.Interfaces;
+using HandySuites.Infrastructure.Zonas.Repositories;
+using HandySuites.Application.Zonas.Services;
+using HandySuites.Application.Metas.Interfaces;
+using HandySuites.Infrastructure.Repositories.Metas;
+using HandySuites.Application.Metas.Services;
+using HandySuites.Application.FamiliasProductos.Interfaces;
+using HandySuites.Infrastructure.FamiliasProductos.Repositories;
+using HandySuites.Application.FamiliasProductos.Services;
+using HandySuites.Application.Inventario.Interfaces;
+using HandySuites.Infrastructure.Inventario.Repositories;
+using HandySuites.Application.Descuentos.Interfaces;
+using HandySuites.Infrastructure.Descuentos.Repositories;
+using HandySuites.Application.ListasPrecios.Interfaces;
+using HandySuites.Infrastructure.ListasPrecios.Repositories;
+using HandySuites.Application.Precios.Interfaces;
+using HandySuites.Infrastructure.Precios.Repositories;
+using HandySuites.Application.Productos.Interfaces;
+using HandySuites.Infrastructure.Productos.Repositories;
+using HandySuites.Application.Promociones.Interfaces;
+using HandySuites.Infrastructure.Promociones.Repositories;
+using HandySuites.Application.CategoriasClientes.Interfaces;
+using HandySuites.Infrastructure.CategoriasClientes.Repositories;
+using HandySuites.Application.CategoriasClientes.Services;
+using HandySuites.Application.CategoriasProductos.Interfaces;
+using HandySuites.Infrastructure.CategoriasProductos.Repositories;
+using HandySuites.Application.CategoriasProductos.Services;
+using HandySuites.Application.UnidadesMedida.Interfaces;
+using HandySuites.Infrastructure.UnidadesMedida.Repositories;
+using HandySuites.Application.UnidadesMedida.Services;
+using HandySuites.Application.Integrations.Interfaces;
+using HandySuites.Application.Integrations.Services;
+using HandySuites.Infrastructure.Repositories.Integrations;
 using FluentValidation;
 using FluentValidation.AspNetCore;
-using HandySales.Application.CategoriasClientes.Validators;
-using HandySales.Application.Clientes.Validators;
-using HandySales.Application.CategoriasProductos.Validators;
-using HandySales.Application.Descuentos.Validators;
-using HandySales.Application.Precios.Validators;
-using HandySales.Application.Zonas.Validators;
-using HandySales.Application.FamiliasProductos.Validators;
-using HandySales.Application.Usuarios.Validators;
-using HandySales.Application.ActivityTracking.Services;
-using HandySales.Application.ActivityTracking.Interfaces;
-using HandySales.Infrastructure.ActivityTracking.Repositories;
-using HandySales.Application.Roles.Services;
-using HandySales.Application.Roles.Interfaces;
-using HandySales.Infrastructure.Roles.Repositories;
-using HandySales.Application.CompanySettings.Services;
-using HandySales.Application.CompanySettings.Interfaces;
-using HandySales.Infrastructure.CompanySettings.Repositories;
-using HandySales.Application.DatosFacturacion.Interfaces;
-using HandySales.Infrastructure.DatosFacturacion.Services;
-using HandySales.Infrastructure.Services;
-using HandySales.Application.NotificationPreferences.Interfaces;
-using HandySales.Infrastructure.NotificationPreferences.Services;
-using HandySales.Application.GlobalSettings.Interfaces;
-using HandySales.Application.GlobalSettings.Services;
-using HandySales.Infrastructure.GlobalSettings.Repositories;
-using HandySales.Application.Companies.Interfaces;
-using HandySales.Application.Companies.Services;
-using HandySales.Infrastructure.Companies.Repositories;
-using HandySales.Application.Pedidos.Interfaces;
-using HandySales.Application.Pedidos.Services;
-using HandySales.Infrastructure.Repositories.Pedidos;
-using HandySales.Application.Visitas.Interfaces;
-using HandySales.Application.Visitas.Services;
-using HandySales.Infrastructure.Repositories.Visitas;
-using HandySales.Application.DeviceSessions.Interfaces;
-using HandySales.Application.DeviceSessions.Services;
-using HandySales.Infrastructure.Repositories.DeviceSessions;
-using HandySales.Application.Rutas.Interfaces;
-using HandySales.Application.Rutas.Services;
-using HandySales.Infrastructure.Repositories.Rutas;
-using HandySales.Application.Sync.Interfaces;
-using HandySales.Application.Sync.Services;
-using HandySales.Infrastructure.Repositories.Sync;
-using HandySales.Application.Notifications.Interfaces;
-using HandySales.Application.Notifications.Services;
-using HandySales.Infrastructure.Notifications.Repositories;
-using HandySales.Infrastructure.Notifications.Services;
-using HandySales.Api.Hubs;
-using HandySales.Application.Interfaces;
-using HandySales.Application.Impersonation.Interfaces;
-using HandySales.Application.Impersonation.Services;
-using HandySales.Infrastructure.Impersonation;
-using HandySales.Application.MovimientosInventario.Interfaces;
-using HandySales.Application.MovimientosInventario.Services;
-using HandySales.Application.MovimientosInventario.Validators;
-using HandySales.Infrastructure.MovimientosInventario.Repositories;
-using HandySales.Application.Cobranza.Interfaces;
-using HandySales.Application.Cobranza.Services;
-using HandySales.Application.Cobranza.Validators;
-using HandySales.Infrastructure.Repositories.Cobranza;
-using HandySales.Api.Payments;
-using HandySales.Api.TwoFactor;
-using HandySales.Shared.Email;
-using HandySales.Application.Tenants.Interfaces;
-using HandySales.Infrastructure.Tenants.Services;
-using HandySales.Application.Auth.Validators;
-using HandySales.Application.SubscriptionPlans.Interfaces;
-using HandySales.Infrastructure.Repositories.SubscriptionPlans;
-using HandySales.Application.Automations.Interfaces;
-using HandySales.Application.Automations.Services;
-using HandySales.Infrastructure.Repositories.Automations;
-using HandySales.Api.Automations;
-using HandySales.Api.Automations.Handlers;
+using HandySuites.Application.CategoriasClientes.Validators;
+using HandySuites.Application.Clientes.Validators;
+using HandySuites.Application.CategoriasProductos.Validators;
+using HandySuites.Application.Descuentos.Validators;
+using HandySuites.Application.Precios.Validators;
+using HandySuites.Application.Zonas.Validators;
+using HandySuites.Application.FamiliasProductos.Validators;
+using HandySuites.Application.Usuarios.Validators;
+using HandySuites.Application.ActivityTracking.Services;
+using HandySuites.Application.ActivityTracking.Interfaces;
+using HandySuites.Infrastructure.ActivityTracking.Repositories;
+using HandySuites.Application.Roles.Services;
+using HandySuites.Application.Roles.Interfaces;
+using HandySuites.Infrastructure.Roles.Repositories;
+using HandySuites.Application.CompanySettings.Services;
+using HandySuites.Application.CompanySettings.Interfaces;
+using HandySuites.Infrastructure.CompanySettings.Repositories;
+using HandySuites.Application.DatosFacturacion.Interfaces;
+using HandySuites.Infrastructure.DatosFacturacion.Services;
+using HandySuites.Infrastructure.Services;
+using HandySuites.Application.NotificationPreferences.Interfaces;
+using HandySuites.Infrastructure.NotificationPreferences.Services;
+using HandySuites.Application.GlobalSettings.Interfaces;
+using HandySuites.Application.GlobalSettings.Services;
+using HandySuites.Infrastructure.GlobalSettings.Repositories;
+using HandySuites.Application.Companies.Interfaces;
+using HandySuites.Application.Companies.Services;
+using HandySuites.Infrastructure.Companies.Repositories;
+using HandySuites.Application.Pedidos.Interfaces;
+using HandySuites.Application.Pedidos.Services;
+using HandySuites.Infrastructure.Repositories.Pedidos;
+using HandySuites.Application.Visitas.Interfaces;
+using HandySuites.Application.Visitas.Services;
+using HandySuites.Infrastructure.Repositories.Visitas;
+using HandySuites.Application.DeviceSessions.Interfaces;
+using HandySuites.Application.DeviceSessions.Services;
+using HandySuites.Infrastructure.Repositories.DeviceSessions;
+using HandySuites.Application.Rutas.Interfaces;
+using HandySuites.Application.Rutas.Services;
+using HandySuites.Infrastructure.Repositories.Rutas;
+using HandySuites.Application.Sync.Interfaces;
+using HandySuites.Application.Sync.Services;
+using HandySuites.Infrastructure.Repositories.Sync;
+using HandySuites.Application.Notifications.Interfaces;
+using HandySuites.Application.Notifications.Services;
+using HandySuites.Infrastructure.Notifications.Repositories;
+using HandySuites.Infrastructure.Notifications.Services;
+using HandySuites.Api.Hubs;
+using HandySuites.Application.Interfaces;
+using HandySuites.Application.Impersonation.Interfaces;
+using HandySuites.Application.Impersonation.Services;
+using HandySuites.Infrastructure.Impersonation;
+using HandySuites.Application.MovimientosInventario.Interfaces;
+using HandySuites.Application.MovimientosInventario.Services;
+using HandySuites.Application.MovimientosInventario.Validators;
+using HandySuites.Infrastructure.MovimientosInventario.Repositories;
+using HandySuites.Application.Cobranza.Interfaces;
+using HandySuites.Application.Cobranza.Services;
+using HandySuites.Application.Cobranza.Validators;
+using HandySuites.Infrastructure.Repositories.Cobranza;
+using HandySuites.Api.Payments;
+using HandySuites.Api.TwoFactor;
+using HandySuites.Shared.Email;
+using HandySuites.Application.Tenants.Interfaces;
+using HandySuites.Infrastructure.Tenants.Services;
+using HandySuites.Application.Auth.Validators;
+using HandySuites.Application.SubscriptionPlans.Interfaces;
+using HandySuites.Infrastructure.Repositories.SubscriptionPlans;
+using HandySuites.Application.Automations.Interfaces;
+using HandySuites.Application.Automations.Services;
+using HandySuites.Infrastructure.Repositories.Automations;
+using HandySuites.Api.Automations;
+using HandySuites.Api.Automations.Handlers;
 
-namespace HandySales.Api.Configuration;
+namespace HandySuites.Api.Configuration;
 
 public static class ServiceRegistrationExtensions
 {
@@ -141,14 +141,14 @@ public static class ServiceRegistrationExtensions
 
         // Servicio de tenant para Global Query Filters
         services.AddScoped<ITenantContextService, TenantContextService>();
-        services.AddScoped<HandySales.Application.Common.Interfaces.ITransactionManager, TransactionManager>();
+        services.AddScoped<HandySuites.Application.Common.Interfaces.ITransactionManager, TransactionManager>();
 
         if (environment != "Testing")
         {
             // No registrar DbContext aquí: los tests usarán Sqlite desde CustomWebApplicationFactory
-            services.AddSingleton<HandySales.Api.Middleware.SlowQueryInterceptor>();
-            services.AddScoped<HandySales.Infrastructure.Persistence.TenantRlsInterceptor>();
-            services.AddDbContext<HandySalesDbContext>((sp, options) =>
+            services.AddSingleton<HandySuites.Api.Middleware.SlowQueryInterceptor>();
+            services.AddScoped<HandySuites.Infrastructure.Persistence.TenantRlsInterceptor>();
+            services.AddDbContext<HandySuitesDbContext>((sp, options) =>
              options.UseNpgsql(
                  config.GetConnectionString("DefaultConnection"),
                  o =>
@@ -161,8 +161,8 @@ public static class ServiceRegistrationExtensions
                      o.CommandTimeout(30);
                  })
              .AddInterceptors(
-                 sp.GetRequiredService<HandySales.Api.Middleware.SlowQueryInterceptor>(),
-                 sp.GetRequiredService<HandySales.Infrastructure.Persistence.TenantRlsInterceptor>()));
+                 sp.GetRequiredService<HandySuites.Api.Middleware.SlowQueryInterceptor>(),
+                 sp.GetRequiredService<HandySuites.Infrastructure.Persistence.TenantRlsInterceptor>()));
         }
         services.AddFluentValidationAutoValidation();
 
@@ -176,7 +176,7 @@ public static class ServiceRegistrationExtensions
         services.AddValidatorsFromAssemblyContaining<ClienteCreateDtoValidator>();
 
         services.AddScoped<IUsuarioRepository, UsuarioRepository>();
-        services.AddScoped<HandySales.Application.Usuarios.Services.UsuarioService>();
+        services.AddScoped<HandySuites.Application.Usuarios.Services.UsuarioService>();
         services.AddValidatorsFromAssemblyContaining<UsuarioLoginDtoValidator>();
         services.AddValidatorsFromAssemblyContaining<UsuarioRegisterDtoValidator>();
 
@@ -249,8 +249,8 @@ public static class ServiceRegistrationExtensions
         services.AddScoped<ICloudinaryFolderService, CloudinaryFolderService>();
 
         // Datos de Empresa (identidad del negocio)
-        services.AddScoped<HandySales.Application.DatosEmpresa.Interfaces.IDatosEmpresaRepository, DatosEmpresaRepository>();
-        services.AddScoped<HandySales.Application.DatosEmpresa.Interfaces.IDatosEmpresaService, HandySales.Application.DatosEmpresa.Services.DatosEmpresaService>();
+        services.AddScoped<HandySuites.Application.DatosEmpresa.Interfaces.IDatosEmpresaRepository, DatosEmpresaRepository>();
+        services.AddScoped<HandySuites.Application.DatosEmpresa.Interfaces.IDatosEmpresaService, HandySuites.Application.DatosEmpresa.Services.DatosEmpresaService>();
 
         // Billing Data (DatosFacturacion)
         services.AddScoped<IDatosFacturacionService, DatosFacturacionService>();

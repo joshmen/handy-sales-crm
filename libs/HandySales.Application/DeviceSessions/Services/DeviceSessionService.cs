@@ -1,8 +1,8 @@
-using HandySales.Shared.Multitenancy;
-using HandySales.Application.DeviceSessions.DTOs;
-using HandySales.Application.DeviceSessions.Interfaces;
+using HandySuites.Shared.Multitenancy;
+using HandySuites.Application.DeviceSessions.DTOs;
+using HandySuites.Application.DeviceSessions.Interfaces;
 
-namespace HandySales.Application.DeviceSessions.Services;
+namespace HandySuites.Application.DeviceSessions.Services;
 
 public class DeviceSessionService
 {

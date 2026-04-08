@@ -1,8 +1,8 @@
 using System.Security.Claims;
-using HandySales.Api.TwoFactor;
+using HandySuites.Api.TwoFactor;
 using Microsoft.AspNetCore.Mvc;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class TwoFactorEndpoints
 {

@@ -44,7 +44,7 @@ The Product Categories tour guides new users through import/export, creating a c
 
 ## Import/Export — Business Rules
 
-**Backend endpoint:** `apps/api/src/HandySales.Api/Endpoints/ImportExportEndpoints.cs`
+**Backend endpoint:** `apps/api/src/HandySuites.Api/Endpoints/ImportExportEndpoints.cs`
 
 | Operation | Endpoint | Details |
 |-----------|----------|---------|
@@ -65,4 +65,4 @@ The Product Categories tour guides new users through import/export, creating a c
 
 - Tour definition: `apps/web/src/data/tours/catalogs.ts` → `/product-categories` key
 - Product Categories page: `apps/web/src/app/(dashboard)/product-categories/page.tsx`
-- Import/Export endpoints: `apps/api/src/HandySales.Api/Endpoints/ImportExportEndpoints.cs`
+- Import/Export endpoints: `apps/api/src/HandySuites.Api/Endpoints/ImportExportEndpoints.cs`

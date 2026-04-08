@@ -1,9 +1,9 @@
 using System.Globalization;
 using System.Text;
-using HandySales.Domain.Entities;
+using HandySuites.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Api.Automations.Handlers;
+namespace HandySuites.Api.Automations.Handlers;
 
 public class MetaNoCumplidaHandler : IAutomationHandler
 {

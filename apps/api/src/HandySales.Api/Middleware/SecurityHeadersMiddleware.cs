@@ -1,4 +1,4 @@
-namespace HandySales.Api.Middleware;
+namespace HandySuites.Api.Middleware;
 
 /// <summary>
 /// Adds security headers to all HTTP responses.

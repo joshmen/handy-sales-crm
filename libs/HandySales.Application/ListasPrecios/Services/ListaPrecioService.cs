@@ -1,8 +1,8 @@
-using HandySales.Application.ListasPrecios.DTOs;
-using HandySales.Application.ListasPrecios.Interfaces;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Application.ListasPrecios.DTOs;
+using HandySuites.Application.ListasPrecios.Interfaces;
+using HandySuites.Shared.Multitenancy;
 
-namespace HandySales.Application.ListasPrecios.Services;
+namespace HandySuites.Application.ListasPrecios.Services;
 
 public class ListaPrecioService
 {

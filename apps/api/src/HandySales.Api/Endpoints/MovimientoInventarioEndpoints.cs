@@ -1,9 +1,9 @@
 using FluentValidation;
-using HandySales.Application.MovimientosInventario.DTOs;
-using HandySales.Application.MovimientosInventario.Services;
+using HandySuites.Application.MovimientosInventario.DTOs;
+using HandySuites.Application.MovimientosInventario.Services;
 using Microsoft.AspNetCore.Mvc;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class MovimientoInventarioEndpoints
 {

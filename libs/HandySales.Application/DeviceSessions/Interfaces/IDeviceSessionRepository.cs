@@ -1,7 +1,7 @@
-using HandySales.Application.DeviceSessions.DTOs;
-using HandySales.Domain.Entities;
+using HandySuites.Application.DeviceSessions.DTOs;
+using HandySuites.Domain.Entities;
 
-namespace HandySales.Application.DeviceSessions.Interfaces;
+namespace HandySuites.Application.DeviceSessions.Interfaces;
 
 public interface IDeviceSessionRepository
 {

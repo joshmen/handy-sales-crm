@@ -1,10 +1,10 @@
-using HandySales.Application.CompanySettings.Interfaces;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.CompanySettings.Interfaces;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class ImageUploadEndpoints
 {
@@ -17,7 +17,7 @@ public static class ImageUploadEndpoints
         group.MapPost("/avatar", async (
             IFormFile file,
             ICloudinaryService cloudinaryService,
-            HandySalesDbContext dbContext,
+            HandySuitesDbContext dbContext,
             ClaimsPrincipal user) =>
         {
             try
@@ -86,7 +86,7 @@ public static class ImageUploadEndpoints
         group.MapPost("/company-logo", [Authorize(Roles = "ADMIN,SUPER_ADMIN")] async (
             IFormFile file,
             ICloudinaryService cloudinaryService,
-            HandySalesDbContext dbContext,
+            HandySuitesDbContext dbContext,
             ClaimsPrincipal user) =>
         {
             try
@@ -155,7 +155,7 @@ public static class ImageUploadEndpoints
         group.MapPost("/upload-base64", async (
             Base64ImageRequest request,
             ICloudinaryService cloudinaryService,
-            HandySalesDbContext dbContext,
+            HandySuitesDbContext dbContext,
             ClaimsPrincipal user) =>
         {
             try
@@ -252,7 +252,7 @@ public static class ImageUploadEndpoints
 
         // Obtener información de imágenes del usuario actual
         group.MapGet("/user-images", async (
-            HandySalesDbContext dbContext,
+            HandySuitesDbContext dbContext,
             ClaimsPrincipal user) =>
         {
             var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;

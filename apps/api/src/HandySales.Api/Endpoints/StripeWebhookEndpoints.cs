@@ -1,6 +1,6 @@
-using HandySales.Api.Payments;
+using HandySuites.Api.Payments;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class StripeWebhookEndpoints
 {
@@ -38,6 +38,6 @@ public static class StripeWebhookEndpoints
         })
         .WithName("StripeWebhook")
         .WithSummary("Stripe webhook endpoint")
-        .RequireCors("HandySalesPolicy");
+        .RequireCors("HandySuitesPolicy");
     }
 }

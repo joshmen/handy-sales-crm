@@ -1,17 +1,17 @@
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
-using HandySales.Application.Usuarios.DTOs;
-using HandySales.Application.Usuarios.Interfaces;
+using HandySuites.Application.Usuarios.DTOs;
+using HandySuites.Application.Usuarios.Interfaces;
 using System.Linq.Expressions;
 
-namespace HandySales.Infrastructure.Repositories;
+namespace HandySuites.Infrastructure.Repositories;
 
 public class UsuarioRepository : IUsuarioRepository
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
 
-    public UsuarioRepository(HandySalesDbContext db)
+    public UsuarioRepository(HandySuitesDbContext db)
     {
         _db = db;
     }

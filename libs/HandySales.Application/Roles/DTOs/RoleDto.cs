@@ -1,4 +1,4 @@
-namespace HandySales.Application.Roles.DTOs;
+namespace HandySuites.Application.Roles.DTOs;
 
 public record RoleDto
 {

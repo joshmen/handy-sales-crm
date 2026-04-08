@@ -1,9 +1,9 @@
-using HandySales.Application.Clientes.DTOs;
-using HandySales.Application.Clientes.Interfaces;
-using HandySales.Application.Usuarios.Interfaces;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Application.Clientes.DTOs;
+using HandySuites.Application.Clientes.Interfaces;
+using HandySuites.Application.Usuarios.Interfaces;
+using HandySuites.Shared.Multitenancy;
 
-namespace HandySales.Application.Clientes.Services;
+namespace HandySuites.Application.Clientes.Services;
 
 public class ClienteService
 {

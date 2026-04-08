@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace HandySales.Shared.Security;
+namespace HandySuites.Shared.Security;
 
 /// <summary>
 /// Encrypts/decrypts TOTP secrets using AES-256-CBC.

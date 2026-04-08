@@ -1,16 +1,16 @@
 using System.Text.Json.Serialization;
 using FluentValidation;
-using HandySales.Application.Ai.Interfaces;
-using HandySales.Application.CompanySettings.Interfaces;
-using HandySales.Application.Productos.DTOs;
-using HandySales.Application.Productos.Services;
-using HandySales.Application.SubscriptionPlans.Interfaces;
-using HandySales.Infrastructure.Persistence;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Application.Ai.Interfaces;
+using HandySuites.Application.CompanySettings.Interfaces;
+using HandySuites.Application.Productos.DTOs;
+using HandySuites.Application.Productos.Services;
+using HandySuites.Application.SubscriptionPlans.Interfaces;
+using HandySuites.Infrastructure.Persistence;
+using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class ProductoEndpoints
 {
@@ -105,7 +105,7 @@ public static class ProductoEndpoints
             IFormFile file,
             [FromServices] ProductoService servicio,
             [FromServices] ICloudinaryService cloudinaryService,
-            [FromServices] HandySalesDbContext dbContext,
+            [FromServices] HandySuitesDbContext dbContext,
             ClaimsPrincipal user) =>
         {
             try

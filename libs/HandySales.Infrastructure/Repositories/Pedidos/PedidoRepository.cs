@@ -1,16 +1,16 @@
-using HandySales.Application.Pedidos.DTOs;
-using HandySales.Application.Pedidos.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.Pedidos.DTOs;
+using HandySuites.Application.Pedidos.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Infrastructure.Repositories.Pedidos;
+namespace HandySuites.Infrastructure.Repositories.Pedidos;
 
 public class PedidoRepository : IPedidoRepository
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
 
-    public PedidoRepository(HandySalesDbContext db)
+    public PedidoRepository(HandySuitesDbContext db)
     {
         _db = db;
     }

@@ -1,7 +1,7 @@
 using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Api.Automations.Handlers;
+namespace HandySuites.Api.Automations.Handlers;
 
 /// <summary>
 /// Notifies admin when cobros are registered.

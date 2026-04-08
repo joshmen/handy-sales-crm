@@ -1,6 +1,6 @@
 # Firebase Cloud Messaging (FCM) - Guía de Configuración
 
-Esta guía describe cómo configurar Firebase Cloud Messaging para habilitar notificaciones push en la aplicación HandySales.
+Esta guía describe cómo configurar Firebase Cloud Messaging para habilitar notificaciones push en la aplicación HandySuites.
 
 ## Índice
 
@@ -28,7 +28,7 @@ Esta guía describe cómo configurar Firebase Cloud Messaging para habilitar not
 
 1. Ir a [Firebase Console](https://console.firebase.google.com/)
 2. Click en "Agregar proyecto"
-3. Nombre del proyecto: `handysales-prod` (o el nombre deseado)
+3. Nombre del proyecto: `handysuites-prod` (o el nombre deseado)
 4. Habilitar Google Analytics (recomendado)
 5. Seleccionar cuenta de Analytics existente o crear una nueva
 
@@ -37,8 +37,8 @@ Esta guía describe cómo configurar Firebase Cloud Messaging para habilitar not
 #### Android
 
 1. En la página del proyecto, click en el ícono de Android
-2. **Package name**: `com.handysales.mobile` (debe coincidir con `package` en `app.json`)
-3. **App nickname**: HandySales Android
+2. **Package name**: `com.handysuites.mobile` (debe coincidir con `package` en `app.json`)
+3. **App nickname**: HandySuites Android
 4. **Debug signing certificate SHA-1**: (opcional para desarrollo)
 5. Descargar `google-services.json`
 6. Guardar el archivo en `handy-mobile/android/app/`
@@ -46,8 +46,8 @@ Esta guía describe cómo configurar Firebase Cloud Messaging para habilitar not
 #### iOS
 
 1. Click en "Agregar app" > iOS
-2. **Bundle ID**: `com.handysales.mobile` (debe coincidir con `ios.bundleIdentifier` en `app.json`)
-3. **App nickname**: HandySales iOS
+2. **Bundle ID**: `com.handysuites.mobile` (debe coincidir con `ios.bundleIdentifier` en `app.json`)
+3. **App nickname**: HandySuites iOS
 4. Descargar `GoogleService-Info.plist`
 5. Guardar el archivo en `handy-mobile/ios/HandyMobile/`
 
@@ -66,7 +66,7 @@ Esta guía describe cómo configurar Firebase Cloud Messaging para habilitar not
 ### 1. Instalar NuGet Package
 
 ```bash
-cd HandySales/src/HandySales.Infrastructure
+cd HandySuites/src/HandySuites.Infrastructure
 dotnet add package FirebaseAdmin --version 2.4.0
 ```
 
@@ -77,7 +77,7 @@ dotnet add package FirebaseAdmin --version 2.4.0
 ```json
 {
   "Firebase": {
-    "ProjectId": "handysales-dev",
+    "ProjectId": "handysuites-dev",
     "CredentialsPath": "secrets/firebase-service-account-dev.json"
   }
 }
@@ -88,7 +88,7 @@ dotnet add package FirebaseAdmin --version 2.4.0
 ```json
 {
   "Firebase": {
-    "ProjectId": "handysales-prod",
+    "ProjectId": "handysuites-prod",
     "CredentialsPath": "/app/secrets/firebase-service-account.json"
   }
 }
@@ -101,10 +101,10 @@ Para Azure Container Instances:
 ```bash
 # Usando Azure CLI
 az container create \
-  --resource-group HandySales-RG \
-  --name handysales-api \
+  --resource-group HandySuites-RG \
+  --name handysuites-api \
   --environment-variables \
-    Firebase__ProjectId="handysales-prod" \
+    Firebase__ProjectId="handysuites-prod" \
     Firebase__CredentialsPath="/app/secrets/firebase-service-account.json"
 ```
 
@@ -113,24 +113,24 @@ O usando Azure Key Vault (recomendado):
 ```bash
 # Guardar credenciales como secreto
 az keyvault secret set \
-  --vault-name handysales-keyvault \
+  --vault-name handysuites-keyvault \
   --name FirebaseCredentials \
   --file firebase-service-account.json
 ```
 
 ### 4. Actualizar FcmService.cs
 
-El servicio actual (`HandySales.Infrastructure/Notifications/Services/FcmService.cs`) está preparado para Firebase. Solo necesita descomentar el código de producción:
+El servicio actual (`HandySuites.Infrastructure/Notifications/Services/FcmService.cs`) está preparado para Firebase. Solo necesita descomentar el código de producción:
 
 ```csharp
 using FirebaseAdmin;
 using FirebaseAdmin.Messaging;
 using Google.Apis.Auth.OAuth2;
-using HandySales.Application.Notifications.Interfaces;
+using HandySuites.Application.Notifications.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
-namespace HandySales.Infrastructure.Notifications.Services;
+namespace HandySuites.Infrastructure.Notifications.Services;
 
 public class FcmService : IFcmService
 {
@@ -203,7 +203,7 @@ public class FcmService : IFcmService
                     Priority = Priority.High,
                     Notification = new AndroidNotification
                     {
-                        ChannelId = "handysales_default",
+                        ChannelId = "handysuites_default",
                         Icon = "notification_icon",
                         Sound = "default"
                     }
@@ -258,7 +258,7 @@ public class FcmService : IFcmService
                     Priority = Priority.High,
                     Notification = new AndroidNotification
                     {
-                        ChannelId = "handysales_default",
+                        ChannelId = "handysuites_default",
                         Icon = "notification_icon",
                         Sound = "default"
                     }
@@ -320,11 +320,11 @@ npx expo install @react-native-firebase/app @react-native-firebase/messaging
     ],
     "android": {
       "googleServicesFile": "./google-services.json",
-      "package": "com.handysales.mobile"
+      "package": "com.handysuites.mobile"
     },
     "ios": {
       "googleServicesFile": "./GoogleService-Info.plist",
-      "bundleIdentifier": "com.handysales.mobile"
+      "bundleIdentifier": "com.handysuites.mobile"
     }
   }
 }
@@ -445,7 +445,7 @@ export default function App() {
 
 ```bash
 # Usando curl
-curl -X POST https://api.handysales.com/notificaciones/enviar \
+curl -X POST https://api.handysuites.com/notificaciones/enviar \
   -H "Authorization: Bearer {token}" \
   -H "Content-Type: application/json" \
   -d '{
@@ -458,7 +458,7 @@ curl -X POST https://api.handysales.com/notificaciones/enviar \
 
 ### Prueba en Swagger
 
-1. Abrir https://api.handysales.com/swagger
+1. Abrir https://api.handysuites.com/swagger
 2. Autenticarse con JWT
 3. Ir a POST /notificaciones/enviar
 4. Ejecutar con los parámetros deseados
@@ -491,8 +491,8 @@ Error: APNS certificate has not been uploaded
 import notifee from '@notifee/react-native';
 
 await notifee.createChannel({
-  id: 'handysales_default',
-  name: 'Notificaciones de HandySales',
+  id: 'handysuites_default',
+  name: 'Notificaciones de HandySuites',
   importance: AndroidImportance.HIGH,
 });
 ```
@@ -506,7 +506,7 @@ Habilitar logs detallados en el backend:
 {
   "Logging": {
     "LogLevel": {
-      "HandySales.Infrastructure.Notifications": "Debug"
+      "HandySuites.Infrastructure.Notifications": "Debug"
     }
   }
 }

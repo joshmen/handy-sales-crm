@@ -1,9 +1,9 @@
 using System.Security.Claims;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 
-namespace HandySales.Api.Middleware;
+namespace HandySuites.Api.Middleware;
 
 /// <summary>
 /// Blocks write operations (POST/PUT/PATCH/DELETE) when maintenance mode is active.
@@ -26,7 +26,7 @@ public class MaintenanceMiddleware
         _next = next;
     }
 
-    public async Task InvokeAsync(HttpContext context, HandySalesDbContext db, IMemoryCache cache)
+    public async Task InvokeAsync(HttpContext context, HandySuitesDbContext db, IMemoryCache cache)
     {
         // Allow all GET/HEAD/OPTIONS requests
         if (!WriteMethods.Contains(context.Request.Method))
@@ -73,7 +73,7 @@ public class MaintenanceMiddleware
     }
 
     private static async Task<(bool IsActive, string? Message)> GetMaintenanceStatus(
-        HandySalesDbContext db, IMemoryCache cache)
+        HandySuitesDbContext db, IMemoryCache cache)
     {
         if (cache.TryGetValue(CacheKey, out (bool IsActive, string? Message) cached))
             return cached;

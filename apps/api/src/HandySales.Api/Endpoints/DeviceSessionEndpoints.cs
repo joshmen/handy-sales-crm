@@ -1,10 +1,10 @@
 using System.Net.Http.Json;
-using HandySales.Application.DeviceSessions.DTOs;
-using HandySales.Application.DeviceSessions.Services;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Application.DeviceSessions.DTOs;
+using HandySuites.Application.DeviceSessions.Services;
+using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class DeviceSessionEndpoints
 {

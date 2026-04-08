@@ -1,14 +1,14 @@
-using HandySales.Application.Geo.Interfaces;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.Geo.Interfaces;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Infrastructure.Services;
+namespace HandySuites.Infrastructure.Services;
 
 public class GeoQueryService : IGeoQueryService
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
 
-    public GeoQueryService(HandySalesDbContext db)
+    public GeoQueryService(HandySuitesDbContext db)
     {
         _db = db;
     }

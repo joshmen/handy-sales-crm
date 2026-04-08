@@ -1,7 +1,7 @@
 using FluentValidation;
-using HandySales.Application.Precios.DTOs;
+using HandySuites.Application.Precios.DTOs;
 
-namespace HandySales.Application.Precios.Validators
+namespace HandySuites.Application.Precios.Validators
 {
     public class PrecioPorProductoCreateDtoValidator : AbstractValidator<PrecioPorProductoCreateDto>
     {

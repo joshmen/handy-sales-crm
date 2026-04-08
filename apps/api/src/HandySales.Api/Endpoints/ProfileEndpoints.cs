@@ -1,8 +1,8 @@
-using HandySales.Application.Usuarios.Services;
+using HandySuites.Application.Usuarios.Services;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class ProfileEndpoints
 {

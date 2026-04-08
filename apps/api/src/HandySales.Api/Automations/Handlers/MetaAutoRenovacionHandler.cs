@@ -1,7 +1,7 @@
-using HandySales.Domain.Entities;
+using HandySuites.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Api.Automations.Handlers;
+namespace HandySuites.Api.Automations.Handlers;
 
 public class MetaAutoRenovacionHandler : IAutomationHandler
 {

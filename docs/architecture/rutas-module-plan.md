@@ -137,22 +137,22 @@ CREATE TABLE IF NOT EXISTS RutasRetornoInventario (
 
 | Archivo | Descripción |
 |---------|-------------|
-| `libs/HandySales.Domain/Entities/RutaCarga.cs` | Producto cargado a ruta |
-| `libs/HandySales.Domain/Entities/RutaPedido.cs` | Pedido asignado a ruta |
-| `libs/HandySales.Domain/Entities/RutaRetornoInventario.cs` | Reconciliación al cierre |
+| `libs/HandySuites.Domain/Entities/RutaCarga.cs` | Producto cargado a ruta |
+| `libs/HandySuites.Domain/Entities/RutaPedido.cs` | Pedido asignado a ruta |
+| `libs/HandySuites.Domain/Entities/RutaRetornoInventario.cs` | Reconciliación al cierre |
 
 **Modificar:**
-- `libs/HandySales.Domain/Entities/RutaVendedor.cs` → Agregar `EfectivoInicial`, `ComentariosCarga`, `MontoRecibido`, `CerradoEn`, `CerradoPor`, y navigation props a nuevas entidades. Agregar nuevos valores al enum `EstadoRuta`.
+- `libs/HandySuites.Domain/Entities/RutaVendedor.cs` → Agregar `EfectivoInicial`, `ComentariosCarga`, `MontoRecibido`, `CerradoEn`, `CerradoPor`, y navigation props a nuevas entidades. Agregar nuevos valores al enum `EstadoRuta`.
 
 ### 2.2 Registrar en DbContext
 
-**Modificar:** `libs/HandySales.Infrastructure/Data/ApplicationDbContext.cs`
+**Modificar:** `libs/HandySuites.Infrastructure/Data/ApplicationDbContext.cs`
 - Agregar `DbSet<RutaCarga>`, `DbSet<RutaPedido>`, `DbSet<RutaRetornoInventario>`
 - Agregar configuración de mapeo en `OnModelCreating`
 
 ### 2.3 Nuevos DTOs
 
-**Modificar:** `libs/HandySales.Application/Rutas/DTOs/RutaVendedorDto.cs`
+**Modificar:** `libs/HandySuites.Application/Rutas/DTOs/RutaVendedorDto.cs`
 
 ```csharp
 // DTOs para Carga de Inventario
@@ -169,7 +169,7 @@ public class CerrarRutaRequest { ... }      // Write: montoRecibido + retornos[]
 
 ### 2.4 Validadores
 
-**Crear:** `libs/HandySales.Application/Rutas/Validators/RutaCargaValidators.cs`
+**Crear:** `libs/HandySuites.Application/Rutas/Validators/RutaCargaValidators.cs`
 
 ---
 
@@ -177,7 +177,7 @@ public class CerrarRutaRequest { ... }      // Write: montoRecibido + retornos[]
 
 ### 3.1 Repository
 
-**Modificar:** `libs/HandySales.Application/Rutas/IRutaVendedorRepository.cs` + implementación
+**Modificar:** `libs/HandySuites.Application/Rutas/IRutaVendedorRepository.cs` + implementación
 
 Nuevos métodos:
 ```csharp
@@ -200,12 +200,12 @@ Task CerrarRutaAsync(int rutaId, CerrarRutaRequest req, int tenantId); // Comple
 
 ### 3.2 Service
 
-**Modificar:** `libs/HandySales.Application/Rutas/RutaVendedorService.cs`
+**Modificar:** `libs/HandySuites.Application/Rutas/RutaVendedorService.cs`
 - Agregar métodos correspondientes que delegan al repository
 
 ### 3.3 Endpoints
 
-**Modificar:** `apps/api/src/HandySales.Api/Endpoints/RutaVendedorEndpoints.cs`
+**Modificar:** `apps/api/src/HandySuites.Api/Endpoints/RutaVendedorEndpoints.cs`
 
 Nuevos endpoints:
 ```
@@ -394,10 +394,10 @@ Body:
 | Archivo | Fase |
 |---------|------|
 | `infra/database/migrations/13_create_rutas_carga_cierre_tables.sql` | 1 |
-| `libs/HandySales.Domain/Entities/RutaCarga.cs` | 2 |
-| `libs/HandySales.Domain/Entities/RutaPedido.cs` | 2 |
-| `libs/HandySales.Domain/Entities/RutaRetornoInventario.cs` | 2 |
-| `libs/HandySales.Application/Rutas/Validators/RutaCargaValidators.cs` | 2 |
+| `libs/HandySuites.Domain/Entities/RutaCarga.cs` | 2 |
+| `libs/HandySuites.Domain/Entities/RutaPedido.cs` | 2 |
+| `libs/HandySuites.Domain/Entities/RutaRetornoInventario.cs` | 2 |
+| `libs/HandySuites.Application/Rutas/Validators/RutaCargaValidators.cs` | 2 |
 | `apps/web/src/app/(dashboard)/routes/manage/page.tsx` | 6 |
 | `apps/web/src/app/(dashboard)/routes/manage/[id]/load/page.tsx` | 7 |
 | `apps/web/src/app/(dashboard)/routes/manage/[id]/close/page.tsx` | 8 |
@@ -405,13 +405,13 @@ Body:
 ### MODIFICAR (10 archivos)
 | Archivo | Fase | Cambios |
 |---------|------|---------|
-| `libs/HandySales.Domain/Entities/RutaVendedor.cs` | 2 | Nuevas props + enum values |
-| `libs/HandySales.Infrastructure/Data/ApplicationDbContext.cs` | 2 | DbSets + mappings |
-| `libs/HandySales.Application/Rutas/DTOs/RutaVendedorDto.cs` | 2 | DTOs carga + cierre |
-| `libs/HandySales.Application/Rutas/IRutaVendedorRepository.cs` | 3 | Nuevos métodos |
-| `libs/HandySales.Infrastructure/Repositories/RutaVendedorRepository.cs` | 3 | Implementación |
-| `libs/HandySales.Application/Rutas/RutaVendedorService.cs` | 3 | Nuevos métodos |
-| `apps/api/src/HandySales.Api/Endpoints/RutaVendedorEndpoints.cs` | 3 | Nuevos endpoints |
+| `libs/HandySuites.Domain/Entities/RutaVendedor.cs` | 2 | Nuevas props + enum values |
+| `libs/HandySuites.Infrastructure/Data/ApplicationDbContext.cs` | 2 | DbSets + mappings |
+| `libs/HandySuites.Application/Rutas/DTOs/RutaVendedorDto.cs` | 2 | DTOs carga + cierre |
+| `libs/HandySuites.Application/Rutas/IRutaVendedorRepository.cs` | 3 | Nuevos métodos |
+| `libs/HandySuites.Infrastructure/Repositories/RutaVendedorRepository.cs` | 3 | Implementación |
+| `libs/HandySuites.Application/Rutas/RutaVendedorService.cs` | 3 | Nuevos métodos |
+| `apps/api/src/HandySuites.Api/Endpoints/RutaVendedorEndpoints.cs` | 3 | Nuevos endpoints |
 | `apps/web/src/services/api/routes.ts` | 4 | Nuevos métodos API |
 | `apps/web/src/components/layout/Sidebar.tsx` | 4 | Segundo sub-ítem |
 | `apps/web/src/app/(dashboard)/routes/page.tsx` | 5 | Título, quitar Eye |
@@ -453,7 +453,7 @@ Body:
 
 ### Visión General
 
-El módulo de Rutas es el corazón operativo de HandySales. Conecta la administración web con la app móvil del vendedor, gestionando todo el ciclo de vida de una ruta de venta/entrega: desde la planificación hasta el cierre financiero.
+El módulo de Rutas es el corazón operativo de HandySuites. Conecta la administración web con la app móvil del vendedor, gestionando todo el ciclo de vida de una ruta de venta/entrega: desde la planificación hasta el cierre financiero.
 
 ### Arquitectura del Módulo
 

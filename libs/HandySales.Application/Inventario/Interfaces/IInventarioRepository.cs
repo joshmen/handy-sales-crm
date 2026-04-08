@@ -1,6 +1,6 @@
-using HandySales.Application.Inventario.DTOs;
+using HandySuites.Application.Inventario.DTOs;
 
-namespace HandySales.Application.Inventario.Interfaces;
+namespace HandySuites.Application.Inventario.Interfaces;
 
 public interface IInventarioRepository
 {

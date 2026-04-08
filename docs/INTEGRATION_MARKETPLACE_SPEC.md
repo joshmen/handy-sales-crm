@@ -21,7 +21,7 @@
 
 ## INT Fase 1: Backend — Entidades + Endpoints (Main API, port 1050)
 
-### Nuevas entidades en `libs/HandySales.Domain/Entities/`
+### Nuevas entidades en `libs/HandySuites.Domain/Entities/`
 
 - [ ] **INT-1**: Crear `Integration.cs` — Catalogo platform-level (SIN tenant_id, SIN AuditableEntity)
   - Campos: `Id`, `Slug` (unique, max 50), `Nombre` (max 100), `Descripcion` (max 500), `DescripcionCorta` (max 200)
@@ -43,7 +43,7 @@
   - Campos: `Id` (long), `TenantId`, `IntegrationId`, `Accion` (ACTIVAR/DESACTIVAR/CONFIGURAR/ERROR)
   - `Descripcion` (max 500), `UsuarioId`, `CreatedAt`
 
-- [ ] **INT-4**: Registrar en `HandySalesDbContext.cs`
+- [ ] **INT-4**: Registrar en `HandySuitesDbContext.cs`
   - Agregar 3 DbSets: `Integrations`, `TenantIntegrations`, `IntegrationLogs`
   - `Integration` NO tiene global query filter de tenant (es catalogo global)
   - `TenantIntegration` y `IntegrationLog` SI tienen tenant filter + `EliminadoEn == null` si aplica
@@ -105,7 +105,7 @@
 **Nuevos backend (8):** Integration.cs, TenantIntegration.cs, IntegrationLog.cs, IntegrationDtos.cs, IIntegrationRepository.cs, IntegrationService.cs, IntegrationRepository.cs, IntegrationEndpoints.cs
 **Nuevos frontend (10):** integrations.ts (types), integrations.ts (service), billing.ts, IntegrationsContext.tsx, integrations/page.tsx, facturacion-sat/page.tsx, facturas/page.tsx, nueva-factura/page.tsx, configuracion-fiscal/page.tsx, reportes/page.tsx
 **Nuevo infra (1):** 07_integrations_seed.sql
-**Modificados backend (3):** HandySalesDbContext.cs, Program.cs (main), Program.cs (billing CORS)
+**Modificados backend (3):** HandySuitesDbContext.cs, Program.cs (main), Program.cs (billing CORS)
 **Modificados frontend (4):** Sidebar.tsx, middleware.ts, services/api/index.ts, BillingTab.tsx
 **EF Migration (auto):** AddIntegrationsMarketplace
 

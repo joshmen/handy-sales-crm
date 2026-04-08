@@ -1,6 +1,6 @@
-using HandySales.Application.DatosFacturacion.DTOs;
+using HandySuites.Application.DatosFacturacion.DTOs;
 
-namespace HandySales.Application.DatosFacturacion.Interfaces
+namespace HandySuites.Application.DatosFacturacion.Interfaces
 {
     public interface IDatosFacturacionService
     {

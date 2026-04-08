@@ -1,18 +1,18 @@
-using HandySales.Application.Roles.DTOs;
-using HandySales.Application.Roles.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Application.Roles.DTOs;
+using HandySuites.Application.Roles.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
+using HandySuites.Shared.Multitenancy;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Infrastructure.Roles.Repositories;
+namespace HandySuites.Infrastructure.Roles.Repositories;
 
 public class RoleRepository : IRoleRepository
 {
-    private readonly HandySalesDbContext _context;
+    private readonly HandySuitesDbContext _context;
     private readonly ICurrentTenant _currentTenant;
 
-    public RoleRepository(HandySalesDbContext context, ICurrentTenant currentTenant)
+    public RoleRepository(HandySuitesDbContext context, ICurrentTenant currentTenant)
     {
         _context = context;
         _currentTenant = currentTenant;

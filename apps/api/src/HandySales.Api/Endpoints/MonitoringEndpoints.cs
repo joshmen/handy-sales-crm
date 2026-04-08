@@ -1,10 +1,10 @@
 using System.Text.Json;
 using Amazon.CloudWatchLogs;
 using Amazon.CloudWatchLogs.Model;
-using HandySales.Api.Configuration;
+using HandySuites.Api.Configuration;
 using Serilog.Events;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class MonitoringEndpoints
 {

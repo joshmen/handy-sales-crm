@@ -26,8 +26,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\HandySales.Application\HandySales.Application.csproj" />
-    <ProjectReference Include="..\..\src\HandySales.Api\HandySales.Api.csproj" />
+    <ProjectReference Include="..\..\src\HandySuites.Application\HandySuites.Application.csproj" />
+    <ProjectReference Include="..\..\src\HandySuites.Api\HandySuites.Api.csproj" />
   </ItemGroup>
 
 </Project>

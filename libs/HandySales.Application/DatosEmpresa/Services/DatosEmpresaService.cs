@@ -1,8 +1,8 @@
-using HandySales.Application.DatosEmpresa.DTOs;
-using HandySales.Application.DatosEmpresa.Interfaces;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Application.DatosEmpresa.DTOs;
+using HandySuites.Application.DatosEmpresa.Interfaces;
+using HandySuites.Shared.Multitenancy;
 
-namespace HandySales.Application.DatosEmpresa.Services;
+namespace HandySuites.Application.DatosEmpresa.Services;
 
 public class DatosEmpresaService : IDatosEmpresaService
 {

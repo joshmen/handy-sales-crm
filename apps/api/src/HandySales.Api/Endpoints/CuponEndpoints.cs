@@ -1,10 +1,10 @@
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
+using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class CuponEndpoints
 {
@@ -13,7 +13,7 @@ public static class CuponEndpoints
         // ── SuperAdmin CRUD ──
         var superadmin = app.MapGroup("/api/superadmin/cupones")
             .RequireAuthorization()
-            .RequireCors("HandySalesPolicy");
+            .RequireCors("HandySuitesPolicy");
 
         superadmin.MapGet("/", GetAll)
             .WithName("GetAllCupones")
@@ -34,7 +34,7 @@ public static class CuponEndpoints
         // ── Tenant redemption ──
         var subscription = app.MapGroup("/api/subscription")
             .RequireAuthorization()
-            .RequireCors("HandySalesPolicy");
+            .RequireCors("HandySuitesPolicy");
 
         subscription.MapPost("/redimir-cupon", RedimirCupon)
             .WithName("RedimirCupon")
@@ -44,7 +44,7 @@ public static class CuponEndpoints
     // ── GET /api/superadmin/cupones ──
     private static async Task<IResult> GetAll(
         [FromServices] ICurrentTenant currentTenant,
-        [FromServices] HandySalesDbContext db)
+        [FromServices] HandySuitesDbContext db)
     {
         if (!currentTenant.IsSuperAdmin)
             return Results.Forbid();
@@ -79,7 +79,7 @@ public static class CuponEndpoints
     private static async Task<IResult> Create(
         [FromBody] CuponCreateDto dto,
         [FromServices] ICurrentTenant currentTenant,
-        [FromServices] HandySalesDbContext db)
+        [FromServices] HandySuitesDbContext db)
     {
         if (!currentTenant.IsSuperAdmin)
             return Results.Forbid();
@@ -113,7 +113,7 @@ public static class CuponEndpoints
         int id,
         [FromBody] CuponUpdateDto dto,
         [FromServices] ICurrentTenant currentTenant,
-        [FromServices] HandySalesDbContext db)
+        [FromServices] HandySuitesDbContext db)
     {
         if (!currentTenant.IsSuperAdmin)
             return Results.Forbid();
@@ -139,7 +139,7 @@ public static class CuponEndpoints
     private static async Task<IResult> Delete(
         int id,
         [FromServices] ICurrentTenant currentTenant,
-        [FromServices] HandySalesDbContext db)
+        [FromServices] HandySuitesDbContext db)
     {
         if (!currentTenant.IsSuperAdmin)
             return Results.Forbid();
@@ -161,7 +161,7 @@ public static class CuponEndpoints
     private static async Task<IResult> RedimirCupon(
         [FromBody] RedimirCuponRequest request,
         [FromServices] ICurrentTenant currentTenant,
-        [FromServices] HandySalesDbContext db)
+        [FromServices] HandySuitesDbContext db)
     {
         if (!currentTenant.IsAdmin && !currentTenant.IsSuperAdmin)
             return Results.Forbid();

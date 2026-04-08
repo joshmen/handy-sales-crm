@@ -1,16 +1,16 @@
-using HandySales.Application.Promociones.DTOs;
-using HandySales.Application.Promociones.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.Promociones.DTOs;
+using HandySuites.Application.Promociones.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Infrastructure.Promociones.Repositories;
+namespace HandySuites.Infrastructure.Promociones.Repositories;
 
 public class PromocionRepository : IPromocionRepository
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
 
-    public PromocionRepository(HandySalesDbContext db)
+    public PromocionRepository(HandySuitesDbContext db)
     {
         _db = db;
     }

@@ -1,10 +1,10 @@
 using System.Net.Http.Json;
-using HandySales.Application.Metas.DTOs;
-using HandySales.Application.Metas.Services;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.Metas.DTOs;
+using HandySuites.Application.Metas.Services;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class MetaVendedorEndpoints
 {

@@ -1,16 +1,16 @@
-using HandySales.Application.Ai.DTOs;
-using HandySales.Application.Ai.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.Ai.DTOs;
+using HandySuites.Application.Ai.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
-namespace HandySales.Infrastructure.Ai.Services;
+namespace HandySuites.Infrastructure.Ai.Services;
 
 public class AiActionDetector : IAiActionDetector
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
     private readonly IMemoryCache _cache;
     private readonly ILogger<AiActionDetector> _logger;
 
@@ -19,7 +19,7 @@ public class AiActionDetector : IAiActionDetector
     private static readonly TimeSpan CacheTtl = TimeSpan.FromMinutes(10);
 
     public AiActionDetector(
-        HandySalesDbContext db,
+        HandySuitesDbContext db,
         IMemoryCache cache,
         ILogger<AiActionDetector> logger)
     {

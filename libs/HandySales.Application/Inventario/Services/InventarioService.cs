@@ -1,8 +1,8 @@
-using HandySales.Application.Inventario.DTOs;
-using HandySales.Application.Inventario.Interfaces;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Application.Inventario.DTOs;
+using HandySuites.Application.Inventario.Interfaces;
+using HandySuites.Shared.Multitenancy;
 
-namespace HandySales.Application.Inventario.Services;
+namespace HandySuites.Application.Inventario.Services;
 
 public class InventarioService
 {

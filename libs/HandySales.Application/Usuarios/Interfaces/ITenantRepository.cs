@@ -1,6 +1,6 @@
-using HandySales.Domain.Entities;
+using HandySuites.Domain.Entities;
 
-namespace HandySales.Application.Usuarios.Interfaces;
+namespace HandySuites.Application.Usuarios.Interfaces;
 
 public interface ITenantRepository
 {

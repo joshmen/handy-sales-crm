@@ -1,4 +1,4 @@
-namespace HandySales.Application.Cobranza.DTOs;
+namespace HandySuites.Application.Cobranza.DTOs;
 
 public class CobroDto
 {

@@ -1,4 +1,4 @@
-namespace HandySales.Shared.Email;
+namespace HandySuites.Shared.Email;
 
 public interface IEmailService
 {

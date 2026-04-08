@@ -3,10 +3,10 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using FluentAssertions;
-using HandySales.Shared.Security;
+using HandySuites.Shared.Security;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace HandySales.Tests.Integration.Auth
+namespace HandySuites.Tests.Integration.Auth
 {
     public class AuthEndpointsTests : IClassFixture<CustomWebApplicationFactory>
     {
@@ -97,7 +97,7 @@ namespace HandySales.Tests.Integration.Auth
         [Fact]
         public async Task Login_DeberiaRetornarToken_ConUsuarioSeeded()
         {
-            // Usa el usuario pre-seeded en HandySalesTestSeeder
+            // Usa el usuario pre-seeded en HandySuitesTestSeeder
             var login = new UsuarioLoginDto
             {
                 email = "test@user.com",

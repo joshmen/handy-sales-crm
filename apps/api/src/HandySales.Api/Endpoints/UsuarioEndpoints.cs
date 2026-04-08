@@ -1,13 +1,13 @@
-using HandySales.Application.Usuarios.Services;
-using HandySales.Application.Usuarios.DTOs;
-using HandySales.Application.SubscriptionPlans.Interfaces;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Application.Usuarios.Services;
+using HandySuites.Application.Usuarios.DTOs;
+using HandySuites.Application.SubscriptionPlans.Interfaces;
+using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using HandySales.Application.Common.DTOs;
+using HandySuites.Application.Common.DTOs;
 using FluentValidation;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class UsuarioEndpoints
 {

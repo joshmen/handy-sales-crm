@@ -1,8 +1,8 @@
-using HandySales.Application.CompanySettings.Interfaces;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.CompanySettings.Interfaces;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class MigrationEndpoints
 {
@@ -14,7 +14,7 @@ public static class MigrationEndpoints
 
         // POST /api/migration/initialize-existing-tenants
         group.MapPost("/initialize-existing-tenants", async (
-            HandySalesDbContext dbContext,
+            HandySuitesDbContext dbContext,
             ICloudinaryService cloudinaryService) =>
         {
             try
@@ -47,7 +47,7 @@ public static class MigrationEndpoints
 
                             if (existingSettings == null)
                             {
-                                var companySetting = new HandySales.Domain.Entities.CompanySetting
+                                var companySetting = new HandySuites.Domain.Entities.CompanySetting
                                 {
                                     TenantId = tenant.Id,
                                     CompanyName = tenant.NombreEmpresa,
@@ -115,7 +115,7 @@ public static class MigrationEndpoints
 
         // GET /api/migration/tenants-status
         group.MapGet("/tenants-status", async (
-            HandySalesDbContext dbContext) =>
+            HandySuitesDbContext dbContext) =>
         {
             var tenants = await dbContext.Tenants
                 .Select(t => new

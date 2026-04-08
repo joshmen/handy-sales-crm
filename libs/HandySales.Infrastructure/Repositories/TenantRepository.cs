@@ -1,9 +1,9 @@
-using HandySales.Application.Usuarios.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.Usuarios.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Infrastructure.Repositories;
+namespace HandySuites.Infrastructure.Repositories;
 
 /// <summary>
 /// Repositorio para gestión de Tenants.
@@ -11,9 +11,9 @@ namespace HandySales.Infrastructure.Repositories;
 /// </summary>
 public class TenantRepository : ITenantRepository
 {
-    private readonly HandySalesDbContext _context;
+    private readonly HandySuitesDbContext _context;
 
-    public TenantRepository(HandySalesDbContext context)
+    public TenantRepository(HandySuitesDbContext context)
     {
         _context = context;
     }

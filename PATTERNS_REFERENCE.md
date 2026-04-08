@@ -1,4 +1,4 @@
-# HandySales Project Patterns Reference
+# HandySuites Project Patterns Reference
 
 > **Purpose**: Quick reference guide for implementing new features (CRUD operations, repository patterns, DI registration, endpoint mapping).
 > **Last Updated**: 2026-03-01
@@ -7,7 +7,7 @@
 
 ### File Structure
 ```
-libs/HandySales.Infrastructure/
+libs/HandySuites.Infrastructure/
 └── Repositories/
     └── CategoriasClientes/
         ├── CategoriaClienteRepository.cs (Implementation)
@@ -17,18 +17,18 @@ libs/HandySales.Infrastructure/
 ### Repository Implementation Pattern
 
 ```csharp
-using HandySales.Application.{Entity}.DTOs;
-using HandySales.Application.{Entity}.Interfaces;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.{Entity}.DTOs;
+using HandySuites.Application.{Entity}.Interfaces;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Infrastructure.{Entity}.Repositories;
+namespace HandySuites.Infrastructure.{Entity}.Repositories;
 
 public class {Entity}Repository : I{Entity}Repository
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
 
-    public {Entity}Repository(HandySalesDbContext db)
+    public {Entity}Repository(HandySuitesDbContext db)
     {
         _db = db;
     }
@@ -153,7 +153,7 @@ public class {Entity}Repository : I{Entity}Repository
 
 ---
 
-## 2. DBCONTEXT CONFIGURATION (HandySalesDbContext)
+## 2. DBCONTEXT CONFIGURATION (HandySuitesDbContext)
 
 ### DbSet Declarations
 ```csharp
@@ -257,7 +257,7 @@ public static class ServiceRegistrationExtensions
         // DbContext (skip in Testing environment)
         if (environment != "Testing")
         {
-            services.AddDbContext<HandySalesDbContext>(options =>
+            services.AddDbContext<HandySuitesDbContext>(options =>
                 options.UseMySql(
                     config.GetConnectionString("DefaultConnection"),
                     new MySqlServerVersion(new Version(8, 0, 0))
@@ -329,15 +329,15 @@ app.Run();
 
 ### Endpoint File Pattern
 
-**File**: `apps/api/src/HandySales.Api/Endpoints/{Entity}Endpoints.cs`
+**File**: `apps/api/src/HandySuites.Api/Endpoints/{Entity}Endpoints.cs`
 
 ```csharp
-using HandySales.Application.{Entity}.Interfaces;
-using HandySales.Application.{Entity}.DTOs;
-using HandySales.Shared.Security;
+using HandySuites.Application.{Entity}.Interfaces;
+using HandySuites.Application.{Entity}.DTOs;
+using HandySuites.Shared.Security;
 using Microsoft.AspNetCore.Http.HttpResults;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class {Entity}Endpoints
 {
@@ -477,7 +477,7 @@ public record {Entity}BatchToggleRequest(List<int> Ids, bool Activo);
 
 ### Location
 ```
-apps/api/src/HandySales.Api/Middleware/{Purpose}Middleware.cs
+apps/api/src/HandySuites.Api/Middleware/{Purpose}Middleware.cs
 ```
 
 ### Basic Pattern
@@ -538,7 +538,7 @@ app.UseMiddleware<MaintenanceMiddleware>();      // Before endpoints
 
 ### Location
 ```
-apps/api/src/HandySales.Api/Workers/{Purpose}Processor.cs
+apps/api/src/HandySuites.Api/Workers/{Purpose}Processor.cs
 ```
 
 ### Pattern
@@ -563,7 +563,7 @@ public class {Purpose}Processor : BackgroundService
             try
             {
                 using var scope = _serviceProvider.CreateScope();
-                var db = scope.ServiceProvider.GetRequiredService<HandySalesDbContext>();
+                var db = scope.ServiceProvider.GetRequiredService<HandySuitesDbContext>();
 
                 // Do work
                 await ProcessAsync(db, stoppingToken);
@@ -584,7 +584,7 @@ public class {Purpose}Processor : BackgroundService
         _logger.LogInformation("{Purpose}Processor stopped");
     }
 
-    private async Task ProcessAsync(HandySalesDbContext db, CancellationToken ct)
+    private async Task ProcessAsync(HandySuitesDbContext db, CancellationToken ct)
     {
         // Implementation
     }
@@ -603,7 +603,7 @@ builder.Services.AddHostedService<{Purpose}Processor>();
 
 When creating a NEW domain entity, follow this MANDATORY pattern:
 
-### 1. Domain Entity (libs/HandySales.Domain/Entities/)
+### 1. Domain Entity (libs/HandySuites.Domain/Entities/)
 ```csharp
 public class {Entity} : AuditableEntity
 {
@@ -618,7 +618,7 @@ public class {Entity} : AuditableEntity
 }
 ```
 
-### 2. Add DbSet (HandySalesDbContext.cs)
+### 2. Add DbSet (HandySuitesDbContext.cs)
 ```csharp
 public DbSet<{Entity}> {Entities} => Set<{Entity}>();
 ```
@@ -651,8 +651,8 @@ modelBuilder.Entity<{Entity}>()
 ```bash
 export PATH="$PATH:/c/Users/AW AREA 51M R2/.dotnet/tools"
 dotnet-ef migrations add Add{Entity} \
-  --project libs/HandySales.Infrastructure \
-  --startup-project apps/api/src/HandySales.Api \
+  --project libs/HandySuites.Infrastructure \
+  --startup-project apps/api/src/HandySuites.Api \
   --output-dir Migrations
 ```
 
@@ -837,17 +837,17 @@ public class CustomWebApplicationFactory<TProgram>
         {
             // Remove real DbContext
             var descriptor = services.FirstOrDefault(d =>
-                d.ServiceType == typeof(DbContextOptions<HandySalesDbContext>));
+                d.ServiceType == typeof(DbContextOptions<HandySuitesDbContext>));
             if (descriptor != null)
                 services.Remove(descriptor);
 
             // Add test DbContext (SQLite)
-            services.AddDbContext<HandySalesDbContext>(options =>
+            services.AddDbContext<HandySuitesDbContext>(options =>
                 options.UseSqlite("DataSource=:memory:"));
 
             // Create schema
             using var scope = services.BuildServiceProvider().CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<HandySalesDbContext>();
+            var db = scope.ServiceProvider.GetRequiredService<HandySuitesDbContext>();
             db.Database.EnsureCreated();
         });
     }
@@ -886,7 +886,7 @@ public class {Entity}EndpointTests
 ## 11. QUICK CHECKLIST FOR NEW FEATURES
 
 - [ ] Create Domain entity inheriting `AuditableEntity`
-- [ ] Add `DbSet<T>` to HandySalesDbContext
+- [ ] Add `DbSet<T>` to HandySuitesDbContext
 - [ ] Configure in `OnModelCreating` with FK and indexes
 - [ ] Add global query filter with tenant check + soft delete
 - [ ] Generate EF Core migration and verify

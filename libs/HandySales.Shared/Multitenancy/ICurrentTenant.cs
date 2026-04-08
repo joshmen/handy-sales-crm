@@ -1,4 +1,4 @@
-namespace HandySales.Shared.Multitenancy;
+namespace HandySuites.Shared.Multitenancy;
 
 public interface ICurrentTenant
 {

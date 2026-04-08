@@ -1,4 +1,4 @@
-namespace HandySales.Application.Notifications.DTOs;
+namespace HandySuites.Application.Notifications.DTOs;
 
 /// <summary>
 /// Tenant-level notification settings. Controls which push/email notifications are enabled.

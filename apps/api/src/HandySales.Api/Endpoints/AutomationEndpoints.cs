@@ -1,17 +1,17 @@
 using System.Security.Claims;
-using HandySales.Api.Automations;
-using HandySales.Application.Automations.DTOs;
-using HandySales.Application.Automations.Interfaces;
-using HandySales.Application.Automations.Services;
-using HandySales.Application.Notifications.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
-using HandySales.Shared.Email;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Api.Automations;
+using HandySuites.Application.Automations.DTOs;
+using HandySuites.Application.Automations.Interfaces;
+using HandySuites.Application.Automations.Services;
+using HandySuites.Application.Notifications.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
+using HandySuites.Shared.Email;
+using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class AutomationEndpoints
 {
@@ -62,7 +62,7 @@ public static class AutomationEndpoints
             if (userId <= 0) return Results.Unauthorized();
 
             // Validate subscription is active (Trial or Active)
-            var db = context.RequestServices.GetRequiredService<HandySalesDbContext>();
+            var db = context.RequestServices.GetRequiredService<HandySuitesDbContext>();
             var tenant = await db.Tenants.AsNoTracking().FirstOrDefaultAsync(t => t.Id == tenantId);
             if (tenant?.SubscriptionStatus is not ("Trial" or "Active"))
                 return Results.Json(new { error = "Tu suscripción ha expirado. Suscríbete para activar automatizaciones." }, statusCode: 402);
@@ -137,7 +137,7 @@ public static class AutomationEndpoints
             HttpContext context,
             [FromServices] IAutomationRepository repo,
             [FromServices] IEnumerable<IAutomationHandler> handlers,
-            [FromServices] HandySalesDbContext db,
+            [FromServices] HandySuitesDbContext db,
             [FromServices] INotificationService notifications,
             [FromServices] ICurrentTenant currentTenant,
             CancellationToken ct) =>

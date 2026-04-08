@@ -1,8 +1,8 @@
-using HandySales.Application.Companies.DTOs;
-using HandySales.Application.Companies.Interfaces;
-using HandySales.Domain.Entities;
+using HandySuites.Application.Companies.DTOs;
+using HandySuites.Application.Companies.Interfaces;
+using HandySuites.Domain.Entities;
 
-namespace HandySales.Application.Companies.Services
+namespace HandySuites.Application.Companies.Services
 {
     public interface ICompanyService
     {

@@ -1,7 +1,7 @@
-using HandySales.Application.Roles.DTOs;
-using HandySales.Application.Roles.Interfaces;
+using HandySuites.Application.Roles.DTOs;
+using HandySuites.Application.Roles.Interfaces;
 
-namespace HandySales.Application.Roles.Services;
+namespace HandySuites.Application.Roles.Services;
 
 public class RoleService
 {

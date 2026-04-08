@@ -1,13 +1,13 @@
-using HandySales.Application.Ai.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.Ai.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Infrastructure.Ai.Services;
+namespace HandySuites.Infrastructure.Ai.Services;
 
 public class AiCreditService : IAiCreditService
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
 
     private static readonly Dictionary<string, int> CreditCosts = new()
     {
@@ -27,7 +27,7 @@ public class AiCreditService : IAiCreditService
         ["enterprise"] = 500
     };
 
-    public AiCreditService(HandySalesDbContext db) => _db = db;
+    public AiCreditService(HandySuitesDbContext db) => _db = db;
 
     public int GetCreditCost(string tipoAccion)
         => CreditCosts.GetValueOrDefault(tipoAccion.ToLower(), 0);

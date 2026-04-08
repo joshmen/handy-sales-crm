@@ -1,15 +1,15 @@
-using HandySales.Application.Inventario.DTOs;
-using HandySales.Application.Inventario.Interfaces;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.Inventario.DTOs;
+using HandySuites.Application.Inventario.Interfaces;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Infrastructure.Inventario.Repositories;
+namespace HandySuites.Infrastructure.Inventario.Repositories;
 
 public class InventarioRepository : IInventarioRepository
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
 
-    public InventarioRepository(HandySalesDbContext db)
+    public InventarioRepository(HandySuitesDbContext db)
     {
         _db = db;
     }

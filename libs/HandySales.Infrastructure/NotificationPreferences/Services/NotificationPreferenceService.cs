@@ -1,16 +1,16 @@
-using HandySales.Application.NotificationPreferences.DTOs;
-using HandySales.Application.NotificationPreferences.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.NotificationPreferences.DTOs;
+using HandySuites.Application.NotificationPreferences.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Infrastructure.NotificationPreferences.Services
+namespace HandySuites.Infrastructure.NotificationPreferences.Services
 {
     public class NotificationPreferenceService : INotificationPreferenceService
     {
-        private readonly HandySalesDbContext _context;
+        private readonly HandySuitesDbContext _context;
 
-        public NotificationPreferenceService(HandySalesDbContext context)
+        public NotificationPreferenceService(HandySuitesDbContext context)
         {
             _context = context;
         }

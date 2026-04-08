@@ -3,12 +3,12 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
 using FluentValidation;
-using HandySales.Shared.Security;
+using HandySuites.Shared.Security;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class AuthEndpoints
 {

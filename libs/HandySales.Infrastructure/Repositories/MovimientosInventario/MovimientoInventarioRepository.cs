@@ -1,16 +1,16 @@
-using HandySales.Application.MovimientosInventario.DTOs;
-using HandySales.Application.MovimientosInventario.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.MovimientosInventario.DTOs;
+using HandySuites.Application.MovimientosInventario.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Infrastructure.MovimientosInventario.Repositories;
+namespace HandySuites.Infrastructure.MovimientosInventario.Repositories;
 
 public class MovimientoInventarioRepository : IMovimientoInventarioRepository
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
 
-    public MovimientoInventarioRepository(HandySalesDbContext db)
+    public MovimientoInventarioRepository(HandySuitesDbContext db)
     {
         _db = db;
     }

@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace HandySales.Infrastructure.Persistence;
+namespace HandySuites.Infrastructure.Persistence;
 
 /// <summary>
 /// Applies pending EF Core migrations on startup.
@@ -16,7 +16,7 @@ public static class DatabaseMigrator
     public static async Task MigrateAsync(IServiceProvider services, ILogger logger)
     {
         using var scope = services.CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<HandySalesDbContext>();
+        var dbContext = scope.ServiceProvider.GetRequiredService<HandySuitesDbContext>();
 
         var pendingMigrations = (await dbContext.Database.GetPendingMigrationsAsync()).ToList();
 

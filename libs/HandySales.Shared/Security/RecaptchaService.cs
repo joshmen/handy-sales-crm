@@ -1,7 +1,7 @@
 using System.Net.Http.Json;
 using Microsoft.Extensions.Logging;
 
-namespace HandySales.Shared.Security;
+namespace HandySuites.Shared.Security;
 
 public class RecaptchaService
 {

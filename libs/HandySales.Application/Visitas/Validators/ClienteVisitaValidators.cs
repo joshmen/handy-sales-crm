@@ -1,7 +1,7 @@
 using FluentValidation;
-using HandySales.Application.Visitas.DTOs;
+using HandySuites.Application.Visitas.DTOs;
 
-namespace HandySales.Application.Visitas.Validators;
+namespace HandySuites.Application.Visitas.Validators;
 
 public class ClienteVisitaCreateDtoValidator : AbstractValidator<ClienteVisitaCreateDto>
 {

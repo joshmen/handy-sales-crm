@@ -1,4 +1,4 @@
-namespace HandySales.Application.Zonas.DTOs;
+namespace HandySuites.Application.Zonas.DTOs;
 
 public class UpdateZonaDto
 {

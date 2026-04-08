@@ -1,7 +1,7 @@
-using HandySales.Application.Pedidos.DTOs;
-using HandySales.Domain.Entities;
+using HandySuites.Application.Pedidos.DTOs;
+using HandySuites.Domain.Entities;
 
-namespace HandySales.Application.Pedidos.Interfaces;
+namespace HandySuites.Application.Pedidos.Interfaces;
 
 public interface IPedidoRepository
 {

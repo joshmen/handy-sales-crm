@@ -1,4 +1,4 @@
-namespace HandySales.Application.SubscriptionPlans.DTOs;
+namespace HandySuites.Application.SubscriptionPlans.DTOs;
 
 public class SubscriptionPlanAdminDto
 {

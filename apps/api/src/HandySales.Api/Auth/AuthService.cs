@@ -1,15 +1,15 @@
 using System.Collections.Concurrent;
 using System.Security.Cryptography;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
-using HandySales.Shared.Email;
-using HandySales.Shared.Security;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
+using HandySuites.Shared.Email;
+using HandySuites.Shared.Security;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
-using HandySales.Application.ActivityTracking.Services;
-using HandySales.Application.CompanySettings.Interfaces;
-using HandySales.Application.Tenants.Interfaces;
-using HandySales.Api.TwoFactor;
+using HandySuites.Application.ActivityTracking.Services;
+using HandySuites.Application.CompanySettings.Interfaces;
+using HandySuites.Application.Tenants.Interfaces;
+using HandySuites.Api.TwoFactor;
 using Microsoft.AspNetCore.Http;
 using System.Linq;
 
@@ -19,7 +19,7 @@ public class AuthService
     private const int MaxTotpAttempts = 5;
     private static readonly TimeSpan TotpLockoutWindow = TimeSpan.FromMinutes(10);
     private static readonly ConcurrentDictionary<int, (int Count, DateTime FirstAttempt)> _totpAttempts = new();
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
     private readonly JwtTokenGenerator _jwt;
     private readonly IActivityTrackingService _activityTracking;
     private readonly IHttpContextAccessor _httpContextAccessor;
@@ -32,7 +32,7 @@ public class AuthService
     private readonly ILogger<AuthService> _logger;
 
     public AuthService(
-        HandySalesDbContext db,
+        HandySuitesDbContext db,
         JwtTokenGenerator jwt,
         IActivityTrackingService activityTracking,
         IHttpContextAccessor httpContextAccessor,
@@ -921,7 +921,7 @@ public class AuthService
         {
             // Use a separate scoped DbContext to avoid concurrency issues
             using var scope = _serviceProvider.CreateScope();
-            var scopedDb = scope.ServiceProvider.GetRequiredService<HandySalesDbContext>();
+            var scopedDb = scope.ServiceProvider.GetRequiredService<HandySuitesDbContext>();
             
             var httpContext = _httpContextAccessor.HttpContext;
             var activity = new ActivityLog
@@ -1002,7 +1002,7 @@ public class AuthService
         var html = EmailTemplates.PasswordReset(usuario.Nombre, resetUrl);
         try
         {
-            await _emailService.SendAsync(email, "Restablecer Contraseña - HandySales", html);
+            await _emailService.SendAsync(email, "Restablecer Contraseña - HandySuites", html);
         }
         catch (Exception ex)
         {

@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
-using HandySales.Application.ActivityTracking.Interfaces;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Application.ActivityTracking.Interfaces;
+using HandySuites.Shared.Multitenancy;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class ActivityLogEndpoints
 {
@@ -10,7 +10,7 @@ public static class ActivityLogEndpoints
     {
         var group = app.MapGroup("/api/activity-logs")
             .RequireAuthorization()
-            .RequireCors("HandySalesPolicy");
+            .RequireCors("HandySuitesPolicy");
 
         group.MapGet("/", GetActivityLogs)
             .WithName("GetActivityLogs")

@@ -10,7 +10,7 @@ Handy Suites Main API — .NET 8 Web API for CRM/ERP system. Clean Architecture 
 
 ```bash
 # Build from monorepo root
-dotnet build apps/api/src/HandySales.Api/HandySales.Api.csproj
+dotnet build apps/api/src/HandySuites.Api/HandySuites.Api.csproj
 
 # Run via Docker (preferred — see root CLAUDE.md)
 docker-compose -f docker-compose.dev.yml up -d --build api_main
@@ -21,8 +21,8 @@ dotnet test
 # EF Core migrations (PATH fix required in bash)
 export PATH="$PATH:/c/Users/AW AREA 51M R2/.dotnet/tools"
 dotnet-ef migrations add <MigrationName> \
-  --project libs/HandySales.Infrastructure \
-  --startup-project apps/api/src/HandySales.Api \
+  --project libs/HandySuites.Infrastructure \
+  --startup-project apps/api/src/HandySuites.Api \
   --output-dir Migrations
 
 # Migrations auto-apply on API startup in dev — no manual `database update` needed
@@ -45,27 +45,27 @@ curl -s http://localhost:1050/health
 
 ### Clean Architecture Layers
 
-1. **HandySales.Api** (`apps/api/src/HandySales.Api/`) — Presentation
+1. **HandySuites.Api** (`apps/api/src/HandySuites.Api/`) — Presentation
    - 47 endpoint files in `/Endpoints/`
    - Configuration: CORS, JWT, Logging, DI in `/Configuration/`
    - Middleware: GlobalException, RequestLogging, Maintenance, SessionValidation, TenantFilter
    - Entry point: `Program.cs`
 
-2. **HandySales.Application** (`libs/HandySales.Application/`) — Business Logic
+2. **HandySuites.Application** (`libs/HandySuites.Application/`) — Business Logic
    - Feature-based folders: Auth, Clientes, Productos, Pedidos, Cobros, Rutas, Inventario, etc.
    - DTOs, validators, services, interfaces
 
-3. **HandySales.Domain** (`libs/HandySales.Domain/`) — Core Domain
+3. **HandySuites.Domain** (`libs/HandySuites.Domain/`) — Core Domain
    - 43 entity models in `/Entities/`
    - Common: `AuditableEntity` base class (soft deletes, audit fields)
    - No external dependencies
 
-4. **HandySales.Infrastructure** (`libs/HandySales.Infrastructure/`) — Data Access
-   - `HandySalesDbContext` with multi-tenant global query filters
+4. **HandySuites.Infrastructure** (`libs/HandySuites.Infrastructure/`) — Data Access
+   - `HandySuitesDbContext` with multi-tenant global query filters
    - Repository implementations with `AsNoTracking` for reads
    - `DatabaseMigrator` with PostgreSQL advisory lock for safe auto-migration
 
-5. **HandySales.Shared** (`libs/HandySales.Shared/`) — Cross-cutting utilities
+5. **HandySuites.Shared** (`libs/HandySuites.Shared/`) — Cross-cutting utilities
 
 ### Key Features (2026)
 - Multi-tenant with `tenant_id` global query filters + soft deletes (`EliminadoEn`)

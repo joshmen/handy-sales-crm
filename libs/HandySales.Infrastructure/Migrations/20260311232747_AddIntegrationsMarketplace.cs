@@ -4,7 +4,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace HandySales.Infrastructure.Migrations
+namespace HandySuites.Infrastructure.Migrations
 {
     /// <inheritdoc />
     public partial class AddIntegrationsMarketplace : Migration

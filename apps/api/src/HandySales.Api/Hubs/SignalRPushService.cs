@@ -1,7 +1,7 @@
-using HandySales.Application.Notifications.Interfaces;
+using HandySuites.Application.Notifications.Interfaces;
 using Microsoft.AspNetCore.SignalR;
 
-namespace HandySales.Api.Hubs;
+namespace HandySuites.Api.Hubs;
 
 /// <summary>
 /// SignalR implementation of IRealtimePushService.

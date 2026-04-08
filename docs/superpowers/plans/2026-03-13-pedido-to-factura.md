@@ -15,9 +15,9 @@
 ### Backend — Main API (EF Core migration)
 | File | Action | Responsibility |
 |------|--------|---------------|
-| `libs/HandySales.Domain/Entities/Producto.cs` | MODIFY | Add `ClaveSat` field |
-| `libs/HandySales.Domain/Entities/UnidadMedida.cs` | MODIFY | Add `ClaveSat` field |
-| `libs/HandySales.Infrastructure/Migrations/` | CREATE | New migration for SAT fields |
+| `libs/HandySuites.Domain/Entities/Producto.cs` | MODIFY | Add `ClaveSat` field |
+| `libs/HandySuites.Domain/Entities/UnidadMedida.cs` | MODIFY | Add `ClaveSat` field |
+| `libs/HandySuites.Infrastructure/Migrations/` | CREATE | New migration for SAT fields |
 
 ### Backend — Billing API (order reader + endpoint)
 | File | Action | Responsibility |
@@ -42,7 +42,7 @@
 ### Task 1: Add `ClaveSat` to Producto entity
 
 **Files:**
-- Modify: `libs/HandySales.Domain/Entities/Producto.cs`
+- Modify: `libs/HandySuites.Domain/Entities/Producto.cs`
 
 - [ ] **Step 1: Add ClaveSat property to Producto**
 
@@ -56,7 +56,7 @@ This is the SAT `ClaveProdServ` code (e.g., `52161557` for "Artículos de papele
 
 - [ ] **Step 2: Verify the entity compiles**
 
-Run: `cd "c:/Users/AW AREA 51M R2/OneDrive/Offshore_Projects/HandySales" && dotnet build libs/HandySales.Domain`
+Run: `cd "c:/Users/AW AREA 51M R2/OneDrive/Offshore_Projects/HandySuites" && dotnet build libs/HandySuites.Domain`
 Expected: Build succeeded
 
 ---
@@ -64,7 +64,7 @@ Expected: Build succeeded
 ### Task 2: Add `ClaveSat` to UnidadMedida entity
 
 **Files:**
-- Modify: `libs/HandySales.Domain/Entities/UnidadMedida.cs` (the file at root scope, Table `UnidadesMedida`)
+- Modify: `libs/HandySuites.Domain/Entities/UnidadMedida.cs` (the file at root scope, Table `UnidadesMedida`)
 
 - [ ] **Step 1: Add ClaveSat property to UnidadMedida**
 
@@ -78,7 +78,7 @@ This is the SAT `ClaveUnidad` code (e.g., `H87` for "Pieza", `E48` for "Servicio
 
 - [ ] **Step 2: Verify the entity compiles**
 
-Run: `cd "c:/Users/AW AREA 51M R2/OneDrive/Offshore_Projects/HandySales" && dotnet build libs/HandySales.Domain`
+Run: `cd "c:/Users/AW AREA 51M R2/OneDrive/Offshore_Projects/HandySuites" && dotnet build libs/HandySuites.Domain`
 Expected: Build succeeded
 
 ---
@@ -86,15 +86,15 @@ Expected: Build succeeded
 ### Task 3: Generate EF Core migration
 
 **Files:**
-- Create: `libs/HandySales.Infrastructure/Migrations/<timestamp>_AddClaveSatFields.cs`
+- Create: `libs/HandySuites.Infrastructure/Migrations/<timestamp>_AddClaveSatFields.cs`
 
 - [ ] **Step 1: Generate migration**
 
 ```bash
 export PATH="$PATH:/c/Users/AW AREA 51M R2/.dotnet/tools"
 dotnet-ef migrations add AddClaveSatToProductosYUnidades \
-  --project libs/HandySales.Infrastructure \
-  --startup-project apps/api/src/HandySales.Api \
+  --project libs/HandySuites.Infrastructure \
+  --startup-project apps/api/src/HandySuites.Api \
   --output-dir Migrations
 ```
 
@@ -113,9 +113,9 @@ docker-compose -f docker-compose.dev.yml up -d --build api_main
 Wait for container to start, then verify columns exist:
 
 ```bash
-docker exec handysales_postgres_dev psql -U handy_user -d handy_erp \
+docker exec handysuites_postgres_dev psql -U handy_user -d handy_erp \
   -c "\d \"Productos\"" | grep clave_sat
-docker exec handysales_postgres_dev psql -U handy_user -d handy_erp \
+docker exec handysuites_postgres_dev psql -U handy_user -d handy_erp \
   -c "\d \"UnidadesMedida\"" | grep clave_sat
 ```
 
@@ -124,9 +124,9 @@ Expected: Both columns appear as `character varying` nullable.
 - [ ] **Step 4: Commit**
 
 ```bash
-git add libs/HandySales.Domain/Entities/Producto.cs \
-        libs/HandySales.Domain/Entities/UnidadMedida.cs \
-        libs/HandySales.Infrastructure/Migrations/
+git add libs/HandySuites.Domain/Entities/Producto.cs \
+        libs/HandySuites.Domain/Entities/UnidadMedida.cs \
+        libs/HandySuites.Infrastructure/Migrations/
 git commit -m "feat: add clave_sat to Producto and UnidadMedida for CFDI integration"
 ```
 
@@ -137,12 +137,12 @@ git commit -m "feat: add clave_sat to Producto and UnidadMedida for CFDI integra
 ### Task 4: Create IOrderReaderService interface
 
 **Files:**
-- Create: `apps/billing/HandySales.Billing.Api/Services/IOrderReaderService.cs`
+- Create: `apps/billing/HandySuites.Billing.Api/Services/IOrderReaderService.cs`
 
 - [ ] **Step 1: Define the interface and DTOs**
 
 ```csharp
-namespace HandySales.Billing.Api.Services;
+namespace HandySuites.Billing.Api.Services;
 
 /// <summary>
 /// Reads order data from handy_erp database (cross-DB via Npgsql).
@@ -203,7 +203,7 @@ public class OrderLineForInvoice
 
 - [ ] **Step 2: Verify it compiles**
 
-Run: `dotnet build apps/billing/HandySales.Billing.Api`
+Run: `dotnet build apps/billing/HandySuites.Billing.Api`
 Expected: Build succeeded
 
 ---
@@ -211,7 +211,7 @@ Expected: Build succeeded
 ### Task 5: Implement OrderReaderService
 
 **Files:**
-- Create: `apps/billing/HandySales.Billing.Api/Services/OrderReaderService.cs`
+- Create: `apps/billing/HandySuites.Billing.Api/Services/OrderReaderService.cs`
 
 This follows the exact same pattern as `CompanyLogoService` — raw Npgsql query to `handy_erp`.
 
@@ -220,7 +220,7 @@ This follows the exact same pattern as `CompanyLogoService` — raw Npgsql query
 ```csharp
 using Npgsql;
 
-namespace HandySales.Billing.Api.Services;
+namespace HandySuites.Billing.Api.Services;
 
 public class OrderReaderService : IOrderReaderService
 {
@@ -368,14 +368,14 @@ public class OrderReaderService : IOrderReaderService
 
 - [ ] **Step 2: Verify it compiles**
 
-Run: `dotnet build apps/billing/HandySales.Billing.Api`
+Run: `dotnet build apps/billing/HandySuites.Billing.Api`
 Expected: Build succeeded
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add apps/billing/HandySales.Billing.Api/Services/IOrderReaderService.cs \
-        apps/billing/HandySales.Billing.Api/Services/OrderReaderService.cs
+git add apps/billing/HandySuites.Billing.Api/Services/IOrderReaderService.cs \
+        apps/billing/HandySuites.Billing.Api/Services/OrderReaderService.cs
 git commit -m "feat: add OrderReaderService to read pedido data from main DB"
 ```
 
@@ -386,7 +386,7 @@ git commit -m "feat: add OrderReaderService to read pedido data from main DB"
 ### Task 6: Add DTO for order-to-invoice request
 
 **Files:**
-- Modify: `apps/billing/HandySales.Billing.Api/DTOs/FacturaDtos.cs`
+- Modify: `apps/billing/HandySuites.Billing.Api/DTOs/FacturaDtos.cs`
 
 - [ ] **Step 1: Add CreateFacturaFromOrderRequest DTO**
 
@@ -414,7 +414,7 @@ public class CreateFacturaFromOrderRequest
 
 - [ ] **Step 2: Verify it compiles**
 
-Run: `dotnet build apps/billing/HandySales.Billing.Api`
+Run: `dotnet build apps/billing/HandySuites.Billing.Api`
 Expected: Build succeeded
 
 ---
@@ -422,8 +422,8 @@ Expected: Build succeeded
 ### Task 7: Add `POST /api/facturas/from-order` endpoint
 
 **Files:**
-- Modify: `apps/billing/HandySales.Billing.Api/Controllers/FacturasController.cs`
-- Modify: `apps/billing/HandySales.Billing.Api/Program.cs`
+- Modify: `apps/billing/HandySuites.Billing.Api/Controllers/FacturasController.cs`
+- Modify: `apps/billing/HandySuites.Billing.Api/Program.cs`
 
 - [ ] **Step 1: Register OrderReaderService in DI**
 
@@ -570,7 +570,7 @@ public async Task<ActionResult<FacturaDto>> CreateFacturaFromOrder(CreateFactura
 
 - [ ] **Step 4: Verify it compiles**
 
-Run: `dotnet build apps/billing/HandySales.Billing.Api`
+Run: `dotnet build apps/billing/HandySuites.Billing.Api`
 Expected: Build succeeded
 
 - [ ] **Step 5: Rebuild billing API container and test**
@@ -592,9 +592,9 @@ Expected: 201 Created with factura JSON containing data pulled from the order.
 - [ ] **Step 6: Commit**
 
 ```bash
-git add apps/billing/HandySales.Billing.Api/Controllers/FacturasController.cs \
-        apps/billing/HandySales.Billing.Api/DTOs/FacturaDtos.cs \
-        apps/billing/HandySales.Billing.Api/Program.cs
+git add apps/billing/HandySuites.Billing.Api/Controllers/FacturasController.cs \
+        apps/billing/HandySuites.Billing.Api/DTOs/FacturaDtos.cs \
+        apps/billing/HandySuites.Billing.Api/Program.cs
 git commit -m "feat: add POST /api/facturas/from-order endpoint"
 ```
 

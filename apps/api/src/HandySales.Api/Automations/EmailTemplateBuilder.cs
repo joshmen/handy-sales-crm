@@ -1,9 +1,9 @@
 using System.Text;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Api.Automations;
+namespace HandySuites.Api.Automations;
 
 /// <summary>
 /// Builds professional branded HTML email templates using company data.
@@ -34,7 +34,7 @@ public class EmailTemplateBuilder
     /// <summary>
     /// Create a builder from tenant data. Fetches DatosEmpresa + CompanySetting.
     /// </summary>
-    public static async Task<EmailTemplateBuilder> CreateAsync(HandySalesDbContext db, int tenantId, CancellationToken ct)
+    public static async Task<EmailTemplateBuilder> CreateAsync(HandySuitesDbContext db, int tenantId, CancellationToken ct)
     {
         var settings = await db.Set<CompanySetting>()
             .Where(cs => cs.TenantId == tenantId)
@@ -115,7 +115,7 @@ public class EmailTemplateBuilder
                             <tr>
                                 <td align="center" style="padding:16px 32px;">
                                     <p style="margin:0;font-size:11px;color:#9ca3af;line-height:1.5;">
-                                        Este correo fue generado autom&aacute;ticamente por HandySales.<br/>
+                                        Este correo fue generado autom&aacute;ticamente por HandySuites.<br/>
                                         Puedes configurar tus notificaciones desde el panel de Automatizaciones.
                                     </p>
                                 </td>

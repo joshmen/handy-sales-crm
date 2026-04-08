@@ -1,7 +1,7 @@
 using FluentValidation;
-using HandySales.Application.Rutas.DTOs;
+using HandySuites.Application.Rutas.DTOs;
 
-namespace HandySales.Application.Rutas.Validators;
+namespace HandySuites.Application.Rutas.Validators;
 
 public class RutaVendedorCreateDtoValidator : AbstractValidator<RutaVendedorCreateDto>
 {

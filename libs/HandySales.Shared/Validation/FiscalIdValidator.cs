@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace HandySales.Shared.Validation;
+namespace HandySuites.Shared.Validation;
 
 /// <summary>
 /// Validates LATAM fiscal identifiers by country type.

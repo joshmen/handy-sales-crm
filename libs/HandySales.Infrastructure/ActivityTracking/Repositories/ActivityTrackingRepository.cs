@@ -1,15 +1,15 @@
-using HandySales.Application.ActivityTracking.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.ActivityTracking.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Infrastructure.ActivityTracking.Repositories;
+namespace HandySuites.Infrastructure.ActivityTracking.Repositories;
 
 public class ActivityTrackingRepository : IActivityTrackingRepository
 {
-    private readonly HandySalesDbContext _context;
+    private readonly HandySuitesDbContext _context;
 
-    public ActivityTrackingRepository(HandySalesDbContext context)
+    public ActivityTrackingRepository(HandySuitesDbContext context)
     {
         _context = context;
     }

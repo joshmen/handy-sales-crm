@@ -1,6 +1,6 @@
-using HandySales.Domain.Entities;
+using HandySuites.Domain.Entities;
 
-namespace HandySales.Application.Impersonation.Interfaces;
+namespace HandySuites.Application.Impersonation.Interfaces;
 
 /// <summary>
 /// Repositorio para gestión de sesiones de impersonación.

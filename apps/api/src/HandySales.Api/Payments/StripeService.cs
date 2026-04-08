@@ -1,13 +1,13 @@
-using HandySales.Application.SubscriptionPlans.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
-using HandySales.Shared.Email;
+using HandySuites.Application.SubscriptionPlans.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
+using HandySuites.Shared.Email;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Stripe;
 using Stripe.Checkout;
 
-namespace HandySales.Api.Payments;
+namespace HandySuites.Api.Payments;
 
 public interface IStripeService
 {
@@ -49,7 +49,7 @@ public record PaymentMethodDto(
 
 public class StripeService : IStripeService
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
     private readonly IEmailService _emailService;
     private readonly IMemoryCache _cache;
     private readonly ILogger<StripeService> _logger;
@@ -57,7 +57,7 @@ public class StripeService : IStripeService
     private readonly string _webhookSecret;
 
     public StripeService(
-        HandySalesDbContext db,
+        HandySuitesDbContext db,
         IEmailService emailService,
         IMemoryCache cache,
         ILogger<StripeService> logger,
@@ -310,7 +310,7 @@ public class StripeService : IStripeService
 
         var emailBody = EmailTemplates.SubscriptionCancellationScheduled(
             tenant.NombreEmpresa, sub.CurrentPeriodEnd);
-        await _emailService.SendBulkAsync(adminEmails!, "Cancelación programada - HandySales", emailBody);
+        await _emailService.SendBulkAsync(adminEmails!, "Cancelación programada - HandySuites", emailBody);
 
         _logger.LogInformation("Subscription cancel scheduled for tenant {TenantId}, ends {EndDate}",
             tenantId, sub.CurrentPeriodEnd);
@@ -346,7 +346,7 @@ public class StripeService : IStripeService
             .ToListAsync();
 
         var emailBody = EmailTemplates.SubscriptionReactivated(tenant.NombreEmpresa);
-        await _emailService.SendBulkAsync(adminEmails!, "Suscripción reactivada - HandySales", emailBody);
+        await _emailService.SendBulkAsync(adminEmails!, "Suscripción reactivada - HandySuites", emailBody);
 
         _logger.LogInformation("Subscription reactivated for tenant {TenantId}", tenantId);
     }
@@ -456,7 +456,7 @@ public class StripeService : IStripeService
             tenant.PlanTipo ?? "Suscripción",
             (decimal)(invoice.AmountPaid / 100m));
 
-        await _emailService.SendBulkAsync(adminEmails!, "Pago recibido - HandySales", emailBody);
+        await _emailService.SendBulkAsync(adminEmails!, "Pago recibido - HandySuites", emailBody);
 
         _logger.LogInformation("Invoice paid for tenant {TenantId}, amount: {Amount}", tenant.Id, invoice.AmountPaid);
     }
@@ -485,7 +485,7 @@ public class StripeService : IStripeService
             .ToListAsync();
 
         var emailBody = EmailTemplates.PaymentFailed(tenant.NombreEmpresa, "");
-        await _emailService.SendBulkAsync(adminEmails!, "Error en el pago - HandySales", emailBody);
+        await _emailService.SendBulkAsync(adminEmails!, "Error en el pago - HandySuites", emailBody);
 
         _logger.LogWarning("Payment failed for tenant {TenantId}", tenant.Id);
     }

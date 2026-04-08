@@ -1,11 +1,11 @@
 using System.Security.Claims;
-using HandySales.Api.Hubs;
-using HandySales.Application.DTOs;
-using HandySales.Application.Interfaces;
+using HandySuites.Api.Hubs;
+using HandySuites.Application.DTOs;
+using HandySuites.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 /// <summary>
 /// Endpoints de impersonación para SUPER_ADMIN.
@@ -174,7 +174,7 @@ public static class ImpersonationEndpoints
         group.MapGet("/", async (
             HttpContext context,
             [FromServices] IImpersonationService service,
-            [FromServices] HandySales.Shared.Multitenancy.ICurrentTenant currentTenant,
+            [FromServices] HandySuites.Shared.Multitenancy.ICurrentTenant currentTenant,
             [FromQuery] string? status,
             [FromQuery] DateTime? fromDate,
             [FromQuery] DateTime? toDate,

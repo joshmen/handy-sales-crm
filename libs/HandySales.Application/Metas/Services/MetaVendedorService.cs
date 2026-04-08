@@ -1,8 +1,8 @@
-using HandySales.Application.Metas.DTOs;
-using HandySales.Application.Metas.Interfaces;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Application.Metas.DTOs;
+using HandySuites.Application.Metas.Interfaces;
+using HandySuites.Shared.Multitenancy;
 
-namespace HandySales.Application.Metas.Services;
+namespace HandySuites.Application.Metas.Services;
 
 public class MetaVendedorService
 {

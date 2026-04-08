@@ -1,8 +1,8 @@
-using HandySales.Application.Sync.DTOs;
-using HandySales.Application.Sync.Interfaces;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Application.Sync.DTOs;
+using HandySuites.Application.Sync.Interfaces;
+using HandySuites.Shared.Multitenancy;
 
-namespace HandySales.Application.Sync.Services;
+namespace HandySuites.Application.Sync.Services;
 
 public class SyncService
 {

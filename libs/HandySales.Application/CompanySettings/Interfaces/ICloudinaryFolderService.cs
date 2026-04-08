@@ -1,4 +1,4 @@
-namespace HandySales.Application.CompanySettings.Interfaces
+namespace HandySuites.Application.CompanySettings.Interfaces
 {
     public interface ICloudinaryFolderService
     {

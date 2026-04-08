@@ -93,8 +93,8 @@ Deployment                   -> Vercel (frontend) + Railway (APIs + PostgreSQL) 
 docker-compose -f docker-compose.dev.yml up -d
 
 # 2. First-time only: seed database (after EF Core creates tables ~30s)
-docker exec -i handysales_postgres_dev psql -U handy_user -d handy_erp < infra/database/schema/seed_local_pg.sql
-docker exec -i handysales_postgres_dev psql -U handy_user -d handy_erp < infra/database/schema/seed_e2e_pg.sql
+docker exec -i handysuites_postgres_dev psql -U handy_user -d handy_erp < infra/database/schema/seed_local_pg.sql
+docker exec -i handysuites_postgres_dev psql -U handy_user -d handy_erp < infra/database/schema/seed_e2e_pg.sql
 
 # 3. Start frontend locally (separate terminal)
 cd apps/web && npm run dev
@@ -109,8 +109,8 @@ cd apps/web && npm run dev
 
 ```bash
 # Backend tests (429 xUnit tests: 391 API + 38 Mobile)
-dotnet test apps/api/tests/HandySales.Tests/HandySales.Tests.csproj
-dotnet test apps/mobile/HandySales.Mobile.Tests/HandySales.Mobile.Tests.csproj
+dotnet test apps/api/tests/HandySuites.Tests/HandySuites.Tests.csproj
+dotnet test apps/mobile/HandySuites.Mobile.Tests/HandySuites.Mobile.Tests.csproj
 
 # Frontend type check (web only — Next.js)
 cd apps/web && npm run type-check
@@ -178,8 +178,8 @@ Other users: `vendedor1@jeyma.com`, `admin@huichol.com`, `admin@centro.com`, `ad
 ### MANDATORY — Entity Creation Rules
 
 Every new domain entity MUST:
-1. **Inherit `AuditableEntity`** (`libs/HandySales.Domain/Common/AuditableEntity.cs`) — provides `Activo`, `CreadoEn`, `ActualizadoEn`, `CreadoPor`, `ActualizadoPor`, `EliminadoEn`, `EliminadoPor`, `Version`
-2. **Have a global query filter** in `HandySalesDbContext.OnModelCreating` that includes `e.EliminadoEn == null`. If the entity has `TenantId`, combine both: `e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null`
+1. **Inherit `AuditableEntity`** (`libs/HandySuites.Domain/Common/AuditableEntity.cs`) — provides `Activo`, `CreadoEn`, `ActualizadoEn`, `CreadoPor`, `ActualizadoPor`, `EliminadoEn`, `EliminadoPor`, `Version`
+2. **Have a global query filter** in `HandySuitesDbContext.OnModelCreating` that includes `e.EliminadoEn == null`. If the entity has `TenantId`, combine both: `e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null`
 3. **Use `.Remove()` for deletes** — `SaveChangesAsync` override auto-converts to soft delete (sets `EliminadoEn` + `EliminadoPor`)
 4. **Never hard-delete** an `AuditableEntity` — if physical delete needed, entity should NOT inherit `AuditableEntity`
 
@@ -204,8 +204,8 @@ Every new domain entity MUST:
 # Generate migration
 export PATH="$PATH:/c/Users/AW AREA 51M R2/.dotnet/tools"
 dotnet-ef migrations add DescripcionDelCambio \
-  --project libs/HandySales.Infrastructure \
-  --startup-project apps/api/src/HandySales.Api \
+  --project libs/HandySuites.Infrastructure \
+  --startup-project apps/api/src/HandySuites.Api \
   --output-dir Migrations
 
 # Verify: rebuild API container

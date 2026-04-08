@@ -1,12 +1,12 @@
-using HandySales.Application.Ai.DTOs;
-using HandySales.Application.Ai.Interfaces;
-using HandySales.Application.Rutas.DTOs;
-using HandySales.Application.Rutas.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Application.Ai.DTOs;
+using HandySuites.Application.Ai.Interfaces;
+using HandySuites.Application.Rutas.DTOs;
+using HandySuites.Application.Rutas.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Shared.Multitenancy;
 using Microsoft.Extensions.Logging;
 
-namespace HandySales.Application.Rutas.Services;
+namespace HandySuites.Application.Rutas.Services;
 
 public class RutaVendedorService
 {

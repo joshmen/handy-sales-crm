@@ -1,7 +1,7 @@
-using HandySales.Domain.Common;
+using HandySuites.Domain.Common;
 using System.ComponentModel.DataAnnotations;
 
-namespace HandySales.Domain.Entities
+namespace HandySuites.Domain.Entities
 {
     public class NotificationPreference : AuditableEntity
     {

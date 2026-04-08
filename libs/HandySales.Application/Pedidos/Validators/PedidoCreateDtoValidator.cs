@@ -1,7 +1,7 @@
 using FluentValidation;
-using HandySales.Application.Pedidos.DTOs;
+using HandySuites.Application.Pedidos.DTOs;
 
-namespace HandySales.Application.Pedidos.Validators;
+namespace HandySuites.Application.Pedidos.Validators;
 
 public class PedidoCreateDtoValidator : AbstractValidator<PedidoCreateDto>
 {

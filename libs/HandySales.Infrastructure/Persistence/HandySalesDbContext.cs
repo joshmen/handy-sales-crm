@@ -1,17 +1,17 @@
 using System.Text.Json;
-using HandySales.Domain.Common;
-using HandySales.Domain.Entities;
+using HandySuites.Domain.Common;
+using HandySuites.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
-namespace HandySales.Infrastructure.Persistence;
+namespace HandySuites.Infrastructure.Persistence;
 
-public class HandySalesDbContext : DbContext
+public class HandySuitesDbContext : DbContext
 {
     private readonly ITenantContextService? _tenantContext;
 
-    public HandySalesDbContext(DbContextOptions<HandySalesDbContext> options) : base(options) { }
+    public HandySuitesDbContext(DbContextOptions<HandySuitesDbContext> options) : base(options) { }
 
-    public HandySalesDbContext(DbContextOptions<HandySalesDbContext> options, ITenantContextService tenantContext)
+    public HandySuitesDbContext(DbContextOptions<HandySuitesDbContext> options, ITenantContextService tenantContext)
         : base(options)
     {
         _tenantContext = tenantContext;
@@ -25,7 +25,7 @@ public class HandySalesDbContext : DbContext
     public DbSet<Cliente> Clientes => Set<Cliente>();
     public DbSet<Producto> Productos => Set<Producto>();
     public DbSet<Usuario> Usuarios => Set<Usuario>();
-    public DbSet<HandySales.Domain.Entities.Inventario> Inventarios => Set<HandySales.Domain.Entities.Inventario>();
+    public DbSet<HandySuites.Domain.Entities.Inventario> Inventarios => Set<HandySuites.Domain.Entities.Inventario>();
     public DbSet<MovimientoInventario> MovimientosInventario => Set<MovimientoInventario>();
     public DbSet<ListaPrecio> ListasPrecios => Set<ListaPrecio>();
     public DbSet<PrecioPorProducto> PreciosPorProducto => Set<PrecioPorProducto>();
@@ -129,7 +129,7 @@ public class HandySalesDbContext : DbContext
         //modelBuilder.Entity<Cliente>().ToTable("Clientes");
         //modelBuilder.Entity<Producto>().ToTable("Productos");
         //modelBuilder.Entity<Usuario>().ToTable("Usuarios");
-        //modelBuilder.Entity<HandySales.Domain.Entities.Inventario>().ToTable("Inventario");
+        //modelBuilder.Entity<HandySuites.Domain.Entities.Inventario>().ToTable("Inventario");
         //modelBuilder.Entity<ListaPrecio>().ToTable("ListasPrecios");
         //modelBuilder.Entity<PrecioPorProducto>().ToTable("PreciosPorProducto");
         //modelBuilder.Entity<DescuentoPorCantidad>().ToTable("DescuentosPorCantidad");
@@ -186,7 +186,7 @@ public class HandySalesDbContext : DbContext
             // Inventario relationship (one-to-one)
             entity.HasOne(p => p.Inventario)
                   .WithOne(i => i.Producto)
-                  .HasForeignKey<HandySales.Domain.Entities.Inventario>(i => i.ProductoId)
+                  .HasForeignKey<HandySuites.Domain.Entities.Inventario>(i => i.ProductoId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
@@ -758,7 +758,7 @@ public class HandySalesDbContext : DbContext
         modelBuilder.Entity<Usuario>()
             .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
 
-        modelBuilder.Entity<HandySales.Domain.Entities.Inventario>()
+        modelBuilder.Entity<HandySuites.Domain.Entities.Inventario>()
             .HasQueryFilter(e => (!ShouldApplyTenantFilter || e.TenantId == CurrentTenantId) && e.EliminadoEn == null);
 
         modelBuilder.Entity<MovimientoInventario>()

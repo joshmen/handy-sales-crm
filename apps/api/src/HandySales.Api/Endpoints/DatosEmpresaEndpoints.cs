@@ -1,9 +1,9 @@
-using HandySales.Application.DatosEmpresa.DTOs;
-using HandySales.Application.DatosEmpresa.Interfaces;
-using HandySales.Shared.Multitenancy;
+using HandySuites.Application.DatosEmpresa.DTOs;
+using HandySuites.Application.DatosEmpresa.Interfaces;
+using HandySuites.Shared.Multitenancy;
 using Microsoft.AspNetCore.Mvc;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class DatosEmpresaEndpoints
 {

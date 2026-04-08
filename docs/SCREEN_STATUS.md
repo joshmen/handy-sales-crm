@@ -14,7 +14,7 @@
 - **Maintenance mode**: Middleware que bloquea requests + toggle desde SuperAdmin con banner automatico (shimmer + no-dismiss)
 - **2FA/TOTP**: Endpoints backend + UI setup/disable en SecurityTab, TOTP encryption service
 - **Session validation**: Middleware valida sesion activa, revocacion remota de dispositivos
-- **Rebranding → Handy Suites**: Nombre cambiado de HandyCRM/HandySales a "Handy Suites" en toda la app, BD, y assets
+- **Rebranding → Handy Suites**: Nombre cambiado de HandyCRM/HandySuites a "Handy Suites" en toda la app, BD, y assets
 - **Landing page** (`/`): Pagina publica con 9 secciones (hero, features, pricing, testimonios, footer). Server Component con SEO metadata
 - **Login split layout** (`/login`): Panel izquierdo con imagen vendedor de ruta + gradient overlay + value props + pills App Store/Google Play. Panel derecho con form. `AuthLayout` reutilizable
 - **Forgot/Reset password pages**: `/forgot-password` y `/reset-password` con AuthLayout compartido

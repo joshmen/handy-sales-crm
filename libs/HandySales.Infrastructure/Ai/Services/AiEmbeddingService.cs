@@ -1,19 +1,19 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using HandySales.Application.Ai.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.Ai.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Pgvector;
 
-namespace HandySales.Infrastructure.Ai.Services;
+namespace HandySuites.Infrastructure.Ai.Services;
 
 public class AiEmbeddingService : IAiEmbeddingService
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IConfiguration _config;
     private readonly ILogger<AiEmbeddingService> _logger;
@@ -25,7 +25,7 @@ public class AiEmbeddingService : IAiEmbeddingService
     };
 
     public AiEmbeddingService(
-        HandySalesDbContext db,
+        HandySuitesDbContext db,
         IHttpClientFactory httpClientFactory,
         IConfiguration config,
         ILogger<AiEmbeddingService> logger)

@@ -1,8 +1,8 @@
-using HandySales.Api.Hubs;
+using HandySuites.Api.Hubs;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class InternalEndpoints
 {
@@ -16,7 +16,7 @@ public static class InternalEndpoints
         group.MapPost("/sync-notify", async (
             SyncNotifyRequest request,
             IHubContext<NotificationHub> hubContext,
-            HandySales.Infrastructure.Persistence.HandySalesDbContext db,
+            HandySuites.Infrastructure.Persistence.HandySuitesDbContext db,
             IConfiguration configuration,
             HttpContext context,
             ILogger<Program> logger) =>

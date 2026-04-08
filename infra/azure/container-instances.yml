@@ -3,13 +3,13 @@
 
 apiVersion: 2019-12-01
 location: eastus2  # Región más barata
-name: handysales-container-group
+name: handysuites-container-group
 properties:
   containers:
   # API Principal
   - name: handy-api-main
     properties:
-      image: handysales/api-main:latest
+      image: handysuites/api-main:latest
       resources:
         requests:
           memoryInGB: 0.5    # Mínimo posible
@@ -20,13 +20,13 @@ properties:
       - name: ASPNETCORE_URLS
         value: http://+:5000
       - name: ConnectionStrings__DefaultConnection
-        secureValue: "Server=handysales-mysql.mysql.database.azure.com;Database=handy_erp;User=handyadmin;Password=${MYSQL_PASSWORD};SslMode=Required;"
+        secureValue: "Server=handysuites-mysql.mysql.database.azure.com;Database=handy_erp;User=handyadmin;Password=${MYSQL_PASSWORD};SslMode=Required;"
       - name: JWT__SecretKey
         secureValue: "${JWT_SECRET}"
       - name: JWT__Issuer
-        value: "HandySales"
+        value: "HandySuites"
       - name: JWT__Audience
-        value: "HandySalesUsers"
+        value: "HandySuitesUsers"
       - name: JWT__ExpirationHours
         value: "24"
       - name: Multitenancy__DefaultTenantId
@@ -38,7 +38,7 @@ properties:
   # API Facturación  
   - name: handy-api-billing
     properties:
-      image: handysales/api-billing:latest
+      image: handysuites/api-billing:latest
       resources:
         requests:
           memoryInGB: 0.5    # Mínimo posible
@@ -49,15 +49,15 @@ properties:
       - name: ASPNETCORE_URLS
         value: http://+:5001
       - name: ConnectionStrings__BillingConnection
-        secureValue: "Server=handysales-mysql.mysql.database.azure.com;Database=handy_billing;User=handyadmin;Password=${MYSQL_PASSWORD};SslMode=Required;"
+        secureValue: "Server=handysuites-mysql.mysql.database.azure.com;Database=handy_billing;User=handyadmin;Password=${MYSQL_PASSWORD};SslMode=Required;"
       - name: ConnectionStrings__MainConnection
-        secureValue: "Server=handysales-mysql.mysql.database.azure.com;Database=handy_erp;User=handyadmin;Password=${MYSQL_PASSWORD};SslMode=Required;"
+        secureValue: "Server=handysuites-mysql.mysql.database.azure.com;Database=handy_erp;User=handyadmin;Password=${MYSQL_PASSWORD};SslMode=Required;"
       - name: JWT__SecretKey
         secureValue: "${JWT_SECRET}"
       - name: JWT__Issuer
-        value: "HandySales"
+        value: "HandySuites"
       - name: JWT__Audience
-        value: "HandySalesUsers"
+        value: "HandySuitesUsers"
       ports:
       - port: 5001
         protocol: TCP
@@ -94,7 +94,7 @@ properties:
       port: 5000
     - protocol: TCP
       port: 5001
-    dnsNameLabel: handysales-api  # handysales-api.eastus2.azurecontainer.io
+    dnsNameLabel: handysuites-api  # handysuites-api.eastus2.azurecontainer.io
 
   # Auto-restart policy
   restartPolicy: Always
@@ -104,10 +104,10 @@ properties:
   - name: nginx-config
     azureFile:
       shareName: nginx-config
-      storageAccountName: handysalesstorage
+      storageAccountName: handysuitesstorage
       storageAccountKey: "${STORAGE_KEY}"
 
 tags:
   Environment: Production
-  Project: HandySales
+  Project: HandySuites
   CostCenter: Main

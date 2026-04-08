@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace HandySales.Application.Usuarios.Validators
+namespace HandySuites.Application.Usuarios.Validators
 {
     public class UsuarioLoginDtoValidator : AbstractValidator<UsuarioLoginDto>
     {

@@ -1,15 +1,15 @@
-using HandySales.Application.Integrations.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.Integrations.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Infrastructure.Repositories.Integrations;
+namespace HandySuites.Infrastructure.Repositories.Integrations;
 
 public class IntegrationRepository : IIntegrationRepository
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
 
-    public IntegrationRepository(HandySalesDbContext db)
+    public IntegrationRepository(HandySuitesDbContext db)
     {
         _db = db;
     }

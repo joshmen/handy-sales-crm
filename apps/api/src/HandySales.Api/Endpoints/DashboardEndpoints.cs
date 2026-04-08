@@ -1,13 +1,13 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using HandySales.Infrastructure.Persistence;
-using HandySales.Shared.Multitenancy;
-using HandySales.Application.Tenants.DTOs;
-using HandySales.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
+using HandySuites.Shared.Multitenancy;
+using HandySuites.Application.Tenants.DTOs;
+using HandySuites.Domain.Entities;
 using System.Text.Json;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class DashboardEndpoints
 {
@@ -15,7 +15,7 @@ public static class DashboardEndpoints
     {
         var group = app.MapGroup("/api/dashboard")
             .RequireAuthorization()
-            .RequireCors("HandySalesPolicy");
+            .RequireCors("HandySuitesPolicy");
 
         // Métricas del dashboard
         group.MapGet("/metrics", GetDashboardMetrics)
@@ -54,7 +54,7 @@ public static class DashboardEndpoints
     }
 
     private static async Task<IResult> GetDashboardMetrics(
-        [FromServices] HandySalesDbContext context,
+        [FromServices] HandySuitesDbContext context,
         [FromServices] ICurrentTenant currentTenant)
     {
         try
@@ -126,7 +126,7 @@ public static class DashboardEndpoints
     }
 
     private static async Task<IResult> GetRecentActivity(
-        [FromServices] HandySalesDbContext context,
+        [FromServices] HandySuitesDbContext context,
         [FromServices] ICurrentTenant currentTenant,
         [FromQuery] int limit = 50)
     {
@@ -179,7 +179,7 @@ public static class DashboardEndpoints
     }
 
     private static async Task<IResult> GetActivityChart(
-        [FromServices] HandySalesDbContext context,
+        [FromServices] HandySuitesDbContext context,
         [FromServices] ICurrentTenant currentTenant,
         [FromQuery] int days = 7)
     {
@@ -236,7 +236,7 @@ public static class DashboardEndpoints
     }
 
     private static async Task<IResult> GetMyPerformance(
-        [FromServices] HandySalesDbContext context,
+        [FromServices] HandySuitesDbContext context,
         [FromServices] ICurrentTenant currentTenant,
         [FromQuery] string? startDate = null,
         [FromQuery] string? endDate = null)
@@ -323,7 +323,7 @@ public static class DashboardEndpoints
     }
 
     private static async Task<IResult> GetSystemMetrics(
-        [FromServices] HandySalesDbContext context,
+        [FromServices] HandySuitesDbContext context,
         [FromServices] ICurrentTenant currentTenant)
     {
         if (!currentTenant.IsSuperAdmin)
@@ -399,7 +399,7 @@ public static class DashboardEndpoints
     }
 
     private static async Task<IResult> GetSystemTrends(
-        [FromServices] HandySalesDbContext context,
+        [FromServices] HandySuitesDbContext context,
         [FromServices] ICurrentTenant currentTenant,
         [FromQuery] int days = 30)
     {
@@ -483,7 +483,7 @@ public static class DashboardEndpoints
     }
 
     private static async Task<IResult> GetGlobalUsers(
-        [FromServices] HandySalesDbContext context,
+        [FromServices] HandySuitesDbContext context,
         [FromServices] ICurrentTenant currentTenant,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,

@@ -1,6 +1,6 @@
-using HandySales.Application.Notifications.DTOs;
+using HandySuites.Application.Notifications.DTOs;
 
-namespace HandySales.Application.Notifications.Interfaces;
+namespace HandySuites.Application.Notifications.Interfaces;
 
 public interface INotificationService
 {

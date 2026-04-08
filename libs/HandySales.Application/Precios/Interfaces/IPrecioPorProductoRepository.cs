@@ -1,6 +1,6 @@
-using HandySales.Application.Precios.DTOs;
+using HandySuites.Application.Precios.DTOs;
 
-namespace HandySales.Application.Precios.Interfaces;
+namespace HandySuites.Application.Precios.Interfaces;
 
 public interface IPrecioPorProductoRepository
 {

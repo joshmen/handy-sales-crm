@@ -1,16 +1,16 @@
-using HandySales.Application.Zonas.DTOs;
-using HandySales.Application.Zonas.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.Zonas.DTOs;
+using HandySuites.Application.Zonas.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Infrastructure.Zonas.Repositories;
+namespace HandySuites.Infrastructure.Zonas.Repositories;
 
 public class ZonaRepository : IZonaRepository
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
 
-    public ZonaRepository(HandySalesDbContext db)
+    public ZonaRepository(HandySuitesDbContext db)
     {
         _db = db;
     }

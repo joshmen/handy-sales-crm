@@ -1,11 +1,11 @@
 using System.IO.Compression;
 using System.Threading.RateLimiting;
-using HandySales.Api.Configuration;
-using HandySales.Api.Endpoints;
-using HandySales.Api.Hubs;
-using HandySales.Api.Middleware;
-using HandySales.Api.Workers;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Api.Configuration;
+using HandySuites.Api.Endpoints;
+using HandySuites.Api.Hubs;
+using HandySuites.Api.Middleware;
+using HandySuites.Api.Workers;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.ResponseCompression;
 
@@ -176,7 +176,7 @@ app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseSwaggerConfiguration(app.Environment);
 
 app.UseHttpsRedirection();
-app.UseCors("HandySalesPolicy");
+app.UseCors("HandySuitesPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();

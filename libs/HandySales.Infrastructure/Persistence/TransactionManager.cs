@@ -1,14 +1,14 @@
-using HandySales.Application.Common.Interfaces;
+using HandySuites.Application.Common.Interfaces;
 using Microsoft.EntityFrameworkCore.Storage;
 
-namespace HandySales.Infrastructure.Persistence;
+namespace HandySuites.Infrastructure.Persistence;
 
 public class TransactionManager : ITransactionManager
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
     private IDbContextTransaction? _currentTransaction;
 
-    public TransactionManager(HandySalesDbContext db) => _db = db;
+    public TransactionManager(HandySuitesDbContext db) => _db = db;
 
     public async Task<IAsyncDisposable> BeginTransactionAsync()
     {

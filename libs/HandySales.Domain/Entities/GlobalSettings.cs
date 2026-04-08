@@ -1,7 +1,7 @@
-using HandySales.Domain.Common;
+using HandySuites.Domain.Common;
 using System;
 
-namespace HandySales.Domain.Entities
+namespace HandySuites.Domain.Entities
 {
     /// <summary>
     /// Global platform settings managed by SUPER_ADMIN

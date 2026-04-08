@@ -1,4 +1,4 @@
-# Política de Impersonación de Cuentas - HandySales
+# Política de Impersonación de Cuentas - HandySuites
 
 **Versión:** 1.0
 **Fecha:** 2026-01-30
@@ -136,7 +136,7 @@ La **impersonación** es la capacidad de un administrador de plataforma (SUPER_A
 
 Después de cada sesión de impersonación, el sistema envía automáticamente:
 
-**Asunto:** Acceso de Soporte a tu cuenta - HandySales
+**Asunto:** Acceso de Soporte a tu cuenta - HandySuites
 
 **Contenido:**
 ```
@@ -155,10 +155,10 @@ Este acceso fue realizado de acuerdo con nuestros Términos de Servicio
 y Política de Privacidad para brindarte un mejor soporte.
 
 Si tienes preguntas sobre este acceso, responde a este correo o
-contacta a soporte@handysales.com
+contacta a soporte@handysuites.com
 
 Saludos,
-Equipo HandySales
+Equipo HandySuites
 ```
 
 ### 7.2 Excepciones a la Notificación
@@ -170,7 +170,7 @@ Equipo HandySales
 
 ## 8. Sanciones por Incumplimiento
 
-### 8.1 Para Empleados de HandySales
+### 8.1 Para Empleados de HandySuites
 
 | Infracción | Primera Vez | Reincidencia |
 |------------|-------------|--------------|
@@ -182,7 +182,7 @@ Equipo HandySales
 ### 8.2 Reporte de Incidentes
 
 Los clientes pueden reportar uso indebido a:
-- **Email:** privacidad@handysales.com
+- **Email:** privacidad@handysuites.com
 - **Teléfono:** [Número de contacto]
 - **INAI:** Si consideran violación a la LFPDPPP
 
@@ -202,7 +202,7 @@ Los clientes pueden ejercer sus derechos de:
 
 > **Sección X.X - Acceso Administrativo**
 >
-> El Cliente reconoce y acepta que HandySales, a través de personal
+> El Cliente reconoce y acepta que HandySuites, a través de personal
 > autorizado, podrá acceder a la cuenta del Cliente para:
 >
 > a) Brindar soporte técnico solicitado por el Cliente
@@ -225,7 +225,7 @@ Los clientes pueden ejercer sus derechos de:
 
 > **Transferencias y Acceso a Datos**
 >
-> Para la prestación del servicio, personal autorizado de HandySales
+> Para la prestación del servicio, personal autorizado de HandySuites
 > podrá acceder a los datos almacenados en su cuenta con fines de:
 >
 > - Soporte técnico
@@ -242,7 +242,7 @@ Los clientes pueden ejercer sus derechos de:
 
 | Versión | Fecha | Cambios | Autor |
 |---------|-------|---------|-------|
-| 1.0 | 2026-01-30 | Versión inicial | HandySales |
+| 1.0 | 2026-01-30 | Versión inicial | HandySuites |
 
 ---
 

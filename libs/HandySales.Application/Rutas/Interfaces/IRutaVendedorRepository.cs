@@ -1,7 +1,7 @@
-using HandySales.Application.Rutas.DTOs;
-using HandySales.Domain.Entities;
+using HandySuites.Application.Rutas.DTOs;
+using HandySuites.Domain.Entities;
 
-namespace HandySales.Application.Rutas.Interfaces;
+namespace HandySuites.Application.Rutas.Interfaces;
 
 public interface IRutaVendedorRepository
 {

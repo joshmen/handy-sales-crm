@@ -2,7 +2,7 @@ using System.Data.Common;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
-namespace HandySales.Infrastructure.Persistence;
+namespace HandySuites.Infrastructure.Persistence;
 
 /// <summary>
 /// EF Core command interceptor that prepends SET app.tenant_id before every SQL command.

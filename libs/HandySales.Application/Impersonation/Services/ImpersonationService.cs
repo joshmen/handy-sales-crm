@@ -1,14 +1,14 @@
 using System.Text.Json;
-using HandySales.Application.DTOs;
-using HandySales.Application.Impersonation.Interfaces;
-using HandySales.Application.Interfaces;
-using HandySales.Application.Notifications.Interfaces;
-using HandySales.Application.Usuarios.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Shared.Security;
+using HandySuites.Application.DTOs;
+using HandySuites.Application.Impersonation.Interfaces;
+using HandySuites.Application.Interfaces;
+using HandySuites.Application.Notifications.Interfaces;
+using HandySuites.Application.Usuarios.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Shared.Security;
 using Microsoft.Extensions.Logging;
 
-namespace HandySales.Application.Impersonation.Services;
+namespace HandySuites.Application.Impersonation.Services;
 
 /// <summary>
 /// Servicio de impersonación con auditoría completa.

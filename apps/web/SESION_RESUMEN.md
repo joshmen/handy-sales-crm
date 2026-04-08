@@ -1,7 +1,7 @@
 # 🔧 Resumen de Sesión - Resolución de Problemas Backend/Frontend
 
 ## 📋 **Contexto Inicial**
-- **Proyecto**: HandySales CRM - Sistema multi-tenant con Next.js + ASP.NET Core
+- **Proyecto**: HandySuites CRM - Sistema multi-tenant con Next.js + ASP.NET Core
 - **Problema Principal**: Error 401 en login frontend + errores de base de datos
 - **Estado**: Completamente resuelto ✅
 
@@ -55,7 +55,7 @@
 - `CompanyEndpoints.cs` - Agregado control ADMIN
 - `GlobalSettingsEndpoints.cs` - Ya tenía control SUPER_ADMIN
 - `Usuario.cs` - Entity con mapeo correcto
-- `HandySalesDbContext.cs` - Configuración DbContext
+- `HandySuitesDbContext.cs` - Configuración DbContext
 
 ### Frontend (Next.js)
 - `.env.local` - Configuración puertos correctos
@@ -112,13 +112,13 @@ curl -X POST "http://localhost:5070/auth/login" \
 
 ### Iniciar Backend
 ```bash
-cd "C:\Users\AW AREA 51M R2\OneDrive\Offshore_Projects\HandySales\HandySales"
-dotnet run --project src/HandySales.Api
+cd "C:\Users\AW AREA 51M R2\OneDrive\Offshore_Projects\HandySuites\HandySuites"
+dotnet run --project src/HandySuites.Api
 ```
 
 ### Iniciar Frontend  
 ```bash
-cd "C:\Users\AW AREA 51M R2\OneDrive\Offshore_Projects\HandySales\handy-crm"
+cd "C:\Users\AW AREA 51M R2\OneDrive\Offshore_Projects\HandySuites\handy-crm"
 npm run dev
 ```
 

@@ -1,7 +1,7 @@
 using FluentValidation;
-using HandySales.Application.Cobranza.DTOs;
+using HandySuites.Application.Cobranza.DTOs;
 
-namespace HandySales.Application.Cobranza.Validators;
+namespace HandySuites.Application.Cobranza.Validators;
 
 public class CobroCreateDtoValidator : AbstractValidator<CobroCreateDto>
 {

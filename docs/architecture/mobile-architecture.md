@@ -1,4 +1,4 @@
-# HandySales Mobile - Arquitectura React Native
+# HandySuites Mobile - Arquitectura React Native
 
 ## Visión General
 

@@ -1,10 +1,10 @@
 using System.Text.Json;
-using HandySales.Application.Impersonation.Interfaces;
-using HandySales.Domain.Entities;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.Impersonation.Interfaces;
+using HandySuites.Domain.Entities;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Infrastructure.Impersonation;
+namespace HandySuites.Infrastructure.Impersonation;
 
 /// <summary>
 /// Repositorio para sesiones de impersonación.
@@ -12,9 +12,9 @@ namespace HandySales.Infrastructure.Impersonation;
 /// </summary>
 public class ImpersonationRepository : IImpersonationRepository
 {
-    private readonly HandySalesDbContext _context;
+    private readonly HandySuitesDbContext _context;
 
-    public ImpersonationRepository(HandySalesDbContext context)
+    public ImpersonationRepository(HandySuitesDbContext context)
     {
         _context = context;
     }

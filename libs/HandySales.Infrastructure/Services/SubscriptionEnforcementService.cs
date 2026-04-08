@@ -1,14 +1,14 @@
-using HandySales.Application.SubscriptionPlans.Interfaces;
-using HandySales.Infrastructure.Persistence;
+using HandySuites.Application.SubscriptionPlans.Interfaces;
+using HandySuites.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HandySales.Infrastructure.Services;
+namespace HandySuites.Infrastructure.Services;
 
 public class SubscriptionEnforcementService : ISubscriptionEnforcementService
 {
-    private readonly HandySalesDbContext _db;
+    private readonly HandySuitesDbContext _db;
 
-    public SubscriptionEnforcementService(HandySalesDbContext db)
+    public SubscriptionEnforcementService(HandySuitesDbContext db)
     {
         _db = db;
     }

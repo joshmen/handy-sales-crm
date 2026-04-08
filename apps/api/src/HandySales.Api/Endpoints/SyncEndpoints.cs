@@ -1,8 +1,8 @@
-using HandySales.Application.Sync.DTOs;
-using HandySales.Application.Sync.Services;
+using HandySuites.Application.Sync.DTOs;
+using HandySuites.Application.Sync.Services;
 using Microsoft.AspNetCore.Mvc;
 
-namespace HandySales.Api.Endpoints;
+namespace HandySuites.Api.Endpoints;
 
 public static class SyncEndpoints
 {
