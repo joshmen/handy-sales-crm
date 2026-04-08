@@ -202,7 +202,7 @@ export default function ReportsPage() {
   const breadcrumbs = [
     { label: 'Inicio', href: '/dashboard' },
     ...(activeCard
-      ? [{ label: 'Reportes', href: '#', onClick: () => setActiveReport(null) }, { label: activeCard.label }]
+      ? [{ label: 'Reportes', onClick: () => setActiveReport(null) }, { label: activeCard.label }]
       : [{ label: 'Reportes' }]
     ),
   ];
