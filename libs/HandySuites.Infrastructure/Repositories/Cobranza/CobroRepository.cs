@@ -94,6 +94,9 @@ public class CobroRepository : ICobroRepository
 
     public async Task<int> CrearAsync(CobroCreateDto dto, int tenantId, int usuarioId)
     {
+        var strategy = _db.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async () =>
+        {
         // Use a transaction to prevent over-payment race conditions
         await using var transaction = await _db.Database.BeginTransactionAsync();
         try
@@ -106,7 +109,7 @@ public class CobroRepository : ICobroRepository
                 var isPostgres = _db.Database.ProviderName?.Contains("Npgsql") == true;
                 var pedido = isPostgres
                     ? await _db.Pedidos
-                        .FromSqlInterpolated($"SELECT * FROM \"Pedidos\" WHERE \"Id\" = {dto.PedidoId.Value} AND \"TenantId\" = {tenantId} AND \"EliminadoEn\" IS NULL FOR UPDATE")
+                        .FromSqlInterpolated($"SELECT * FROM \"Pedidos\" WHERE id = {dto.PedidoId.Value} AND tenant_id = {tenantId} AND eliminado_en IS NULL FOR UPDATE")
                         .Select(p => new { p.Total })
                         .FirstOrDefaultAsync()
                     : await _db.Pedidos
@@ -156,10 +159,14 @@ public class CobroRepository : ICobroRepository
             await transaction.RollbackAsync();
             throw;
         }
+        }); // end strategy.ExecuteAsync
     }
 
     public async Task<bool> ActualizarAsync(int id, CobroUpdateDto dto, int tenantId)
     {
+        var strategy = _db.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async () =>
+        {
         await using var transaction = await _db.Database.BeginTransactionAsync();
         try
         {
@@ -172,7 +179,7 @@ public class CobroRepository : ICobroRepository
                 var isPostgres = _db.Database.ProviderName?.Contains("Npgsql") == true;
                 var pedido = isPostgres
                     ? await _db.Pedidos
-                        .FromSqlInterpolated($"SELECT * FROM \"Pedidos\" WHERE \"Id\" = {entity.PedidoId.Value} AND \"TenantId\" = {tenantId} AND \"EliminadoEn\" IS NULL FOR UPDATE")
+                        .FromSqlInterpolated($"SELECT * FROM \"Pedidos\" WHERE id = {entity.PedidoId.Value} AND tenant_id = {tenantId} AND eliminado_en IS NULL FOR UPDATE")
                         .Select(p => new { p.Total })
                         .FirstOrDefaultAsync()
                     : await _db.Pedidos
@@ -214,6 +221,7 @@ public class CobroRepository : ICobroRepository
             await transaction.RollbackAsync();
             throw;
         }
+        }); // end strategy.ExecuteAsync
     }
 
     public async Task<bool> AnularAsync(int id, int tenantId)

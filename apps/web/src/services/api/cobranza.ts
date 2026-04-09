@@ -89,12 +89,12 @@ export interface CobroResumen {
 // ═══════════════════════════════════════════════════════
 
 export const METODO_PAGO_OPTIONS = [
-  { value: 0, label: 'Efectivo' },
-  { value: 1, label: 'Transferencia' },
-  { value: 2, label: 'Cheque' },
-  { value: 3, label: 'Tarjeta de Crédito' },
-  { value: 4, label: 'Tarjeta de Débito' },
-  { value: 5, label: 'Otro' },
+  { value: 0, labelKey: 'cash' },
+  { value: 1, labelKey: 'transfer' },
+  { value: 2, labelKey: 'check' },
+  { value: 3, labelKey: 'creditCard' },
+  { value: 4, labelKey: 'debitCard' },
+  { value: 5, labelKey: 'other' },
 ];
 
 // ═══════════════════════════════════════════════════════

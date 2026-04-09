@@ -1144,6 +1144,7 @@
       "amountLabel": "Amount",
       "paymentMethod": "Payment Method",
       "paymentDate": "Payment Date",
+      "selectDate": "Select a date",
       "reference": "Reference",
       "referencePlaceholder": "Transfer number, check, etc.",
       "notes": "Notes",
@@ -1161,6 +1162,14 @@
     "validation": {
       "amountGreaterThanZero": "Amount must be greater than 0",
       "amountExceedsBalance": "Amount exceeds outstanding balance ({balance})"
+    },
+    "paymentMethods": {
+      "cash": "Cash",
+      "transfer": "Wire Transfer",
+      "check": "Check",
+      "creditCard": "Credit Card",
+      "debitCard": "Debit Card",
+      "other": "Other"
     },
     "pendingOrders": "{count} pending order(s)",
     "totalLabel": "Total",

@@ -54,11 +54,11 @@ import { useTranslations } from 'next-intl';
 // ─── Zod Schema ───────────────────────────────────────
 
 const cobroSchema = z.object({
-  clienteId: z.number().min(1, 'Selecciona un cliente'),
-  pedidoId: z.number().min(1, 'Selecciona un pedido'),
-  monto: z.number().min(0.01, 'El monto debe ser mayor a 0'),
-  metodoPago: z.number().min(0, 'Selecciona un método de pago'),
-  fechaCobro: z.string().optional(),
+  clienteId: z.number().min(1, 'required'),
+  pedidoId: z.number().optional(),
+  monto: z.number().min(0.01, 'required'),
+  metodoPago: z.number().min(0, 'required'),
+  fechaCobro: z.string().min(1, 'required'),
   referencia: z.string().optional(),
   notas: z.string().optional(),
 });
@@ -67,8 +67,7 @@ type CobroFormData = z.infer<typeof cobroSchema>;
 
 // ─── Helpers ──────────────────────────────────────────
 
-const fmtDate = (d: string) =>
-  formatDate(d, null, { day: '2-digit', month: 'short', year: 'numeric' });
+// fmtDate moved inside component to use locale-aware useFormatters hook
 
 function defaultDates() {
   const h = new Date();
@@ -117,6 +116,7 @@ export default function CobranzaPage() {
   const t = useTranslations('collections');
   const tc = useTranslations('common');
   const { formatCurrency, formatDate } = useFormatters();
+  const fmtDate = (d: string) => formatDate(d, { day: '2-digit', month: 'short', year: 'numeric' });
   const drawerEstadoCuentaRef = useRef<DrawerHandle>(null);
   const drawerNewCobroRef = useRef<DrawerHandle>(null);
 
@@ -283,13 +283,13 @@ export default function CobranzaPage() {
     try {
       setCreating(true);
       await createCobro({
-        pedidoId: data.pedidoId,
+        pedidoId: data.pedidoId && data.pedidoId > 0 ? data.pedidoId : null,
         clienteId: data.clienteId,
         monto: data.monto,
         metodoPago: data.metodoPago,
-        fechaCobro: data.fechaCobro,
-        referencia: data.referencia,
-        notas: data.notas,
+        fechaCobro: data.fechaCobro || undefined,
+        referencia: data.referencia || undefined,
+        notas: data.notas || undefined,
       });
       toast.success(t('paymentCreated'));
       setShowNewCobro(false);
@@ -1218,7 +1218,7 @@ export default function CobranzaPage() {
                                       className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white"
                                     >
                                       {METODO_PAGO_OPTIONS.map((opt) => (
-                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                        <option key={opt.value} value={opt.value}>{t(`paymentMethods.${opt.labelKey}`)}</option>
                                       ))}
                                     </select>
                                   </div>
@@ -1388,18 +1388,19 @@ export default function CobranzaPage() {
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
               >
                 {METODO_PAGO_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
+                  <option key={o.value} value={o.value}>{t(`paymentMethods.${o.labelKey}`)}</option>
                 ))}
               </select>
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">{t('drawer.paymentDate')}</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{t('drawer.paymentDate')} *</label>
             <DateTimePicker
               mode="date"
               value={watch('fechaCobro')}
               onChange={(val) => setValue('fechaCobro', val, { shouldValidate: true, shouldDirty: true })}
             />
+            {errors.fechaCobro && <p className="text-xs text-red-500 mt-1">{t('drawer.selectDate')}</p>}
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">{t('drawer.reference')}</label>

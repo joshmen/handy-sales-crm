@@ -1144,6 +1144,7 @@
       "amountLabel": "Monto",
       "paymentMethod": "Metodo de Pago",
       "paymentDate": "Fecha del Cobro",
+      "selectDate": "Selecciona una fecha",
       "reference": "Referencia",
       "referencePlaceholder": "Num. transferencia, cheque, etc.",
       "notes": "Notas",
@@ -1158,6 +1159,14 @@
       "last90Days": "Últimos 90d"
     },
     "register": "Registrar",
+    "paymentMethods": {
+      "cash": "Efectivo",
+      "transfer": "Transferencia",
+      "check": "Cheque",
+      "creditCard": "Tarjeta de Crédito",
+      "debitCard": "Tarjeta de Débito",
+      "other": "Otro"
+    },
     "validation": {
       "amountGreaterThanZero": "El monto debe ser mayor a 0",
       "amountExceedsBalance": "El monto excede el saldo pendiente ({balance})"
