@@ -1,6 +1,17 @@
 'use client';
 
 import { toast as sonnerToast } from 'sonner';
+import { getMessages } from '@/i18n/messages';
+
+// Read current locale from localStorage (same source as CompanyContext)
+function getLocaleMessages() {
+  try {
+    const settings = JSON.parse(localStorage.getItem('company_settings') || '{}');
+    return getMessages(settings.language || 'es');
+  } catch {
+    return getMessages('es');
+  }
+}
 
 // Tipos compatibles con la API anterior
 interface ToastProps {
@@ -17,13 +28,14 @@ type ToastReturn = {
 // Función principal: acepta objeto { title, description, variant }
 function toast(props: ToastProps): ToastReturn {
   let id: string | number;
+  const m = getLocaleMessages();
 
   if (props.variant === 'destructive') {
-    id = sonnerToast.error(props.title || 'Error', {
+    id = sonnerToast.error(props.title || m.common.error, {
       description: props.description,
     });
   } else {
-    id = sonnerToast.success(props.title || '', {
+    id = sonnerToast.success(props.title || m.common.success, {
       description: props.description,
     });
   }
@@ -46,19 +58,23 @@ type ToastAPI = typeof toast & {
 
 const toastWithHelpers = Object.assign(toast, {
   success: (message: string, opts?: HelperOpts): ToastReturn => {
-    const id = sonnerToast.success(opts?.title || 'Éxito', { description: message });
+    const m = getLocaleMessages();
+    const id = sonnerToast.success(opts?.title || m.common.success, { description: message });
     return { id, dismiss: () => sonnerToast.dismiss(id) };
   },
   error: (message: string, opts?: HelperOpts): ToastReturn => {
-    const id = sonnerToast.error(opts?.title || 'Error', { description: message });
+    const m = getLocaleMessages();
+    const id = sonnerToast.error(opts?.title || m.common.error, { description: message });
     return { id, dismiss: () => sonnerToast.dismiss(id) };
   },
   info: (message: string, opts?: HelperOpts): ToastReturn => {
-    const id = sonnerToast.info(opts?.title || 'Información', { description: message });
+    const m = getLocaleMessages();
+    const id = sonnerToast.info(opts?.title || m.common.info, { description: message });
     return { id, dismiss: () => sonnerToast.dismiss(id) };
   },
   warning: (message: string, opts?: HelperOpts): ToastReturn => {
-    const id = sonnerToast.warning(opts?.title || 'Atención', { description: message });
+    const m = getLocaleMessages();
+    const id = sonnerToast.warning(opts?.title || m.common.warning, { description: message });
     return { id, dismiss: () => sonnerToast.dismiss(id) };
   },
 }) as ToastAPI;
