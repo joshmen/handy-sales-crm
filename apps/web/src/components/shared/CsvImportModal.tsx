@@ -325,7 +325,7 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
           </button>
           <button
             onClick={handleClose}
-            className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700"
+            className="px-4 py-2 text-sm font-medium text-success-foreground bg-success rounded-md hover:bg-success/90"
           >
             {t('close')}
           </button>
@@ -348,7 +348,7 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
             <button
               onClick={handleImport}
               disabled={importing || selectedCount === 0}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-success-foreground bg-success rounded-md hover:bg-success/90 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {importing ? (
                 <>
@@ -393,7 +393,7 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
             <div className="flex items-center gap-1.5">
               <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-medium ${
                 isCompleted ? 'bg-green-100 text-green-700' :
-                isActive ? 'bg-green-600 text-white' :
+                isActive ? 'bg-success text-success-foreground' :
                 'bg-gray-100 text-gray-400'
               }`}>
                 {isCompleted ? <Check className="w-3.5 h-3.5" /> : i + 1}

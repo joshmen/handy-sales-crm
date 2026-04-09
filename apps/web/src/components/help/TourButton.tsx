@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Play, RotateCcw } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useTour } from '@/hooks/useTour';
 
 interface TourButtonProps {
@@ -9,6 +10,7 @@ interface TourButtonProps {
 }
 
 export function TourButton({ onStartTour }: TourButtonProps) {
+  const t = useTranslations('help.tourPrompt');
   const { hasTour, isCompleted, tourConfig, startTour } = useTour();
 
   if (!hasTour || !tourConfig) return null;
@@ -25,18 +27,18 @@ export function TourButton({ onStartTour }: TourButtonProps) {
     <button
       type="button"
       onClick={handleClick}
-      className="w-full flex items-center gap-2.5 px-4 py-3 text-left bg-green-50 hover:bg-green-100 border-b border-green-100 transition-colors group"
+      className="w-full flex items-center gap-2.5 px-4 py-3 text-left bg-success/10 hover:bg-success/20 border-b border-success/20 transition-colors group"
     >
       {isCompleted ? (
-        <RotateCcw className="w-4 h-4 text-green-500 group-hover:text-green-600 flex-shrink-0" />
+        <RotateCcw className="w-4 h-4 text-success group-hover:text-success/80 flex-shrink-0" />
       ) : (
-        <Play className="w-4 h-4 text-green-500 group-hover:text-green-600 flex-shrink-0" />
+        <Play className="w-4 h-4 text-success group-hover:text-success/80 flex-shrink-0" />
       )}
       <div className="flex-1 min-w-0">
-        <span className="text-sm font-medium text-green-700">
-          {isCompleted ? 'Repetir tour de esta página' : 'Iniciar tour interactivo'}
+        <span className="text-sm font-medium text-success">
+          {isCompleted ? t('repeatTour') : t('startTour')}
         </span>
-        <p className="text-xs text-green-600 mt-0.5">
+        <p className="text-xs text-success/80 mt-0.5">
           {tourConfig.description}
         </p>
       </div>

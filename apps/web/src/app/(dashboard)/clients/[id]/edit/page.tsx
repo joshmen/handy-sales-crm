@@ -276,7 +276,7 @@ export default function EditClientPage() {
           <p className="text-gray-600 mb-4">{t('clientNotFoundMessage')}</p>
           <button
             onClick={() => router.push('/clients')}
-            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+            className="px-4 py-2 bg-success text-success-foreground rounded hover:bg-success/90"
           >
             Volver a clientes
           </button>
@@ -322,7 +322,7 @@ export default function EditClientPage() {
               })}
               disabled={saving || isOutOfZone}
               title={isOutOfZone ? t('outOfZoneTitle') : undefined}
-              className="flex items-center gap-2 bg-[#16A34A] hover:bg-green-700 text-white text-[13px] font-semibold px-5 py-2 rounded disabled:opacity-50 transition-colors"
+              className="flex items-center gap-2 bg-success hover:bg-success/90 text-white text-[13px] font-semibold px-5 py-2 rounded disabled:opacity-50 transition-colors"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
               {saving ? tc('saving') : t('saveChangesButton')}

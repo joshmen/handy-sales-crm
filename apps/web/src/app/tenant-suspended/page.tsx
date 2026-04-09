@@ -11,7 +11,7 @@ export default function TenantSuspendedPage() {
       <div className="max-w-md w-full text-center space-y-6">
         {/* Brand */}
         <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-10 h-10 bg-[#16A34A] rounded-xl flex items-center justify-center">
+          <div className="w-10 h-10 bg-success rounded-xl flex items-center justify-center">
             <span className="text-white font-bold text-lg">H</span>
           </div>
           <span className="text-[#111827] text-2xl font-bold">
@@ -48,7 +48,7 @@ export default function TenantSuspendedPage() {
         {/* Back to login */}
         <button
           onClick={() => router.push('/login')}
-          className="w-full h-11 bg-[#16A34A] hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-colors"
+          className="w-full h-11 bg-success hover:bg-success/90 text-white text-sm font-semibold rounded-lg transition-colors"
         >
           Volver al Inicio de Sesión
         </button>

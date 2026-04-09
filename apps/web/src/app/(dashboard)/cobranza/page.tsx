@@ -318,8 +318,8 @@ export default function CobranzaPage() {
   // ─── Inline cobro (inside estado de cuenta drawer) ──
 
   const handleInlineCobro = async (pedidoId: number, clienteId: number, saldoPedido: number) => {
-    if (inlineCobroData.monto <= 0) { toast.error('El monto debe ser mayor a 0'); return; }
-    if (inlineCobroData.monto > saldoPedido) { toast.error(`El monto excede el saldo pendiente (${formatCurrency(saldoPedido)})`); return; }
+    if (inlineCobroData.monto <= 0) { toast.error(t('validation.amountGreaterThanZero')); return; }
+    if (inlineCobroData.monto > saldoPedido) { toast.error(t('validation.amountExceedsBalance', { balance: formatCurrency(saldoPedido) })); return; }
     setInlineCobroSaving(true);
     try {
       await createCobro({
@@ -413,7 +413,7 @@ export default function CobranzaPage() {
             <button
               data-tour="cobranza-new-btn"
               onClick={() => setShowNewCobro(true)}
-              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
             >
               <Plus className="w-4 h-4" />
               <span>{t('newPayment')}</span>
@@ -525,7 +525,7 @@ export default function CobranzaPage() {
             <button
               data-tour="cobranza-refresh"
               onClick={() => { fetchCobros(); fetchSaldos(); fetchResumen(); }}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">{tc('refresh')}</span>
@@ -798,7 +798,7 @@ export default function CobranzaPage() {
                                 {s.clienteNombre}
                               </div>
                               <div className="text-xs text-gray-500 truncate">
-                                {s.pedidosPendientes} pedido{s.pedidosPendientes !== 1 ? 's' : ''} pendiente{s.pedidosPendientes !== 1 ? 's' : ''}
+                                {t('pendingOrders', { count: s.pedidosPendientes })}
                               </div>
                             </div>
                             <div className="text-right flex-shrink-0">
@@ -810,10 +810,10 @@ export default function CobranzaPage() {
                           {/* Row 2: Badges */}
                           <div className="flex flex-wrap items-center gap-2 mb-2">
                             <span className="text-xs text-gray-600">
-                              Facturado: {formatCurrency(s.totalFacturado)}
+                              {t('statement.invoiced')}: {formatCurrency(s.totalFacturado)}
                             </span>
                             <span className="text-xs text-green-600">
-                              Cobrado: {formatCurrency(s.totalCobrado)}
+                              {t('statement.collected')}: {formatCurrency(s.totalCobrado)}
                             </span>
                           </div>
                           {/* Progress bar */}
@@ -830,9 +830,9 @@ export default function CobranzaPage() {
                           <div className="flex justify-end gap-2">
                             <button
                               onClick={(e) => { e.stopPropagation(); openQuickCobro(s.clienteId); }}
-                              className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
+                              className="px-3 py-1.5 text-xs font-medium text-success-foreground bg-success rounded hover:bg-success/90 transition-colors"
                             >
-                              Cobrar
+                              {t('collect')}
                             </button>
                             <button
                               onClick={(e) => { e.stopPropagation(); openDetail(s.clienteId); }}
@@ -970,31 +970,31 @@ export default function CobranzaPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div>
-                  <p className="text-[10px] font-medium text-muted-foreground">Pendiente</p>
+                  <p className="text-[10px] font-medium text-muted-foreground">{t('statement.pending')}</p>
                   <p className={`text-sm font-bold tabular-nums ${estadoCuenta.saldoPendiente > 0 ? 'text-amber-500' : 'text-emerald-500'}`}>
                     {formatCurrency(estadoCuenta.saldoPendiente)}
                   </p>
                 </div>
                 <div className="w-px h-8 bg-border" />
                 <div>
-                  <p className="text-[10px] font-medium text-muted-foreground">Cobrado</p>
+                  <p className="text-[10px] font-medium text-muted-foreground">{t('statement.collected')}</p>
                   <p className="text-sm font-bold tabular-nums text-emerald-500">{formatCurrency(estadoCuenta.totalCobrado)}</p>
                 </div>
               </div>
               <button
                 onClick={() => drawerEstadoCuentaRef.current?.requestClose()}
-                className="px-4 py-2 text-sm font-medium text-muted-foreground bg-accent border border-border rounded-lg hover:bg-accent/80 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
               >
-                Cerrar
+                {tc('close')}
               </button>
             </div>
           ) : (
             <div className="flex justify-end">
               <button
                 onClick={() => drawerEstadoCuentaRef.current?.requestClose()}
-                className="px-4 py-2 text-sm font-medium text-muted-foreground bg-accent border border-border rounded-lg hover:bg-accent/80 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
               >
-                Cerrar
+                {tc('close')}
               </button>
             </div>
           )
@@ -1006,7 +1006,7 @@ export default function CobranzaPage() {
               <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-950 flex items-center justify-center">
                 <Loader2 className="h-5 w-5 animate-spin text-green-600" />
               </div>
-              <p className="text-sm text-muted-foreground">Cargando estado de cuenta...</p>
+              <p className="text-sm text-muted-foreground">{t('loadingStatement')}</p>
             </div>
           ) : estadoCuenta ? (
             <>
@@ -1019,7 +1019,7 @@ export default function CobranzaPage() {
                   <div className="mx-6 mt-6 rounded-xl border border-border bg-card p-5">
                     {/* Top row: label + percentage */}
                     <div className="flex items-baseline justify-between mb-3">
-                      <p className="text-xs text-muted-foreground">Avance de cobro</p>
+                      <p className="text-xs text-muted-foreground">{t('statement.collectionProgress')}</p>
                       <p className="text-2xl font-bold tabular-nums text-foreground leading-none">{pct}<span className="text-sm font-medium text-muted-foreground ml-0.5">%</span></p>
                     </div>
                     {/* Stacked bar — cobrado fills green, remainder stays as track */}
@@ -1032,15 +1032,15 @@ export default function CobranzaPage() {
                     {/* KPI row */}
                     <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-border">
                       <div>
-                        <p className="text-[11px] text-muted-foreground mb-0.5">Facturado</p>
+                        <p className="text-[11px] text-muted-foreground mb-0.5">{t('statement.invoiced')}</p>
                         <p className="text-sm font-semibold tabular-nums text-foreground">{formatCurrency(estadoCuenta.totalFacturado)}</p>
                       </div>
                       <div>
-                        <p className="text-[11px] text-muted-foreground mb-0.5">Cobrado</p>
+                        <p className="text-[11px] text-muted-foreground mb-0.5">{t('statement.collected')}</p>
                         <p className="text-sm font-semibold tabular-nums text-green-600 dark:text-green-400">{formatCurrency(estadoCuenta.totalCobrado)}</p>
                       </div>
                       <div>
-                        <p className="text-[11px] text-muted-foreground mb-0.5">Pendiente</p>
+                        <p className="text-[11px] text-muted-foreground mb-0.5">{t('statement.pending')}</p>
                         <p className={`text-sm font-semibold tabular-nums ${estadoCuenta.saldoPendiente > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-green-600 dark:text-green-400'}`}>{formatCurrency(estadoCuenta.saldoPendiente)}</p>
                       </div>
                     </div>
@@ -1059,7 +1059,7 @@ export default function CobranzaPage() {
                         : 'text-muted-foreground hover:text-foreground'
                     }`}
                   >
-                    Último año
+                    {t('statement.lastYear')}
                   </button>
                   <button
                     onClick={estadoCuentaHistorico ? undefined : toggleEstadoCuentaPeriodo}
@@ -1069,25 +1069,25 @@ export default function CobranzaPage() {
                         : 'text-muted-foreground hover:text-foreground'
                     }`}
                   >
-                    Todo el historial
+                    {t('statement.fullHistory')}
                   </button>
                 </div>
                 <span className="text-[11px] text-muted-foreground">
-                  {estadoCuentaHistorico ? 'Historial completo' : 'Últimos 12 meses'}
+                  {estadoCuentaHistorico ? t('statement.fullHistoryLabel') : t('statement.last12Months')}
                 </span>
               </div>
 
               {/* ── Pedidos list ── */}
               <div className="px-6 pt-4 pb-6">
-                <h3 className="text-xs font-semibold text-gray-400 mb-3">Pedidos</h3>
+                <h3 className="text-xs font-semibold text-gray-400 mb-3">{t('columns.orders')}</h3>
                 {estadoCuenta.pedidos.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12">
                     <Receipt className="w-10 h-10 text-gray-300 mb-3" />
-                    <p className="text-sm text-gray-500 font-medium">No hay pedidos en este período</p>
+                    <p className="text-sm text-gray-500 font-medium">{t('statement.noOrdersInPeriod')}</p>
                     <p className="text-xs text-gray-400 mt-1">
                       {estadoCuentaHistorico
-                        ? 'Este cliente no tiene pedidos registrados'
-                        : 'Prueba con "Todo el historial" para ver pedidos más antiguos'}
+                        ? t('statement.noOrdersEver')
+                        : t('statement.tryFullHistory')}
                     </p>
                   </div>
                 ) : (
@@ -1122,7 +1122,7 @@ export default function CobranzaPage() {
                                   <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
                                     isPaid ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
                                   }`}>
-                                    {isPaid ? 'Pagado' : 'Pendiente'}
+                                    {isPaid ? t('statement.paid') : t('statement.pending')}
                                   </span>
                                 </div>
                                 <p className="text-xs text-gray-400 mt-0.5">{fmtDate(p.fechaPedido)}</p>
@@ -1132,7 +1132,7 @@ export default function CobranzaPage() {
                               <p className="text-sm font-bold text-gray-900 tabular-nums">{formatCurrency(p.total)}</p>
                               {!isPaid && (
                                 <p className="text-xs text-amber-600 font-medium tabular-nums mt-0.5">
-                                  Debe {formatCurrency(p.saldo)}
+                                  {t('statement.owes')} {formatCurrency(p.saldo)}
                                 </p>
                               )}
                             </div>
@@ -1177,7 +1177,7 @@ export default function CobranzaPage() {
                         {/* No cobros */}
                         {p.cobros.length === 0 && !isPaid && (
                           <div className="border-t border-gray-100 px-4 py-2.5 bg-gray-50/30 rounded-b-xl">
-                            <p className="text-xs text-gray-400 italic">Sin cobros registrados</p>
+                            <p className="text-xs text-gray-400 italic">{t('statement.noPaymentsRecorded')}</p>
                           </div>
                         )}
 
@@ -1191,12 +1191,12 @@ export default function CobranzaPage() {
                                   <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
                                     <CurrencyDollar className="w-3 h-3 text-green-600" weight="bold" />
                                   </div>
-                                  <span className="text-xs font-semibold text-green-800">Registrar cobro</span>
+                                  <span className="text-xs font-semibold text-green-800">{t('registerPayment')}</span>
                                 </div>
                                 {/* Row 1: Monto + Método */}
                                 <div className="grid grid-cols-2 gap-2">
                                   <div>
-                                    <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Monto *</label>
+                                    <label className="block text-[10px] font-medium text-gray-500 mb-0.5">{t('drawer.amountLabel')} *</label>
                                     <div className="relative">
                                       <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-gray-400">$</span>
                                       <input
@@ -1225,12 +1225,12 @@ export default function CobranzaPage() {
                                 </div>
                                 {/* Row 2: Referencia */}
                                 <div>
-                                  <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Referencia <span className="text-gray-300">(opcional)</span></label>
+                                  <label className="block text-[10px] font-medium text-gray-500 mb-0.5">{t('drawer.reference')} <span className="text-gray-300">({tc('optional')})</span></label>
                                   <input
                                     type="text"
                                     value={inlineCobroData.referencia}
                                     onChange={(e) => setInlineCobroData(prev => ({ ...prev, referencia: e.target.value }))}
-                                    placeholder="Ej: Transferencia #456"
+                                    placeholder={t('drawer.referencePlaceholder')}
                                     className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white"
                                   />
                                 </div>
@@ -1239,21 +1239,21 @@ export default function CobranzaPage() {
                                   <button
                                     onClick={() => handleInlineCobro(p.pedidoId, detailClienteId, p.saldo)}
                                     disabled={inlineCobroSaving || inlineCobroData.monto <= 0}
-                                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-green-600 rounded-md hover:bg-green-700 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-success-foreground bg-success rounded-md hover:bg-success/90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                   >
                                     {inlineCobroSaving ? (
                                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                                     ) : (
                                       <CheckCircle className="w-3.5 h-3.5" weight="bold" />
                                     )}
-                                    {inlineCobroSaving ? 'Guardando...' : 'Registrar'}
+                                    {inlineCobroSaving ? tc('saving') : t('register')}
                                   </button>
                                   <button
                                     onClick={() => setInlineCobroPedidoId(null)}
                                     disabled={inlineCobroSaving}
                                     className="px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors disabled:opacity-50"
                                   >
-                                    Cancelar
+                                    {tc('cancel')}
                                   </button>
                                 </div>
                               </div>
@@ -1264,10 +1264,10 @@ export default function CobranzaPage() {
                                   setInlineCobroPedidoId(p.pedidoId);
                                   setInlineCobroData({ monto: p.saldo, metodoPago: 0, referencia: '' });
                                 }}
-                                className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold text-white bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg hover:from-green-700 hover:to-emerald-700 active:scale-[0.98] transition-all duration-150 shadow-sm shadow-green-200"
+                                className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold text-success-foreground bg-success rounded-lg hover:bg-success/90 active:scale-[0.98] transition-all duration-150 shadow-sm"
                               >
                                 <CurrencyDollar className="w-4 h-4" weight="bold" />
-                                Cobrar {formatCurrency(p.saldo)}
+                                {t('collect')} {formatCurrency(p.saldo)}
                               </button>
                             )}
                           </div>
@@ -1300,7 +1300,7 @@ export default function CobranzaPage() {
         footer={
           <div className="flex items-center justify-end gap-3">
             <Button type="button" variant="outline" onClick={() => drawerNewCobroRef.current?.requestClose()} disabled={creating}>
-              Cancelar
+              {tc('cancel')}
             </Button>
             <Button type="button" variant="success" onClick={rhfSubmit(handleCreateCobro)} disabled={creating} className="flex items-center gap-2">
               {creating && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -1311,7 +1311,7 @@ export default function CobranzaPage() {
       >
         <div className="p-6 space-y-4">
           <div data-tour="cobro-client-selector">
-            <label className="block text-xs font-medium text-gray-600 mb-1">Cliente *</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{t('drawer.clientLabel')} *</label>
             <SearchableSelect
               options={clientOptions}
               value={watch('clienteId') || null}
@@ -1319,14 +1319,14 @@ export default function CobranzaPage() {
                 setValue('clienteId', val ? Number(val) : 0, { shouldDirty: true });
                 setValue('pedidoId', 0, { shouldDirty: true });
               }}
-              placeholder="Seleccionar cliente..."
-              searchPlaceholder="Buscar por nombre..."
-              emptyMessage="No se encontraron clientes"
+              placeholder={t('drawer.selectClient')}
+              searchPlaceholder={t('drawer.searchClientPlaceholder')}
+              emptyMessage={t('drawer.noClients')}
             />
-            {errors.clienteId && <p className="text-xs text-red-500 mt-1">{errors.clienteId.message}</p>}
+            {errors.clienteId && <p className="text-xs text-red-500 mt-1">{t('drawer.selectClient')}</p>}
           </div>
           <div data-tour="cobro-pedido-selector">
-            <label className="block text-xs font-medium text-gray-600 mb-1">Pedido *</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{t('drawer.orderLabel')} *</label>
             {formPedidosLoading ? (
               <div className="flex items-center gap-2 py-2 text-sm text-gray-400">
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -1349,29 +1349,29 @@ export default function CobranzaPage() {
                       setValue('monto', pedido.saldo, { shouldDirty: true });
                     }
                   }}
-                  placeholder="Seleccionar pedido..."
-                  searchPlaceholder="Buscar por número..."
-                  emptyMessage="No se encontraron pedidos"
+                  placeholder={t('drawer.selectOrder')}
+                  searchPlaceholder={t('drawer.searchOrderPlaceholder')}
+                  emptyMessage={t('drawer.noOrders')}
                 />
               ) : (
-                <div className="py-2 px-3 bg-amber-50 border border-amber-200 rounded-lg">
-                  <p className="text-sm text-amber-700 font-medium">Este cliente no tiene pedidos con saldo pendiente</p>
-                  <p className="text-xs text-amber-600 mt-1">
-                    Para registrar un cobro, primero debe existir un pedido.{' '}
-                    <Link href="/orders" className="underline font-medium hover:text-amber-800">
-                      Ir a crear pedido
+                <div className="py-2 px-3 bg-muted/40 border-l-2 border-l-amber-500 border border-border rounded-lg">
+                  <p className="text-sm text-foreground font-medium">{t('drawer.noPendingOrders')}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {t('drawer.noPendingOrdersHint')}{' '}
+                    <Link href="/orders" className="underline font-medium text-primary hover:text-primary/80">
+                      {t('drawer.goToCreateOrder')}
                     </Link>
                   </p>
                 </div>
               )
             ) : (
-              <p className="text-sm text-gray-400 py-2">Selecciona un cliente primero</p>
+              <p className="text-sm text-gray-400 py-2">{t('drawer.selectClientFirst')}</p>
             )}
-            {errors.pedidoId && <p className="text-xs text-red-500 mt-1">{errors.pedidoId.message}</p>}
+            {errors.pedidoId && <p className="text-xs text-red-500 mt-1">{t('drawer.selectOrder')}</p>}
           </div>
           <div data-tour="cobro-amount-method" className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Monto *</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{t('drawer.amountLabel')} *</label>
               <input
                 type="number"
                 step="0.01"
@@ -1379,10 +1379,10 @@ export default function CobranzaPage() {
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
                 placeholder="0.00"
               />
-              {errors.monto && <p className="text-xs text-red-500 mt-1">{errors.monto.message}</p>}
+              {errors.monto && <p className="text-xs text-red-500 mt-1">{t('validation.amountGreaterThanZero')}</p>}
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Metodo de Pago</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{t('drawer.paymentMethod')}</label>
               <select
                 {...register('metodoPago', { valueAsNumber: true })}
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
@@ -1394,7 +1394,7 @@ export default function CobranzaPage() {
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Fecha del Cobro</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{t('drawer.paymentDate')}</label>
             <DateTimePicker
               mode="date"
               value={watch('fechaCobro')}
@@ -1402,21 +1402,21 @@ export default function CobranzaPage() {
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Referencia</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{t('drawer.reference')}</label>
             <input
               type="text"
               {...register('referencia')}
               className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
-              placeholder="Num. transferencia, cheque, etc."
+              placeholder={t('drawer.referencePlaceholder')}
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Notas</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{t('drawer.notes')}</label>
             <textarea
               {...register('notas')}
               className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
               rows={2}
-              placeholder="Notas opcionales..."
+              placeholder={t('drawer.notesPlaceholder')}
             />
           </div>
         </div>
@@ -1443,7 +1443,7 @@ export default function CobranzaPage() {
             disabled={deleting}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
           >
-            Cancelar
+            {tc('cancel')}
           </button>
           <button
             onClick={handleDeleteCobro}

@@ -177,7 +177,7 @@ export function DispositivosTab() {
       <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mb-4"><Shield className="w-8 h-8 text-red-400" /></div>
       <h3 className="text-lg font-semibold text-foreground mb-2">{t('errorLoadingDevices')}</h3>
       <p className="text-sm text-muted-foreground text-center max-w-md mb-4">{error}</p>
-      <button onClick={fetchSessions} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors">
+      <button onClick={fetchSessions} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-success-foreground bg-success rounded-md hover:bg-success/90 transition-colors">
         <RefreshCw className="w-4 h-4" />{t('retry')}
       </button>
     </div>
@@ -200,7 +200,7 @@ export function DispositivosTab() {
           {cleaningExpired ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />}
           <span>{t('cleanExpired')}</span>
         </button>
-        <button onClick={handleRefresh} disabled={loading} className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors disabled:opacity-50">
+        <button onClick={handleRefresh} disabled={loading} className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-success-foreground bg-success rounded-md hover:bg-success/90 transition-colors disabled:opacity-50">
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
           <span>{t('refresh')}</span>
         </button>
@@ -332,7 +332,7 @@ export function DispositivosTab() {
             <div className="flex items-center gap-2">
               <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} aria-label={t('prevPage')} className="px-3 py-2 border border-gray-200 rounded-md text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"><ChevronLeft className="w-4 h-4" /></button>
               {Array.from({ length: totalPages }, (_, i) => i + 1).filter((page) => { if (totalPages <= 5) return true; if (page === 1 || page === totalPages) return true; return Math.abs(page - currentPage) <= 1; }).reduce<(number | string)[]>((acc, page, idx, arr) => { if (idx > 0) { const prev = arr[idx - 1]; if (page - prev > 1) acc.push('...'); } acc.push(page); return acc; }, []).map((page, idx) => (
-                <button key={typeof page === 'number' ? `page-${page}` : `ellipsis-${idx}`} onClick={() => typeof page === 'number' && setCurrentPage(page)} disabled={page === '...'} className={`min-w-[32px] px-2 py-1.5 text-sm rounded-md transition-colors ${page === currentPage ? 'bg-green-600 text-white' : page === '...' ? 'text-gray-400 cursor-default' : 'text-gray-600 hover:bg-gray-100'}`}>{page}</button>
+                <button key={typeof page === 'number' ? `page-${page}` : `ellipsis-${idx}`} onClick={() => typeof page === 'number' && setCurrentPage(page)} disabled={page === '...'} className={`min-w-[32px] px-2 py-1.5 text-sm rounded-md transition-colors ${page === currentPage ? 'bg-success text-success-foreground' : page === '...' ? 'text-gray-400 cursor-default' : 'text-gray-600 hover:bg-gray-100'}`}>{page}</button>
               ))}
               <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} aria-label={t('nextPage')} className="px-3 py-2 border border-gray-200 rounded-md text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"><ChevronRight className="w-4 h-4" /></button>
             </div>

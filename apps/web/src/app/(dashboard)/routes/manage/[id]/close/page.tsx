@@ -199,7 +199,7 @@ export default function CloseRoutePage() {
                 data-tour="routes-close-btn"
                 onClick={handleCerrarRuta}
                 disabled={closing}
-                className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors disabled:opacity-50"
               >
                 {closing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
                 Cerrar ruta
@@ -226,7 +226,7 @@ export default function CloseRoutePage() {
               <React.Fragment key={step.estado}>
                 <div className="flex items-center gap-1.5">
                   <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                    isCompleted ? 'bg-green-600 text-white' :
+                    isCompleted ? 'bg-success text-success-foreground' :
                     isCurrent ? 'bg-green-100 border-2 border-green-600 text-green-700' :
                     'bg-gray-100 text-gray-400'
                   }`}>

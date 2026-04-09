@@ -341,7 +341,7 @@ export default function TenantDetailPage() {
         type="submit"
         form="edit-tenant-form"
         disabled={submitting}
-        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+        className="px-4 py-2 bg-success text-success-foreground rounded-lg hover:bg-success/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
       >
         {submitting ? (
           <>
@@ -372,7 +372,7 @@ export default function TenantDetailPage() {
           className={`flex-1 px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
             isSuspending
               ? 'bg-red-600 text-white hover:bg-red-700'
-              : 'bg-green-600 text-white hover:bg-green-700'
+              : 'bg-success text-success-foreground hover:bg-success/90'
           }`}
         >
           {submitting ? (
@@ -404,7 +404,7 @@ export default function TenantDetailPage() {
         type="submit"
         form="add-user-form"
         disabled={submitting || tenant.stats.usuarios >= tenant.maxUsuarios}
-        className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        className="flex-1 px-4 py-2 bg-success text-success-foreground rounded-lg hover:bg-success/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
         {submitting ? (
           <>

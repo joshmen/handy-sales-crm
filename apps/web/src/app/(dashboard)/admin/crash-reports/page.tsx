@@ -1194,7 +1194,7 @@ function MobileCrashesTab() {
                       size="sm"
                       onClick={handleMarcarResuelto}
                       disabled={resolverLoading}
-                      className="bg-green-600 hover:bg-green-700 text-white"
+                      className="bg-success hover:bg-success/90 text-white"
                     >
                       {resolverLoading ? (
                         <Loader2 className="h-4 w-4 animate-spin mr-1" />
@@ -1208,7 +1208,7 @@ function MobileCrashesTab() {
               ) : (
                 <Button
                   onClick={() => setResolverOpen(true)}
-                  className="bg-green-600 hover:bg-green-700 text-white"
+                  className="bg-success hover:bg-success/90 text-white"
                 >
                   <CheckCircle size={16} weight="fill" className="mr-2" />
                   Marcar como resuelto

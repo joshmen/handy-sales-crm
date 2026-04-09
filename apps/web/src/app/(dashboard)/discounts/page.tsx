@@ -443,7 +443,7 @@ export default function DiscountsPage() {
             )}
           </div>
           <div className="relative group" data-tour="discounts-create-btn">
-            <button className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors">
+            <button className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors">
               <Plus className="w-4 h-4" />
               <span>{t('newDiscount')}</span>
               <ChevronDown className="w-3.5 h-3.5" />
@@ -506,7 +506,7 @@ export default function DiscountsPage() {
             <button
               onClick={handleRefresh}
               disabled={loading}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors disabled:opacity-50"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
               <span>{tc('refresh')}</span>

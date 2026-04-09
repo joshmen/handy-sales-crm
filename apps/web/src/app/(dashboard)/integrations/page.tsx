@@ -121,7 +121,7 @@ function IntegrationCard({
                 size="sm"
                 onClick={() => onActivate(integration.slug)}
                 disabled={loading}
-                className="bg-green-600 hover:bg-green-700 text-white"
+                className="bg-success hover:bg-success/90 text-white"
               >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : t("activate")}
               </Button>

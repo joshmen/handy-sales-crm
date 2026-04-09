@@ -378,7 +378,7 @@ export default function TenantsPage() {
         type="submit"
         form="tenant-form"
         disabled={submitting}
-        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+        className="px-4 py-2 bg-success text-success-foreground rounded-lg hover:bg-success/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
       >
         {submitting ? (
           <>
@@ -403,7 +403,7 @@ export default function TenantsPage() {
       actions={
         <button
           onClick={handleOpenCreate}
-          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-success text-success-foreground rounded-lg hover:bg-success/90 transition-colors"
         >
           <Plus className="h-4 w-4" />
           Nueva Empresa
@@ -495,7 +495,7 @@ export default function TenantsPage() {
                 {!searchTerm && planFilter === 'todos' && (
                   <button
                     onClick={handleOpenCreate}
-                    className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
+                    className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90"
                   >
                     <Plus className="w-4 h-4" />
                     {t('newCompany')}
@@ -635,7 +635,7 @@ export default function TenantsPage() {
                   onClick={() => setCurrentPage(page)}
                   className={`min-w-[32px] px-2 py-1 text-sm rounded-md transition-colors ${
                     page === currentPage
-                      ? 'bg-green-600 text-white'
+                      ? 'bg-success text-success-foreground'
                       : 'text-muted-foreground hover:bg-accent'
                   }`}
                 >
@@ -680,7 +680,7 @@ export default function TenantsPage() {
               {!searchTerm && planFilter === 'todos' && (
                 <button
                   onClick={handleOpenCreate}
-                  className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
+                  className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90"
                 >
                   <Plus className="w-4 h-4" />
                   {t('newCompany')}
@@ -801,7 +801,7 @@ export default function TenantsPage() {
                       onClick={() => setCurrentPage(page)}
                       className={`min-w-[32px] px-2 py-1 text-sm rounded-md transition-colors ${
                         page === currentPage
-                          ? 'bg-green-600 text-white'
+                          ? 'bg-success text-success-foreground'
                           : 'text-muted-foreground hover:bg-accent'
                       }`}
                     >

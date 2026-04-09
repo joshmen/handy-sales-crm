@@ -101,7 +101,7 @@ export function DefaultsPanel({
         <Button
           onClick={onSaveDefaults}
           disabled={savingDefaults}
-          className="bg-green-600 hover:bg-green-700 text-white"
+          className="bg-success hover:bg-success/90 text-white"
         >
           {savingDefaults && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
           Guardar Predeterminados

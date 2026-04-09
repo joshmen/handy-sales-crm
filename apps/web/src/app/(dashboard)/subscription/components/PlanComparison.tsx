@@ -215,7 +215,7 @@ export function QuickPlanComparison({
                     variant={downgrade.isDowngrade ? "outline" : "default"}
                     onClick={() => onUpgrade(plan.codigo)}
                     disabled={processing}
-                    className={downgrade.isDowngrade ? "" : "bg-green-600 hover:bg-green-700 text-white"}
+                    className={downgrade.isDowngrade ? "" : "bg-success hover:bg-success/90 text-white"}
                   >
                     {downgrade.isDowngrade ? "Cambiar" : "Actualizar"}
                   </Button>
@@ -261,7 +261,7 @@ function PlanCard({
         <div className="relative bg-card rounded-2xl p-6 h-full flex flex-col min-h-[420px]">
           {isPopular && (
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
-              <span className="bg-green-600 text-white text-[11px] font-semibold px-4 py-1 rounded-full shadow-sm flex items-center gap-1">
+              <span className="bg-success text-success-foreground text-[11px] font-semibold px-4 py-1 rounded-full shadow-sm flex items-center gap-1">
                 <Sparkles className="h-3 w-3" />
                 Más popular
               </span>
@@ -357,7 +357,7 @@ function PlanCard({
                   : downgrade.isDowngrade
                     ? "bg-amber-500 text-white hover:bg-amber-600 shadow-md"
                     : isPopular
-                      ? "bg-green-600 text-white hover:bg-green-700 shadow-md"
+                      ? "bg-success text-success-foreground hover:bg-success/90 shadow-md"
                       : "bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100"
             }`}
             disabled={isDisabled}

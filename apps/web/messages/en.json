@@ -1111,6 +1111,12 @@
       "unpaid": "Pending",
       "owes": "Owes",
       "noPaymentsRecorded": "No payments recorded",
+      "fullHistory": "Full history",
+      "fullHistoryLabel": "Full history",
+      "last12Months": "Last 12 months",
+      "noOrdersEver": "This client has no registered orders",
+      "tryFullHistory": "Try \"Full history\" to see older orders",
+      "owes": "Owes",
       "registerPayment": "Register payment",
       "amountLabel": "Amount",
       "methodLabel": "Method",
@@ -1150,6 +1156,11 @@
       "thisWeek": "This week",
       "thisMonth": "This month",
       "last90Days": "Last 90 days"
+    },
+    "register": "Register",
+    "validation": {
+      "amountGreaterThanZero": "Amount must be greater than 0",
+      "amountExceedsBalance": "Amount exceeds outstanding balance ({balance})"
     },
     "pendingOrders": "{count} pending order(s)",
     "totalLabel": "Total",
@@ -3853,7 +3864,8 @@
     },
     "tourPrompt": {
       "tourAvailable": "Tour available",
-      "startTour": "Start tour",
+      "startTour": "Start interactive tour",
+      "repeatTour": "Repeat tour for this page",
       "notNow": "Not now",
       "dontShowAgain": "Don't show again"
     }

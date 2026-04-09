@@ -246,7 +246,7 @@ export default function NewClientPage() {
               })}
               disabled={saving || isOutOfZone}
               title={isOutOfZone ? t('outOfZoneTitle') : undefined}
-              className="flex items-center gap-2 bg-[#16A34A] hover:bg-green-700 text-white text-[13px] font-semibold px-5 py-2 rounded disabled:opacity-50 transition-colors"
+              className="flex items-center gap-2 bg-success hover:bg-success/90 text-success-foreground text-[13px] font-semibold px-5 py-2 rounded disabled:opacity-50 transition-colors"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
               {saving ? tc('saving') : t('saveButton')}

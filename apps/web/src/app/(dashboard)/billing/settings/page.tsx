@@ -199,14 +199,14 @@ export default function BillingSettingsPage() {
       subtitle={t('subtitle')}
       actions={
         activeTab === 'datos' ? (
-          <Button onClick={handleSave} disabled={saving} className="bg-green-600 hover:bg-green-700 text-white">
+          <Button onClick={handleSave} disabled={saving} className="bg-success hover:bg-success/90 text-white">
             {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
             {tCommon('save')}
           </Button>
         ) : (
           <button
             onClick={() => setShowAddSerie(true)}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-success hover:bg-success/90 rounded-lg transition-colors"
           >
             <Plus className="w-4 h-4" />
             {t('newSeries')}
@@ -372,7 +372,7 @@ export default function BillingSettingsPage() {
                   <input type="password" value={certPassword} onChange={e => setCertPassword(e.target.value)} placeholder={t('keyPasswordPlaceholder')} className="w-full max-w-sm px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-green-500/30" />
                 </div>
                 <div className="pt-1">
-                  <Button onClick={handleUploadCert} disabled={uploading || !cerFile || !keyFile || !certPassword.trim()} className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-50">
+                  <Button onClick={handleUploadCert} disabled={uploading || !cerFile || !keyFile || !certPassword.trim()} className="bg-success hover:bg-success/90 text-white disabled:opacity-50">
                     {uploading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Upload className="w-4 h-4 mr-2" />}
                     {t('uploadCerts')}
                   </Button>
@@ -438,7 +438,7 @@ export default function BillingSettingsPage() {
               </div>
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setShowAddSerie(false)}>{tCommon('cancel')}</Button>
-                <Button onClick={handleAddSerie} disabled={savingSerie} className="bg-green-600 hover:bg-green-700 text-white">
+                <Button onClick={handleAddSerie} disabled={savingSerie} className="bg-success hover:bg-success/90 text-white">
                   {savingSerie ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
                   {t('createSeries')}
                 </Button>

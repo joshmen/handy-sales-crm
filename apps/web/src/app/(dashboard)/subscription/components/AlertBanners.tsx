@@ -119,7 +119,7 @@ export function AlertBanners({
               size="sm"
               onClick={onTrialCheckout}
               disabled={trialCheckoutLoading}
-              className="bg-green-600 hover:bg-green-700 text-white flex-shrink-0"
+              className="bg-success hover:bg-success/90 text-white flex-shrink-0"
             >
               {trialCheckoutLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

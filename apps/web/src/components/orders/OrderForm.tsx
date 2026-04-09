@@ -239,7 +239,7 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
               onClick={() => setTipoVenta(1)}
               className={`px-3 py-1.5 text-[13px] font-medium transition-colors ${
                 tipoVenta === 1
-                  ? 'bg-green-600 text-white'
+                  ? 'bg-success text-success-foreground'
                   : 'bg-white text-gray-600 hover:bg-gray-100 dark:bg-gray-700 dark:text-gray-300'
               }`}
             >
@@ -358,7 +358,7 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
             className="w-[70px] text-center"
             placeholder={t('qty')}
           />
-          <Button type="button" onClick={handleAddProduct} className="bg-green-600 hover:bg-green-700 text-white px-4">
+          <Button type="button" onClick={handleAddProduct} className="bg-success hover:bg-success/90 text-white px-4">
             {t('add')}
           </Button>
         </div>

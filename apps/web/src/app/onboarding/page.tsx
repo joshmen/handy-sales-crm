@@ -581,7 +581,7 @@ export default function OnboardingPage() {
             {currentStep < TOTAL_STEPS ? (
               <button
                 onClick={goNext}
-                className="flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 transition-colors rounded-lg shadow-sm onb-pulse-glow"
+                className="flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-success hover:bg-success/90 transition-colors rounded-lg shadow-sm onb-pulse-glow"
               >
                 Continuar
                 <ArrowRight size={16} />
@@ -590,7 +590,7 @@ export default function OnboardingPage() {
               <button
                 onClick={handleComplete}
                 disabled={saving}
-                className="flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 transition-colors rounded-lg shadow-sm disabled:opacity-50"
+                className="flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-success hover:bg-success/90 transition-colors rounded-lg shadow-sm disabled:opacity-50"
               >
                 {saving ? (
                   <>

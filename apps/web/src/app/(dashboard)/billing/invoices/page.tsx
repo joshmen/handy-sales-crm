@@ -293,7 +293,7 @@ export default function InvoicesPage() {
                 size="sm"
                 onClick={() => handleTimbrar(f.id)}
                 disabled={timbrando === f.id}
-                className="mt-3 w-full bg-green-600 hover:bg-green-700 text-white text-xs"
+                className="mt-3 w-full bg-success hover:bg-success/90 text-white text-xs"
               >
                 {timbrando === f.id ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
                 {tInv('stamp')}

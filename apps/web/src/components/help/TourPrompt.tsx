@@ -33,6 +33,7 @@ const MAX_PROMPT_SHOWS = 3;
 
 export function TourPrompt() {
   const t = useTranslations('help.tourPrompt');
+  const tc = useTranslations('common');
   const { hasTour, tourConfig, isCompleted, startTour } = useTour();
   const [visible, setVisible] = useState(false);
   const [animateIn, setAnimateIn] = useState(false);
@@ -111,12 +112,12 @@ export function TourPrompt() {
         }`}
       >
         {/* Pulse ring */}
-        <span className="absolute inset-0 rounded-full bg-green-400 animate-ping opacity-30" />
+        <span className="absolute inset-0 rounded-full bg-success/40 animate-ping opacity-30" />
         <button
           type="button"
           onClick={() => setExpanded(true)}
-          className="relative h-10 px-4 rounded-full bg-green-500 hover:bg-green-600 text-white shadow-lg hover:shadow-xl flex items-center gap-1.5 transition-all active:scale-95"
-          aria-label="Tour disponible"
+          className="relative h-10 px-4 rounded-full bg-success hover:bg-success/90 text-success-foreground shadow-lg hover:shadow-xl flex items-center gap-1.5 transition-all active:scale-95"
+          aria-label={t('tourAvailable')}
         >
           <Play className="w-4 h-4 ml-0.5" />
           <span className="text-sm font-medium">Tour</span>
@@ -131,18 +132,18 @@ export function TourPrompt() {
       className="fixed bottom-6 right-4 left-4 sm:left-auto sm:right-6 z-50 sm:w-[320px] bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200"
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-green-50 border-b border-green-100">
+      <div className="flex items-center justify-between px-4 py-3 bg-success/10 border-b border-success/20">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center">
-            <Play className="w-3.5 h-3.5 text-green-600 ml-0.5" />
+          <div className="w-7 h-7 rounded-full bg-success/20 flex items-center justify-center">
+            <Play className="w-3.5 h-3.5 text-success ml-0.5" />
           </div>
-          <span className="text-sm font-semibold text-green-900">{t('tourAvailable')}</span>
+          <span className="text-sm font-semibold text-foreground">{t('tourAvailable')}</span>
         </div>
         <button
           type="button"
           onClick={handleCollapse}
-          className="p-1 text-gray-400 hover:text-gray-600 hover:bg-green-100 rounded transition-colors"
-          aria-label="Cerrar"
+          className="p-1 text-gray-400 hover:text-gray-600 hover:bg-success/10 rounded transition-colors"
+          aria-label={tc('close')}
         >
           <X className="w-4 h-4" />
         </button>
@@ -160,7 +161,7 @@ export function TourPrompt() {
         <button
           type="button"
           onClick={handleStartTour}
-          className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
+          className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-success hover:bg-success/90 text-white text-sm font-medium rounded-lg transition-colors"
         >
           <Play className="w-3.5 h-3.5 ml-0.5" />
           {t('startTour')}

@@ -17,10 +17,13 @@ import {
   isAfter,
   parseISO,
 } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { es, enUS } from 'date-fns/locale';
+import { useLocale } from 'next-intl';
 import { Popover, PopoverTrigger, PopoverContent } from './Popover';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+const DATE_LOCALES: Record<string, Locale> = { es, en: enUS };
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -50,7 +53,8 @@ interface DateTimePickerProps {
 
 // ─── Day names (Spanish, 1 letter) ─────────────────────────────────────────
 
-const DAY_NAMES = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'];
+const DAY_NAMES_ES = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'];
+const DAY_NAMES_EN = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
@@ -70,6 +74,8 @@ export function DateTimePicker({
   name,
   compact = false,
 }: DateTimePickerProps) {
+  const appLocale = useLocale();
+  const dateLocale = DATE_LOCALES[appLocale] || es;
   const [open, setOpen] = useState(false);
 
   // Parse current value
@@ -180,14 +186,14 @@ export function DateTimePicker({
     if (!value || !selectedDate) return '';
 
     if (mode === 'datetime' && value.includes('T')) {
-      return format(selectedDate, "d 'de' MMM yyyy · HH:mm", { locale: es });
+      return format(selectedDate, "d 'de' MMM yyyy · HH:mm", { locale: dateLocale });
     }
-    return format(selectedDate, "d 'de' MMMM 'de' yyyy", { locale: es });
+    return format(selectedDate, "d 'de' MMMM 'de' yyyy", { locale: dateLocale });
   }, [value, selectedDate, mode]);
 
   const defaultPlaceholder = mode === 'datetime'
-    ? 'Seleccionar fecha y hora...'
-    : 'Seleccionar fecha...';
+    ? (appLocale === 'en' ? 'Select date and time...' : 'Seleccionar fecha y hora...')
+    : (appLocale === 'en' ? 'Select date...' : 'Seleccionar fecha...');
 
   return (
     <div className={cn('flex flex-col gap-1', className)}>
@@ -238,7 +244,7 @@ export function DateTimePicker({
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <span className="text-sm font-semibold text-gray-800 capitalize select-none">
-                {format(viewMonth, 'MMMM yyyy', { locale: es })}
+                {format(viewMonth, 'MMMM yyyy', { locale: dateLocale })}
               </span>
               <button
                 type="button"
@@ -252,7 +258,7 @@ export function DateTimePicker({
 
             {/* Day headers */}
             <div className="grid grid-cols-7 mb-1">
-              {DAY_NAMES.map((d) => (
+              {(appLocale === 'en' ? DAY_NAMES_EN : DAY_NAMES_ES).map((d) => (
                 <div
                   key={d}
                   className="h-8 flex items-center justify-center text-[11px] font-medium text-gray-400 select-none"
@@ -284,7 +290,7 @@ export function DateTimePicker({
                       // Today ring
                       today && !selected && 'font-semibold text-green-700 ring-1 ring-inset ring-green-300',
                       // Selected
-                      selected && 'bg-green-600 text-white font-semibold hover:bg-green-700',
+                      selected && 'bg-success text-success-foreground font-semibold hover:bg-success/90',
                       // Disabled
                       dayDisabled && 'text-gray-200 cursor-not-allowed hover:bg-transparent'
                     )}
@@ -332,7 +338,7 @@ export function DateTimePicker({
                   <button
                     type="button"
                     onClick={handleConfirm}
-                    className="h-8 px-3 ml-auto text-xs font-medium text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors"
+                    className="h-8 px-3 ml-auto text-xs font-medium text-success-foreground bg-success rounded-md hover:bg-success/90 transition-colors"
                   >
                     Listo
                   </button>
@@ -349,9 +355,9 @@ export function DateTimePicker({
                   setViewMonth(today);
                   handleDayClick(today);
                 }}
-                className="text-xs text-green-600 hover:text-green-700 font-medium hover:underline transition-colors"
+                className="text-xs text-success hover:text-success/80 font-medium hover:underline transition-colors"
               >
-                Hoy
+                {appLocale === 'en' ? 'Today' : 'Hoy'}
               </button>
             </div>
           </div>

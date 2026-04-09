@@ -441,7 +441,7 @@ export default function NewInvoicePage() {
           <Button
             onClick={() => handleSubmit(true)}
             disabled={saving}
-            className="bg-green-600 hover:bg-green-700 text-white"
+            className="bg-success hover:bg-success/90 text-white"
           >
             {saving && timbrarAfter ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
             {t('saveAndStamp')}

@@ -333,7 +333,7 @@ export default function RouteAdminPage() {
       actions={
         <button
           onClick={handleOpenCreate}
-          className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
         >
           <Plus className="w-4 h-4" />
           <span>{t('templates.newTemplate')}</span>
@@ -538,7 +538,7 @@ export default function RouteAdminPage() {
               type="button"
               onClick={rhfSubmit(handleSubmitTemplate)}
               disabled={actionLoading}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 disabled:opacity-50"
             >
               {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
               {editingTemplate ? t('templates.update') : t('templates.create')}
@@ -658,7 +658,7 @@ export default function RouteAdminPage() {
               <button
                 type="submit"
                 disabled={actionLoading || !watchAssign('usuarioId')}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 disabled:opacity-50"
               >
                 {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                 {t('templates.assignRoute')}

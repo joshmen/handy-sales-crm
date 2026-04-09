@@ -192,7 +192,7 @@ export default function InvoiceDetailPage() {
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Factura no encontrada</h2>
           <p className="text-gray-600 mb-4">La factura que buscas no existe o no tienes acceso.</p>
-          <button onClick={() => router.push('/billing/invoices')} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+          <button onClick={() => router.push('/billing/invoices')} className="px-4 py-2 bg-success text-success-foreground rounded hover:bg-success/90">
             Volver a facturas
           </button>
         </div>
@@ -232,7 +232,7 @@ export default function InvoiceDetailPage() {
               <button
                 onClick={handleTimbrar}
                 disabled={!!actionLoading}
-                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-[13px] font-semibold px-4 py-2 rounded-lg disabled:opacity-50 transition-colors"
+                className="flex items-center gap-2 bg-success hover:bg-success/90 text-white text-[13px] font-semibold px-4 py-2 rounded-lg disabled:opacity-50 transition-colors"
               >
                 {actionLoading === 'timbrar' && <Loader2 className="w-4 h-4 animate-spin" />}
                 Timbrar
@@ -401,7 +401,7 @@ export default function InvoiceDetailPage() {
               <button
                 onClick={handleSendEmail}
                 disabled={!emailTo.trim() || !!actionLoading}
-                className="flex items-center gap-2 px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 text-sm bg-success text-success-foreground rounded-lg hover:bg-success/90 disabled:opacity-50"
               >
                 {actionLoading === 'email' && <Loader2 className="w-4 h-4 animate-spin" />}
                 Enviar

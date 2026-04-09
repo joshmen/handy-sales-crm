@@ -1111,6 +1111,12 @@
       "unpaid": "Pendiente",
       "owes": "Debe",
       "noPaymentsRecorded": "Sin cobros registrados",
+      "fullHistory": "Todo el historial",
+      "fullHistoryLabel": "Historial completo",
+      "last12Months": "Últimos 12 meses",
+      "noOrdersEver": "Este cliente no tiene pedidos registrados",
+      "tryFullHistory": "Prueba con \"Todo el historial\" para ver pedidos más antiguos",
+      "owes": "Debe",
       "registerPayment": "Registrar cobro",
       "amountLabel": "Monto",
       "methodLabel": "Método",
@@ -1150,6 +1156,11 @@
       "thisWeek": "Esta semana",
       "thisMonth": "Este mes",
       "last90Days": "Últimos 90d"
+    },
+    "register": "Registrar",
+    "validation": {
+      "amountGreaterThanZero": "El monto debe ser mayor a 0",
+      "amountExceedsBalance": "El monto excede el saldo pendiente ({balance})"
     },
     "pendingOrders": "{count} pedido(s) pendiente(s)",
     "totalLabel": "Total",
@@ -3853,7 +3864,8 @@
     },
     "tourPrompt": {
       "tourAvailable": "Tour disponible",
-      "startTour": "Iniciar tour",
+      "startTour": "Iniciar tour interactivo",
+      "repeatTour": "Repetir tour de esta página",
       "notNow": "Ahora no",
       "dontShowAgain": "No volver a mostrar"
     }

@@ -56,7 +56,7 @@ export function PlanHeroCard({ subscription, currentPlan, onChangePlan }: PlanHe
             </div>
           </div>
 
-          <Button size="sm" onClick={onChangePlan} className="bg-green-600 hover:bg-green-700 text-white">
+          <Button size="sm" onClick={onChangePlan} className="bg-success hover:bg-success/90 text-white">
             <ArrowUpRight className="h-4 w-4 mr-1.5" />
             Cambiar plan
           </Button>

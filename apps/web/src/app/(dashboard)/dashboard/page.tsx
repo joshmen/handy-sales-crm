@@ -817,7 +817,7 @@ function WelcomeBanner({ userName }: { userName?: string | null }) {
         </div>
         <a
           href="/getting-started"
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-medium transition-colors flex-shrink-0 w-fit"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-success hover:bg-success/90 text-white text-sm font-medium transition-colors flex-shrink-0 w-fit"
         >
           {t('welcome.cta')}
           <ArrowRight className="w-3.5 h-3.5" />

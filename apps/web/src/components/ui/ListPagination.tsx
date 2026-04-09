@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface ListPaginationProps {
   currentPage: number;
@@ -20,10 +21,12 @@ export const ListPagination: React.FC<ListPaginationProps> = ({
   totalItems,
   pageSize,
   onPageChange,
-  itemLabel = 'registros',
+  itemLabel,
   loading = false,
   className,
 }) => {
+  const tc = useTranslations('common');
+  const resolvedLabel = itemLabel || tc('records');
   if (totalItems === 0) return null;
 
   const startItem = (currentPage - 1) * pageSize + 1;
@@ -48,7 +51,7 @@ export const ListPagination: React.FC<ListPaginationProps> = ({
   return (
     <div className={`flex flex-col sm:flex-row items-center justify-between gap-4 transition-opacity duration-200 ${loading ? 'opacity-60' : 'opacity-100'} ${className ?? ''}`}>
       <span className="text-sm text-gray-500">
-        Mostrando {startItem}-{endItem} de {totalItems} {itemLabel}
+        {tc('showing')} {startItem}-{endItem} {tc('of')} {totalItems} {resolvedLabel}
       </span>
       <div className="flex items-center gap-2">
         <button
@@ -67,7 +70,7 @@ export const ListPagination: React.FC<ListPaginationProps> = ({
               disabled={page === '...' || loading}
               className={`min-w-[32px] px-2 py-1 text-sm rounded-md transition-colors ${
                 page === currentPage
-                  ? 'bg-green-600 text-white'
+                  ? 'bg-success text-success-foreground'
                   : page === '...'
                   ? 'text-gray-400 cursor-default'
                   : 'text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed'
@@ -81,7 +84,7 @@ export const ListPagination: React.FC<ListPaginationProps> = ({
         <button
           onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
           disabled={currentPage === totalPages || loading}
-          className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="px-3 py-2 bg-success text-success-foreground rounded-md hover:bg-success/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           <ChevronRight className="w-4 h-4" />
         </button>

@@ -192,7 +192,7 @@ export function MapeoEditModal({ product, onSave, onDelete, onClose, saving }: M
             <Button
               onClick={() => onSave(product.productoId, claveProdServ, claveUnidad)}
               disabled={saving || !canSave || (!hasChanges && product.hasMapping)}
-              className="bg-green-600 hover:bg-green-700 text-white"
+              className="bg-success hover:bg-success/90 text-white"
             >
               {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
               Guardar

@@ -439,7 +439,7 @@ function VisitsPageContent() {
       </div>
       <button
         onClick={handleCreateVisit}
-        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
       >
         <Plus className="w-4 h-4" />
         <span className="hidden sm:inline">{t('newVisit')}</span>
@@ -527,7 +527,7 @@ function VisitsPageContent() {
             </div>
             <button
               onClick={() => fetchVisits()}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Actualizar</span>

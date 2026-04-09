@@ -260,7 +260,7 @@ export default function AnnouncementsPage() {
               disabled={togglingMaintenance}
               className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 maintenanceActive
-                  ? 'bg-green-600 hover:bg-green-700 text-white'
+                  ? 'bg-success hover:bg-success/90 text-white'
                   : 'bg-red-600 hover:bg-red-700 text-white'
               } disabled:opacity-50`}
             >

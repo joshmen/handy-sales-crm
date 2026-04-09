@@ -270,10 +270,7 @@ export function DataGrid<T>({
 
       {/* ─── Pagination ─── */}
       {pagination && pagination.totalPages > 1 && (
-        <div className="flex items-center justify-between px-5 py-3 border-t border-gray-200 bg-gray-50/50">
-          <span className="text-[12px] text-gray-500">
-            {tg('showingRange', { start: ((pagination.currentPage - 1) * pagination.pageSize) + 1, end: Math.min(pagination.currentPage * pagination.pageSize, pagination.totalItems), total: pagination.totalItems })}
-          </span>
+        <div className="px-5 py-3 border-t border-gray-200 bg-gray-50/50">
           <ListPagination
             currentPage={pagination.currentPage}
             totalPages={pagination.totalPages}

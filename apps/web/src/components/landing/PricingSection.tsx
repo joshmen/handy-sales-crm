@@ -134,7 +134,7 @@ function PricingCard({
           {/* Popular tag */}
           {plan.popular && (
             <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-              <span className="bg-green-600 text-white text-[11px] font-semibold px-4 py-1 rounded-full">
+              <span className="bg-success text-success-foreground text-[11px] font-semibold px-4 py-1 rounded-full">
                 Más popular
               </span>
             </div>
@@ -186,7 +186,7 @@ function PricingCard({
             href={plan.ctaHref}
             className={`group/btn flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-semibold text-sm transition-all duration-300 ${
               plan.popular
-                ? 'bg-green-600 text-white hover:bg-green-700 shadow-md'
+                ? 'bg-success text-success-foreground hover:bg-success/90 shadow-md'
                 : 'bg-gray-900 text-white hover:bg-gray-800'
             }`}
           >

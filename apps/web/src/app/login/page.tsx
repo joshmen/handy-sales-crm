@@ -616,7 +616,7 @@ function LoginContent() {
                   type="button"
                   onClick={handleForceLogin}
                   disabled={forcingLogin}
-                  className="w-full h-12 bg-[#16A34A] hover:bg-[#15803D] text-white text-[15px] font-semibold rounded-[10px] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center shadow-sm hover:shadow-md active:scale-[0.98]"
+                  className="w-full h-12 bg-success hover:bg-success/90 text-white text-[15px] font-semibold rounded-[10px] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center shadow-sm hover:shadow-md active:scale-[0.98]"
                 >
                   {forcingLogin ? (<>{spinnerSvg}{t('connecting')}</>) : t('continueHere')}
                 </button>

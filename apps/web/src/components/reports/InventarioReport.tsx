@@ -83,7 +83,7 @@ export function InventarioReport() {
             {exporting ? tFilters('exporting') : 'PDF'}
           </button>
         )}
-        <button onClick={fetch} disabled={loading} className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50">
+        <button onClick={fetch} disabled={loading} className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-success-foreground bg-success rounded-md hover:bg-success/90 disabled:opacity-50">
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           {tCommon('refresh')}
         </button>

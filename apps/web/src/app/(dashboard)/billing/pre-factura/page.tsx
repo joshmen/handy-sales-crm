@@ -287,7 +287,7 @@ function PreFacturaContent() {
           {errorClienteId && (
             <a
               href={`/clients/${errorClienteId}/edit`}
-              className="inline-flex items-center gap-2 px-4 py-2 mb-4 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 mb-4 text-sm font-medium text-white bg-success hover:bg-success/90 rounded-lg transition-colors"
             >
               Editar cliente
             </a>
@@ -474,7 +474,7 @@ function PreFacturaContent() {
         <Button
           onClick={() => handleSubmit(true)}
           disabled={submitting}
-          className="order-2 sm:order-3 bg-green-600 hover:bg-green-700 text-white"
+          className="order-2 sm:order-3 bg-success hover:bg-success/90 text-white"
         >
           {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Stamp className="w-4 h-4 mr-2" />}
           Crear y Timbrar

@@ -259,7 +259,7 @@ export default function FiscalMappingPage() {
           {selectedIds.size > 0 && (
             <Button
               onClick={() => setShowBatchAssign(true)}
-              className="bg-green-600 hover:bg-green-700 text-white"
+              className="bg-success hover:bg-success/90 text-white"
             >
               <CheckCheck className="w-4 h-4 mr-2" />
               {t('assignToProducts', { count: selectedIds.size })}

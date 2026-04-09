@@ -78,6 +78,7 @@ export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) =>
           const hsl = hexToHsl(response.data.companyPrimaryColor);
           if (hsl) {
             document.documentElement.style.setProperty('--primary', hsl);
+            document.documentElement.style.setProperty('--success', hsl);
             document.documentElement.style.setProperty('--ring', hsl);
           }
         }
@@ -167,6 +168,7 @@ export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) =>
           const hsl = hexToHsl(response.data.companyPrimaryColor);
           if (hsl) {
             document.documentElement.style.setProperty('--primary', hsl);
+            document.documentElement.style.setProperty('--success', hsl);
             document.documentElement.style.setProperty('--ring', hsl);
           }
         }

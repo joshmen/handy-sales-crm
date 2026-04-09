@@ -28,7 +28,7 @@ export function Checkbox({
         <label className="flex items-center gap-1.5 cursor-pointer" onClick={(e) => { e.preventDefault(); field.onChange(!field.value); }}>
           <div
             className={`w-4 h-4 rounded flex items-center justify-center shrink-0 ${
-              field.value ? 'bg-[#16A34A]' : 'border border-gray-300 bg-white'
+              field.value ? 'bg-success' : 'border border-gray-300 bg-white'
             }`}
           >
             {field.value && <Check className="w-3 h-3 text-white" strokeWidth={3} />}

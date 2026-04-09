@@ -258,7 +258,7 @@ export default function CalendarPage() {
               </div>
 
               {/* Botón actualizar */}
-              <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white font-medium">
+              <Button size="sm" className="bg-success hover:bg-success/90 text-white font-medium">
                 🔄 Actualizar
               </Button>
             </div>

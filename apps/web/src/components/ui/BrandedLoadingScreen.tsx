@@ -28,8 +28,13 @@ export function BrandedLoadingScreen({ message }: BrandedLoadingScreenProps) {
     setDisplayMessage(resolvedMessage);
   }, [resolvedMessage, tc]);
 
+  // Uses CSS variable set by inline script in <head> — available before React hydrates
+  // Falls back to default green if variable not set
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#16A34A]">
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center"
+      style={{ backgroundColor: 'var(--company-primary-color, #16a34a)' }}
+    >
       <div className="flex flex-col items-center gap-6">
         <div className="flex items-center gap-3">
           <img src="/logo-icon.svg" alt="Handy Suites" className="w-20 h-20" />

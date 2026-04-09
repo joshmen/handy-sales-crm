@@ -65,7 +65,7 @@ export const BatchConfirmModal: React.FC<BatchConfirmModalProps> = ({
           onClick={onConfirm}
           disabled={loading}
           className={`px-4 py-2 text-sm font-medium text-white rounded-lg disabled:opacity-50 flex items-center gap-2 ${
-            isActivate ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
+            isActivate ? 'bg-success hover:bg-success/90' : 'bg-red-600 hover:bg-red-700'
           }`}
         >
           {loading && <Loader2 className="w-4 h-4 animate-spin" />}

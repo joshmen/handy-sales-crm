@@ -182,7 +182,7 @@ export const VisitCard: React.FC<VisitCardProps> = ({
               variant="default"
               size="sm"
               onClick={() => onCheckIn(visit.id)}
-              className="bg-green-600 hover:bg-green-700"
+              className="bg-success hover:bg-success/90"
             >
               <Play size={14} className="mr-1" />
               Iniciar

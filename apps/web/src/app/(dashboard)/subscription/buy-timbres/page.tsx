@@ -102,7 +102,7 @@ export default function BuyTimbresPage() {
               }`}
             >
               {pkg.badge && (
-                <span className="absolute -top-2.5 left-4 px-2 py-0.5 text-[10px] font-bold uppercase bg-green-600 text-white rounded-full">
+                <span className="absolute -top-2.5 left-4 px-2 py-0.5 text-[10px] font-bold uppercase bg-success text-success-foreground rounded-full">
                   {pkg.badge}
                 </span>
               )}
@@ -131,7 +131,7 @@ export default function BuyTimbresPage() {
           <Button
             onClick={handlePurchase}
             disabled={purchasing}
-            className="h-11 px-8 bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl"
+            className="h-11 px-8 bg-success hover:bg-success/90 text-white font-medium rounded-xl"
           >
             {purchasing ? (
               <><Loader2 className="w-4 h-4 animate-spin mr-2" /> {tb('processing')}</>

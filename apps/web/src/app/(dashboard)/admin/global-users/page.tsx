@@ -335,7 +335,7 @@ export default function GlobalUsersPage() {
                       onClick={() => setCurrentPage(page)}
                       className={`min-w-[32px] px-2 py-1 text-sm rounded-md transition-colors ${
                         page === currentPage
-                          ? 'bg-green-600 text-white'
+                          ? 'bg-success text-success-foreground'
                           : 'text-gray-600 hover:bg-gray-100'
                       }`}
                     >

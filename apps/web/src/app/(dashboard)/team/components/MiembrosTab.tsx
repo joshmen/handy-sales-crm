@@ -266,7 +266,7 @@ function SupervisorView() {
         {isAdmin && (
           <Button
             onClick={handleOpenAsignar}
-            className="gap-1.5 bg-green-600 hover:bg-green-700 text-white"
+            className="gap-1.5 bg-success hover:bg-success/90 text-white"
           >
             <UserPlus className="h-4 w-4" />
             {t("assignSellers")}
@@ -462,7 +462,7 @@ function SupervisorView() {
               <Button
                 onClick={handleAsignar}
                 disabled={selectedIds.size === 0 || assignLoading}
-                className="bg-green-600 hover:bg-green-700 text-white gap-1.5"
+                className="bg-success hover:bg-success/90 text-white gap-1.5"
               >
                 {assignLoading && <Loader2 className="h-4 w-4 animate-spin" />}
                 {t('assign', { count: selectedIds.size })}
@@ -1094,7 +1094,7 @@ function AdminUsersView() {
           <button
             data-tour="users-create-btn"
             onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>{t('newUser')}</span>
@@ -1194,7 +1194,7 @@ function AdminUsersView() {
           {/* Refresh Button */}
           <button
             onClick={handleRefresh}
-            className="flex items-center gap-2 px-4 py-2 h-10 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 h-10 text-[13px] font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
             <span>{t('refresh')}</span>
@@ -1406,7 +1406,7 @@ function AdminUsersView() {
               </button>
               <button
                 onClick={handleCreateUser}
-                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
+                className="px-4 py-2 text-sm font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90"
               >
                 {t('createUser')}
               </button>
@@ -1490,7 +1490,7 @@ function AdminUsersView() {
               </button>
               <button
                 onClick={handleUpdateUser}
-                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
+                className="px-4 py-2 text-sm font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90"
               >
                 {t('saveChanges')}
               </button>

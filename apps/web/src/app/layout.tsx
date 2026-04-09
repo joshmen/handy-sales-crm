@@ -90,8 +90,18 @@ export default async function RootLayout({
                   var companySettings = localStorage.getItem('company_settings');
                   if (companySettings) {
                     var settings = JSON.parse(companySettings);
-                    if (settings.primaryColor && /^#[0-9a-fA-F]{6}$/.test(settings.primaryColor)) {
-                      document.documentElement.style.setProperty('--company-primary-color', settings.primaryColor);
+                    var pc = settings.companyPrimaryColor || settings.primaryColor;
+                    if (pc && /^#[0-9a-fA-F]{6}$/.test(pc) && pc !== '#007bff') {
+                      document.documentElement.style.setProperty('--company-primary-color', pc);
+                      // Convert hex to HSL for design tokens
+                      var r = parseInt(pc.slice(1,3),16)/255, g = parseInt(pc.slice(3,5),16)/255, b = parseInt(pc.slice(5,7),16)/255;
+                      var max = Math.max(r,g,b), min = Math.min(r,g,b), d = max-min, h=0, s=0, l=(max+min)/2;
+                      if(d>0){s=d/(1-Math.abs(2*l-1));if(max===r)h=60*((g-b)/d%6);else if(max===g)h=60*((b-r)/d+2);else h=60*((r-g)/d+4);}
+                      if(h<0)h+=360;
+                      var hsl = Math.round(h)+' '+Math.round(s*100)+'% '+Math.round(l*100)+'%';
+                      document.documentElement.style.setProperty('--primary', hsl);
+                      document.documentElement.style.setProperty('--success', hsl);
+                      document.documentElement.style.setProperty('--ring', hsl);
                     }
                   }
                 } catch (e) {

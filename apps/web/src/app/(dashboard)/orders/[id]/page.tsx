@@ -139,7 +139,7 @@ export default function OrderDetailPage() {
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">{t('notFound')}</h2>
           <p className="text-gray-600 mb-4">{t('notFoundMessage')}</p>
-          <button onClick={() => router.push('/orders')} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+          <button onClick={() => router.push('/orders')} className="px-4 py-2 bg-success text-success-foreground rounded hover:bg-success/90">
             Volver a pedidos
           </button>
         </div>
@@ -198,7 +198,7 @@ export default function OrderDetailPage() {
               <button
                 onClick={() => handleAction('entregar')}
                 disabled={!!actionLoading}
-                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-[13px] font-semibold px-4 py-2 rounded-lg disabled:opacity-50 transition-colors"
+                className="flex items-center gap-2 bg-success hover:bg-success/90 text-white text-[13px] font-semibold px-4 py-2 rounded-lg disabled:opacity-50 transition-colors"
               >
                 {actionLoading === 'entregar' && <Loader2 className="w-4 h-4 animate-spin" />}
                 Entregar
@@ -235,7 +235,7 @@ export default function OrderDetailPage() {
                     )}
                     <div className="flex flex-col items-center gap-1">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold
-                        ${isCurrent ? 'bg-green-600 text-white ring-2 ring-green-200' : isCompleted ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-500'}`}>
+                        ${isCurrent ? 'bg-success text-success-foreground ring-2 ring-green-200' : isCompleted ? 'bg-success text-success-foreground' : 'bg-gray-200 text-gray-500'}`}>
                         {isCompleted ? '\u2713' : i + 1}
                       </div>
                       <span className={`text-xs ${isCurrent ? 'font-semibold text-gray-900' : 'text-gray-500'}`}>

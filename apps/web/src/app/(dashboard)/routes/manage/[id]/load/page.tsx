@@ -261,7 +261,7 @@ export default function LoadInventoryPage() {
               <button
                 onClick={handleSaveEfectivo}
                 disabled={saving}
-                className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors disabled:opacity-50"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 Guardar
@@ -422,7 +422,7 @@ export default function LoadInventoryPage() {
             </div>
             <button
               onClick={handleAddProducto}
-              className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
               Agregar
@@ -578,7 +578,7 @@ export default function LoadInventoryPage() {
                         className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
                           alreadyAssigned
                             ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                            : 'bg-green-600 text-white hover:bg-green-700'
+                            : 'bg-success text-success-foreground hover:bg-success/90'
                         }`}
                       >
                         {alreadyAssigned ? 'Asignado' : 'Asignar'}

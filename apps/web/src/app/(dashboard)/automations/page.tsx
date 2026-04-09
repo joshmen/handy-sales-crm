@@ -251,7 +251,7 @@ export default function AutomationsPage() {
           <button
             onClick={() => loadTemplates()}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
             data-tour="automations-refresh"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
@@ -297,7 +297,7 @@ export default function AutomationsPage() {
                 onClick={() => setActiveCategory(cat)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
                   activeCategory === cat
-                    ? 'bg-green-600 text-white'
+                    ? 'bg-success text-success-foreground'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >

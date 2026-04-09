@@ -108,7 +108,7 @@ export function ImageUpload(props: ImageUploadProps) {
       onClick={handleClick}
       disabled={disabled}
       className={cn(
-        'absolute bottom-0 right-0 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors disabled:opacity-50 shadow-md ring-2 ring-white dark:ring-gray-900',
+        'absolute bottom-0 right-0 bg-success text-success-foreground rounded-full hover:bg-success/90 transition-colors disabled:opacity-50 shadow-md ring-2 ring-white dark:ring-gray-900',
         s.btn,
       )}
       title={hasImage ? tc('changeImage') : tc('uploadImage')}

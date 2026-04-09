@@ -92,7 +92,7 @@ export default function ClientDetailPage() {
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">{t('notFound')}</h2>
           <p className="text-gray-600 mb-4">{t('notFoundMessage')}</p>
-          <button onClick={() => router.push('/clients')} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+          <button onClick={() => router.push('/clients')} className="px-4 py-2 bg-success text-success-foreground rounded hover:bg-success/90">
             {t('backToClients')}
           </button>
         </div>
@@ -130,7 +130,7 @@ export default function ClientDetailPage() {
 
           <Link
             href={`/clients/${clientId}/edit`}
-            className="flex items-center gap-2 bg-[#16A34A] hover:bg-green-700 text-white text-[13px] font-semibold px-5 py-2 rounded-lg transition-colors"
+            className="flex items-center gap-2 bg-success hover:bg-success/90 text-white text-[13px] font-semibold px-5 py-2 rounded-lg transition-colors"
           >
             {tc('edit')}
           </Link>
