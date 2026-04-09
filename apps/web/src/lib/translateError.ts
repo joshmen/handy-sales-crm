@@ -11,7 +11,7 @@ const ERROR_MAP: Record<string, { es: string; en: string }> = {
   'Ya existe una unidad con ese nombre': { es: 'Ya existe una unidad con ese nombre', en: 'A unit with that name already exists' },
   'Ya existe una lista con ese nombre': { es: 'Ya existe una lista con ese nombre', en: 'A list with that name already exists' },
   'Ya existe una zona con ese nombre': { es: 'Ya existe una zona con ese nombre', en: 'A zone with that name already exists' },
-  'Ya existe un descuento para este producto': { es: 'Ya existe un descuento para este producto', en: 'A discount already exists for this product' },
+  // Removed — handled by dynamic regex pattern below
   'Ya existe una promoción con ese nombre': { es: 'Ya existe una promoción con ese nombre', en: 'A promotion with that name already exists' },
   'Ya existe un cliente con ese correo': { es: 'Ya existe un cliente con ese correo', en: 'A client with that email already exists' },
   'Ya existe un usuario con ese correo': { es: 'Ya existe un usuario con ese correo', en: 'A user with that email already exists' },
@@ -150,9 +150,9 @@ export function translateError(message: string): string {
       },
     },
     {
-      pattern: /^Ya existe un descuento (global|para este producto) con cantidad mínima de (\d+)/,
+      pattern: /^Ya existe un descuento (global|para este producto) con cantidad mínima de \d+/,
       replacement: { en: message
-        .replace(/^Ya existe un descuento (global|para este producto) con cantidad mínima de (\d+)\.$/,
+        .replace(/^Ya existe un descuento (global|para este producto) con cantidad mínima de (\d+)\.?$/,
           (_, scope, qty) => `A ${scope === 'global' ? 'global' : 'product'} discount with minimum quantity of ${qty} already exists.`)
       },
     },
