@@ -53,6 +53,7 @@ type FormData = z.infer<typeof formSchema>;
 
 export default function PriceListsPage() {
   const t = useTranslations('priceLists');
+  const tv = useTranslations('formValidation');
   const tc = useTranslations('common');
   const { formatDate: _fmtDate } = useFormatters();
   // State
@@ -490,7 +491,7 @@ export default function PriceListsPage() {
               type="text"
               {...register('nombre')}
               placeholder={t('namePlaceholder')}
-              error={errors.nombre?.message}
+              error={errors.nombre?.message ? tv(errors.nombre.message) : undefined}
             />
           </div>
           <div data-tour="pricelists-drawer-description">

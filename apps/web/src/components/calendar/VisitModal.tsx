@@ -47,6 +47,7 @@ export const VisitModal: React.FC<VisitModalProps> = ({
   selectedDate,
 }) => {
   const t = useTranslations('visits.calendarModal');
+  const tv = useTranslations('formValidation');
   const tc = useTranslations('common');
   const drawerRef = useRef<DrawerHandle>(null);
 
@@ -174,14 +175,14 @@ export const VisitModal: React.FC<VisitModalProps> = ({
             mode="date"
             value={watch('date')}
             onChange={(val) => setValue('date', val, { shouldValidate: true, shouldDirty: true })}
-            error={errors.date?.message}
+            error={errors.date?.message ? tv(errors.date.message) : undefined}
           />
 
           <Input
             label={t('startTimeLabel')}
             type="time"
             {...register('startTime')}
-            error={errors.startTime?.message}
+            error={errors.startTime?.message ? tv(errors.startTime.message) : undefined}
           />
         </div>
 
@@ -220,7 +221,7 @@ export const VisitModal: React.FC<VisitModalProps> = ({
         <Input
           label={t('addressLabel')}
           {...register('address')}
-          error={errors.address?.message}
+          error={errors.address?.message ? tv(errors.address.message) : undefined}
           placeholder={t('addressPlaceholder')}
         />
 

@@ -53,6 +53,7 @@ type FormData = z.infer<typeof formSchema>;
 export default function ProductFamiliesPage() {
   const t = useTranslations('productFamilies');
   const tc = useTranslations('common');
+  const tv = useTranslations('formValidation');
   // State
   const [families, setFamilies] = useState<ProductFamily[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -484,7 +485,7 @@ export default function ProductFamiliesPage() {
               type="text"
               {...register('nombre')}
               placeholder={t('drawer.namePlaceholder')}
-              error={errors.nombre?.message}
+              error={errors.nombre?.message ? tv(errors.nombre.message) : undefined}
             />
           </div>
           <div data-tour="product-families-drawer-description">
