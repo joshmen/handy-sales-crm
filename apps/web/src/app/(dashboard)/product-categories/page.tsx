@@ -22,6 +22,7 @@ import { BatchActionBar } from '@/components/shared/BatchActionBar';
 import { BatchConfirmModal } from '@/components/shared/BatchConfirmModal';
 import { DataGrid, type DataGridColumn } from '@/components/ui/DataGrid';
 import { useTranslations } from 'next-intl';
+import { FieldError } from '@/components/forms/FieldError';
 import {
   Plus,
   Edit2,
@@ -38,7 +39,7 @@ import {
 import { Tag } from '@phosphor-icons/react';
 
 const formSchema = z.object({
-  nombre: z.string().min(1, 'El nombre es requerido'),
+  nombre: z.string().min(1, 'nameRequired'),
   descripcion: z.string(),
 });
 type FormData = z.infer<typeof formSchema>;
@@ -467,7 +468,7 @@ export default function ProductCategoriesPage() {
               placeholder={t('drawer.namePlaceholder')}
               {...register('nombre')}
             />
-            {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre.message}</p>}
+            {errors.nombre && <FieldError message={errors.nombre.message} />}
           </div>
 
           <div data-tour="product-categories-drawer-description" className="space-y-2">

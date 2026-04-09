@@ -17,6 +17,7 @@ import { ActiveToggle } from '@/components/ui/ActiveToggle';
 import { DataGrid, type DataGridColumn } from '@/components/ui/DataGrid';
 import { api } from '@/lib/api';
 import { useTranslations } from 'next-intl';
+import { FieldError } from '@/components/forms/FieldError';
 import {
   Plus,
   Edit2,
@@ -29,7 +30,7 @@ import {
 } from 'lucide-react';
 
 const formSchema = z.object({
-  nombre: z.string().min(1, 'El nombre es requerido'),
+  nombre: z.string().min(1, 'nameRequired'),
   abreviatura: z.string(),
 });
 type FormData = z.infer<typeof formSchema>;
@@ -335,7 +336,7 @@ export default function UnitsPage() {
               placeholder={t('namePlaceholder')}
               {...register('nombre')}
             />
-            {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre.message}</p>}
+            {errors.nombre && <FieldError message={errors.nombre.message} />}
           </div>
 
           <div className="space-y-2">

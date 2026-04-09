@@ -14,17 +14,17 @@ import { CreatePromotionDto, PromotionType, RewardMethod } from '@/types/promoti
 const promotionCreateSchema = z.object({
   name: z
     .string()
-    .min(1, 'El nombre es obligatorio')
+    .min(1, 'nameRequired')
     .max(100, 'El nombre no puede exceder 100 caracteres'),
   description: z.string().max(500).optional(),
   type: z.nativeEnum(PromotionType),
   applicationProducts: z.array(z.object({
-    productId: z.string().min(1, 'Debe seleccionar un producto'),
+    productId: z.string().min(1, 'selectProduct'),
     minimumQuantity: z.number().min(1, 'La cantidad mínima debe ser al menos 1'),
     description: z.string().optional(),
   })).min(1, 'Debe agregar al menos un producto de aplicación'),
   rewardProducts: z.array(z.object({
-    productId: z.string().min(1, 'Debe seleccionar un producto'),
+    productId: z.string().min(1, 'selectProduct'),
     maxQuantity: z.number().optional(),
     discountValue: z.number().min(0, 'El descuento no puede ser negativo'),
     discountMethod: z.nativeEnum(RewardMethod),

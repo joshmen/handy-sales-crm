@@ -46,6 +46,7 @@ import { ListPagination } from '@/components/ui/ListPagination';
 import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useTranslations } from 'next-intl';
+import { FieldError } from '@/components/forms/FieldError';
 
 // ─── Almacén tab types ───────────────────────────────────────────────
 const inventorySchema = z.object({
@@ -71,7 +72,7 @@ const movementSchema = z.object({
   productoId: z.number().min(1, 'Selecciona un producto'),
   tipoMovimiento: z.enum(['ENTRADA', 'SALIDA', 'AJUSTE']),
   cantidad: z.number().min(0.01, 'La cantidad debe ser mayor a 0'),
-  motivo: z.string().min(1, 'Selecciona un motivo'),
+  motivo: z.string().min(1, 'selectReason'),
   comentario: z.string(),
 });
 type MovementFormData = z.infer<typeof movementSchema>;

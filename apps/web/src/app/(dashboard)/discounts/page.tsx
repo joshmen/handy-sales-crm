@@ -31,6 +31,7 @@ import {
   X,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { FieldError } from '@/components/forms/FieldError';
 import { Percent as PercentIcon } from '@phosphor-icons/react';
 import { SearchBar } from '@/components/common/SearchBar';
 import { InactiveToggle } from '@/components/ui/InactiveToggle';
@@ -644,7 +645,7 @@ export default function DiscountsPage() {
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">%</span>
               </div>
-              {errors.descuentoPorcentaje && <p className="text-red-500 text-xs mt-1">{errors.descuentoPorcentaje.message}</p>}
+              {errors.descuentoPorcentaje && <FieldError message={errors.descuentoPorcentaje.message} />}
             </div>
 
             <div data-tour="discounts-drawer-quantity">
@@ -658,7 +659,7 @@ export default function DiscountsPage() {
                 {...register('cantidadMinima', { valueAsNumber: true })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
               />
-              {errors.cantidadMinima && <p className="text-red-500 text-xs mt-1">{errors.cantidadMinima.message}</p>}
+              {errors.cantidadMinima && <FieldError message={errors.cantidadMinima.message} />}
             </div>
           </div>
 
@@ -676,7 +677,7 @@ export default function DiscountsPage() {
                 emptyMessage={t('noProducts')}
                 disabled={loadingProducts}
               />
-              {errors.productoId && <p className="text-red-500 text-xs mt-1">{errors.productoId.message}</p>}
+              {errors.productoId && <FieldError message={errors.productoId.message} />}
             </div>
           )}
         </form>

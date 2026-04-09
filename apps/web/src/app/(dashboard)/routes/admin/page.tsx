@@ -29,6 +29,7 @@ import {
   Route,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { FieldError } from '@/components/forms/FieldError';
 
 interface ZoneOption {
   id: number;
@@ -43,7 +44,7 @@ interface UsuarioOption {
 // --- Form schemas ---
 
 const templateSchema = z.object({
-  nombre: z.string().min(1, 'El nombre es requerido').max(100),
+  nombre: z.string().min(1, 'nameRequired').max(100),
   descripcion: z.string(),
   zonaId: z.number().nullable(),
   notas: z.string(),
@@ -52,8 +53,8 @@ const templateSchema = z.object({
 type TemplateFormData = z.infer<typeof templateSchema>;
 
 const assignSchema = z.object({
-  usuarioId: z.number().min(1, 'Selecciona un vendedor'),
-  fecha: z.string().min(1, 'La fecha es requerida'),
+  usuarioId: z.number().min(1, 'selectVendor'),
+  fecha: z.string().min(1, 'dateRequired'),
 });
 
 type AssignFormData = z.infer<typeof assignSchema>;

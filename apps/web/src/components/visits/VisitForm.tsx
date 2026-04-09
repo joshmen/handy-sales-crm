@@ -10,6 +10,7 @@ import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { ClienteVisitaCreateDto, TipoVisita } from '@/types/visits';
 import { Client } from '@/types';
 import { useTranslations } from 'next-intl';
+import { FieldError } from '@/components/forms/FieldError';
 
 // Schema de validación para visitas - sincronizado con backend
 const visitFormSchema = z.object({

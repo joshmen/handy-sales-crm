@@ -13,6 +13,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslations } from 'next-intl';
+import { FieldError } from '@/components/forms/FieldError';
 import {
   Plus,
   Edit2,
@@ -34,7 +35,7 @@ import { exportToCsv } from '@/services/api/importExport';
 import { CsvImportModal } from '@/components/shared/CsvImportModal';
 
 const formSchema = z.object({
-  nombre: z.string().min(1, 'El nombre es requerido'),
+  nombre: z.string().min(1, 'nameRequired'),
   descripcion: z.string(),
 });
 type FormData = z.infer<typeof formSchema>;
@@ -371,7 +372,7 @@ export default function ClientCategoriesPage() {
                 placeholder={t('drawer.namePlaceholder')}
                 {...register('nombre')}
               />
-              {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre.message}</p>}
+              {errors.nombre && <FieldError message={errors.nombre.message} />}
             </div>
 
             <div data-tour="client-categories-drawer-description" className="space-y-2">

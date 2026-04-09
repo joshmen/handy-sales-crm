@@ -12,6 +12,7 @@ import { Order, OrderItem } from '@/types/orders';
 import { Client, Product } from '@/types';
 import { Trash2, Package, ShoppingCart } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { FieldError } from '@/components/forms/FieldError';
 
 // Schema factory — needs t() for translated messages
 function createOrderFormSchema(t: (key: string) => string) {

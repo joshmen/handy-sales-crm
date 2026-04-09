@@ -133,7 +133,7 @@ export const formSchemas = {
 
   register: z
     .object({
-      name: commonSchemas.required('El nombre es requerido'),
+      name: commonSchemas.required('nameRequired'),
       email: commonSchemas.email,
       password: commonSchemas.password,
       confirmPassword: commonSchemas.password,
@@ -146,7 +146,7 @@ export const formSchemas = {
 
   // Client
   client: z.object({
-    name: commonSchemas.required('El nombre es requerido'),
+    name: commonSchemas.required('nameRequired'),
     email: commonSchemas.email.optional().or(z.literal('')),
     phone: commonSchemas.phone.optional().or(z.literal('')),
     address: commonSchemas.required('La dirección es requerida'),
@@ -157,7 +157,7 @@ export const formSchemas = {
 
   // Product
   product: z.object({
-    name: commonSchemas.required('El nombre es requerido'),
+    name: commonSchemas.required('nameRequired'),
     code: commonSchemas.required('El código es requerido'),
     description: commonSchemas.optionalString,
     price: commonSchemas.currency,
@@ -169,7 +169,7 @@ export const formSchemas = {
 
   // User
   user: z.object({
-    name: commonSchemas.required('El nombre es requerido'),
+    name: commonSchemas.required('nameRequired'),
     email: commonSchemas.email,
     phone: commonSchemas.phone.optional().or(z.literal('')),
     role: z.enum(['ADMIN', 'SUPERVISOR', 'VENDEDOR']),
@@ -179,7 +179,7 @@ export const formSchemas = {
 
   // Settings
   profile: z.object({
-    name: commonSchemas.required('El nombre es requerido'),
+    name: commonSchemas.required('nameRequired'),
     email: commonSchemas.email,
     phone: commonSchemas.phone.optional().or(z.literal('')),
     territory: commonSchemas.optionalString,

@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { Target } from '@phosphor-icons/react';
 import { useTranslations } from 'next-intl';
+import { FieldError } from '@/components/forms/FieldError';
 import { useFormatters } from '@/hooks/useFormatters';
 
 // ─── Types ─────────────────────────────────────────────
@@ -50,12 +51,12 @@ const TIPO_COLORS: Record<string, string> = {
 
 // ─── Zod Schema ────────────────────────────────────────
 const metaSchema = z.object({
-  usuarioId: z.number({ required_error: 'Selecciona un vendedor' }).min(1, 'Selecciona un vendedor'),
+  usuarioId: z.number({ required_error: 'selectVendor' }).min(1, 'selectVendor'),
   tipo: z.enum(['ventas', 'pedidos', 'visitas'], { required_error: 'Selecciona un tipo' }),
   periodo: z.enum(['semanal', 'mensual'], { required_error: 'Selecciona un período' }),
   monto: z.number({ required_error: 'El monto es requerido' }).positive('Debe ser mayor a 0'),
-  fechaInicio: z.string().min(1, 'La fecha de inicio es requerida'),
-  fechaFin: z.string().min(1, 'La fecha de fin es requerida'),
+  fechaInicio: z.string().min(1, 'startDateRequired'),
+  fechaFin: z.string().min(1, 'endDateRequired'),
   autoRenovar: z.boolean(),
 }).refine(d => d.fechaFin > d.fechaInicio, {
   message: 'La fecha de fin debe ser posterior a la de inicio',
@@ -551,7 +552,7 @@ export default function MetasPage() {
                 <option key={t.value} value={t.value}>{t.label}</option>
               ))}
             </select>
-            {errors.tipo && <p className="text-red-500 text-xs mt-1">{errors.tipo.message}</p>}
+            {errors.tipo && <FieldError message={errors.tipo.message} />}
           </div>
 
           {/* Período */}
@@ -595,7 +596,7 @@ export default function MetasPage() {
               className="w-full h-10 border border-gray-300 rounded-lg text-sm px-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder={watchedTipo === 'ventas' ? '50000.00' : '20'}
             />
-            {errors.monto && <p className="text-red-500 text-xs mt-1">{errors.monto.message}</p>}
+            {errors.monto && <FieldError message={errors.monto.message} />}
           </div>
 
           {/* Fechas */}

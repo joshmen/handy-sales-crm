@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { signIn } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
+import { FieldError } from '@/components/forms/FieldError';
 import { z } from 'zod';
 import { toast } from '@/hooks/useToast';
 import { Eye, EyeOff } from 'lucide-react';
@@ -18,11 +19,11 @@ import { BrandedLoadingScreen } from '@/components/ui/BrandedLoadingScreen';
 
 // Schema for manual registration
 const registerSchema = z.object({
-  nombre: z.string().min(1, 'El nombre es obligatorio'),
+  nombre: z.string().min(1, 'nameRequired'),
   email: z.string().email('Formato de correo inválido'),
   password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
   confirmPassword: z.string(),
-  nombreEmpresa: z.string().min(1, 'El nombre de la empresa es obligatorio'),
+  nombreEmpresa: z.string().min(1, 'companyNameRequired'),
   identificadorFiscal: z.string().max(13).regex(/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/, 'RFC inválido').optional().or(z.literal('')),
   contacto: z.string().max(100).optional().or(z.literal('')),
   aceptaTerminos: z.literal(true, { errorMap: () => ({ message: 'Debes aceptar los términos y el aviso de privacidad' }) }),
@@ -33,9 +34,9 @@ const registerSchema = z.object({
 
 // Schema for Google registration (no password)
 const googleRegisterSchema = z.object({
-  nombre: z.string().min(1, 'El nombre es obligatorio'),
+  nombre: z.string().min(1, 'nameRequired'),
   email: z.string().email('Formato de correo inválido'),
-  nombreEmpresa: z.string().min(1, 'El nombre de la empresa es obligatorio'),
+  nombreEmpresa: z.string().min(1, 'companyNameRequired'),
   identificadorFiscal: z.string().max(13).regex(/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/, 'RFC inválido').optional().or(z.literal('')),
   contacto: z.string().max(100).optional().or(z.literal('')),
   aceptaTerminos: z.literal(true, { errorMap: () => ({ message: 'Debes aceptar los términos y el aviso de privacidad' }) }),

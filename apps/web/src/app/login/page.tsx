@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { signIn } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
+import { FieldError } from '@/components/forms/FieldError';
 import { loginSchema, LoginFormData } from '@/lib/validations';
 import { toast } from '@/hooks/useToast';
 import { Eye, EyeOff, Monitor, Shield, AlertTriangle } from 'lucide-react';

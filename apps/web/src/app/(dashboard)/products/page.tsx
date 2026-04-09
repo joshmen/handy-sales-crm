@@ -41,6 +41,7 @@ import { BatchActionBar } from '@/components/shared/BatchActionBar';
 import { BatchConfirmModal } from '@/components/shared/BatchConfirmModal';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useTranslations } from 'next-intl';
+import { FieldError } from '@/components/forms/FieldError';
 
 // Tipos locales para los catálogos (coinciden con el backend)
 interface FamiliaProducto {
@@ -76,8 +77,8 @@ interface ProductoDetalle {
 
 // Zod schema para validación del formulario
 const productSchema = z.object({
-  nombre: z.string().min(1, 'El nombre es requerido'),
-  codigoBarra: z.string().min(1, 'El código de barras es requerido'),
+  nombre: z.string().min(1, 'nameRequired'),
+  codigoBarra: z.string().min(1, 'barcodeRequired'),
   descripcion: z.string(),
   familiaId: z.number().min(1, 'Selecciona una familia de productos'),
   categoraId: z.number().min(1, 'Selecciona una categoría'),
@@ -735,7 +736,7 @@ export default function ProductsPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
                   placeholder={t('drawer.namePlaceholder')}
                 />
-                {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre.message}</p>}
+                {errors.nombre && <FieldError message={errors.nombre.message} />}
               </div>
 
               {/* Codigo de Barras */}
@@ -749,7 +750,7 @@ export default function ProductsPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent font-mono"
                   placeholder={t('drawer.barcodePlaceholder')}
                 />
-                {errors.codigoBarra && <p className="text-red-500 text-xs mt-1">{errors.codigoBarra.message}</p>}
+                {errors.codigoBarra && <FieldError message={errors.codigoBarra.message} />}
               </div>
 
               {/* Descripcion */}
@@ -820,7 +821,7 @@ export default function ProductsPage() {
                       placeholder={t('drawer.selectFamily')}
                       searchPlaceholder={t('drawer.searchFamily')}
                     />
-                    {errors.familiaId && <p className="text-red-500 text-xs mt-1">{errors.familiaId.message}</p>}
+                    {errors.familiaId && <FieldError message={errors.familiaId.message} />}
                   </>
                 )}
               </div>
@@ -844,7 +845,7 @@ export default function ProductsPage() {
                       placeholder={t('drawer.selectCategory')}
                       searchPlaceholder={t('drawer.searchCategory')}
                     />
-                    {errors.categoraId && <p className="text-red-500 text-xs mt-1">{errors.categoraId.message}</p>}
+                    {errors.categoraId && <FieldError message={errors.categoraId.message} />}
                   </>
                 )}
               </div>
@@ -868,7 +869,7 @@ export default function ProductsPage() {
                       placeholder={t('drawer.selectUnit')}
                       searchPlaceholder={t('drawer.searchUnit')}
                     />
-                    {errors.unidadMedidaId && <p className="text-red-500 text-xs mt-1">{errors.unidadMedidaId.message}</p>}
+                    {errors.unidadMedidaId && <FieldError message={errors.unidadMedidaId.message} />}
                   </>
                 )}
               </div>
@@ -889,7 +890,7 @@ export default function ProductsPage() {
                     placeholder="0.00"
                   />
                 </div>
-                {errors.precioBase && <p className="text-red-500 text-xs mt-1">{errors.precioBase.message}</p>}
+                {errors.precioBase && <FieldError message={errors.precioBase.message} />}
               </div>
             </form>
         </Drawer>

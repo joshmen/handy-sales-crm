@@ -22,7 +22,7 @@ import {
 const discountCreateSchema = z.object({
   name: z
     .string()
-    .min(1, 'El nombre es obligatorio')
+    .min(1, 'nameRequired')
     .max(100, 'El nombre no puede exceder 100 caracteres'),
   description: z.string().max(255).optional(),
   type: z.nativeEnum(DiscountType),

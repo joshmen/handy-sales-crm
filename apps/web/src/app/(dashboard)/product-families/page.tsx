@@ -45,7 +45,7 @@ interface ProductFamily {
 }
 
 const formSchema = z.object({
-  nombre: z.string().min(1, 'El nombre es requerido'),
+  nombre: z.string().min(1, 'nameRequired'),
   descripcion: z.string(),
 });
 type FormData = z.infer<typeof formSchema>;

@@ -12,12 +12,13 @@ import { Calendar } from 'lucide-react';
 import { Visit } from '@/types/calendar';
 import { Client, User } from '@/types';
 import { useTranslations } from 'next-intl';
+import { FieldError } from '@/components/forms/FieldError';
 
 const visitSchema = z.object({
-  clientId: z.string().min(1, 'Selecciona un cliente'),
-  userId: z.string().min(1, 'Selecciona un vendedor'),
-  date: z.string().min(1, 'La fecha es requerida'),
-  startTime: z.string().min(1, 'La hora es requerida'),
+  clientId: z.string().min(1, 'selectClient'),
+  userId: z.string().min(1, 'selectVendor'),
+  date: z.string().min(1, 'dateRequired'),
+  startTime: z.string().min(1, 'timeRequired'),
   type: z.enum(['sales', 'delivery', 'follow_up', 'meeting']),
   priority: z.enum(['low', 'medium', 'high']),
   notes: z.string(),

@@ -42,7 +42,7 @@ export function DiscountPreview({
     }
     
     if (formData.type === DiscountType.PRODUCT_SPECIFIC && !formData.productId) {
-      warnings.push('Debe seleccionar un producto');
+      warnings.push('selectProduct');
     }
 
     // Verificar solapamiento de rangos

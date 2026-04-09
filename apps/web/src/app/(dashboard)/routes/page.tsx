@@ -40,6 +40,7 @@ import { Path } from '@phosphor-icons/react';
 import { useFormatters } from '@/hooks/useFormatters';
 import { dateOnlyToUTC } from '@/lib/formatters';
 import { useTranslations } from 'next-intl';
+import { FieldError } from '@/components/forms/FieldError';
 
 interface ZoneOption {
   id: number;
@@ -52,10 +53,10 @@ interface UsuarioOption {
 }
 
 const routeSchema = z.object({
-  nombre: z.string().min(1, 'El nombre es requerido').max(100),
+  nombre: z.string().min(1, 'nameRequired').max(100),
   usuarioId: z.number(),
   zonaId: z.number().nullable(),
-  fecha: z.string().min(1, 'La fecha es requerida'),
+  fecha: z.string().min(1, 'dateRequired'),
   horaInicioEstimada: z.string(),
   horaFinEstimada: z.string(),
   descripcion: z.string(),

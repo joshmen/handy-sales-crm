@@ -44,15 +44,16 @@ import { GoogleMapWrapper, Circle } from '@/components/maps/GoogleMapWrapper';
 import type { MapMarker } from '@/components/maps/GoogleMapWrapper';
 import { GoogleMap, useJsApiLoader, Marker as GMarker, Circle as GCircle, Autocomplete } from '@react-google-maps/api';
 import { useTranslations } from 'next-intl';
+import { FieldError } from '@/components/forms/FieldError';
 
 const DEFAULT_CENTER = { lat: 20.6597, lng: -103.3496 }; // Guadalajara, México
 const MAPS_LIBRARIES: ('places')[] = ['places'];
 
 // Zod schema for zone form validation
 const zoneFormSchema = z.object({
-  name: z.string().min(1, 'El nombre es obligatorio'),
+  name: z.string().min(1, 'nameRequired'),
   description: z.string().optional(),
-  color: z.string().min(1, 'El color es obligatorio'),
+  color: z.string().min(1, 'colorRequired'),
   isEnabled: z.boolean(),
   centroLatitud: z.union([z.number(), z.nan()]).optional().transform(v => v && !isNaN(v) ? v : undefined),
   centroLongitud: z.union([z.number(), z.nan()]).optional().transform(v => v && !isNaN(v) ? v : undefined),

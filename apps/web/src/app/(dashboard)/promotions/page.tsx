@@ -38,6 +38,7 @@ import { InactiveToggle } from '@/components/ui/InactiveToggle';
 import { ActiveToggle } from '@/components/ui/ActiveToggle';
 import { DataGrid, DataGridColumn } from '@/components/ui/DataGrid';
 import { useTranslations } from 'next-intl';
+import { FieldError } from '@/components/forms/FieldError';
 import { Megaphone } from '@phosphor-icons/react';
 import { HelpTooltip } from '@/components/help/HelpTooltip';
 import { useFormatters } from '@/hooks/useFormatters';
@@ -48,12 +49,12 @@ interface ProductoSimple {
 }
 
 const promotionSchema = z.object({
-  nombre: z.string().min(1, 'El nombre es requerido'),
+  nombre: z.string().min(1, 'nameRequired'),
   descripcion: z.string(),
   productoIds: z.array(z.number()).min(1, 'Selecciona al menos un producto'),
   descuentoPorcentaje: z.number().min(1, 'Mínimo 1%').max(100, 'Máximo 100%'),
-  fechaInicio: z.string().min(1, 'La fecha de inicio es requerida'),
-  fechaFin: z.string().min(1, 'La fecha de fin es requerida'),
+  fechaInicio: z.string().min(1, 'startDateRequired'),
+  fechaFin: z.string().min(1, 'endDateRequired'),
 }).refine(data => !data.fechaFin || !data.fechaInicio || data.fechaFin > data.fechaInicio, {
   message: 'La fecha de fin debe ser posterior a la de inicio',
   path: ['fechaFin'],
@@ -598,7 +599,7 @@ export default function PromotionsPage() {
               placeholder="Ej: Promo Verano 2026"
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
-            {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre.message}</p>}
+            {errors.nombre && <FieldError message={errors.nombre.message} />}
           </div>
 
           <div data-tour="promotions-drawer-description">
@@ -659,7 +660,7 @@ export default function PromotionsPage() {
                   : undefined
               }
             />
-            {errors.productoIds && <p className="text-red-500 text-xs mt-1">{errors.productoIds.message}</p>}
+            {errors.productoIds && <FieldError message={errors.productoIds.message} />}
             <p className="text-xs text-gray-400 mt-1">{t('selectedCount', { selected: watch('productoIds').length, total: productos.length, plural: watch('productoIds').length !== 1 ? 's' : '', plural2: watch('productoIds').length !== 1 ? 's' : '' })}</p>
           </div>
 
@@ -673,7 +674,7 @@ export default function PromotionsPage() {
               placeholder="Ej: 15"
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
-            {errors.descuentoPorcentaje && <p className="text-red-500 text-xs mt-1">{errors.descuentoPorcentaje.message}</p>}
+            {errors.descuentoPorcentaje && <FieldError message={errors.descuentoPorcentaje.message} />}
           </div>
 
           <div className="grid grid-cols-2 gap-4" data-tour="promotions-drawer-dates">
@@ -684,7 +685,7 @@ export default function PromotionsPage() {
                 value={watch('fechaInicio')}
                 onChange={(val) => setValue('fechaInicio', val, { shouldValidate: true, shouldDirty: true })}
               />
-              {errors.fechaInicio && <p className="text-red-500 text-xs mt-1">{errors.fechaInicio.message}</p>}
+              {errors.fechaInicio && <FieldError message={errors.fechaInicio.message} />}
             </div>
             <div>
               <label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">{t('endDate')} <span className="text-red-500">*</span></label>
@@ -694,7 +695,7 @@ export default function PromotionsPage() {
                 onChange={(val) => setValue('fechaFin', val, { shouldValidate: true, shouldDirty: true })}
                 min={watch('fechaInicio')}
               />
-              {errors.fechaFin && <p className="text-red-500 text-xs mt-1">{errors.fechaFin.message}</p>}
+              {errors.fechaFin && <FieldError message={errors.fechaFin.message} />}
             </div>
           </div>
         </form>

@@ -38,6 +38,7 @@ import { tenantService } from '@/services/api/tenants';
 import { toast } from '@/hooks/useToast';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useTranslations } from 'next-intl';
+import { FieldError } from '@/components/forms/FieldError';
 
 interface TenantFormData {
   nombreEmpresa: string;
@@ -842,7 +843,7 @@ export default function TenantsPage() {
             <input
               type="text"
               {...register('nombreEmpresa', {
-                required: 'El nombre es requerido',
+                required: 'nameRequired',
                 minLength: { value: 2, message: 'Mínimo 2 caracteres' },
               })}
               className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-green-500 focus:border-transparent"

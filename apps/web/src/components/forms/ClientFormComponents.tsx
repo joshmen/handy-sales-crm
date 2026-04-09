@@ -65,7 +65,7 @@ export function FormField({
   error?: string;
   children: React.ReactNode;
 }) {
-  const tv = useTranslations('clients.formValidation');
+  const tv = useTranslations('formValidation');
   // If error is a translation key (no spaces, camelCase), translate it; otherwise show as-is
   const translatedError = error && !error.includes(' ')
     ? (() => { try { return tv(error); } catch { return error; } })()

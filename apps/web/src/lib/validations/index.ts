@@ -14,7 +14,7 @@ import { z } from 'zod';
 export const zonaCreateSchema = z.object({
   nombre: z
     .string()
-    .min(1, 'El nombre es obligatorio'),
+    .min(1, 'nameRequired'),
   descripcion: z.string().max(255).optional(),
 });
 
@@ -22,7 +22,7 @@ export const zonaUpdateSchema = z.object({
   id: z.number().int().positive('ID inválido'),
   nombre: z
     .string()
-    .min(1, 'El nombre es obligatorio')
+    .min(1, 'nameRequired')
     .max(100, 'El nombre no puede exceder 100 caracteres'),
   descripcion: z.string().max(255).optional(),
 });
@@ -38,7 +38,7 @@ export type ZonaUpdateFormData = z.infer<typeof zonaUpdateSchema>;
 export const categoriaClienteSchema = z.object({
   nombre: z
     .string()
-    .min(1, 'El nombre es obligatorio'),
+    .min(1, 'nameRequired'),
   descripcion: z.string().optional(),
 });
 
@@ -52,7 +52,7 @@ export type CategoriaClienteFormData = z.infer<typeof categoriaClienteSchema>;
 export const categoriaProductoSchema = z.object({
   nombre: z
     .string()
-    .min(1, 'El nombre es obligatorio')
+    .min(1, 'nameRequired')
     .max(100, 'El nombre no puede exceder 100 caracteres'),
   descripcion: z.string().max(255).optional(),
 });
@@ -67,7 +67,7 @@ export type CategoriaProductoFormData = z.infer<typeof categoriaProductoSchema>;
 export const familiaProductoSchema = z.object({
   nombre: z
     .string()
-    .min(1, 'El nombre es obligatorio')
+    .min(1, 'nameRequired')
     .max(100, 'El nombre no puede exceder 100 caracteres'),
   descripcion: z.string().max(255).optional(),
 });
@@ -82,7 +82,7 @@ export type FamiliaProductoFormData = z.infer<typeof familiaProductoSchema>;
 export const unidadMedidaSchema = z.object({
   nombre: z
     .string()
-    .min(1, 'El nombre es obligatorio'),
+    .min(1, 'nameRequired'),
   abreviatura: z.string().max(10).optional(),
 });
 
@@ -96,7 +96,7 @@ export type UnidadMedidaFormData = z.infer<typeof unidadMedidaSchema>;
 export const productoSchema = z.object({
   nombre: z
     .string()
-    .min(1, 'El nombre es obligatorio'),
+    .min(1, 'nameRequired'),
   codigoBarra: z
     .string()
     .min(1, 'El código de barras es obligatorio'),
@@ -122,7 +122,7 @@ export const inventarioCreateSchema = z.object({
   productoId: z
     .number()
     .int()
-    .positive('Debe seleccionar un producto'),
+    .positive('selectProduct'),
   cantidadActual: z
     .number()
     .min(0, 'La cantidad no puede ser negativa'),
@@ -163,7 +163,7 @@ export type InventarioUpdateFormData = z.infer<typeof inventarioUpdateSchema>;
 export const listaPrecioSchema = z.object({
   nombre: z
     .string()
-    .min(1, 'El nombre es obligatorio'),
+    .min(1, 'nameRequired'),
   descripcion: z.string().optional(),
 });
 
@@ -178,7 +178,7 @@ export const precioPorProductoSchema = z.object({
   productoId: z
     .number()
     .int()
-    .positive('Debe seleccionar un producto'),
+    .positive('selectProduct'),
   listaPrecioId: z
     .number()
     .int()
@@ -199,7 +199,7 @@ export const descuentoSchema = z.object({
   productoId: z
     .number()
     .int()
-    .positive('Debe seleccionar un producto'),
+    .positive('selectProduct'),
   cantidadMinima: z
     .number()
     .positive('La cantidad mínima debe ser mayor a 0'),
@@ -222,12 +222,12 @@ export type DescuentoFormData = z.infer<typeof descuentoSchema>;
 export const promocionSchema = z.object({
   nombre: z
     .string()
-    .min(1, 'El nombre es obligatorio'),
+    .min(1, 'nameRequired'),
   descripcion: z.string().optional(),
   productoId: z
     .number()
     .int()
-    .positive('Debe seleccionar un producto'),
+    .positive('selectProduct'),
   descuentoPorcentaje: z
     .number()
     .min(0, 'El descuento no puede ser negativo')
@@ -249,7 +249,7 @@ export const detallePedidoSchema = z.object({
   productoId: z
     .number()
     .int()
-    .positive('Debe seleccionar un producto'),
+    .positive('selectProduct'),
   cantidad: z
     .number()
     .positive('La cantidad debe ser mayor a 0')
@@ -367,7 +367,7 @@ export const registerSchema = z.object({
     .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'La contraseña debe contener minúsculas, mayúsculas y números'),
   nombre: z
     .string()
-    .min(1, 'El nombre es obligatorio'),
+    .min(1, 'nameRequired'),
   nombreEmpresa: z
     .string()
     .min(1, 'El nombre de empresa es obligatorio'),
@@ -393,7 +393,7 @@ export const usuarioUpdateSchema = z.object({
     .max(255),
   nombre: z
     .string()
-    .min(1, 'El nombre es obligatorio')
+    .min(1, 'nameRequired')
     .max(100)
     .regex(nombreRegex, 'El nombre solo puede contener letras y espacios'),
   password: z
@@ -407,7 +407,7 @@ export const usuarioUpdateSchema = z.object({
 export const usuarioProfileSchema = z.object({
   nombre: z
     .string()
-    .min(1, 'El nombre es obligatorio')
+    .min(1, 'nameRequired')
     .max(100)
     .regex(nombreRegex, 'El nombre solo puede contener letras y espacios'),
   currentPassword: z.string().optional(),
