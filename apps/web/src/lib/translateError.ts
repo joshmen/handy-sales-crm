@@ -62,6 +62,43 @@ const ERROR_MAP: Record<string, { es: string; en: string }> = {
   'La unidad no existe': { es: 'La unidad no existe', en: 'Unit does not exist' },
   'La lista de precios no existe': { es: 'La lista de precios no existe', en: 'Price list does not exist' },
 
+  // Category/family/unit duplicates (from services)
+  'Ya existe una categoría de productos con ese nombre.': { es: 'Ya existe una categoría de productos con ese nombre.', en: 'A product category with that name already exists.' },
+  'Ya existe una familia de productos con ese nombre.': { es: 'Ya existe una familia de productos con ese nombre.', en: 'A product family with that name already exists.' },
+  'Ya existe una lista de precios con ese nombre.': { es: 'Ya existe una lista de precios con ese nombre.', en: 'A price list with that name already exists.' },
+  'Ya existe una unidad de medida con ese nombre.': { es: 'Ya existe una unidad de medida con ese nombre.', en: 'A unit of measure with that name already exists.' },
+  'Ya existe una promoción con ese nombre.': { es: 'Ya existe una promoción con ese nombre.', en: 'A promotion with that name already exists.' },
+
+  // Route errors
+  'La ruta no está en progreso': { es: 'La ruta no está en progreso', en: 'Route is not in progress' },
+  'No se puede editar una ruta que ya está en progreso o completada': { es: 'No se puede editar una ruta que ya está en progreso o completada', en: 'Cannot edit a route that is already in progress or completed' },
+  'No se puede eliminar una ruta en progreso': { es: 'No se puede eliminar una ruta en progreso', en: 'Cannot delete a route in progress' },
+  'No se pueden agregar productos a una ruta en este estado': { es: 'No se pueden agregar productos a una ruta en este estado', en: 'Cannot add products to a route in this state' },
+  'No se pueden eliminar paradas de una ruta en progreso': { es: 'No se pueden eliminar paradas de una ruta en progreso', en: 'Cannot remove stops from a route in progress' },
+  'No se pueden reordenar paradas de una ruta en progreso': { es: 'No se pueden reordenar paradas de una ruta en progreso', en: 'Cannot reorder stops of a route in progress' },
+  'Solo se pueden agregar paradas a rutas planificadas o pendientes de aceptar': { es: 'Solo se pueden agregar paradas a rutas planificadas o pendientes de aceptar', en: 'Stops can only be added to planned or pending routes' },
+  'Solo se pueden cerrar rutas completadas/terminadas': { es: 'Solo se pueden cerrar rutas completadas/terminadas', en: 'Only completed routes can be closed' },
+  'Solo se pueden enviar a carga rutas planificadas': { es: 'Solo se pueden enviar a carga rutas planificadas', en: 'Only planned routes can be sent for loading' },
+  'Ruta no encontrada': { es: 'Ruta no encontrada', en: 'Route not found' },
+
+  // Auth/user errors
+  'El email ya está en uso': { es: 'El email ya está en uso', en: 'Email is already in use' },
+  'La contraseña actual es incorrecta': { es: 'La contraseña actual es incorrecta', en: 'Current password is incorrect' },
+  'Esta contraseña fue encontrada en filtraciones de datos. Por favor elige una contraseña diferente.': { es: 'Esta contraseña fue encontrada en filtraciones de datos. Por favor elige una contraseña diferente.', en: 'This password was found in data breaches. Please choose a different password.' },
+  'No puedes desactivar tu propia cuenta': { es: 'No puedes desactivar tu propia cuenta', en: 'You cannot deactivate your own account' },
+  'No se permiten correos electrónicos temporales o desechables.': { es: 'No se permiten correos electrónicos temporales o desechables.', en: 'Temporary or disposable email addresses are not allowed.' },
+
+  // Role errors
+  'No se puede eliminar el rol porque hay usuarios asignados a él': { es: 'No se puede eliminar el rol porque hay usuarios asignados a él', en: 'Cannot delete role because there are users assigned to it' },
+
+  // Impersonation
+  'Ya tienes una sesión de impersonación activa. Finalízala antes de iniciar otra.': { es: 'Ya tienes una sesión de impersonación activa. Finalízala antes de iniciar otra.', en: 'You already have an active impersonation session. End it before starting another.' },
+  'La sesión ya fue finalizada.': { es: 'La sesión ya fue finalizada.', en: 'Session has already ended.' },
+
+  // Promotion
+  'Debe seleccionar al menos un producto.': { es: 'Debe seleccionar al menos un producto.', en: 'You must select at least one product.' },
+  'La fecha de fin debe ser posterior a la fecha de inicio.': { es: 'La fecha de fin debe ser posterior a la fecha de inicio.', en: 'End date must be after start date.' },
+
   // Limits
   'Has alcanzado el límite de usuarios': { es: 'Has alcanzado el límite de usuarios', en: 'You have reached the user limit' },
   'Has alcanzado el límite de productos': { es: 'Has alcanzado el límite de productos', en: 'You have reached the product limit' },
@@ -118,6 +155,14 @@ export function translateError(message: string): string {
         .replace(/^Ya existe un descuento (global|para este producto) con cantidad mínima de (\d+)\.$/,
           (_, scope, qty) => `A ${scope === 'global' ? 'global' : 'product'} discount with minimum quantity of ${qty} already exists.`)
       },
+    },
+    {
+      pattern: /^Ya existe un rol con el nombre '.+'$/,
+      replacement: { en: message.replace("Ya existe un rol con el nombre", "A role with the name").replace("already exists", "") + " already exists" },
+    },
+    {
+      pattern: /^Stock insuficiente:/,
+      replacement: { en: message.replace('Stock insuficiente:', 'Insufficient stock:') },
     },
     {
       pattern: /^Escala de descuentos inconsistente/,
