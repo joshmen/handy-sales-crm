@@ -2,6 +2,7 @@
 
 import { toast as sonnerToast } from 'sonner';
 import { getMessages } from '@/i18n/messages';
+import { translateError } from '@/lib/translateError';
 
 // Read current locale from localStorage (same source as CompanyContext)
 function getLocaleMessages() {
@@ -32,7 +33,7 @@ function toast(props: ToastProps): ToastReturn {
 
   if (props.variant === 'destructive') {
     id = sonnerToast.error(props.title || m.common.error, {
-      description: props.description,
+      description: translateError(props.description || ''),
     });
   } else {
     id = sonnerToast.success(props.title || m.common.success, {
@@ -64,7 +65,7 @@ const toastWithHelpers = Object.assign(toast, {
   },
   error: (message: string, opts?: HelperOpts): ToastReturn => {
     const m = getLocaleMessages();
-    const id = sonnerToast.error(opts?.title || m.common.error, { description: message });
+    const id = sonnerToast.error(opts?.title || m.common.error, { description: translateError(message) });
     return { id, dismiss: () => sonnerToast.dismiss(id) };
   },
   info: (message: string, opts?: HelperOpts): ToastReturn => {
