@@ -38,9 +38,9 @@ public static class DescuentosEndpoints
                 var id = await servicio.CrearDescuentoAsync(dto);
                 return Results.Created($"/descuentos/{id}", new { id });
             }
-            catch (InvalidOperationException)
+            catch (InvalidOperationException ex)
             {
-                return Results.Conflict(new { message = "Ya existe un registro con esos datos." });
+                return Results.Conflict(new { message = ex.Message });
             }
         }).RequireAuthorization();
 
@@ -59,9 +59,9 @@ public static class DescuentosEndpoints
                 var actualizado = await servicio.ActualizarDescuentoAsync(id, dto);
                 return actualizado ? Results.NoContent() : Results.NotFound();
             }
-            catch (InvalidOperationException)
+            catch (InvalidOperationException ex)
             {
-                return Results.Conflict(new { message = "Ya existe un registro con esos datos." });
+                return Results.Conflict(new { message = ex.Message });
             }
         }).RequireAuthorization();
 

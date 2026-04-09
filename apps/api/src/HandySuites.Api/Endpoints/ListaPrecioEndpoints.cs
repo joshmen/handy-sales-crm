@@ -32,9 +32,9 @@ public static class ListaPrecioEndpoints
                 var id = await servicio.CrearListaPrecioAsync(dto);
                 return Results.Created($"/listas-precios/{id}", new { id });
             }
-            catch (InvalidOperationException)
+            catch (InvalidOperationException ex)
             {
-                return Results.Conflict(new { message = "Ya existe una lista de precios con ese nombre." });
+                return Results.Conflict(new { message = ex.Message });
             }
         }).RequireAuthorization();
 
@@ -53,9 +53,9 @@ public static class ListaPrecioEndpoints
                 var actualizado = await servicio.ActualizarListaPrecioAsync(id, dto);
                 return actualizado ? Results.NoContent() : Results.NotFound();
             }
-            catch (InvalidOperationException)
+            catch (InvalidOperationException ex)
             {
-                return Results.Conflict(new { message = "Ya existe una lista de precios con ese nombre." });
+                return Results.Conflict(new { message = ex.Message });
             }
         }).RequireAuthorization();
 

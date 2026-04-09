@@ -32,9 +32,9 @@ public static class UnidadMedidaEndpoints
                 var id = await servicio.CrearUnidadAsync(dto);
                 return Results.Created($"/unidades-medida/{id}", new { id });
             }
-            catch (InvalidOperationException)
+            catch (InvalidOperationException ex)
             {
-                return Results.Conflict(new { message = "Ya existe una unidad de medida con ese nombre." });
+                return Results.Conflict(new { message = ex.Message });
             }
         }).RequireAuthorization();
 
@@ -53,9 +53,9 @@ public static class UnidadMedidaEndpoints
                 var actualizado = await servicio.ActualizarUnidadAsync(id, dto);
                 return actualizado ? Results.NoContent() : Results.NotFound();
             }
-            catch (InvalidOperationException)
+            catch (InvalidOperationException ex)
             {
-                return Results.Conflict(new { message = "Ya existe una unidad de medida con ese nombre." });
+                return Results.Conflict(new { message = ex.Message });
             }
         }).RequireAuthorization();
 

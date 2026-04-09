@@ -106,7 +106,7 @@ public static class RoleEndpoints
             var role = await roleService.CreateRoleAsync(createRoleDto);
             return Results.Created($"/api/roles/{role.Id}", role);
         }
-        catch (InvalidOperationException)
+        catch (InvalidOperationException ex)
         {
             return Results.BadRequest(new { error = "No se pudo completar la operación con el rol." });
         }
@@ -130,7 +130,7 @@ public static class RoleEndpoints
             }
             return Results.Ok(role);
         }
-        catch (InvalidOperationException)
+        catch (InvalidOperationException ex)
         {
             return Results.BadRequest(new { error = "No se pudo completar la operación con el rol." });
         }
@@ -153,7 +153,7 @@ public static class RoleEndpoints
             }
             return Results.NoContent();
         }
-        catch (InvalidOperationException)
+        catch (InvalidOperationException ex)
         {
             return Results.BadRequest(new { error = "No se pudo completar la operación con el rol." });
         }

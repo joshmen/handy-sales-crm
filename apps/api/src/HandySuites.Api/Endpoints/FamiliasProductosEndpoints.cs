@@ -23,9 +23,9 @@ public static class FamiliasProductosEndpoints
                 var id = await servicio.CrearFamiliaAsync(dto);
                 return Results.Created($"/familias-productos/{id}", new { id });
             }
-            catch (InvalidOperationException)
+            catch (InvalidOperationException ex)
             {
-                return Results.Conflict(new { message = "Ya existe una familia con ese nombre." });
+                return Results.Conflict(new { message = ex.Message });
             }
         }).RequireAuthorization();
 
@@ -61,9 +61,9 @@ public static class FamiliasProductosEndpoints
                 var actualizado = await servicio.ActualizarFamiliaAsync(id, dto);
                 return actualizado ? Results.NoContent() : Results.NotFound();
             }
-            catch (InvalidOperationException)
+            catch (InvalidOperationException ex)
             {
-                return Results.Conflict(new { message = "Ya existe una familia con ese nombre." });
+                return Results.Conflict(new { message = ex.Message });
             }
         }).RequireAuthorization();
 

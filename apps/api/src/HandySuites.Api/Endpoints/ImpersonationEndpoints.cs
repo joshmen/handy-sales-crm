@@ -54,13 +54,13 @@ public static class ImpersonationEndpoints
             {
                 return Results.Forbid();
             }
-            catch (InvalidOperationException)
+            catch (InvalidOperationException ex)
             {
-                return Results.BadRequest(new { message = "No se pudo completar la acción de impersonación." });
+                return Results.BadRequest(new { message = ex.Message });
             }
-            catch (ArgumentException)
+            catch (ArgumentException argEx)
             {
-                return Results.BadRequest(new { message = "No se pudo completar la acción de impersonación." });
+                return Results.BadRequest(new { message = argEx.Message });
             }
         });
 
@@ -83,9 +83,9 @@ public static class ImpersonationEndpoints
             {
                 return Results.Forbid();
             }
-            catch (Exception)
+            catch (Exception endEx)
             {
-                return Results.BadRequest(new { message = "No se pudo completar la acción de impersonación." });
+                return Results.BadRequest(new { message = endEx.Message });
             }
         });
 

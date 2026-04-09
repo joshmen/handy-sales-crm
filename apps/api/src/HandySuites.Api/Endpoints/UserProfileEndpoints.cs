@@ -82,7 +82,7 @@ public static class UserProfileEndpoints
 
             return Results.Ok(new { message = "Perfil actualizado correctamente" });
         }
-        catch (InvalidOperationException)
+        catch (InvalidOperationException ex)
         {
             return Results.BadRequest(new { error = "No se pudo actualizar el perfil." });
         }

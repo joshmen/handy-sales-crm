@@ -31,7 +31,7 @@ public static class TwoFactorEndpoints
                 var result = await totp.GenerateSetupAsync(userId.Value);
                 return Results.Ok(result);
             }
-            catch (InvalidOperationException)
+            catch (InvalidOperationException ex)
             {
                 return Results.BadRequest(new { error = "Error al configurar la autenticación de dos factores." });
             }
@@ -51,7 +51,7 @@ public static class TwoFactorEndpoints
                 var result = await totp.EnableAsync(userId.Value, dto.Code);
                 return Results.Ok(result);
             }
-            catch (InvalidOperationException)
+            catch (InvalidOperationException ex)
             {
                 return Results.BadRequest(new { error = "Error al configurar la autenticación de dos factores." });
             }
@@ -86,7 +86,7 @@ public static class TwoFactorEndpoints
                 var codes = await totp.RegenerateRecoveryCodesAsync(userId.Value, dto.Code);
                 return Results.Ok(new { recoveryCodes = codes });
             }
-            catch (InvalidOperationException)
+            catch (InvalidOperationException ex)
             {
                 return Results.BadRequest(new { error = "Error al configurar la autenticación de dos factores." });
             }

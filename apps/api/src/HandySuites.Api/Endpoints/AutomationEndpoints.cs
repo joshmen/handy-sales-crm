@@ -74,7 +74,7 @@ public static class AutomationEndpoints
             }
             catch (InvalidOperationException ex)
             {
-                return Results.BadRequest(new { error = "Error al ejecutar la automatización." });
+                return Results.BadRequest(new { error = ex.Message });
             }
         })
         .WithSummary("Activar automatización");

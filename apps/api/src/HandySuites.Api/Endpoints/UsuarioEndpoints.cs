@@ -163,7 +163,7 @@ public static class UsuarioEndpoints
         {
             return Results.Forbid();
         }
-        catch (InvalidOperationException)
+        catch (InvalidOperationException ex)
         {
             return Results.BadRequest(new { error = "No se pudo completar la operación." });
         }
@@ -243,7 +243,7 @@ public static class UsuarioEndpoints
         {
             return Results.Forbid();
         }
-        catch (InvalidOperationException)
+        catch (InvalidOperationException ex)
         {
             return Results.BadRequest(new { error = "No se pudo completar la operación." });
         }
