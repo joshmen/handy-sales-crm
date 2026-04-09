@@ -49,6 +49,12 @@ const ERROR_MAP: Record<string, { es: string; en: string }> = {
   'Ya existe una lista de precios con ese nombre.': { es: 'Ya existe una lista de precios con ese nombre.', en: 'A price list with that name already exists.' },
   'Lista de IDs inválida (máx. 1000)': { es: 'Lista de IDs inválida (máx. 1000)', en: 'Invalid ID list (max 1000)' },
 
+  // Promotion specific
+  'Ya existe una promoción con ese nombre.': { es: 'Ya existe una promoción con ese nombre.', en: 'A promotion with that name already exists.' },
+  'La fecha de fin debe ser posterior a la fecha de inicio.': { es: 'La fecha de fin debe ser posterior a la fecha de inicio.', en: 'End date must be after start date.' },
+  'La fecha de fin debe ser posterior a la de inicio': { es: 'La fecha de fin debe ser posterior a la de inicio', en: 'End date must be after start date' },
+  'Debe seleccionar al menos un producto.': { es: 'Debe seleccionar al menos un producto.', en: 'You must select at least one product.' },
+
   // Product/catalog specific
   'El producto no existe': { es: 'El producto no existe', en: 'Product does not exist' },
   'La familia no existe': { es: 'La familia no existe', en: 'Family does not exist' },
@@ -98,6 +104,13 @@ export function translateError(message: string): string {
     {
       pattern: /^El monto \(.+\) excede el saldo pendiente del pedido \(.+\)$/,
       replacement: { en: message.replace('El monto', 'The amount').replace('excede el saldo pendiente del pedido', 'exceeds the outstanding balance of the order') },
+    },
+    {
+      pattern: /^El producto '.+' ya tiene la promoción '.+' activa del .+ al .+ que se traslapa/,
+      replacement: { en: message
+        .replace(/^El producto '(.+)' ya tiene la promoción '(.+)' activa del (.+) al (.+) que se traslapa con las fechas seleccionadas\.$/,
+          "Product '$1' already has promotion '$2' active from $3 to $4 which overlaps with the selected dates.")
+      },
     },
   ];
 
