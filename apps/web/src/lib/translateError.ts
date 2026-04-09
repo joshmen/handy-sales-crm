@@ -112,6 +112,23 @@ export function translateError(message: string): string {
           "Product '$1' already has promotion '$2' active from $3 to $4 which overlaps with the selected dates.")
       },
     },
+    {
+      pattern: /^Ya existe un descuento (global|para este producto) con cantidad mínima de (\d+)/,
+      replacement: { en: message
+        .replace(/^Ya existe un descuento (global|para este producto) con cantidad mínima de (\d+)\.$/,
+          (_, scope, qty) => `A ${scope === 'global' ? 'global' : 'product'} discount with minimum quantity of ${qty} already exists.`)
+      },
+    },
+    {
+      pattern: /^Escala de descuentos inconsistente/,
+      replacement: { en: message
+        .replace('Escala de descuentos inconsistente:', 'Inconsistent discount scale:')
+        .replace('la cantidad mínima', 'minimum quantity')
+        .replace('tiene un descuento igual o menor', 'has an equal or lower discount')
+        .replace('que la cantidad', 'than quantity')
+        .replace('Una mayor cantidad debe tener un descuento estrictamente mayor.', 'A higher quantity must have a strictly higher discount.')
+      },
+    },
   ];
 
   for (const { pattern, replacement } of dynamicPatterns) {
