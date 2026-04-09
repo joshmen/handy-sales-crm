@@ -36,6 +36,10 @@ const ERROR_MAP: Record<string, { es: string; en: string }> = {
   'Tu suscripción ha expirado': { es: 'Tu suscripción ha expirado', en: 'Your subscription has expired' },
   'Suscripción no activa': { es: 'Suscripción no activa', en: 'Subscription is not active' },
 
+  // Already exists (generic)
+  'Ya existe un registro con esos datos': { es: 'Ya existe un registro con esos datos', en: 'A record with this data already exists' },
+  'Ya existe un registro con esos datos.': { es: 'Ya existe un registro con esos datos.', en: 'A record with this data already exists.' },
+
   // Limits
   'Has alcanzado el límite de usuarios': { es: 'Has alcanzado el límite de usuarios', en: 'You have reached the user limit' },
   'Has alcanzado el límite de productos': { es: 'Has alcanzado el límite de productos', en: 'You have reached the product limit' },
