@@ -270,6 +270,18 @@ export const handleApiResponse = <T>(response: AxiosResponse<ApiResponse<T>>): T
   }
 };
 
+/** Get locale-aware fallback error message */
+const getApiFallbackMessage = (): string => {
+  try {
+    const settings = JSON.parse(localStorage.getItem('company_settings') || '{}');
+    return settings.language === 'en'
+      ? 'An error occurred. Please try again.'
+      : 'Ocurrió un error. Intenta nuevamente.';
+  } catch {
+    return 'Ocurrió un error. Intenta nuevamente.';
+  }
+};
+
 /** Sanitize backend error messages — never show technical details to the user */
 const sanitizeMessage = (msg: string | undefined, fallback: string): string => {
   if (!msg || typeof msg !== 'string') return fallback;
