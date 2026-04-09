@@ -591,7 +591,7 @@ export default function TenantsPage() {
                     <button
                       onClick={() => handleOpenEdit(tenant)}
                       className="p-1.5 text-gray-600 hover:text-amber-600 hover:bg-amber-50 rounded-md transition-colors"
-                      title="Editar"
+                      title={tc('edit')}
                     >
                       <Pencil className="h-4 w-4 text-amber-400" />
                     </button>

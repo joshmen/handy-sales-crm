@@ -3363,6 +3363,8 @@
   },
   "promotions": {
     "title": "Promociones",
+    "promoSingular": "promoción",
+    "promoPlural": "promociones",
     "newPromotion": "Nueva promoción",
     "searchPlaceholder": "Buscar promoción...",
     "loadingPromotions": "Cargando promociones...",
@@ -3541,6 +3543,8 @@
   },
   "priceLists": {
     "title": "Listas de precios",
+    "listSingular": "lista",
+    "listPlural": "listas",
     "newList": "Nueva lista",
     "searchPlaceholder": "Buscar lista de precios...",
     "showInactive": "Mostrar inactivas",

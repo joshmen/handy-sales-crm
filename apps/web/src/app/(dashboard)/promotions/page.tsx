@@ -400,6 +400,7 @@ export default function PromotionsPage() {
         { label: t('title') },
       ]}
       title={t('title')}
+      subtitle={`${promotions.length} ${promotions.length === 1 ? t('promoSingular') : t('promoPlural')}`}
       actions={
         <>
           <div className="relative" data-tour="promotions-import-export">

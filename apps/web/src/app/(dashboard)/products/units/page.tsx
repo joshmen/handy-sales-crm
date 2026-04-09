@@ -250,7 +250,7 @@ export default function UnitsPage() {
             )},
             { key: 'actions', label: '', width: 80, cellRenderer: (item) => (
               <div className="flex items-center justify-center gap-1" onClick={e => e.stopPropagation()}>
-                <button onClick={() => handleOpenEdit(item)} disabled={loading} className="p-1 hover:bg-amber-50 rounded transition-colors disabled:opacity-50" title="Editar">
+                <button onClick={() => handleOpenEdit(item)} disabled={loading} className="p-1 hover:bg-amber-50 rounded transition-colors disabled:opacity-50" title={tc('edit')}>
                   <Edit2 className="w-4 h-4 text-amber-400 hover:text-amber-600" />
                 </button>
                 {deleteConfirmId === item.id ? (
@@ -259,7 +259,7 @@ export default function UnitsPage() {
                     <button onClick={() => setDeleteConfirmId(null)} className="p-1 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X className="w-4 h-4" /></button>
                   </>
                 ) : (
-                  <button onClick={() => setDeleteConfirmId(item.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Eliminar"><Trash2 className="w-4 h-4" /></button>
+                  <button onClick={() => setDeleteConfirmId(item.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title={tc('delete')}><Trash2 className="w-4 h-4" /></button>
                 )}
               </div>
             )},

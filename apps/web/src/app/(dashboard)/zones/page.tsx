@@ -654,7 +654,7 @@ export default function ZonesPage() {
                         </>
                       ) : (
                         <>
-                          <button onClick={() => setDeleteConfirmId(zone.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Eliminar"><Trash2 className="w-4 h-4" /></button>
+                          <button onClick={() => setDeleteConfirmId(zone.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title={tc('delete')}><Trash2 className="w-4 h-4" /></button>
                           <CaretRight className="w-4 h-4 text-gray-300 group-hover:text-amber-500 transition-colors" weight="bold" />
                         </>
                       )}
