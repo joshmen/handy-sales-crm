@@ -23,7 +23,7 @@ export interface Cobro {
 }
 
 export interface CobroCreateDto {
-  pedidoId: number;
+  pedidoId: number | null;
   clienteId: number;
   monto: number;
   metodoPago: number;

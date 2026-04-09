@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-// Schema de validación para clientes
+// Validation keys — translated at render time via useTranslations('clients.formPage.validation')
 export const clientSchema = z.object({
   // === Información General ===
   habilitado: z.boolean().default(true),
@@ -8,12 +8,12 @@ export const clientSchema = z.object({
 
   descripcion: z
     .string()
-    .min(1, 'La descripción es obligatoria')
-    .max(255, 'La descripción no puede exceder 255 caracteres'),
+    .min(1, 'nameRequired')
+    .max(255, 'nameMax255'),
 
   categoriaId: z
     .string()
-    .min(1, 'Debe seleccionar una categoría'),
+    .min(1, 'categoryRequired'),
 
   comentarios: z.string().max(500).optional(),
 
@@ -27,18 +27,18 @@ export const clientSchema = z.object({
   ventaMinimaEfectiva: z.number().min(0).default(0),
 
   // === Config entregas ===
-  tiposPagoPermitidos: z.enum(['contado_credito', 'contado', 'credito', 'efectivo', 'transferencia', 'cheque', 'tarjeta_credito', 'tarjeta_debito', 'otro'], { errorMap: () => ({ message: 'Seleccione un tipo de pago válido' }) }).default('efectivo'),
-  tipoPagoPredeterminado: z.enum(['contado', 'credito', 'efectivo', 'transferencia', 'cheque', 'tarjeta_credito', 'tarjeta_debito', 'otro'], { errorMap: () => ({ message: 'Seleccione un método de pago válido' }) }).default('efectivo'),
+  tiposPagoPermitidos: z.enum(['contado_credito', 'contado', 'credito', 'efectivo', 'transferencia', 'cheque', 'tarjeta_credito', 'tarjeta_debito', 'otro'], { errorMap: () => ({ message: 'paymentTypeRequired' }) }).default('efectivo'),
+  tipoPagoPredeterminado: z.enum(['contado', 'credito', 'efectivo', 'transferencia', 'cheque', 'tarjeta_credito', 'tarjeta_debito', 'otro'], { errorMap: () => ({ message: 'paymentMethodRequired' }) }).default('efectivo'),
   diasCredito: z.number().min(0).default(0),
 
   // === Datos fiscales ===
   facturable: z.boolean().default(false),
   rfc: z
     .string()
-    .max(13, 'El RFC debe tener máximo 13 caracteres')
+    .max(13, 'rfcMax13')
     .optional()
     .default(''),
-  razonSocial: z.string().max(300, 'La razón social no puede exceder 300 caracteres').optional().default(''),
+  razonSocial: z.string().max(300, 'businessNameMax300').optional().default(''),
   codigoPostalFiscal: z.string().optional().default(''),
   regimenFiscal: z.string().optional().default(''),
   usoCFDIPredeterminado: z.string().optional().default(''),
@@ -46,20 +46,20 @@ export const clientSchema = z.object({
   // === Dirección y geolocalización ===
   direccion: z
     .string()
-    .min(1, 'La dirección es obligatoria')
-    .max(500, 'La dirección no puede exceder 500 caracteres'),
+    .min(1, 'addressRequired')
+    .max(500, 'addressMax500'),
   numeroExterior: z
     .string()
-    .min(1, 'El número exterior es obligatorio')
-    .max(20, 'El número exterior no puede exceder 20 caracteres'),
+    .min(1, 'extNumberRequired')
+    .max(20, 'extNumberMax20'),
   ciudad: z.string().max(100).optional(),
   colonia: z.string().max(100).optional(),
   codigoPostal: z.string().max(10).optional(),
 
   zonaId: z
-    .number({ required_error: 'Debe seleccionar una zona' })
+    .number({ required_error: 'zoneRequired' })
     .int()
-    .positive('Debe seleccionar una zona válida'),
+    .positive('zoneRequired'),
 
   latitud: z.number().default(0),
   longitud: z.number().default(0),
@@ -68,28 +68,28 @@ export const clientSchema = z.object({
   encargado: z.string().max(255).optional(),
   telefono: z
     .string()
-    .min(1, 'El teléfono es obligatorio')
-    .regex(/^\d{10}$/, 'El teléfono debe tener exactamente 10 dígitos'),
+    .min(1, 'phoneRequired')
+    .regex(/^\d{10}$/, 'phoneMust10Digits'),
   email: z
     .string()
-    .min(1, 'El correo es obligatorio')
-    .email('El formato del correo es inválido'),
+    .min(1, 'emailRequired')
+    .email('emailInvalid'),
 }).superRefine((data, ctx) => {
   // Validación condicional: si facturable=true, los campos fiscales son obligatorios
   if (data.facturable) {
     if (!data.razonSocial || data.razonSocial.trim() === '') {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La razón social es obligatoria para clientes facturables', path: ['razonSocial'] });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'businessNameRequiredForBilling', path: ['razonSocial'] });
     }
     if (!data.rfc || data.rfc.trim() === '') {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'El RFC es obligatorio para clientes facturables', path: ['rfc'] });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'rfcRequiredForBilling', path: ['rfc'] });
     } else if (!/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/.test(data.rfc.toUpperCase())) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'El RFC no tiene un formato válido', path: ['rfc'] });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'rfcInvalidFormat', path: ['rfc'] });
     }
     if (!data.codigoPostalFiscal || !/^\d{5}$/.test(data.codigoPostalFiscal)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'El código postal fiscal debe tener 5 dígitos', path: ['codigoPostalFiscal'] });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'fiscalPostalCode5Digits', path: ['codigoPostalFiscal'] });
     }
     if (!data.regimenFiscal || data.regimenFiscal.trim() === '') {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'El régimen fiscal es obligatorio para clientes facturables', path: ['regimenFiscal'] });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'taxRegimeRequiredForBilling', path: ['regimenFiscal'] });
     }
   }
 });
@@ -183,7 +183,6 @@ export function mapFormToBackendDto(data: ClientFormData) {
     numeroExterior: data.numeroExterior,
     idZona: data.zonaId,
     categoriaClienteId: data.categoriaId ? parseInt(data.categoriaId) : 1,
-    // Campos adicionales
     esProspecto: data.esProspecto,
     comentarios: data.comentarios || null,
     listaPreciosId: data.listaPreciosId ? parseInt(data.listaPreciosId) : null,
@@ -194,16 +193,12 @@ export function mapFormToBackendDto(data: ClientFormData) {
     tiposPagoPermitidos: data.tiposPagoPermitidos,
     tipoPagoPredeterminado: data.tipoPagoPredeterminado,
     diasCredito: data.diasCredito,
-    // Dirección desglosada
     ciudad: data.ciudad || null,
     colonia: data.colonia || null,
     codigoPostal: data.codigoPostal || null,
-    // Contacto
     encargado: data.encargado || null,
-    // Geolocalización
     latitud: data.latitud || null,
     longitud: data.longitud || null,
-    // Datos fiscales
     facturable: data.facturable,
     razonSocial: data.razonSocial || null,
     codigoPostalFiscal: data.codigoPostalFiscal || null,

@@ -3,6 +3,7 @@
 import React from 'react';
 import { Controller } from 'react-hook-form';
 import type { Control } from 'react-hook-form';
+import { useTranslations } from 'next-intl';
 import { Check, AlertCircle, HelpCircle } from 'lucide-react';
 import type { ClientFormData } from '@/lib/validations/client';
 
@@ -64,17 +65,22 @@ export function FormField({
   error?: string;
   children: React.ReactNode;
 }) {
+  const tv = useTranslations('clients.formValidation');
+  // If error is a translation key (no spaces, camelCase), translate it; otherwise show as-is
+  const translatedError = error && !error.includes(' ')
+    ? (() => { try { return tv(error); } catch { return error; } })()
+    : error;
   return (
     <div className="flex flex-col gap-1.5">
       <label className="text-xs font-medium text-gray-700">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
       {children}
-      {hint && !error && <p className="text-[11px] text-gray-400">{hint}</p>}
-      {error && (
+      {hint && !translatedError && <p className="text-[11px] text-gray-400">{hint}</p>}
+      {translatedError && (
         <p className="text-[11px] text-red-500 flex items-center gap-1">
           <AlertCircle className="w-3 h-3" />
-          {error}
+          {translatedError}
         </p>
       )}
     </div>

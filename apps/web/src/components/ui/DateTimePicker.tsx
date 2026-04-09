@@ -17,6 +17,7 @@ import {
   isAfter,
   parseISO,
 } from 'date-fns';
+import type { Locale } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
 import { useLocale } from 'next-intl';
 import { Popover, PopoverTrigger, PopoverContent } from './Popover';
