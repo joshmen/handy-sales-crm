@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -20,17 +21,10 @@ import {
   CreditCard,
 } from "lucide-react";
 
-const categoryLabels: Record<string, string> = {
-  facturacion: "Facturación",
-  comunicacion: "Comunicación",
-  mapas: "Mapas",
-  pagos: "Pagos",
-};
-
-const estadoBadge: Record<string, { label: string; className: string }> = {
-  DISPONIBLE: { label: "Disponible", className: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300" },
-  PROXIMO: { label: "Próximamente", className: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300" },
-  DESCONTINUADO: { label: "Descontinuado", className: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400" },
+const estadoBadgeStyles: Record<string, string> = {
+  DISPONIBLE: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
+  PROXIMO: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
+  DESCONTINUADO: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400",
 };
 
 const iconMap: Record<string, React.ReactNode> = {
@@ -45,13 +39,28 @@ function IntegrationCard({
   onActivate,
   onDeactivate,
   loading,
+  t,
 }: {
   integration: IntegrationCatalog;
   onActivate: (slug: string) => void;
   onDeactivate: (slug: string) => void;
   loading: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  t: (key: string, values?: any) => string;
 }) {
-  const badge = estadoBadge[integration.estado] || estadoBadge.DISPONIBLE;
+  const estadoLabelMap: Record<string, string> = {
+    DISPONIBLE: t("statusAvailable"),
+    PROXIMO: t("statusComingSoon"),
+    DESCONTINUADO: t("statusDiscontinued"),
+  };
+  const categoryLabelMap: Record<string, string> = {
+    facturacion: t("categoryBilling"),
+    comunicacion: t("categoryCommunication"),
+    mapas: t("categoryMaps"),
+    pagos: t("categoryPayments"),
+  };
+  const badgeClassName = estadoBadgeStyles[integration.estado] || estadoBadgeStyles.DISPONIBLE;
+  const badgeLabel = estadoLabelMap[integration.estado] || estadoLabelMap.DISPONIBLE;
   const isAvailable = integration.estado === "DISPONIBLE";
   const icon = iconMap[integration.icono || ""] || <Zap className="h-6 w-6" />;
 
@@ -71,10 +80,10 @@ function IntegrationCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="font-semibold text-gray-900 dark:text-white">{integration.nombre}</h3>
-              <Badge className={badge.className}>{badge.label}</Badge>
+              <Badge className={badgeClassName}>{badgeLabel}</Badge>
               {integration.isActivated && (
                 <Badge className="bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">
-                  <Check className="h-3 w-3 mr-1" /> Activa
+                  <Check className="h-3 w-3 mr-1" /> {t("activeLabel")}
                 </Badge>
               )}
             </div>
@@ -83,16 +92,16 @@ function IntegrationCard({
             </p>
             <div className="flex items-center gap-3 mt-3">
               <span className="text-xs text-muted-foreground font-medium">
-                {categoryLabels[integration.categoria] || integration.categoria}
+                {categoryLabelMap[integration.categoria] || integration.categoria}
               </span>
               {integration.precioMXN > 0 && (
                 <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
                   ${integration.precioMXN.toLocaleString("es-MX")} MXN
-                  {integration.tipoPrecio === "MENSUAL" ? "/mes" : ""}
+                  {integration.tipoPrecio === "MENSUAL" ? t("perMonth") : ""}
                 </span>
               )}
               {integration.precioMXN === 0 && (
-                <span className="text-xs font-semibold text-green-600">Gratis</span>
+                <span className="text-xs font-semibold text-green-600">{t("free")}</span>
               )}
             </div>
           </div>
@@ -105,7 +114,7 @@ function IntegrationCard({
                 disabled={loading}
                 className="text-red-600 border-red-200 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-950/30"
               >
-                Desactivar
+                {t("deactivate")}
               </Button>
             ) : isAvailable ? (
               <Button
@@ -114,11 +123,11 @@ function IntegrationCard({
                 disabled={loading}
                 className="bg-green-600 hover:bg-green-700 text-white"
               >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Activar"}
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : t("activate")}
               </Button>
             ) : (
               <Button size="sm" variant="outline" disabled className="opacity-50">
-                <Clock className="h-4 w-4 mr-1" /> Próximamente
+                <Clock className="h-4 w-4 mr-1" /> {t("comingSoon")}
               </Button>
             )}
           </div>
@@ -126,7 +135,7 @@ function IntegrationCard({
 
         {integration.isActivated && integration.fechaActivacion && (
           <p className="text-xs text-muted-foreground mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
-            Activada el {new Date(integration.fechaActivacion).toLocaleDateString("es-MX")}
+            {t("activatedOn", { date: new Date(integration.fechaActivacion).toLocaleDateString() })}
           </p>
         )}
       </CardContent>
@@ -136,6 +145,8 @@ function IntegrationCard({
 
 export default function IntegrationsPage() {
   useRequireAdmin();
+  const t = useTranslations("integrations");
+  const tc = useTranslations("common");
   const [integrations, setIntegrations] = useState<IntegrationCatalog[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -146,7 +157,7 @@ export default function IntegrationsPage() {
       const data = await integrationService.getCatalog();
       setIntegrations(data);
     } catch {
-      toast.error("Error al cargar integraciones");
+      toast.error(t("errorLoading"));
     } finally {
       setLoading(false);
     }
@@ -158,10 +169,10 @@ export default function IntegrationsPage() {
     setActionLoading(slug);
     try {
       await integrationService.activate(slug);
-      toast({ title: "Integración activada" });
+      toast({ title: t("activated") });
       await fetchData();
     } catch {
-      toast.error("Error al activar integración");
+      toast.error(t("errorActivating"));
     } finally {
       setActionLoading(null);
     }
@@ -180,10 +191,10 @@ export default function IntegrationsPage() {
     setActionLoading(slug);
     try {
       await integrationService.deactivate(slug);
-      toast({ title: "Integración desactivada" });
+      toast({ title: t("deactivated") });
       await fetchData();
     } catch {
-      toast.error("Error al desactivar integración");
+      toast.error(t("errorDeactivating"));
     } finally {
       setActionLoading(null);
     }
@@ -201,7 +212,7 @@ export default function IntegrationsPage() {
     return (
       <div role="status" className="flex items-center justify-center min-h-[60vh]">
         <Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" />
-        <span className="sr-only">Cargando...</span>
+        <span className="sr-only">Loading...</span>
       </div>
     );
   }
@@ -209,11 +220,11 @@ export default function IntegrationsPage() {
   return (
     <PageHeader
       breadcrumbs={[
-        { label: "Inicio", href: "/dashboard" },
-        { label: "Integraciones" },
+        { label: tc("home"), href: "/dashboard" },
+        { label: t("breadcrumbIntegrations") },
       ]}
-      title="Integraciones"
-      subtitle={`${activeCount} activa${activeCount !== 1 ? "s" : ""} de ${integrations.length} disponibles`}
+      title={t("title")}
+      subtitle={activeCount !== 1 ? t("subtitlePlural", { active: activeCount, total: integrations.length }) : t("subtitle", { active: activeCount, total: integrations.length })}
     >
       <div className="space-y-4">
         {/* Filter tabs */}
@@ -229,7 +240,7 @@ export default function IntegrationsPage() {
                   : "text-muted-foreground hover:bg-muted"
               }`}
             >
-              {f === "all" ? "Todas" : f === "active" ? "Activas" : "Disponibles"}
+              {f === "all" ? t("filterAll") : f === "active" ? t("filterActive") : t("filterAvailable")}
             </button>
           ))}
         </div>
@@ -238,7 +249,7 @@ export default function IntegrationsPage() {
         <div className="grid grid-cols-1 gap-3">
           {filtered.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              No hay integraciones en esta categoría.
+              {t("emptyCategory")}
             </div>
           ) : (
             filtered.map((integration) => (
@@ -248,6 +259,7 @@ export default function IntegrationsPage() {
                 onActivate={handleActivate}
                 onDeactivate={handleDeactivate}
                 loading={actionLoading === integration.slug}
+                t={t}
               />
             ))
           )}
@@ -265,17 +277,17 @@ export default function IntegrationsPage() {
             onClick={e => e.stopPropagation()}
           >
             <h3 id="deactivate-dialog-title" className="text-lg font-semibold text-foreground mb-2">
-              Desactivar integración
+              {t("deactivateTitle")}
             </h3>
             <p className="text-sm text-muted-foreground mb-5">
-              ¿Deseas desactivar esta integración? Puedes reactivarla en cualquier momento.
+              {t("deactivateDesc")}
             </p>
             <div className="flex gap-3">
               <Button variant="outline" className="flex-1" onClick={() => setDeactivateSlug(null)}>
-                Cancelar
+                {tc("cancel")}
               </Button>
               <Button className="flex-1 bg-red-600 hover:bg-red-700 text-white" onClick={confirmDeactivate}>
-                Desactivar
+                {t("deactivate")}
               </Button>
             </div>
           </div>

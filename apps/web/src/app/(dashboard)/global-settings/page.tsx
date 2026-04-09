@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useGlobalSettings } from '@/contexts/GlobalSettingsContext';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -44,6 +45,7 @@ export default function GlobalSettingsPage() {
   const { formatDate, formatNumber } = useFormatters();
   const { data: session } = useSession();
   const router = useRouter();
+  const t = useTranslations('globalSettings');
   const {
     globalSettings,
     isLoading,
@@ -58,8 +60,8 @@ export default function GlobalSettingsPage() {
   useEffect(() => {
     if (session && session.user?.role !== 'SUPER_ADMIN') {
       toast({
-        title: 'Acceso denegado',
-        description: 'Solo los Super Administradores pueden acceder a esta página',
+        title: t('accessDenied'),
+        description: t('accessDeniedDesc'),
         variant: 'destructive',
       });
       router.push('/dashboard');
@@ -104,7 +106,7 @@ export default function GlobalSettingsPage() {
     if (!success) {
       toast({
         title: 'Error',
-        description: 'No se pudieron guardar las configuraciones',
+        description: t('errorSaving'),
         variant: 'destructive',
       });
     }
@@ -126,7 +128,7 @@ export default function GlobalSettingsPage() {
   if (!settings) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">No se pudieron cargar las configuraciones</p>
+        <p className="text-gray-500">{t('errorLoading')}</p>
       </div>
     );
   }
@@ -139,14 +141,14 @@ export default function GlobalSettingsPage() {
               <div className="p-2 bg-purple-100 rounded-lg">
                 <Settings className="h-6 w-6 text-purple-600" />
               </div>
-              <h1 className="text-3xl font-bold text-gray-900">Configuración Global</h1>
+              <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
             </div>
             <p className="text-gray-600">
-              Configuraciones que afectan a toda la plataforma Handy Suites
+              {t('subtitle')}
             </p>
             <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full bg-red-100 text-red-800 text-sm font-medium">
               <Shield className="h-4 w-4 mr-1" />
-              Solo Super Administrador
+              {t('superAdminOnly')}
             </div>
           </div>
 
@@ -155,14 +157,14 @@ export default function GlobalSettingsPage() {
             <Card className="p-6">
               <div className="flex items-center space-x-3 mb-6">
                 <Palette className="h-5 w-5 text-blue-600" />
-                <h2 className="text-xl font-semibold text-gray-900">Marca de la Plataforma</h2>
-                <span className="text-xs bg-blue-50 text-blue-500 px-2 py-0.5 rounded-full">Logo y nombre activos</span>
+                <h2 className="text-xl font-semibold text-gray-900">{t('branding.title')}</h2>
+                <span className="text-xs bg-blue-50 text-blue-500 px-2 py-0.5 rounded-full">{t('branding.activeHint')}</span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div data-tour="settings-platform">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nombre de la plataforma
+                    {t('branding.platformName')}
                   </label>
                   <Input
                     value={settings.platformName}
@@ -173,18 +175,18 @@ export default function GlobalSettingsPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Logo de la plataforma
+                    {t('branding.platformLogo')}
                   </label>
                   <div className="flex items-center space-x-4">
                     <ImageUpload
                       variant="avatar"
                       src={settings.platformLogo}
-                      alt="Logo de la plataforma"
+                      alt={t('branding.logoAlt')}
                       fallback={settings.platformName ? settings.platformName.charAt(0).toUpperCase() : 'H'}
                       fallbackClassName="bg-primary/15 text-primary"
                       size="md"
                       maxSizeMB={2}
-                      hint="PNG, JPG o WebP. Máx. 2 MB."
+                      hint={t('branding.logoHint')}
                       disabled={isUpdating}
                       onUpload={uploadPlatformLogo}
                       onDelete={deletePlatformLogo}
@@ -194,7 +196,7 @@ export default function GlobalSettingsPage() {
 
                 <div data-tour="settings-colors">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Color primario
+                    {t('branding.primaryColor')}
                   </label>
                   <div className="flex space-x-2">
                     <Input
@@ -218,7 +220,7 @@ export default function GlobalSettingsPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Color secundario
+                    {t('branding.secondaryColor')}
                   </label>
                   <div className="flex space-x-2">
                     <Input
@@ -246,40 +248,40 @@ export default function GlobalSettingsPage() {
             <Card className="p-6">
               <div className="flex items-center space-x-3 mb-6">
                 <Globe className="h-5 w-5 text-green-600" />
-                <h2 className="text-xl font-semibold text-gray-900">Configuración Regional</h2>
-                <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">Próximamente</span>
+                <h2 className="text-xl font-semibold text-gray-900">{t('regional.title')}</h2>
+                <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{t('regional.comingSoon')}</span>
               </div>
 
               <div data-tour="settings-regional" className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Idioma por defecto
+                    {t('regional.defaultLanguage')}
                   </label>
                   <SearchableSelect
                     value={settings.defaultLanguage}
                     onChange={(value) => setSettings({ ...settings, defaultLanguage: String(value) })}
                     options={[
-                      { value: 'es', label: 'Español' },
-                      { value: 'en', label: 'English' }
+                      { value: 'es', label: t('regional.langEs') },
+                      { value: 'en', label: t('regional.langEn') }
                     ]}
-                    placeholder="Selecciona un idioma"
+                    placeholder={t('regional.selectLanguage')}
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Zona horaria por defecto
+                    {t('regional.defaultTimezone')}
                   </label>
                   <SearchableSelect
                     value={settings.defaultTimezone}
                     onChange={(value) => setSettings({ ...settings, defaultTimezone: String(value) })}
                     options={[
-                      { value: 'America/Mexico_City', label: 'México (GMT-6)' },
-                      { value: 'America/New_York', label: 'Nueva York (GMT-5)' },
-                      { value: 'America/Los_Angeles', label: 'Los Ángeles (GMT-8)' },
-                      { value: 'Europe/Madrid', label: 'Madrid (GMT+1)' }
+                      { value: 'America/Mexico_City', label: t('regional.tzMexico') },
+                      { value: 'America/New_York', label: t('regional.tzNewYork') },
+                      { value: 'America/Los_Angeles', label: t('regional.tzLosAngeles') },
+                      { value: 'Europe/Madrid', label: t('regional.tzMadrid') }
                     ]}
-                    placeholder="Selecciona una zona horaria"
+                    placeholder={t('regional.selectTimezone')}
                   />
                 </div>
               </div>
@@ -289,15 +291,15 @@ export default function GlobalSettingsPage() {
             <Card className="p-6">
               <div className="flex items-center space-x-3 mb-6">
                 <Shield className="h-5 w-5 text-orange-600" />
-                <h2 className="text-xl font-semibold text-gray-900">Seguridad y Acceso</h2>
+                <h2 className="text-xl font-semibold text-gray-900">{t('security.title')}</h2>
               </div>
 
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-medium text-gray-900">Permitir auto-registro</h3>
+                    <h3 className="text-sm font-medium text-gray-900">{t('security.selfRegistration')}</h3>
                     <p className="text-sm text-gray-500">
-                      Los usuarios pueden registrarse sin invitación
+                      {t('security.selfRegistrationDesc')}
                     </p>
                   </div>
                   <Switch
@@ -311,9 +313,9 @@ export default function GlobalSettingsPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-sm font-medium text-gray-900">
-                      Verificación de email requerida
+                      {t('security.emailVerification')}
                     </h3>
-                    <p className="text-sm text-gray-500">Los usuarios deben verificar su email</p>
+                    <p className="text-sm text-gray-500">{t('security.emailVerificationDesc')}</p>
                   </div>
                   <Switch
                     checked={settings.requireEmailVerification}
@@ -326,8 +328,8 @@ export default function GlobalSettingsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Máximo usuarios por empresa
-                      <span className="ml-2 text-xs bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded">No aplicado aún</span>
+                      {t('security.maxUsers')}
+                      <span className="ml-2 text-xs bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded">{t('security.maxUsersNotEnforced')}</span>
                     </label>
                     <Input
                       type="number"
@@ -338,15 +340,15 @@ export default function GlobalSettingsPage() {
                           maxUsersPerCompany: e.target.value ? parseInt(e.target.value) : null,
                         })
                       }
-                      placeholder="Sin límite"
+                      placeholder={t('security.noLimit')}
                     />
-                    <p className="text-xs text-gray-400 mt-1">El límite se define por plan en cada empresa</p>
+                    <p className="text-xs text-gray-400 mt-1">{t('security.maxUsersHint')}</p>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Máximo almacenamiento por empresa (MB)
-                      <span className="ml-2 text-xs bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded">No aplicado aún</span>
+                      {t('security.maxStorage')}
+                      <span className="ml-2 text-xs bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded">{t('security.maxStorageNotEnforced')}</span>
                     </label>
                     <Input
                       type="number"
@@ -357,7 +359,7 @@ export default function GlobalSettingsPage() {
                           maxStoragePerCompany: e.target.value ? parseInt(e.target.value) : null,
                         })
                       }
-                      placeholder="Sin límite"
+                      placeholder={t('security.noLimit')}
                     />
                   </div>
                 </div>
@@ -368,19 +370,19 @@ export default function GlobalSettingsPage() {
             <Card className="p-6">
               <div className="flex items-center space-x-3 mb-4">
                 <AlertTriangle className="h-5 w-5 text-red-600" />
-                <h2 className="text-xl font-semibold text-gray-900">Modo de Mantenimiento</h2>
+                <h2 className="text-xl font-semibold text-gray-900">{t('maintenance.title')}</h2>
               </div>
 
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <div>
                   <p className="text-sm text-gray-700">
-                    El modo de mantenimiento se gestiona desde el módulo de Anuncios, donde puedes activarlo con un mensaje personalizado y banner automático.
+                    {t('maintenance.description')}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
-                    Estado actual: {settings.maintenanceMode ? (
-                      <span className="text-red-600 font-medium">Activo</span>
+                    {t('maintenance.currentStatus')} {settings.maintenanceMode ? (
+                      <span className="text-red-600 font-medium">{t('maintenance.statusActive')}</span>
                     ) : (
-                      <span className="text-green-600 font-medium">Inactivo</span>
+                      <span className="text-green-600 font-medium">{t('maintenance.statusInactive')}</span>
                     )}
                   </p>
                 </div>
@@ -389,7 +391,7 @@ export default function GlobalSettingsPage() {
                   onClick={() => router.push('/admin/announcements')}
                   className="flex-shrink-0 ml-4"
                 >
-                  Ir a Anuncios
+                  {t('maintenance.goToAnnouncements')}
                 </Button>
               </div>
             </Card>
@@ -402,7 +404,7 @@ export default function GlobalSettingsPage() {
                 disabled={isUpdating}
               >
                 <RotateCcw className="h-4 w-4 mr-2" />
-                Recargar
+                {t('reload')}
               </Button>
 
               <Button
@@ -414,12 +416,12 @@ export default function GlobalSettingsPage() {
                 {isUpdating ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Guardando...
+                    {t('savingLabel')}
                   </>
                 ) : (
                   <>
                     <Save className="h-4 w-4 mr-2" />
-                    Guardar Configuración
+                    {t('saveConfig')}
                   </>
                 )}
               </Button>
@@ -428,7 +430,7 @@ export default function GlobalSettingsPage() {
 
           {/* Footer Info */}
           <div className="text-center text-sm text-gray-500">
-            Última actualización: {formatDate(settings.updatedAt)}
+            {t('lastUpdated', { date: formatDate(settings.updatedAt) })}
           </div>
       </div>
   );

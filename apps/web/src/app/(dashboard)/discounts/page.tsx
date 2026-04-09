@@ -30,6 +30,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Percent as PercentIcon } from '@phosphor-icons/react';
 import { SearchBar } from '@/components/common/SearchBar';
 import { InactiveToggle } from '@/components/ui/InactiveToggle';
@@ -52,6 +53,8 @@ const discountSchema = z.object({
 type DiscountFormData = z.infer<typeof discountSchema>;
 
 export default function DiscountsPage() {
+  const t = useTranslations('discounts');
+  const tc = useTranslations('common');
   const { formatDate } = useFormatters();
   const drawerRef = useRef<DrawerHandle>(null);
 
@@ -116,7 +119,7 @@ export default function DiscountsPage() {
       setDiscounts(response.data);
     } catch (error) {
       console.error('Error loading discounts:', error);
-      toast.error('No se pudieron cargar los descuentos');
+      toast.error(t('errorLoading'));
     } finally {
       setLoading(false);
     }
@@ -128,7 +131,7 @@ export default function DiscountsPage() {
 
   const handleRefresh = () => {
     fetchDiscounts();
-    toast.success('Los descuentos se han actualizado correctamente');
+    toast.success(t('refreshed'));
   };
 
   const handleOpenCreate = (tipo: TipoAplicacion) => {
@@ -155,13 +158,13 @@ export default function DiscountsPage() {
     try {
       setTogglingId(discount.id);
       await api.patch(`/descuentos/${discount.id}/toggle`);
-      toast.success(discount.activo ? 'Descuento desactivado' : 'Descuento activado');
+      toast.success(discount.activo ? t('deactivated') : t('activated'));
       setDiscounts(prev => prev.map(d =>
         d.id === discount.id ? { ...d, activo: !d.activo } : d
       ));
     } catch (error) {
       console.error('Error al cambiar estado:', error);
-      toast.error('Error al cambiar el estado del descuento');
+      toast.error(t('errorToggle'));
     } finally {
       setTogglingId(null);
     }
@@ -170,10 +173,10 @@ export default function DiscountsPage() {
   const handleDelete = async (id: number) => {
     try {
       await api.delete(`/descuentos/${id}`);
-      toast.success('Descuento eliminado');
+      toast.success(t('deleted'));
       await fetchDiscounts();
     } catch {
-      toast.error('Error al eliminar el descuento');
+      toast.error(t('errorDeleting'));
     }
   };
 
@@ -190,17 +193,17 @@ export default function DiscountsPage() {
 
       if (editingDiscount) {
         await api.put(`/descuentos/${editingDiscount.id}`, dto);
-        toast.success('Descuento actualizado exitosamente');
+        toast.success(t('updated'));
       } else {
         await api.post('/descuentos', dto);
-        toast.success('Descuento creado exitosamente');
+        toast.success(t('created'));
       }
 
       setIsModalOpen(false);
       await fetchDiscounts();
     } catch (error: unknown) {
       const e = error as { response?: { data?: { message?: string } } };
-      const message = e?.response?.data?.message || 'Ocurrió un error al guardar el descuento';
+      const message = e?.response?.data?.message || t('errorSaving');
       toast.error(message);
     } finally {
       setActionLoading(false);
@@ -268,7 +271,7 @@ export default function DiscountsPage() {
   const discountColumns = useMemo<DataGridColumn<DescuentoPorCantidadDto>[]>(() => [
     {
       key: 'descuentoPorcentaje',
-      label: 'Descuento',
+      label: t('discount'),
       sortable: true,
       width: 'flex',
       cellRenderer: (d) => (
@@ -279,16 +282,16 @@ export default function DiscountsPage() {
     },
     {
       key: 'cantidadMinima',
-      label: 'Cantidad mín.',
+      label: t('minQuantity'),
       sortable: true,
       width: 'flex',
       cellRenderer: (d) => (
-        <div className="text-[13px] text-gray-900">{d.cantidadMinima} unidades</div>
+        <div className="text-[13px] text-gray-900">{d.cantidadMinima} {t('units')}</div>
       ),
     },
     ...(activeTab === 'product' ? [{
       key: 'producto',
-      label: 'Producto',
+      label: t('product'),
       width: 'flex' as const,
       cellRenderer: (d: DescuentoPorCantidadDto) => (
         <div>
@@ -299,7 +302,7 @@ export default function DiscountsPage() {
     }] : []),
     {
       key: 'creadoPor',
-      label: 'Creado por',
+      label: t('createdBy'),
       width: 'flex',
       hiddenOnMobile: true,
       cellRenderer: (d) => (
@@ -311,7 +314,7 @@ export default function DiscountsPage() {
     },
     {
       key: 'actualizadoPor',
-      label: 'Última mod.',
+      label: t('lastModified'),
       width: 'flex',
       hiddenOnMobile: true,
       cellRenderer: (d) => (
@@ -323,7 +326,7 @@ export default function DiscountsPage() {
     },
     {
       key: 'activo',
-      label: 'Activo',
+      label: tc('active'),
       width: 60,
       align: 'center' as const,
       cellRenderer: (d) => (
@@ -338,7 +341,7 @@ export default function DiscountsPage() {
       width: 60,
       cellRenderer: (d) => (
         <div className="flex items-center justify-center gap-1" onClick={(e) => e.stopPropagation()}>
-          <button onClick={() => handleOpenEdit(d)} disabled={loading} className="p-1.5 text-amber-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors disabled:opacity-50" title="Editar">
+          <button onClick={() => handleOpenEdit(d)} disabled={loading} className="p-1.5 text-amber-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors disabled:opacity-50" title={tc('edit')}>
             <Pencil className="w-4 h-4" />
           </button>
           {deleteConfirmId === d.id ? (
@@ -347,7 +350,7 @@ export default function DiscountsPage() {
               <button onClick={() => setDeleteConfirmId(null)} className="p-1 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X className="w-4 h-4" /></button>
             </>
           ) : (
-            <button onClick={() => setDeleteConfirmId(d.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Eliminar"><Trash2 className="w-4 h-4" /></button>
+            <button onClick={() => setDeleteConfirmId(d.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title={tc('delete')}><Trash2 className="w-4 h-4" /></button>
           )}
         </div>
       ),
@@ -371,7 +374,7 @@ export default function DiscountsPage() {
       await api.patch('/descuentos/batch-toggle', { ids, activo });
 
       toast.success(
-        `${ids.length} descuento${ids.length > 1 ? 's' : ''} ${activo ? 'activado' : 'desactivado'}${ids.length > 1 ? 's' : ''} exitosamente`
+        activo ? t('batchActivated', { count: ids.length, plural: ids.length > 1 ? 's' : '', plural2: ids.length > 1 ? 's' : '' }) : t('batchDeactivated', { count: ids.length, plural: ids.length > 1 ? 's' : '', plural2: ids.length > 1 ? 's' : '' })
       );
 
       batch.completeBatch();
@@ -379,7 +382,7 @@ export default function DiscountsPage() {
         ids.includes(d.id) ? { ...d, activo } : d
       ));
     } catch (_error) {
-      toast.error('Error al cambiar el estado de los descuentos');
+      toast.error(t('batchError'));
     } finally {
       setActionLoading(false);
     }
@@ -391,21 +394,21 @@ export default function DiscountsPage() {
     const date = new Date(dateStr);
     const diff = now.getTime() - date.getTime();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    if (days === 0) return 'hoy';
-    if (days === 1) return 'hace un día';
-    if (days < 7) return `hace ${days} días`;
-    if (days < 30) return `hace ${Math.floor(days / 7)} semanas`;
+    if (days === 0) return t('today');
+    if (days === 1) return t('dayAgo');
+    if (days < 7) return t('daysAgo', { count: days });
+    if (days < 30) return t('weeksAgo', { count: Math.floor(days / 7) });
     return formatDate(date);
   };
 
   return (
     <PageHeader
       breadcrumbs={[
-        { label: 'Inicio', href: '/dashboard' },
-        { label: 'Descuentos por cantidad' },
+        { label: tc('home'), href: '/dashboard' },
+        { label: t('title') },
       ]}
-      title="Descuentos por cantidad"
-      subtitle={totalItems > 0 ? `${totalItems} descuento${totalItems !== 1 ? 's' : ''}` : undefined}
+      title={t('title')}
+      subtitle={totalItems > 0 ? t('discountCount', { count: totalItems, plural: totalItems !== 1 ? 's' : '' }) : undefined}
       actions={
         <>
           <div className="relative" data-tour="discounts-import-export">
@@ -414,7 +417,7 @@ export default function DiscountsPage() {
               className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
             >
               <Download className="w-3.5 h-3.5 text-emerald-500" />
-              <span className="hidden sm:inline">Importar / Exportar</span>
+              <span className="hidden sm:inline">{tc('importExport')}</span>
               <ChevronDown className="w-3 h-3 text-gray-400" />
             </button>
             {showDataMenu && (
@@ -422,18 +425,18 @@ export default function DiscountsPage() {
                 <div className="fixed inset-0 z-10" onClick={() => setShowDataMenu(false)} />
                 <div className="absolute right-0 mt-1 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1">
                   <button
-                    onClick={async () => { setShowDataMenu(false); try { await exportToCsv('descuentos'); toast.success('Archivo CSV descargado'); } catch { toast.error('Error al exportar datos'); } }}
+                    onClick={async () => { setShowDataMenu(false); try { await exportToCsv('descuentos'); toast.success(tc('csvDownloaded')); } catch { toast.error(tc('errorExporting')); } }}
                     className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
                   >
                     <Download className="w-3.5 h-3.5 text-emerald-500" />
-                    Exportar CSV
+                    {tc('exportCsv')}
                   </button>
                   <button
                     onClick={() => { setIsImportOpen(true); setShowDataMenu(false); }}
                     className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
                   >
                     <Upload className="w-3.5 h-3.5 text-blue-500" />
-                    Importar CSV
+                    {tc('importCsv')}
                   </button>
                 </div>
               </>
@@ -442,7 +445,7 @@ export default function DiscountsPage() {
           <div className="relative group" data-tour="discounts-create-btn">
             <button className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors">
               <Plus className="w-4 h-4" />
-              <span>Nuevo descuento</span>
+              <span>{t('newDiscount')}</span>
               <ChevronDown className="w-3.5 h-3.5" />
             </button>
             <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20">
@@ -450,13 +453,13 @@ export default function DiscountsPage() {
                 onClick={() => handleOpenCreate('Global')}
                 className="w-full px-4 py-2.5 text-left text-[13px] text-gray-700 hover:bg-gray-50 first:rounded-t-lg"
               >
-                Descuento global
+                {t('globalDiscount')}
               </button>
               <button
                 onClick={() => handleOpenCreate('Producto')}
                 className="w-full px-4 py-2.5 text-left text-[13px] text-gray-700 hover:bg-gray-50 last:rounded-b-lg border-t border-gray-100"
               >
-                Descuento por producto
+                {t('productDiscount')}
               </button>
             </div>
           </div>
@@ -473,7 +476,7 @@ export default function DiscountsPage() {
                   : 'text-gray-500 border-transparent hover:text-gray-700'
               }`}
             >
-              Descuento global ({globalCount})
+              {t('tabGlobal', { count: globalCount })}
             </button>
             <button
               onClick={() => { setActiveTab('product'); setCurrentPage(1); }}
@@ -483,7 +486,7 @@ export default function DiscountsPage() {
                   : 'text-gray-500 border-transparent hover:text-gray-700'
               }`}
             >
-              Descuento por producto ({productCount})
+              {t('tabProduct', { count: productCount })}
             </button>
           </div>
 
@@ -496,7 +499,7 @@ export default function DiscountsPage() {
                 else setSearchProduct(v);
                 setCurrentPage(1);
               }}
-              placeholder={activeTab === 'product' ? 'Buscar por producto o código...' : 'Buscar descuento...'}
+              placeholder={activeTab === 'product' ? t('searchProduct') : t('searchGlobal')}
               dataTour="discounts-search"
             />
 
@@ -506,7 +509,7 @@ export default function DiscountsPage() {
               className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-              <span>Actualizar</span>
+              <span>{tc('refresh')}</span>
             </button>
 
             <div data-tour="discounts-toggle-inactive" className="ml-auto">
@@ -540,10 +543,10 @@ export default function DiscountsPage() {
               data={sortedDiscounts}
               keyExtractor={(d) => d.id}
               loading={loading}
-              loadingMessage="Cargando descuentos..."
+              loadingMessage={t('loadingDiscounts')}
               emptyIcon={<Percent className="w-16 h-16 text-orange-300" />}
-              emptyTitle="No hay descuentos"
-              emptyMessage="Crea tu primer descuento por cantidad para comenzar"
+              emptyTitle={t('noDiscounts')}
+              emptyMessage={t('noDiscountsDesc')}
               onRowClick={(d) => handleOpenEdit(d)}
               sort={{
                 key: sortKey,
@@ -581,12 +584,12 @@ export default function DiscountsPage() {
                   </div>
                   <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
                     <span className={`inline-flex px-2 py-0.5 rounded-full ${discount.tipoAplicacion === 'Global' ? 'bg-blue-100 text-blue-600' : 'bg-purple-100 text-purple-600'}`}>{discount.tipoAplicacion}</span>
-                    <span>A partir de {discount.cantidadMinima} unidades</span>
+                    <span>{t('startingFrom', { count: discount.cantidadMinima })}</span>
                     {discount.tipoAplicacion === 'Producto' && discount.productoCodigo && <span className="text-gray-400">- {discount.productoCodigo}</span>}
                   </div>
                   <div className="mt-2.5 flex items-center justify-end gap-1 border-t border-gray-100 pt-2" onClick={(e) => e.stopPropagation()}>
                     <button onClick={() => handleOpenEdit(discount)} disabled={loading} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded hover:bg-gray-50 transition-colors disabled:opacity-50">
-                      <Pencil className="w-3 h-3 text-amber-400" /><span>Editar</span>
+                      <Pencil className="w-3 h-3 text-amber-400" /><span>{tc('edit')}</span>
                     </button>
                     {deleteConfirmId === discount.id ? (
                       <div className="flex items-center gap-1">
@@ -607,7 +610,7 @@ export default function DiscountsPage() {
         ref={drawerRef}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editingDiscount ? 'Editar Descuento' : 'Nuevo Descuento'}
+        title={editingDiscount ? t('editDiscount') : t('newDiscount')}
         icon={<Percent className="w-5 h-5 text-green-600" />}
         width="sm"
         isDirty={isDirty}
@@ -615,11 +618,11 @@ export default function DiscountsPage() {
         footer={
           <div className="flex justify-end gap-3" data-tour="discounts-drawer-actions">
             <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()} disabled={actionLoading}>
-              Cancelar
+              {tc('cancel')}
             </Button>
             <Button type="button" variant="success" onClick={handleSubmit} disabled={actionLoading} className="flex items-center gap-2">
               {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-              {editingDiscount ? 'Guardar Cambios' : 'Crear Descuento'}
+              {editingDiscount ? tc('saveChanges') : t('newDiscount')}
             </Button>
           </div>
         }
@@ -628,7 +631,7 @@ export default function DiscountsPage() {
           <div className="grid grid-cols-2 gap-4" data-tour="discounts-drawer-fields">
             <div data-tour="discounts-drawer-percentage">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Porcentaje <span className="text-red-500">*</span>
+                {t('percentage')} <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <input
@@ -646,7 +649,7 @@ export default function DiscountsPage() {
 
             <div data-tour="discounts-drawer-quantity">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Cantidad minima <span className="text-red-500">*</span>
+                {t('minQuantity')} <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
@@ -662,15 +665,15 @@ export default function DiscountsPage() {
           {watch('tipoAplicacion') === 'Producto' && (
             <div data-tour="discounts-drawer-product">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Producto <span className="text-red-500">*</span>
+                {t('product')} <span className="text-red-500">*</span>
               </label>
               <SearchableSelect
                 options={productOptions}
                 value={watch('productoId') || null}
                 onChange={(val) => setValue('productoId', val ? Number(val) : 0, { shouldDirty: true })}
-                placeholder={loadingProducts ? 'Cargando productos...' : 'Seleccionar producto...'}
-                searchPlaceholder="Buscar por nombre o codigo..."
-                emptyMessage="No se encontraron productos"
+                placeholder={loadingProducts ? t('loadingProducts') : t('selectProduct')}
+                searchPlaceholder={t('searchProductPlaceholder')}
+                emptyMessage={t('noProducts')}
                 disabled={loadingProducts}
               />
               {errors.productoId && <p className="text-red-500 text-xs mt-1">{errors.productoId.message}</p>}
@@ -688,8 +691,8 @@ export default function DiscountsPage() {
         selectedCount={batch.selectedCount}
         entityLabel="descuentos"
         loading={actionLoading}
-        consequenceDeactivate="Los clientes ya no podrán obtener estos descuentos."
-        consequenceActivate="Los clientes podrán obtener estos descuentos nuevamente."
+        consequenceDeactivate={t('batchConsequenceDeactivate')}
+        consequenceActivate={t('batchConsequenceActivate')}
       />
 
       <CsvImportModal

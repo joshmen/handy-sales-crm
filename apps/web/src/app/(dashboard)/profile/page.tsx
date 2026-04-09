@@ -28,6 +28,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { getInitials } from '@/lib/utils';
+import { useTranslations } from 'next-intl';
 import { useFormatters } from '@/hooks/useFormatters';
 
 // Roles del sistema
@@ -39,6 +40,8 @@ enum UserRole {
 }
 
 export default function ProfilePage() {
+  const t = useTranslations('profile');
+  const tc = useTranslations('common');
   const { formatDate } = useFormatters();
   useSession();
   const {
@@ -147,7 +150,7 @@ export default function ProfilePage() {
       }
       return true;
     },
-    message: 'Tienes cambios sin guardar que se perderán si abandonas esta página.',
+    message: t('discardChangesDesc'),
   });
 
   // Role-based permissions
@@ -160,7 +163,7 @@ export default function ProfilePage() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando perfil...</p>
+          <p className="text-gray-600">{t('loadingProfile')}</p>
         </div>
       </div>
     );
@@ -169,7 +172,7 @@ export default function ProfilePage() {
   if (!profile) {
     return (
       <div className="text-center p-6">
-        <p className="text-red-600">Error al cargar el perfil</p>
+        <p className="text-red-600">{t('errorLoading')}</p>
       </div>
     );
   }
@@ -177,8 +180,8 @@ export default function ProfilePage() {
   const handleSaveProfile = async (): Promise<boolean> => {
     if (isVendedor) {
       toast({
-        title: 'Sin permisos',
-        description: 'Solo el administrador puede modificar tu información personal',
+        title: t('noPermission'),
+        description: t('noPermissionDesc'),
         variant: 'destructive',
       });
       return false;
@@ -211,13 +214,13 @@ export default function ProfilePage() {
       await deviceSessionService.cerrarSesion(sessionId, 'Cerrado desde perfil');
       setDevices(prev => prev.filter(d => d.id !== sessionId));
       toast({
-        title: 'Dispositivo revocado',
-        description: 'La sesión ha sido cerrada correctamente',
+        title: t('deviceRevoked'),
+        description: t('deviceRevokedDesc'),
       });
     } catch {
       toast({
         title: 'Error',
-        description: 'No se pudo cerrar la sesión',
+        description: t('errorRevokingDevice'),
         variant: 'destructive',
       });
     }
@@ -236,9 +239,9 @@ export default function ProfilePage() {
     <div className="p-6 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">Mi Perfil</h1>
+        <h1 className="text-3xl font-bold">{t('title')}</h1>
         <p className="text-muted-foreground mt-1">
-          Gestiona tu información personal y seguridad
+          {t('subtitle')}
         </p>
       </div>
 
@@ -255,7 +258,7 @@ export default function ProfilePage() {
                 fallbackClassName="bg-primary/15 text-primary"
                 size="xl"
                 maxSizeMB={2}
-                hint="PNG, JPG o WebP. Máx. 2 MB."
+                hint={t('imageHint')}
                 disabled={isUpdating}
                 onUpload={uploadAvatar}
                 onDelete={deleteAvatar}
@@ -276,13 +279,13 @@ export default function ProfilePage() {
                     }[profile.role as UserRole] || 'bg-gray-100 text-gray-800'
                   }
                 >
-                  {profile.esSuperAdmin && 'Super Administrador'}
-                  {profile.esAdmin && !profile.esSuperAdmin && 'Administrador'}
-                  {!profile.esAdmin && !profile.esSuperAdmin && 'Vendedor'}
+                  {profile.esSuperAdmin && t('roles.superAdmin')}
+                  {profile.esAdmin && !profile.esSuperAdmin && t('roles.admin')}
+                  {!profile.esAdmin && !profile.esSuperAdmin && t('roles.vendor')}
                 </Badge>
                 <Badge variant="outline">
                   <Building className="h-3 w-3 mr-1" />
-                  Empresa
+                  {t('company')}
                 </Badge>
                 <Badge variant="outline">
                   <MapPin className="h-3 w-3 mr-1" />
@@ -307,11 +310,11 @@ export default function ProfilePage() {
 
       <Tabs defaultValue="personal" className="space-y-4">
         <TabsList data-tour="profile-tabs">
-          <TabsTrigger value="personal">Información Personal</TabsTrigger>
-          <TabsTrigger value="security">Seguridad</TabsTrigger>
-          <TabsTrigger value="devices">Dispositivos</TabsTrigger>
-          <TabsTrigger value="notifications">Notificaciones</TabsTrigger>
-          <TabsTrigger value="activity">Actividad</TabsTrigger>
+          <TabsTrigger value="personal">{t('tabs.personal')}</TabsTrigger>
+          <TabsTrigger value="security">{t('tabs.security')}</TabsTrigger>
+          <TabsTrigger value="devices">{t('tabs.devices')}</TabsTrigger>
+          <TabsTrigger value="notifications">{t('tabs.notifications')}</TabsTrigger>
+          <TabsTrigger value="activity">{t('tabs.activity')}</TabsTrigger>
         </TabsList>
 
         {/* Personal Information Tab */}
@@ -320,9 +323,9 @@ export default function ProfilePage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Información Personal</CardTitle>
+                  <CardTitle>{t('personalInfo')}</CardTitle>
                   <CardDescription>
-                    Actualiza tu información personal y de contacto
+                    {t('personalInfoDesc')}
                   </CardDescription>
                 </div>
                 {!editStates.personal && (
@@ -330,12 +333,12 @@ export default function ProfilePage() {
                     onClick={() => setEditStates(prev => ({ ...prev, personal: true }))}
                     disabled={isVendedor || isUpdating}
                     title={
-                      isVendedor ? 'Solo el administrador puede modificar tu información' : ''
+                      isVendedor ? t('noPermissionDesc') : ''
                     }
                     size="sm"
                   >
                     <User className="h-4 w-4 mr-2" />
-                    Editar Información
+                    {t('editInfo')}
                   </Button>
                 )}
               </div>
@@ -343,7 +346,7 @@ export default function ProfilePage() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Nombre completo</Label>
+                  <Label htmlFor="name">{t('fullName')}</Label>
                   <Input
                     id="name"
                     value={profileForm.name}
@@ -364,7 +367,7 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Teléfono</Label>
+                  <Label htmlFor="phone">{t('phone')}</Label>
                   <Input
                     id="phone"
                     value={profileForm.phone}
@@ -374,7 +377,7 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="department">Departamento</Label>
+                  <Label htmlFor="department">{t('department')}</Label>
                   <Input
                     id="department"
                     value={profileForm.department}
@@ -384,7 +387,7 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="location">Ubicación</Label>
+                  <Label htmlFor="location">{t('location')}</Label>
                   <Input
                     id="location"
                     value={profileForm.location}
@@ -394,14 +397,14 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Rol</Label>
+                  <Label>{t('role')}</Label>
                   <Input
                     value={
                       profile.esSuperAdmin
-                        ? 'Super Administrador'
+                        ? t('roles.superAdmin')
                         : profile.esAdmin
-                        ? 'Administrador'
-                        : 'Vendedor'
+                        ? t('roles.admin')
+                        : t('roles.vendor')
                     }
                     disabled
                   />
@@ -415,15 +418,15 @@ export default function ProfilePage() {
                     onClick={handleCancelPersonalEdit}
                     disabled={isUpdating}
                   >
-                    Cancelar
+                    {tc('cancel')}
                   </Button>
                   <Button
                     onClick={handleSaveProfile}
                     disabled={isUpdating || !hasPersonalChanges}
-                    title={!hasPersonalChanges ? 'No hay cambios para guardar' : ''}
+                    title={!hasPersonalChanges ? t('noChangesToSave') : ''}
                   >
                     <Save className="h-4 w-4 mr-2" />
-                    {isUpdating ? 'Guardando...' : 'Guardar Cambios'}
+                    {isUpdating ? tc('saving') : tc('save')}
                   </Button>
                 </div>
               )}
@@ -442,9 +445,9 @@ export default function ProfilePage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Dispositivos Conectados</CardTitle>
+                  <CardTitle>{t('connectedDevices')}</CardTitle>
                   <CardDescription>
-                    Gestiona los dispositivos que tienen acceso a tu cuenta
+                    {t('connectedDevicesDesc')}
                   </CardDescription>
                 </div>
                 {!editStates.devices && (
@@ -453,7 +456,7 @@ export default function ProfilePage() {
                     size="sm"
                   >
                     <Smartphone className="h-4 w-4 mr-2" />
-                    Administrar Dispositivos
+                    {t('manageDevices')}
                   </Button>
                 )}
               </div>
@@ -461,7 +464,7 @@ export default function ProfilePage() {
             <CardContent>
               <div className="space-y-4">
                 {devices.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">No hay sesiones activas</p>
+                  <p className="text-sm text-muted-foreground text-center py-4">{t('noActiveSessions')}</p>
                 ) : devices.map(device => (
                   <div
                     key={device.id}
@@ -476,13 +479,13 @@ export default function ProfilePage() {
                       <div>
                         <p className="font-medium">{device.deviceName || device.deviceTypeNombre}</p>
                         <p className="text-sm text-muted-foreground">
-                          {device.deviceTypeNombre}{device.ipAddress ? ` • ${device.ipAddress}` : ''} • Último acceso: {formatTime(new Date(device.lastActivity))}
+                          {device.deviceTypeNombre}{device.ipAddress ? ` • ${device.ipAddress}` : ''} • {t('lastAccess')}: {formatTime(new Date(device.lastActivity))}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       {device.esSesionActual && (
-                        <Badge className="bg-green-500 text-white">Sesión actual</Badge>
+                        <Badge className="bg-green-500 text-white">{t('currentSession')}</Badge>
                       )}
                       {!device.esSesionActual && (
                         <Button
@@ -490,7 +493,7 @@ export default function ProfilePage() {
                           size="sm"
                           onClick={() => handleRevokeDevice(device.id)}
                         >
-                          Revocar
+                          {t('revoke')}
                         </Button>
                       )}
                     </div>
@@ -501,7 +504,7 @@ export default function ProfilePage() {
               {editStates.devices && (
                 <div className="flex justify-end gap-2 pt-4">
                   <Button variant="outline" onClick={() => setEditStates(prev => ({ ...prev, devices: false }))}>
-                    Terminar Administración
+                    {t('finishManaging')}
                   </Button>
                 </div>
               )}
@@ -523,13 +526,13 @@ export default function ProfilePage() {
         <TabsContent value="activity" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Historial de Actividad</CardTitle>
-              <CardDescription>Registro de las últimas acciones en tu cuenta</CardDescription>
+              <CardTitle>{t('activityHistory')}</CardTitle>
+              <CardDescription>{t('activityHistoryDesc')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {activityLog.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">No hay actividad reciente</p>
+                  <p className="text-sm text-muted-foreground text-center py-4">{t('noRecentActivity')}</p>
                 ) : activityLog.map(activity => (
                   <div
                     key={activity.id}
@@ -559,8 +562,8 @@ export default function ProfilePage() {
       <UnsavedChangesDialog
         open={showDialog}
         onOpenChange={setShowDialog}
-        title="¿Descartar cambios?"
-        description="Tienes cambios sin guardar en tu información personal que se perderán si continúas. ¿Qué deseas hacer?"
+        title={t('discardChangesTitle')}
+        description={t('discardChangesDesc')}
         onContinue={() => {
           setShowDialog(false);
           if (hasPersonalChanges) {

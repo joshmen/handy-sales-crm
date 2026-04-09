@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { useTranslations } from 'next-intl';
 import {
   ChevronDown,
   ChevronRight,
@@ -414,7 +415,31 @@ interface SidebarProps {
   isImpersonating?: boolean;
 }
 
+// Translation map: sidebar label → i18n key
+const LABEL_KEYS: Record<string, string> = {
+  'Tablero': 'nav.dashboard', 'Pedidos': 'nav.orders', 'Cobranza': 'nav.collections',
+  'Clientes': 'nav.clients', 'Lista de clientes': 'nav.clientsList', 'Categorías de clientes': 'nav.clientCategories',
+  'Productos': 'nav.products', 'Lista de productos': 'nav.productsList', 'Familias de productos': 'nav.productFamilies',
+  'Categorías de productos': 'nav.productCategories', 'Unidades de medida': 'nav.units',
+  'Precios': 'nav.pricing', 'Listas de precios': 'nav.priceLists', 'Descuentos': 'nav.discounts', 'Promociones': 'nav.promotions',
+  'Rutas': 'nav.routes', 'Lista de rutas': 'nav.routesList', 'Plantillas': 'nav.routeTemplates',
+  'Inventario': 'nav.inventory', 'Zonas': 'nav.zones', 'Visitas': 'nav.visits',
+  'Reportes': 'nav.reports', 'Metas': 'nav.goals', 'Automatizaciones': 'nav.automations',
+  'Equipo': 'nav.team', 'Registro de actividad': 'nav.activityLog',
+  'Facturación': 'nav.billing', 'Resumen': 'nav.billingSummary', 'Facturas': 'nav.billingInvoices',
+  'Mapeo Fiscal': 'nav.billingFiscalMapping', 'Configuración Fiscal': 'nav.billingSettings',
+  'Suscripción': 'nav.subscription', 'Configuración': 'nav.settings', 'Asistente IA': 'nav.aiAssistant', 'Ayuda': 'nav.help',
+  'Dashboard': 'nav.dashboard', 'Empresas': 'nav.saCompanies', 'Usuarios Global': 'nav.saGlobalUsers',
+  'Anuncios': 'nav.saAnnouncements', 'Planes': 'nav.saPlans', 'Cupones': 'nav.saCoupons',
+  'Monitor de Errores': 'nav.saCrashReports', 'Seguridad': 'nav.saSecurity',
+  // Sections
+  'Ventas': 'nav.sectionSales', 'Catálogo': 'nav.sectionCatalog', 'Operación': 'nav.sectionOperations',
+  'Empresa': 'nav.sectionCompany',
+};
+
 export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonatingProp }) => {
+  const t = useTranslations();
+  const tl = (label: string) => { const key = LABEL_KEYS[label]; return key ? t(key) : label; };
   const [mounted, setMounted] = useState(false);
   const { data: session } = useSession();
   // SIEMPRE llamar useCompany para mantener orden de hooks
@@ -555,7 +580,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
 
         {showLabels && (
           <>
-            <span className={cn('flex-1 truncate', hasSubmenu && 'text-left')}>{item.label}</span>
+            <span className={cn('flex-1 truncate', hasSubmenu && 'text-left')}>{tl(item.label)}</span>
             <div className="flex items-center gap-2">
               {item.badge && (
                 <div className="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-xs font-semibold rounded-full">
@@ -584,7 +609,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
 
         {!showLabels && (
           <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-50 whitespace-nowrap">
-            {item.label}
+            {tl(item.label)}
             <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
           </div>
         )}
@@ -667,7 +692,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
             <div className="flex items-center justify-between">
               {!sidebarCollapsed && (
                 <h2 className="text-sm font-semibold text-foreground">
-                  {isSuperAdminDirect ? 'Administración' : 'Navegación'}
+                  {isSuperAdminDirect ? t('nav.administration') : t('nav.navigation')}
                 </h2>
               )}
               {/* Collapse toggle */}
@@ -702,7 +727,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
                       <div className="pt-4 pb-1 px-3 first:pt-0">
                         <div className="flex items-center gap-2">
                           <span className="text-[10px] font-semibold text-muted-foreground/70">
-                            {item.section}
+                            {tl(item.section)}
                           </span>
                           <div className="flex-1 h-px bg-border" />
                         </div>
@@ -721,7 +746,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
               className="mx-3 mb-2 flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors group"
             >
               <SbForms size={16} className="text-muted-foreground group-hover:text-green-600 flex-shrink-0" />
-              <span className="truncate">Guía de configuración</span>
+              <span className="truncate">{t('nav.gettingStarted')}</span>
             </Link>
           )}
 

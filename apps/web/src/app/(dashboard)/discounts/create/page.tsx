@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
+import { useTranslations } from 'next-intl';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { z } from 'zod';
 import { Button } from '@/components/ui/Button';
@@ -68,6 +69,8 @@ const mockProducts = [
 ];
 
 function CreateDiscountForm() {
+  const t = useTranslations('discounts');
+  const tc = useTranslations('common');
   const searchParams = useSearchParams();
   const router = useRouter();
   const discountType = searchParams.get('type') as DiscountType || DiscountType.GLOBAL;
@@ -144,7 +147,7 @@ function CreateDiscountForm() {
       router.push('/discounts');
     } catch (error) {
       console.error('Error saving discount:', error);
-      setErrors({ general: 'Error al guardar el descuento. Intente nuevamente.' });
+      setErrors({ general: t('createPage.generalError') });
     } finally {
       setIsSubmitting(false);
     }
@@ -165,12 +168,12 @@ function CreateDiscountForm() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold">
-              Crear descuento por {discountType === DiscountType.GLOBAL ? 'cantidad' : 'producto'}
+              {discountType === DiscountType.GLOBAL ? t('createPage.titleGlobal') : t('createPage.titleProduct')}
             </h1>
             <p className="text-gray-600">
               {discountType === DiscountType.GLOBAL
-                ? 'Configura descuentos aplicables a cualquier producto según la cantidad total'
-                : 'Configura descuentos específicos para un producto individual'
+                ? t('createPage.subtitleGlobal')
+                : t('createPage.subtitleProduct')
               }
             </p>
           </div>
@@ -186,7 +189,7 @@ function CreateDiscountForm() {
         {/* Mostrar errores de validación */}
         {Object.keys(errors).length > 0 && !errors.general && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="font-medium text-red-700 mb-2">Por favor corrija los siguientes errores:</p>
+            <p className="font-medium text-red-700 mb-2">{t('createPage.validationErrorsTitle')}</p>
             <ul className="list-disc list-inside text-red-600 text-sm">
               {Object.entries(errors).map(([field, message]) => (
                 <li key={field}>{message}</li>
@@ -208,7 +211,7 @@ function CreateDiscountForm() {
             {/* Botones de acción */}
             <div className="flex gap-4 justify-end mt-6">
               <Button variant="outline" onClick={() => router.back()}>
-                Cancelar
+                {tc('cancel')}
               </Button>
               <Button
                 onClick={handleSave}
@@ -220,7 +223,7 @@ function CreateDiscountForm() {
                 ) : (
                   <Save size={16} />
                 )}
-                {isSubmitting ? 'Guardando...' : 'Guardar descuento'}
+                {isSubmitting ? tc('saving') : t('createPage.saveDiscount')}
               </Button>
             </div>
           </div>

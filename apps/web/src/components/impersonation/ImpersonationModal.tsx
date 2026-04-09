@@ -28,6 +28,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { SbAlert, SbSecurity, SbBuildings } from '@/components/layout/DashboardIcons';
+import { useTranslations } from 'next-intl';
 
 interface Tenant {
   id: number;
@@ -46,6 +47,8 @@ interface ImpersonationModalProps {
  * Requiere justificación obligatoria y muestra advertencias de auditoría.
  */
 export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: ImpersonationModalProps) {
+  const t = useTranslations('impersonation');
+  const tCommon = useTranslations('common');
   const [reason, setReason] = useState('');
   const [ticketNumber, setTicketNumber] = useState('');
   const [accessLevel, setAccessLevel] = useState<'READ_ONLY' | 'READ_WRITE'>('READ_ONLY');
@@ -71,7 +74,7 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
       setTenantsLoading(true);
       tenantService.getAll()
         .then((tenants) => setAllTenants(tenants.map(t => ({ id: t.id, nombre: t.nombreEmpresa, activo: t.activo }))))
-        .catch(() => toast({ title: 'Error', description: 'No se pudieron cargar las empresas', variant: 'destructive' }))
+        .catch(() => toast({ title: 'Error', description: t('couldNotLoadCompanies'), variant: 'destructive' }))
         .finally(() => setTenantsLoading(false));
     }
   }, [isOpen, needsTenantSelection, allTenants.length]);
@@ -119,8 +122,8 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
     });
 
     toast({
-      title: 'Sesión iniciada',
-      description: `Ahora estás viendo la cuenta de ${tenant.nombre}`,
+      title: t('sessionStarted'),
+      description: t('nowViewing', { name: tenant.nombre }),
     });
 
     onClose();
@@ -137,7 +140,7 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
     if (isWriteAccess && !reason.trim()) {
       toast({
         title: 'Error',
-        description: 'La justificación es obligatoria para acceso de lectura/escritura',
+        description: t('justificationRequired'),
         variant: 'destructive',
       });
       return;
@@ -146,7 +149,7 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
     if (isWriteAccess && reason.trim().length < 20) {
       toast({
         title: 'Error',
-        description: 'La justificación debe tener al menos 20 caracteres',
+        description: t('justificationMinChars'),
         variant: 'destructive',
       });
       return;
@@ -155,7 +158,7 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
     if (!agreedToPolicy) {
       toast({
         title: 'Error',
-        description: 'Debes aceptar la política de impersonación',
+        description: t('mustAcceptPolicy'),
         variant: 'destructive',
       });
       return;
@@ -182,7 +185,7 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
 
       toast({
         title: 'Error',
-        description: errorMsg || 'No se pudo iniciar la sesión',
+        description: errorMsg || t('couldNotStart'),
         variant: 'destructive',
       });
     } finally {
@@ -201,8 +204,8 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
       setExistingSession(null);
 
       toast({
-        title: 'Sesión anterior finalizada',
-        description: 'Iniciando nueva sesión...',
+        title: t('previousSessionEnded'),
+        description: t('startingNewSession'),
       });
 
       // Iniciar nueva sesión
@@ -210,7 +213,7 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
     } catch (error) {
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'No se pudo finalizar la sesión anterior',
+        description: error instanceof Error ? error.message : t('couldNotEndPrevious'),
         variant: 'destructive',
       });
     } finally {
@@ -237,10 +240,10 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <SbBuildings size={20} />
-              Seleccionar Empresa
+              {t('selectCompany')}
             </DialogTitle>
             <DialogDescription>
-              Elige la empresa a la que deseas acceder como soporte.
+              {t('selectCompanyDesc')}
             </DialogDescription>
           </DialogHeader>
 
@@ -251,7 +254,7 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
               <Input
                 value={tenantSearch}
                 onChange={(e) => setTenantSearch(e.target.value)}
-                placeholder="Buscar empresa..."
+                placeholder={t('searchCompany')}
                 className="pl-9"
               />
             </div>
@@ -264,7 +267,7 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
                 </div>
               ) : filteredTenants.length === 0 ? (
                 <div className="text-center py-6 text-gray-500 text-sm">
-                  {tenantSearch ? 'No se encontraron empresas' : 'No hay empresas disponibles'}
+                  {tenantSearch ? t('noCompaniesFound') : t('noCompaniesAvailable')}
                 </div>
               ) : (
                 filteredTenants.map((t) => (
@@ -290,7 +293,7 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
 
           <DialogFooter>
             <Button variant="outline" onClick={handleClose}>
-              Cancelar
+              {tCommon('cancel')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -306,10 +309,10 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <SbAlert size={20} />
-              Sesión Activa Existente
+              {t('existingSession')}
             </DialogTitle>
             <DialogDescription>
-              Ya tienes una sesión de impersonación activa. Debes finalizarla antes de iniciar una nueva.
+              {t('existingSessionDesc')}
             </DialogDescription>
           </DialogHeader>
 
@@ -332,7 +335,7 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
                 {existingSession.minutesRemaining != null && (
                   <div className="flex items-center gap-1.5">
                     <Clock className="h-4 w-4" />
-                    <span>{existingSession.minutesRemaining} min restantes</span>
+                    <span>{t('minutesRemaining', { minutes: existingSession.minutesRemaining })}</span>
                   </div>
                 )}
                 {existingSession.accessLevel && (
@@ -343,7 +346,7 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
                       <Edit className="h-4 w-4" />
                     )}
                     <span>
-                      {existingSession.accessLevel === 'READ_ONLY' ? 'Solo lectura' : 'Lectura/Escritura'}
+                      {existingSession.accessLevel === 'READ_ONLY' ? t('readOnly') : t('readWrite')}
                     </span>
                   </div>
                 )}
@@ -352,13 +355,13 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
 
             {/* Mensaje */}
             <p className="text-sm text-gray-600">
-              Puedes finalizar la sesión anterior e iniciar una nueva, o cancelar y mantener la sesión actual.
+              {t('endExistingMessage')}
             </p>
           </div>
 
           <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={handleClose} disabled={isLoading}>
-              Cancelar
+              {tCommon('cancel')}
             </Button>
             <Button
               onClick={handleEndExistingAndRetry}
@@ -370,7 +373,7 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
               ) : (
                 <XCircle className="h-4 w-4 mr-2" />
               )}
-              Finalizar anterior e iniciar nueva
+              {t('endAndStartNew')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -385,10 +388,10 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <SbSecurity size={20} />
-            Iniciar Sesión de Soporte
+            {t('startSupportSession')}
           </DialogTitle>
           <DialogDescription>
-            Accederás temporalmente a la cuenta del cliente para brindar soporte.
+            {t('supportSessionDesc')}
           </DialogDescription>
         </DialogHeader>
 
@@ -398,12 +401,12 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
             <div className="flex gap-3">
               <SbAlert size={20} className="flex-shrink-0 mt-0.5" />
               <div className="text-sm text-muted-foreground">
-                <p className="font-medium mb-1 text-foreground">Importante:</p>
+                <p className="font-medium mb-1 text-foreground">{t('important')}</p>
                 <ul className="list-disc list-inside space-y-1">
-                  <li>Todas las acciones serán registradas</li>
-                  <li>El cliente será notificado de este acceso</li>
-                  <li>La sesión expira en 60 minutos</li>
-                  <li>Solo accede a la información necesaria</li>
+                  <li>{t('allActionsRecorded')}</li>
+                  <li>{t('clientNotified')}</li>
+                  <li>{t('sessionExpires60')}</li>
+                  <li>{t('onlyAccessNeeded')}</li>
                 </ul>
               </div>
             </div>
@@ -426,7 +429,7 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
                   className="text-xs text-blue-600"
                   onClick={() => setSelectedTenant(null)}
                 >
-                  Cambiar
+                  {t('change')}
                 </Button>
               )}
             </div>
@@ -434,7 +437,7 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
 
           {/* Nivel de acceso */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">Nivel de acceso</label>
+            <label className="text-sm font-medium">{t('accessLevel')}</label>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
@@ -447,8 +450,8 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
               >
                 <Eye className="h-4 w-4" />
                 <div className="text-left">
-                  <p className="font-medium text-sm">Solo lectura</p>
-                  <p className="text-xs text-gray-500">Recomendado</p>
+                  <p className="font-medium text-sm">{t('readOnly')}</p>
+                  <p className="text-xs text-gray-500">{t('recommended')}</p>
                 </div>
               </button>
               <button
@@ -462,8 +465,8 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
               >
                 <Edit className="h-4 w-4" />
                 <div className="text-left">
-                  <p className="font-medium text-sm">Lectura/Escritura</p>
-                  <p className="text-xs text-gray-500">Requiere justificación</p>
+                  <p className="font-medium text-sm">{t('readWrite')}</p>
+                  <p className="text-xs text-gray-500">{t('requiresJustification')}</p>
                 </div>
               </button>
             </div>
@@ -472,7 +475,7 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
           {/* H5: Justificación — obligatoria solo para READ_WRITE */}
           <div className="space-y-2">
             <label className="text-sm font-medium">
-              Justificación {accessLevel === 'READ_WRITE' ? (
+              {t('justification')} {accessLevel === 'READ_WRITE' ? (
                 <span className="text-red-500">*</span>
               ) : (
                 <span className="text-gray-400 font-normal">(opcional)</span>
@@ -482,13 +485,13 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder={accessLevel === 'READ_WRITE'
-                ? 'Describe el motivo del acceso (mínimo 20 caracteres)...'
-                : 'Opcional — describe brevemente el motivo del acceso...'
+                ? t('justificationPlaceholderRequired')
+                : t('justificationPlaceholderOptional')
               }
               className="w-full min-h-[80px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
             />
             {accessLevel === 'READ_WRITE' && (
-              <p className="text-xs text-gray-500">{reason.length}/20 caracteres mínimos</p>
+              <p className="text-xs text-gray-500">{t('minCharsCount', { count: reason.length })}</p>
             )}
           </div>
 
@@ -496,14 +499,14 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
           <div className="space-y-2">
             <label className="text-sm font-medium flex items-center gap-1">
               <FileText className="h-4 w-4" />
-              Referencia de ticket <span className="text-gray-400 font-normal">(opcional)</span>
+              {t('ticketReference')} <span className="text-gray-400 font-normal">(opcional)</span>
             </label>
             <Input
               value={ticketNumber}
               onChange={(e) => setTicketNumber(e.target.value)}
-              placeholder="Ej: JIRA-123, Zendesk #456, Freshdesk 789"
+              placeholder={t('ticketPlaceholder')}
             />
-            <p className="text-xs text-gray-400">Número de ticket en tu sistema de soporte externo</p>
+            <p className="text-xs text-gray-400">{t('ticketHelp')}</p>
           </div>
 
           {/* Aceptar política */}
@@ -515,22 +518,22 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
               className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
             />
             <span className="text-sm text-gray-600">
-              Confirmo que este acceso cumple con la{' '}
+              {t('policyConfirmation')}{' '}
               <a
                 href="/docs/impersonation-policy"
                 target="_blank"
                 className="text-blue-600 hover:underline"
               >
-                Política de Impersonación
+                {t('impersonationPolicy')}
               </a>{' '}
-              y que entiendo que todas mis acciones serán auditadas.
+              {t('policyAuditNotice')}
             </span>
           </label>
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={handleClose} disabled={isLoading}>
-            Cancelar
+            {tCommon('cancel')}
           </Button>
           <Button
             onClick={handleStart}
@@ -538,7 +541,7 @@ export function ImpersonationModal({ isOpen, onClose, tenant: initialTenant }: I
             className="bg-amber-500 hover:bg-amber-600 text-white"
           >
             {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Iniciar Sesión de Soporte
+            {t('startSupportSession')}
           </Button>
         </DialogFooter>
       </DialogContent>

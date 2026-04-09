@@ -27,6 +27,7 @@ import {
   SubscriptionPlanUpdateDto,
 } from '@/services/api/subscriptionPlansAdmin';
 import { useFormatters } from '@/hooks/useFormatters';
+import { useTranslations } from 'next-intl';
 
 const AVAILABLE_FEATURES = [
   'CRM y clientes',
@@ -48,6 +49,9 @@ const AVAILABLE_FEATURES = [
 type DrawerMode = 'none' | 'create' | 'edit';
 
 export default function SubscriptionPlansAdminPage() {
+  const t = useTranslations('admin.subscriptionPlans');
+  const ta = useTranslations('admin');
+  const tc = useTranslations('common');
   const { formatCurrency } = useFormatters();
   const [plans, setPlans] = useState<SubscriptionPlanAdminDto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -75,7 +79,7 @@ export default function SubscriptionPlansAdminPage() {
       const data = await subscriptionPlanAdminService.getAll();
       setPlans(data);
     } catch {
-      toast({ title: 'Error', description: 'No se pudieron cargar los planes', variant: 'destructive' });
+      toast({ title: tc('error'), description: t('loadError'), variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -128,7 +132,7 @@ export default function SubscriptionPlansAdminPage() {
 
   const handleSave = async () => {
     if (!nombre.trim() || (drawerMode === 'create' && !codigo.trim())) {
-      toast({ title: 'Error', description: 'Nombre y código son requeridos', variant: 'destructive' });
+      toast({ title: tc('error'), description: t('nameAndCodeRequired'), variant: 'destructive' });
       return;
     }
 
@@ -141,7 +145,7 @@ export default function SubscriptionPlansAdminPage() {
           incluyeReportes, incluyeSoportePrioritario, caracteristicas, activo, orden,
         };
         await subscriptionPlanAdminService.update(editingPlan.id, dto);
-        toast({ title: 'Plan actualizado', description: `${nombre} se actualizó correctamente` });
+        toast({ title: t('planUpdated'), description: t('planUpdatedDesc', { name: nombre }) });
       } else {
         const dto: SubscriptionPlanCreateDto = {
           nombre, codigo: codigo.toUpperCase(),
@@ -150,13 +154,13 @@ export default function SubscriptionPlansAdminPage() {
           incluyeReportes, incluyeSoportePrioritario, caracteristicas, orden,
         };
         await subscriptionPlanAdminService.create(dto);
-        toast({ title: 'Plan creado', description: `${nombre} se creó correctamente` });
+        toast({ title: t('planCreated'), description: t('planCreatedDesc', { name: nombre }) });
       }
       closeDrawer();
       fetchPlans();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Error al guardar';
-      toast({ title: 'Error', description: message, variant: 'destructive' });
+      const message = err instanceof Error ? err.message : t('saveError');
+      toast({ title: tc('error'), description: message, variant: 'destructive' });
     } finally {
       setSaving(false);
     }
@@ -166,8 +170,8 @@ export default function SubscriptionPlansAdminPage() {
     // Warn before deactivating a plan with active tenants
     if (plan.activo && plan.tenantCount > 0) {
       toast({
-        title: 'No se puede desactivar',
-        description: `${plan.tenantCount} empresa(s) usan el plan "${plan.nombre}". Migra las empresas a otro plan antes de desactivarlo.`,
+        title: t('cannotDeactivate'),
+        description: t('cannotDeactivateDesc', { count: plan.tenantCount, name: plan.nombre }),
         variant: 'destructive',
       });
       return;
@@ -175,11 +179,11 @@ export default function SubscriptionPlansAdminPage() {
 
     try {
       await subscriptionPlanAdminService.toggle(plan.id);
-      toast({ title: plan.activo ? 'Plan desactivado' : 'Plan activado' });
+      toast({ title: plan.activo ? t('planDeactivated') : t('planActivated') });
       fetchPlans();
     } catch (err: unknown) {
-      const message = (err as { message?: string })?.message || 'Error al cambiar estado';
-      toast({ title: 'Error', description: message, variant: 'destructive' });
+      const message = (err as { message?: string })?.message || t('toggleError');
+      toast({ title: tc('error'), description: message, variant: 'destructive' });
     }
   };
 
@@ -208,7 +212,7 @@ export default function SubscriptionPlansAdminPage() {
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <CreditCard className="h-5 w-5 text-blue-600" weight="duotone" />
-            {drawerMode === 'edit' ? 'Editar Plan' : 'Nuevo Plan'}
+            {drawerMode === 'edit' ? t('drawerTitleEdit') : t('drawerTitleCreate')}
           </h2>
           <button onClick={closeDrawer} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
             <X className="h-5 w-5" />
@@ -220,14 +224,14 @@ export default function SubscriptionPlansAdminPage() {
           {/* Nombre */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nombre del Plan <span className="text-red-500">*</span>
+              {t('planNameLabel')} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
               className={inputClasses}
-              placeholder="Ej: Plan Profesional"
+              placeholder={t('planNamePlaceholder')}
             />
           </div>
 
@@ -235,17 +239,17 @@ export default function SubscriptionPlansAdminPage() {
           {drawerMode === 'create' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Código <span className="text-red-500">*</span>
+                {t('codeLabel')} <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 value={codigo}
                 onChange={(e) => setCodigo(e.target.value.toUpperCase())}
                 className={`${inputClasses} font-mono uppercase`}
-                placeholder="Ej: PRO"
+                placeholder={t('codePlaceholder')}
                 maxLength={20}
               />
-              <p className="text-xs text-gray-500 mt-1">Identificador único. No se puede cambiar después.</p>
+              <p className="text-xs text-gray-500 mt-1">{t('codeHint')}</p>
             </div>
           )}
 
@@ -253,7 +257,7 @@ export default function SubscriptionPlansAdminPage() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Precio Mensual (MXN)
+                {t('monthlyPriceLabel')}
               </label>
               <input
                 type="number"
@@ -266,7 +270,7 @@ export default function SubscriptionPlansAdminPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Precio Anual (MXN)
+                {t('annualPriceLabel')}
               </label>
               <input
                 type="number"
@@ -282,13 +286,13 @@ export default function SubscriptionPlansAdminPage() {
           {/* Límites */}
           <div className="border-t border-gray-200 pt-4 mt-4">
             <h3 className="text-sm font-semibold text-gray-900 mb-3">
-              Límites del Plan
+              {t('planLimits')}
             </h3>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Max Usuarios
+                {t('maxUsersLabel')}
               </label>
               <div className="relative">
                 <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" weight="regular" />
@@ -303,7 +307,7 @@ export default function SubscriptionPlansAdminPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Max Productos
+                {t('maxProductsLabel')}
               </label>
               <div className="relative">
                 <Package className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" weight="regular" />
@@ -318,7 +322,7 @@ export default function SubscriptionPlansAdminPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Max Clientes
+                {t('maxClientsLabel')}
               </label>
               <div className="relative">
                 <UsersFour className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" weight="regular" />
@@ -336,7 +340,7 @@ export default function SubscriptionPlansAdminPage() {
           {/* Orden */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Orden de visualización
+              {t('displayOrderLabel')}
             </label>
             <input
               type="number"
@@ -350,10 +354,10 @@ export default function SubscriptionPlansAdminPage() {
           {/* Características */}
           <div className="border-t border-gray-200 pt-4 mt-4">
             <h3 className="text-sm font-semibold text-gray-900 mb-1">
-              Características incluidas
+              {t('includedFeatures')}
             </h3>
             <p className="text-xs text-gray-500 mb-3">
-              {caracteristicas.length} de {AVAILABLE_FEATURES.length} seleccionadas
+              {t('featuresSelected', { selected: caracteristicas.length, total: AVAILABLE_FEATURES.length })}
             </p>
           </div>
           <div className="space-y-1">
@@ -387,7 +391,7 @@ export default function SubscriptionPlansAdminPage() {
           {/* Configuración */}
           <div className="border-t border-gray-200 pt-4 mt-4">
             <h3 className="text-sm font-semibold text-gray-900 mb-3">
-              Configuración
+              {t('configSection')}
             </h3>
           </div>
           <div className="space-y-3">
@@ -396,7 +400,7 @@ export default function SubscriptionPlansAdminPage() {
               onClick={() => setIncluyeReportes(!incluyeReportes)}
             >
               <span className={`text-sm ${incluyeReportes ? 'text-gray-900 font-medium' : 'text-gray-600'}`}>
-                Incluye Reportes
+                {t('includesReports')}
               </span>
               <div className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${incluyeReportes ? 'bg-blue-600' : 'bg-gray-200'}`}>
                 <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${incluyeReportes ? 'translate-x-4' : 'translate-x-0.5'}`} />
@@ -407,7 +411,7 @@ export default function SubscriptionPlansAdminPage() {
               onClick={() => setIncluyeSoportePrioritario(!incluyeSoportePrioritario)}
             >
               <span className={`text-sm ${incluyeSoportePrioritario ? 'text-gray-900 font-medium' : 'text-gray-600'}`}>
-                Soporte Prioritario
+                {t('prioritySupport')}
               </span>
               <div className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${incluyeSoportePrioritario ? 'bg-blue-600' : 'bg-gray-200'}`}>
                 <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${incluyeSoportePrioritario ? 'translate-x-4' : 'translate-x-0.5'}`} />
@@ -419,7 +423,7 @@ export default function SubscriptionPlansAdminPage() {
                 onClick={() => setActivo(!activo)}
               >
                 <span className={`text-sm ${activo ? 'text-green-700 font-medium' : 'text-red-600 font-medium'}`}>
-                  {activo ? 'Plan Activo' : 'Plan Inactivo'}
+                  {activo ? t('planActive') : t('planInactive')}
                 </span>
                 <div className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${activo ? 'bg-green-600' : 'bg-gray-200'}`}>
                   <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${activo ? 'translate-x-4' : 'translate-x-0.5'}`} />
@@ -437,7 +441,7 @@ export default function SubscriptionPlansAdminPage() {
             className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             disabled={saving}
           >
-            Cancelar
+            {tc('cancel')}
           </button>
           <button
             type="button"
@@ -448,10 +452,10 @@ export default function SubscriptionPlansAdminPage() {
             {saving ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Guardando...
+                {tc('saving')}
               </>
             ) : (
-              drawerMode === 'edit' ? 'Guardar Cambios' : 'Crear Plan'
+              drawerMode === 'edit' ? t('saveChanges') : t('createPlan')
             )}
           </button>
         </div>
@@ -463,9 +467,9 @@ export default function SubscriptionPlansAdminPage() {
     <div className="p-6 space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-gray-600">
-        <span>Administración</span>
+        <span>{ta('breadcrumb')}</span>
         <ChevronRight className="h-4 w-4" />
-        <span className="text-gray-900 font-medium">Planes de Suscripción</span>
+        <span className="text-gray-900 font-medium">{t('breadcrumb')}</span>
       </div>
 
       {/* Header */}
@@ -473,10 +477,10 @@ export default function SubscriptionPlansAdminPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <CreditCard className="h-6 w-6 text-blue-600" weight="duotone" />
-            Planes de Suscripción
+            {t('title')}
           </h1>
           <p className="mt-1 text-sm text-gray-500">
-            Gestiona los planes disponibles y sus límites
+            {t('subtitle')}
           </p>
         </div>
         <div className="flex gap-2">
@@ -486,14 +490,14 @@ export default function SubscriptionPlansAdminPage() {
             className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            Actualizar
+            {tc('refresh')}
           </button>
           <button
             onClick={openCreate}
             className="flex items-center gap-2 px-3 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Plus className="h-4 w-4" />
-            Nuevo Plan
+            {t('newPlan')}
           </button>
         </div>
       </div>
@@ -506,7 +510,7 @@ export default function SubscriptionPlansAdminPage() {
               <CreditCard className="h-5 w-5 text-blue-600" weight="duotone" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Total Planes</p>
+              <p className="text-sm text-gray-500">{t('totalPlans')}</p>
               <p className="text-2xl font-bold text-gray-900">{totalPlans}</p>
             </div>
           </div>
@@ -517,7 +521,7 @@ export default function SubscriptionPlansAdminPage() {
               <CheckCircle className="h-5 w-5 text-green-600" weight="duotone" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Planes Activos</p>
+              <p className="text-sm text-gray-500">{t('activePlans')}</p>
               <p className="text-2xl font-bold text-gray-900">{activePlans}</p>
             </div>
           </div>
@@ -528,7 +532,7 @@ export default function SubscriptionPlansAdminPage() {
               <Buildings className="h-5 w-5 text-violet-600" weight="duotone" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Empresas con Plan</p>
+              <p className="text-sm text-gray-500">{t('companiesWithPlan')}</p>
               <p className="text-2xl font-bold text-gray-900">{totalTenants}</p>
             </div>
           </div>
@@ -543,13 +547,13 @@ export default function SubscriptionPlansAdminPage() {
       ) : plans.length === 0 ? (
         <div className="rounded-lg border border-gray-200 bg-white p-12 text-center">
           <CreditCard className="mx-auto h-12 w-12 text-gray-300" weight="duotone" />
-          <p className="mt-4 text-gray-500">No hay planes de suscripción</p>
+          <p className="mt-4 text-gray-500">{t('noPlans')}</p>
           <button
             onClick={openCreate}
             className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700"
           >
             <Plus className="h-4 w-4" />
-            Crear primer plan
+            {t('createFirst')}
           </button>
         </div>
       ) : (
@@ -559,16 +563,16 @@ export default function SubscriptionPlansAdminPage() {
             <table className="w-full text-sm">
               <thead className="border-b border-gray-200 bg-gray-50 text-left">
                 <tr>
-                  <th className="px-4 py-3 font-medium text-gray-500">Plan</th>
-                  <th className="px-4 py-3 font-medium text-gray-500">Código</th>
-                  <th className="px-4 py-3 font-medium text-gray-500 text-right">Mensual</th>
-                  <th className="px-4 py-3 font-medium text-gray-500 text-right">Anual</th>
-                  <th className="px-4 py-3 font-medium text-gray-500 text-center">Usuarios</th>
-                  <th className="px-4 py-3 font-medium text-gray-500 text-center">Productos</th>
-                  <th className="px-4 py-3 font-medium text-gray-500 text-center">Características</th>
-                  <th className="px-4 py-3 font-medium text-gray-500 text-center">Empresas</th>
-                  <th className="px-4 py-3 font-medium text-gray-500 text-center">Estado</th>
-                  <th className="px-4 py-3 font-medium text-gray-500 text-right">Acciones</th>
+                  <th className="px-4 py-3 font-medium text-gray-500">{t('tablePlan')}</th>
+                  <th className="px-4 py-3 font-medium text-gray-500">{t('tableCode')}</th>
+                  <th className="px-4 py-3 font-medium text-gray-500 text-right">{t('tableMonthly')}</th>
+                  <th className="px-4 py-3 font-medium text-gray-500 text-right">{t('tableAnnual')}</th>
+                  <th className="px-4 py-3 font-medium text-gray-500 text-center">{t('tableUsers')}</th>
+                  <th className="px-4 py-3 font-medium text-gray-500 text-center">{t('tableProducts')}</th>
+                  <th className="px-4 py-3 font-medium text-gray-500 text-center">{t('tableFeatures')}</th>
+                  <th className="px-4 py-3 font-medium text-gray-500 text-center">{t('tableCompanies')}</th>
+                  <th className="px-4 py-3 font-medium text-gray-500 text-center">{t('tableStatus')}</th>
+                  <th className="px-4 py-3 font-medium text-gray-500 text-right">{t('tableActions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -610,7 +614,7 @@ export default function SubscriptionPlansAdminPage() {
                       <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
                         plan.activo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
                       }`}>
-                        {plan.activo ? 'Activo' : 'Inactivo'}
+                        {plan.activo ? tc('active') : tc('inactive')}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">
@@ -618,7 +622,7 @@ export default function SubscriptionPlansAdminPage() {
                         <button
                           onClick={() => openEdit(plan)}
                           className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
-                          title="Editar"
+                          title={tc('edit')}
                         >
                           <Pencil className="h-4 w-4" />
                         </button>
@@ -633,8 +637,8 @@ export default function SubscriptionPlansAdminPage() {
                           }`}
                           title={
                             plan.activo && plan.tenantCount > 0
-                              ? `No se puede desactivar: ${plan.tenantCount} empresa(s) usan este plan`
-                              : plan.activo ? 'Desactivar' : 'Activar'
+                              ? t('cannotDeactivateDesc', { count: plan.tenantCount, name: plan.nombre })
+                              : plan.activo ? tc('deactivate') : tc('activate')
                           }
                         >
                           {plan.activo ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />}
@@ -669,28 +673,28 @@ export default function SubscriptionPlansAdminPage() {
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
                   <div>
-                    <span className="text-gray-500">Mensual:</span>{' '}
+                    <span className="text-gray-500">{t('tableMonthly')}:</span>{' '}
                     <span className="font-medium">{formatPrice(plan.precioMensual)}</span>
                   </div>
                   <div>
-                    <span className="text-gray-500">Anual:</span>{' '}
+                    <span className="text-gray-500">{t('tableAnnual')}:</span>{' '}
                     <span className="font-medium">{formatPrice(plan.precioAnual)}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Users className="h-3.5 w-3.5 text-gray-400" />
-                    <span className="text-gray-500">Usuarios:</span> {plan.maxUsuarios}
+                    <span className="text-gray-500">{t('tableUsers')}:</span> {plan.maxUsuarios}
                   </div>
                   <div className="flex items-center gap-1">
                     <Package className="h-3.5 w-3.5 text-gray-400" />
-                    <span className="text-gray-500">Productos:</span> {plan.maxProductos}
+                    <span className="text-gray-500">{t('tableProducts')}:</span> {plan.maxProductos}
                   </div>
                   <div className="flex items-center gap-1">
                     <UsersFour className="h-3.5 w-3.5 text-gray-400" />
-                    <span className="text-gray-500">Clientes:</span> {plan.maxClientesPorMes}
+                    <span className="text-gray-500">{t('maxClientsLabel')}:</span> {plan.maxClientesPorMes}
                   </div>
                   <div className="flex items-center gap-1">
                     <Buildings className="h-3.5 w-3.5 text-gray-400" />
-                    <span className="text-gray-500">Empresas:</span> {plan.tenantCount}
+                    <span className="text-gray-500">{t('tableCompanies')}:</span> {plan.tenantCount}
                   </div>
                 </div>
                 <div className="mt-3 flex gap-2 border-t border-gray-100 pt-3">
@@ -699,7 +703,7 @@ export default function SubscriptionPlansAdminPage() {
                     className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                   >
                     <Pencil className="h-3.5 w-3.5 text-amber-600" />
-                    Editar
+                    {tc('edit')}
                   </button>
                   <button
                     onClick={() => handleToggle(plan)}
@@ -712,7 +716,7 @@ export default function SubscriptionPlansAdminPage() {
                     }`}
                   >
                     {plan.activo ? <PowerOff className="h-3.5 w-3.5" /> : <Power className="h-3.5 w-3.5" />}
-                    {plan.activo && plan.tenantCount > 0 ? 'En uso' : plan.activo ? 'Desactivar' : 'Activar'}
+                    {plan.activo && plan.tenantCount > 0 ? t('inUse') : plan.activo ? tc('deactivate') : tc('activate')}
                   </button>
                 </div>
               </div>

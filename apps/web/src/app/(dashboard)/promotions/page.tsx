@@ -37,6 +37,7 @@ import { SearchBar } from '@/components/common/SearchBar';
 import { InactiveToggle } from '@/components/ui/InactiveToggle';
 import { ActiveToggle } from '@/components/ui/ActiveToggle';
 import { DataGrid, DataGridColumn } from '@/components/ui/DataGrid';
+import { useTranslations } from 'next-intl';
 import { Megaphone } from '@phosphor-icons/react';
 import { HelpTooltip } from '@/components/help/HelpTooltip';
 import { useFormatters } from '@/hooks/useFormatters';
@@ -61,6 +62,8 @@ const promotionSchema = z.object({
 type PromotionFormData = z.infer<typeof promotionSchema>;
 
 export default function PromotionsPage() {
+  const t = useTranslations('promotions');
+  const tc = useTranslations('common');
   const { formatDate: _fmtDate } = useFormatters();
   const drawerRef = useRef<DrawerHandle>(null);
   const [promotions, setPromotions] = useState<PromocionDto[]>([]);
@@ -93,7 +96,7 @@ export default function PromotionsPage() {
       setPromotions(response.data);
     } catch (error) {
       console.error('Error loading promotions:', error);
-      toast.error('No se pudieron cargar las promociones');
+      toast.error(t('errorLoading'));
     } finally {
       setLoading(false);
     }
@@ -169,7 +172,7 @@ export default function PromotionsPage() {
   const promoColumns = useMemo<DataGridColumn<PromocionDto>[]>(() => [
     {
       key: 'nombre',
-      label: 'Nombre',
+      label: t('name'),
       sortable: true,
       width: 'flex',
       cellRenderer: (promo) => (
@@ -181,18 +184,18 @@ export default function PromotionsPage() {
     },
     {
       key: 'productos',
-      label: 'Productos',
+      label: t('products'),
       width: 200,
       cellRenderer: (promo) => promo.productos && promo.productos.length > 0 ? (
         <div className="group relative">
           <div className="flex items-center gap-1.5">
             <Package className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
             <span className="text-[13px] text-gray-700">
-              {promo.productos.length === 1 ? promo.productos[0].productoNombre : `${promo.productos.length} productos`}
+              {promo.productos.length === 1 ? promo.productos[0].productoNombre : t('productsCount', { count: promo.productos.length, plural: 's' })}
             </span>
           </div>
           <div className="invisible group-hover:visible absolute z-20 left-0 top-full mt-1 w-56 bg-gray-900 text-white text-xs rounded-lg shadow-lg p-2 max-h-[200px] overflow-y-auto">
-            <div className="font-medium text-gray-300 mb-1 px-1">{promo.productos.length} producto{promo.productos.length !== 1 ? 's' : ''}:</div>
+            <div className="font-medium text-gray-300 mb-1 px-1">{t('productsCount', { count: promo.productos.length, plural: promo.productos.length !== 1 ? 's' : '' })}:</div>
             {promo.productos.map((prod) => (
               <div key={prod.productoId} className="flex items-center gap-1.5 px-1 py-0.5 rounded hover:bg-gray-800">
                 <Package className="w-3 h-3 text-gray-400 flex-shrink-0" />
@@ -201,11 +204,11 @@ export default function PromotionsPage() {
             ))}
           </div>
         </div>
-      ) : <span className="text-[11px] text-gray-400">Sin productos</span>,
+      ) : <span className="text-[11px] text-gray-400">{t('noProducts')}</span>,
     },
     {
       key: 'descuentoPorcentaje',
-      label: 'Descuento',
+      label: t('discountPercent'),
       sortable: true,
       width: 80,
       align: 'center',
@@ -215,7 +218,7 @@ export default function PromotionsPage() {
     },
     {
       key: 'fechaInicio',
-      label: 'Vigencia',
+      label: t('validity'),
       sortable: true,
       width: 200,
       cellRenderer: (promo) => (
@@ -224,13 +227,13 @@ export default function PromotionsPage() {
             <Calendar className="w-3.5 h-3.5 text-violet-500 flex-shrink-0" />
             <span>{formatDate(promo.fechaInicio)} - {formatDate(promo.fechaFin)}</span>
           </div>
-          {isExpired(promo.fechaFin) && <span className="text-[11px] text-red-500 ml-5">Vencida</span>}
+          {isExpired(promo.fechaFin) && <span className="text-[11px] text-red-500 ml-5">{t('expired')}</span>}
         </div>
       ),
     },
     {
       key: 'activo',
-      label: 'Activo',
+      label: tc('active'),
       width: 50,
       align: 'center',
       cellRenderer: (promo) => (
@@ -245,7 +248,7 @@ export default function PromotionsPage() {
       width: 64,
       cellRenderer: (promo) => (
         <div className="flex items-center justify-center gap-1" onClick={(e) => e.stopPropagation()}>
-          <button onClick={() => handleOpenEdit(promo)} disabled={loading} className="p-1 text-amber-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors disabled:opacity-50" title="Editar">
+          <button onClick={() => handleOpenEdit(promo)} disabled={loading} className="p-1 text-amber-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors disabled:opacity-50" title={tc('edit')}>
             <Pencil className="w-4 h-4" />
           </button>
           {deleteConfirmId === promo.id ? (
@@ -254,7 +257,7 @@ export default function PromotionsPage() {
               <button onClick={() => setDeleteConfirmId(null)} className="p-1 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X className="w-4 h-4" /></button>
             </>
           ) : (
-            <button onClick={() => setDeleteConfirmId(promo.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Eliminar"><Trash2 className="w-4 h-4" /></button>
+            <button onClick={() => setDeleteConfirmId(promo.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title={tc('delete')}><Trash2 className="w-4 h-4" /></button>
           )}
         </div>
       ),
@@ -279,7 +282,7 @@ export default function PromotionsPage() {
       await promotionService.batchToggleActive(ids, activo);
 
       toast.success(
-        `${ids.length} promocion${ids.length > 1 ? 'es' : ''} ${activo ? 'activada' : 'desactivada'}${ids.length > 1 ? 's' : ''} exitosamente`
+        activo ? t('batchActivated', { count: ids.length, plural: ids.length > 1 ? 'es' : '', plural2: ids.length > 1 ? 's' : '' }) : t('batchDeactivated', { count: ids.length, plural: ids.length > 1 ? 'es' : '', plural2: ids.length > 1 ? 's' : '' })
       );
 
       // Optimistic update
@@ -294,7 +297,7 @@ export default function PromotionsPage() {
       batch.completeBatch();
     } catch (error) {
       console.error('Error en batch toggle:', error);
-      toast.error('Error al cambiar el estado de las promociones');
+      toast.error(t('batchError'));
       batch.setBatchLoading(false);
       await fetchPromotions();
     }
@@ -302,7 +305,7 @@ export default function PromotionsPage() {
 
   const handleRefresh = () => {
     fetchPromotions();
-    toast.success('Promociones actualizadas');
+    toast.success(t('refreshed'));
   };
 
   const handleOpenCreate = () => {
@@ -327,10 +330,10 @@ export default function PromotionsPage() {
   const handleDelete = async (id: number) => {
     try {
       await promotionService.delete(id);
-      toast.success('Promoción eliminada');
+      toast.success(t('deleted'));
       await fetchPromotions();
     } catch {
-      toast.error('Error al eliminar la promoción');
+      toast.error(t('errorDeleting'));
     }
   };
 
@@ -349,17 +352,17 @@ export default function PromotionsPage() {
 
       if (editingPromotion) {
         await api.put(`/promociones/${editingPromotion.id}`, dto);
-        toast.success('Promocion actualizada exitosamente');
+        toast.success(t('updated'));
       } else {
         await api.post('/promociones', dto);
-        toast.success('Promocion creada exitosamente');
+        toast.success(t('created'));
       }
 
       setIsModalOpen(false);
       await fetchPromotions();
     } catch (error: unknown) {
       const e = error as { response?: { data?: { message?: string } }; message?: string };
-      const msg = e?.response?.data?.message || e?.message || 'Ocurrio un error';
+      const msg = e?.response?.data?.message || e?.message || t('errorSaving');
       toast.error(msg);
     } finally {
       setActionLoading(false);
@@ -371,7 +374,7 @@ export default function PromotionsPage() {
       setTogglingId(promo.id);
       const newActivo = !promo.activo;
       await promotionService.toggleActive(promo.id, newActivo);
-      toast.success(newActivo ? 'Promocion activada' : 'Promocion desactivada');
+      toast.success(newActivo ? t('activated') : t('deactivated'));
       // Optimistic update
       if (!showInactive && !newActivo) {
         setPromotions(prev => prev.filter(p => p.id !== promo.id));
@@ -381,7 +384,7 @@ export default function PromotionsPage() {
         ));
       }
     } catch (error: unknown) {
-      const msg = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Error al cambiar estado';
+      const msg = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || t('errorToggle');
       toast.error(msg);
       await fetchPromotions();
     } finally {
@@ -392,10 +395,10 @@ export default function PromotionsPage() {
   return (
     <PageHeader
       breadcrumbs={[
-        { label: 'Inicio', href: '/dashboard' },
-        { label: 'Promociones' },
+        { label: tc('home'), href: '/dashboard' },
+        { label: t('title') },
       ]}
-      title="Promociones"
+      title={t('title')}
       actions={
         <>
           <div className="relative" data-tour="promotions-import-export">
@@ -404,7 +407,7 @@ export default function PromotionsPage() {
               className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
             >
               <Download className="w-3.5 h-3.5 text-emerald-500" />
-              <span className="hidden sm:inline">Importar / Exportar</span>
+              <span className="hidden sm:inline">{tc('importExport')}</span>
               <ChevronDown className="w-3 h-3 text-gray-400" />
             </button>
             {showDataMenu && (
@@ -412,18 +415,18 @@ export default function PromotionsPage() {
                 <div className="fixed inset-0 z-10" onClick={() => setShowDataMenu(false)} />
                 <div className="absolute right-0 mt-1 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1">
                   <button
-                    onClick={async () => { setShowDataMenu(false); try { await exportToCsv('promociones'); toast.success('Archivo CSV descargado'); } catch { toast.error('Error al exportar datos'); } }}
+                    onClick={async () => { setShowDataMenu(false); try { await exportToCsv('promociones'); toast.success(tc('csvDownloaded')); } catch { toast.error(tc('errorExporting')); } }}
                     className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
                   >
                     <Download className="w-3.5 h-3.5 text-emerald-500" />
-                    Exportar CSV
+                    {tc('exportCsv')}
                   </button>
                   <button
                     onClick={() => { setIsImportOpen(true); setShowDataMenu(false); }}
                     className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
                   >
                     <Upload className="w-3.5 h-3.5 text-blue-500" />
-                    Importar CSV
+                    {tc('importCsv')}
                   </button>
                 </div>
               </>
@@ -435,7 +438,7 @@ export default function PromotionsPage() {
             className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors"
           >
             <Plus className="w-4 h-4" />
-            <span>Nueva promoción</span>
+            <span>{t('newPromotion')}</span>
           </button>
         </>
       }
@@ -446,7 +449,7 @@ export default function PromotionsPage() {
           <SearchBar
             value={search}
             onChange={(v) => { setSearch(v); setCurrentPage(1); }}
-            placeholder="Buscar promoción..."
+            placeholder={t('searchPlaceholder')}
             dataTour="promotions-search"
           />
 
@@ -456,7 +459,7 @@ export default function PromotionsPage() {
             className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline">Actualizar</span>
+            <span className="hidden sm:inline">{tc('refresh')}</span>
           </button>
 
           <div data-tour="promotions-toggle-inactive" className="ml-auto">
@@ -485,10 +488,10 @@ export default function PromotionsPage() {
             data={sortedPromotions}
             keyExtractor={(p) => p.id}
             loading={loading}
-            loadingMessage="Cargando promociones..."
+            loadingMessage={t('loadingPromotions')}
             emptyIcon={<Gift className="w-16 h-16 text-yellow-300" />}
-            emptyTitle="No hay promociones"
-            emptyMessage="Crea tu primera promoción para comenzar"
+            emptyTitle={t('noPromotions')}
+            emptyMessage={t('noPromotionsDesc')}
             sort={{
               key: sortKey,
               direction: sortDir,
@@ -524,17 +527,17 @@ export default function PromotionsPage() {
                   </div>
                 </div>
                 <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-500">
-                  <span className="inline-flex items-center gap-1"><Package className="w-3 h-3 text-blue-400" /> {promo.productos?.length || 0} productos</span>
+                  <span className="inline-flex items-center gap-1"><Package className="w-3 h-3 text-blue-400" /> {t('productsCount', { count: promo.productos?.length || 0, plural: (promo.productos?.length || 0) !== 1 ? 's' : '' })}</span>
                   <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full font-medium">{promo.descuentoPorcentaje}%</span>
                 </div>
                 <div className="mt-1.5 flex items-center gap-1 text-xs text-gray-500">
                   <Calendar className="w-3 h-3 text-violet-500" />
                   <span>{formatDate(promo.fechaInicio)} - {formatDate(promo.fechaFin)}</span>
-                  {isExpired(promo.fechaFin) && <span className="text-red-500 ml-1">Vencida</span>}
+                  {isExpired(promo.fechaFin) && <span className="text-red-500 ml-1">{t('expired')}</span>}
                 </div>
                 <div className="mt-2.5 flex items-center justify-end gap-1 border-t border-gray-100 pt-2" onClick={(e) => e.stopPropagation()}>
                   <button onClick={() => handleOpenEdit(promo)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-green-600 hover:bg-green-50 rounded transition-colors">
-                    <Pencil className="w-3.5 h-3.5 text-amber-400" /> Editar
+                    <Pencil className="w-3.5 h-3.5 text-amber-400" /> {tc('edit')}
                   </button>
                   {deleteConfirmId === promo.id ? (
                     <div className="flex items-center gap-1">
@@ -560,8 +563,8 @@ export default function PromotionsPage() {
         selectedCount={batch.selectedCount}
         entityLabel="promocion"
         loading={batch.batchLoading}
-        consequenceActivate="Las promociones activadas volverán a estar disponibles."
-        consequenceDeactivate="Las promociones desactivadas no estarán disponibles."
+        consequenceActivate={t('batchConsequenceActivate')}
+        consequenceDeactivate={t('batchConsequenceDeactivate')}
       />
 
       {/* Create/Edit Drawer */}
@@ -569,7 +572,7 @@ export default function PromotionsPage() {
         ref={drawerRef}
         isOpen={isModalOpen}
         onClose={() => !actionLoading && setIsModalOpen(false)}
-        title={editingPromotion ? 'Editar Promoción' : 'Nueva Promoción'}
+        title={editingPromotion ? t('editPromotion') : t('newPromotion')}
         icon={<Tag className="w-5 h-5 text-amber-500" />}
         width="lg"
         isDirty={isDirty}
@@ -577,18 +580,18 @@ export default function PromotionsPage() {
         footer={
           <div className="flex justify-end gap-3" data-tour="promotions-drawer-actions">
             <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()} disabled={actionLoading}>
-              Cancelar
+              {tc('cancel')}
             </Button>
             <Button type="button" variant="default" onClick={handleSubmit} disabled={actionLoading} className="flex items-center gap-2">
               {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-              {editingPromotion ? 'Guardar Cambios' : 'Crear Promoción'}
+              {editingPromotion ? tc('saveChanges') : t('newPromotion')}
             </Button>
           </div>
         }
       >
         <form onSubmit={handleSubmit} data-tour="promotion-form" className="px-6 py-6 space-y-4">
           <div data-tour="promotions-drawer-name">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('name')} <span className="text-red-500">*</span></label>
             <input
               type="text"
               {...register('nombre')}
@@ -599,17 +602,17 @@ export default function PromotionsPage() {
           </div>
 
           <div data-tour="promotions-drawer-description">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Descripcion</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('description')}</label>
             <input
               type="text"
               {...register('descripcion')}
-              placeholder="Descripcion de la promocion..."
+              placeholder={t('descriptionPlaceholder')}
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
           </div>
 
           <div data-tour="promotions-drawer-products">
-            <label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">Productos <span className="text-red-500">*</span> <HelpTooltip tooltipKey="promo-products" /></label>
+            <label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">{t('products')} <span className="text-red-500">*</span> <HelpTooltip tooltipKey="promo-products" /></label>
             {/* Selected product chips */}
             {watch('productoIds').length > 0 && (
               <div className="flex flex-wrap gap-1.5 mb-2 max-h-[120px] overflow-y-auto p-1">
@@ -642,9 +645,9 @@ export default function PromotionsPage() {
                   setValue('productoIds', [...currentIds, Number(val)], { shouldDirty: true });
                 }
               }}
-              placeholder={watch('productoIds').length > 0 ? 'Agregar otro producto...' : 'Seleccionar productos...'}
-              searchPlaceholder="Buscar producto..."
-              emptyMessage="No hay mas productos disponibles"
+              placeholder={watch('productoIds').length > 0 ? t('addAnotherProduct') : t('selectProducts')}
+              searchPlaceholder={t('searchProduct')}
+              emptyMessage={t('noMoreProducts')}
               onSelectAll={
                 watch('productoIds').length < productos.length
                   ? () => setValue('productoIds', productos.map(p => p.id), { shouldDirty: true })
@@ -657,11 +660,11 @@ export default function PromotionsPage() {
               }
             />
             {errors.productoIds && <p className="text-red-500 text-xs mt-1">{errors.productoIds.message}</p>}
-            <p className="text-xs text-gray-400 mt-1">{watch('productoIds').length} de {productos.length} producto{watch('productoIds').length !== 1 ? 's' : ''} seleccionado{watch('productoIds').length !== 1 ? 's' : ''}</p>
+            <p className="text-xs text-gray-400 mt-1">{t('selectedCount', { selected: watch('productoIds').length, total: productos.length, plural: watch('productoIds').length !== 1 ? 's' : '', plural2: watch('productoIds').length !== 1 ? 's' : '' })}</p>
           </div>
 
           <div data-tour="promotions-drawer-discount">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Descuento (%) <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('discountPercent')} <span className="text-red-500">*</span></label>
             <input
               type="number"
               min="1"
@@ -675,7 +678,7 @@ export default function PromotionsPage() {
 
           <div className="grid grid-cols-2 gap-4" data-tour="promotions-drawer-dates">
             <div>
-              <label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">Fecha inicio <span className="text-red-500">*</span> <HelpTooltip tooltipKey="promo-dates" /></label>
+              <label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">{t('startDate')} <span className="text-red-500">*</span> <HelpTooltip tooltipKey="promo-dates" /></label>
               <DateTimePicker
                 mode="date"
                 value={watch('fechaInicio')}
@@ -684,7 +687,7 @@ export default function PromotionsPage() {
               {errors.fechaInicio && <p className="text-red-500 text-xs mt-1">{errors.fechaInicio.message}</p>}
             </div>
             <div>
-              <label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">Fecha fin <span className="text-red-500">*</span></label>
+              <label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">{t('endDate')} <span className="text-red-500">*</span></label>
               <DateTimePicker
                 mode="date"
                 value={watch('fechaFin')}

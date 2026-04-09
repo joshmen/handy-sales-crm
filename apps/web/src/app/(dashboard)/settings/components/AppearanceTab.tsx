@@ -109,8 +109,12 @@ export const AppearanceTab: React.FC = () => {
       // Also write to localStorage for instant hydration on next page load
       localStorage.setItem('handysuites-timezone', timezone);
       localStorage.setItem('handysuites-language', language);
+      // Set cookie for server-side locale detection (next-intl reads this on SSR)
+      document.cookie = `NEXT_LOCALE=${language};path=/;max-age=${365 * 24 * 60 * 60};SameSite=Lax`;
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
+      // Reload to apply locale change across all server-rendered content
+      window.location.reload();
     }
   };
 

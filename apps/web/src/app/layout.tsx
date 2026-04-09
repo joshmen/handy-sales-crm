@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
 import { ClientProviders } from "@/components/providers/ClientProviders";
 import { CookieConsentBanner } from "@/components/ui/CookieConsentBanner";
 import { ErrorListener } from "@/components/ErrorListener";
@@ -57,13 +59,16 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
-    <html lang="es" suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#16a34a" />
@@ -101,12 +106,20 @@ export default function RootLayout({
       </head>
       <body className={inter.className} suppressHydrationWarning>
         <a
+          id="skip-link"
           href="#main-content"
           className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-indigo-700 focus:rounded-md focus:shadow-lg focus:ring-2 focus:ring-indigo-500"
         >
-          Saltar al contenido principal
+          Skip to main content
         </a>
-        <ClientProviders>{children}</ClientProviders>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var s=JSON.parse(localStorage.getItem('company_settings')||'{}');if(s.language!=='en'){document.getElementById('skip-link').textContent='Saltar al contenido principal';}}catch(e){}`,
+          }}
+        />
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <ClientProviders>{children}</ClientProviders>
+        </NextIntlClientProvider>
         <ErrorListener />
         <CookieConsentBanner />
       </body>

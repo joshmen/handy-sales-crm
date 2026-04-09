@@ -35,6 +35,7 @@ import { ErrorBanner } from '@/components/ui/ErrorBanner';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { DataGrid, DataGridColumn } from '@/components/ui/DataGrid';
 import { useFormatters } from '@/hooks/useFormatters';
+import { useTranslations } from 'next-intl';
 
 // Mapeo de estados de API a estados del componente
 const estadoToStatus: Record<string, Order['status']> = {
@@ -176,6 +177,8 @@ interface UsuarioOption {
 }
 
 export default function OrdersPage() {
+  const t = useTranslations('orders');
+  const tc = useTranslations('common');
   const { formatCurrency, formatDate } = useFormatters();
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN';
@@ -235,8 +238,8 @@ export default function OrdersPage() {
       });
     } catch (err) {
       console.error('Error al cargar pedidos:', err);
-      setError('Error al cargar los pedidos. Intenta de nuevo.');
-      toast.error('Error al cargar los pedidos');
+      setError(t('errorLoading'));
+      toast.error(t('errorLoading'));
     } finally {
       setLoading(false);
     }
@@ -315,18 +318,18 @@ export default function OrdersPage() {
       const orderDetail = await orderService.getOrderById(parseInt(orderId));
       toast.info(`Pedido ${orderDetail.numeroPedido} - Total: $${orderDetail.total.toFixed(2)}`);
     } catch (_err) {
-      toast.error('Error al cargar los detalles del pedido');
+      toast.error(t('errorLoading'));
     }
   };
 
   const handleDeleteOrder = async (orderId: string) => {
-    if (confirm('¿Estás seguro de que quieres eliminar este pedido?')) {
+    if (confirm(t('confirmDelete'))) {
       try {
         await orderService.deleteOrder(parseInt(orderId));
         setOrders(orders.filter(o => o.id !== orderId));
-        toast.success('Pedido eliminado correctamente');
+        toast.success(t('orderDeleted'));
       } catch (_err) {
-        toast.error('Error al eliminar el pedido');
+        toast.error(t('errorDeleting'));
       }
     }
   };
@@ -343,24 +346,24 @@ export default function OrdersPage() {
         case 'en-ruta': await orderService.sendToRoute(id); break;
         case 'entregar': await orderService.deliverOrder(id); break;
       }
-      toast.success('Estado actualizado');
+      toast.success(t('statusUpdated'));
       fetchOrders();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Error al cambiar estado';
+      const message = err instanceof Error ? err.message : tc('errorChangingStatus');
       toast.error(message);
     }
   };
 
   const handleCancelOrderStatus = async (orderId: string) => {
-    const reason = window.prompt('Motivo de cancelación (opcional):');
+    const reason = window.prompt(t('cancelReason'));
     if (reason === null) return; // User clicked Cancel on the prompt
     const id = parseInt(orderId);
     try {
       await orderService.cancelOrder(id, reason || undefined);
-      toast.success('Pedido cancelado');
+      toast.success(t('orderCancelled'));
       fetchOrders();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Error al cancelar pedido';
+      const message = err instanceof Error ? err.message : t('errorCancelling');
       toast.error(message);
     }
   };
@@ -372,7 +375,7 @@ export default function OrdersPage() {
           fechaEntregaEstimada: orderData.deliveryDate?.toISOString(),
           notas: orderData.notes,
         });
-        toast.success('Pedido actualizado correctamente');
+        toast.success(t('orderUpdated'));
       } else {
         const createData = {
           clienteId: parseInt(orderData.clientId || '0'),
@@ -387,20 +390,20 @@ export default function OrdersPage() {
           })) || [],
         };
         await orderService.createOrder(createData);
-        const tipoMsg = orderData.tipoVenta === 1 ? 'Venta directa creada y entregada' : 'Pedido creado correctamente';
+        const tipoMsg = orderData.tipoVenta === 1 ? t('directSaleCreated') : t('orderCreated');
         toast.success(tipoMsg);
       }
       await fetchOrders();
       setShowOrderForm(false);
       setEditingOrder(null);
     } catch (_err) {
-      toast.error('Error al guardar el pedido');
+      toast.error(t('errorSaving'));
     }
   };
 
   const handleRefresh = () => {
     fetchOrders();
-    toast.success('Lista actualizada');
+    toast.success(tc('listUpdated'));
   };
 
   // Sort state
@@ -440,7 +443,7 @@ export default function OrdersPage() {
   const orderColumns = useMemo<DataGridColumn<Order>[]>(() => [
     {
       key: 'code',
-      label: '# Pedido',
+      label: t('columns.orderNumber'),
       sortable: true,
       width: 150,
       cellRenderer: (order) => (
@@ -452,7 +455,7 @@ export default function OrdersPage() {
     },
     {
       key: 'client',
-      label: 'Cliente',
+      label: t('columns.client'),
       sortable: true,
       width: 'flex',
       cellRenderer: (order) => (
@@ -461,14 +464,14 @@ export default function OrdersPage() {
     },
     {
       key: 'vendor',
-      label: 'Vendedor',
+      label: t('columns.vendor'),
       width: 140,
       hiddenOnMobile: true,
       cellRenderer: (order) => <span className="text-[13px] text-gray-500 truncate block">{order.user.name}</span>,
     },
     {
       key: 'orderDate',
-      label: 'Fecha',
+      label: t('columns.date'),
       sortable: true,
       width: 120,
       cellRenderer: (order) => (
@@ -480,22 +483,22 @@ export default function OrdersPage() {
     },
     {
       key: 'status',
-      label: 'Estado',
+      label: t('columns.status'),
       width: 90,
       cellRenderer: (order) => (
         <span className={`text-[12px] font-medium whitespace-nowrap ${statusTextColors[order.status]}`}>
-          {statusLabels[order.status]}
+          {t(`status.${order.status === 'en_route' ? 'enRoute' : order.status}`)}
         </span>
       ),
     },
     {
       key: 'tipoVenta',
-      label: 'Tipo',
+      label: t('columns.type'),
       width: 85,
       hiddenOnMobile: true,
       cellRenderer: (order) => (
         <span className={`text-[12px] whitespace-nowrap ${order.tipoVenta === 1 ? 'text-emerald-600' : 'text-gray-500'}`}>
-          {order.tipoVenta === 1 ? 'V. Directa' : 'Preventa'}
+          {order.tipoVenta === 1 ? t('filters.directSale') : t('filters.preventa')}
         </span>
       ),
     },
@@ -513,7 +516,7 @@ export default function OrdersPage() {
     },
     {
       key: 'actions',
-      label: 'Acciones',
+      label: tc('actions'),
       width: 180,
       align: 'center',
       cellRenderer: (order) => {
@@ -526,7 +529,7 @@ export default function OrdersPage() {
                 onClick={() => handleAdvanceStatus(order.id, nextAction.action)}
                 className={`flex items-center gap-0.5 text-[11px] px-2.5 py-1 rounded font-semibold transition-colors whitespace-nowrap ${nextAction.colorClasses}`}
               >
-                {nextAction.label}
+                {nextAction.action === 'confirmar' ? t('actions.confirm') : nextAction.action === 'en-ruta' ? t('actions.sendToRoute') : t('actions.deliver')}
               </button>
             )}
             {order.status === 'delivered' && (() => {
@@ -537,24 +540,24 @@ export default function OrdersPage() {
                   className="text-[11px] px-2.5 py-1 rounded font-medium text-blue-700 border border-blue-200 hover:bg-blue-50 transition-colors whitespace-nowrap flex items-center gap-1"
                 >
                   <FileText className="w-3 h-3" />
-                  Ver Factura
+                  {t('actions.viewInvoice')}
                 </button>
               ) : (
                 <button
                   onClick={() => handleFacturar(order.id)}
                   className="text-[11px] px-2.5 py-1 rounded font-medium text-emerald-700 border border-emerald-200 hover:bg-emerald-50 transition-colors whitespace-nowrap"
                 >
-                  Facturar
+                  {t('actions.invoice')}
                 </button>
               );
             })()}
             <div className="flex items-center gap-0.5 border border-gray-200 rounded-md px-0.5 py-0.5">
               {canAdvanceOrders && canCancel && (
-                <button onClick={() => handleCancelOrderStatus(order.id)} className="p-1 hover:bg-red-50 rounded transition-colors" title="Cancelar">
+                <button onClick={() => handleCancelOrderStatus(order.id)} className="p-1 hover:bg-red-50 rounded transition-colors" title={t('actions.cancelOrder')}>
                   <X className="w-3.5 h-3.5 text-gray-400 hover:text-red-500" />
                 </button>
               )}
-              <button onClick={() => handleDeleteOrder(order.id)} className="p-1 hover:bg-red-50 rounded transition-colors" title="Eliminar">
+              <button onClick={() => handleDeleteOrder(order.id)} className="p-1 hover:bg-red-50 rounded transition-colors" title={tc('delete')}>
                 <Trash2 className="w-3.5 h-3.5 text-gray-400 hover:text-red-500" />
               </button>
             </div>
@@ -568,21 +571,21 @@ export default function OrdersPage() {
     <>
       <PageHeader
         breadcrumbs={[
-          { label: 'Inicio', href: '/dashboard' },
-          { label: 'Pedidos' },
+          { label: tc('home'), href: '/dashboard' },
+          { label: t('title') },
         ]}
-        title="Pedidos"
-        subtitle={totalItems > 0 ? `${totalItems} pedido${totalItems !== 1 ? 's' : ''}` : undefined}
+        title={t('title')}
+        subtitle={totalItems > 0 ? t('orderCount', { count: totalItems, plural: totalItems !== 1 ? 's' : '' }) : undefined}
         actions={
           <>
-            <ExportButton entity="pedidos" label="Exportar" params={{ desde: fechaDesde, hasta: fechaHasta }} />
+            <ExportButton entity="pedidos" params={{ desde: fechaDesde, hasta: fechaHasta }} />
             <button
               data-tour="orders-create-btn"
               onClick={handleCreateOrder}
               className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
             >
               <Plus className="w-4 h-4" />
-              <span>Nuevo pedido</span>
+              <span>{t('newOrder')}</span>
             </button>
           </>
         }
@@ -598,7 +601,7 @@ export default function OrdersPage() {
             <SearchBar
               value={searchTerm}
               onChange={(v) => { setSearchTerm(v); setCurrentPage(1); }}
-              placeholder="Buscar pedido por número o cliente..."
+              placeholder={t('searchPlaceholder')}
               className="w-full"
             />
           </div>
@@ -633,12 +636,12 @@ export default function OrdersPage() {
               onChange={(e) => { setEstadoFilter(e.target.value); setCurrentPage(1); }}
               className="px-3 py-2 h-10 text-[13px] text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             >
-              <option value="">Todos los estados</option>
-              <option value="Borrador">Borrador</option>
-              <option value="Confirmado">Confirmado</option>
-              <option value="EnRuta">En Ruta</option>
-              <option value="Entregado">Entregado</option>
-              <option value="Cancelado">Cancelado</option>
+              <option value="">{t('filters.allStatuses')}</option>
+              <option value="Borrador">{t('status.draft')}</option>
+              <option value="Confirmado">{t('status.confirmed')}</option>
+              <option value="EnRuta">{t('status.enRoute')}</option>
+              <option value="Entregado">{t('status.delivered')}</option>
+              <option value="Cancelado">{t('status.cancelled')}</option>
             </select>
 
             {/* Users Filter - solo visible para Admin */}
@@ -646,12 +649,12 @@ export default function OrdersPage() {
             <div className="min-w-[200px] max-w-[260px]" data-tour="orders-user-filter">
               <SearchableSelect
                 options={[
-                  { value: 'all', label: 'Todos los vendedores' },
+                  { value: 'all', label: t('filters.allVendors') },
                   ...usuarios.map(u => ({ value: u.id.toString(), label: u.nombre })),
                 ]}
                 value={filterUser}
                 onChange={(val) => { setFilterUser(val ? String(val) : 'all'); setCurrentPage(1); }}
-                placeholder="Todos los vendedores"
+                placeholder={t('filters.allVendors')}
               />
             </div>
             )}
@@ -663,9 +666,9 @@ export default function OrdersPage() {
               onChange={(e) => { setTipoVentaFilter(e.target.value as '' | '0' | '1'); setCurrentPage(1); }}
               className="px-3 py-2 h-10 text-[13px] text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             >
-              <option value="">Todos los tipos</option>
-              <option value="0">Preventa</option>
-              <option value="1">Venta Directa</option>
+              <option value="">{t('filters.allTypes')}</option>
+              <option value="0">{t('filters.preventa')}</option>
+              <option value="1">{t('filters.directSale')}</option>
             </select>
 
             {/* Refresh Button */}
@@ -674,7 +677,7 @@ export default function OrdersPage() {
               className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
             >
               <RefreshCw className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Actualizar</span>
+              <span className="hidden sm:inline">{tc('refresh')}</span>
             </button>
           </div>
             {/* Orders DataGrid */}
@@ -684,10 +687,10 @@ export default function OrdersPage() {
                 data={sortedOrders}
                 keyExtractor={(o) => o.id}
                 loading={loading}
-                loadingMessage="Cargando pedidos..."
+                loadingMessage={t('loadingOrders')}
                 emptyIcon={<FileText className="w-16 h-16" />}
-                emptyTitle="No se encontraron resultados"
-                emptyMessage="Crea pedidos desde la app móvil"
+                emptyTitle={t('emptyTitle')}
+                emptyMessage={t('emptyMessage')}
                 onRowClick={(order) => handleEditOrder(order.id)}
                 sort={{
                   key: sortKey,
@@ -716,12 +719,12 @@ export default function OrdersPage() {
                         </div>
                         <span className="flex items-center gap-1.5">
                           <span className={`w-2 h-2 rounded-full ${statusDotColors[order.status]}`} />
-                          <span className={`text-[11px] font-medium whitespace-nowrap ${statusTextColors[order.status]}`}>{statusLabels[order.status]}</span>
+                          <span className={`text-[11px] font-medium whitespace-nowrap ${statusTextColors[order.status]}`}>{t(`status.${order.status === 'en_route' ? 'enRoute' : order.status}`)}</span>
                         </span>
                       </div>
                       <div className="flex justify-end mt-1">
                         <span className={`text-[10px] font-medium ${order.tipoVenta === 1 ? 'text-emerald-600' : 'text-gray-400'}`}>
-                          {order.tipoVenta === 1 ? 'Venta Directa' : 'Preventa'}
+                          {order.tipoVenta === 1 ? t('filters.directSale') : t('filters.preventa')}
                         </span>
                       </div>
                       <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 mb-2.5">
@@ -733,23 +736,23 @@ export default function OrdersPage() {
                       </div>
                       <div className="flex items-center justify-end gap-1 border-t border-gray-100 pt-2" onClick={(e) => e.stopPropagation()}>
                         <button onClick={() => handleViewDetails(order.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded">
-                          <Eye className="w-3.5 h-3.5 text-blue-400" /> Ver
+                          <Eye className="w-3.5 h-3.5 text-blue-400" /> {t('view')}
                         </button>
                         <button onClick={() => handleEditOrder(order.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-green-600 hover:bg-green-50 rounded">
-                          <Edit className="w-3.5 h-3.5 text-amber-400" /> Editar
+                          <Edit className="w-3.5 h-3.5 text-amber-400" /> {t('editOrder')}
                         </button>
                         <button onClick={() => handleDeleteOrder(order.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-red-600 hover:bg-red-50 rounded">
-                          <Trash2 className="w-3.5 h-3.5 text-red-400" /> Eliminar
+                          <Trash2 className="w-3.5 h-3.5 text-red-400" /> {tc('delete')}
                         </button>
                         {order.status === 'delivered' && (() => {
                           const inv = invoicedOrders[parseInt(order.id)];
                           return inv ? (
                             <button onClick={() => router.push(`/billing/invoices/${inv.facturaId}`)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded">
-                              <FileText className="w-3.5 h-3.5 text-blue-500" /> Ver Factura
+                              <FileText className="w-3.5 h-3.5 text-blue-500" /> {t('actions.viewInvoice')}
                             </button>
                           ) : (
                             <button onClick={() => handleFacturar(order.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-emerald-600 hover:bg-emerald-50 rounded">
-                              <Receipt className="w-3.5 h-3.5 text-emerald-500" weight="bold" /> Facturar
+                              <Receipt className="w-3.5 h-3.5 text-emerald-500" weight="bold" /> {t('actions.invoice')}
                             </button>
                           );
                         })()}
@@ -758,12 +761,12 @@ export default function OrdersPage() {
                         <div className="flex items-center gap-2 border-t border-gray-100 pt-2 mt-1" onClick={(e) => e.stopPropagation()}>
                           {nextAction && (
                             <button onClick={() => handleAdvanceStatus(order.id, nextAction.action)} className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-md font-medium transition-colors ${nextAction.colorClasses}`}>
-                              <ChevronRight className="w-3 h-3" /> {nextAction.label}
+                              <ChevronRight className="w-3 h-3" /> {nextAction.action === 'confirmar' ? t('actions.confirm') : nextAction.action === 'en-ruta' ? t('actions.sendToRoute') : t('actions.deliver')}
                             </button>
                           )}
                           {canCancel && (
                             <button onClick={() => handleCancelOrderStatus(order.id)} className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-md font-medium text-red-600 bg-red-50 hover:bg-red-100 transition-colors">
-                              <X className="w-3 h-3" /> Cancelar
+                              <X className="w-3 h-3" /> {t('actions.cancelOrder')}
                             </button>
                           )}
                         </div>
@@ -784,7 +787,7 @@ export default function OrdersPage() {
           setEditingOrder(null);
           setFormIsDirty(false);
         }}
-        title={editingOrder ? 'Editar Pedido' : 'Nuevo Pedido'}
+        title={editingOrder ? t('drawerTitleEdit') : t('drawerTitleNew')}
         icon={<ShoppingCart className="w-5 h-5 text-green-600" />}
         width="lg"
         isDirty={formIsDirty}
@@ -792,10 +795,10 @@ export default function OrdersPage() {
         footer={
           <div className="flex items-center justify-end gap-3">
             <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()}>
-              Cancelar
+              {tc('cancel')}
             </Button>
             <Button type="button" variant="success" onClick={() => orderFormRef.current?.submit()} className="flex items-center gap-2">
-              {editingOrder ? 'Guardar Cambios' : 'Crear Pedido'}
+              {editingOrder ? t('saveChanges') : t('createOrder')}
             </Button>
           </div>
         }

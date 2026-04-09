@@ -13,6 +13,7 @@ import {
 import { useAnnouncements } from '@/hooks/useAnnouncements';
 import type { AnnouncementBanner } from '@/services/api/announcements';
 import { cn } from '@/lib/utils';
+import { useTranslations } from 'next-intl';
 
 const EXIT_DURATION = 400; // must match banner-exit animation duration
 
@@ -105,6 +106,7 @@ function BannerRow({
   index: number;
   isExiting: boolean;
 }) {
+  const t = useTranslations('announcements');
   const style = getBannerStyle(banner.tipo, banner.prioridad);
 
   return (
@@ -158,7 +160,7 @@ function BannerRow({
         {banner.tipo === 'Maintenance' && (
           <span className="hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-white/20 text-white border border-white/30">
             <Radio className="h-2.5 w-2.5 animate-pulse" />
-            Mantenimiento
+            {t('maintenanceBadge')}
           </span>
         )}
 
@@ -170,7 +172,7 @@ function BannerRow({
               'opacity-60 hover:opacity-100',
               style.dismissHover,
             )}
-            aria-label="Cerrar anuncio"
+            aria-label={t('closeBanner')}
           >
             <X className="h-3.5 w-3.5" />
           </button>

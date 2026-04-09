@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import * as Popover from '@radix-ui/react-popover';
 import { Search, ChevronDown, Check, X, Package } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTranslations } from 'next-intl';
 
 export interface SearchableSelectOption {
   value: string | number;
@@ -30,15 +31,16 @@ export function SearchableSelect({
   options,
   value,
   onChange,
-  placeholder = 'Seleccionar...',
-  searchPlaceholder = 'Buscar...',
-  emptyMessage = 'Sin resultados',
+  placeholder,
+  searchPlaceholder,
+  emptyMessage,
   disabled = false,
   error = false,
   className,
   onSelectAll,
   onClearAll,
 }: SearchableSelectProps) {
+  const tc = useTranslations('common');
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -83,13 +85,13 @@ export function SearchableSelect({
             {selected?.imageUrl && (
               <img src={selected.imageUrl} alt="" className="w-5 h-5 rounded object-cover flex-shrink-0" />
             )}
-            <span className="truncate">{selected ? selected.label : placeholder}</span>
+            <span className="truncate">{selected ? selected.label : (placeholder ?? tc('select'))}</span>
           </span>
           <div className="flex items-center gap-1">
             {selected && !disabled && (
               <span
                 role="button"
-                aria-label="Limpiar selección"
+                aria-label={tc('clearSelection')}
                 tabIndex={0}
                 className="p-0.5 hover:bg-gray-100 rounded"
                 onClick={(e) => {
@@ -119,8 +121,8 @@ export function SearchableSelect({
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder={searchPlaceholder}
-              aria-label="Buscar opciones"
+              placeholder={searchPlaceholder ?? tc('searchEllipsis')}
+              aria-label={tc('searchOptions')}
               className="flex-1 text-sm outline-none bg-transparent placeholder:text-gray-400"
             />
             {search && (
@@ -143,7 +145,7 @@ export function SearchableSelect({
                   onClick={() => { onSelectAll(); setOpen(false); }}
                   className="text-xs text-green-600 hover:text-green-700 font-medium hover:underline"
                 >
-                  Seleccionar todos ({options.length})
+                  {tc('selectAll', { count: options.length })}
                 </button>
               )}
               {onClearAll && (
@@ -152,7 +154,7 @@ export function SearchableSelect({
                   onClick={() => { onClearAll(); setOpen(false); }}
                   className="text-xs text-red-500 hover:text-red-600 font-medium hover:underline ml-auto"
                 >
-                  Quitar todos
+                  {tc('removeAll')}
                 </button>
               )}
             </div>
@@ -162,7 +164,7 @@ export function SearchableSelect({
           <div id="searchable-select-listbox" role="listbox" className="max-h-[220px] overflow-y-auto">
             {filtered.length === 0 ? (
               <div className="px-3 py-6 text-center text-sm text-gray-400">
-                {emptyMessage}
+                {emptyMessage ?? tc('noResults')}
               </div>
             ) : (
               filtered.map((option) => {

@@ -2,6 +2,7 @@
 
 import React, { useCallback } from 'react';
 import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { ListPagination } from './ListPagination';
 import { TableLoadingOverlay } from './TableLoadingOverlay';
 
@@ -78,11 +79,13 @@ export function DataGrid<T>({
   loading = false,
   loadingMessage,
   emptyIcon,
-  emptyTitle = 'Sin resultados',
+  emptyTitle,
   emptyMessage,
   mobileCardRenderer,
   className,
 }: DataGridProps<T>) {
+  const tg = useTranslations('dataGrid');
+  const resolvedEmptyTitle = emptyTitle || tg('emptyTitle');
   const allSelected = selection && data.length > 0 && data.every(item => selection.selectedIds.has(keyExtractor(item)));
   const someSelected = selection && data.some(item => selection.selectedIds.has(keyExtractor(item)));
 
@@ -113,9 +116,9 @@ export function DataGrid<T>({
   };
 
   return (
-    <div className={`bg-white rounded-xl border border-gray-200 overflow-hidden ${className || ''}`}>
-      {/* ─── Loading Overlay ─── */}
-      {loading && <TableLoadingOverlay loading={true} message={loadingMessage} />}
+    <div className={`bg-white rounded-xl border border-gray-200 overflow-hidden relative ${className || ''}`}>
+      {/* ─── Loading Overlay (only when refreshing existing data) ─── */}
+      {loading && data.length > 0 && <TableLoadingOverlay loading={true} message={loadingMessage} />}
 
       {/* ─── Desktop Table ─── */}
       <div className="hidden sm:block">
@@ -155,11 +158,23 @@ export function DataGrid<T>({
         </div>
 
         {/* Rows */}
-        <div className={loading ? 'opacity-50 pointer-events-none' : ''}>
-          {data.length === 0 && !loading ? (
+        <div className={loading && data.length > 0 ? 'opacity-50 pointer-events-none' : ''}>
+          {loading && data.length === 0 ? (
+            <div>
+              {Array.from({ length: pagination?.pageSize || 5 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3 px-5 py-3.5 border-b border-gray-100 animate-pulse" style={{ animationDelay: `${i * 75}ms` }}>
+                  {columns.map(col => (
+                    <div key={col.key} style={getColumnStyle(col)} className={col.hiddenOnMobile ? 'hidden md:block' : ''}>
+                      <div className={`h-4 bg-gray-200 rounded ${col.key === 'status' ? 'w-16' : 'w-3/4'}`} />
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          ) : data.length === 0 && !loading ? (
             <div className="flex flex-col items-center justify-center py-16 px-4">
               {emptyIcon && <div className="mb-3 text-gray-300">{emptyIcon}</div>}
-              <p className="text-sm font-medium text-gray-500">{emptyTitle}</p>
+              <p className="text-sm font-medium text-gray-500">{resolvedEmptyTitle}</p>
               {emptyMessage && <p className="text-xs text-gray-400 mt-1">{emptyMessage}</p>}
             </div>
           ) : (
@@ -218,7 +233,7 @@ export function DataGrid<T>({
         ) : data.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 px-4">
             {emptyIcon && <div className="mb-3 text-gray-300">{emptyIcon}</div>}
-            <p className="text-sm font-medium text-gray-500">{emptyTitle}</p>
+            <p className="text-sm font-medium text-gray-500">{resolvedEmptyTitle}</p>
             {emptyMessage && <p className="text-xs text-gray-400 mt-1">{emptyMessage}</p>}
           </div>
         ) : (
@@ -257,7 +272,7 @@ export function DataGrid<T>({
       {pagination && pagination.totalPages > 1 && (
         <div className="flex items-center justify-between px-5 py-3 border-t border-gray-200 bg-gray-50/50">
           <span className="text-[12px] text-gray-500">
-            Mostrando {((pagination.currentPage - 1) * pagination.pageSize) + 1}-{Math.min(pagination.currentPage * pagination.pageSize, pagination.totalItems)} de {pagination.totalItems}
+            {tg('showingRange', { start: ((pagination.currentPage - 1) * pagination.pageSize) + 1, end: Math.min(pagination.currentPage * pagination.pageSize, pagination.totalItems), total: pagination.totalItems })}
           </span>
           <ListPagination
             currentPage={pagination.currentPage}
@@ -273,7 +288,7 @@ export function DataGrid<T>({
       {pagination && pagination.totalPages <= 1 && pagination.totalItems > 0 && (
         <div className="px-5 py-2.5 border-t border-gray-200 bg-gray-50/50">
           <span className="text-[12px] text-gray-500">
-            Mostrando {pagination.totalItems} registro{pagination.totalItems !== 1 ? 's' : ''}
+            {tg('showingTotal', { total: pagination.totalItems, plural: pagination.totalItems !== 1 ? 's' : '' })}
           </span>
         </div>
       )}

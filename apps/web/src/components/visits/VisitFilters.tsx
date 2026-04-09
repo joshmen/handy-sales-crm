@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/Button';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { TipoVisita, ResultadoVisita } from '@/types/visits';
 import { Search, X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface VisitFiltersProps {
   searchTerm: string;
@@ -29,6 +30,8 @@ export const VisitFilters: React.FC<VisitFiltersProps> = ({
   onClearFilters,
   className = '',
 }) => {
+  const t = useTranslations('visits.filterForm');
+  const tv = useTranslations('visits.types');
   const hasFilters = searchTerm || tipoFilter || resultadoFilter || dateFilter;
 
   return (
@@ -38,7 +41,7 @@ export const VisitFilters: React.FC<VisitFiltersProps> = ({
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
         <input
           type="text"
-          placeholder="Buscar por cliente..."
+          placeholder={t('searchByClient')}
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
           className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -51,13 +54,13 @@ export const VisitFilters: React.FC<VisitFiltersProps> = ({
         <div className="min-w-[170px]">
           <SearchableSelect
             options={[
-              { value: '', label: 'Todos los tipos' },
-              { value: String(TipoVisita.Rutina), label: 'Rutina' },
-              { value: String(TipoVisita.Cobranza), label: 'Cobranza' },
-              { value: String(TipoVisita.Entrega), label: 'Entrega' },
-              { value: String(TipoVisita.Prospeccion), label: 'Prospección' },
-              { value: String(TipoVisita.Seguimiento), label: 'Seguimiento' },
-              { value: String(TipoVisita.Otro), label: 'Otro' },
+              { value: '', label: t('allTypes') },
+              { value: String(TipoVisita.Rutina), label: tv('routine') },
+              { value: String(TipoVisita.Cobranza), label: tv('collection') },
+              { value: String(TipoVisita.Entrega), label: tv('delivery') },
+              { value: String(TipoVisita.Prospeccion), label: tv('prospecting') },
+              { value: String(TipoVisita.Seguimiento), label: tv('followUp') },
+              { value: String(TipoVisita.Otro), label: tv('other') },
             ]}
             value={tipoFilter || null}
             onChange={(val) => onTipoChange(val ? String(val) : '')}
@@ -69,13 +72,13 @@ export const VisitFilters: React.FC<VisitFiltersProps> = ({
         <div className="min-w-[180px]">
           <SearchableSelect
             options={[
-              { value: '', label: 'Todos los resultados' },
-              { value: String(ResultadoVisita.Pendiente), label: 'Pendiente' },
-              { value: String(ResultadoVisita.Venta), label: 'Con Venta' },
-              { value: String(ResultadoVisita.SinVenta), label: 'Sin Venta' },
-              { value: String(ResultadoVisita.NoEncontrado), label: 'No Encontrado' },
-              { value: String(ResultadoVisita.Reprogramada), label: 'Reprogramada' },
-              { value: String(ResultadoVisita.Cancelada), label: 'Cancelada' },
+              { value: '', label: t('allResults') },
+              { value: String(ResultadoVisita.Pendiente), label: t('resultPending') },
+              { value: String(ResultadoVisita.Venta), label: t('resultWithSale') },
+              { value: String(ResultadoVisita.SinVenta), label: t('resultNoSale') },
+              { value: String(ResultadoVisita.NoEncontrado), label: t('resultNotFound') },
+              { value: String(ResultadoVisita.Reprogramada), label: t('resultRescheduled') },
+              { value: String(ResultadoVisita.Cancelada), label: t('resultCancelled') },
             ]}
             value={resultadoFilter || null}
             onChange={(val) => onResultadoChange(val ? String(val) : '')}
@@ -87,13 +90,13 @@ export const VisitFilters: React.FC<VisitFiltersProps> = ({
         <div className="min-w-[170px]">
           <SearchableSelect
             options={[
-              { value: '', label: 'Todas las fechas' },
-              { value: 'today', label: 'Hoy' },
-              { value: 'yesterday', label: 'Ayer' },
-              { value: 'this_week', label: 'Esta semana' },
-              { value: 'last_week', label: 'Semana pasada' },
-              { value: 'this_month', label: 'Este mes' },
-              { value: 'last_month', label: 'Mes pasado' },
+              { value: '', label: t('allDates') },
+              { value: 'today', label: t('today') },
+              { value: 'yesterday', label: t('yesterday') },
+              { value: 'this_week', label: t('thisWeek') },
+              { value: 'last_week', label: t('lastWeek') },
+              { value: 'this_month', label: t('thisMonth') },
+              { value: 'last_month', label: t('lastMonth') },
             ]}
             value={dateFilter || null}
             onChange={(val) => onDateChange(val ? String(val) : '')}
@@ -110,7 +113,7 @@ export const VisitFilters: React.FC<VisitFiltersProps> = ({
             className="flex items-center"
           >
             <X size={16} className="mr-1" />
-            Limpiar
+            {t('clear')}
           </Button>
         )}
       </div>

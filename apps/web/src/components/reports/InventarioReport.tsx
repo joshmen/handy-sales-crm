@@ -8,6 +8,7 @@ import { getInventario, InventarioProducto } from '@/services/api/reports';
 import { toast } from '@/hooks/useToast';
 import { RefreshCw, Download, Loader2 } from 'lucide-react';
 import { useReportExport } from '@/hooks/useReportExport';
+import { useTranslations } from 'next-intl';
 
 const estadoColors: Record<string, { bg: string; text: string; label: string; pie: string }> = {
   sin_stock: { bg: 'bg-red-100', text: 'text-red-700', label: 'Sin Stock', pie: '#dc2626' },
@@ -17,6 +18,9 @@ const estadoColors: Record<string, { bg: string; text: string; label: string; pi
 };
 
 export function InventarioReport() {
+  const t = useTranslations('reports.inventario');
+  const tCommon = useTranslations('reports.common');
+  const tFilters = useTranslations('reports.filters');
   const [data, setData] = useState<{ productos: InventarioProducto[]; resumen: { total: number; sinStock: number; bajo: number; normal: number; exceso: number } } | null>(null);
   const [loading, setLoading] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
@@ -41,7 +45,7 @@ export function InventarioReport() {
       setLoading(true);
       const res = await getInventario();
       setData(res);
-    } catch { toast.error('Error al cargar inventario'); }
+    } catch { toast.error(tCommon('errorLoadingInventory')); }
     finally { setLoading(false); }
   }, []);
 
@@ -49,13 +53,13 @@ export function InventarioReport() {
   useEffect(() => { fetch(); }, []);
 
   const columns: ReportColumn<InventarioProducto>[] = [
-    { key: 'nombre', header: 'Producto', sortable: true },
-    { key: 'codigoBarra', header: 'Código' },
-    { key: 'stockActual', header: 'Actual', align: 'right', sortable: true },
-    { key: 'stockMinimo', header: 'Mínimo', align: 'right' },
-    { key: 'stockMaximo', header: 'Máximo', align: 'right' },
+    { key: 'nombre', header: t('product'), sortable: true },
+    { key: 'codigoBarra', header: t('code') },
+    { key: 'stockActual', header: t('current'), align: 'right', sortable: true },
+    { key: 'stockMinimo', header: t('minimum'), align: 'right' },
+    { key: 'stockMaximo', header: t('maximum'), align: 'right' },
     {
-      key: 'estado', header: 'Estado', align: 'center', sortable: true,
+      key: 'estado', header: t('status'), align: 'center', sortable: true,
       render: (r) => {
         const c = estadoColors[r.estado];
         return <span className={`inline-block px-2 py-0.5 text-[10px] font-medium rounded-full ${c.bg} ${c.text}`}>{c.label}</span>;
@@ -76,22 +80,22 @@ export function InventarioReport() {
         {data && (
           <button onClick={exportPDF} disabled={exporting} className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50" title="Exportar a PDF">
             {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-            {exporting ? 'Exportando...' : 'PDF'}
+            {exporting ? tFilters('exporting') : 'PDF'}
           </button>
         )}
         <button onClick={fetch} disabled={loading} className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50">
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          Actualizar
+          {tCommon('refresh')}
         </button>
       </div>
 
       {data && (
         <>
           <ReportKPICards cards={[
-            { label: 'Total Productos', value: data.resumen.total, color: 'gray' },
-            { label: 'Sin Stock', value: data.resumen.sinStock, color: data.resumen.sinStock > 0 ? 'red' : 'gray' },
-            { label: 'Stock Bajo', value: data.resumen.bajo, color: data.resumen.bajo > 0 ? 'amber' : 'gray' },
-            { label: 'Normal', value: data.resumen.normal, color: 'green' },
+            { label: t('totalProducts'), value: data.resumen.total, color: 'gray' },
+            { label: t('outOfStock'), value: data.resumen.sinStock, color: data.resumen.sinStock > 0 ? 'red' : 'gray' },
+            { label: t('lowStock'), value: data.resumen.bajo, color: data.resumen.bajo > 0 ? 'amber' : 'gray' },
+            { label: t('normal'), value: data.resumen.normal, color: 'green' },
           ]} />
 
           {pieData.length > 0 && (

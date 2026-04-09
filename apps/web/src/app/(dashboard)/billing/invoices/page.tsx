@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { Search, Download, X as XIcon, FileText, Loader2, ChevronLeft, ChevronRight, Shield } from 'lucide-react';
 import { TimbresModal } from '@/components/billing/TimbresModal';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -26,14 +27,18 @@ const ESTADO_STYLES: Record<FacturaEstado, string> = {
   ERROR: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
 };
 
-const ESTADO_LABELS: Record<FacturaEstado, string> = {
-  PENDIENTE: 'Pendiente',
-  TIMBRADA: 'Timbrada',
-  CANCELADA: 'Cancelada',
-  ERROR: 'Error',
-};
-
 export default function InvoicesPage() {
+  const t = useTranslations('billing');
+  const tInv = useTranslations('billing.invoices');
+  const tCommon = useTranslations('common');
+
+  const ESTADO_LABELS: Record<FacturaEstado, string> = {
+    PENDIENTE: tInv('status.pending'),
+    TIMBRADA: tInv('status.stamped'),
+    CANCELADA: tInv('status.cancelled'),
+    ERROR: tInv('status.error'),
+  };
+
   const [facturas, setFacturas] = useState<FacturaListItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -57,7 +62,7 @@ export default function InvoicesPage() {
       setTotalCount(data.totalCount ?? 0);
     } catch (err) {
       const { message } = extractBillingError(err);
-      toast({ title: 'Error al cargar facturas', description: message, variant: 'destructive' });
+      toast({ title: tInv('errorLoading'), description: message, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -70,7 +75,7 @@ export default function InvoicesPage() {
 
   const handleExportAll = async () => {
     try {
-      toast.info('Preparando descarga...');
+      toast.info(tInv('preparingDownload'));
       const response = await billingAxios.get('/api/facturas/export-zip', { responseType: 'blob' });
       const blob = new Blob([response.data], { type: 'application/zip' });
       const url = URL.createObjectURL(blob);
@@ -80,7 +85,7 @@ export default function InvoicesPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      toast.error('Error al exportar facturas');
+      toast.error(tInv('exportError'));
     }
   };
 
@@ -88,7 +93,7 @@ export default function InvoicesPage() {
     setTimbrando(id);
     try {
       await timbrarFactura(id);
-      toast({ title: 'Factura timbrada exitosamente' });
+      toast({ title: tInv('stampSuccess') });
       loadFacturas();
     } catch (err) {
       const billingErr = extractBillingError(err);
@@ -97,7 +102,7 @@ export default function InvoicesPage() {
         setTimbresModalOpen(true);
       } else {
         toast({
-          title: 'Error al timbrar factura',
+          title: tInv('stampError'),
           description: billingErr.details
             ? `${billingErr.message} — ${billingErr.details}`
             : billingErr.message,
@@ -114,22 +119,22 @@ export default function InvoicesPage() {
   if (loading && facturas.length === 0) return (
     <div role="status" className="flex items-center justify-center min-h-[60vh]">
       <Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" />
-      <span className="sr-only">Cargando...</span>
+      <span className="sr-only">Loading...</span>
     </div>
   );
 
   return (<>
     <PageHeader
       breadcrumbs={[
-        { label: 'Facturación', href: '/billing' },
-        { label: 'Facturas' },
+        { label: t('title'), href: '/billing' },
+        { label: tInv('title') },
       ]}
-      title="Facturas"
-      subtitle={`${totalCount} facturas`}
+      title={tInv('title')}
+      subtitle={tInv('subtitle', { count: totalCount })}
       actions={
         <Button variant="outline" onClick={handleExportAll} disabled={totalCount === 0}>
           <Download className="w-4 h-4 mr-2" />
-          Exportar
+          {tCommon('export')}
         </Button>
       }
     >
@@ -139,7 +144,7 @@ export default function InvoicesPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Buscar por RFC receptor..."
+            placeholder={tInv('searchByRfc')}
             value={filterRfc}
             onChange={e => setFilterRfc(e.target.value)}
             className="w-full pl-9 pr-8 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-500"
@@ -155,10 +160,10 @@ export default function InvoicesPage() {
           onChange={e => setFilterEstado(e.target.value)}
           className="px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-500"
         >
-          <option value="">Todos los estados</option>
-          <option value="PENDIENTE">Pendiente</option>
-          <option value="TIMBRADA">Timbrada</option>
-          <option value="CANCELADA">Cancelada</option>
+          <option value="">{tInv('allStatuses')}</option>
+          <option value="PENDIENTE">{tInv('status.pending')}</option>
+          <option value="TIMBRADA">{tInv('status.stamped')}</option>
+          <option value="CANCELADA">{tInv('status.cancelled')}</option>
         </select>
       </div>
 
@@ -166,13 +171,15 @@ export default function InvoicesPage() {
         <div className="flex-1 flex items-start gap-2.5 px-3 py-2.5 rounded-lg bg-muted/40 border border-border border-l-2 border-l-green-600/50">
           <FileText className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Las facturas se generan desde <Link href="/orders" className="text-foreground hover:underline font-medium">Pedidos</Link> → Facturar en pedidos entregados.
+            {tInv.rich('invoicesFromOrders', {
+              link: (chunks) => <Link href="/orders" className="text-foreground hover:underline font-medium">{chunks}</Link>,
+            })}
           </p>
         </div>
         <div className="flex-1 flex items-start gap-2.5 px-3 py-2.5 rounded-lg bg-muted/40 border border-border border-l-2 border-l-green-600/50">
           <Shield className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Almacenamiento seguro durante su suscripción y 90 días después de cancelar.
+            {tInv('secureStorage')}
           </p>
         </div>
       </div>
@@ -182,12 +189,12 @@ export default function InvoicesPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/50">
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Folio</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Fecha</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Receptor</th>
-              <th className="text-right px-4 py-3 font-medium text-muted-foreground">Total</th>
-              <th className="text-center px-4 py-3 font-medium text-muted-foreground">Estado</th>
-              <th className="text-right px-4 py-3 font-medium text-muted-foreground">Acciones</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground">{tInv('columns.folio')}</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground">{tInv('columns.date')}</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground">{tInv('columns.receiver')}</th>
+              <th className="text-right px-4 py-3 font-medium text-muted-foreground">{tInv('columns.total')}</th>
+              <th className="text-center px-4 py-3 font-medium text-muted-foreground">{tInv('columns.status')}</th>
+              <th className="text-right px-4 py-3 font-medium text-muted-foreground">{tInv('columns.actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -223,7 +230,7 @@ export default function InvoicesPage() {
                         disabled={timbrando === f.id}
                         className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20 text-xs"
                       >
-                        {timbrando === f.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Timbrar'}
+                        {timbrando === f.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : tInv('stamp')}
                       </Button>
                     )}
                     {f.estado === 'TIMBRADA' && (
@@ -231,16 +238,16 @@ export default function InvoicesPage() {
                         <button
                           onClick={() => downloadFacturaPdf(f.id, `${f.serie || ''}${f.folio}`, f.emisorRfc)}
                           className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                          aria-label={`Descargar PDF de factura ${f.serie || ''}${f.folio}`}
-                          title="Descargar PDF"
+                          aria-label={`${tInv('downloadPdf')} ${f.serie || ''}${f.folio}`}
+                          title={tInv('downloadPdf')}
                         >
                           <FileText className="w-4 h-4" aria-hidden="true" />
                         </button>
                         <button
                           onClick={() => downloadFacturaXml(f.id, `${f.serie || ''}${f.folio}`, f.emisorRfc)}
                           className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                          aria-label={`Descargar XML de factura ${f.serie || ''}${f.folio}`}
-                          title="Descargar XML"
+                          aria-label={`${tInv('downloadXml')} ${f.serie || ''}${f.folio}`}
+                          title={tInv('downloadXml')}
                         >
                           <Download className="w-4 h-4" aria-hidden="true" />
                         </button>
@@ -253,7 +260,7 @@ export default function InvoicesPage() {
             {facturas.length === 0 && !loading && (
               <tr>
                 <td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">
-                  No se encontraron facturas
+                  {tInv('noInvoicesFound')}
                 </td>
               </tr>
             )}
@@ -289,14 +296,14 @@ export default function InvoicesPage() {
                 className="mt-3 w-full bg-green-600 hover:bg-green-700 text-white text-xs"
               >
                 {timbrando === f.id ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
-                Timbrar
+                {tInv('stamp')}
               </Button>
             )}
           </div>
         ))}
         {facturas.length === 0 && !loading && (
           <div className="text-center py-12 text-muted-foreground text-sm">
-            No se encontraron facturas
+            {tInv('noInvoicesFound')}
           </div>
         )}
       </div>
@@ -305,7 +312,7 @@ export default function InvoicesPage() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between mt-4 text-sm">
           <span className="text-muted-foreground">
-            Página {page} de {totalPages}
+            {tInv('pageOf', { page, total: totalPages })}
           </span>
           <div className="flex items-center gap-1">
             <Button

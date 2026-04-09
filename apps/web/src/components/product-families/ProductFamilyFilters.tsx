@@ -4,6 +4,7 @@ import React from 'react';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Search } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface ProductFamilyFiltersProps {
   searchTerm: string;
@@ -18,13 +19,14 @@ export const ProductFamilyFilters: React.FC<ProductFamilyFiltersProps> = ({
   showDisabled,
   onShowDisabledChange,
 }) => {
+  const t = useTranslations('productFamilies.filterForm');
   return (
     <div className="mb-6 space-y-4">
       {/* Barra de búsqueda */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
         <Input
-          placeholder="Buscar familias de productos..."
+          placeholder={t('searchPlaceholder')}
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
           className="pl-10"
@@ -44,7 +46,7 @@ export const ProductFamilyFilters: React.FC<ProductFamilyFiltersProps> = ({
           htmlFor="show-disabled" 
           className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
         >
-          Mostrar familias inactivas
+          {t('showInactiveFamilies')}
         </Label>
       </div>
     </div>

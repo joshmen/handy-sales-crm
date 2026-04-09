@@ -22,6 +22,7 @@ import { toast } from "@/hooks/useToast";
 import { useReportExport } from "@/hooks/useReportExport";
 import { useFormatters } from "@/hooks/useFormatters";
 import { Search, Download, Loader2, ArrowUp, ArrowDown, Minus } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 function monthAgo(months: number) {
   const d = new Date();
@@ -29,20 +30,25 @@ function monthAgo(months: number) {
   return d.toISOString().slice(0, 10);
 }
 
-const METRIC_LABELS: Record<string, string> = {
-  totalVentas: "Total Ventas",
-  cantidadPedidos: "Pedidos",
-  ticketPromedio: "Ticket Promedio",
-  clientesUnicos: "Clientes Únicos",
-  totalVisitas: "Visitas",
-  nuevosClientes: "Nuevos Clientes",
-  totalCobros: "Cobros",
-};
+// METRIC_LABELS is now handled via translations inside the component
 
 export function ComparativoPeriodosReport() {
   const { formatCurrency } = useFormatters();
+  const t = useTranslations("reports.comparativo");
+  const tMetrics = useTranslations("reports.comparativo.metrics");
+  const tCommon = useTranslations("reports.common");
+  const tFilters = useTranslations("reports.filters");
   const fmt = (n: number) => formatCurrency(n);
   const ct = useChartTheme();
+  const METRIC_LABELS: Record<string, string> = {
+    totalVentas: tMetrics("totalVentas"),
+    cantidadPedidos: tMetrics("cantidadPedidos"),
+    ticketPromedio: tMetrics("ticketPromedio"),
+    clientesUnicos: tMetrics("clientesUnicos"),
+    totalVisitas: tMetrics("totalVisitas"),
+    nuevosClientes: tMetrics("nuevosClientes"),
+    totalCobros: tMetrics("totalCobros"),
+  };
   const [p1Desde, setP1Desde] = useState(monthAgo(2));
   const [p1Hasta, setP1Hasta] = useState(monthAgo(1));
   const [p2Desde, setP2Desde] = useState(monthAgo(1));
@@ -93,7 +99,7 @@ export function ComparativoPeriodosReport() {
       });
       setData(res);
     } catch {
-      toast.error("Error al cargar reporte");
+      toast.error(tCommon("errorLoading"));
     } finally {
       setLoading(false);
     }
@@ -112,14 +118,14 @@ export function ComparativoPeriodosReport() {
       {/* Custom filters for 4 date pickers */}
       <div className="flex flex-wrap items-end gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
         <div className="flex flex-col gap-1">
-          <span className="text-xs font-semibold text-gray-500 uppercase">Período 1</span>
+          <span className="text-xs font-semibold text-gray-500 uppercase">{tCommon("period1")}</span>
           <div className="flex gap-2">
             <DateTimePicker mode="date" label="Desde" value={p1Desde} onChange={setP1Desde} />
             <DateTimePicker mode="date" label="Hasta" value={p1Hasta} onChange={setP1Hasta} />
           </div>
         </div>
         <div className="flex flex-col gap-1">
-          <span className="text-xs font-semibold text-gray-500 uppercase">Período 2</span>
+          <span className="text-xs font-semibold text-gray-500 uppercase">{tCommon("period2")}</span>
           <div className="flex gap-2">
             <DateTimePicker mode="date" label="Desde" value={p2Desde} onChange={setP2Desde} />
             <DateTimePicker mode="date" label="Hasta" value={p2Hasta} onChange={setP2Hasta} />
@@ -131,7 +137,7 @@ export function ComparativoPeriodosReport() {
           className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50"
         >
           <Search className="w-3.5 h-3.5" />
-          {loading ? "Cargando..." : "Consultar"}
+          {loading ? tFilters("loading") : tFilters("apply")}
         </button>
         {data && (
           <button
@@ -140,7 +146,7 @@ export function ComparativoPeriodosReport() {
             className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 ml-auto"
           >
             {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-            {exporting ? "Exportando..." : "PDF"}
+            {exporting ? tFilters("exporting") : "PDF"}
           </button>
         )}
       </div>
@@ -149,10 +155,10 @@ export function ComparativoPeriodosReport() {
         <>
           <ReportKPICards
             cards={[
-              { label: "Ventas P1", value: fmt(data.periodo1.totalVentas), color: "blue" },
-              { label: "Ventas P2", value: fmt(data.periodo2.totalVentas), color: "green" },
+              { label: t("salesP1"), value: fmt(data.periodo1.totalVentas), color: "blue" },
+              { label: t("salesP2"), value: fmt(data.periodo2.totalVentas), color: "green" },
               {
-                label: "Variación Ventas",
+                label: t("salesVariation"),
                 value: `${data.deltas.totalVentas?.porcentajeCambio ?? 0}%`,
                 color: (data.deltas.totalVentas?.porcentajeCambio ?? 0) >= 0 ? "green" : "red",
               },
@@ -161,7 +167,7 @@ export function ComparativoPeriodosReport() {
 
           {chartData.length > 0 && (
             <div ref={chartRef} className="bg-white border border-gray-200 rounded-lg p-4">
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">Comparativo por Métrica</h3>
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">{t("chartTitle")}</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
@@ -169,8 +175,8 @@ export function ComparativoPeriodosReport() {
                   <YAxis tick={{ fontSize: 11 }} />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="periodo1" name="Período 1" fill="#94a3b8" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="periodo2" name="Período 2" fill="#16a34a" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="periodo1" name={tCommon("period1")} fill="#94a3b8" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="periodo2" name={tCommon("period2")} fill="#16a34a" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -181,11 +187,11 @@ export function ComparativoPeriodosReport() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Métrica</th>
-                  <th className="text-right px-4 py-3 font-semibold text-gray-600">Período 1</th>
-                  <th className="text-right px-4 py-3 font-semibold text-gray-600">Período 2</th>
-                  <th className="text-right px-4 py-3 font-semibold text-gray-600">Diferencia</th>
-                  <th className="text-right px-4 py-3 font-semibold text-gray-600">% Cambio</th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600">{t("metricLabel")}</th>
+                  <th className="text-right px-4 py-3 font-semibold text-gray-600">{tCommon("period1")}</th>
+                  <th className="text-right px-4 py-3 font-semibold text-gray-600">{tCommon("period2")}</th>
+                  <th className="text-right px-4 py-3 font-semibold text-gray-600">{t("difference")}</th>
+                  <th className="text-right px-4 py-3 font-semibold text-gray-600">{t("changePercent")}</th>
                 </tr>
               </thead>
               <tbody>

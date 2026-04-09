@@ -21,6 +21,7 @@ import { useBatchOperations } from '@/hooks/useBatchOperations';
 import { BatchActionBar } from '@/components/shared/BatchActionBar';
 import { BatchConfirmModal } from '@/components/shared/BatchConfirmModal';
 import { DataGrid, type DataGridColumn } from '@/components/ui/DataGrid';
+import { useTranslations } from 'next-intl';
 import {
   Plus,
   Edit2,
@@ -43,6 +44,8 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 export default function ProductCategoriesPage() {
+  const t = useTranslations('productCategories');
+  const tc = useTranslations('common');
   // State
   const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -80,7 +83,7 @@ export default function ProductCategoriesPage() {
       setCategories(response.data);
     } catch (error) {
       console.error('Error loading categories:', error);
-      toast.error('No se pudieron cargar las categorías');
+      toast.error(t('errorLoading'));
     } finally {
       setLoading(false);
     }
@@ -163,16 +166,16 @@ export default function ProductCategoriesPage() {
 
       if (editingCategory) {
         await api.put(`/categorias-productos/${editingCategory.id}`, data);
-        toast.success(`Categoría "${data.nombre}" actualizada`);
+        toast.success(t('categoryUpdated', { name: data.nombre }));
       } else {
         await api.post('/categorias-productos', data);
-        toast.success(`Categoría "${data.nombre}" creada`);
+        toast.success(t('categoryCreated', { name: data.nombre }));
       }
 
       setIsModalOpen(false);
       await loadCategories();
     } catch (error: unknown) {
-      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Ocurrió un error al guardar la categoría';
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || t('errorSaving');
       toast.error(message);
     } finally {
       setActionLoading(false);
@@ -186,7 +189,7 @@ export default function ProductCategoriesPage() {
       const newActive = !category.activo;
       const result = await api.patch<{ actualizado?: boolean; message?: string }>(`/categorias-productos/${category.id}/activo`, { activo: newActive });
       if (result.data.actualizado) {
-        toast.success(newActive ? 'Categoría activada' : 'Categoría desactivada');
+        toast.success(newActive ? t('categoryActivated') : t('categoryDeactivated'));
         if (!showInactive && !newActive) {
           setCategories(prev => prev.filter(c => c.id !== category.id));
         } else {
@@ -196,7 +199,7 @@ export default function ProductCategoriesPage() {
         }
       }
     } catch (error: unknown) {
-      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Error al cambiar el estado';
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || t('errorChangingStatus');
       toast.error(message);
     } finally {
       setTogglingId(null);
@@ -207,10 +210,10 @@ export default function ProductCategoriesPage() {
   const handleDelete = async (id: number) => {
     try {
       await productCategoryService.delete(id);
-      toast.success('Categoría eliminada');
+      toast.success(t('categoryDeleted'));
       await loadCategories();
     } catch {
-      toast.error('Error al eliminar la categoría');
+      toast.error(t('errorDeleting'));
     }
   };
 
@@ -223,7 +226,7 @@ export default function ProductCategoriesPage() {
       const activo = batch.batchAction === 'activate';
       await api.patch('/categorias-productos/batch-toggle', { ids, activo });
       toast.success(
-        `${ids.length} categoría${ids.length > 1 ? 's' : ''} ${activo ? 'activada' : 'desactivada'}${ids.length > 1 ? 's' : ''}`
+        t('batchSuccess', { count: ids.length, plural: ids.length > 1 ? 's' : '', action: activo ? tc('activate').toLowerCase() : tc('deactivate').toLowerCase() })
       );
       batch.completeBatch();
       if (!showInactive && !activo) {
@@ -234,7 +237,7 @@ export default function ProductCategoriesPage() {
         ));
       }
     } catch (error: unknown) {
-      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Error al cambiar el estado';
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || t('errorBatchToggle');
       toast.error(message);
     } finally {
       batch.setBatchLoading(false);
@@ -244,11 +247,11 @@ export default function ProductCategoriesPage() {
   return (
     <PageHeader
       breadcrumbs={[
-        { label: 'Inicio', href: '/dashboard' },
-        { label: 'Categorías de productos' },
+        { label: tc('home'), href: '/dashboard' },
+        { label: t('title') },
       ]}
-      title="Categorías de productos"
-      subtitle={totalItems > 0 ? `${totalItems} categoría${totalItems !== 1 ? 's' : ''}` : undefined}
+      title={t('title')}
+      subtitle={totalItems > 0 ? t('subtitle', { count: totalItems, plural: totalItems !== 1 ? 's' : '' }) : undefined}
       actions={
         <>
           <div className="relative" data-tour="product-categories-import-export">
@@ -257,7 +260,7 @@ export default function ProductCategoriesPage() {
               className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
             >
               <Download className="w-3.5 h-3.5 text-emerald-500" />
-              <span className="hidden sm:inline">Importar / Exportar</span>
+              <span className="hidden sm:inline">{tc('importExport')}</span>
               <ChevronDown className="w-3 h-3 text-gray-400" />
             </button>
             {showDataMenu && (
@@ -265,18 +268,18 @@ export default function ProductCategoriesPage() {
                 <div className="fixed inset-0 z-10" onClick={() => setShowDataMenu(false)} />
                 <div className="absolute right-0 mt-1 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1">
                   <button
-                    onClick={async () => { setShowDataMenu(false); try { await exportToCsv('categorias-productos'); toast.success('Archivo CSV descargado'); } catch { toast.error('Error al exportar datos'); } }}
+                    onClick={async () => { setShowDataMenu(false); try { await exportToCsv('categorias-productos'); toast.success(tc('csvDownloaded')); } catch { toast.error(tc('errorExporting')); } }}
                     className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
                   >
                     <Download className="w-3.5 h-3.5 text-emerald-500" />
-                    Exportar CSV
+                    {tc('exportCsv')}
                   </button>
                   <button
                     onClick={() => { setShowDataMenu(false); setIsImportOpen(true); }}
                     className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
                   >
                     <Upload className="w-3.5 h-3.5 text-blue-500" />
-                    Importar CSV
+                    {tc('importCsv')}
                   </button>
                 </div>
               </>
@@ -288,7 +291,7 @@ export default function ProductCategoriesPage() {
             className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-success rounded-lg hover:bg-success/90 transition-colors"
           >
             <Plus className="w-4 h-4" />
-            <span>Nueva categoría</span>
+            <span>{t('newCategory')}</span>
           </button>
         </>
       }
@@ -299,7 +302,7 @@ export default function ProductCategoriesPage() {
           <SearchBar
             value={searchTerm}
             onChange={(v) => { setSearchTerm(v); setCurrentPage(1); }}
-            placeholder="Buscar categoría..."
+            placeholder={t('searchPlaceholder')}
             dataTour="product-categories-search"
           />
           <button
@@ -307,7 +310,7 @@ export default function ProductCategoriesPage() {
             className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-white bg-success rounded-lg hover:bg-success/90 transition-colors"
           >
             <RefreshCw className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Actualizar</span>
+            <span className="hidden sm:inline">{tc('refresh')}</span>
           </button>
 
           <div data-tour="product-categories-toggle-inactive" className="ml-auto">
@@ -333,17 +336,17 @@ export default function ProductCategoriesPage() {
         <div data-tour="product-categories-table">
           <DataGrid<ProductCategory>
             columns={[
-              { key: 'id', label: 'ID', width: 60, sortable: true, cellRenderer: (item) => <span className="font-mono text-gray-500">{item.id}</span> },
-              { key: 'nombre', label: 'Nombre', width: 'flex', sortable: true, cellRenderer: (item) => <span className="font-medium text-gray-900">{item.nombre}</span> },
-              { key: 'descripcion', label: 'Descripción', width: 'flex', sortable: true, hiddenOnMobile: true, cellRenderer: (item) => <span className="text-gray-500 truncate">{item.descripcion || '-'}</span> },
-              { key: 'activo', label: 'Activo', width: 50, align: 'center', cellRenderer: (item) => (
+              { key: 'id', label: tc('id'), width: 60, sortable: true, cellRenderer: (item) => <span className="font-mono text-gray-500">{item.id}</span> },
+              { key: 'nombre', label: tc('name'), width: 'flex', sortable: true, cellRenderer: (item) => <span className="font-medium text-gray-900">{item.nombre}</span> },
+              { key: 'descripcion', label: tc('description'), width: 'flex', sortable: true, hiddenOnMobile: true, cellRenderer: (item) => <span className="text-gray-500 truncate">{item.descripcion || '-'}</span> },
+              { key: 'activo', label: tc('active'), width: 50, align: 'center', cellRenderer: (item) => (
                 <div onClick={e => e.stopPropagation()}>
                   <ActiveToggle isActive={item.activo} onToggle={() => handleToggleActive(item)} isLoading={togglingId === item.id} />
                 </div>
               )},
               { key: 'actions', label: '', width: 80, cellRenderer: (item) => (
                 <div className="flex items-center justify-center gap-1" onClick={e => e.stopPropagation()}>
-                  <button onClick={() => handleOpenEdit(item)} disabled={loading} className="p-1 hover:bg-amber-50 rounded transition-colors disabled:opacity-50" title="Editar">
+                  <button onClick={() => handleOpenEdit(item)} disabled={loading} className="p-1 hover:bg-amber-50 rounded transition-colors disabled:opacity-50" title={tc('edit')}>
                     <Edit2 className="w-4 h-4 text-amber-400 hover:text-amber-600" />
                   </button>
                   {deleteConfirmId === item.id ? (
@@ -352,7 +355,7 @@ export default function ProductCategoriesPage() {
                       <button onClick={() => setDeleteConfirmId(null)} className="p-1 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X className="w-4 h-4" /></button>
                     </>
                   ) : (
-                    <button onClick={() => setDeleteConfirmId(item.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Eliminar"><Trash2 className="w-4 h-4" /></button>
+                    <button onClick={() => setDeleteConfirmId(item.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title={tc('delete')}><Trash2 className="w-4 h-4" /></button>
                   )}
                 </div>
               )},
@@ -368,10 +371,10 @@ export default function ProductCategoriesPage() {
             pagination={{ currentPage, totalPages, totalItems, pageSize, onPageChange: setCurrentPage }}
             sort={{ key: sortKey, direction: sortDir, onSort: handleSort }}
             loading={loading}
-            loadingMessage="Cargando categorías..."
+            loadingMessage={t('loadingCategories')}
             emptyIcon={<Package className="w-16 h-16 text-purple-300" />}
-            emptyTitle={searchTerm ? 'No se encontraron categorías' : 'No hay categorías'}
-            emptyMessage={searchTerm ? 'No se encontraron categorías con ese término' : 'Crea tu primera categoría de productos para comenzar'}
+            emptyTitle={searchTerm ? t('emptySearchTitle') : t('emptyTitle')}
+            emptyMessage={searchTerm ? t('emptySearchMessage') : t('emptyMessage')}
             mobileCardRenderer={(category) => (
               <div>
                 <div className="flex items-center gap-3 mb-2">
@@ -390,13 +393,13 @@ export default function ProductCategoriesPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-gray-900 truncate">{category.nombre}</div>
-                    <div className="text-xs text-gray-500 truncate">{category.descripcion || 'Sin descripción'}</div>
+                    <div className="text-xs text-gray-500 truncate">{category.descripcion || tc('noDescription')}</div>
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <ActiveToggle isActive={category.activo} onToggle={() => handleToggleActive(category)} isLoading={togglingId === category.id} />
                   <button onClick={() => handleOpenEdit(category)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors">
-                    <Edit2 className="w-3.5 h-3.5 text-amber-400 hover:text-amber-600" /><span>Editar</span>
+                    <Edit2 className="w-3.5 h-3.5 text-amber-400 hover:text-amber-600" /><span>{tc('edit')}</span>
                   </button>
                   {deleteConfirmId === category.id ? (
                     <div className="flex items-center gap-1">
@@ -438,7 +441,7 @@ export default function ProductCategoriesPage() {
         ref={drawerRef}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editingCategory ? 'Editar Categoría' : 'Nueva Categoría'}
+        title={editingCategory ? t('drawer.titleEdit') : t('drawer.titleNew')}
         icon={<Tag className="w-5 h-5" />}
         width="sm"
         isDirty={isDirty}
@@ -446,11 +449,11 @@ export default function ProductCategoriesPage() {
         footer={
           <div data-tour="product-categories-drawer-actions" className="flex items-center justify-end gap-3">
             <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()} disabled={actionLoading}>
-              Cancelar
+              {tc('cancel')}
             </Button>
             <Button type="button" variant="success" onClick={handleSubmit} disabled={actionLoading} className="flex items-center gap-2">
               {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-              {editingCategory ? 'Guardar Cambios' : 'Crear Categoría'}
+              {editingCategory ? tc('saveChanges') : t('drawer.createCategory')}
             </Button>
           </div>
         }
@@ -458,19 +461,19 @@ export default function ProductCategoriesPage() {
         <form onSubmit={handleSubmit} data-tour="product-categories-form" className="p-6 space-y-4">
           <div data-tour="product-categories-drawer-name" className="space-y-2">
             <label className="text-sm font-medium">
-              Nombre <span className="text-red-500">*</span>
+              {t('drawer.nameLabel')} <span className="text-red-500">*</span>
             </label>
             <Input
-              placeholder="Ej: Electrónicos, Ropa, Alimentos..."
+              placeholder={t('drawer.namePlaceholder')}
               {...register('nombre')}
             />
             {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre.message}</p>}
           </div>
 
           <div data-tour="product-categories-drawer-description" className="space-y-2">
-            <label className="text-sm font-medium">Descripción</label>
+            <label className="text-sm font-medium">{t('drawer.descriptionLabel')}</label>
             <Input
-              placeholder="Descripción opcional de la categoría"
+              placeholder={t('drawer.descriptionPlaceholder')}
               {...register('descripcion')}
             />
           </div>

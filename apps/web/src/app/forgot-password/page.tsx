@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useTranslations } from 'next-intl';
 import { z } from 'zod';
 import { ArrowLeft, Mail, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
@@ -17,6 +18,7 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export default function ForgotPasswordPage() {
+  const t = useTranslations('auth');
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -56,21 +58,20 @@ export default function ForgotPasswordPage() {
             <CheckCircle className="w-8 h-8 text-emerald-600" />
           </div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">
-            Revise su correo
+            {t('forgotPasswordSuccess')}
           </h2>
           <p className="text-sm text-gray-600 mb-6">
-            Si el correo está registrado, recibirá un enlace para
-            restablecer su contraseña. El enlace expira en 30 minutos.
+            {t('forgotPasswordSuccessDesc')}
           </p>
           <p className="text-xs text-gray-400 mb-6">
-            No olvide revisar la carpeta de spam.
+            {t('checkSpam')}
           </p>
           <Link
             href="/login"
             className="inline-flex items-center gap-2 text-sm font-medium text-indigo-600 hover:text-indigo-700"
           >
             <ArrowLeft className="w-4 h-4" />
-            Volver al login
+            {t('backToLogin')}
           </Link>
         </div>
       ) : (
@@ -81,23 +82,22 @@ export default function ForgotPasswordPage() {
               <Mail className="w-7 h-7 text-blue-600" />
             </div>
             <h2 className="text-xl font-bold text-gray-900 mb-1">
-              ¿Olvidaste tu contraseña?
+              {t('forgotPasswordTitle')}
             </h2>
             <p className="text-sm text-gray-500">
-              Ingresa tu correo y te enviaremos instrucciones para
-              restablecerla.
+              {t('forgotPasswordSubtitle')}
             </p>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Correo electrónico
+                {t('emailLabel')}
               </label>
               <input
                 type="email"
                 {...register('email')}
-                placeholder="tu@empresa.com"
+                placeholder={t('emailPlaceholder')}
                 className="w-full h-12 px-3.5 rounded-[10px] border border-[#D1D5DB] text-[15px] focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
                 autoFocus
               />
@@ -120,7 +120,7 @@ export default function ForgotPasswordPage() {
               {loading ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
-                'Enviar instrucciones'
+                t('sendInstructions')
               )}
             </button>
 
@@ -130,7 +130,7 @@ export default function ForgotPasswordPage() {
                 className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
-                Volver al login
+                {t('backToLogin')}
               </Link>
             </div>
           </form>

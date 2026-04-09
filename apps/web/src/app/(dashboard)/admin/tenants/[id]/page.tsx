@@ -35,6 +35,7 @@ import { ImpersonationModal } from '@/components/impersonation';
 import { useFormatters } from '@/hooks/useFormatters';
 import { Drawer } from '@/components/ui/Drawer';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { useTranslations } from 'next-intl';
 
 interface TenantFormData {
   nombreEmpresa: string;
@@ -52,6 +53,10 @@ interface AddUserFormData {
 type DrawerMode = 'none' | 'edit' | 'suspend' | 'addUser';
 
 export default function TenantDetailPage() {
+  const t = useTranslations('admin.tenantDetail');
+  const tt = useTranslations('admin.tenants');
+  const ta = useTranslations('admin');
+  const tc = useTranslations('common');
   const { formatDate: _fmtDate } = useFormatters();
   const params = useParams();
   const router = useRouter();
@@ -129,7 +134,7 @@ export default function TenantDetailPage() {
       console.error('Error loading tenant:', error);
       toast({
         title: 'Error',
-        description: 'No se pudo cargar la información de la empresa',
+        description: t('loadingInfo'),
         variant: 'destructive',
       });
     } finally {
@@ -189,8 +194,8 @@ export default function TenantDetailPage() {
       };
       await tenantService.update(tenant.id, updateData);
       toast({
-        title: 'Empresa actualizada',
-        description: 'Los cambios se guardaron correctamente',
+        title: tt('companyUpdated'),
+        description: tt('changesSaved'),
       });
       handleCloseDrawer();
       loadTenant();
@@ -198,7 +203,7 @@ export default function TenantDetailPage() {
       console.error('Error updating tenant:', error);
       toast({
         title: 'Error',
-        description: 'No se pudo actualizar la empresa',
+        description: t('updateError'),
         variant: 'destructive',
       });
     } finally {
@@ -212,8 +217,8 @@ export default function TenantDetailPage() {
       setSubmitting(true);
       await tenantService.toggleActivo(tenant.id, !tenant.activo);
       toast({
-        title: tenant.activo ? 'Empresa suspendida' : 'Empresa reactivada',
-        description: `${tenant.nombreEmpresa} fue ${tenant.activo ? 'suspendida' : 'reactivada'} correctamente`,
+        title: tenant.activo ? t('companySuspended') : t('companyReactivated'),
+        description: tenant.activo ? t('suspendedCorrectly', { name: tenant.nombreEmpresa }) : t('reactivatedCorrectly', { name: tenant.nombreEmpresa }),
       });
       handleCloseDrawer();
       loadTenant();
@@ -221,7 +226,7 @@ export default function TenantDetailPage() {
       console.error('Error suspending tenant:', error);
       toast({
         title: 'Error',
-        description: 'No se pudo cambiar el estado de la empresa',
+        description: t('suspendError'),
         variant: 'destructive',
       });
     } finally {
@@ -241,8 +246,8 @@ export default function TenantDetailPage() {
       };
       await tenantService.createTenantUser(tenant.id, createData);
       toast({
-        title: 'Usuario creado',
-        description: `El usuario fue creado en ${tenant.nombreEmpresa}`,
+        title: t('userCreated'),
+        description: t('userCreatedDesc', { company: tenant.nombreEmpresa }),
       });
       handleCloseDrawer();
       loadTenantUsers();
@@ -250,7 +255,7 @@ export default function TenantDetailPage() {
       console.error('Error creating user:', error);
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'No se pudo crear el usuario',
+        description: error instanceof Error ? error.message : t('userCreateError'),
         variant: 'destructive',
       });
     } finally {
@@ -271,10 +276,10 @@ export default function TenantDetailPage() {
 
   const getPlanLabel = (plan: string | null) => {
     switch (plan) {
-      case 'free': return 'Gratis';
-      case 'basic': return 'Básico';
-      case 'pro': return 'Pro';
-      default: return 'Sin plan';
+      case 'free': return tt('planFree');
+      case 'basic': return tt('planBasic');
+      case 'pro': return tt('planPro');
+      default: return tt('noPlan');
     }
   };
 
@@ -295,7 +300,7 @@ export default function TenantDetailPage() {
         <div className="flex flex-col items-center gap-3">
           <img src="/logo-icon.svg" alt="Handy Suites" className="w-8 h-8" />
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">Cargando información...</span>
+          <span className="text-sm text-muted-foreground">{t('loadingInfo')}</span>
         </div>
       </div>
     );
@@ -306,14 +311,14 @@ export default function TenantDetailPage() {
       <div className="p-6">
         <div className="text-center py-16">
           <Building2 className="h-12 w-12 text-muted-foreground/40 mx-auto mb-3" />
-          <h2 className="text-lg font-medium text-foreground">Empresa no encontrada</h2>
-          <p className="text-sm text-muted-foreground mt-1">La empresa solicitada no existe o fue eliminada</p>
+          <h2 className="text-lg font-medium text-foreground">{t('companyNotFound')}</h2>
+          <p className="text-sm text-muted-foreground mt-1">{t('companyNotFoundDesc')}</p>
           <button
             onClick={() => router.push('/admin/tenants')}
             className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-green-600 hover:text-green-700"
           >
             <ArrowLeft className="h-4 w-4" />
-            Volver a Empresas
+            {t('backToCompanies')}
           </button>
         </div>
       </div>
@@ -330,7 +335,7 @@ export default function TenantDetailPage() {
         className="px-4 py-2 text-muted-foreground bg-card border border-border rounded-lg hover:bg-accent transition-colors"
         disabled={submitting}
       >
-        Cancelar
+        {tc('cancel')}
       </button>
       <button
         type="submit"
@@ -341,10 +346,10 @@ export default function TenantDetailPage() {
         {submitting ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />
-            Guardando...
+            {tc('saving')}
           </>
         ) : (
-          'Guardar'
+          tc('save')
         )}
       </button>
     </div>
@@ -373,12 +378,12 @@ export default function TenantDetailPage() {
           {submitting ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              Procesando...
+              {t('processing')}
             </>
           ) : isSuspending ? (
-            'Suspender Empresa'
+            t('suspendCompany')
           ) : (
-            'Reactivar Empresa'
+            t('reactivateCompany')
           )}
         </button>
       </div>
@@ -393,7 +398,7 @@ export default function TenantDetailPage() {
         className="flex-1 px-4 py-2 text-muted-foreground bg-card border border-border rounded-lg hover:bg-accent transition-colors"
         disabled={submitting}
       >
-        Cancelar
+        {tc('cancel')}
       </button>
       <button
         type="submit"
@@ -404,10 +409,10 @@ export default function TenantDetailPage() {
         {submitting ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />
-            Creando...
+            {t('creating')}
           </>
         ) : (
-          'Crear Usuario'
+          t('createUser')
         )}
       </button>
     </div>
@@ -422,14 +427,14 @@ export default function TenantDetailPage() {
         className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
       >
         <Shield className="h-4 w-4" />
-        <span className="hidden sm:inline">Impersonar</span>
+        <span className="hidden sm:inline">{t('impersonate')}</span>
       </button>
       <button
         onClick={handleOpenEdit}
         className="flex items-center gap-2 px-4 py-2 text-muted-foreground bg-card border border-border rounded-lg hover:bg-accent transition-colors text-sm"
       >
         <Pencil className="h-4 w-4" />
-        <span className="hidden sm:inline">Editar</span>
+        <span className="hidden sm:inline">{tc('edit')}</span>
       </button>
       <button
         onClick={() => setDrawerMode('suspend')}
@@ -440,7 +445,7 @@ export default function TenantDetailPage() {
         }`}
       >
         <ShieldAlert className="h-4 w-4" />
-        <span className="hidden sm:inline">{tenant.activo ? 'Suspender' : 'Reactivar'}</span>
+        <span className="hidden sm:inline">{tenant.activo ? t('suspend') : t('reactivate')}</span>
       </button>
     </>
   );
@@ -448,8 +453,8 @@ export default function TenantDetailPage() {
   return (
     <PageHeader
       breadcrumbs={[
-        { label: 'Administración' },
-        { label: 'Gestión de Empresas', href: '/admin/tenants' },
+        { label: ta('breadcrumb') },
+        { label: tt('breadcrumb'), href: '/admin/tenants' },
         { label: tenant.nombreEmpresa },
       ]}
       title={tenant.nombreEmpresa}
@@ -462,7 +467,7 @@ export default function TenantDetailPage() {
           {/* Company Info Card */}
           <div className="lg:col-span-2 bg-card border border-border rounded-lg p-5">
             <h3 className="text-sm font-semibold text-foreground mb-4">
-              Información de la Empresa
+              {t('companyInfo')}
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               {tenant.datosEmpresa?.identificadorFiscal && (
@@ -553,7 +558,7 @@ export default function TenantDetailPage() {
           {/* Stats Grid */}
           <div className="space-y-3">
             <h3 className="text-sm font-semibold text-foreground">
-              Estadísticas
+              {t('statistics')}
             </h3>
             <div className="grid grid-cols-2 lg:grid-cols-1 gap-3">
               <div className="bg-card border border-border rounded-lg p-4 flex items-center gap-3">
@@ -600,14 +605,14 @@ export default function TenantDetailPage() {
         <div className="bg-card border border-border rounded-lg">
           <div className="flex items-center justify-between p-4 border-b border-border">
             <h3 className="text-sm font-semibold text-foreground">
-              Usuarios del Tenant
+              {t('tenantUsers')}
             </h3>
             <button
               onClick={handleOpenAddUser}
               className="flex items-center gap-1.5 text-sm text-green-600 hover:text-green-700 font-medium"
             >
               <UserPlus className="h-4 w-4" />
-              Agregar Usuario
+              {t('addUser')}
             </button>
           </div>
 
@@ -618,13 +623,13 @@ export default function TenantDetailPage() {
           ) : tenantUsers.length === 0 ? (
             <div className="text-center py-12 text-sm text-muted-foreground">
               <Users className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
-              <p>No hay usuarios registrados</p>
+              <p>{t('noUsersRegistered')}</p>
               <button
                 onClick={handleOpenAddUser}
                 className="mt-3 inline-flex items-center gap-1.5 text-sm text-green-600 hover:text-green-700 font-medium"
               >
                 <UserPlus className="h-4 w-4" />
-                Agregar el primer usuario
+                {t('addFirstUser')}
               </button>
             </div>
           ) : (
@@ -680,7 +685,7 @@ export default function TenantDetailPage() {
       <Drawer
         isOpen={drawerMode === 'edit'}
         onClose={handleCloseDrawer}
-        title="Editar Empresa"
+        title={t('editCompany')}
         icon={<Building2 className="h-5 w-5 text-green-600" />}
         width="md"
         footer={editDrawerFooter}
@@ -744,7 +749,7 @@ export default function TenantDetailPage() {
       <Drawer
         isOpen={drawerMode === 'suspend'}
         onClose={handleCloseDrawer}
-        title={tenant.activo ? 'Suspender Empresa' : 'Reactivar Empresa'}
+        title={tenant.activo ? t('suspendCompany') : t('reactivateCompany')}
         icon={<ShieldAlert className={`h-5 w-5 ${tenant.activo ? 'text-red-600' : 'text-green-600'}`} />}
         width="md"
         footer={suspendDrawerFooter}
@@ -790,7 +795,7 @@ export default function TenantDetailPage() {
       <Drawer
         isOpen={drawerMode === 'addUser'}
         onClose={handleCloseDrawer}
-        title="Agregar Usuario"
+        title={t('addUserTitle')}
         icon={<UserPlus className="h-5 w-5 text-green-600" />}
         width="md"
         footer={addUserDrawerFooter}

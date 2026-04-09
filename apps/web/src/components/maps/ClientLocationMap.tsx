@@ -8,6 +8,7 @@ import {
   Circle as GCircle,
 } from '@react-google-maps/api';
 import { Loader2, AlertTriangle } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 const DEFAULT_CENTER = { lat: 20.6597, lng: -103.3496 }; // Guadalajara, México
 const MAPS_LIBRARIES: ('places')[] = ['places'];
@@ -51,6 +52,7 @@ export function ClientLocationMap({
   autoGeolocate = false,
   height = 260,
 }: ClientLocationMapProps) {
+  const t = useTranslations('maps');
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
     libraries: MAPS_LIBRARIES,
@@ -179,9 +181,9 @@ export function ClientLocationMap({
         style={{ height }}
       >
         <p className="text-sm text-gray-500">
-          Google Maps no configurado. Agrega{' '}
-          <code className="bg-gray-200 px-1 rounded">NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> en
-          .env.local
+          {t('notConfigured')}{' '}
+          <code className="bg-gray-200 px-1 rounded">NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code>{' '}
+          {t('notConfiguredSuffix')}
         </p>
       </div>
     );
@@ -193,7 +195,7 @@ export function ClientLocationMap({
         className="flex items-center justify-center bg-gray-100 rounded-lg"
         style={{ height }}
       >
-        <p className="text-sm text-red-500">Error al cargar Google Maps</p>
+        <p className="text-sm text-red-500">{t('errorLoadingMaps')}</p>
       </div>
     );
   }
@@ -205,7 +207,7 @@ export function ClientLocationMap({
         style={{ height }}
       >
         <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
-        <span className="ml-2 text-sm text-gray-500">Cargando mapa...</span>
+        <span className="ml-2 text-sm text-gray-500">{t('loadingMap')}</span>
       </div>
     );
   }
@@ -271,12 +273,11 @@ export function ClientLocationMap({
       {isOutside ? (
         <p className="text-xs text-red-600 flex items-center gap-1.5">
           <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
-          El cliente está fuera de la zona &quot;{selectedZone?.nombre}&quot;. Mueve el marcador
-          dentro del área o selecciona otra zona.
+          {t('clientOutsideZone', { zone: selectedZone?.nombre ?? '' })}
         </p>
       ) : (
         <p className="text-xs text-gray-400">
-          Haz doble clic en el mapa o arrastra el marcador para ubicar al cliente.
+          {t('mapInstructions')}
         </p>
       )}
     </div>

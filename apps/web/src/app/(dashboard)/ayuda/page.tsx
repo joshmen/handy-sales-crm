@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { PageHeader } from '@/components/layout/PageHeader';
 import {
   MapPin,
@@ -54,164 +55,168 @@ interface Phase {
   hideForVendedor?: boolean;
 }
 
-const PHASES: Phase[] = [
-  {
-    id: 'setup',
-    number: 1,
-    title: 'Configuracion Inicial',
-    subtitle: 'Catalogo, zonas, clientes y precios. Se configura una sola vez.',
-    color: 'green',
-    hex: '#16A34A',
-    platform: 'web',
-    role: 'Admin',
-    icon: Buildings,
-    hideForVendedor: true,
-    steps: [
-      { label: 'Crear zonas geograficas', href: '/zones' },
-      { label: 'Catalogo de productos y familias', href: '/products' },
-      { label: 'Inventario inicial de productos', href: '/inventory' },
-      { label: 'Listas de precios por cliente', href: '/price-lists' },
-      { label: 'Registro de clientes y asignacion de zona', href: '/clients' },
-      { label: 'Metas de vendedores por periodo', href: '/metas' },
-    ],
-  },
-  {
-    id: 'planning',
-    number: 2,
-    title: 'Planificacion de Rutas',
-    subtitle: 'Crear ruta, agregar paradas, cargar inventario al vehiculo.',
-    color: 'indigo',
-    hex: '#6366F1',
-    platform: 'web',
-    role: 'Supervisor',
-    icon: NavigationArrow,
-    vendedorTitle: 'Tu ruta de hoy',
-    vendedorSubtitle: 'Revisa los clientes que te asignaron y acepta tu ruta.',
-    vendedorSteps: [
-      { label: 'Ver tu ruta asignada del dia', href: '/routes' },
-      { label: 'Revisar productos cargados al vehiculo' },
-      { label: 'Aceptar la ruta para iniciar' },
-    ],
-    steps: [
-      { label: 'Crear ruta del dia (vendedor + zona + fecha)', href: '/routes' },
-      { label: 'Agregar paradas en orden de visita', href: '/routes' },
-      { label: 'Cargar inventario al vehiculo', href: '/routes' },
-      { label: 'Asignar pedidos pre-confirmados (opcional)' },
-      { label: 'Registrar efectivo inicial del vendedor' },
-    ],
-  },
-  {
-    id: 'execution',
-    number: 3,
-    title: 'Ejecucion en Campo',
-    subtitle: 'Iniciar ruta, check-in/out con GPS, tomar pedidos, cobrar.',
-    color: 'amber',
-    hex: '#F59E0B',
-    platform: 'app',
-    role: 'Vendedor',
-    icon: DeviceMobile,
-    vendedorTitle: 'Visitar clientes',
-    vendedorSubtitle: 'Llega al cliente, vende, cobra y sigue con el siguiente.',
-    vendedorSteps: [
-      { label: 'Iniciar tu ruta', mobileOnly: true },
-      { label: 'Llegar al cliente — check-in automatico con GPS', mobileOnly: true },
-      { label: 'Vender productos (venta directa desde el vehiculo)', mobileOnly: true },
-      { label: 'Cobrar al momento o dejar a credito', mobileOnly: true },
-      { label: 'Imprimir ticket de venta', mobileOnly: true },
-      { label: 'Check-out y siguiente cliente', mobileOnly: true },
-    ],
-    steps: [
-      { label: 'Vendedor inicia la ruta asignada', mobileOnly: true },
-      { label: 'Llegar al cliente (GPS)', mobileOnly: true },
-      { label: 'Check-in con geolocalizacion', mobileOnly: true },
-      { label: 'Tomar pedido / venta directa', mobileOnly: true },
-      { label: 'Cobrar (efectivo, transferencia, tarjeta)', mobileOnly: true },
-      { label: 'Check-out + resultado + evidencia fotografica', mobileOnly: true },
-      { label: 'Siguiente parada...', mobileOnly: true },
-    ],
-  },
-  {
-    id: 'orders',
-    number: 4,
-    title: 'Ciclo del Pedido',
-    subtitle: 'Venta en ruta (inmediata) o preventa (entrega posterior).',
-    color: 'blue',
-    hex: '#3B82F6',
-    platform: 'ambos',
-    role: 'Todos',
-    icon: Bag,
-    vendedorTitle: 'Tus ventas',
-    vendedorSubtitle: 'Ve lo que vendiste. El admin se encarga del resto.',
-    vendedorSteps: [
-      { label: 'Venta en ruta: vendes, entregas y cobras al momento', mobileOnly: true },
-      { label: 'Preventa: solo tomas el pedido, se entrega otro dia', mobileOnly: true },
-      { label: 'Ver historial de tus pedidos', href: '/orders' },
-    ],
-    steps: [
-      {
-        label: 'Venta en ruta: Borrador → Entregado (instantaneo)',
-        description: 'El vendedor lleva producto, vende y entrega en el momento.',
-      },
-      {
-        label: 'Preventa: Borrador → Enviado → Confirmado → EnProceso → EnRuta → Entregado',
-        description: 'El vendedor solo toma el pedido. Almacen prepara y logistica entrega otro dia.',
-      },
-      { label: 'Administrar pedidos y cambiar estados', href: '/orders' },
-      { label: 'Entrega descuenta inventario automaticamente' },
-      { label: 'Cancelar pedidos con motivo (solo admin)', href: '/orders' },
-    ],
-  },
-  {
-    id: 'collections',
-    number: 5,
-    title: 'Cobranza',
-    subtitle: 'Cobros parciales/totales, saldos, estado de cuenta.',
-    color: 'violet',
-    hex: '#8B5CF6',
-    platform: 'ambos',
-    role: 'Todos',
-    icon: CreditCard,
-    vendedorTitle: 'Cobros pendientes',
-    vendedorSubtitle: 'Clientes que te deben. Ve y cobra.',
-    vendedorSteps: [
-      { label: 'Ver clientes con saldo pendiente', href: '/cobranza' },
-      { label: 'Registrar cobro (efectivo, transferencia, cheque)', mobileOnly: true },
-      { label: 'Imprimir recibo de cobro', mobileOnly: true },
-    ],
-    steps: [
-      { label: 'Cobros parciales o totales por pedido', href: '/cobranza' },
-      { label: 'Multiples metodos de pago (efectivo, transferencia, cheque, tarjeta)' },
-      { label: 'Saldo del cliente se actualiza automaticamente' },
-      { label: 'Estado de cuenta por cliente', href: '/cobranza' },
-      { label: 'Resumen general de cartera', href: '/cobranza' },
-    ],
-  },
-  {
-    id: 'closure',
-    number: 6,
-    title: 'Cierre de Ruta',
-    subtitle: 'Reconciliar inventario, cerrar ruta, reportes del dia.',
-    color: 'red',
-    hex: '#EF4444',
-    platform: 'web',
-    role: 'Supervisor',
-    icon: ChartBar,
-    vendedorTitle: 'Cerrar tu dia',
-    vendedorSubtitle: 'Entrega cuentas: efectivo, producto devuelto, mermas.',
-    vendedorSteps: [
-      { label: 'Reportar productos devueltos y mermas', mobileOnly: true },
-      { label: 'Entregar efectivo recaudado' },
-      { label: 'Tu ruta se marca como completada' },
-    ],
-    steps: [
-      { label: 'Completar ruta', href: '/routes' },
-      { label: 'Reconciliar inventario: vendidos, devueltos, mermas', href: '/routes' },
-      { label: 'Registrar monto recibido del vendedor' },
-      { label: 'Cerrar ruta oficialmente', href: '/routes' },
-      { label: 'Generar reportes del dia', href: '/reports' },
-    ],
-  },
-];
+// Phase/step keys map to help.phases.* and help.steps.* in translation files
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function buildPhases(t: (key: string) => string): Phase[] {
+  return [
+    {
+      id: 'setup',
+      number: 1,
+      title: t('phases.setup.title'),
+      subtitle: t('phases.setup.subtitle'),
+      color: 'green',
+      hex: '#16A34A',
+      platform: 'web',
+      role: 'Admin',
+      icon: Buildings,
+      hideForVendedor: true,
+      steps: [
+        { label: t('steps.createZones'), href: '/zones' },
+        { label: t('steps.productCatalog'), href: '/products' },
+        { label: t('steps.initialInventory'), href: '/inventory' },
+        { label: t('steps.priceLists'), href: '/price-lists' },
+        { label: t('steps.registerClients'), href: '/clients' },
+        { label: t('steps.sellerGoals'), href: '/metas' },
+      ],
+    },
+    {
+      id: 'planning',
+      number: 2,
+      title: t('phases.planning.title'),
+      subtitle: t('phases.planning.subtitle'),
+      color: 'indigo',
+      hex: '#6366F1',
+      platform: 'web',
+      role: 'Supervisor',
+      icon: NavigationArrow,
+      vendedorTitle: t('phases.planning.vendedorTitle'),
+      vendedorSubtitle: t('phases.planning.vendedorSubtitle'),
+      vendedorSteps: [
+        { label: t('steps.viewAssignedRoute'), href: '/routes' },
+        { label: t('steps.reviewProducts') },
+        { label: t('steps.acceptRoute') },
+      ],
+      steps: [
+        { label: t('steps.createRoute'), href: '/routes' },
+        { label: t('steps.addStops'), href: '/routes' },
+        { label: t('steps.loadInventory'), href: '/routes' },
+        { label: t('steps.assignOrders') },
+        { label: t('steps.registerCash') },
+      ],
+    },
+    {
+      id: 'execution',
+      number: 3,
+      title: t('phases.execution.title'),
+      subtitle: t('phases.execution.subtitle'),
+      color: 'amber',
+      hex: '#F59E0B',
+      platform: 'app',
+      role: 'Vendedor',
+      icon: DeviceMobile,
+      vendedorTitle: t('phases.execution.vendedorTitle'),
+      vendedorSubtitle: t('phases.execution.vendedorSubtitle'),
+      vendedorSteps: [
+        { label: t('steps.vendedorStartRoute'), mobileOnly: true },
+        { label: t('steps.vendedorArriveGps'), mobileOnly: true },
+        { label: t('steps.vendedorSell'), mobileOnly: true },
+        { label: t('steps.vendedorCollect'), mobileOnly: true },
+        { label: t('steps.vendedorPrint'), mobileOnly: true },
+        { label: t('steps.vendedorCheckOut'), mobileOnly: true },
+      ],
+      steps: [
+        { label: t('steps.startRoute'), mobileOnly: true },
+        { label: t('steps.arriveClient'), mobileOnly: true },
+        { label: t('steps.checkIn'), mobileOnly: true },
+        { label: t('steps.takeOrder'), mobileOnly: true },
+        { label: t('steps.collect'), mobileOnly: true },
+        { label: t('steps.checkOut'), mobileOnly: true },
+        { label: t('steps.nextStop'), mobileOnly: true },
+      ],
+    },
+    {
+      id: 'orders',
+      number: 4,
+      title: t('phases.orders.title'),
+      subtitle: t('phases.orders.subtitle'),
+      color: 'blue',
+      hex: '#3B82F6',
+      platform: 'ambos',
+      role: 'Todos',
+      icon: Bag,
+      vendedorTitle: t('phases.orders.vendedorTitle'),
+      vendedorSubtitle: t('phases.orders.vendedorSubtitle'),
+      vendedorSteps: [
+        { label: t('steps.vendedorRouteSale'), mobileOnly: true },
+        { label: t('steps.vendedorPresale'), mobileOnly: true },
+        { label: t('steps.viewOrderHistory'), href: '/orders' },
+      ],
+      steps: [
+        {
+          label: t('steps.routeSale'),
+          description: t('steps.routeSaleDesc'),
+        },
+        {
+          label: t('steps.presale'),
+          description: t('steps.presaleDesc'),
+        },
+        { label: t('steps.manageOrders'), href: '/orders' },
+        { label: t('steps.deliveryDiscount') },
+        { label: t('steps.cancelOrders'), href: '/orders' },
+      ],
+    },
+    {
+      id: 'collections',
+      number: 5,
+      title: t('phases.collections.title'),
+      subtitle: t('phases.collections.subtitle'),
+      color: 'violet',
+      hex: '#8B5CF6',
+      platform: 'ambos',
+      role: 'Todos',
+      icon: CreditCard,
+      vendedorTitle: t('phases.collections.vendedorTitle'),
+      vendedorSubtitle: t('phases.collections.vendedorSubtitle'),
+      vendedorSteps: [
+        { label: t('steps.vendedorPendingClients'), href: '/cobranza' },
+        { label: t('steps.vendedorRegisterPayment'), mobileOnly: true },
+        { label: t('steps.vendedorPrintReceipt'), mobileOnly: true },
+      ],
+      steps: [
+        { label: t('steps.partialPayments'), href: '/cobranza' },
+        { label: t('steps.multiplePayment') },
+        { label: t('steps.autoBalance') },
+        { label: t('steps.clientStatement'), href: '/cobranza' },
+        { label: t('steps.portfolioSummary'), href: '/cobranza' },
+      ],
+    },
+    {
+      id: 'closure',
+      number: 6,
+      title: t('phases.closure.title'),
+      subtitle: t('phases.closure.subtitle'),
+      color: 'red',
+      hex: '#EF4444',
+      platform: 'web',
+      role: 'Supervisor',
+      icon: ChartBar,
+      vendedorTitle: t('phases.closure.vendedorTitle'),
+      vendedorSubtitle: t('phases.closure.vendedorSubtitle'),
+      vendedorSteps: [
+        { label: t('steps.vendedorReportReturns'), mobileOnly: true },
+        { label: t('steps.vendedorDeliverCash') },
+        { label: t('steps.vendedorRouteCompleted') },
+      ],
+      steps: [
+        { label: t('steps.completeRoute'), href: '/routes' },
+        { label: t('steps.reconcileInventory'), href: '/routes' },
+        { label: t('steps.registerReceivedAmount') },
+        { label: t('steps.closeRoute'), href: '/routes' },
+        { label: t('steps.generateReports'), href: '/reports' },
+      ],
+    },
+  ];
+}
 
 // Color map for dynamic Tailwind classes
 const COLOR_MAP: Record<string, { bg: string; text: string; border: string; bgLight: string; dot: string }> = {
@@ -227,24 +232,24 @@ const COLOR_MAP: Record<string, { bg: string; text: string; border: string; bgLi
 // Components
 // ---------------------------------------------------------------------------
 
-function PlatformBadge({ platform }: { platform: 'web' | 'app' | 'ambos' }) {
+function PlatformBadge({ platform, t }: { platform: 'web' | 'app' | 'ambos'; t: (key: string) => string }) {
   if (platform === 'web') {
     return (
       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-medium dark:bg-emerald-900/30 dark:text-emerald-400">
-        <Desktop size={12} weight="bold" /> Web
+        <Desktop size={12} weight="bold" /> {t('platformWeb')}
       </span>
     );
   }
   if (platform === 'app') {
     return (
       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-medium dark:bg-amber-900/30 dark:text-amber-400">
-        <DeviceMobile size={12} weight="bold" /> App Movil
+        <DeviceMobile size={12} weight="bold" /> {t('platformApp')}
       </span>
     );
   }
   return (
     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-medium dark:bg-blue-900/30 dark:text-blue-400">
-      <Desktop size={12} weight="bold" /> Web + App
+      <Desktop size={12} weight="bold" /> {t('platformBoth')}
     </span>
   );
 }
@@ -258,7 +263,7 @@ function RoleBadge({ role }: { role: string }) {
   );
 }
 
-function StepRow({ step, index, phaseColor }: { step: FlowStep; index: number; phaseColor: string }) {
+function StepRow({ step, index, phaseColor, t }: { step: FlowStep; index: number; phaseColor: string; t: (key: string) => string }) {
   const colors = COLOR_MAP[phaseColor];
   return (
     <div className="group flex items-center gap-3 px-5 py-3 hover:bg-muted/50 transition-colors">
@@ -273,7 +278,7 @@ function StepRow({ step, index, phaseColor }: { step: FlowStep; index: number; p
       </div>
       {step.mobileOnly && (
         <span className="flex-shrink-0 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded">
-          solo app
+          {t('mobileOnly')}
         </span>
       )}
       {step.href && (
@@ -290,7 +295,7 @@ function StepRow({ step, index, phaseColor }: { step: FlowStep; index: number; p
   );
 }
 
-function PhaseAccordion({ phase, isVendedor }: { phase: Phase; isVendedor: boolean }) {
+function PhaseAccordion({ phase, isVendedor, t }: { phase: Phase; isVendedor: boolean; t: (key: string) => string }) {
   const [open, setOpen] = useState(phase.number === 1 && !isVendedor || phase.number === 3 && isVendedor);
   const colors = COLOR_MAP[phase.color];
   const Icon = phase.icon;
@@ -313,13 +318,13 @@ function PhaseAccordion({ phase, isVendedor }: { phase: Phase; isVendedor: boole
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className={`text-xs font-semibold ${colors.text}`}>FASE {phase.number}</span>
+            <span className={`text-xs font-semibold ${colors.text}`}>{t('phase')} {phase.number}</span>
           </div>
           <h3 className="text-base font-semibold text-foreground leading-tight">{title}</h3>
           <p className="text-sm text-muted-foreground mt-0.5 line-clamp-1">{subtitle}</p>
         </div>
         <div className="flex-shrink-0 flex items-center gap-2">
-          <PlatformBadge platform={phase.platform} />
+          <PlatformBadge platform={phase.platform} t={t} />
           <RoleBadge role={phase.role} />
           {open
             ? <CaretDown size={16} className="text-muted-foreground" />
@@ -334,7 +339,7 @@ function PhaseAccordion({ phase, isVendedor }: { phase: Phase; isVendedor: boole
           {steps.map((step, i) => (
             <React.Fragment key={i}>
               {i > 0 && <div className="mx-5 border-t border-border/50" />}
-              <StepRow step={step} index={i} phaseColor={phase.color} />
+              <StepRow step={step} index={i} phaseColor={phase.color} t={t} />
             </React.Fragment>
           ))}
         </div>
@@ -348,17 +353,20 @@ function PhaseAccordion({ phase, isVendedor }: { phase: Phase; isVendedor: boole
 // ---------------------------------------------------------------------------
 
 export default function AyudaPage() {
+  const t = useTranslations('help');
+  const tc = useTranslations('common');
   const [isVendedor, setIsVendedor] = useState(false);
+  const PHASES = buildPhases(t);
 
   return (
     <PageHeader
       breadcrumbs={[
-        { label: 'Inicio', href: '/dashboard' },
-        { label: 'Herramientas' },
-        { label: 'Ayuda' },
+        { label: tc('home'), href: '/dashboard' },
+        { label: t('breadcrumbTools') },
+        { label: t('breadcrumbHelp') },
       ]}
-      title="Flujo de Venta"
-      subtitle="Mapa interactivo del ciclo completo — haz clic en cada paso para ir a la pagina correspondiente"
+      title={t('title')}
+      subtitle={t('subtitle')}
       actions={
         <div className="flex items-center gap-1 p-1 bg-muted rounded-lg">
           <button
@@ -369,7 +377,7 @@ export default function AyudaPage() {
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            <span className="hidden sm:inline">Vista </span>Admin
+            <span className="hidden sm:inline">{t('viewAdminFull').split(' ')[0]} </span>{t('viewAdmin')}
           </button>
           <button
             onClick={() => setIsVendedor(true)}
@@ -379,7 +387,7 @@ export default function AyudaPage() {
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            <span className="hidden sm:inline">Vista </span>Vendedor
+            <span className="hidden sm:inline">{t('viewSellerFull').split(' ')[0]} </span>{t('viewSeller')}
           </button>
         </div>
       }
@@ -407,16 +415,16 @@ export default function AyudaPage() {
         {isVendedor && (
           <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
             <p className="text-sm text-amber-800 dark:text-amber-300">
-              <strong>Venta en ruta:</strong> Llevas el producto en tu vehiculo, vendes, entregas y cobras al momento.
+              <strong>{t('routeSaleLabel')}</strong> {t('routeSaleInfo')}
               <br />
-              <strong>Preventa:</strong> Solo tomas el pedido. El almacen prepara y se entrega otro dia.
+              <strong>{t('presaleLabel')}</strong> {t('presaleInfo')}
             </p>
           </div>
         )}
 
         {/* Phase accordions */}
         {PHASES.map(phase => (
-          <PhaseAccordion key={phase.id} phase={phase} isVendedor={isVendedor} />
+          <PhaseAccordion key={phase.id} phase={phase} isVendedor={isVendedor} t={t} />
         ))}
       </div>
     </PageHeader>

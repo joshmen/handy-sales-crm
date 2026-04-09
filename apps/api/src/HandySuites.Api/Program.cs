@@ -182,6 +182,7 @@ app.UseAuthorization();
 app.UseRateLimiter();
 app.UseMiddleware<SessionValidationMiddleware>();
 app.UseMiddleware<ViewerReadOnlyMiddleware>();
+app.UseMiddleware<SubscriptionReadOnlyMiddleware>();
 app.UseMiddleware<MaintenanceMiddleware>();
 
 // ENDPOINTS

@@ -1,3 +1,5 @@
+'use client';
+
 import * as React from 'react';
 import {
   Dialog,
@@ -10,6 +12,7 @@ import {
 import { Button } from '@/components/ui/Button';
 import { Save } from 'lucide-react';
 import { SbAlert } from '@/components/layout/DashboardIcons';
+import { useTranslations } from 'next-intl';
 
 interface UnsavedChangesDialogProps {
   open: boolean;
@@ -26,14 +29,15 @@ interface UnsavedChangesDialogProps {
 export function UnsavedChangesDialog({
   open,
   onOpenChange,
-  title = "¿Descartar cambios?",
-  description = "Tienes cambios sin guardar que se perderán si continúas. ¿Estás seguro de que quieres continuar?",
+  title,
+  description,
   onContinue,
   onCancel,
   onSave,
   showSaveOption = false,
   isLoading = false,
 }: UnsavedChangesDialogProps) {
+  const tc = useTranslations('common');
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl w-full max-w-[95vw] mx-4">
@@ -41,9 +45,9 @@ export function UnsavedChangesDialog({
           <div className="flex items-start gap-3">
             <SbAlert size={20} className="mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
-              <DialogTitle className="text-left break-words">{title}</DialogTitle>
+              <DialogTitle className="text-left break-words">{title ?? tc('discardChangesTitle')}</DialogTitle>
               <DialogDescription className="mt-1.5 text-left break-words whitespace-normal">
-                {description}
+                {description ?? tc('discardChangesDesc')}
               </DialogDescription>
             </div>
           </div>
@@ -56,7 +60,7 @@ export function UnsavedChangesDialog({
             disabled={isLoading}
             className="w-full sm:w-auto"
           >
-            Permanecer aquí
+            {tc('stayHere')}
           </Button>
           
           <Button
@@ -65,7 +69,7 @@ export function UnsavedChangesDialog({
             disabled={isLoading}
             className="w-full sm:w-auto"
           >
-            Descartar cambios
+            {tc('discardChanges')}
           </Button>
           
           {showSaveOption && onSave && (
@@ -75,7 +79,7 @@ export function UnsavedChangesDialog({
               className="w-full sm:w-auto"
             >
               <Save className="h-4 w-4 mr-2" />
-              {isLoading ? "Guardando..." : "Guardar y continuar"}
+              {isLoading ? tc('saving') : tc('saveAndContinue')}
             </Button>
           )}
         </DialogFooter>

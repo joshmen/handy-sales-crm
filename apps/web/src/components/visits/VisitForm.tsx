@@ -9,6 +9,7 @@ import { SearchableSelect, SearchableSelectOption } from '@/components/ui/Search
 import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { ClienteVisitaCreateDto, TipoVisita } from '@/types/visits';
 import { Client } from '@/types';
+import { useTranslations } from 'next-intl';
 
 // Schema de validación para visitas - sincronizado con backend
 const visitFormSchema = z.object({
@@ -37,6 +38,8 @@ export const VisitForm: React.FC<VisitFormProps> = ({
   onCancel,
   defaultDate,
 }) => {
+  const t = useTranslations('visits.form');
+  const tc = useTranslations('common');
   const {
     register,
     handleSubmit,
@@ -82,15 +85,15 @@ export const VisitForm: React.FC<VisitFormProps> = ({
       {/* Cliente */}
       <div data-tour="visits-form-client">
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Cliente <span className="text-red-500">*</span>
+          {t('client')} <span className="text-red-500">*</span>
         </label>
         <SearchableSelect
           options={clientOptions}
           value={clienteId || null}
           onChange={(val) => setValue('clienteId', val ? Number(val) : 0, { shouldValidate: true })}
-          placeholder="Seleccionar cliente..."
-          searchPlaceholder="Buscar por nombre o dirección..."
-          emptyMessage="No se encontraron clientes"
+          placeholder={t('selectClient')}
+          searchPlaceholder={t('searchClientPlaceholder')}
+          emptyMessage={t('noClientsFound')}
           error={!!errors.clienteId}
         />
         {errors.clienteId && (
@@ -101,20 +104,20 @@ export const VisitForm: React.FC<VisitFormProps> = ({
       {/* Tipo de visita */}
       <div data-tour="visits-form-type">
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Tipo de Visita
+          {t('visitType')}
         </label>
         <SearchableSelect
           options={[
-            { value: TipoVisita.Rutina, label: 'Rutina' },
-            { value: TipoVisita.Cobranza, label: 'Cobranza' },
-            { value: TipoVisita.Entrega, label: 'Entrega' },
-            { value: TipoVisita.Prospeccion, label: 'Prospección' },
-            { value: TipoVisita.Seguimiento, label: 'Seguimiento' },
-            { value: TipoVisita.Otro, label: 'Otro' },
+            { value: TipoVisita.Rutina, label: t('typeRoutine') },
+            { value: TipoVisita.Cobranza, label: t('typeCollection') },
+            { value: TipoVisita.Entrega, label: t('typeDelivery') },
+            { value: TipoVisita.Prospeccion, label: t('typeProspecting') },
+            { value: TipoVisita.Seguimiento, label: t('typeFollowUp') },
+            { value: TipoVisita.Otro, label: t('typeOther') },
           ]}
           value={watch('tipoVisita') ?? null}
           onChange={(val) => setValue('tipoVisita', val != null ? Number(val) as unknown as TipoVisita : TipoVisita.Rutina, { shouldValidate: true })}
-          placeholder="Seleccionar tipo de visita"
+          placeholder={t('selectVisitType')}
         />
       </div>
 
@@ -122,22 +125,22 @@ export const VisitForm: React.FC<VisitFormProps> = ({
       <div data-tour="visits-form-date">
         <DateTimePicker
           mode="datetime"
-          label="Fecha Programada (opcional)"
+          label={t('scheduledDate')}
           value={watch('fechaProgramada') || ''}
           onChange={(val) => setValue('fechaProgramada', val, { shouldValidate: true, shouldDirty: true })}
-          hint="Deja vacío para visita inmediata"
+          hint={t('scheduledDateHint')}
         />
       </div>
 
       {/* Notas */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Notas (opcional)
+          {t('notesOptional')}
         </label>
         <textarea
           {...register('notas')}
           rows={3}
-          placeholder="Notas adicionales sobre la visita..."
+          placeholder={t('notesPlaceholder')}
           className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
             errors.notas ? 'border-red-500' : 'border-gray-300'
           }`}
@@ -150,10 +153,10 @@ export const VisitForm: React.FC<VisitFormProps> = ({
       {/* Botones */}
       <div data-tour="visits-form-actions" className="flex justify-end gap-3 pt-4 border-t border-gray-100">
         <Button type="button" variant="outline" onClick={onCancel}>
-          Cancelar
+          {tc('cancel')}
         </Button>
         <Button type="submit" variant="success">
-          Programar Visita
+          {t('scheduleVisit')}
         </Button>
       </div>
     </form>

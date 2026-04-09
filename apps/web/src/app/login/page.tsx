@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { signIn } from 'next-auth/react';
+import { useTranslations } from 'next-intl';
 import { loginSchema, LoginFormData } from '@/lib/validations';
 import { toast } from '@/hooks/useToast';
 import { Eye, EyeOff, Monitor, Shield, AlertTriangle } from 'lucide-react';
@@ -54,6 +55,7 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { executeRecaptcha } = useGoogleReCaptcha();
+  const t = useTranslations('auth');
 
   const [showPassword, setShowPassword] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
@@ -93,8 +95,8 @@ function LoginContent() {
       if (sessionStorage.getItem('session_replaced') === 'true') {
         sessionStorage.removeItem('session_replaced');
         toast({
-          title: 'Sesión cerrada',
-          description: 'Tu sesión fue cerrada porque se inició sesión en otro dispositivo.',
+          title: t('sessionClosed'),
+          description: t('sessionClosedDesc'),
           variant: 'destructive',
         });
       }
@@ -125,7 +127,7 @@ function LoginContent() {
           }
         })
         .catch(() => {
-          toast({ title: 'Sesión expirada', description: 'El enlace de verificación 2FA ha expirado. Intenta iniciar sesión de nuevo.', variant: 'destructive' });
+          toast({ title: t('sessionExpired'), description: t('sessionExpiredDesc'), variant: 'destructive' });
         });
     }
 
@@ -133,8 +135,8 @@ function LoginContent() {
     const error = searchParams.get('error');
     if (error === 'AccessDenied') {
       toast({
-        title: 'Acceso denegado',
-        description: 'Tu cuenta de correo no está registrada en el sistema. Contacta al administrador.',
+        title: t('accessDenied'),
+        description: t('accessDeniedDesc'),
         variant: 'destructive',
       });
     }
@@ -174,8 +176,8 @@ function LoginContent() {
       router.push(safeCallback);
     } else {
       toast({
-        title: 'Error de sesión',
-        description: 'No se pudo establecer la sesión. Intenta nuevamente.',
+        title: t('sessionError'),
+        description: t('sessionErrorDesc'),
         variant: 'destructive',
       });
     }
@@ -225,8 +227,8 @@ function LoginContent() {
       // Tenant deactivated
       if (responseData.code === 'TENANT_DEACTIVATED') {
         toast({
-          title: 'Cuenta desactivada',
-          description: sanitizeErrorMessage(responseData.message, 'Su empresa ha sido desactivada. Contacte al administrador del sistema.'),
+          title: t('accountDeactivated'),
+          description: sanitizeErrorMessage(responseData.message, t('accountDeactivatedDesc')),
           variant: 'destructive',
         });
         setSigningIn(false);
@@ -244,8 +246,8 @@ function LoginContent() {
 
       // Authentication failure
       toast({
-        title: 'Error de autenticación',
-        description: sanitizeErrorMessage(responseData.message, 'Email o contraseña incorrectos.'),
+        title: t('authError'),
+        description: sanitizeErrorMessage(responseData.message, t('invalidCredentials')),
         variant: 'destructive',
       });
       setValue('password', '');
@@ -267,8 +269,8 @@ function LoginContent() {
       }
 
       toast({
-        title: 'Error del sistema',
-        description: 'No se pudo conectar con el servidor. Intenta nuevamente.',
+        title: t('systemError'),
+        description: t('systemErrorDesc'),
         variant: 'destructive',
       });
     } finally {
@@ -279,7 +281,7 @@ function LoginContent() {
   const handleVerify2FA = async () => {
     const cleanCode = totpCode.replace(/\s/g, '');
     if (cleanCode.length !== 6) {
-      toast.error('Ingresa un código de 6 dígitos');
+      toast.error(t('enter6Digits'));
       return;
     }
 
@@ -293,20 +295,20 @@ function LoginContent() {
 
       if (response.data?.code === 'TENANT_DEACTIVATED') {
         toast({
-          title: 'Cuenta desactivada',
-          description: response.data.message || 'Su empresa ha sido desactivada.',
+          title: t('accountDeactivated'),
+          description: response.data.message || t('accountDeactivatedDesc'),
           variant: 'destructive',
         });
         handleBackToCredentials();
       } else if (response.status === 200 && response.data.user && response.data.token) {
         await establishSession(response.data as LoginSuccessResponse);
       } else {
-        toast.error(sanitizeErrorMessage(response.data.error, 'Código inválido. Intenta nuevamente.'));
+        toast.error(sanitizeErrorMessage(response.data.error, t('invalidCode')));
         setTotpCode('');
         totpInputRef.current?.focus();
       }
     } catch {
-      toast.error('Error al verificar código');
+      toast.error(t('errorVerifying'));
     } finally {
       setVerifying2FA(false);
     }
@@ -326,20 +328,20 @@ function LoginContent() {
 
       if (response.data?.code === 'TENANT_DEACTIVATED') {
         toast({
-          title: 'Cuenta desactivada',
-          description: response.data.message || 'Su empresa ha sido desactivada.',
+          title: t('accountDeactivated'),
+          description: response.data.message || t('accountDeactivatedDesc'),
           variant: 'destructive',
         });
         handleBackToCredentials();
       } else if (response.status === 200 && response.data.user && response.data.token) {
         await establishSession(response.data as LoginSuccessResponse);
       } else if (response.data.error === '2FA_REQUIRED') {
-        toast.error('Este usuario tiene 2FA activado. Usa tu código de autenticación.');
+        toast.error(t('twoFARequired'));
       } else {
-        toast.error(sanitizeErrorMessage(response.data.message, 'Error al forzar inicio de sesión'));
+        toast.error(sanitizeErrorMessage(response.data.message, t('errorForceLogin')));
       }
     } catch {
-      toast.error('Error de conexión');
+      toast.error(t('connectionError'));
     } finally {
       setForcingLogin(false);
     }
@@ -375,22 +377,22 @@ function LoginContent() {
             <>
               <div className="space-y-2 text-center auth-animate auth-animate-delay-1">
                 <h1 className="text-[28px] font-bold text-[#0F172A] tracking-tight">
-                  Iniciar sesión
+                  {t('signIn')}
                 </h1>
                 <p className="text-[15px] text-[#64748B]">
-                  Ingresa tus credenciales para acceder
+                  {t('signInSubtitle')}
                 </p>
               </div>
 
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                 <div className="space-y-1.5 auth-animate auth-animate-delay-2">
                   <label htmlFor="email" className="block text-[14px] font-medium text-[#374151]">
-                    Correo electrónico
+                    {t('emailLabel')}
                   </label>
                   <input
                     id="email"
                     type="email"
-                    placeholder="tu@empresa.com"
+                    placeholder={t('emailPlaceholder')}
                     {...register('email')}
                     disabled={isDisabled}
                     className={`auth-input w-full h-12 px-3.5 border rounded-[10px] text-[15px] bg-gray-50/50 outline-none ${
@@ -408,10 +410,10 @@ function LoginContent() {
                 <div className="space-y-1.5 auth-animate auth-animate-delay-3">
                   <div className="flex items-center justify-between">
                     <label htmlFor="password" className="block text-[14px] font-medium text-[#374151]">
-                      Contraseña
+                      {t('password')}
                     </label>
                     <a href="/forgot-password" className="text-[13px] font-medium text-indigo-600 hover:text-indigo-700 transition-colors">
-                      ¿Olvidaste tu contraseña?
+                      {t('forgotPassword')}
                     </a>
                   </div>
                   <div className="relative">
@@ -449,7 +451,7 @@ function LoginContent() {
                     onChange={(e) => setRememberMe(e.target.checked)}
                     className="w-[18px] h-[18px] rounded border-[#D1D5DB] text-indigo-600 focus:ring-indigo-500 transition-colors"
                   />
-                  <span className="text-[14px] text-[#374151]">Recordar sesión</span>
+                  <span className="text-[14px] text-[#374151]">{t('rememberSession')}</span>
                 </label>
 
                 <div className="auth-animate auth-animate-delay-5">
@@ -458,7 +460,7 @@ function LoginContent() {
                     disabled={isDisabled}
                     className="w-full h-12 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white text-[16px] font-semibold rounded-[10px] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center shadow-sm hover:shadow-md active:scale-[0.98]"
                   >
-                    {signingIn ? (<>{spinnerSvg}Verificando...</>) : 'Iniciar Sesión'}
+                    {signingIn ? (<>{spinnerSvg}{t('signingIn')}</>) : t('signInButton')}
                   </button>
                 </div>
               </form>
@@ -490,20 +492,20 @@ function LoginContent() {
                     <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18A10.96 10.96 0 001 12c0 1.77.42 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
                     <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                   </svg>
-                  Continuar con Google
+                  {t('continueWithGoogle')}
                 </button>
               </div>
 
               <p className="text-center text-[14px] text-[#64748B] auth-animate auth-animate-delay-7">
-                ¿No tienes cuenta?{' '}
+                {t('noAccount')}{' '}
                 <a href="/register" className="font-medium text-indigo-600 hover:text-indigo-700 transition-colors">
-                  Regístrate gratis
+                  {t('registerFree')}
                 </a>
               </p>
 
               {process.env.NODE_ENV === 'development' && (
                 <div className="p-3 bg-gray-50 rounded-lg border border-gray-100 auth-animate auth-animate-delay-7">
-                  <p className="text-xs text-gray-500 mb-1.5 font-medium">Credenciales de prueba:</p>
+                  <p className="text-xs text-gray-500 mb-1.5 font-medium">{t('testCredentials')}</p>
                   <div className="space-y-0.5">
                     <p className="text-xs text-gray-500">
                       <span className="font-medium">Admin:</span> admin@jeyma.com / test123
@@ -522,10 +524,10 @@ function LoginContent() {
             <>
               <div className="space-y-2 text-center auth-animate auth-animate-delay-1">
                 <h1 className="text-[28px] font-bold text-[#0F172A] tracking-tight">
-                  Verificación 2FA
+                  {t('verification2FA')}
                 </h1>
                 <p className="text-[15px] text-[#64748B]">
-                  Ingresa el código de 6 dígitos de tu app de autenticación
+                  {t('verification2FADesc')}
                 </p>
               </div>
 
@@ -534,14 +536,14 @@ function LoginContent() {
                   <div className="flex items-start gap-2">
                     <Monitor className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
                     <div className="text-sm text-amber-800">
-                      <p className="font-medium">Sesión activa detectada</p>
+                      <p className="font-medium">{t('activeSessionDetected')}</p>
                       {conflictInfo.activeDevice && (
-                        <p className="text-xs mt-1">Dispositivo: {conflictInfo.activeDevice}</p>
+                        <p className="text-xs mt-1">{t('deviceLabel')}: {conflictInfo.activeDevice}</p>
                       )}
                       {conflictInfo.lastActivity && (
-                        <p className="text-xs">Última actividad: {conflictInfo.lastActivity}</p>
+                        <p className="text-xs">{t('lastActivityLabel')}: {conflictInfo.lastActivity}</p>
                       )}
-                      <p className="text-xs mt-1">Al verificar tu código, se cerrará la sesión anterior.</p>
+                      <p className="text-xs mt-1">{t('verifyWillCloseOther')}</p>
                     </div>
                   </div>
                 </div>
@@ -569,7 +571,7 @@ function LoginContent() {
                     className="auth-input w-48 h-14 text-center text-2xl tracking-[0.5em] font-mono border border-[#D1D5DB] rounded-[10px] outline-none disabled:bg-gray-50"
                   />
 
-                  <p className="text-xs text-[#9CA3AF]">El código cambia cada 30 segundos</p>
+                  <p className="text-xs text-[#9CA3AF]">{t('codeChanges30s')}</p>
                 </div>
 
                 <div className="auth-animate auth-animate-delay-4">
@@ -579,7 +581,7 @@ function LoginContent() {
                     disabled={totpCode.replace(/\s/g, '').length !== 6 || verifying2FA}
                     className="w-full h-12 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white text-[15px] font-semibold rounded-[10px] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center shadow-sm hover:shadow-md active:scale-[0.98]"
                   >
-                    {verifying2FA ? (<>{spinnerSvg}Verificando...</>) : 'Verificar y continuar'}
+                    {verifying2FA ? (<>{spinnerSvg}{t('signingIn')}</>) : t('verifyAndContinue')}
                   </button>
                 </div>
 
@@ -588,7 +590,7 @@ function LoginContent() {
                   onClick={handleBackToCredentials}
                   className="w-full text-sm text-[#64748B] hover:text-[#374151] transition-colors auth-animate auth-animate-delay-5"
                 >
-                  Volver al inicio de sesión
+                  {t('backToSignIn')}
                 </button>
               </div>
             </>
@@ -602,12 +604,10 @@ function LoginContent() {
                   <Monitor className="h-7 w-7 text-amber-600" />
                 </div>
                 <h1 className="text-[24px] font-bold text-[#0F172A] tracking-tight">
-                  Ya tienes una sesión abierta
+                  {t('activeSession')}
                 </h1>
                 <p className="text-[14px] text-[#64748B] leading-relaxed">
-                  Tu cuenta está conectada en <strong className="text-[#334155]">{conflictInfo.activeDevice || 'otro dispositivo'}</strong>
-                  {conflictInfo.lastActivity ? ` (${conflictInfo.lastActivity.toLowerCase()})` : ''}.
-                  Solo puedes usar una sesión a la vez.
+                  {t('activeSessionDesc', { device: conflictInfo.activeDevice || 'otro dispositivo', time: conflictInfo.lastActivity?.toLowerCase() || '' })}
                 </p>
               </div>
 
@@ -618,11 +618,11 @@ function LoginContent() {
                   disabled={forcingLogin}
                   className="w-full h-12 bg-[#16A34A] hover:bg-[#15803D] text-white text-[15px] font-semibold rounded-[10px] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center shadow-sm hover:shadow-md active:scale-[0.98]"
                 >
-                  {forcingLogin ? (<>{spinnerSvg}Conectando...</>) : 'Continuar aquí'}
+                  {forcingLogin ? (<>{spinnerSvg}{t('connecting')}</>) : t('continueHere')}
                 </button>
 
                 <p className="text-xs text-center text-[#94A3B8]">
-                  La otra sesión se cerrará automáticamente
+                  {t('otherSessionClosed')}
                 </p>
 
                 <button
@@ -630,7 +630,7 @@ function LoginContent() {
                   onClick={handleBackToCredentials}
                   className="w-full h-11 text-sm font-medium text-[#64748B] rounded-[10px] hover:bg-gray-50 transition-all active:scale-[0.98]"
                 >
-                  Usar otra cuenta
+                  {t('useOtherAccount')}
                 </button>
               </div>
             </>
@@ -639,7 +639,7 @@ function LoginContent() {
       </AuthLayout>
 
       {/* Full-Page Navigation Overlay */}
-      {navigating && <BrandedLoadingScreen message="Preparando tu escritorio..." />}
+      {navigating && <BrandedLoadingScreen message={t('preparing')} />}
     </>
   );
 }

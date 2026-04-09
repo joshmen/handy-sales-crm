@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import {
   CheckCircle2,
   Circle,
@@ -76,6 +77,8 @@ interface OnboardingPhase {
 
 export default function GettingStartedPage() {
   const router = useRouter();
+  const t = useTranslations('gettingStarted');
+  const tc = useTranslations('common');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [phases, setPhases] = useState<OnboardingPhase[]>([]);
@@ -154,8 +157,8 @@ export default function GettingStartedPage() {
     const newPhases: OnboardingPhase[] = [
       {
         id: 'base',
-        title: 'Configuración Base',
-        description: 'Lo esencial para arrancar',
+        title: t('phases.base.title'),
+        description: t('phases.base.description'),
         colorDot: 'bg-slate-500',
         colorBg: 'bg-slate-50',
         colorText: 'text-slate-700',
@@ -167,8 +170,8 @@ export default function GettingStartedPage() {
         steps: [
           {
             id: 'company',
-            title: 'Configura tu empresa',
-            description: 'Logo, nombre comercial y datos fiscales',
+            title: t('steps.company.title'),
+            description: t('steps.company.description'),
             href: '/settings',
             icon: Building2,
             completed: companyConfigured,
@@ -176,8 +179,8 @@ export default function GettingStartedPage() {
           },
           {
             id: 'units',
-            title: 'Unidades de medida',
-            description: 'Piezas, cajas, kilos, litros...',
+            title: t('steps.units.title'),
+            description: t('steps.units.description'),
             href: '/units',
             icon: Ruler,
             completed: hasUnits,
@@ -187,8 +190,8 @@ export default function GettingStartedPage() {
       },
       {
         id: 'catalog',
-        title: 'Catálogo de Productos',
-        description: 'Tu oferta comercial completa',
+        title: t('phases.catalog.title'),
+        description: t('phases.catalog.description'),
         colorDot: 'bg-amber-500',
         colorBg: 'bg-amber-50',
         colorText: 'text-amber-700',
@@ -200,8 +203,8 @@ export default function GettingStartedPage() {
         steps: [
           {
             id: 'product-categories',
-            title: 'Categorías de productos',
-            description: 'Agrupa tus productos (Bebidas, Snacks...)',
+            title: t('steps.productCategories.title'),
+            description: t('steps.productCategories.description'),
             href: '/product-categories',
             icon: Layers,
             completed: hasProductCats,
@@ -209,8 +212,8 @@ export default function GettingStartedPage() {
           },
           {
             id: 'product-families',
-            title: 'Familias de productos',
-            description: 'Líneas de marca o proveedor',
+            title: t('steps.productFamilies.title'),
+            description: t('steps.productFamilies.description'),
             href: '/product-families',
             icon: FolderTree,
             completed: hasProductFams,
@@ -218,8 +221,8 @@ export default function GettingStartedPage() {
           },
           {
             id: 'products',
-            title: 'Crea tus productos',
-            description: 'Agrega tu catálogo de productos o servicios',
+            title: t('steps.products.title'),
+            description: t('steps.products.description'),
             href: '/products',
             icon: Package,
             completed: hasProducts,
@@ -227,8 +230,8 @@ export default function GettingStartedPage() {
           },
           {
             id: 'price-lists',
-            title: 'Listas de precios',
-            description: 'Precios diferenciados por cliente o zona',
+            title: t('steps.priceLists.title'),
+            description: t('steps.priceLists.description'),
             href: '/price-lists',
             icon: Tags,
             completed: hasPriceLists,
@@ -236,8 +239,8 @@ export default function GettingStartedPage() {
           },
           {
             id: 'discounts',
-            title: 'Descuentos',
-            description: 'Descuentos por volumen, temporada o cliente',
+            title: t('steps.discounts.title'),
+            description: t('steps.discounts.description'),
             href: '/discounts',
             icon: Percent,
             completed: hasDiscounts,
@@ -245,8 +248,8 @@ export default function GettingStartedPage() {
           },
           {
             id: 'promotions',
-            title: 'Promociones',
-            description: 'Ofertas especiales y temporales',
+            title: t('steps.promotions.title'),
+            description: t('steps.promotions.description'),
             href: '/promotions',
             icon: Zap,
             completed: hasPromotions,
@@ -256,8 +259,8 @@ export default function GettingStartedPage() {
       },
       {
         id: 'clients',
-        title: 'Clientes',
-        description: 'Tu cartera comercial',
+        title: t('phases.clients.title'),
+        description: t('phases.clients.description'),
         colorDot: 'bg-blue-500',
         colorBg: 'bg-blue-50',
         colorText: 'text-blue-700',
@@ -269,8 +272,8 @@ export default function GettingStartedPage() {
         steps: [
           {
             id: 'client-categories',
-            title: 'Categorías de clientes',
-            description: 'Mayorista, minorista, gobierno...',
+            title: t('steps.clientCategories.title'),
+            description: t('steps.clientCategories.description'),
             href: '/client-categories',
             icon: LayoutGrid,
             completed: hasClientCats,
@@ -278,8 +281,8 @@ export default function GettingStartedPage() {
           },
           {
             id: 'clients-list',
-            title: 'Registra tus clientes',
-            description: 'Tu cartera con datos de contacto y ubicación',
+            title: t('steps.clientsList.title'),
+            description: t('steps.clientsList.description'),
             href: '/clients',
             icon: UsersIcon,
             completed: hasClients,
@@ -289,8 +292,8 @@ export default function GettingStartedPage() {
       },
       {
         id: 'territory',
-        title: 'Equipo y Territorio',
-        description: 'Organiza tu fuerza de ventas',
+        title: t('phases.territory.title'),
+        description: t('phases.territory.description'),
         colorDot: 'bg-violet-500',
         colorBg: 'bg-violet-50',
         colorText: 'text-violet-700',
@@ -302,8 +305,8 @@ export default function GettingStartedPage() {
         steps: [
           {
             id: 'team',
-            title: 'Invita a tu equipo',
-            description: 'Agrega vendedores y supervisores',
+            title: t('steps.team.title'),
+            description: t('steps.team.description'),
             href: '/team',
             icon: UserPlus,
             completed: hasTeam,
@@ -311,8 +314,8 @@ export default function GettingStartedPage() {
           },
           {
             id: 'zones',
-            title: 'Configura zonas',
-            description: 'Divide tu territorio de ventas',
+            title: t('steps.zones.title'),
+            description: t('steps.zones.description'),
             href: '/zones',
             icon: MapPin,
             completed: hasZones,
@@ -322,8 +325,8 @@ export default function GettingStartedPage() {
       },
       {
         id: 'operations',
-        title: 'Operaciones',
-        description: '¡A vender!',
+        title: t('phases.operations.title'),
+        description: t('phases.operations.description'),
         colorDot: 'bg-green-500',
         colorBg: 'bg-green-50',
         colorText: 'text-green-700',
@@ -335,8 +338,8 @@ export default function GettingStartedPage() {
         steps: [
           {
             id: 'routes',
-            title: 'Planifica rutas',
-            description: 'Asigna vendedores a zonas y clientes',
+            title: t('steps.routes.title'),
+            description: t('steps.routes.description'),
             href: '/routes/manage',
             icon: Route,
             completed: hasRoutes,
@@ -344,8 +347,8 @@ export default function GettingStartedPage() {
           },
           {
             id: 'orders',
-            title: 'Crea tu primer pedido',
-            description: '¡Ya estás listo para vender!',
+            title: t('steps.orders.title'),
+            description: t('steps.orders.description'),
             href: '/orders',
             icon: ShoppingCart,
             completed: hasOrders,
@@ -378,7 +381,7 @@ export default function GettingStartedPage() {
     }
 
     return newPhases;
-  }, []);
+  }, [t]);
 
   // Restore expanded phases from session (if user navigated away and came back)
   const restoredExpanded = useRef(false);
@@ -455,7 +458,7 @@ export default function GettingStartedPage() {
   if (loading) return (
     <div role="status" className="flex items-center justify-center min-h-[60vh]">
       <Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" />
-      <span className="sr-only">Cargando...</span>
+      <span className="sr-only">{t('loading')}</span>
     </div>
   );
 
@@ -475,19 +478,19 @@ export default function GettingStartedPage() {
         <div className="page-animate">
           <div className="flex items-center gap-2 text-sm mb-3">
             <Link href="/dashboard" className="text-gray-500 hover:text-gray-700 transition-colors">
-              Inicio
+              {tc('home')}
             </Link>
             <span className="text-gray-400">/</span>
-            <span className="text-gray-900 font-medium">Primeros Pasos</span>
+            <span className="text-gray-900 font-medium">{t('breadcrumbTitle')}</span>
           </div>
         </div>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between page-animate page-animate-delay-1">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-              Primeros Pasos
+              {t('title')}
             </h1>
             <p className="text-sm text-gray-500 mt-1">
-              Configura tu negocio paso a paso
+              {t('subtitle')}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -497,15 +500,15 @@ export default function GettingStartedPage() {
               className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">Actualizar</span>
+              <span className="hidden sm:inline">{tc('refresh')}</span>
             </button>
             <button
               onClick={handleDismiss}
               className="flex items-center gap-1.5 h-9 px-3 text-xs font-medium text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <X className="w-3.5 h-3.5" />
-              <span className="sm:hidden">Omitir</span>
-              <span className="hidden sm:inline">Omitir guía</span>
+              <span className="sm:hidden">{t('skipShort')}</span>
+              <span className="hidden sm:inline">{t('skipFull')}</span>
             </button>
           </div>
         </div>
@@ -530,12 +533,12 @@ export default function GettingStartedPage() {
                 )}
                 <div>
                   <h2 className="font-semibold text-gray-900">
-                    {allDone ? '¡Configuración completa!' : 'Progreso de configuración'}
+                    {allDone ? t('progressComplete') : t('progressTitle')}
                   </h2>
                   <p className="text-sm text-gray-500">
                     {allDone
-                      ? 'Tu negocio está listo para operar'
-                      : `${completedSteps} de ${totalSteps} pasos completados`}
+                      ? t('businessReady')
+                      : t('stepsCompleted', { completed: completedSteps, total: totalSteps })}
                   </p>
                 </div>
               </div>
@@ -558,14 +561,16 @@ export default function GettingStartedPage() {
         {showConfetti && allDone && (
           <div className="bg-green-50 border border-green-200 rounded-xl p-5 text-center page-animate">
             <p className="text-green-800 font-medium">
-              ¡Felicidades! Tu cuenta está completamente configurada.
+              {t('congratulations')}
             </p>
             <p className="text-sm text-green-600 mt-1">
-              Puedes ir al{' '}
-              <Link href="/dashboard" className="underline font-medium hover:text-green-700">
-                Tablero
-              </Link>{' '}
-              para empezar a trabajar.
+              {t.rich('goToDashboardHint', {
+                link: (chunks) => (
+                  <Link href="/dashboard" className="underline font-medium hover:text-green-700">
+                    {chunks}
+                  </Link>
+                ),
+              })}
             </p>
           </div>
         )}
@@ -658,10 +663,10 @@ export default function GettingStartedPage() {
                                   borderColor: phase.colorButton,
                                   backgroundColor: 'transparent',
                                 }}
-                                title="Ir con tour guiado"
+                                title={t('guidedTour')}
                               >
                                 <Compass className="w-3 h-3" />
-                                <span className="hidden sm:inline">Guiar</span>
+                                <span className="hidden sm:inline">{t('guide')}</span>
                               </button>
                             )}
                             {!step.completed && (
@@ -670,7 +675,7 @@ export default function GettingStartedPage() {
                                 className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap text-white hover:opacity-90"
                                 style={{ backgroundColor: phase.colorButton }}
                               >
-                                Ir
+                                {t('go')}
                                 <ChevronRight className="w-3 h-3" />
                               </Link>
                             )}
@@ -681,10 +686,10 @@ export default function GettingStartedPage() {
                                   router.push(step.href);
                                 }}
                                 className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-400 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
-                                title="Repetir tour guiado"
+                                title={t('repeatTour')}
                               >
                                 <Compass className="w-3 h-3" />
-                                <span className="hidden sm:inline">Tour</span>
+                                <span className="hidden sm:inline">{t('tour')}</span>
                               </button>
                             )}
                             {step.completed && (
@@ -692,7 +697,7 @@ export default function GettingStartedPage() {
                                 href={step.href}
                                 className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-400 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                               >
-                                Ver
+                                {t('view')}
                                 <ChevronRight className="w-3 h-3" />
                               </Link>
                             )}
@@ -710,7 +715,7 @@ export default function GettingStartedPage() {
         {/* Help text */}
         <div className="text-center py-4 page-animate page-animate-delay-4">
           <p className="text-xs text-gray-400">
-            El progreso se detecta automáticamente. Puedes volver a esta página en cualquier momento.
+            {t('progressHelp')}
           </p>
         </div>
       </div>

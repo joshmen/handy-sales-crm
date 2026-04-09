@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { Plus, ArrowRight, Loader2 } from 'lucide-react';
 import {
   SbBilling,
@@ -25,6 +26,7 @@ interface KpiCard {
 }
 
 export default function BillingDashboardPage() {
+  const t = useTranslations('billing');
   const [dashboard, setDashboard] = useState<BillingDashboard | null>(null);
   const [timbres, setTimbres] = useState<TimbresBalance | null>(null);
   const [loading, setLoading] = useState(true);
@@ -40,7 +42,7 @@ export default function BillingDashboardPage() {
         if (dashData.status === 'fulfilled') setDashboard(dashData.value);
         if (timbresData.status === 'fulfilled') setTimbres(timbresData.value);
         if (dashData.status === 'rejected') {
-          toast({ title: 'Error al cargar dashboard de facturación', variant: 'destructive' });
+          toast({ title: t('errorLoadingDashboard'), variant: 'destructive' });
         }
       } finally {
         setLoading(false);
@@ -52,32 +54,32 @@ export default function BillingDashboardPage() {
   if (loading) return (
     <div role="status" className="flex items-center justify-center min-h-[60vh]">
       <Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" />
-      <span className="sr-only">Cargando...</span>
+      <span className="sr-only">Loading...</span>
     </div>
   );
 
   const d = dashboard;
   const kpis: KpiCard[] = [
     {
-      label: 'Total facturado',
+      label: t('kpis.totalInvoiced'),
       value: formatCurrency(d?.montoTotal ?? 0),
       icon: SbDollarSign,
       color: 'text-emerald-600 dark:text-emerald-400',
     },
     {
-      label: 'Facturas timbradas',
+      label: t('kpis.stampedInvoices'),
       value: String(d?.facturasTimbradas ?? 0),
       icon: SbCheckCircle,
       color: 'text-blue-600 dark:text-blue-400',
     },
     {
-      label: 'Pendientes',
+      label: t('kpis.pending'),
       value: String(d?.facturasPendientes ?? 0),
       icon: SbClock,
       color: 'text-amber-600 dark:text-amber-400',
     },
     {
-      label: 'Canceladas',
+      label: t('kpis.cancelled'),
       value: String(d?.facturasCanceladas ?? 0),
       icon: SbAlert,
       color: 'text-red-600 dark:text-red-400',
@@ -87,16 +89,16 @@ export default function BillingDashboardPage() {
   return (
     <PageHeader
       breadcrumbs={[
-        { label: 'Facturación', href: '/billing' },
-        { label: 'Resumen' },
+        { label: t('title'), href: '/billing' },
+        { label: t('summary') },
       ]}
-      title="Facturación"
-      subtitle="Resumen de facturación electrónica SAT CFDI 4.0"
+      title={t('title')}
+      subtitle={t('subtitle')}
       actions={
         <Link href="/billing/invoices/new">
           <Button className="bg-green-600 hover:bg-green-700 text-white">
             <Plus className="w-4 h-4 mr-2" />
-            Nueva Factura
+            {t('newInvoice')}
           </Button>
         </Link>
       }
@@ -123,7 +125,7 @@ export default function BillingDashboardPage() {
       {timbres && (
         <div className="bg-card border border-border rounded-xl p-5 mb-6">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-foreground">Timbres este mes</h2>
+            <h2 className="text-sm font-semibold text-foreground">{t('stampsThisMonth')}</h2>
             <span className="text-sm font-medium tabular-nums text-muted-foreground">
               {timbres.usados} / {timbres.maximo}
             </span>
@@ -133,7 +135,7 @@ export default function BillingDashboardPage() {
             aria-valuenow={timbres.usados}
             aria-valuemin={0}
             aria-valuemax={timbres.maximo}
-            aria-label={`Timbres usados: ${timbres.usados} de ${timbres.maximo}`}
+            aria-label={t('stampsUsedLabel', { used: timbres.usados, max: timbres.maximo })}
             className="w-full h-2 bg-muted rounded-full overflow-hidden mb-2"
           >
             <div
@@ -149,7 +151,7 @@ export default function BillingDashboardPage() {
             />
           </div>
           <p className="text-xs text-muted-foreground">
-            {timbres.disponibles} timbres disponibles
+            {t('stampsAvailable', { count: timbres.disponibles })}
             {!timbres.allowed && timbres.message && (
               <span className="text-red-500 ml-2">— {timbres.message}</span>
             )}
@@ -161,7 +163,7 @@ export default function BillingDashboardPage() {
         {/* Facturación por día */}
         <div className="lg:col-span-2 bg-card border border-border rounded-xl p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-foreground">Facturación por día</h2>
+            <h2 className="text-sm font-semibold text-foreground">{t('invoicingByDay')}</h2>
           </div>
           {d?.facturasPorDia && d.facturasPorDia.length > 0 ? (
             <div className="space-y-2">
@@ -171,21 +173,21 @@ export default function BillingDashboardPage() {
                     {new Date(item.fecha).toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric', month: 'short' })}
                   </span>
                   <div className="flex items-center gap-3">
-                    <span className="text-xs text-muted-foreground">{item.cantidad} facturas</span>
+                    <span className="text-xs text-muted-foreground">{t('invoicesCount', { count: item.cantidad })}</span>
                     <span className="font-medium tabular-nums">{formatCurrency(item.monto)}</span>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">Sin datos en el período</p>
+            <p className="text-sm text-muted-foreground">{t('noDataInPeriod')}</p>
           )}
         </div>
 
         {/* Top Clientes */}
         <div className="bg-card border border-border rounded-xl p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-foreground">Top Clientes</h2>
+            <h2 className="text-sm font-semibold text-foreground">{t('topClients')}</h2>
           </div>
           {d?.topClientes && d.topClientes.length > 0 ? (
             <div className="space-y-3">
@@ -195,12 +197,12 @@ export default function BillingDashboardPage() {
                     <span className="font-medium truncate max-w-[140px]">{c.nombre}</span>
                     <span className="font-medium tabular-nums">{formatCurrency(c.montoTotal)}</span>
                   </div>
-                  <p className="text-xs text-muted-foreground">{c.rfc} · {c.totalFacturas} facturas</p>
+                  <p className="text-xs text-muted-foreground">{c.rfc} · {t('invoicesCount', { count: c.totalFacturas })}</p>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">Sin clientes facturados</p>
+            <p className="text-sm text-muted-foreground">{t('noInvoicedClients')}</p>
           )}
         </div>
       </div>
@@ -213,7 +215,7 @@ export default function BillingDashboardPage() {
         >
           <div className="flex items-center gap-3">
             <SbBilling size={22} />
-            <span className="text-sm font-medium">Ver todas las facturas</span>
+            <span className="text-sm font-medium">{t('viewAllInvoices')}</span>
           </div>
           <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-green-600 transition-colors" aria-hidden="true" />
         </Link>
@@ -223,7 +225,7 @@ export default function BillingDashboardPage() {
         >
           <div className="flex items-center gap-3">
             <Plus className="w-5 h-5 text-green-600" />
-            <span className="text-sm font-medium">Crear nueva factura</span>
+            <span className="text-sm font-medium">{t('createNewInvoice')}</span>
           </div>
           <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-green-600 transition-colors" aria-hidden="true" />
         </Link>
@@ -233,7 +235,7 @@ export default function BillingDashboardPage() {
         >
           <div className="flex items-center gap-3">
             <SbBilling size={22} />
-            <span className="text-sm font-medium">Configuración fiscal</span>
+            <span className="text-sm font-medium">{t('fiscalSettings')}</span>
           </div>
           <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-green-600 transition-colors" aria-hidden="true" />
         </Link>

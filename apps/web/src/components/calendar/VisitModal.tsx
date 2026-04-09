@@ -11,6 +11,7 @@ import { SelectCompat as Select } from '@/components/ui/SelectCompat';
 import { Calendar } from 'lucide-react';
 import { Visit } from '@/types/calendar';
 import { Client, User } from '@/types';
+import { useTranslations } from 'next-intl';
 
 const visitSchema = z.object({
   clientId: z.string().min(1, 'Selecciona un cliente'),
@@ -44,6 +45,8 @@ export const VisitModal: React.FC<VisitModalProps> = ({
   onSave,
   selectedDate,
 }) => {
+  const t = useTranslations('visits.calendarModal');
+  const tc = useTranslations('common');
   const drawerRef = useRef<DrawerHandle>(null);
 
   const defaultValues = useMemo(() => ({
@@ -78,16 +81,16 @@ export const VisitModal: React.FC<VisitModalProps> = ({
   }, [defaultValues, resetForm]);
 
   const typeOptions = [
-    { value: 'sales', label: 'Venta' },
-    { value: 'delivery', label: 'Entrega' },
-    { value: 'follow_up', label: 'Seguimiento' },
-    { value: 'meeting', label: 'Reunión' },
+    { value: 'sales', label: t('typeSales') },
+    { value: 'delivery', label: t('typeDelivery') },
+    { value: 'follow_up', label: t('typeFollowUp') },
+    { value: 'meeting', label: t('typeMeeting') },
   ];
 
   const priorityOptions = [
-    { value: 'low', label: 'Baja' },
-    { value: 'medium', label: 'Media' },
-    { value: 'high', label: 'Alta' },
+    { value: 'low', label: t('priorityLow') },
+    { value: 'medium', label: t('priorityMedium') },
+    { value: 'high', label: t('priorityHigh') },
   ];
 
   const clientOptions = clients.map(client => ({
@@ -115,7 +118,7 @@ export const VisitModal: React.FC<VisitModalProps> = ({
       ref={drawerRef}
       isOpen={isOpen}
       onClose={onClose}
-      title={visit ? 'Editar Visita' : 'Nueva Visita'}
+      title={visit ? t('editVisit') : t('newVisit')}
       icon={<Calendar className="w-5 h-5 text-green-600" />}
       width="md"
       isDirty={isDirty}
@@ -123,9 +126,9 @@ export const VisitModal: React.FC<VisitModalProps> = ({
       footer={
         <div className="flex justify-end space-x-2">
           <Button variant="outline" onClick={() => drawerRef.current?.requestClose()}>
-            Cancelar
+            {tc('cancel')}
           </Button>
-          <Button onClick={handleSave}>{visit ? 'Actualizar' : 'Crear'}</Button>
+          <Button onClick={handleSave}>{visit ? t('update') : tc('create')}</Button>
         </div>
       }
     >
@@ -133,11 +136,11 @@ export const VisitModal: React.FC<VisitModalProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Select
-              label="Cliente *"
+              label={t('clientLabel')}
               value={watch('clientId')}
               onChange={(e) => setValue('clientId', e.target.value, { shouldDirty: true })}
             >
-              <option value="">Seleccionar cliente</option>
+              <option value="">{t('selectClient')}</option>
               {clientOptions.map(u => (
                 <option key={u.value} value={String(u.value)}>
                   {u.label}
@@ -149,11 +152,11 @@ export const VisitModal: React.FC<VisitModalProps> = ({
 
           <div>
             <Select
-              label="Usuario *"
+              label={t('userLabel')}
               value={watch('userId')}
               onChange={(e) => setValue('userId', e.target.value, { shouldDirty: true })}
             >
-              <option value="">Seleccionar usuario</option>
+              <option value="">{t('selectUser')}</option>
               {userOptions.map(u => (
                 <option key={u.value} value={String(u.value)}>
                   {u.label}
@@ -166,7 +169,7 @@ export const VisitModal: React.FC<VisitModalProps> = ({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <DateTimePicker
-            label="Fecha *"
+            label={t('dateLabel')}
             mode="date"
             value={watch('date')}
             onChange={(val) => setValue('date', val, { shouldValidate: true, shouldDirty: true })}
@@ -174,7 +177,7 @@ export const VisitModal: React.FC<VisitModalProps> = ({
           />
 
           <Input
-            label="Hora de inicio *"
+            label={t('startTimeLabel')}
             type="time"
             {...register('startTime')}
             error={errors.startTime?.message}
@@ -184,7 +187,7 @@ export const VisitModal: React.FC<VisitModalProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Select
-              label="Tipo de visita"
+              label={t('visitTypeLabel')}
               value={watch('type')}
               onChange={(e) => setValue('type', e.target.value as VisitFormData['type'], { shouldDirty: true })}
             >
@@ -199,7 +202,7 @@ export const VisitModal: React.FC<VisitModalProps> = ({
 
           <div>
             <Select
-              label="Prioridad"
+              label={t('priorityLabel')}
               value={watch('priority')}
               onChange={(e) => setValue('priority', e.target.value as VisitFormData['priority'], { shouldDirty: true })}
             >
@@ -214,19 +217,19 @@ export const VisitModal: React.FC<VisitModalProps> = ({
         </div>
 
         <Input
-          label="Dirección"
+          label={t('addressLabel')}
           {...register('address')}
           error={errors.address?.message}
-          placeholder="Dirección de la visita"
+          placeholder={t('addressPlaceholder')}
         />
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Comentarios de la visita
+            {t('commentsLabel')}
           </label>
           <textarea
             {...register('notes')}
-            placeholder="Comentarios a tu vendedor de qué quieres que haga lograr en esta visita"
+            placeholder={t('commentsPlaceholder')}
             className="w-full p-2 border border-gray-300 rounded-lg h-24 focus:outline-none focus:ring-2 focus:ring-teal-500"
           />
           {errors.notes && (

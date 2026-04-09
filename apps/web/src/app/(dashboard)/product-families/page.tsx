@@ -20,6 +20,7 @@ import { DataGrid, type DataGridColumn } from '@/components/ui/DataGrid';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useTranslations } from 'next-intl';
 import {
   Plus,
   Pencil,
@@ -50,6 +51,8 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 export default function ProductFamiliesPage() {
+  const t = useTranslations('productFamilies');
+  const tc = useTranslations('common');
   // State
   const [families, setFamilies] = useState<ProductFamily[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -86,7 +89,7 @@ export default function ProductFamiliesPage() {
       setFamilies(response.data);
     } catch (error) {
       console.error('Error loading families:', error);
-      toast.error('No se pudieron cargar las familias de productos');
+      toast.error(t('errorLoading'));
     } finally {
       setLoading(false);
     }
@@ -174,17 +177,17 @@ export default function ProductFamiliesPage() {
 
       if (editingFamily) {
         await api.put(`/familias-productos/${editingFamily.id}`, data);
-        toast.success(`Familia "${data.nombre}" actualizada exitosamente`);
+        toast.success(t('familyUpdated', { name: data.nombre }));
       } else {
         await api.post('/familias-productos', data);
-        toast.success(`Familia "${data.nombre}" creada exitosamente`);
+        toast.success(t('familyCreated', { name: data.nombre }));
       }
 
       setShowFamilyForm(false);
       await loadFamilies();
     } catch (error: unknown) {
       console.error('Error al guardar familia:', error);
-      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Error al guardar la familia';
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || t('errorSaving');
       toast.error(message);
     } finally {
       setSavingFamily(false);
@@ -202,13 +205,13 @@ export default function ProductFamiliesPage() {
     try {
       setSavingFamily(true);
       await api.delete(`/familias-productos/${deletingFamily.id}`);
-      toast.success(`Familia "${deletingFamily.nombre}" eliminada exitosamente`);
+      toast.success(t('familyDeleted', { name: deletingFamily.nombre }));
       setShowDeleteConfirm(false);
       setDeletingFamily(null);
       await loadFamilies();
     } catch (error: unknown) {
       console.error('Error al eliminar:', error);
-      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Ocurrió un error al eliminar la familia';
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || t('errorDeleting');
       toast.error(message);
       setShowDeleteConfirm(false);
       setDeletingFamily(null);
@@ -223,7 +226,7 @@ export default function ProductFamiliesPage() {
       setTogglingId(family.id);
       const newActivo = !family.activo;
       await api.patch(`/familias-productos/${family.id}/activo`, { activo: newActivo });
-      toast.success(newActivo ? 'Familia activada' : 'Familia desactivada');
+      toast.success(newActivo ? t('familyActivated') : t('familyDeactivated'));
       if (!showInactive && !newActivo) {
         setFamilies(prev => prev.filter(f => f.id !== family.id));
       } else {
@@ -233,7 +236,7 @@ export default function ProductFamiliesPage() {
       }
     } catch (error: unknown) {
       console.error('Error al cambiar estado:', error);
-      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Error al cambiar el estado de la familia';
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || t('errorChangingStatus');
       toast.error(message);
     } finally {
       setTogglingId(null);
@@ -258,7 +261,7 @@ export default function ProductFamiliesPage() {
       await api.patch('/familias-productos/batch-toggle', { ids, activo });
 
       toast.success(
-        `${ids.length} familia${ids.length > 1 ? 's' : ''} ${activo ? 'activada' : 'desactivada'}${ids.length > 1 ? 's' : ''} exitosamente`
+        t('batchSuccess', { count: ids.length, plural: ids.length > 1 ? 's' : '', action: activo ? tc('activate').toLowerCase() : tc('deactivate').toLowerCase() })
       );
 
       if (!showInactive && !activo) {
@@ -271,7 +274,7 @@ export default function ProductFamiliesPage() {
       batch.completeBatch();
     } catch (error: unknown) {
       console.error('Error en batch toggle:', error);
-      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Error al cambiar el estado de las familias';
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || t('errorBatchToggle');
       toast.error(message);
       batch.setBatchLoading(false);
     }
@@ -280,11 +283,11 @@ export default function ProductFamiliesPage() {
   return (
     <PageHeader
       breadcrumbs={[
-        { label: 'Inicio', href: '/dashboard' },
-        { label: 'Familias de productos' },
+        { label: tc('home'), href: '/dashboard' },
+        { label: t('title') },
       ]}
-      title="Familias de productos"
-      subtitle={totalItems > 0 ? `${totalItems} familia${totalItems !== 1 ? 's' : ''}` : undefined}
+      title={t('title')}
+      subtitle={totalItems > 0 ? t('subtitle', { count: totalItems, plural: totalItems !== 1 ? 's' : '' }) : undefined}
       actions={
         <>
           <div className="relative" data-tour="product-families-import-export">
@@ -293,7 +296,7 @@ export default function ProductFamiliesPage() {
               className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
             >
               <Download className="w-3.5 h-3.5 text-emerald-500" />
-              <span className="hidden sm:inline">Importar / Exportar</span>
+              <span className="hidden sm:inline">{tc('importExport')}</span>
               <ChevronDown className="w-3 h-3 text-gray-400" />
             </button>
             {showDataMenu && (
@@ -301,18 +304,18 @@ export default function ProductFamiliesPage() {
                 <div className="fixed inset-0 z-10" onClick={() => setShowDataMenu(false)} />
                 <div className="absolute right-0 mt-1 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1">
                   <button
-                    onClick={async () => { setShowDataMenu(false); try { await exportToCsv('familias-productos'); toast.success('Archivo CSV descargado'); } catch { toast.error('Error al exportar datos'); } }}
+                    onClick={async () => { setShowDataMenu(false); try { await exportToCsv('familias-productos'); toast.success(tc('csvDownloaded')); } catch { toast.error(tc('errorExporting')); } }}
                     className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
                   >
                     <Download className="w-3.5 h-3.5 text-emerald-500" />
-                    Exportar CSV
+                    {tc('exportCsv')}
                   </button>
                   <button
                     onClick={() => { setShowDataMenu(false); setIsImportOpen(true); }}
                     className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
                   >
                     <Upload className="w-3.5 h-3.5 text-blue-500" />
-                    Importar CSV
+                    {tc('importCsv')}
                   </button>
                 </div>
               </>
@@ -324,7 +327,7 @@ export default function ProductFamiliesPage() {
             className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
           >
             <Plus className="w-4 h-4" />
-            <span>Nueva familia</span>
+            <span>{t('newFamily')}</span>
           </button>
         </>
       }
@@ -335,7 +338,7 @@ export default function ProductFamiliesPage() {
           <SearchBar
             value={searchTerm}
             onChange={(v) => { setSearchTerm(v); setCurrentPage(1); }}
-            placeholder="Buscar familia..."
+            placeholder={t('searchPlaceholder')}
             dataTour="product-families-search"
           />
           <button
@@ -343,7 +346,7 @@ export default function ProductFamiliesPage() {
             className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
           >
             <RefreshCw className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Actualizar</span>
+            <span className="hidden sm:inline">{tc('refresh')}</span>
           </button>
 
           <div data-tour="product-families-toggle-inactive" className="ml-auto">
@@ -369,17 +372,17 @@ export default function ProductFamiliesPage() {
         <div data-tour="product-families-table">
           <DataGrid<ProductFamily>
             columns={[
-              { key: 'id', label: 'ID', width: 60, sortable: true, cellRenderer: (item) => <span className="font-mono text-gray-500">{item.id}</span> },
-              { key: 'nombre', label: 'Nombre', width: 'flex', sortable: true, cellRenderer: (item) => <span className="font-medium text-gray-900">{item.nombre}</span> },
-              { key: 'descripcion', label: 'Descripción', width: 'flex', sortable: true, hiddenOnMobile: true, cellRenderer: (item) => <span className="text-gray-500 truncate">{item.descripcion || '-'}</span> },
-              { key: 'activo', label: 'Activo', width: 50, align: 'center', cellRenderer: (item) => (
+              { key: 'id', label: tc('id'), width: 60, sortable: true, cellRenderer: (item) => <span className="font-mono text-gray-500">{item.id}</span> },
+              { key: 'nombre', label: tc('name'), width: 'flex', sortable: true, cellRenderer: (item) => <span className="font-medium text-gray-900">{item.nombre}</span> },
+              { key: 'descripcion', label: tc('description'), width: 'flex', sortable: true, hiddenOnMobile: true, cellRenderer: (item) => <span className="text-gray-500 truncate">{item.descripcion || '-'}</span> },
+              { key: 'activo', label: tc('active'), width: 50, align: 'center', cellRenderer: (item) => (
                 <div onClick={e => e.stopPropagation()}>
                   <ActiveToggle isActive={item.activo} onToggle={() => handleToggleActive(item)} disabled={loading} isLoading={togglingId === item.id} />
                 </div>
               )},
               { key: 'actions', label: '', width: 40, cellRenderer: (item) => (
                 <div className="flex justify-center" onClick={e => e.stopPropagation()}>
-                  <button onClick={() => handleOpenEdit(item)} disabled={loading} className="p-1 hover:bg-amber-50 rounded transition-colors disabled:opacity-50" title="Editar">
+                  <button onClick={() => handleOpenEdit(item)} disabled={loading} className="p-1 hover:bg-amber-50 rounded transition-colors disabled:opacity-50" title={tc('edit')}>
                     <Pencil className="w-4 h-4 text-amber-400 hover:text-amber-600" />
                   </button>
                 </div>
@@ -396,10 +399,10 @@ export default function ProductFamiliesPage() {
             pagination={{ currentPage, totalPages, totalItems, pageSize, onPageChange: setCurrentPage }}
             sort={{ key: sortKey, direction: sortDir, onSort: handleSortChange }}
             loading={loading}
-            loadingMessage="Cargando familias..."
+            loadingMessage={t('loadingFamilies')}
             emptyIcon={<Boxes className="w-16 h-16 text-pink-300" />}
-            emptyTitle={searchTerm ? 'No se encontraron familias' : 'No hay familias'}
-            emptyMessage={searchTerm ? 'No se encontraron familias con ese término' : 'Crea tu primera familia de productos para comenzar'}
+            emptyTitle={searchTerm ? t('emptySearchTitle') : t('emptyTitle')}
+            emptyMessage={searchTerm ? t('emptySearchMessage') : t('emptyMessage')}
             mobileCardRenderer={(family) => (
               <div className={!family.activo ? 'opacity-60' : ''}>
                 <div className="flex items-center gap-3 mb-2">
@@ -408,7 +411,7 @@ export default function ProductFamiliesPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-gray-900 truncate">{family.nombre}</div>
-                    <div className="text-xs text-gray-500 truncate">{family.descripcion || 'Sin descripción'}</div>
+                    <div className="text-xs text-gray-500 truncate">{family.descripcion || tc('noDescription')}</div>
                   </div>
                   <button onClick={() => batch.handleToggleSelect(family.id)} className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${batch.selectedIds.has(family.id) ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300 hover:border-green-500'}`}>
                     {batch.selectedIds.has(family.id) && <Check className="w-3 h-3" />}
@@ -417,10 +420,10 @@ export default function ProductFamiliesPage() {
                 </div>
                 <div className="flex justify-end">
                   <button onClick={() => handleOpenEdit(family)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors">
-                    <Pencil className="w-3.5 h-3.5 text-amber-400 hover:text-amber-600" /><span>Editar</span>
+                    <Pencil className="w-3.5 h-3.5 text-amber-400 hover:text-amber-600" /><span>{tc('edit')}</span>
                   </button>
                   <button onClick={() => handleOpenDelete(family)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-red-600 hover:bg-red-50 rounded transition-colors">
-                    <Trash2 className="w-3.5 h-3.5 text-red-400 hover:text-red-600" /><span>Eliminar</span>
+                    <Trash2 className="w-3.5 h-3.5 text-red-400 hover:text-red-600" /><span>{tc('delete')}</span>
                   </button>
                 </div>
               </div>
@@ -447,8 +450,8 @@ export default function ProductFamiliesPage() {
         selectedCount={batch.selectedCount}
         entityLabel="familia"
         loading={batch.batchLoading}
-        consequenceActivate="Las familias activadas volverán a aparecer en las listas activas."
-        consequenceDeactivate="Las familias desactivadas no aparecerán en las listas activas."
+        consequenceActivate={t('consequenceActivate')}
+        consequenceDeactivate={t('consequenceDeactivate')}
       />
 
       {/* Create/Edit Drawer */}
@@ -456,7 +459,7 @@ export default function ProductFamiliesPage() {
         ref={drawerRef}
         isOpen={showFamilyForm}
         onClose={handleCancelForm}
-        title={editingFamily ? 'Editar Familia' : 'Nueva Familia'}
+        title={editingFamily ? t('drawer.titleEdit') : t('drawer.titleNew')}
         icon={<FolderTree className="w-5 h-5" />}
         width="sm"
         isDirty={isDirty}
@@ -464,11 +467,11 @@ export default function ProductFamiliesPage() {
         footer={
           <div className="flex items-center justify-end gap-3" data-tour="product-families-drawer-actions">
             <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()} disabled={savingFamily}>
-              Cancelar
+              {tc('cancel')}
             </Button>
             <Button type="button" variant="success" onClick={handleSaveFamily} disabled={savingFamily} className="flex items-center gap-2">
               {savingFamily && <Loader2 className="w-4 h-4 animate-spin" />}
-              {editingFamily ? 'Guardar Cambios' : 'Crear Familia'}
+              {editingFamily ? tc('saveChanges') : t('drawer.createFamily')}
             </Button>
           </div>
         }
@@ -477,20 +480,20 @@ export default function ProductFamiliesPage() {
           <div data-tour="product-families-drawer-name">
             <Input
               id="nombre"
-              label={<>Nombre <span className="text-red-500">*</span></>}
+              label={<>{t('drawer.nameLabel')} <span className="text-red-500">*</span></>}
               type="text"
               {...register('nombre')}
-              placeholder="Ej: Implantes, Herramientas, Accesorios..."
+              placeholder={t('drawer.namePlaceholder')}
               error={errors.nombre?.message}
             />
           </div>
           <div data-tour="product-families-drawer-description">
             <Input
               id="descripcion"
-              label="Descripción"
+              label={t('drawer.descriptionLabel')}
               type="text"
               {...register('descripcion')}
-              placeholder="Descripción opcional de la familia"
+              placeholder={t('drawer.descriptionPlaceholder')}
             />
           </div>
         </form>
@@ -501,21 +504,20 @@ export default function ProductFamiliesPage() {
         <Modal
           isOpen={showDeleteConfirm}
           onClose={() => { setShowDeleteConfirm(false); setDeletingFamily(null); }}
-          title="¿Eliminar familia?"
+          title={t('confirmDeleteTitle')}
         >
           <div className="py-4">
             <p className="text-gray-500">
-              ¿Estás seguro de que deseas eliminar la familia{' '}
-              <strong>&quot;{deletingFamily?.nombre}&quot;</strong>? Esta acción no se puede deshacer.
+              {t('confirmDeleteMessage', { name: deletingFamily?.nombre ?? '' })}
             </p>
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t">
             <Button type="button" variant="outline" onClick={() => { setShowDeleteConfirm(false); setDeletingFamily(null); }} disabled={savingFamily}>
-              Cancelar
+              {tc('cancel')}
             </Button>
             <Button type="button" variant="destructive" onClick={handleDelete} disabled={savingFamily} className="flex items-center gap-2">
               {savingFamily && <Loader2 className="w-4 h-4 animate-spin" />}
-              Eliminar
+              {tc('delete')}
             </Button>
           </div>
         </Modal>

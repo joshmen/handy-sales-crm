@@ -50,6 +50,7 @@ import { useSignalR } from '@/contexts/SignalRContext';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useCompany } from '@/contexts/CompanyContext';
 import { useReportExport } from '@/hooks/useReportExport';
+import { useTranslations } from 'next-intl';
 
 // Tipos para métricas
 interface MetricCardData {
@@ -81,6 +82,8 @@ function getDateRange(periodo: 'semana' | 'mes' | 'trimestre') {
 }
 
 export default function DashboardPage() {
+  const t = useTranslations('dashboard');
+  const tc = useTranslations('common');
   const { data: session } = useSession();
   const router = useRouter();
   const { isImpersonating } = useImpersonationStore();
@@ -145,31 +148,31 @@ export default function DashboardPage() {
   // Build metric cards dynamically from ejecutivo data
   const metricCards: MetricCardData[] = ejecutivo ? [
     {
-      title: 'Ventas Totales',
+      title: t('totalSales'),
       value: `${formatCurrency(ejecutivo.ventas.total)}`,
       change: ejecutivo.ventas.crecimientoPct,
-      changeLabel: `vs ${periodo === 'semana' ? 'semana' : periodo === 'mes' ? 'mes' : 'trimestre'} anterior`,
+      changeLabel: periodo === 'semana' ? t('vsPreviousWeek') : periodo === 'mes' ? t('vsPreviousMonth') : t('vsPreviousQuarter'),
       icon3d: SbDollarSign,
     },
     {
-      title: 'Pedidos',
+      title: t('orders'),
       value: formatNumber(ejecutivo.ventas.pedidos),
       change: 0,
-      changeLabel: periodo === 'semana' ? 'esta semana' : periodo === 'mes' ? 'este mes' : 'este trimestre',
+      changeLabel: periodo === 'semana' ? t('thisWeek') : periodo === 'mes' ? t('thisMonth') : t('thisQuarter'),
       icon3d: SbShoppingCart,
     },
     {
-      title: 'Visitas',
+      title: t('visits'),
       value: formatNumber(ejecutivo.visitas.total),
       change: ejecutivo.visitas.efectividadPct,
-      changeLabel: 'efectividad',
+      changeLabel: t('effectiveness'),
       icon3d: SbClients,
     },
     {
-      title: 'Clientes Activos',
+      title: t('activeClients'),
       value: formatNumber(ejecutivo.clientesActivos),
       change: 0,
-      changeLabel: `${ejecutivo.nuevosClientes} nuevos`,
+      changeLabel: t('newClients', { count: ejecutivo.nuevosClientes }),
       icon3d: SbProducts,
     },
   ] : [];
@@ -219,7 +222,7 @@ export default function DashboardPage() {
   // Export hook
   const { exportPDF, exporting } = useReportExport({
     fileName: 'dashboard-resumen',
-    title: 'Resumen del Tablero',
+    title: t('reportTitle'),
     dateRange: { desde, hasta },
     kpis: metricCards.map(c => ({ label: c.title, value: c.value })),
     chartRef,
@@ -297,38 +300,38 @@ export default function DashboardPage() {
   }, [isVendedor, isSuperAdminDirect, periodo, refreshKey]);
 
   if (isLoading) {
-    return <BrandedLoadingScreen message="Cargando dashboard..." />;
+    return <BrandedLoadingScreen message={t('loadingDashboard')} />;
   }
 
   // Vista para vendedores con datos reales
   if (isVendedor && vendedorPerf) {
     const vendedorCards: MetricCardData[] = [
       {
-        title: 'Mis Ventas',
+        title: t('mySales'),
         value: `${formatCurrency(vendedorPerf.totalVentas)}`,
         change: 0,
-        changeLabel: 'últimos 30 días',
+        changeLabel: t('last30Days'),
         icon3d: SbDollarSign,
       },
       {
-        title: 'Mis Pedidos',
+        title: t('myOrders'),
         value: String(vendedorPerf.pedidosCount),
         change: 0,
-        changeLabel: `${vendedorPerf.pedidosEntregados} entregados`,
+        changeLabel: t('delivered', { count: vendedorPerf.pedidosEntregados }),
         icon3d: SbShoppingCart,
       },
       {
-        title: 'Mis Visitas',
+        title: t('myVisits'),
         value: String(vendedorPerf.visitasTotal),
         change: vendedorPerf.efectividadVisitas,
-        changeLabel: 'efectividad',
+        changeLabel: t('effectiveness'),
         icon3d: SbClients,
       },
       {
-        title: 'Mis Clientes',
+        title: t('myClients'),
         value: String(vendedorPerf.clientesAsignados),
         change: 0,
-        changeLabel: 'asignados',
+        changeLabel: t('assigned'),
         icon3d: SbProducts,
       },
     ];
@@ -336,14 +339,14 @@ export default function DashboardPage() {
     return (
       <div className="space-y-8">
         <div className="flex items-center gap-2 text-sm page-animate">
-          <span className="text-muted-foreground">Inicio</span>
+          <span className="text-muted-foreground">{tc('home')}</span>
           <span className="text-muted-foreground">/</span>
-          <span className="text-foreground font-medium">Mi Rendimiento</span>
+          <span className="text-foreground font-medium">{t('myPerformance')}</span>
         </div>
 
         <div className="page-animate page-animate-delay-1">
-          <h1 className="text-3xl font-semibold text-foreground tracking-tight">Mi Rendimiento</h1>
-          <p className="text-muted-foreground mt-1">Hola {session?.user?.name}, aquí están tus métricas</p>
+          <h1 className="text-3xl font-semibold text-foreground tracking-tight">{t('myPerformance')}</h1>
+          <p className="text-muted-foreground mt-1">{t('greeting', { name: session?.user?.name || '' })}</p>
         </div>
 
         {/* Métricas del vendedor */}
@@ -379,8 +382,8 @@ export default function DashboardPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <h3 className="text-lg font-semibold text-gray-900">
               {goalData
-                ? `Meta ${goalData.tipo === 'ventas' ? 'de Ventas' : goalData.tipo === 'pedidos' ? 'de Pedidos' : 'de Visitas'} ${goalData.periodo === 'semanal' ? 'Semanal' : 'Mensual'}`
-                : 'Meta del Período'}
+                ? (goalData.tipo === 'ventas' ? t('goalSales', { period: goalData.periodo === 'semanal' ? t('weekly') : t('monthly') }) : goalData.tipo === 'pedidos' ? t('goalOrders', { period: goalData.periodo === 'semanal' ? t('weekly') : t('monthly') }) : t('goalVisits', { period: goalData.periodo === 'semanal' ? t('weekly') : t('monthly') }))
+                : t('goalPeriod')}
             </h3>
             {goalData && (
               <span className={`px-3 py-1 rounded-lg text-sm font-medium w-fit ${
@@ -397,7 +400,7 @@ export default function DashboardPage() {
             <>
               <div className="flex flex-wrap items-center gap-6 sm:gap-10 mb-6">
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">Meta</p>
+                  <p className="text-sm text-gray-500 mb-1">{t('goalTarget')}</p>
                   <p className="text-2xl font-semibold text-gray-900">
                     {goalData.tipo === 'ventas'
                       ? `${formatCurrency(goalData.target)}`
@@ -405,7 +408,7 @@ export default function DashboardPage() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">Logrado</p>
+                  <p className="text-sm text-gray-500 mb-1">{t('goalAchieved')}</p>
                   <p className="text-2xl font-semibold" style={{ color: 'var(--company-primary-color, #16a34a)' }}>
                     {goalData.tipo === 'ventas'
                       ? `${formatCurrency(goalData.current)}`
@@ -413,7 +416,7 @@ export default function DashboardPage() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">Restante</p>
+                  <p className="text-sm text-gray-500 mb-1">{t('goalRemaining')}</p>
                   <p className="text-2xl font-semibold text-gray-900">
                     {goalData.tipo === 'ventas'
                       ? `${formatCurrency(Math.max(0, goalData.target - goalData.current))}`
@@ -441,8 +444,8 @@ export default function DashboardPage() {
           ) : (
             <div className="flex flex-col items-center justify-center py-8 text-gray-400 gap-2">
               <AlertCircle className="w-8 h-8 text-gray-300" />
-              <p className="text-sm">Sin meta activa para el período actual</p>
-              <a href="/metas" className="text-xs text-blue-500 hover:underline">Configurar metas →</a>
+              <p className="text-sm">{t('noActiveGoal')}</p>
+              <a href="/metas" className="text-xs text-blue-500 hover:underline">{t('configureGoals')}</a>
             </div>
           )}
         </div>
@@ -456,9 +459,9 @@ export default function DashboardPage() {
       <div className="space-y-8">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm page-animate">
-          <span className="text-muted-foreground">Inicio</span>
+          <span className="text-muted-foreground">{tc('home')}</span>
           <span className="text-muted-foreground">/</span>
-          <span className="text-foreground font-medium">Tablero</span>
+          <span className="text-foreground font-medium">{t('title')}</span>
         </div>
 
         {/* Welcome Banner (dismissible, shows for 7 days after onboarding) */}
@@ -467,8 +470,8 @@ export default function DashboardPage() {
         {/* Title Row */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 page-animate page-animate-delay-1">
           <div>
-            <h1 className="text-3xl font-semibold text-gray-900 tracking-tight">Tablero</h1>
-            <p className="text-gray-500 mt-1">Resumen de ventas y actividad</p>
+            <h1 className="text-3xl font-semibold text-gray-900 tracking-tight">{t('title')}</h1>
+            <p className="text-gray-500 mt-1">{t('subtitle')}</p>
           </div>
           <div className="flex items-center gap-3">
             {/* Period Selector */}
@@ -478,9 +481,9 @@ export default function DashboardPage() {
                 onChange={(e) => setPeriodo(e.target.value as 'semana' | 'mes' | 'trimestre')}
                 className="appearance-none flex items-center gap-2 px-4 py-2 pr-8 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 bg-white cursor-pointer transition-colors"
               >
-                <option value="semana">Esta Semana</option>
-                <option value="mes">Este Mes</option>
-                <option value="trimestre">Este Trimestre</option>
+                <option value="semana">{t('thisWeek')}</option>
+                <option value="mes">{t('thisMonth')}</option>
+                <option value="trimestre">{t('thisQuarter')}</option>
               </select>
               <ChevronDown className="w-4 h-4 absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
             </div>
@@ -495,7 +498,7 @@ export default function DashboardPage() {
               ) : (
                 <Download className="w-4 h-4 text-emerald-500" />
               )}
-              <span>Exportar</span>
+              <span>{t('exportReport')}</span>
             </button>
           </div>
         </div>
@@ -550,9 +553,9 @@ export default function DashboardPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">
-                  Ventas {periodo === 'semana' ? 'Semanales' : periodo === 'mes' ? 'del Mes' : 'del Trimestre'}
+                  {periodo === 'semana' ? t('weeklySales') : periodo === 'mes' ? t('monthlySales') : t('quarterlySales')}
                 </h3>
-                <p className="text-sm text-gray-500">Ingresos por día</p>
+                <p className="text-sm text-gray-500">{t('revenuePerDay')}</p>
               </div>
             </div>
             {/* Bar Chart */}
@@ -571,7 +574,7 @@ export default function DashboardPage() {
                 </div>
               )) : (
                 <div className="flex items-center justify-center w-full h-full text-sm text-gray-400">
-                  Sin datos en este período
+                  {t('noDataPeriod')}
                 </div>
               )}
             </div>
@@ -580,7 +583,7 @@ export default function DashboardPage() {
           {/* Activity Card */}
           <div className="bg-white border border-gray-200 rounded-xl" data-tour="dashboard-activity">
             <div className="flex items-center justify-between p-5 border-b border-gray-100">
-              <h3 className="font-semibold text-gray-900">Actividad Reciente</h3>
+              <h3 className="font-semibold text-gray-900">{t('recentActivity')}</h3>
             </div>
             <div className="divide-y divide-gray-100">
               {activities.length > 0 ? activities.map((a) => {
@@ -605,7 +608,7 @@ export default function DashboardPage() {
                 );
               }) : (
                 <div className="flex items-center justify-center py-8 text-sm text-gray-400">
-                  Sin actividad reciente
+                  {t('noRecentActivity')}
                 </div>
               )}
             </div>
@@ -620,8 +623,8 @@ export default function DashboardPage() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <h3 className="text-lg font-semibold text-gray-900">
                   {goalData
-                    ? `Meta ${goalData.tipo === 'ventas' ? 'de Ventas' : goalData.tipo === 'pedidos' ? 'de Pedidos' : 'de Visitas'} ${goalData.periodo === 'semanal' ? 'Semanal' : 'Mensual'}`
-                    : 'Meta del Período'}
+                    ? (goalData.tipo === 'ventas' ? t('goalSales', { period: goalData.periodo === 'semanal' ? t('weekly') : t('monthly') }) : goalData.tipo === 'pedidos' ? t('goalOrders', { period: goalData.periodo === 'semanal' ? t('weekly') : t('monthly') }) : t('goalVisits', { period: goalData.periodo === 'semanal' ? t('weekly') : t('monthly') }))
+                    : t('goalPeriod')}
                 </h3>
                 {goalData && (
                   <span className={`px-3 py-1 rounded-lg text-sm font-medium w-fit ${
@@ -638,7 +641,7 @@ export default function DashboardPage() {
                 <>
                   <div className="flex flex-wrap items-center gap-6 sm:gap-10 mb-6">
                     <div>
-                      <p className="text-sm text-gray-500 mb-1">Meta</p>
+                      <p className="text-sm text-gray-500 mb-1">{t('goalTarget')}</p>
                       <p className="text-2xl font-semibold text-gray-900">
                         {goalData.tipo === 'ventas'
                           ? `${formatCurrency(goalData.target)}`
@@ -646,7 +649,7 @@ export default function DashboardPage() {
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500 mb-1">Logrado</p>
+                      <p className="text-sm text-gray-500 mb-1">{t('goalAchieved')}</p>
                       <p className="text-2xl font-semibold" style={{ color: 'var(--company-primary-color, #16a34a)' }}>
                         {goalData.tipo === 'ventas'
                           ? `${formatCurrency(goalData.current)}`
@@ -654,7 +657,7 @@ export default function DashboardPage() {
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500 mb-1">Restante</p>
+                      <p className="text-sm text-gray-500 mb-1">{t('goalRemaining')}</p>
                       <p className="text-2xl font-semibold text-gray-900">
                         {goalData.tipo === 'ventas'
                           ? `${formatCurrency(Math.max(0, goalData.target - goalData.current))}`
@@ -682,8 +685,8 @@ export default function DashboardPage() {
               ) : (
                 <div className="flex flex-col items-center justify-center py-8 text-gray-400 gap-2">
                   <AlertCircle className="w-8 h-8 text-gray-300" />
-                  <p className="text-sm">Sin meta activa para el período actual</p>
-                  <a href="/metas" className="text-xs text-blue-500 hover:underline">Configurar metas →</a>
+                  <p className="text-sm">{t('noActiveGoal')}</p>
+                  <a href="/metas" className="text-xs text-blue-500 hover:underline">{t('configureGoals')}</a>
                 </div>
               )}
             </>
@@ -691,8 +694,8 @@ export default function DashboardPage() {
             <>
               {/* Admin: all active metas summary */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Metas del Período</h3>
-                <a href="/metas" className="text-xs text-blue-500 hover:underline">Ver todas →</a>
+                <h3 className="text-lg font-semibold text-gray-900">{t('periodGoals')}</h3>
+                <a href="/metas" className="text-xs text-blue-500 hover:underline">{t('viewAll')}</a>
               </div>
               {allMetasActivas.length > 0 ? (
                 <div className="space-y-3">
@@ -718,8 +721,8 @@ export default function DashboardPage() {
               ) : (
                 <div className="flex flex-col items-center justify-center py-8 text-gray-400 gap-2">
                   <AlertCircle className="w-8 h-8 text-gray-300" />
-                  <p className="text-sm">Sin metas activas para el período actual</p>
-                  <a href="/metas" className="text-xs text-blue-500 hover:underline">Configurar metas →</a>
+                  <p className="text-sm">{t('noActiveGoals')}</p>
+                  <a href="/metas" className="text-xs text-blue-500 hover:underline">{t('configureGoals')}</a>
                 </div>
               )}
             </>
@@ -729,33 +732,33 @@ export default function DashboardPage() {
         {/* Delivery Stats — only shown when data is available */}
         {deliveryStats && (
           <div className="page-animate page-animate-delay-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Entregas de Hoy</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('todayDeliveries')}</h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className="bg-white border border-gray-200 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <SbTruck size={24} />
-                  <span className="text-xs text-gray-500">En Ruta</span>
+                  <span className="text-xs text-gray-500">{t('inRoute')}</span>
                 </div>
                 <p className="text-2xl font-semibold text-gray-900">{deliveryStats.totalEnRuta}</p>
               </div>
               <div className="bg-white border border-gray-200 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <SbCheckCircle size={24} />
-                  <span className="text-xs text-gray-500">Completadas</span>
+                  <span className="text-xs text-gray-500">{t('completed')}</span>
                 </div>
                 <p className="text-2xl font-semibold text-gray-900">{deliveryStats.totalCompletadas}</p>
               </div>
               <div className="bg-white border border-gray-200 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <SbClock size={24} />
-                  <span className="text-xs text-gray-500">Pendientes</span>
+                  <span className="text-xs text-gray-500">{t('pending')}</span>
                 </div>
                 <p className="text-2xl font-semibold text-gray-900">{deliveryStats.totalPendientes}</p>
               </div>
               <div className="bg-white border border-gray-200 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <SbTrendingUp size={24} />
-                  <span className="text-xs text-gray-500">% Completado</span>
+                  <span className="text-xs text-gray-500">{t('completedPct')}</span>
                 </div>
                 <p className="text-2xl font-semibold text-gray-900">{deliveryStats.porcentajeCompletado}%</p>
               </div>
@@ -769,6 +772,7 @@ export default function DashboardPage() {
 // ─── Welcome Banner ───
 
 function WelcomeBanner({ userName }: { userName?: string | null }) {
+  const t = useTranslations('dashboard');
   const [dismissed, setDismissed] = useState(true);
 
   useEffect(() => {
@@ -794,7 +798,7 @@ function WelcomeBanner({ userName }: { userName?: string | null }) {
       <button
         onClick={handleDismiss}
         className="absolute top-3 right-3 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
-        aria-label="Cerrar banner"
+        aria-label={t('welcome.closeBanner')}
       >
         <X className="w-4 h-4" />
       </button>
@@ -805,17 +809,17 @@ function WelcomeBanner({ userName }: { userName?: string | null }) {
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="text-[15px] font-semibold text-foreground">
-            {firstName ? `${firstName}, tu espacio está listo` : 'Tu espacio está listo'}
+            {firstName ? t('welcome.title', { name: firstName }) : t('welcome.titleDefault')}
           </h3>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Completa la configuración inicial para sacar el máximo provecho de Handy Suites.
+            {t('welcome.subtitle')}
           </p>
         </div>
         <a
           href="/getting-started"
           className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-medium transition-colors flex-shrink-0 w-fit"
         >
-          Comenzar
+          {t('welcome.cta')}
           <ArrowRight className="w-3.5 h-3.5" />
         </a>
       </div>

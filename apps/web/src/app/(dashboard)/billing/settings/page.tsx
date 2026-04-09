@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import { Upload, Save, Loader2, CheckCircle, AlertCircle, FileCheck, X, Shield, Plus} from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
@@ -14,6 +15,9 @@ import type { ConfiguracionFiscal, NumeracionDocumento } from '@/types/billing';
 type SettingsTab = 'datos' | 'series';
 
 export default function BillingSettingsPage() {
+  const t = useTranslations('billing.settings');
+  const tBilling = useTranslations('billing');
+  const tCommon = useTranslations('common');
   const [activeTab, setActiveTab] = useState<SettingsTab>('datos');
   const [config, setConfig] = useState<Partial<ConfiguracionFiscal>>({});
   const [loading, setLoading] = useState(true);
@@ -43,7 +47,7 @@ export default function BillingSettingsPage() {
 
   const handleAddSerie = async () => {
     if (!newSerie.serie.trim()) {
-      toast({ title: 'La serie es obligatoria', variant: 'destructive' });
+      toast({ title: t('seriesRequired'), variant: 'destructive' });
       return;
     }
     setSavingSerie(true);
@@ -53,12 +57,12 @@ export default function BillingSettingsPage() {
         serie: newSerie.serie.toUpperCase(),
         folioInicial: newSerie.folioInicial,
       });
-      toast({ title: 'Serie creada' });
+      toast({ title: t('seriesCreated') });
       setShowAddSerie(false);
       setNewSerie({ serie: '', tipoDocumento: 'Ingreso', folioInicial: 1 });
       await loadSeries();
     } catch {
-      toast({ title: 'Error al crear serie', variant: 'destructive' });
+      toast({ title: t('errorCreatingSeries'), variant: 'destructive' });
     } finally {
       setSavingSerie(false);
     }
@@ -67,10 +71,10 @@ export default function BillingSettingsPage() {
   const handleToggleSerie = async (id: number, activo: boolean) => {
     try {
       await toggleNumeracion(id, activo);
-      toast({ title: activo ? 'Serie activada' : 'Serie desactivada' });
+      toast({ title: activo ? t('seriesActivated') : t('seriesDeactivated') });
       await loadSeries();
     } catch {
-      toast({ title: 'Error al cambiar estado de la serie', variant: 'destructive' });
+      toast({ title: t('errorTogglingSeriesStatus'), variant: 'destructive' });
     }
   };
 
@@ -96,16 +100,16 @@ export default function BillingSettingsPage() {
 
   const handleSave = async () => {
     if (!config.rfc?.trim() || !config.razonSocial?.trim()) {
-      toast({ title: 'RFC y razón social son obligatorios', variant: 'destructive' });
+      toast({ title: t('rfcAndNameRequired'), variant: 'destructive' });
       return;
     }
     setSaving(true);
     try {
       const saved = await saveConfigFiscal(config);
       setConfig(saved);
-      toast({ title: 'Configuración fiscal guardada' });
+      toast({ title: t('configSaved') });
     } catch {
-      toast({ title: 'Error al guardar configuración', variant: 'destructive' });
+      toast({ title: t('errorSavingConfig'), variant: 'destructive' });
     } finally {
       setSaving(false);
     }
@@ -113,7 +117,7 @@ export default function BillingSettingsPage() {
 
   const handleUploadCert = async () => {
     if (!cerFile || !keyFile || !certPassword.trim() || !config.id) {
-      toast({ title: 'Seleccione ambos archivos (.cer y .key) e ingrese la contraseña', variant: 'destructive' });
+      toast({ title: t('selectBothFilesAndPassword'), variant: 'destructive' });
       return;
     }
     setUploading(true);
@@ -123,7 +127,7 @@ export default function BillingSettingsPage() {
       formData.append('LlavePrivada', keyFile);
       formData.append('Password', certPassword);
       await uploadCertificado(config.id, formData);
-      toast({ title: 'Certificados CSD subidos exitosamente' });
+      toast({ title: t('uploadCertsSuccess') });
       const updated = await getConfigFiscal();
       setConfig(updated);
       setCerFile(null);
@@ -133,7 +137,7 @@ export default function BillingSettingsPage() {
       if (keyInputRef.current) keyInputRef.current.value = '';
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
-        || 'Error al subir certificados';
+        || t('uploadCertsError');
       toast({ title: msg, variant: 'destructive' });
     } finally {
       setUploading(false);
@@ -147,7 +151,7 @@ export default function BillingSettingsPage() {
   if (loading) return (
     <div role="status" className="flex items-center justify-center min-h-[60vh]">
       <Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" />
-      <span className="sr-only">Cargando...</span>
+      <span className="sr-only">Loading...</span>
     </div>
   );
 
@@ -156,28 +160,28 @@ export default function BillingSettingsPage() {
   const seriesColumns: DataGridColumn<NumeracionDocumento>[] = [
     {
       key: 'serie',
-      label: 'Serie',
+      label: t('seriesLabel'),
       cellRenderer: (s) => <span className="font-mono font-bold text-foreground">{s.serie || '—'}</span>,
     },
     {
       key: 'tipoDocumento',
-      label: 'Tipo',
+      label: t('voucherType'),
     },
     {
       key: 'folioInicial',
-      label: 'Folio inicial',
+      label: t('initialFolio'),
       align: 'right',
       cellRenderer: (s) => <span className="tabular-nums">{s.folioInicial}</span>,
     },
     {
       key: 'folioActual',
-      label: 'Folio actual',
+      label: t('currentFolio'),
       align: 'right',
       cellRenderer: (s) => <span className="tabular-nums font-semibold">{s.folioActual}</span>,
     },
     {
       key: 'activo',
-      label: 'Activo',
+      label: tCommon('active'),
       align: 'center',
       cellRenderer: (s) => (
         <ActiveToggle isActive={s.activo} onToggle={() => handleToggleSerie(s.id, !s.activo)} />
@@ -188,16 +192,16 @@ export default function BillingSettingsPage() {
   return (
     <PageHeader
       breadcrumbs={[
-        { label: 'Facturación', href: '/billing' },
-        { label: 'Configuración Fiscal' },
+        { label: tBilling('title'), href: '/billing' },
+        { label: t('title') },
       ]}
-      title="Configuración Fiscal"
-      subtitle="Datos del emisor, certificados CSD y series de folios"
+      title={t('title')}
+      subtitle={t('subtitle')}
       actions={
         activeTab === 'datos' ? (
           <Button onClick={handleSave} disabled={saving} className="bg-green-600 hover:bg-green-700 text-white">
             {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-            Guardar
+            {tCommon('save')}
           </Button>
         ) : (
           <button
@@ -205,7 +209,7 @@ export default function BillingSettingsPage() {
             className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
           >
             <Plus className="w-4 h-4" />
-            Nueva serie
+            {t('newSeries')}
           </button>
         )
       }
@@ -222,7 +226,7 @@ export default function BillingSettingsPage() {
               : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
-          Datos Fiscales
+          {t('tabs.fiscalData')}
         </button>
         <button
           role="tab"
@@ -234,7 +238,7 @@ export default function BillingSettingsPage() {
               : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
-          Series y Folios
+          {t('tabs.series')}
           {series.length > 0 && (
             <span className="ml-1.5 text-xs text-muted-foreground">({series.length})</span>
           )}
@@ -248,10 +252,10 @@ export default function BillingSettingsPage() {
         <div className="space-y-6 max-w-3xl">
           {/* Datos del Emisor */}
           <section className="bg-card border border-border rounded-xl p-5">
-            <h2 className="text-sm font-semibold text-foreground mb-4">Datos del emisor</h2>
+            <h2 className="text-sm font-semibold text-foreground mb-4">{t('issuerData')}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">RFC *</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">{t('rfc')} *</label>
                 <input
                   type="text"
                   value={config.rfc || ''}
@@ -262,7 +266,7 @@ export default function BillingSettingsPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Razón social *</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">{t('businessName')} *</label>
                 <input
                   type="text"
                   value={config.razonSocial || ''}
@@ -272,13 +276,13 @@ export default function BillingSettingsPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Régimen fiscal</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">{t('taxRegime')}</label>
                 <select
                   value={config.regimenFiscal || ''}
                   onChange={e => updateField('regimenFiscal', e.target.value)}
                   className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-green-500/30"
                 >
-                  <option value="">Seleccionar...</option>
+                  <option value="">{t('selectOption')}</option>
                   <option value="601">601 — General de Ley Personas Morales</option>
                   <option value="603">603 — Personas Morales con Fines no Lucrativos</option>
                   <option value="605">605 — Sueldos y Salarios</option>
@@ -301,7 +305,7 @@ export default function BillingSettingsPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Código postal</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">{t('postalCode')}</label>
                 <input
                   type="text"
                   value={config.codigoPostal || ''}
@@ -312,7 +316,7 @@ export default function BillingSettingsPage() {
                 />
               </div>
               <div className="sm:col-span-2">
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Dirección fiscal</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">{t('fiscalAddress')}</label>
                 <input
                   type="text"
                   value={config.direccionFiscal || ''}
@@ -326,17 +330,17 @@ export default function BillingSettingsPage() {
 
           {/* Certificados CSD */}
           <section className="bg-card border border-border rounded-xl p-5">
-            <h2 className="text-sm font-semibold text-foreground mb-4">Certificados CSD</h2>
+            <h2 className="text-sm font-semibold text-foreground mb-4">{t('csdCertificates')}</h2>
             <div className="flex items-center gap-2 mb-5">
               {hasCertificates ? (
                 <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
                   <CheckCircle className="w-4 h-4" />
-                  <span className="text-sm font-medium">Certificados cargados correctamente</span>
+                  <span className="text-sm font-medium">{t('certsLoaded')}</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
                   <AlertCircle className="w-4 h-4" />
-                  <span className="text-sm font-medium">Sin certificados — necesarios para timbrar</span>
+                  <span className="text-sm font-medium">{t('certsNeeded')}</span>
                 </div>
               )}
             </div>
@@ -344,44 +348,44 @@ export default function BillingSettingsPage() {
             {config.id ? (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1">Certificado (.cer)</label>
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">{t('cerFile')}</label>
                   <div className="flex items-center gap-2">
                     <input ref={cerInputRef} type="file" accept=".cer" onChange={e => setCerFile(e.target.files?.[0] || null)} className="hidden" />
                     <button type="button" onClick={() => cerInputRef.current?.click()} className="flex-1 flex items-center gap-2 px-3 py-2 text-sm border border-dashed border-border rounded-lg bg-background hover:bg-muted/50 transition-colors text-left">
-                      {cerFile ? (<><FileCheck className="w-4 h-4 text-green-600 shrink-0" /><span className="text-foreground truncate">{cerFile.name}</span></>) : (<><Upload className="w-4 h-4 text-muted-foreground shrink-0" /><span className="text-muted-foreground">Seleccionar archivo .cer</span></>)}
+                      {cerFile ? (<><FileCheck className="w-4 h-4 text-green-600 shrink-0" /><span className="text-foreground truncate">{cerFile.name}</span></>) : (<><Upload className="w-4 h-4 text-muted-foreground shrink-0" /><span className="text-muted-foreground">{t('selectCerFile')}</span></>)}
                     </button>
                     {cerFile && (<button type="button" onClick={() => { setCerFile(null); if (cerInputRef.current) cerInputRef.current.value = ''; }} className="p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground"><X className="w-4 h-4" /></button>)}
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1">Llave privada (.key)</label>
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">{t('keyFile')}</label>
                   <div className="flex items-center gap-2">
                     <input ref={keyInputRef} type="file" accept=".key" onChange={e => setKeyFile(e.target.files?.[0] || null)} className="hidden" />
                     <button type="button" onClick={() => keyInputRef.current?.click()} className="flex-1 flex items-center gap-2 px-3 py-2 text-sm border border-dashed border-border rounded-lg bg-background hover:bg-muted/50 transition-colors text-left">
-                      {keyFile ? (<><FileCheck className="w-4 h-4 text-green-600 shrink-0" /><span className="text-foreground truncate">{keyFile.name}</span></>) : (<><Upload className="w-4 h-4 text-muted-foreground shrink-0" /><span className="text-muted-foreground">Seleccionar archivo .key</span></>)}
+                      {keyFile ? (<><FileCheck className="w-4 h-4 text-green-600 shrink-0" /><span className="text-foreground truncate">{keyFile.name}</span></>) : (<><Upload className="w-4 h-4 text-muted-foreground shrink-0" /><span className="text-muted-foreground">{t('selectKeyFile')}</span></>)}
                     </button>
                     {keyFile && (<button type="button" onClick={() => { setKeyFile(null); if (keyInputRef.current) keyInputRef.current.value = ''; }} className="p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground"><X className="w-4 h-4" /></button>)}
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1">Contraseña de la llave privada</label>
-                  <input type="password" value={certPassword} onChange={e => setCertPassword(e.target.value)} placeholder="Contraseña del archivo .key" className="w-full max-w-sm px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-green-500/30" />
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">{t('keyPassword')}</label>
+                  <input type="password" value={certPassword} onChange={e => setCertPassword(e.target.value)} placeholder={t('keyPasswordPlaceholder')} className="w-full max-w-sm px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-green-500/30" />
                 </div>
                 <div className="pt-1">
                   <Button onClick={handleUploadCert} disabled={uploading || !cerFile || !keyFile || !certPassword.trim()} className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-50">
                     {uploading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Upload className="w-4 h-4 mr-2" />}
-                    Subir certificados
+                    {t('uploadCerts')}
                   </Button>
                   <div className="flex items-start gap-2 mt-3 px-3 py-2 rounded-lg bg-muted/40 border border-border border-l-2 border-l-green-600/50">
                     <Shield className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
                     <p className="text-xs text-muted-foreground leading-relaxed">
-                      Sus certificados se protegen con encriptación de grado bancario (AES-256) respaldada por AWS. Cada empresa tiene su propia llave de cifrado aislada. Nunca almacenamos contraseñas en texto plano.
+                      {t('certsSecurityNote')}
                     </p>
                   </div>
                 </div>
               </div>
             ) : (
-              <p className="text-xs text-muted-foreground">Guarde la configuración fiscal primero para poder subir certificados.</p>
+              <p className="text-xs text-muted-foreground">{t('saveFiscalFirst')}</p>
             )}
           </section>
         </div>
@@ -395,10 +399,10 @@ export default function BillingSettingsPage() {
           {/* Add serie form */}
           {showAddSerie && (
             <div className="mb-5 p-4 rounded-xl border border-border bg-card">
-              <h3 className="text-sm font-semibold text-foreground mb-3">Nueva serie</h3>
+              <h3 className="text-sm font-semibold text-foreground mb-3">{t('newSeries')}</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
                 <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1">Serie *</label>
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">{t('seriesLabel')} *</label>
                   <input
                     type="text"
                     value={newSerie.serie}
@@ -409,7 +413,7 @@ export default function BillingSettingsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1">Tipo de comprobante</label>
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">{t('voucherType')}</label>
                   <select
                     value={newSerie.tipoDocumento}
                     onChange={e => setNewSerie(s => ({ ...s, tipoDocumento: e.target.value }))}
@@ -422,7 +426,7 @@ export default function BillingSettingsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1">Folio inicial</label>
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">{t('initialFolio')}</label>
                   <input
                     type="number"
                     value={newSerie.folioInicial}
@@ -433,10 +437,10 @@ export default function BillingSettingsPage() {
                 </div>
               </div>
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setShowAddSerie(false)}>Cancelar</Button>
+                <Button variant="outline" onClick={() => setShowAddSerie(false)}>{tCommon('cancel')}</Button>
                 <Button onClick={handleAddSerie} disabled={savingSerie} className="bg-green-600 hover:bg-green-700 text-white">
                   {savingSerie ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
-                  Crear serie
+                  {t('createSeries')}
                 </Button>
               </div>
             </div>
@@ -453,7 +457,7 @@ export default function BillingSettingsPage() {
             columns={seriesColumns}
             keyExtractor={(s) => s.id}
             loading={loading}
-            emptyMessage="No hay series configuradas. Crea una serie para comenzar a facturar."
+            emptyMessage={t('noSeriesConfigured')}
             mobileCardRenderer={(s) => (
               <div className="flex items-center justify-between">
                 <div>

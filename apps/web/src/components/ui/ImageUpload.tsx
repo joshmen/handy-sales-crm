@@ -4,6 +4,7 @@ import React, { useRef } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar';
 import { Camera, Upload, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTranslations } from 'next-intl';
 
 // --- Variante circular (avatares, logos) ---
 interface AvatarUploadProps {
@@ -58,6 +59,7 @@ export function ImageUpload(props: ImageUploadProps) {
     onDelete,
   } = props;
 
+  const tc = useTranslations('common');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const s = sizeMap[size];
   const hasImage = !!src;
@@ -72,8 +74,8 @@ export function ImageUpload(props: ImageUploadProps) {
       // Import toast dynamically to avoid circular deps
       const { toast } = await import('@/hooks/useToast');
       toast({
-        title: 'Archivo muy grande',
-        description: `El archivo no debe superar ${maxSizeMB}MB`,
+        title: tc('fileTooLarge'),
+        description: tc('fileTooLargeDesc', { max: maxSizeMB }),
         variant: 'destructive',
       });
       return;
@@ -109,7 +111,7 @@ export function ImageUpload(props: ImageUploadProps) {
         'absolute bottom-0 right-0 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors disabled:opacity-50 shadow-md ring-2 ring-white dark:ring-gray-900',
         s.btn,
       )}
-      title={hasImage ? 'Cambiar imagen' : 'Subir imagen'}
+      title={hasImage ? tc('changeImage') : tc('uploadImage')}
     >
       {hasImage ? <Camera className={s.icon} /> : <Upload className={s.icon} />}
     </button>
@@ -125,7 +127,7 @@ export function ImageUpload(props: ImageUploadProps) {
           onClick={handleDelete}
           disabled={disabled}
           className="text-red-500 hover:text-red-600 transition-colors disabled:opacity-50"
-          title="Eliminar imagen"
+          title={tc('deleteImage')}
         >
           <Trash2 className={s.deleteIcon} />
         </button>

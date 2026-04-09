@@ -11,6 +11,7 @@ import {
 
 export { Circle };
 import { Loader2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 const DEFAULT_CENTER = { lat: 20.6597, lng: -103.3496 }; // Guadalajara, México
 const DEFAULT_ZOOM = 12;
@@ -56,6 +57,7 @@ export function GoogleMapWrapper({
   onMarkerClick,
   children,
 }: GoogleMapWrapperProps) {
+  const t = useTranslations('maps');
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
     libraries: ['places'] as ('places')[],
@@ -84,7 +86,7 @@ export function GoogleMapWrapper({
   if (loadError) {
     return (
       <div className="flex items-center justify-center bg-gray-100 rounded-lg" style={{ height }}>
-        <p className="text-sm text-red-500">Error al cargar Google Maps. Verifica tu API key.</p>
+        <p className="text-sm text-red-500">{t('loadError')}</p>
       </div>
     );
   }
@@ -93,7 +95,7 @@ export function GoogleMapWrapper({
     return (
       <div className="flex items-center justify-center bg-gray-100 rounded-lg" style={{ height }}>
         <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-        <span className="ml-2 text-sm text-gray-500">Cargando mapa...</span>
+        <span className="ml-2 text-sm text-gray-500">{t('loadingMap')}</span>
       </div>
     );
   }
@@ -102,7 +104,7 @@ export function GoogleMapWrapper({
     return (
       <div className="flex items-center justify-center bg-gray-100 rounded-lg" style={{ height }}>
         <p className="text-sm text-gray-500">
-          Google Maps no configurado. Agrega <code className="bg-gray-200 px-1 rounded">NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> en .env.local
+          {t('notConfigured')} <code className="bg-gray-200 px-1 rounded">NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> {t('notConfiguredSuffix')}
         </p>
       </div>
     );

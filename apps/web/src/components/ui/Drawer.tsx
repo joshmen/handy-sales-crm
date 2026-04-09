@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UnsavedChangesDialog } from '@/components/ui/UnsavedChangesDialog';
+import { useTranslations } from 'next-intl';
 
 export interface DrawerHandle {
   requestClose: () => void;
@@ -41,6 +42,7 @@ export const Drawer = forwardRef<DrawerHandle, DrawerProps>(({
   isDirty = false,
   onSave,
 }, ref) => {
+  const tc = useTranslations('common');
   const [showUnsaved, setShowUnsaved] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
@@ -140,7 +142,7 @@ export const Drawer = forwardRef<DrawerHandle, DrawerProps>(({
             </div>
             <button
               onClick={handleRequestClose}
-              aria-label="Cerrar"
+              aria-label={tc('close')}
               className="flex items-center justify-center w-9 h-9 rounded-lg bg-accent hover:bg-accent/80 transition-colors focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-1"
             >
               <X className="w-[18px] h-[18px] text-muted-foreground" />

@@ -6,6 +6,7 @@ import { format, parse, startOfWeek, getDay, startOfMonth, endOfMonth } from 'da
 import { es } from 'date-fns/locale';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { ClienteVisitaListaDto } from '@/types/visits';
+import { useTranslations } from 'next-intl';
 
 const locales = { es };
 
@@ -50,6 +51,7 @@ export function VisitCalendarView({
   onSlotClick,
   loading,
 }: VisitCalendarViewProps) {
+  const t = useTranslations('visits.calendar');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<View>('month');
 
@@ -120,25 +122,25 @@ export function VisitCalendarView({
   );
 
   const messages = {
-    today: 'Hoy',
-    previous: 'Anterior',
-    next: 'Siguiente',
-    month: 'Mes',
-    week: 'Semana',
-    day: 'Día',
-    agenda: 'Agenda',
-    date: 'Fecha',
-    time: 'Hora',
-    event: 'Evento',
-    noEventsInRange: 'No hay visitas en este período.',
-    showMore: (total: number) => `+${total} más`,
+    today: t('today'),
+    previous: t('previous'),
+    next: t('next'),
+    month: t('month'),
+    week: t('week'),
+    day: t('day'),
+    agenda: t('agenda'),
+    date: t('date'),
+    time: t('time'),
+    event: t('event'),
+    noEventsInRange: t('noEventsInRange'),
+    showMore: (total: number) => t('showMore', { total }),
   };
 
   return (
     <div className="relative">
       {loading && (
         <div className="absolute inset-0 bg-white/60 z-10 flex items-center justify-center">
-          <div className="text-sm text-gray-500">Cargando visitas...</div>
+          <div className="text-sm text-gray-500">{t('loadingVisits')}</div>
         </div>
       )}
 

@@ -7,6 +7,7 @@ import { Switch } from '@/components/ui/Switch';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { Save, Upload } from 'lucide-react';
 import { toast } from '@/hooks/useToast';
+import { useTranslations } from 'next-intl';
 
 interface BillingData {
   // Datos básicos
@@ -104,6 +105,7 @@ interface BillingTabProps {
 }
 
 export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
+  const t = useTranslations('billing.settingsTab');
   const [billingData, setBillingData] = useState<BillingData>({
     rfc: '',
     razonSocial: '',
@@ -147,7 +149,7 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
     if (billingData.rfc && !validarRFC(billingData.rfc)) {
       toast({
         title: 'Error',
-        description: 'El RFC no es válido',
+        description: t('invalidRfc'),
         variant: 'destructive',
       });
       return;
@@ -157,7 +159,7 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
     if (billingData.codigoPostal && billingData.codigoPostal.length !== 5) {
       toast({
         title: 'Error',
-        description: 'El código postal debe tener 5 dígitos',
+        description: t('invalidPostalCode'),
         variant: 'destructive',
       });
       return;
@@ -165,8 +167,8 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
 
     // Aquí iría la lógica para guardar en el backend
     toast({
-      title: 'Configuración guardada',
-      description: 'Los datos de facturación se han actualizado correctamente',
+      title: t('configSaved'),
+      description: t('configSavedDesc'),
     });
     setOriginalData(billingData);
     setHasChanges(false);
@@ -187,8 +189,8 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
         // Aquí iría la lógica para subir el archivo
         setBillingData({ ...billingData, [field]: file.name });
         toast({
-          title: 'Archivo cargado',
-          description: `${file.name} se ha cargado correctamente`,
+          title: t('fileUploaded'),
+          description: t('fileUploadedDesc', { name: file.name }),
         });
       }
     };
@@ -200,14 +202,14 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
       {/* Activar facturación */}
       <Card>
         <CardHeader>
-          <CardTitle>Configuración de Facturación CFDI 4.0</CardTitle>
+          <CardTitle>{t('cfdiTitle')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>Activar facturación electrónica</Label>
+              <Label>{t('enableBilling')}</Label>
               <p className="text-sm text-muted-foreground">
-                Habilita la emisión de facturas electrónicas CFDI 4.0
+                {t('enableBillingDesc')}
               </p>
             </div>
             <Switch
@@ -223,12 +225,12 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
       {/* Datos del contribuyente */}
       <Card>
         <CardHeader>
-          <CardTitle>Datos del Contribuyente</CardTitle>
+          <CardTitle>{t('taxpayerData')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="rfc">RFC *</Label>
+              <Label htmlFor="rfc">{t('rfc')}</Label>
               <Input
                 id="rfc"
                 value={billingData.rfc}
@@ -241,21 +243,21 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="regimen">Régimen Fiscal *</Label>
+              <Label htmlFor="regimen">{t('taxRegime')}</Label>
               <SearchableSelect
                 value={billingData.regimenFiscal}
                 onChange={(value) =>
                   setBillingData({ ...billingData, regimenFiscal: String(value) })
                 }
                 options={REGIMENES_FISCALES}
-                placeholder="Selecciona un régimen fiscal"
+                placeholder={t('selectTaxRegime')}
                 disabled={!billingData.facturacionActiva}
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="razonSocial">Razón Social *</Label>
+            <Label htmlFor="razonSocial">{t('businessName')}</Label>
             <Input
               id="razonSocial"
               value={billingData.razonSocial}
@@ -268,7 +270,7 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="nombreComercial">Nombre Comercial</Label>
+            <Label htmlFor="nombreComercial">{t('commercialName')}</Label>
             <Input
               id="nombreComercial"
               value={billingData.nombreComercial}
@@ -285,12 +287,12 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
       {/* Domicilio fiscal */}
       <Card>
         <CardHeader>
-          <CardTitle>Domicilio Fiscal</CardTitle>
+          <CardTitle>{t('fiscalAddress')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-3 gap-4">
             <div className="col-span-2 space-y-2">
-              <Label htmlFor="calle">Calle *</Label>
+              <Label htmlFor="calle">{t('street')}</Label>
               <Input
                 id="calle"
                 value={billingData.calle}
@@ -302,7 +304,7 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-2">
-                <Label htmlFor="numExt">No. Ext *</Label>
+                <Label htmlFor="numExt">{t('extNumber')}</Label>
                 <Input
                   id="numExt"
                   value={billingData.numeroExterior}
@@ -313,7 +315,7 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="numInt">No. Int</Label>
+                <Label htmlFor="numInt">{t('intNumber')}</Label>
                 <Input
                   id="numInt"
                   value={billingData.numeroInterior}
@@ -328,7 +330,7 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="colonia">Colonia *</Label>
+              <Label htmlFor="colonia">{t('neighborhood')}</Label>
               <Input
                 id="colonia"
                 value={billingData.colonia}
@@ -339,7 +341,7 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="cp">Código Postal *</Label>
+              <Label htmlFor="cp">{t('postalCode')}</Label>
               <Input
                 id="cp"
                 value={billingData.codigoPostal}
@@ -354,7 +356,7 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="municipio">Municipio/Delegación *</Label>
+              <Label htmlFor="municipio">{t('municipality')}</Label>
               <Input
                 id="municipio"
                 value={billingData.municipio}
@@ -365,7 +367,7 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="estado">Estado *</Label>
+              <Label htmlFor="estado">{t('state')}</Label>
               <Input
                 id="estado"
                 value={billingData.estado}
@@ -382,12 +384,12 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
       {/* Configuración de comprobantes */}
       <Card>
         <CardHeader>
-          <CardTitle>Configuración de Comprobantes</CardTitle>
+          <CardTitle>{t('voucherSettings')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="serie">Serie</Label>
+              <Label htmlFor="serie">{t('series')}</Label>
               <Input
                 id="serie"
                 value={billingData.serie}
@@ -400,7 +402,7 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="folio">Folio Inicial</Label>
+              <Label htmlFor="folio">{t('initialFolio')}</Label>
               <Input
                 id="folio"
                 type="number"
@@ -416,7 +418,7 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="lugarExp">Lugar de Expedición (CP) *</Label>
+              <Label htmlFor="lugarExp">{t('issuancePlace')}</Label>
               <Input
                 id="lugarExp"
                 value={billingData.lugarExpedicion}
@@ -429,14 +431,14 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="usoCfdi">Uso CFDI Predeterminado</Label>
+              <Label htmlFor="usoCfdi">{t('defaultCfdiUse')}</Label>
               <SearchableSelect
                 value={billingData.usoCFDI}
                 onChange={(value) =>
                   setBillingData({ ...billingData, usoCFDI: String(value) })
                 }
                 options={USOS_CFDI}
-                placeholder="Selecciona un uso CFDI"
+                placeholder={t('selectCfdiUse')}
                 disabled={!billingData.facturacionActiva}
               />
             </div>
@@ -444,38 +446,38 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
 
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="tipoComp">Tipo de Comprobante</Label>
+              <Label htmlFor="tipoComp">{t('voucherType')}</Label>
               <SearchableSelect
                 value={billingData.tipoComprobantePredeterminado}
                 onChange={(value) =>
                   setBillingData({ ...billingData, tipoComprobantePredeterminado: String(value) })
                 }
                 options={TIPOS_COMPROBANTE}
-                placeholder="Selecciona un tipo de comprobante"
+                placeholder={t('selectVoucherType')}
                 disabled={!billingData.facturacionActiva}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="formaPago">Forma de Pago</Label>
+              <Label htmlFor="formaPago">{t('paymentForm')}</Label>
               <SearchableSelect
                 value={billingData.formaPagoPredeterminada}
                 onChange={(value) =>
                   setBillingData({ ...billingData, formaPagoPredeterminada: String(value) })
                 }
                 options={FORMAS_PAGO}
-                placeholder="Selecciona una forma de pago"
+                placeholder={t('selectPaymentForm')}
                 disabled={!billingData.facturacionActiva}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="metodoPago">Método de Pago</Label>
+              <Label htmlFor="metodoPago">{t('paymentMethodLabel')}</Label>
               <SearchableSelect
                 value={billingData.metodoPagoPredeterminado}
                 onChange={(value) =>
                   setBillingData({ ...billingData, metodoPagoPredeterminado: String(value) })
                 }
                 options={METODOS_PAGO}
-                placeholder="Selecciona un método de pago"
+                placeholder={t('selectPaymentMethod')}
                 disabled={!billingData.facturacionActiva}
               />
             </div>
@@ -486,16 +488,16 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
       {/* Certificados */}
       <Card>
         <CardHeader>
-          <CardTitle>Certificados de Sello Digital (CSD)</CardTitle>
+          <CardTitle>{t('csdCertificates')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Certificado (.cer)</Label>
+              <Label>{t('certificate')}</Label>
               <div className="flex gap-2">
                 <Input
                   value={billingData.certificadoCSD}
-                  placeholder="No se ha cargado ningún certificado"
+                  placeholder={t('noCertificateLoaded')}
                   disabled
                 />
                 <Button
@@ -505,17 +507,17 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
                   disabled={!billingData.facturacionActiva}
                 >
                   <Upload className="mr-2 h-4 w-4" />
-                  Cargar
+                  {t('load')}
                 </Button>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label>Llave privada (.key)</Label>
+              <Label>{t('privateKey')}</Label>
               <div className="flex gap-2">
                 <Input
                   value={billingData.llaveCSD}
-                  placeholder="No se ha cargado ninguna llave"
+                  placeholder={t('noKeyLoaded')}
                   disabled
                 />
                 <Button
@@ -525,13 +527,13 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
                   disabled={!billingData.facturacionActiva}
                 >
                   <Upload className="mr-2 h-4 w-4" />
-                  Cargar
+                  {t('load')}
                 </Button>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="passwordCSD">Contraseña del certificado</Label>
+              <Label htmlFor="passwordCSD">{t('certificatePassword')}</Label>
               <Input
                 id="passwordCSD"
                 type="password"
@@ -549,24 +551,24 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
       {/* PAC */}
       <Card>
         <CardHeader>
-          <CardTitle>Proveedor Autorizado de Certificación (PAC)</CardTitle>
+          <CardTitle>{t('pacTitle')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="pac">Nombre del PAC</Label>
+              <Label htmlFor="pac">{t('pacName')}</Label>
               <Input
                 id="pac"
                 value={billingData.nombrePAC}
                 onChange={(e) =>
                   setBillingData({ ...billingData, nombrePAC: e.target.value })
                 }
-                placeholder="Ej. Facturama, SW Sapien, etc."
+                placeholder={t('pacNamePlaceholder')}
                 disabled={!billingData.facturacionActiva}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="usuarioPac">Usuario PAC</Label>
+              <Label htmlFor="usuarioPac">{t('pacUser')}</Label>
               <Input
                 id="usuarioPac"
                 value={billingData.usuarioPAC}
@@ -579,7 +581,7 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="passwordPac">Contraseña PAC</Label>
+            <Label htmlFor="passwordPac">{t('pacPassword')}</Label>
             <Input
               id="passwordPac"
               type="password"
@@ -596,12 +598,12 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
       {/* Contacto */}
       <Card>
         <CardHeader>
-          <CardTitle>Información de Contacto</CardTitle>
+          <CardTitle>{t('contactInfo')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Correo Electrónico</Label>
+              <Label htmlFor="email">{t('email')}</Label>
               <Input
                 id="email"
                 type="email"
@@ -609,19 +611,19 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
                 onChange={(e) =>
                   setBillingData({ ...billingData, correoElectronico: e.target.value })
                 }
-                placeholder="facturacion@empresa.com"
+                placeholder={t('emailPlaceholder')}
                 disabled={!billingData.facturacionActiva}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="telefono">Teléfono</Label>
+              <Label htmlFor="telefono">{t('phone')}</Label>
               <Input
                 id="telefono"
                 value={billingData.telefono}
                 onChange={(e) =>
                   setBillingData({ ...billingData, telefono: e.target.value })
                 }
-                placeholder="(55) 1234-5678"
+                placeholder={t('phonePlaceholder')}
                 disabled={!billingData.facturacionActiva}
               />
             </div>
@@ -636,7 +638,7 @@ export const BillingTab: React.FC<BillingTabProps> = ({ isUpdating }) => {
           disabled={isUpdating || !hasChanges || !billingData.facturacionActiva}
         >
           <Save className="mr-2 h-4 w-4" />
-          {isUpdating ? 'Guardando...' : 'Guardar configuración de facturación'}
+          {isUpdating ? t('saving') : t('saveBillingConfig')}
         </Button>
       </div>
     </div>

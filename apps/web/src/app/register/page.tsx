@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { signIn } from 'next-auth/react';
+import { useTranslations } from 'next-intl';
 import { z } from 'zod';
 import { toast } from '@/hooks/useToast';
 import { Eye, EyeOff } from 'lucide-react';
@@ -47,6 +48,8 @@ function RegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { executeRecaptcha } = useGoogleReCaptcha();
+  const t = useTranslations('auth.register');
+  const ta = useTranslations('auth');
 
   // Check if coming from Google OAuth redirect
   const googleEmail = searchParams.get('email');
@@ -185,12 +188,12 @@ function RegisterContent() {
       <div className="space-y-6">
         <div className="space-y-2 text-center">
           <h1 className="text-[28px] font-bold text-[#0F172A] tracking-tight">
-            {isGoogleMode ? 'Completa tu registro' : 'Crea tu cuenta'}
+            {isGoogleMode ? t('completeGoogleTitle') : t('title')}
           </h1>
           <p className="text-[15px] text-[#64748B]">
             {isGoogleMode
-              ? 'Solo necesitamos los datos de tu empresa'
-              : 'Prueba gratis por 14 dias — acceso PRO completo'}
+              ? t('googleSubtitle')
+              : t('trialSubtitle')}
           </p>
         </div>
 
@@ -198,7 +201,7 @@ function RegisterContent() {
           /* ═══ Google Registration Form ═══ */
           <form onSubmit={googleForm.handleSubmit(onGoogleSubmit)} className="space-y-4">
             <div className="space-y-1.5">
-              <label className="block text-[14px] font-medium text-[#374151]">Nombre</label>
+              <label className="block text-[14px] font-medium text-[#374151]">{t('fullName')}</label>
               <input
                 {...googleForm.register('nombre')}
                 disabled={submitting}
@@ -210,7 +213,7 @@ function RegisterContent() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-[14px] font-medium text-[#374151]">Correo electrónico</label>
+              <label className="block text-[14px] font-medium text-[#374151]">{ta('emailLabel')}</label>
               <input
                 {...googleForm.register('email')}
                 readOnly
@@ -219,7 +222,7 @@ function RegisterContent() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-[14px] font-medium text-[#374151]">Nombre de la empresa *</label>
+              <label className="block text-[14px] font-medium text-[#374151]">{t('companyName')} *</label>
               <input
                 {...googleForm.register('nombreEmpresa')}
                 placeholder="Mi Empresa S.A. de C.V."
@@ -233,7 +236,7 @@ function RegisterContent() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label className="block text-[14px] font-medium text-[#374151]">Identificador Fiscal</label>
+                <label className="block text-[14px] font-medium text-[#374151]">{t('taxId')}</label>
                 <input
                   {...googleForm.register('identificadorFiscal', { setValueAs: (v: string) => typeof v === 'string' ? v.toUpperCase() : v })}
                   placeholder="Opcional"
@@ -242,7 +245,7 @@ function RegisterContent() {
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="block text-[14px] font-medium text-[#374151]">Contacto</label>
+                <label className="block text-[14px] font-medium text-[#374151]">{t('contact')}</label>
                 <input
                   {...googleForm.register('contacto')}
                   placeholder="Opcional"
@@ -261,13 +264,13 @@ function RegisterContent() {
                   className="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                 />
                 <span className="text-[13px] text-[#64748B] leading-tight">
-                  Acepto los{' '}
+                  {t('termsAndConditions').split(t('termsLink'))[0]}
                   <a href="/terminos" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-700 underline">
-                    Términos y Condiciones
+                    {t('termsLink')}
                   </a>{' '}
                   y el{' '}
                   <a href="/privacidad" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-700 underline">
-                    Aviso de Privacidad
+                    {t('privacyLink')}
                   </a>
                 </span>
               </label>
@@ -281,7 +284,7 @@ function RegisterContent() {
               disabled={submitting}
               className="w-full h-12 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white text-[16px] font-semibold rounded-[10px] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center shadow-sm"
             >
-              {submitting ? (<>{spinnerSvg}Creando cuenta...</>) : 'Completar registro'}
+              {submitting ? (<>{spinnerSvg}{t('creatingAccount')}</>) : t('completeRegistration')}
             </button>
           </form>
         ) : (
@@ -289,7 +292,7 @@ function RegisterContent() {
           <>
             <form onSubmit={manualForm.handleSubmit(onManualSubmit)} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="block text-[14px] font-medium text-[#374151]">Nombre completo</label>
+                <label className="block text-[14px] font-medium text-[#374151]">{t('fullName')}</label>
                 <input
                   {...manualForm.register('nombre')}
                   placeholder="Juan Pérez"
@@ -302,7 +305,7 @@ function RegisterContent() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-[14px] font-medium text-[#374151]">Correo electrónico</label>
+                <label className="block text-[14px] font-medium text-[#374151]">{ta('emailLabel')}</label>
                 <input
                   {...manualForm.register('email')}
                   type="email"
@@ -317,7 +320,7 @@ function RegisterContent() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label className="block text-[14px] font-medium text-[#374151]">Contraseña</label>
+                  <label className="block text-[14px] font-medium text-[#374151]">{ta('password')}</label>
                   <div className="relative">
                     <input
                       {...manualForm.register('password')}
@@ -340,7 +343,7 @@ function RegisterContent() {
                   )}
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-[14px] font-medium text-[#374151]">Confirmar</label>
+                  <label className="block text-[14px] font-medium text-[#374151]">{t('confirmLabel')}</label>
                   <div className="relative">
                     <input
                       {...manualForm.register('confirmPassword')}
@@ -365,7 +368,7 @@ function RegisterContent() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-[14px] font-medium text-[#374151]">Nombre de la empresa *</label>
+                <label className="block text-[14px] font-medium text-[#374151]">{t('companyName')} *</label>
                 <input
                   {...manualForm.register('nombreEmpresa')}
                   placeholder="Mi Empresa S.A. de C.V."
@@ -379,7 +382,7 @@ function RegisterContent() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label className="block text-[14px] font-medium text-[#374151]">Identificador Fiscal</label>
+                  <label className="block text-[14px] font-medium text-[#374151]">{t('taxId')}</label>
                   <input
                     {...manualForm.register('identificadorFiscal', { setValueAs: (v: string) => typeof v === 'string' ? v.toUpperCase() : v })}
                     placeholder="Opcional"
@@ -388,7 +391,7 @@ function RegisterContent() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-[14px] font-medium text-[#374151]">Contacto</label>
+                  <label className="block text-[14px] font-medium text-[#374151]">{t('contact')}</label>
                   <input
                     {...manualForm.register('contacto')}
                     placeholder="Opcional"
@@ -427,7 +430,7 @@ function RegisterContent() {
                 disabled={submitting}
                 className="w-full h-12 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white text-[16px] font-semibold rounded-[10px] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center shadow-sm"
               >
-                {submitting ? (<>{spinnerSvg}Creando cuenta...</>) : 'Crear mi cuenta'}
+                {submitting ? (<>{spinnerSvg}{t('creatingAccount')}</>) : t('createMyAccount')}
               </button>
             </form>
 
@@ -453,15 +456,15 @@ function RegisterContent() {
                 <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18A10.96 10.96 0 001 12c0 1.77.42 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
               </svg>
-              Continuar con Google
+              {ta('continueWithGoogle')}
             </button>
           </>
         )}
 
         <p className="text-center text-[14px] text-[#64748B]">
-          ¿Ya tienes cuenta?{' '}
+          {t('alreadyHaveAccount')}{' '}
           <a href="/login" className="font-medium text-indigo-600 hover:text-indigo-700">
-            Inicia sesión
+            {t('signInLink')}
           </a>
         </p>
       </div>

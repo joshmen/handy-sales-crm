@@ -29,6 +29,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { CurrencyDollar } from '@phosphor-icons/react';
 import { SearchBar } from '@/components/common/SearchBar';
 import { InactiveToggle } from '@/components/ui/InactiveToggle';
@@ -51,6 +52,8 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 export default function PriceListsPage() {
+  const t = useTranslations('priceLists');
+  const tc = useTranslations('common');
   const { formatDate: _fmtDate } = useFormatters();
   // State
   const [priceLists, setPriceLists] = useState<ListaPrecio[]>([]);
@@ -87,7 +90,7 @@ export default function PriceListsPage() {
       setPriceLists(response.data);
     } catch (error) {
       console.error('Error loading price lists:', error);
-      toast.error('No se pudieron cargar las listas de precios');
+      toast.error(t('errorLoading'));
     } finally {
       setLoading(false);
     }
@@ -170,17 +173,17 @@ export default function PriceListsPage() {
 
       if (editingList) {
         await api.put(`/listas-precios/${editingList.id}`, data);
-        toast.success(`Lista "${data.nombre}" actualizada exitosamente`);
+        toast.success(t('updated', { name: data.nombre }));
       } else {
         await api.post('/listas-precios', data);
-        toast.success(`Lista "${data.nombre}" creada exitosamente`);
+        toast.success(t('created', { name: data.nombre }));
       }
 
       setShowListForm(false);
       await loadPriceLists();
     } catch (error: unknown) {
       console.error('Error al guardar lista:', error);
-      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Error al guardar la lista de precios';
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || t('errorSaving');
       toast.error(message);
     } finally{
       setSavingList(false);
@@ -190,10 +193,10 @@ export default function PriceListsPage() {
   const handleDelete = async (id: number) => {
     try {
       await api.delete(`/listas-precios/${id}`);
-      toast.success('Lista eliminada');
+      toast.success(t('deleted'));
       await loadPriceLists();
     } catch {
-      toast.error('Error al eliminar la lista');
+      toast.error(t('errorDeleting'));
     }
   };
 
@@ -208,7 +211,7 @@ export default function PriceListsPage() {
       setTogglingId(list.id);
       const newActivo = !list.activo;
       await api.patch(`/listas-precios/${list.id}/activo`, { activo: newActivo });
-      toast.success(newActivo ? 'Lista activada' : 'Lista desactivada');
+      toast.success(newActivo ? t('activated') : t('deactivated'));
       if (!showInactive && !newActivo) {
         setPriceLists(prev => prev.filter(l => l.id !== list.id));
       } else {
@@ -218,7 +221,7 @@ export default function PriceListsPage() {
       }
     } catch (error: unknown) {
       console.error('Error al cambiar estado:', error);
-      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Error al cambiar el estado de la lista';
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || t('errorToggle');
       toast.error(message);
     } finally {
       setTogglingId(null);
@@ -242,7 +245,7 @@ export default function PriceListsPage() {
       await api.patch('/listas-precios/batch-toggle', { ids, activo });
 
       toast.success(
-        `${ids.length} lista${ids.length > 1 ? 's' : ''} ${activo ? 'activada' : 'desactivada'}${ids.length > 1 ? 's' : ''} exitosamente`
+        activo ? t('batchActivated', { count: ids.length, plural: ids.length > 1 ? 's' : '', plural2: ids.length > 1 ? 's' : '' }) : t('batchDeactivated', { count: ids.length, plural: ids.length > 1 ? 's' : '', plural2: ids.length > 1 ? 's' : '' })
       );
 
       batch.completeBatch();
@@ -255,7 +258,7 @@ export default function PriceListsPage() {
       }
     } catch (error: unknown) {
       console.error('Error en batch toggle:', error);
-      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Error al cambiar el estado de las listas';
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || t('batchError');
       toast.error(message);
       batch.setBatchLoading(false);
     }
@@ -268,20 +271,20 @@ export default function PriceListsPage() {
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    if (days === 0) return 'hoy';
-    if (days === 1) return 'hace un día';
-    if (days < 7) return `hace ${days} días`;
-    if (days < 30) return `hace ${Math.floor(days / 7)} semanas`;
+    if (days === 0) return t('today');
+    if (days === 1) return t('dayAgo');
+    if (days < 7) return t('daysAgo', { count: days });
+    if (days < 30) return t('weeksAgo', { count: Math.floor(days / 7) });
     return _fmtDate(date);
   };
 
   return (
     <PageHeader
       breadcrumbs={[
-        { label: 'Inicio', href: '/dashboard' },
-        { label: 'Listas de precios' },
+        { label: tc('home'), href: '/dashboard' },
+        { label: t('title') },
       ]}
-      title="Listas de precios"
+      title={t('title')}
       actions={
         <>
           <div className="relative" data-tour="pricelists-import-export">
@@ -290,7 +293,7 @@ export default function PriceListsPage() {
               className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
             >
               <Download className="w-3.5 h-3.5 text-emerald-500" />
-              <span className="hidden sm:inline">Importar / Exportar</span>
+              <span className="hidden sm:inline">{tc('importExport')}</span>
               <ChevronDown className="w-3 h-3 text-gray-400" />
             </button>
             {showDataMenu && (
@@ -298,18 +301,18 @@ export default function PriceListsPage() {
                 <div className="fixed inset-0 z-10" onClick={() => setShowDataMenu(false)} />
                 <div className="absolute right-0 mt-1 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1">
                   <button
-                    onClick={async () => { setShowDataMenu(false); try { await exportToCsv('listas-precios'); toast.success('Archivo CSV descargado'); } catch { toast.error('Error al exportar datos'); } }}
+                    onClick={async () => { setShowDataMenu(false); try { await exportToCsv('listas-precios'); toast.success(tc('csvDownloaded')); } catch { toast.error(tc('errorExporting')); } }}
                     className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
                   >
                     <Download className="w-3.5 h-3.5 text-emerald-500" />
-                    Exportar CSV
+                    {tc('exportCsv')}
                   </button>
                   <button
                     onClick={() => { setIsImportOpen(true); setShowDataMenu(false); }}
                     className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
                   >
                     <Upload className="w-3.5 h-3.5 text-blue-500" />
-                    Importar CSV
+                    {tc('importCsv')}
                   </button>
                 </div>
               </>
@@ -321,7 +324,7 @@ export default function PriceListsPage() {
             className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
           >
             <Plus className="w-4 h-4" />
-            <span>Nueva lista</span>
+            <span>{t('newList')}</span>
           </button>
         </>
       }
@@ -332,7 +335,7 @@ export default function PriceListsPage() {
           <SearchBar
             value={searchTerm}
             onChange={(v) => { setSearchTerm(v); setCurrentPage(1); }}
-            placeholder="Buscar lista de precios..."
+            placeholder={t('searchPlaceholder')}
             dataTour="pricelists-search"
           />
           <button
@@ -340,14 +343,14 @@ export default function PriceListsPage() {
             className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
           >
             <RefreshCw className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Actualizar</span>
+            <span className="hidden sm:inline">{tc('refresh')}</span>
           </button>
 
           <div data-tour="pricelists-toggle-inactive" className="ml-auto">
             <InactiveToggle
               value={showInactive}
               onChange={(v) => { setShowInactive(v); setCurrentPage(1); }}
-              label="Mostrar inactivas"
+              label={t('showInactive')}
             />
           </div>
         </div>
@@ -367,11 +370,11 @@ export default function PriceListsPage() {
         <div data-tour="pricelists-table">
           <DataGrid<ListaPrecio>
             columns={[
-              { key: 'id', label: 'ID', width: 60, sortable: true, cellRenderer: (item) => <span className="font-mono text-gray-500">{item.id}</span> },
-              { key: 'nombre', label: 'Nombre', width: 'flex', sortable: true, cellRenderer: (item) => <span className="font-medium text-gray-900">{item.nombre}</span> },
-              { key: 'descripcion', label: 'Descripción', width: 'flex', sortable: true, hiddenOnMobile: true, cellRenderer: (item) => <span className="text-gray-500 truncate">{item.descripcion || '-'}</span> },
-              { key: 'actualizadoEn', label: 'Modificación', width: 140, sortable: true, hiddenOnMobile: true, cellRenderer: (item) => <span className="text-gray-500">{formatDate(item.actualizadoEn || item.creadoEn)}</span> },
-              { key: 'activo', label: 'Activo', width: 50, align: 'center', cellRenderer: (item) => (
+              { key: 'id', label: tc('id'), width: 60, sortable: true, cellRenderer: (item) => <span className="font-mono text-gray-500">{item.id}</span> },
+              { key: 'nombre', label: tc('name'), width: 'flex', sortable: true, cellRenderer: (item) => <span className="font-medium text-gray-900">{item.nombre}</span> },
+              { key: 'descripcion', label: tc('description'), width: 'flex', sortable: true, hiddenOnMobile: true, cellRenderer: (item) => <span className="text-gray-500 truncate">{item.descripcion || '-'}</span> },
+              { key: 'actualizadoEn', label: t('modification'), width: 140, sortable: true, hiddenOnMobile: true, cellRenderer: (item) => <span className="text-gray-500">{formatDate(item.actualizadoEn || item.creadoEn)}</span> },
+              { key: 'activo', label: tc('active'), width: 50, align: 'center', cellRenderer: (item) => (
                 <div onClick={e => e.stopPropagation()}>
                   <ActiveToggle isActive={item.activo} onToggle={() => handleToggleActive(item)} disabled={loading} isLoading={togglingId === item.id} />
                 </div>
@@ -403,10 +406,10 @@ export default function PriceListsPage() {
             pagination={{ currentPage, totalPages, totalItems, pageSize, onPageChange: setCurrentPage }}
             sort={{ key: sortKey, direction: sortDir, onSort: handleSortChange }}
             loading={loading}
-            loadingMessage="Cargando listas..."
+            loadingMessage={t('loadingLists')}
             emptyIcon={<CurrencyDollar className="w-16 h-16 text-green-300" weight="duotone" />}
-            emptyTitle="No hay listas de precios"
-            emptyMessage={searchTerm ? 'No se encontraron resultados para tu búsqueda' : 'Crea tu primera lista de precios para comenzar'}
+            emptyTitle={t('noLists')}
+            emptyMessage={searchTerm ? t('noListsSearch') : t('noListsDesc')}
             mobileCardRenderer={(list) => (
               <div className={!list.activo ? 'opacity-60' : ''}>
                 <div className="flex items-center gap-3 mb-2">
@@ -418,7 +421,7 @@ export default function PriceListsPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-gray-900 truncate">{list.nombre}</div>
-                    <div className="text-xs text-gray-500 truncate">{list.descripcion || 'Sin descripción'}</div>
+                    <div className="text-xs text-gray-500 truncate">{list.descripcion || t('noDescription')}</div>
                   </div>
                   <ActiveToggle isActive={list.activo} onToggle={() => handleToggleActive(list)} disabled={loading} isLoading={togglingId === list.id} />
                 </div>
@@ -427,7 +430,7 @@ export default function PriceListsPage() {
                 </div>
                 <div className="flex justify-end gap-1">
                   <button onClick={() => handleOpenEdit(list)} disabled={loading} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded disabled:opacity-50 transition-colors">
-                    <Pencil className="w-3.5 h-3.5 text-amber-400 hover:text-amber-600" /><span>Editar</span>
+                    <Pencil className="w-3.5 h-3.5 text-amber-400 hover:text-amber-600" /><span>{tc('edit')}</span>
                   </button>
                   {deleteConfirmId === list.id ? (
                     <div className="flex items-center gap-1">
@@ -453,8 +456,8 @@ export default function PriceListsPage() {
         selectedCount={batch.selectedCount}
         entityLabel="lista"
         loading={batch.batchLoading}
-        consequenceDeactivate="Las listas desactivadas no aparecerán en las listas activas."
-        consequenceActivate="Las listas activadas volverán a aparecer en las listas activas."
+        consequenceDeactivate={t('batchConsequenceDeactivate')}
+        consequenceActivate={t('batchConsequenceActivate')}
       />
 
       {/* Create/Edit Drawer */}
@@ -462,7 +465,7 @@ export default function PriceListsPage() {
         ref={drawerRef}
         isOpen={showListForm}
         onClose={handleCancelForm}
-        title={editingList ? 'Editar Lista de Precios' : 'Nueva Lista de Precios'}
+        title={editingList ? t('editList') : t('newListTitle')}
         icon={<ListOrdered className="w-5 h-5" />}
         width="sm"
         isDirty={isDirty}
@@ -470,11 +473,11 @@ export default function PriceListsPage() {
         footer={
           <div data-tour="pricelists-drawer-actions" className="flex items-center justify-end gap-3">
             <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()} disabled={savingList}>
-              Cancelar
+              {tc('cancel')}
             </Button>
             <Button type="button" variant="success" onClick={handleSaveList} disabled={savingList} className="flex items-center gap-2">
               {savingList && <Loader2 className="w-4 h-4 animate-spin" />}
-              {editingList ? 'Guardar Cambios' : 'Crear Lista'}
+              {editingList ? tc('saveChanges') : t('newList')}
             </Button>
           </div>
         }
@@ -483,20 +486,20 @@ export default function PriceListsPage() {
           <div data-tour="pricelists-drawer-name">
             <Input
               id="nombre"
-              label={<>Nombre <span className="text-red-500">*</span></>}
+              label={<>{tc('name')} <span className="text-red-500">*</span></>}
               type="text"
               {...register('nombre')}
-              placeholder="Ej: Lista mayoreo, Lista minorista..."
+              placeholder={t('namePlaceholder')}
               error={errors.nombre?.message}
             />
           </div>
           <div data-tour="pricelists-drawer-description">
             <Input
               id="descripcion"
-              label="Descripción"
+              label={tc('description')}
               type="text"
               {...register('descripcion')}
-              placeholder="Descripción opcional de la lista"
+              placeholder={t('descriptionPlaceholder')}
             />
           </div>
         </form>

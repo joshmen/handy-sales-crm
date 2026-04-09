@@ -7,6 +7,7 @@ import { useRequireAdmin } from "@/hooks/usePermissions";
 import { subscriptionService } from "@/services/api/subscriptions";
 import type { SubscriptionPlan, SubscriptionStatus, StripeInvoice, StripePaymentMethod, TimbreBalance } from "@/types/subscription";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { useTranslations } from "next-intl";
 import { ArrowLeft, Loader2 } from "lucide-react";
 
 import { loadStripe } from "@stripe/stripe-js";
@@ -26,6 +27,8 @@ const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 
 
 export default function SubscriptionPage() {
+  const t = useTranslations('subscription');
+  const tc = useTranslations('common');
   useRequireAdmin();
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null);
@@ -69,7 +72,7 @@ export default function SubscriptionPage() {
       }
     } catch (err) {
       console.error("Error loading subscription data:", err);
-      toast.error("Error al cargar datos de suscripción");
+      toast.error(t("errorLoading"));
     } finally {
       setLoading(false);
     }
@@ -91,7 +94,7 @@ export default function SubscriptionPage() {
       setCheckoutPlan(planCode);
     } catch (err) {
       console.error("Error creating checkout:", err);
-      toast.error("Error al iniciar el proceso de pago. Verifica la configuración de Stripe.");
+      toast.error(t("errorCheckout"));
       setProcessing(false);
     }
   };
@@ -108,7 +111,7 @@ export default function SubscriptionPage() {
       setCheckoutPlan("PRO");
     } catch (err) {
       console.error("Error creating trial checkout:", err);
-      toast.error("Error al iniciar la captura de tarjeta");
+      toast.error(t("errorTrialCheckout"));
     } finally {
       setTrialCheckoutLoading(false);
     }
@@ -123,7 +126,7 @@ export default function SubscriptionPage() {
       window.location.assign(url);
     } catch (err) {
       console.error("Error creating portal:", err);
-      toast.error("Error al abrir el portal de pagos");
+      toast.error(t("errorPortal"));
     } finally {
       setProcessing(false);
     }
@@ -133,12 +136,12 @@ export default function SubscriptionPage() {
     setProcessing(true);
     try {
       await subscriptionService.cancelSubscription();
-      toast({ title: "Cancelación programada", description: "Tu suscripción se cancelará al final del período actual. Puedes reactivarla en cualquier momento." });
+      toast({ title: t("cancelScheduled"), description: t("cancelScheduledDesc") });
       setShowCancelDialog(false);
       await fetchData();
     } catch (err) {
       console.error("Error cancelling:", err);
-      toast.error("Error al cancelar la suscripción");
+      toast.error(t("errorCancelling"));
     } finally {
       setProcessing(false);
     }
@@ -148,11 +151,11 @@ export default function SubscriptionPage() {
     setProcessing(true);
     try {
       await subscriptionService.reactivateSubscription();
-      toast({ title: "Suscripción reactivada", description: "Tu suscripción continuará renovándose normalmente." });
+      toast({ title: t("reactivated"), description: t("reactivatedDesc") });
       await fetchData();
     } catch (err) {
       console.error("Error reactivating:", err);
-      toast.error("Error al reactivar la suscripción");
+      toast.error(t("errorReactivating"));
     } finally {
       setProcessing(false);
     }
@@ -163,7 +166,7 @@ export default function SubscriptionPage() {
     return (
       <div role="status" className="flex items-center justify-center min-h-[60vh]">
         <Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" />
-        <span className="sr-only">Cargando...</span>
+        <span className="sr-only">Loading...</span>
       </div>
     );
   }
@@ -174,18 +177,22 @@ export default function SubscriptionPage() {
   if (checkoutClientSecret) {
     const selectedPlan = plans.find(p => p.codigo === checkoutPlan);
     const checkoutSubtitle = selectedPlan
-      ? `Plan ${selectedPlan.nombre} — $${billingInterval === "year"
-          ? selectedPlan.precioAnual.toLocaleString("es-MX") + "/año"
-          : selectedPlan.precioMensual.toLocaleString("es-MX") + "/mes"}`
-      : "Ingresa tus datos de pago";
+      ? t("planDetails", {
+          name: selectedPlan.nombre,
+          price: billingInterval === "year"
+            ? selectedPlan.precioAnual.toLocaleString("es-MX")
+            : selectedPlan.precioMensual.toLocaleString("es-MX"),
+          interval: billingInterval === "year" ? t("perYear") : t("perMonth"),
+        })
+      : t("enterPaymentDetails");
     return (
       <PageHeader
         breadcrumbs={[
-          { label: "Inicio", href: "/dashboard" },
-          { label: "Suscripción", href: "/subscription" },
-          { label: "Pago" },
+          { label: tc("home"), href: "/dashboard" },
+          { label: t("title"), href: "/subscription" },
+          { label: t("payment") },
         ]}
-        title="Completar suscripción"
+        title={t("completeSubscription")}
         subtitle={checkoutSubtitle}
         actions={
           <Button
@@ -198,7 +205,7 @@ export default function SubscriptionPage() {
             }}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Volver
+            {t("goBack")}
           </Button>
         }
       >
@@ -235,11 +242,11 @@ export default function SubscriptionPage() {
   return (
     <PageHeader
       breadcrumbs={[
-        { label: "Inicio", href: "/dashboard" },
-        { label: "Suscripción" },
+        { label: tc("home"), href: "/dashboard" },
+        { label: t("title") },
       ]}
-      title="Suscripción"
-      subtitle="Administra tu plan y método de pago"
+      title={t("title")}
+      subtitle={t("subtitle")}
     >
       <div className="space-y-6 page-animate">
 

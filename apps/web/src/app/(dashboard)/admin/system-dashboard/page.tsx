@@ -17,6 +17,7 @@ import {
   Crown
 } from 'lucide-react';
 import { useFormatters } from '@/hooks/useFormatters';
+import { useTranslations } from 'next-intl';
 import {
   AreaChart,
   Area,
@@ -34,12 +35,8 @@ import {
 
 const CHART_COLORS = ['#3b82f6', '#8b5cf6', '#06b6d4', '#f59e0b', '#10b981', '#ef4444'];
 
-const PERIOD_OPTIONS = [
-  { value: 7, label: '7 dias' },
-  { value: 15, label: '15 dias' },
-  { value: 30, label: '30 dias' },
-  { value: 90, label: '90 dias' },
-];
+// Period labels are set dynamically using translations inside the component
+const PERIOD_VALUES = [7, 15, 30, 90];
 
 function formatChartDate(dateStr: string): string {
   const d = new Date(dateStr);
@@ -53,7 +50,14 @@ function formatShortCurrency(value: number): string {
 }
 
 export default function SystemDashboardPage() {
+  const t = useTranslations('admin.systemDashboard');
+  const ta = useTranslations('admin');
   const { formatCurrency: _fmtCur, formatNumber: _fmtNum } = useFormatters();
+
+  const PERIOD_OPTIONS = PERIOD_VALUES.map(v => ({
+    value: v,
+    label: t(`days${v}` as 'days7' | 'days15' | 'days30' | 'days90'),
+  }));
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
   const [trends, setTrends] = useState<SystemTrends | null>(null);
   const [loading, setLoading] = useState(true);
@@ -75,7 +79,7 @@ export default function SystemDashboardPage() {
     } catch {
       toast({
         title: 'Error',
-        description: 'No se pudieron cargar las metricas del sistema',
+        description: t('loadError'),
         variant: 'destructive',
       });
     } finally {
@@ -129,7 +133,7 @@ export default function SystemDashboardPage() {
   if (!metrics) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-gray-500">No se pudieron cargar las metricas</p>
+        <p className="text-gray-500">{t('loadErrorShort')}</p>
       </div>
     );
   }
@@ -138,16 +142,16 @@ export default function SystemDashboardPage() {
     <div className="space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center space-x-2 text-sm text-gray-500">
-        <span>Administracion</span>
+        <span>{ta('breadcrumb')}</span>
         <ChevronRight className="h-4 w-4" />
-        <span className="text-gray-900 font-medium">Dashboard Sistema</span>
+        <span className="text-gray-900 font-medium">{t('breadcrumb')}</span>
       </nav>
 
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard del Sistema</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
         <p className="text-gray-500 mt-1">
-          Vista general del sistema y metricas de todas las empresas
+          {t('subtitle')}
         </p>
       </div>
 
@@ -156,13 +160,13 @@ export default function SystemDashboardPage() {
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">Total Empresas</p>
+              <p className="text-sm font-medium text-gray-500">{t('totalCompanies')}</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
                 {formatNumber(metrics.totalTenants)}
               </p>
               <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
                 <UserCheck className="h-3 w-3" />
-                {formatNumber(metrics.activeTenants)} activas
+                {formatNumber(metrics.activeTenants)} {t('activeCompanies')}
               </p>
             </div>
             <div className="h-12 w-12 rounded-lg bg-blue-50 flex items-center justify-center">
@@ -174,12 +178,12 @@ export default function SystemDashboardPage() {
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">Usuarios Activos</p>
+              <p className="text-sm font-medium text-gray-500">{t('activeUsers')}</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
                 {formatNumber(metrics.totalUsuarios)}
               </p>
               <p className="text-xs text-gray-400 mt-1">
-                {formatNumber(metrics.totalClientes)} clientes
+                {formatNumber(metrics.totalClientes)} {t('clients')}
               </p>
             </div>
             <div className="h-12 w-12 rounded-lg bg-purple-50 flex items-center justify-center">
@@ -191,13 +195,13 @@ export default function SystemDashboardPage() {
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">Pedidos Totales</p>
+              <p className="text-sm font-medium text-gray-500">{t('totalOrders')}</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
                 {formatNumber(metrics.totalPedidos)}
               </p>
               <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
                 <Package className="h-3 w-3" />
-                {formatNumber(metrics.totalProductos)} productos
+                {formatNumber(metrics.totalProductos)} {t('products')}
               </p>
             </div>
             <div className="h-12 w-12 rounded-lg bg-orange-50 flex items-center justify-center">
@@ -209,13 +213,13 @@ export default function SystemDashboardPage() {
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">Ventas Totales</p>
+              <p className="text-sm font-medium text-gray-500">{t('totalSales')}</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
                 {formatCurrency(metrics.totalVentas)}
               </p>
               <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
                 <TrendingUp className="h-3 w-3" />
-                Total acumulado
+                {t('accumulated')}
               </p>
             </div>
             <div className="h-12 w-12 rounded-lg bg-green-50 flex items-center justify-center">
@@ -230,7 +234,7 @@ export default function SystemDashboardPage() {
         <>
           {/* Period Selector */}
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500">Periodo:</span>
+            <span className="text-sm text-gray-500">{t('period')}:</span>
             <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
               {PERIOD_OPTIONS.map((opt) => (
                 <button
@@ -252,7 +256,7 @@ export default function SystemDashboardPage() {
           {trends.revenueByDay.length > 0 && (
             <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
               <h3 className="text-base font-semibold text-gray-900 mb-4">
-                Ingresos por Dia
+                {t('revenueByDay')}
               </h3>
               <ResponsiveContainer width="100%" height={280}>
                 <AreaChart data={trends.revenueByDay}>
@@ -275,7 +279,7 @@ export default function SystemDashboardPage() {
                     width={60}
                   />
                   <Tooltip
-                    formatter={(value) => [formatCurrency(Number(value)), 'Ingresos']}
+                    formatter={(value) => [formatCurrency(Number(value)), t('revenue')]}
                     labelFormatter={(label) => formatChartDate(String(label))}
                     contentStyle={{ borderRadius: 8, border: '1px solid #e5e7eb', fontSize: 13 }}
                   />
@@ -297,7 +301,7 @@ export default function SystemDashboardPage() {
             {(trends.tenantGrowth.length > 0 || trends.userGrowth.length > 0) && (
               <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
                 <h3 className="text-base font-semibold text-gray-900 mb-4">
-                  Crecimiento
+                  {t('growth')}
                 </h3>
                 <ResponsiveContainer width="100%" height={250}>
                   <LineChart>
@@ -318,7 +322,7 @@ export default function SystemDashboardPage() {
                       data={trends.tenantGrowth}
                       type="monotone"
                       dataKey="value"
-                      name="Empresas"
+                      name={t('companies')}
                       stroke="#3b82f6"
                       strokeWidth={2}
                       dot={false}
@@ -327,7 +331,7 @@ export default function SystemDashboardPage() {
                       data={trends.userGrowth}
                       type="monotone"
                       dataKey="value"
-                      name="Usuarios"
+                      name={t('users')}
                       stroke="#8b5cf6"
                       strokeWidth={2}
                       dot={false}
@@ -337,11 +341,11 @@ export default function SystemDashboardPage() {
                 <div className="flex items-center gap-4 mt-2 justify-center">
                   <div className="flex items-center gap-1.5">
                     <div className="w-3 h-0.5 bg-blue-500 rounded-full" />
-                    <span className="text-xs text-gray-500">Empresas</span>
+                    <span className="text-xs text-gray-500">{t('companies')}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="w-3 h-0.5 bg-purple-500 rounded-full" />
-                    <span className="text-xs text-gray-500">Usuarios</span>
+                    <span className="text-xs text-gray-500">{t('users')}</span>
                   </div>
                 </div>
               </div>
@@ -351,7 +355,7 @@ export default function SystemDashboardPage() {
             {trends.planBreakdown.length > 0 && (
               <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
                 <h3 className="text-base font-semibold text-gray-900 mb-4">
-                  Distribucion de Planes
+                  {t('planDistribution')}
                 </h3>
                 <ResponsiveContainer width="100%" height={250}>
                   <BarChart data={trends.planBreakdown} layout="vertical">
@@ -389,12 +393,12 @@ export default function SystemDashboardPage() {
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
             <Crown className="h-5 w-5 text-amber-500" />
-            <h2 className="text-lg font-semibold text-gray-900">Top Empresas</h2>
+            <h2 className="text-lg font-semibold text-gray-900">{t('topCompanies')}</h2>
           </div>
 
           {metrics.topTenants.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              No hay datos de empresas disponibles
+              {t('noCompanyData')}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -402,13 +406,13 @@ export default function SystemDashboardPage() {
                 <thead>
                   <tr className="border-b border-gray-200">
                     <th className="text-left text-xs font-medium text-gray-500 pb-3">
-                      Empresa
+                      {t('colCompany')}
                     </th>
                     <th className="text-right text-xs font-medium text-gray-500 pb-3">
-                      Pedidos
+                      {t('colOrders')}
                     </th>
                     <th className="text-right text-xs font-medium text-gray-500 pb-3">
-                      Ventas
+                      {t('colSales')}
                     </th>
                   </tr>
                 </thead>
@@ -443,12 +447,12 @@ export default function SystemDashboardPage() {
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
             <Clock className="h-5 w-5 text-blue-500" />
-            <h2 className="text-lg font-semibold text-gray-900">Ultimas Empresas Registradas</h2>
+            <h2 className="text-lg font-semibold text-gray-900">{t('recentCompanies')}</h2>
           </div>
 
           {metrics.tenantsRecientes.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              No hay empresas registradas recientemente
+              {t('noRecentCompanies')}
             </div>
           ) : (
             <div className="space-y-3">
@@ -462,22 +466,22 @@ export default function SystemDashboardPage() {
                       <p className="font-medium text-gray-900">{tenant.nombreEmpresa}</p>
                       {tenant.activo ? (
                         <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-green-100 text-green-800">
-                          Activa
+                          {t('activeCompanies')}
                         </span>
                       ) : (
                         <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-800">
-                          Inactiva
+                          {t('noSubscription')}
                         </span>
                       )}
                     </div>
                     <div className="flex items-center gap-3 text-xs text-gray-500">
                       <span className="flex items-center gap-1">
                         <Package className="h-3 w-3" />
-                        {tenant.planTipo || 'Sin plan'}
+                        {tenant.planTipo || t('noPlan')}
                       </span>
                       <span className="flex items-center gap-1">
                         <Users className="h-3 w-3" />
-                        {formatNumber(tenant.usuarioCount)} usuarios
+                        {formatNumber(tenant.usuarioCount)} {t('users')}
                       </span>
                     </div>
                   </div>
@@ -485,11 +489,11 @@ export default function SystemDashboardPage() {
                   {tenant.suscripcionActiva ? (
                     <div className="flex items-center gap-1 text-green-600 text-sm font-medium">
                       <TrendingUp className="h-4 w-4" />
-                      Suscripcion activa
+                      {t('activeSubscription')}
                     </div>
                   ) : (
                     <div className="text-gray-400 text-sm">
-                      Sin suscripcion
+                      {t('noSubscription')}
                     </div>
                   )}
                 </div>

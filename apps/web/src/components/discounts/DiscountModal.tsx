@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { SbAlert, SbDiscounts, SbDownload } from '@/components/layout/DashboardIcons';
 import { Discount, DiscountType, DiscountMethod, DiscountStatus } from '@/types/discounts';
+import { useTranslations } from 'next-intl';
 
 interface DiscountModalProps {
   isOpen: boolean;
@@ -29,22 +30,6 @@ const statusColors = {
   [DiscountStatus.PAUSED]: 'bg-yellow-100 text-yellow-800',
 };
 
-const statusLabels = {
-  [DiscountStatus.ACTIVE]: 'Activo',
-  [DiscountStatus.INACTIVE]: 'Inactivo',
-  [DiscountStatus.PAUSED]: 'Pausado',
-};
-
-const typeLabels = {
-  [DiscountType.GLOBAL]: 'Global',
-  [DiscountType.PRODUCT_SPECIFIC]: 'Por Producto',
-};
-
-const methodLabels = {
-  [DiscountMethod.PERCENTAGE]: 'Porcentaje (%)',
-  [DiscountMethod.FIXED_AMOUNT]: 'Monto fijo ($)',
-};
-
 export function DiscountModal({
   isOpen,
   onClose,
@@ -53,6 +38,25 @@ export function DiscountModal({
   onConfirm,
   loading = false,
 }: DiscountModalProps) {
+  const t = useTranslations('discounts.modal');
+  const tc = useTranslations('common');
+
+  const statusLabels = {
+    [DiscountStatus.ACTIVE]: t('statusActive'),
+    [DiscountStatus.INACTIVE]: t('statusInactive'),
+    [DiscountStatus.PAUSED]: t('statusPaused'),
+  };
+
+  const typeLabels = {
+    [DiscountType.GLOBAL]: t('typeGlobal'),
+    [DiscountType.PRODUCT_SPECIFIC]: t('typeProduct'),
+  };
+
+  const methodLabels = {
+    [DiscountMethod.PERCENTAGE]: t('methodPercentage'),
+    [DiscountMethod.FIXED_AMOUNT]: t('methodFixed'),
+  };
+
   const getModalContent = () => {
     switch (type) {
       case 'view':
@@ -77,43 +81,43 @@ export function DiscountModal({
               {/* Información básica */}
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-3">Información básica</h4>
+                  <h4 className="font-medium text-gray-900 mb-3">{t('basicInfo')}</h4>
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Tipo:</span>
+                      <span className="text-gray-600">{t('type')}</span>
                       <span>{typeLabels[discount?.type || DiscountType.GLOBAL]}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Método:</span>
+                      <span className="text-gray-600">{t('method')}</span>
                       <span>{methodLabels[discount?.method || DiscountMethod.PERCENTAGE]}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Combinable:</span>
-                      <span>{discount?.isStackable ? 'Sí' : 'No'}</span>
+                      <span className="text-gray-600">{t('stackable')}</span>
+                      <span>{discount?.isStackable ? tc('yes') : tc('no')}</span>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-3">Configuraciones</h4>
+                  <h4 className="font-medium text-gray-900 mb-3">{t('settings')}</h4>
                   <div className="space-y-2">
                     {discount?.minimumAmount && (
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Monto mínimo:</span>
+                        <span className="text-gray-600">{t('minimumAmount')}</span>
                         <span>${discount.minimumAmount.toLocaleString()}</span>
                       </div>
                     )}
                     {discount?.maximumDiscount && (
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Descuento máximo:</span>
+                        <span className="text-gray-600">{t('maximumDiscount')}</span>
                         <span>${discount.maximumDiscount.toLocaleString()}</span>
                       </div>
                     )}
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Vigencia:</span>
+                      <span className="text-gray-600">{t('validity')}</span>
                       <span>
                         {discount?.isPermanent
-                          ? 'Permanente'
+                          ? t('permanent')
                           : `${discount?.validFrom?.toLocaleDateString()} - ${discount?.validTo?.toLocaleDateString()}`}
                       </span>
                     </div>
@@ -123,7 +127,7 @@ export function DiscountModal({
 
               {/* Rangos de descuento */}
               <div>
-                <h4 className="font-medium text-gray-900 mb-3">Rangos de descuento</h4>
+                <h4 className="font-medium text-gray-900 mb-3">{t('discountRanges')}</h4>
                 <div className="bg-gray-50 rounded-lg p-4">
                   <div className="space-y-2">
                     {discount?.quantityRanges.map((range, index) => (
@@ -133,11 +137,11 @@ export function DiscountModal({
                       >
                         <span className="font-medium">
                           {range.minQuantity}
-                          {range.maxQuantity ? `-${range.maxQuantity}` : '+'} unidades
+                          {range.maxQuantity ? `-${range.maxQuantity}` : '+'} {t('units')}
                         </span>
                         <span className="text-green-600 font-medium">
                           {range.discountValue}
-                          {discount?.method === DiscountMethod.PERCENTAGE ? '%' : '$'} descuento
+                          {discount?.method === DiscountMethod.PERCENTAGE ? '%' : '$'} {t('discountLabel')}
                         </span>
                       </div>
                     ))}
@@ -147,7 +151,7 @@ export function DiscountModal({
 
               {/* Estadísticas */}
               <div>
-                <h4 className="font-medium text-gray-900 mb-3">Estadísticas de uso</h4>
+                <h4 className="font-medium text-gray-900 mb-3">{t('usageStats')}</h4>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="bg-green-50 p-4 rounded-lg text-center">
                     <div className="flex items-center justify-center w-8 h-8 bg-green-100 rounded-lg mx-auto mb-2">
@@ -156,7 +160,7 @@ export function DiscountModal({
                     <div className="text-lg font-bold text-green-600">
                       ${discount?.totalSavings?.toLocaleString() || '0'}
                     </div>
-                    <div className="text-sm text-gray-600">Ahorros generados</div>
+                    <div className="text-sm text-gray-600">{t('savingsGenerated')}</div>
                   </div>
 
                   <div className="bg-blue-50 p-4 rounded-lg text-center">
@@ -166,7 +170,7 @@ export function DiscountModal({
                     <div className="text-lg font-bold text-blue-600">
                       {discount?.totalUsed || 0}
                     </div>
-                    <div className="text-sm text-gray-600">Veces utilizado</div>
+                    <div className="text-sm text-gray-600">{t('timesUsed')}</div>
                   </div>
 
                   <div className="bg-purple-50 p-4 rounded-lg text-center">
@@ -174,9 +178,9 @@ export function DiscountModal({
                       <Calendar className="w-4 h-4 text-purple-600" />
                     </div>
                     <div className="text-lg font-bold text-purple-600">
-                      {discount?.lastUsed?.toLocaleDateString() || 'Nunca'}
+                      {discount?.lastUsed?.toLocaleDateString() || t('never')}
                     </div>
-                    <div className="text-sm text-gray-600">Último uso</div>
+                    <div className="text-sm text-gray-600">{t('lastUsage')}</div>
                   </div>
                 </div>
               </div>
@@ -185,19 +189,19 @@ export function DiscountModal({
               <div className="border-t pt-4">
                 <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
                   <div>
-                    <span className="font-medium">Creado por:</span> {discount?.createdBy}
+                    <span className="font-medium">{t('createdBy')}</span> {discount?.createdBy}
                   </div>
                   <div>
-                    <span className="font-medium">Fecha de creación:</span>{' '}
+                    <span className="font-medium">{t('creationDate')}</span>{' '}
                     {discount?.createdAt.toLocaleDateString()}
                   </div>
                   {discount?.updatedBy && (
                     <>
                       <div>
-                        <span className="font-medium">Modificado por:</span> {discount.updatedBy}
+                        <span className="font-medium">{t('modifiedBy')}</span> {discount.updatedBy}
                       </div>
                       <div>
-                        <span className="font-medium">Última modificación:</span>{' '}
+                        <span className="font-medium">{t('lastModification')}</span>{' '}
                         {discount.updatedAt.toLocaleDateString()}
                       </div>
                     </>
@@ -208,11 +212,11 @@ export function DiscountModal({
 
             <div className="flex justify-end gap-3 mt-6">
               <Button variant="outline" onClick={onClose}>
-                Cerrar
+                {tc('close')}
               </Button>
               <Button>
                 <Edit className="w-4 h-4 mr-2" />
-                Editar
+                {tc('edit')}
               </Button>
             </div>
           </>
@@ -226,25 +230,24 @@ export function DiscountModal({
                 <SbAlert size={28} />
               </div>
               <div>
-                <h3 className="text-lg font-semibold">Eliminar descuento</h3>
-                <p className="text-gray-600">Esta acción no se puede deshacer</p>
+                <h3 className="text-lg font-semibold">{t('deleteDiscount')}</h3>
+                <p className="text-gray-600">{t('cannotUndo')}</p>
               </div>
             </div>
 
             <div className="bg-muted/50 border border-border rounded-lg p-4 mb-6">
               <p className="text-foreground">
-                ¿Estás seguro de que quieres eliminar el descuento{' '}
+                {t('confirmDeleteMsg')}{' '}
                 <strong>&quot;{discount?.name}&quot;</strong>?
               </p>
               <div className="mt-2 text-sm text-muted-foreground">
-                • Se perderán todas las estadísticas de uso • Los pedidos existentes que usen este
-                descuento no se verán afectados • Esta acción es permanente e irreversible
+                {t('deleteConsequences')}
               </div>
             </div>
 
             <div className="flex justify-end gap-3">
               <Button variant="outline" onClick={onClose} disabled={loading}>
-                Cancelar
+                {tc('cancel')}
               </Button>
               <Button
                 variant="destructive"
@@ -253,7 +256,7 @@ export function DiscountModal({
                 className="flex items-center gap-2"
               >
                 <Trash2 className="w-4 h-4" />
-                {loading ? 'Eliminando...' : 'Eliminar descuento'}
+                {loading ? t('deleting') : t('deleteDiscount')}
               </Button>
             </div>
           </>
@@ -267,34 +270,34 @@ export function DiscountModal({
                 <SbDownload size={28} />
               </div>
               <div>
-                <h3 className="text-lg font-semibold">Importar descuentos</h3>
-                <p className="text-gray-600">Cargar descuentos desde un archivo</p>
+                <h3 className="text-lg font-semibold">{t('importTitle')}</h3>
+                <p className="text-gray-600">{t('importDescription')}</p>
               </div>
             </div>
 
             <div className="space-y-4">
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
                 <SbDownload size={48} className="mx-auto mb-4" />
-                <p className="text-lg font-medium text-gray-700 mb-2">Arrastra tu archivo aquí</p>
-                <p className="text-gray-500 mb-4">o haz clic para seleccionar</p>
-                <Button variant="outline">Seleccionar archivo</Button>
+                <p className="text-lg font-medium text-gray-700 mb-2">{t('dragFileHere')}</p>
+                <p className="text-gray-500 mb-4">{t('orClickToSelect')}</p>
+                <Button variant="outline">{t('selectFile')}</Button>
               </div>
 
               <div className="bg-muted/50 border border-border rounded-lg p-4">
-                <h4 className="font-medium text-foreground mb-2">Formato requerido:</h4>
+                <h4 className="font-medium text-foreground mb-2">{t('requiredFormat')}</h4>
                 <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• Archivo CSV o Excel (.xlsx)</li>
-                  <li>• Columnas: nombre, descripción, tipo, método, rangos</li>
-                  <li>• Máximo 1000 registros por archivo</li>
+                  <li>• {t('csvOrExcel')}</li>
+                  <li>• {t('columnsRequired')}</li>
+                  <li>• {t('maxRecords')}</li>
                 </ul>
               </div>
             </div>
 
             <div className="flex justify-end gap-3 mt-6">
               <Button variant="outline" onClick={onClose}>
-                Cancelar
+                {tc('cancel')}
               </Button>
-              <Button disabled>Importar</Button>
+              <Button disabled>{t('importBtn')}</Button>
             </div>
           </>
         );
@@ -307,15 +310,15 @@ export function DiscountModal({
                 <SbDownload size={28} />
               </div>
               <div>
-                <h3 className="text-lg font-semibold">Exportar descuentos</h3>
-                <p className="text-gray-600">Descargar datos de descuentos</p>
+                <h3 className="text-lg font-semibold">{t('exportTitle')}</h3>
+                <p className="text-gray-600">{t('exportDescription')}</p>
               </div>
             </div>
 
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Formato de archivo
+                  {t('fileFormat')}
                 </label>
                 <SearchableSelect
                   options={[
@@ -325,30 +328,30 @@ export function DiscountModal({
                   ]}
                   value="csv"
                   onChange={() => {}}
-                  placeholder="Seleccionar formato"
+                  placeholder={t('selectFormat')}
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Datos a incluir
+                  {t('dataToInclude')}
                 </label>
                 <div className="space-y-2">
                   <label className="flex items-center">
                     <input type="checkbox" defaultChecked className="mr-2" />
-                    Información básica
+                    {t('basicInfoCheck')}
                   </label>
                   <label className="flex items-center">
                     <input type="checkbox" defaultChecked className="mr-2" />
-                    Rangos de descuento
+                    {t('discountRangesCheck')}
                   </label>
                   <label className="flex items-center">
                     <input type="checkbox" className="mr-2" />
-                    Estadísticas de uso
+                    {t('usageStatsCheck')}
                   </label>
                   <label className="flex items-center">
                     <input type="checkbox" className="mr-2" />
-                    Información de auditoría
+                    {t('auditInfoCheck')}
                   </label>
                 </div>
               </div>
@@ -356,11 +359,11 @@ export function DiscountModal({
 
             <div className="flex justify-end gap-3 mt-6">
               <Button variant="outline" onClick={onClose}>
-                Cancelar
+                {tc('cancel')}
               </Button>
               <Button className="flex items-center gap-2">
                 <FileDown className="w-4 h-4" />
-                Exportar
+                {t('exportBtn')}
               </Button>
             </div>
           </>
@@ -374,13 +377,13 @@ export function DiscountModal({
   const getModalTitle = () => {
     switch (type) {
       case 'view':
-        return 'Detalles del descuento';
+        return t('detailsTitle');
       case 'delete':
-        return 'Confirmar eliminación';
+        return t('confirmDelete');
       case 'import':
-        return 'Importar descuentos';
+        return t('importTitle');
       case 'export':
-        return 'Exportar descuentos';
+        return t('exportTitle');
       default:
         return '';
     }

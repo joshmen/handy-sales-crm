@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import { clientService } from '@/services/api/clients';
@@ -22,14 +23,14 @@ function formatDate(dateStr: string) {
   });
 }
 
-const ORDER_STATUS_LABELS: Record<string, { label: string; color: string; bg: string }> = {
-  PENDIENTE:      { label: 'Borrador',   color: 'text-gray-700',  bg: 'bg-gray-100' },
-  CONFIRMADA:     { label: 'Confirmado', color: 'text-blue-700',  bg: 'bg-blue-100' },
-  EN_PREPARACION: { label: 'En prep.',   color: 'text-indigo-700', bg: 'bg-indigo-100' },
-  LISTA_ENVIO:    { label: 'Lista env.', color: 'text-purple-700', bg: 'bg-purple-100' },
-  ENVIADA:        { label: 'En ruta',    color: 'text-amber-700', bg: 'bg-amber-100' },
-  ENTREGADA:      { label: 'Entregado',  color: 'text-green-700', bg: 'bg-green-100' },
-  CANCELADA:      { label: 'Cancelado',  color: 'text-red-700',   bg: 'bg-red-100' },
+const ORDER_STATUS_STYLES: Record<string, { statusKey: string; color: string; bg: string }> = {
+  PENDIENTE:      { statusKey: 'draft',      color: 'text-gray-700',  bg: 'bg-gray-100' },
+  CONFIRMADA:     { statusKey: 'confirmed',  color: 'text-blue-700',  bg: 'bg-blue-100' },
+  EN_PREPARACION: { statusKey: 'inPrep',     color: 'text-indigo-700', bg: 'bg-indigo-100' },
+  LISTA_ENVIO:    { statusKey: 'readyToShip', color: 'text-purple-700', bg: 'bg-purple-100' },
+  ENVIADA:        { statusKey: 'enRoute',    color: 'text-amber-700', bg: 'bg-amber-100' },
+  ENTREGADA:      { statusKey: 'delivered',  color: 'text-green-700', bg: 'bg-green-100' },
+  CANCELADA:      { statusKey: 'cancelled',  color: 'text-red-700',   bg: 'bg-red-100' },
 };
 
 type Tab = 'pedidos' | 'info';
@@ -37,6 +38,9 @@ type Tab = 'pedidos' | 'info';
 // ── Page ──
 
 export default function ClientDetailPage() {
+  const t = useTranslations('clients.detail');
+  const tClients = useTranslations('clients');
+  const tc = useTranslations('common');
   const router = useRouter();
   const params = useParams();
   const clientId = params.id as string;
@@ -58,7 +62,7 @@ export default function ClientDetailPage() {
       setOrders(ordersData);
     } catch {
       setNotFound(true);
-      toast.error('No se pudo cargar el cliente');
+      toast.error(t('errorLoadingClient'));
     } finally {
       setLoading(false);
     }
@@ -75,7 +79,7 @@ export default function ClientDetailPage() {
       <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center">
         <div className="flex items-center gap-3">
           <Loader2 className="w-6 h-6 animate-spin text-green-600" />
-          <span className="text-gray-600">Cargando cliente...</span>
+          <span className="text-gray-600">{t('loadingClient')}</span>
         </div>
       </div>
     );
@@ -86,10 +90,10 @@ export default function ClientDetailPage() {
       <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Cliente no encontrado</h2>
-          <p className="text-gray-600 mb-4">El cliente que buscas no existe o no tienes acceso.</p>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">{t('notFound')}</h2>
+          <p className="text-gray-600 mb-4">{t('notFoundMessage')}</p>
           <button onClick={() => router.push('/clients')} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
-            Volver a clientes
+            {t('backToClients')}
           </button>
         </div>
       </div>
@@ -106,8 +110,8 @@ export default function ClientDetailPage() {
       {/* Header */}
       <div className="bg-white px-4 sm:px-8 py-4 border-b border-gray-200">
         <Breadcrumb items={[
-          { label: 'Inicio', href: '/dashboard' },
-          { label: 'Clientes', href: '/clients' },
+          { label: tc('home'), href: '/dashboard' },
+          { label: tClients('title'), href: '/clients' },
           { label: client.name },
         ]} />
 
@@ -115,11 +119,11 @@ export default function ClientDetailPage() {
           <div className="flex items-center gap-3">
             <h1 className="text-[22px] font-bold text-gray-900">{client.name}</h1>
             <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${client.isActive ? 'text-green-700 bg-green-100' : 'text-gray-700 bg-gray-100'}`}>
-              {client.isActive ? 'Activo' : 'Inactivo'}
+              {client.isActive ? tc('active') : tc('inactive')}
             </span>
             {client.esProspecto && (
               <span className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold text-purple-700 bg-purple-100">
-                Prospecto
+                {tc('prospect')}
               </span>
             )}
           </div>
@@ -128,7 +132,7 @@ export default function ClientDetailPage() {
             href={`/clients/${clientId}/edit`}
             className="flex items-center gap-2 bg-[#16A34A] hover:bg-green-700 text-white text-[13px] font-semibold px-5 py-2 rounded-lg transition-colors"
           >
-            Editar
+            {tc('edit')}
           </Link>
         </div>
       </div>
@@ -138,61 +142,61 @@ export default function ClientDetailPage() {
         {/* KPI cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-white rounded-lg p-5 border border-gray-200">
-            <p className="text-xs font-medium text-gray-500 mb-1">Total pedidos</p>
+            <p className="text-xs font-medium text-gray-500 mb-1">{t('totalOrders')}</p>
             <p className="text-2xl font-bold text-gray-900">{totalPedidos}</p>
           </div>
           <div className="bg-white rounded-lg p-5 border border-gray-200">
-            <p className="text-xs font-medium text-gray-500 mb-1">Total ventas</p>
+            <p className="text-xs font-medium text-gray-500 mb-1">{t('totalSales')}</p>
             <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalVentas)}</p>
           </div>
           <div className="bg-white rounded-lg p-5 border border-gray-200">
-            <p className="text-xs font-medium text-gray-500 mb-1">Pedidos pendientes</p>
+            <p className="text-xs font-medium text-gray-500 mb-1">{t('pendingOrders')}</p>
             <p className="text-2xl font-bold text-gray-900">{pedidosPendientes}</p>
           </div>
         </div>
 
         {/* Client info card */}
         <div className="bg-white rounded-lg p-6 border border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Informacion del cliente</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('clientInfo')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-500">RFC</span>
+              <span className="text-gray-500">{t('rfc')}</span>
               <span className="text-gray-900 font-mono">{client.code || '-'}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Telefono</span>
+              <span className="text-gray-500">{t('phone')}</span>
               <span className="text-gray-900">{client.phone || '-'}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Email</span>
+              <span className="text-gray-500">{t('email')}</span>
               <span className="text-gray-900">{client.email || '-'}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Encargado</span>
+              <span className="text-gray-500">{t('manager')}</span>
               <span className="text-gray-900">{client.encargado || '-'}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Direccion</span>
+              <span className="text-gray-500">{t('address')}</span>
               <span className="text-gray-900 text-right max-w-[200px]">{client.address || '-'}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Zona</span>
+              <span className="text-gray-500">{t('zone')}</span>
               <span className="text-gray-900">{client.zoneName || '-'}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Categoria</span>
+              <span className="text-gray-500">{t('category')}</span>
               <span className="text-gray-900">{client.categoryName || '-'}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Saldo</span>
+              <span className="text-gray-500">{t('balance')}</span>
               <span className="text-gray-900">{formatCurrency(client.saldo ?? 0)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Limite de credito</span>
+              <span className="text-gray-500">{t('creditLimit')}</span>
               <span className="text-gray-900">{formatCurrency(client.limiteCredito ?? 0)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Dias de credito</span>
+              <span className="text-gray-500">{t('creditDays')}</span>
               <span className="text-gray-900">{client.diasCredito ?? 0}</span>
             </div>
           </div>
@@ -201,26 +205,26 @@ export default function ClientDetailPage() {
         {/* Fiscal data section */}
         {client.facturable && (
           <div className="bg-white rounded-lg p-6 border border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Datos fiscales</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('fiscalData')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-500">RFC</span>
+                <span className="text-gray-500">{t('rfc')}</span>
                 <span className="text-gray-900 font-mono">{client.code || '-'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">Razon social</span>
+                <span className="text-gray-500">{t('businessName')}</span>
                 <span className="text-gray-900">{client.razonSocial || '-'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">Regimen fiscal</span>
+                <span className="text-gray-500">{t('taxRegime')}</span>
                 <span className="text-gray-900">{client.regimenFiscal || '-'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">C.P. Fiscal</span>
+                <span className="text-gray-500">{t('fiscalPostalCode')}</span>
                 <span className="text-gray-900">{client.codigoPostalFiscal || '-'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">Uso CFDI predeterminado</span>
+                <span className="text-gray-500">{t('defaultCfdiUse')}</span>
                 <span className="text-gray-900">{client.usoCFDIPredeterminado || '-'}</span>
               </div>
             </div>
@@ -232,8 +236,8 @@ export default function ClientDetailPage() {
           <div className="border-b border-gray-200 px-6">
             <div className="flex gap-6">
               {([
-                { key: 'pedidos' as Tab, label: 'Pedidos' },
-                { key: 'info' as Tab, label: 'Comentarios' },
+                { key: 'pedidos' as Tab, label: t('tabs.orders') },
+                { key: 'info' as Tab, label: t('tabs.comments') },
               ]).map(tab => (
                 <button
                   key={tab.key}
@@ -254,22 +258,24 @@ export default function ClientDetailPage() {
             {activeTab === 'pedidos' && (
               <div>
                 {orders.length === 0 ? (
-                  <p className="text-center text-gray-400 py-8">Sin pedidos registrados</p>
+                  <p className="text-center text-gray-400 py-8">{t('noOrders')}</p>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-gray-200 text-left text-gray-500">
-                          <th className="pb-3 font-medium">Numero</th>
-                          <th className="pb-3 font-medium">Fecha</th>
-                          <th className="pb-3 font-medium">Estado</th>
-                          <th className="pb-3 font-medium">Vendedor</th>
-                          <th className="pb-3 font-medium text-right">Total</th>
+                          <th className="pb-3 font-medium">{t('orderColumns.number')}</th>
+                          <th className="pb-3 font-medium">{t('orderColumns.date')}</th>
+                          <th className="pb-3 font-medium">{t('orderColumns.status')}</th>
+                          <th className="pb-3 font-medium">{t('orderColumns.vendor')}</th>
+                          <th className="pb-3 font-medium text-right">{t('orderColumns.total')}</th>
                         </tr>
                       </thead>
                       <tbody>
                         {orders.map((order) => {
-                          const cfg = ORDER_STATUS_LABELS[order.estado] ?? { label: order.estado, color: 'text-gray-700', bg: 'bg-gray-100' };
+                          const style = ORDER_STATUS_STYLES[order.estado] ?? { statusKey: '', color: 'text-gray-700', bg: 'bg-gray-100' };
+                          const statusLabel = style.statusKey ? t(`orderStatus.${style.statusKey}` as Parameters<typeof t>[0]) : order.estado;
+                          const cfg = { label: statusLabel, color: style.color, bg: style.bg };
                           return (
                             <tr
                               key={order.id}
@@ -300,7 +306,7 @@ export default function ClientDetailPage() {
                 {client.comentarios ? (
                   <p>{client.comentarios}</p>
                 ) : (
-                  <p className="text-gray-400">Sin comentarios</p>
+                  <p className="text-gray-400">{t('noComments')}</p>
                 )}
               </div>
             )}

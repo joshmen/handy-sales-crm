@@ -9,15 +9,16 @@ import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { Label } from '@/components/ui/Label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { Plus, X, Search } from 'lucide-react';
-import { 
-  PromotionType, 
-  RewardMethod, 
+import {
+  PromotionType,
+  RewardMethod,
   CreatePromotionDto,
   ApplicationProduct,
   RewardProduct,
   ClientRange,
   PromotionLimits
 } from '@/types/promotions';
+import { useTranslations } from 'next-intl';
 
 interface PromotionFormProps {
   onSubmit: (data: CreatePromotionDto) => void;
@@ -30,6 +31,8 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
   onCancel,
   initialData,
 }) => {
+  const t = useTranslations('promotions.form');
+  const tc = useTranslations('common');
   const [formData, setFormData] = useState<CreatePromotionDto>({
     name: initialData?.name || '',
     description: initialData?.description || '',
@@ -170,32 +173,32 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
       {/* Información básica */}
       <Card>
         <CardHeader>
-          <CardTitle>Información General</CardTitle>
+          <CardTitle>{t('generalInfo')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label htmlFor="name">Nombre de la promoción *</Label>
+            <Label htmlFor="name">{t('promotionName')}</Label>
             <Input
               id="name"
               value={formData.name}
               onChange={(e) => handleInputChange('name', e.target.value)}
-              placeholder="Ej: Promoción por volumen 2024"
+              placeholder={t('promotionNamePlaceholder')}
               required
             />
           </div>
 
           <div>
-            <Label htmlFor="description">Descripción</Label>
+            <Label htmlFor="description">{t('descriptionLabel')}</Label>
             <Input
               id="description"
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
-              placeholder="La promoción será no fue solo configurada"
+              placeholder={t('descriptionPlaceholder')}
             />
           </div>
 
           <div>
-            <Label htmlFor="type">Tipo de promoción *</Label>
+            <Label htmlFor="type">{t('promotionType')}</Label>
             <Select 
               value={formData.type} 
               onValueChange={(value) => handleInputChange('type', value as PromotionType)}
@@ -204,9 +207,9 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={PromotionType.PERCENTAGE}>Por porcentaje</SelectItem>
-                <SelectItem value={PromotionType.SPECIAL_CLUB}>Club especial por recomendación</SelectItem>
-                <SelectItem value={PromotionType.BUY_X_GET_Y}>Compra X obtén Y</SelectItem>
+                <SelectItem value={PromotionType.PERCENTAGE}>{t('typePercentage')}</SelectItem>
+                <SelectItem value={PromotionType.SPECIAL_CLUB}>{t('typeSpecialClub')}</SelectItem>
+                <SelectItem value={PromotionType.BUY_X_GET_Y}>{t('typeBuyXGetY')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -216,16 +219,16 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
       {/* Productos de aplicación */}
       <Card>
         <CardHeader>
-          <CardTitle>Productos de Aplicación</CardTitle>
+          <CardTitle>{t('applicationProducts')}</CardTitle>
           <p className="text-sm text-gray-600">
-            Productos que debe comprar el cliente para obtener el incentivo
+            {t('applicationProductsDesc')}
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
           {formData.applicationProducts.map((product, index) => (
             <div key={index} className="border rounded-lg p-4 space-y-3">
               <div className="flex justify-between items-center">
-                <h4 className="font-medium">Producto {index + 1}</h4>
+                <h4 className="font-medium">{t('productN', { n: index + 1 })}</h4>
                 <Button
                   type="button"
                   variant="outline"
@@ -238,19 +241,19 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <Label>Buscar producto</Label>
+                  <Label>{t('searchProduct')}</Label>
                   <div className="relative">
                     <Input
                       value={product.productId}
                       onChange={(e) => updateApplicationProduct(index, 'productId', e.target.value)}
-                      placeholder="Buscar producto..."
+                      placeholder={t('searchProductPlaceholder')}
                     />
                     <Search className="absolute right-3 top-3 w-4 h-4 text-gray-400" />
                   </div>
                 </div>
                 
                 <div>
-                  <Label>Cantidad mínima</Label>
+                  <Label>{t('minQuantity')}</Label>
                   <Input
                     type="number"
                     min="1"
@@ -259,13 +262,13 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
                   />
                 </div>
               </div>
-              
+
               <div>
-                <Label>Aquí no se le agregado ningún producto a la promoción</Label>
+                <Label>{t('noProductAddedLabel')}</Label>
                 <Input
                   value={product.description || ''}
                   onChange={(e) => updateApplicationProduct(index, 'description', e.target.value)}
-                  placeholder="Descripción opcional..."
+                  placeholder={t('optionalDescription')}
                 />
               </div>
             </div>
@@ -278,7 +281,7 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
             className="w-full"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Agregar producto de aplicación
+            {t('addApplicationProduct')}
           </Button>
         </CardContent>
       </Card>
@@ -286,16 +289,16 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
       {/* Productos de recompensa */}
       <Card>
         <CardHeader>
-          <CardTitle>Productos de Recompensa</CardTitle>
+          <CardTitle>{t('rewardProducts')}</CardTitle>
           <p className="text-sm text-gray-600">
-            Productos que se podrán descontar antes como parte de la promoción
+            {t('rewardProductsDesc')}
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
           {formData.rewardProducts.map((product, index) => (
             <div key={index} className="border rounded-lg p-4 space-y-3">
               <div className="flex justify-between items-center">
-                <h4 className="font-medium">Recompensa {index + 1}</h4>
+                <h4 className="font-medium">{t('rewardN', { n: index + 1 })}</h4>
                 <Button
                   type="button"
                   variant="outline"
@@ -308,19 +311,19 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>
-                  <Label>Buscar producto</Label>
+                  <Label>{t('searchProduct')}</Label>
                   <div className="relative">
                     <Input
                       value={product.productId}
                       onChange={(e) => updateRewardProduct(index, 'productId', e.target.value)}
-                      placeholder="Buscar producto..."
+                      placeholder={t('searchProductPlaceholder')}
                     />
                     <Search className="absolute right-3 top-3 w-4 h-4 text-gray-400" />
                   </div>
                 </div>
                 
                 <div>
-                  <Label>Método de recompensa</Label>
+                  <Label>{t('rewardMethod')}</Label>
                   <Select 
                     value={product.discountMethod} 
                     onValueChange={(value) => updateRewardProduct(index, 'discountMethod', value as RewardMethod)}
@@ -329,17 +332,17 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={RewardMethod.FREE}>Gratis</SelectItem>
-                      <SelectItem value={RewardMethod.PERCENTAGE_DISCOUNT}>Descuento porcentual</SelectItem>
-                      <SelectItem value={RewardMethod.FIXED_DISCOUNT}>Descuento fijo</SelectItem>
+                      <SelectItem value={RewardMethod.FREE}>{t('rewardFree')}</SelectItem>
+                      <SelectItem value={RewardMethod.PERCENTAGE_DISCOUNT}>{t('rewardPercentageDiscount')}</SelectItem>
+                      <SelectItem value={RewardMethod.FIXED_DISCOUNT}>{t('rewardFixedDiscount')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 {product.discountMethod !== RewardMethod.FREE && (
                   <div>
                     <Label>
-                      {product.discountMethod === RewardMethod.PERCENTAGE_DISCOUNT ? 'Porcentaje' : 'Monto fijo'}
+                      {product.discountMethod === RewardMethod.PERCENTAGE_DISCOUNT ? t('percentageLabel') : t('fixedAmountLabel')}
                     </Label>
                     <Input
                       type="number"
@@ -353,11 +356,11 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
               </div>
               
               <div>
-                <Label>Aquí no se le agregado ningún producto a la recompensa a la promoción</Label>
+                <Label>{t('noRewardProductLabel')}</Label>
                 <Input
                   value={product.description || ''}
                   onChange={(e) => updateRewardProduct(index, 'description', e.target.value)}
-                  placeholder="Descripción opcional..."
+                  placeholder={t('optionalDescription')}
                 />
               </div>
             </div>
@@ -370,7 +373,7 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
             className="w-full"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Agregar producto de recompensa
+            {t('addRewardProduct')}
           </Button>
         </CardContent>
       </Card>
@@ -378,13 +381,13 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
       {/* Rangos de clientes */}
       <Card>
         <CardHeader>
-          <CardTitle>Rangos</CardTitle>
+          <CardTitle>{t('ranges')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {formData.clientRanges.map((range, index) => (
             <div key={index} className="border rounded-lg p-4 space-y-3">
               <div className="flex justify-between items-center">
-                <h4 className="font-medium">Rango {index + 1}: El cliente compra</h4>
+                <h4 className="font-medium">{t('rangeN', { n: index + 1 })}</h4>
                 <Button
                   type="button"
                   variant="outline"
@@ -397,7 +400,7 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
               
               <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                 <div>
-                  <Label>Cantidad mín</Label>
+                  <Label>{t('minQty')}</Label>
                   <Input
                     type="number"
                     min="1"
@@ -407,17 +410,17 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
                 </div>
                 
                 <div>
-                  <Label>Cantidad máx</Label>
+                  <Label>{t('maxQty')}</Label>
                   <Input
                     type="number"
                     value={range.maxQuantity || ''}
                     onChange={(e) => updateClientRange(index, 'maxQuantity', e.target.value ? parseInt(e.target.value) : undefined)}
-                    placeholder="Sin límite"
+                    placeholder={t('noLimit')}
                   />
                 </div>
                 
                 <div>
-                  <Label>Método</Label>
+                  <Label>{t('methodLabel')}</Label>
                   <Select 
                     value={range.rewardMethod} 
                     onValueChange={(value) => updateClientRange(index, 'rewardMethod', value as RewardMethod)}
@@ -426,15 +429,15 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={RewardMethod.FREE}>Gratis</SelectItem>
-                      <SelectItem value={RewardMethod.PERCENTAGE_DISCOUNT}>Porcentaje</SelectItem>
-                      <SelectItem value={RewardMethod.FIXED_DISCOUNT}>Monto fijo</SelectItem>
+                      <SelectItem value={RewardMethod.FREE}>{t('rewardFree')}</SelectItem>
+                      <SelectItem value={RewardMethod.PERCENTAGE_DISCOUNT}>{t('percentageLabel')}</SelectItem>
+                      <SelectItem value={RewardMethod.FIXED_DISCOUNT}>{t('fixedAmountLabel')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 
                 <div>
-                  <Label>Valor recompensa</Label>
+                  <Label>{t('rewardValue')}</Label>
                   <Input
                     type="number"
                     min="0"
@@ -453,7 +456,7 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
             className="w-full"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Agregar rango cliente
+            {t('addClientRange')}
           </Button>
         </CardContent>
       </Card>
@@ -461,36 +464,36 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
       {/* Limitantes */}
       <Card>
         <CardHeader>
-          <CardTitle>Limitantes</CardTitle>
+          <CardTitle>{t('limits')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="maxUsagePerClient">Límite que un cliente puede utilizar la promoción</Label>
+              <Label htmlFor="maxUsagePerClient">{t('maxUsagePerClient')}</Label>
               <Input
                 id="maxUsagePerClient"
                 type="number"
                 min="1"
                 value={formData.limits.maxUsagePerClient || ''}
                 onChange={(e) => handleLimitsChange('maxUsagePerClient', e.target.value ? parseInt(e.target.value) : undefined)}
-                placeholder="Sin límite"
+                placeholder={t('noLimit')}
               />
             </div>
 
             <div>
-              <Label htmlFor="maxTotalUsage">Límite de cuantas veces puede usar la promoción</Label>
+              <Label htmlFor="maxTotalUsage">{t('maxTotalUsage')}</Label>
               <Input
                 id="maxTotalUsage"
                 type="number" 
                 min="1"
                 value={formData.limits.maxTotalUsage || ''}
                 onChange={(e) => handleLimitsChange('maxTotalUsage', e.target.value ? parseInt(e.target.value) : undefined)}
-                placeholder="Sin límite"
+                placeholder={t('noLimit')}
               />
             </div>
 
             <div>
-              <Label htmlFor="maxBudget">Límite de presupuesto para la promoción</Label>
+              <Label htmlFor="maxBudget">{t('maxBudget')}</Label>
               <Input
                 id="maxBudget"
                 type="number"
@@ -498,24 +501,24 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
                 step="0.01"
                 value={formData.limits.maxBudget || ''}
                 onChange={(e) => handleLimitsChange('maxBudget', e.target.value ? parseFloat(e.target.value) : undefined)}
-                placeholder="Sin límite"
+                placeholder={t('noLimit')}
               />
             </div>
 
             <div>
-              <Label htmlFor="maxRewardPieces">Cantidad de piezas disponibles para la promoción</Label>
+              <Label htmlFor="maxRewardPieces">{t('maxRewardPieces')}</Label>
               <Input
                 id="maxRewardPieces"
                 type="number"
                 min="0"
                 value={formData.limits.maxRewardPieces || ''}
                 onChange={(e) => handleLimitsChange('maxRewardPieces', e.target.value ? parseInt(e.target.value) : undefined)}
-                placeholder="Sin límite"
+                placeholder={t('noLimit')}
               />
             </div>
 
             <div>
-              <Label htmlFor="startDate">Rango de fechas para la promoción (inicio)</Label>
+              <Label htmlFor="startDate">{t('dateRangeStart')}</Label>
               <DateTimePicker
                 id="startDate"
                 mode="date"
@@ -525,7 +528,7 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
             </div>
 
             <div>
-              <Label htmlFor="endDate">Rango de fechas para la promoción (fin)</Label>
+              <Label htmlFor="endDate">{t('dateRangeEnd')}</Label>
               <DateTimePicker
                 id="endDate"
                 mode="date"
@@ -541,7 +544,7 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
       {/* Configuraciones adicionales */}
       <Card>
         <CardHeader>
-          <CardTitle>Configuraciones Adicionales</CardTitle>
+          <CardTitle>{t('additionalSettings')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center space-x-2">
@@ -552,7 +555,7 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
               onChange={(e) => handleInputChange('isStackable', e.target.checked)}
               className="rounded"
             />
-            <Label htmlFor="isStackable">Permitir combinar con otras promociones</Label>
+            <Label htmlFor="isStackable">{t('allowStackable')}</Label>
           </div>
 
           <div className="flex items-center space-x-2">
@@ -563,7 +566,7 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
               onChange={(e) => handleInputChange('requiresApproval', e.target.checked)}
               className="rounded"
             />
-            <Label htmlFor="requiresApproval">Requiere aprobación manual</Label>
+            <Label htmlFor="requiresApproval">{t('requiresApproval')}</Label>
           </div>
 
           <div className="flex items-center space-x-2">
@@ -574,7 +577,7 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
               onChange={(e) => handleInputChange('isVisible', e.target.checked)}
               className="rounded"
             />
-            <Label htmlFor="isVisible">Visible para vendedores</Label>
+            <Label htmlFor="isVisible">{t('visibleToVendors')}</Label>
           </div>
         </CardContent>
       </Card>
@@ -582,10 +585,10 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
       {/* Botones de acción */}
       <div className="flex justify-end space-x-4">
         <Button type="button" variant="outline" onClick={onCancel}>
-          Cancelar
+          {tc('cancel')}
         </Button>
         <Button type="submit">
-          Crear promoción
+          {t('createPromotion')}
         </Button>
       </div>
     </form>

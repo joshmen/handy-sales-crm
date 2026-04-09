@@ -24,6 +24,7 @@ import {
   TipoCupon,
   TIPO_CUPON_OPTIONS,
 } from '@/services/api/cuponesAdmin';
+import { useTranslations } from 'next-intl';
 
 type DrawerMode = 'none' | 'create' | 'edit';
 
@@ -50,6 +51,9 @@ function isExpired(dateStr: string | null): boolean {
 }
 
 export default function CuponesAdminPage() {
+  const t = useTranslations('admin.cupones');
+  const ta = useTranslations('admin');
+  const tc = useTranslations('common');
   const [cupones, setCupones] = useState<CuponAdminDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [drawerMode, setDrawerMode] = useState<DrawerMode>('none');
@@ -75,7 +79,7 @@ export default function CuponesAdminPage() {
       const data = await cuponAdminService.getAll();
       setCupones(data);
     } catch {
-      toast({ title: 'Error', description: 'No se pudieron cargar los cupones', variant: 'destructive' });
+      toast({ title: tc('error'), description: t('loadError'), variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -126,7 +130,7 @@ export default function CuponesAdminPage() {
 
   const handleSave = async () => {
     if (!nombre.trim()) {
-      toast({ title: 'Error', description: 'El nombre es requerido', variant: 'destructive' });
+      toast({ title: tc('error'), description: t('nameRequired'), variant: 'destructive' });
       return;
     }
 
@@ -140,7 +144,7 @@ export default function CuponesAdminPage() {
           activo,
         };
         await cuponAdminService.update(editingCupon.id, dto);
-        toast({ title: 'Cupón actualizado', description: `${nombre} se actualizó correctamente` });
+        toast({ title: t('couponUpdated'), description: t('couponUpdatedDesc', { name: nombre }) });
       } else {
         const dto: CuponCreateDto = {
           nombre,
@@ -153,13 +157,13 @@ export default function CuponesAdminPage() {
           fechaExpiracion: fechaExpiracion || null,
         };
         await cuponAdminService.create(dto);
-        toast({ title: 'Cupón creado', description: `${nombre} se creó correctamente` });
+        toast({ title: t('couponCreated'), description: t('couponCreatedDesc', { name: nombre }) });
       }
       closeDrawer();
       fetchCupones();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Error al guardar';
-      toast({ title: 'Error', description: message, variant: 'destructive' });
+      const message = err instanceof Error ? err.message : t('saveError');
+      toast({ title: tc('error'), description: message, variant: 'destructive' });
     } finally {
       setSaving(false);
     }
@@ -168,23 +172,23 @@ export default function CuponesAdminPage() {
   const handleToggle = async (cupon: CuponAdminDto) => {
     try {
       await cuponAdminService.update(cupon.id, { activo: !cupon.activo });
-      toast({ title: cupon.activo ? 'Cupón desactivado' : 'Cupón activado' });
+      toast({ title: cupon.activo ? t('couponDeactivated') : t('couponActivated') });
       fetchCupones();
     } catch (err: unknown) {
-      const message = (err as { message?: string })?.message || 'Error al cambiar estado';
-      toast({ title: 'Error', description: message, variant: 'destructive' });
+      const message = (err as { message?: string })?.message || t('toggleError');
+      toast({ title: tc('error'), description: message, variant: 'destructive' });
     }
   };
 
   const handleDelete = async (cupon: CuponAdminDto) => {
     try {
       await cuponAdminService.delete(cupon.id);
-      toast({ title: 'Cupón eliminado', description: `${cupon.nombre} fue eliminado` });
+      toast({ title: t('couponDeleted'), description: t('couponDeletedDesc', { name: cupon.nombre }) });
       setDeleteConfirmId(null);
       fetchCupones();
     } catch (err: unknown) {
-      const message = (err as { message?: string })?.message || 'Error al eliminar';
-      toast({ title: 'Error', description: message, variant: 'destructive' });
+      const message = (err as { message?: string })?.message || t('deleteError');
+      toast({ title: tc('error'), description: message, variant: 'destructive' });
     }
   };
 
@@ -192,10 +196,10 @@ export default function CuponesAdminPage() {
     try {
       await navigator.clipboard.writeText(codigo);
       setCopiedId(id);
-      toast({ title: 'Código copiado' });
+      toast({ title: t('codeCopied') });
       setTimeout(() => setCopiedId(null), 2000);
     } catch {
-      toast({ title: 'Error', description: 'No se pudo copiar al portapapeles', variant: 'destructive' });
+      toast({ title: tc('error'), description: t('copyError'), variant: 'destructive' });
     }
   };
 
@@ -215,7 +219,7 @@ export default function CuponesAdminPage() {
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <Ticket className="h-5 w-5 text-violet-600" weight="duotone" />
-            {drawerMode === 'edit' ? 'Editar Cupón' : 'Nuevo Cupón'}
+            {drawerMode === 'edit' ? t('drawerTitleEdit') : t('drawerTitleCreate')}
           </h2>
           <button onClick={closeDrawer} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
             <X className="h-5 w-5" />
@@ -227,14 +231,14 @@ export default function CuponesAdminPage() {
           {/* Nombre */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nombre del Cupón <span className="text-red-500">*</span>
+              {t('couponNameLabel')} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
               className={inputClasses}
-              placeholder="Ej: Bienvenida 3 meses gratis"
+              placeholder={t('couponNamePlaceholder')}
             />
           </div>
 
@@ -242,7 +246,7 @@ export default function CuponesAdminPage() {
           {drawerMode === 'create' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tipo de Cupón <span className="text-red-500">*</span>
+                {t('couponTypeLabel')} <span className="text-red-500">*</span>
               </label>
               <select
                 value={tipo}
@@ -260,7 +264,7 @@ export default function CuponesAdminPage() {
           {(drawerMode === 'create' ? tipo : editingCupon?.tipo) === 'MesesGratis' && drawerMode === 'create' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Meses Gratis
+                {t('freeMonthsLabel')}
               </label>
               <input
                 type="number"
@@ -277,21 +281,21 @@ export default function CuponesAdminPage() {
             <>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Plan Objetivo
+                  {t('targetPlanLabel')}
                 </label>
                 <select
                   value={planObjetivo}
                   onChange={(e) => setPlanObjetivo(e.target.value)}
                   className={inputClasses}
                 >
-                  <option value="BASICO">Básico</option>
-                  <option value="PRO">Profesional</option>
-                  <option value="ENTERPRISE">Empresarial</option>
+                  <option value="BASICO">{t('planBasic')}</option>
+                  <option value="PRO">{t('planPro')}</option>
+                  <option value="ENTERPRISE">{t('planEnterprise')}</option>
                 </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Meses de Upgrade
+                  {t('upgradeMonthsLabel')}
                 </label>
                 <input
                   type="number"
@@ -308,7 +312,7 @@ export default function CuponesAdminPage() {
           {(drawerMode === 'create' ? tipo : editingCupon?.tipo) === 'DescuentoPorcentaje' && drawerMode === 'create' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Porcentaje de Descuento
+                {t('discountPercentLabel')}
               </label>
               <input
                 type="number"
@@ -318,14 +322,14 @@ export default function CuponesAdminPage() {
                 onChange={(e) => setDescuentoPorcentaje(Number(e.target.value))}
                 className={inputClasses}
               />
-              <p className="text-xs text-gray-500 mt-1">1-100%</p>
+              <p className="text-xs text-gray-500 mt-1">{t('percentRange')}</p>
             </div>
           )}
 
           {/* Max Usos */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Máximo de Usos
+              {t('maxUsesLabel')}
             </label>
             <input
               type="number"
@@ -339,7 +343,7 @@ export default function CuponesAdminPage() {
           {/* Fecha Expiración */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Fecha de Expiración
+              {t('expirationDateLabel')}
             </label>
             <input
               type="date"
@@ -347,7 +351,7 @@ export default function CuponesAdminPage() {
               onChange={(e) => setFechaExpiracion(e.target.value)}
               className={inputClasses}
             />
-            <p className="text-xs text-gray-500 mt-1">Dejar vacío para sin expiración</p>
+            <p className="text-xs text-gray-500 mt-1">{t('noExpirationHint')}</p>
           </div>
 
           {/* Activo (solo editar) */}
@@ -358,7 +362,7 @@ export default function CuponesAdminPage() {
                 onClick={() => setActivo(!activo)}
               >
                 <span className={`text-sm ${activo ? 'text-green-700 font-medium' : 'text-red-600 font-medium'}`}>
-                  {activo ? 'Cupón Activo' : 'Cupón Inactivo'}
+                  {activo ? t('couponActive') : t('couponInactive')}
                 </span>
                 <div className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${activo ? 'bg-green-600' : 'bg-gray-200'}`}>
                   <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${activo ? 'translate-x-4' : 'translate-x-0.5'}`} />
@@ -371,7 +375,7 @@ export default function CuponesAdminPage() {
           {drawerMode === 'edit' && editingCupon && (
             <div className="border-t border-gray-200 pt-4 mt-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Código (auto-generado)
+                {t('autoGeneratedCode')}
               </label>
               <div className="flex items-center gap-2">
                 <input
@@ -384,7 +388,7 @@ export default function CuponesAdminPage() {
                   type="button"
                   onClick={() => handleCopy(editingCupon.codigo, editingCupon.id)}
                   className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                  title="Copiar código"
+                  title={t('copyCode')}
                 >
                   {copiedId === editingCupon.id ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
                 </button>
@@ -396,15 +400,15 @@ export default function CuponesAdminPage() {
           {drawerMode === 'edit' && editingCupon && (
             <div className="border-t border-gray-200 pt-4 mt-4 space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Tipo:</span>
+                <span className="text-gray-500">{t('summaryType')}:</span>
                 <span className="font-medium">{formatTipo(editingCupon.tipo)}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Redenciones:</span>
+                <span className="text-gray-500">{t('summaryRedemptions')}:</span>
                 <span className="font-medium">{editingCupon.usosActuales} / {editingCupon.maxUsos}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Creado:</span>
+                <span className="text-gray-500">{t('summaryCreated')}:</span>
                 <span className="font-medium">{formatDate(editingCupon.creadoEn)}</span>
               </div>
             </div>
@@ -419,7 +423,7 @@ export default function CuponesAdminPage() {
             className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             disabled={saving}
           >
-            Cancelar
+            {tc('cancel')}
           </button>
           <button
             type="button"
@@ -430,10 +434,10 @@ export default function CuponesAdminPage() {
             {saving ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Guardando...
+                {tc('saving')}
               </>
             ) : (
-              drawerMode === 'edit' ? 'Guardar Cambios' : 'Crear Cupón'
+              drawerMode === 'edit' ? t('saveChanges') : t('createCoupon')
             )}
           </button>
         </div>
@@ -445,9 +449,9 @@ export default function CuponesAdminPage() {
     <div className="p-6 space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-gray-600">
-        <span>Administración</span>
+        <span>{ta('breadcrumb')}</span>
         <ChevronRight className="h-4 w-4" />
-        <span className="text-gray-900 font-medium">Cupones</span>
+        <span className="text-gray-900 font-medium">{t('title')}</span>
       </div>
 
       {/* Header */}
@@ -455,10 +459,10 @@ export default function CuponesAdminPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <Ticket className="h-6 w-6 text-violet-600" weight="duotone" />
-            Cupones
+            {t('title')}
           </h1>
           <p className="mt-1 text-sm text-gray-500">
-            Gestiona cupones de descuento y promociones para tenants
+            {t('subtitle')}
           </p>
         </div>
         <div className="flex gap-2">
@@ -468,14 +472,14 @@ export default function CuponesAdminPage() {
             className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            Actualizar
+            {tc('refresh')}
           </button>
           <button
             onClick={openCreate}
             className="flex items-center gap-2 px-3 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Plus className="h-4 w-4" />
-            Nuevo Cupón
+            {t('newCoupon')}
           </button>
         </div>
       </div>
@@ -488,7 +492,7 @@ export default function CuponesAdminPage() {
               <Ticket className="h-5 w-5 text-violet-600" weight="duotone" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Total Cupones</p>
+              <p className="text-sm text-gray-500">{t('totalCoupons')}</p>
               <p className="text-2xl font-bold text-gray-900">{totalCupones}</p>
             </div>
           </div>
@@ -499,7 +503,7 @@ export default function CuponesAdminPage() {
               <CheckCircle className="h-5 w-5 text-green-600" weight="duotone" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Cupones Activos</p>
+              <p className="text-sm text-gray-500">{t('activeCoupons')}</p>
               <p className="text-2xl font-bold text-gray-900">{activeCupones}</p>
             </div>
           </div>
@@ -510,7 +514,7 @@ export default function CuponesAdminPage() {
               <Ticket className="h-5 w-5 text-blue-600" weight="duotone" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Total Redenciones</p>
+              <p className="text-sm text-gray-500">{t('totalRedemptions')}</p>
               <p className="text-2xl font-bold text-gray-900">{totalRedenciones}</p>
             </div>
           </div>
@@ -525,13 +529,13 @@ export default function CuponesAdminPage() {
       ) : cupones.length === 0 ? (
         <div className="rounded-lg border border-gray-200 bg-white p-12 text-center">
           <Ticket className="mx-auto h-12 w-12 text-gray-300" weight="duotone" />
-          <p className="mt-4 text-gray-500">No hay cupones creados</p>
+          <p className="mt-4 text-gray-500">{t('noCoupons')}</p>
           <button
             onClick={openCreate}
             className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700"
           >
             <Plus className="h-4 w-4" />
-            Crear primer cupón
+            {t('createFirst')}
           </button>
         </div>
       ) : (
@@ -541,13 +545,13 @@ export default function CuponesAdminPage() {
             <table className="w-full text-sm">
               <thead className="border-b border-gray-200 bg-gray-50 text-left">
                 <tr>
-                  <th className="px-4 py-3 font-medium text-gray-500">Nombre</th>
-                  <th className="px-4 py-3 font-medium text-gray-500">Código</th>
-                  <th className="px-4 py-3 font-medium text-gray-500">Tipo</th>
-                  <th className="px-4 py-3 font-medium text-gray-500 text-center">Usos</th>
-                  <th className="px-4 py-3 font-medium text-gray-500">Expiración</th>
-                  <th className="px-4 py-3 font-medium text-gray-500 text-center">Estado</th>
-                  <th className="px-4 py-3 font-medium text-gray-500 text-right">Acciones</th>
+                  <th className="px-4 py-3 font-medium text-gray-500">{t('tableNameHeader')}</th>
+                  <th className="px-4 py-3 font-medium text-gray-500">{t('tableCodeHeader')}</th>
+                  <th className="px-4 py-3 font-medium text-gray-500">{t('tableTypeHeader')}</th>
+                  <th className="px-4 py-3 font-medium text-gray-500 text-center">{t('tableUsesHeader')}</th>
+                  <th className="px-4 py-3 font-medium text-gray-500">{t('tableExpirationHeader')}</th>
+                  <th className="px-4 py-3 font-medium text-gray-500 text-center">{t('tableStatusHeader')}</th>
+                  <th className="px-4 py-3 font-medium text-gray-500 text-right">{t('tableActionsHeader')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -564,7 +568,7 @@ export default function CuponesAdminPage() {
                         <button
                           onClick={() => handleCopy(cupon.codigo, cupon.id)}
                           className="p-1 text-gray-400 hover:text-blue-600 rounded transition-colors"
-                          title="Copiar código"
+                          title={t('copyCode')}
                         >
                           {copiedId === cupon.id ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
                         </button>
@@ -591,7 +595,7 @@ export default function CuponesAdminPage() {
                       <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
                         cupon.activo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
                       }`}>
-                        {cupon.activo ? 'Activo' : 'Inactivo'}
+                        {cupon.activo ? tc('active') : tc('inactive')}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">
@@ -599,7 +603,7 @@ export default function CuponesAdminPage() {
                         <button
                           onClick={() => openEdit(cupon)}
                           className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
-                          title="Editar"
+                          title={tc('edit')}
                         >
                           <Pencil className="h-4 w-4" />
                         </button>
@@ -610,7 +614,7 @@ export default function CuponesAdminPage() {
                               ? 'text-red-600 hover:bg-red-50'
                               : 'text-green-600 hover:bg-green-50'
                           }`}
-                          title={cupon.activo ? 'Desactivar' : 'Activar'}
+                          title={cupon.activo ? tc('deactivate') : tc('activate')}
                         >
                           {cupon.activo ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />}
                         </button>
@@ -619,14 +623,14 @@ export default function CuponesAdminPage() {
                             <button
                               onClick={() => handleDelete(cupon)}
                               className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              title="Confirmar eliminar"
+                              title={t('confirmDelete')}
                             >
                               <Check className="h-4 w-4" />
                             </button>
                             <button
                               onClick={() => setDeleteConfirmId(null)}
                               className="p-1.5 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
-                              title="Cancelar"
+                              title={tc('cancel')}
                             >
                               <X className="h-4 w-4" />
                             </button>
@@ -635,7 +639,7 @@ export default function CuponesAdminPage() {
                           <button
                             onClick={() => setDeleteConfirmId(cupon.id)}
                             className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Eliminar"
+                            title={tc('delete')}
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -678,21 +682,21 @@ export default function CuponesAdminPage() {
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
                   <div>
-                    <span className="text-gray-500">Tipo:</span>{' '}
+                    <span className="text-gray-500">{t('summaryType')}:</span>{' '}
                     <span className="font-medium">{formatTipo(cupon.tipo)}</span>
                   </div>
                   <div>
-                    <span className="text-gray-500">Usos:</span>{' '}
+                    <span className="text-gray-500">{t('tableUsesHeader')}:</span>{' '}
                     <span className="font-medium">{cupon.usosActuales}/{cupon.maxUsos}</span>
                   </div>
                   <div>
-                    <span className="text-gray-500">Expira:</span>{' '}
+                    <span className="text-gray-500">{t('tableExpirationHeader')}:</span>{' '}
                     <span className={`font-medium ${isExpired(cupon.fechaExpiracion) ? 'text-red-600' : ''}`}>
                       {formatDate(cupon.fechaExpiracion)}
                     </span>
                   </div>
                   <div>
-                    <span className="text-gray-500">Creado:</span>{' '}
+                    <span className="text-gray-500">{t('summaryCreated')}:</span>{' '}
                     <span className="font-medium">{formatDate(cupon.creadoEn)}</span>
                   </div>
                 </div>
@@ -702,7 +706,7 @@ export default function CuponesAdminPage() {
                     className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                   >
                     <Pencil className="h-3.5 w-3.5 text-amber-600" />
-                    Editar
+                    {tc('edit')}
                   </button>
                   <button
                     onClick={() => handleToggle(cupon)}
@@ -713,7 +717,7 @@ export default function CuponesAdminPage() {
                     }`}
                   >
                     {cupon.activo ? <PowerOff className="h-3.5 w-3.5" /> : <Power className="h-3.5 w-3.5" />}
-                    {cupon.activo ? 'Desactivar' : 'Activar'}
+                    {cupon.activo ? tc('deactivate') : tc('activate')}
                   </button>
                 </div>
               </div>

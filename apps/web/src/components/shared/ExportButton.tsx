@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Download, Loader2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { exportToCsv, ExportEntity } from '@/services/api/importExport';
 import { toast } from '@/hooks/useToast';
 
@@ -11,17 +12,19 @@ interface ExportButtonProps {
   params?: { desde?: string; hasta?: string };
 }
 
-export function ExportButton({ entity, label = 'Exportar', params }: ExportButtonProps) {
+export function ExportButton({ entity, label, params }: ExportButtonProps) {
+  const tc = useTranslations('common');
+  const resolvedLabel = label || tc('export');
   const [loading, setLoading] = useState(false);
 
   const handleExport = async () => {
     try {
       setLoading(true);
       await exportToCsv(entity, params);
-      toast.success('Archivo CSV descargado');
+      toast.success(tc('csvDownloaded'));
     } catch (err) {
-      console.error('Error al exportar:', err);
-      toast.error('Error al exportar datos');
+      console.error('Error exporting:', err);
+      toast.error(tc('errorExporting'));
     } finally {
       setLoading(false);
     }
@@ -38,7 +41,7 @@ export function ExportButton({ entity, label = 'Exportar', params }: ExportButto
       ) : (
         <Download className="w-3.5 h-3.5 text-gray-500" />
       )}
-      <span className="hidden sm:inline">{label}</span>
+      <span className="hidden sm:inline">{resolvedLabel}</span>
     </button>
   );
 }

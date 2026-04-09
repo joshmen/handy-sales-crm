@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { toast } from '@/hooks/useToast';
@@ -19,23 +20,23 @@ import type { AiCreditBalance, AiUsageStats, AiSuggestedAction } from '@/service
 
 // ─── Action type config ──────────────────────────────────────────
 const ACTION_TYPES = [
-  { value: 'resumen', label: 'Resumen', icon: FileText, cost: 1, color: 'emerald', description: 'Resume notas de visita, historial de ventas' },
-  { value: 'insight', label: 'Insight', icon: ChartBar, cost: 2, color: 'violet', description: 'Analiza datos y detecta tendencias' },
-  { value: 'pregunta', label: 'Pregunta', icon: ChatCircle, cost: 3, color: 'sky', description: 'Pregunta libre sobre tu negocio' },
-  { value: 'pronostico', label: 'Pronóstico', icon: TrendUp, cost: 5, color: 'amber', description: 'Predicciones de ventas o demanda' },
+  { value: 'resumen', labelKey: 'actionTypes.resumen', icon: FileText, cost: 1, color: 'emerald', descKey: 'actionTypes.resumenDesc' },
+  { value: 'insight', labelKey: 'actionTypes.insight', icon: ChartBar, cost: 2, color: 'violet', descKey: 'actionTypes.insightDesc' },
+  { value: 'pregunta', labelKey: 'actionTypes.pregunta', icon: ChatCircle, cost: 3, color: 'sky', descKey: 'actionTypes.preguntaDesc' },
+  { value: 'pronostico', labelKey: 'actionTypes.pronostico', icon: TrendUp, cost: 5, color: 'amber', descKey: 'actionTypes.pronosticoDesc' },
 ] as const;
 
 type ActionType = typeof ACTION_TYPES[number]['value'];
 
 // ─── Suggestion chips — grouped by category ─────────────────────
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const SUGGESTIONS: { text: string; action: ActionType; icon3d: any }[] = [
-  { text: '¿Cuáles son mis 5 clientes más rentables?', action: 'pregunta', icon3d: SbClients },
-  { text: 'Resume las ventas de esta semana', action: 'resumen', icon3d: SbBarChart },
-  { text: '¿Qué productos tienen más margen?', action: 'insight', icon3d: SbLightbulb },
-  { text: 'Pronóstico de ventas para el próximo mes', action: 'pronostico', icon3d: SbTrendingUp },
-  { text: '¿Qué clientes no han comprado en 30 días?', action: 'pregunta', icon3d: SbSearch },
-  { text: 'Analiza la efectividad de mis vendedores', action: 'insight', icon3d: SbGoals },
+const SUGGESTIONS: { textKey: string; action: ActionType; icon3d: any }[] = [
+  { textKey: 'suggestions.topClients', action: 'pregunta', icon3d: SbClients },
+  { textKey: 'suggestions.weeklySales', action: 'resumen', icon3d: SbBarChart },
+  { textKey: 'suggestions.bestMargin', action: 'insight', icon3d: SbLightbulb },
+  { textKey: 'suggestions.forecast', action: 'pronostico', icon3d: SbTrendingUp },
+  { textKey: 'suggestions.inactiveClients', action: 'pregunta', icon3d: SbSearch },
+  { textKey: 'suggestions.vendorEffectiveness', action: 'insight', icon3d: SbGoals },
 ];
 
 // ─── Message types ───────────────────────────────────────────────
@@ -71,6 +72,7 @@ function AiChatAvatar() {
 
 // ─── Help tooltip ────────────────────────────────────────────────
 function HelpTooltip() {
+  const t = useTranslations('ai');
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -94,13 +96,13 @@ function HelpTooltip() {
       <button
         onClick={() => setOpen(!open)}
         className="flex items-center justify-center w-8 h-8 rounded-full border border-gray-200 dark:border-gray-700 text-gray-400 hover:text-violet-500 hover:border-violet-300 dark:hover:border-violet-600 transition-all duration-200 hover:shadow-sm"
-        aria-label="Ayuda sobre tipos de consulta"
+        aria-label={t('helpTitle')}
       >
         <Question size={15} weight="bold" />
       </button>
       {open && (
         <div className="absolute right-0 top-10 z-50 w-80 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl shadow-2xl shadow-black/10 p-5 text-sm animate-ai-fade-up">
-          <p className="font-semibold text-gray-900 dark:text-white mb-4 text-base">Tipos de consulta</p>
+          <p className="font-semibold text-gray-900 dark:text-white mb-4 text-base">{t('helpTitle')}</p>
           <div className="space-y-3">
             {ACTION_TYPES.map((a) => {
               const Icon = a.icon;
@@ -111,10 +113,10 @@ function HelpTooltip() {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-gray-800 dark:text-gray-100">{a.label}</span>
+                      <span className="font-medium text-gray-800 dark:text-gray-100">{t(a.labelKey)}</span>
                       <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">{a.cost} cr</span>
                     </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{a.description}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{t(a.descKey)}</p>
                   </div>
                 </div>
               );
@@ -132,6 +134,7 @@ function WelcomeState({
 }: {
   onSelectSuggestion: (text: string, action: ActionType) => void;
 }) {
+  const t = useTranslations('ai');
   const actionColorMap: Record<string, string> = {
     resumen: 'group-hover:border-emerald-300 dark:group-hover:border-emerald-700 group-hover:shadow-emerald-500/5',
     insight: 'group-hover:border-violet-300 dark:group-hover:border-violet-700 group-hover:shadow-violet-500/5',
@@ -156,10 +159,10 @@ function WelcomeState({
       {/* Heading */}
       <div className="text-center mb-4 sm:mb-8 opacity-0 animate-ai-fade-up" style={{ animationDelay: '100ms', animationFillMode: 'forwards' }}>
         <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-1 sm:mb-2">
-          ¿En qué puedo ayudarte?
+          {t('howCanIHelp')}
         </h2>
         <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto px-2">
-          Analizo tus datos de negocio en tiempo real. Pregunta lo que quieras sobre ventas, clientes, productos y más.
+          {t('welcomeDesc')}
         </p>
       </div>
 
@@ -167,10 +170,11 @@ function WelcomeState({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 max-w-3xl w-full">
         {SUGGESTIONS.map((s, i) => {
           const actionConfig = ACTION_TYPES.find(a => a.value === s.action)!;
+          const suggestionText = t(s.textKey);
           return (
             <button
-              key={s.text}
-              onClick={() => onSelectSuggestion(s.text, s.action)}
+              key={s.textKey}
+              onClick={() => onSelectSuggestion(suggestionText, s.action)}
               className={`group text-left p-3 sm:p-4 rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-800 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 opacity-0 animate-ai-fade-up ${actionColorMap[s.action]}`}
               style={{ animationDelay: `${200 + i * 80}ms`, animationFillMode: 'forwards' }}
             >
@@ -180,12 +184,12 @@ function WelcomeState({
                 </div>
                 <div className="flex-1 min-w-0">
                   <span className="text-sm text-gray-700 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white transition-colors line-clamp-2 leading-snug">
-                    {s.text}
+                    {suggestionText}
                   </span>
                   <div className="flex items-center gap-1.5 mt-2">
                     <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${actionBadgeColor[s.action]}`}>
                       {React.createElement(actionConfig.icon, { size: 10, weight: 'fill' as const })}
-                      {actionConfig.label}
+                      {t(actionConfig.labelKey)}
                     </span>
                     <span className="text-[10px] text-gray-400">{actionConfig.cost} cr</span>
                   </div>
@@ -201,6 +205,7 @@ function WelcomeState({
 
 // ─── No plan gate ────────────────────────────────────────────────
 function NoPlanGate() {
+  const t = useTranslations('ai');
   return (
     <div className="flex-1 flex flex-col items-center justify-center px-4 py-16 text-center">
       <div className="relative mb-8 opacity-0 animate-ai-fade-up" style={{ animationFillMode: 'forwards' }}>
@@ -209,11 +214,10 @@ function NoPlanGate() {
         </div>
       </div>
       <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3 opacity-0 animate-ai-fade-up" style={{ animationDelay: '100ms', animationFillMode: 'forwards' }}>
-        Asistente IA no disponible
+        {t('notAvailable')}
       </h2>
       <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mb-8 opacity-0 animate-ai-fade-up" style={{ animationDelay: '200ms', animationFillMode: 'forwards' }}>
-        El Asistente IA está disponible a partir del plan <span className="font-semibold text-violet-600 dark:text-violet-400">Profesional</span>.
-        Obtén créditos mensuales de inteligencia artificial para analizar tu negocio.
+        {t('notAvailableDesc')}
       </p>
       <div className="opacity-0 animate-ai-fade-up" style={{ animationDelay: '300ms', animationFillMode: 'forwards' }}>
         <Button
@@ -221,7 +225,7 @@ function NoPlanGate() {
           className="!rounded-xl !px-6 !py-3 !bg-violet-600 hover:!bg-violet-700 !border-0"
         >
           <Sparkle size={18} weight="fill" className="mr-2" />
-          Ver planes disponibles
+          {t('viewPlans')}
         </Button>
       </div>
     </div>
@@ -248,6 +252,7 @@ function ActionButtons({
   onExecute: (action: AiSuggestedAction) => void;
   executing: string | null;
 }) {
+  const t = useTranslations('ai');
   const [confirming, setConfirming] = useState<string | null>(null);
   const confirmTimer = useRef<ReturnType<typeof setTimeout>>(null);
 
@@ -275,7 +280,7 @@ function ActionButtons({
 
   return (
     <div className="flex flex-col gap-2 mt-3">
-      <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Acciones sugeridas</p>
+      <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">{t('suggestedActions')}</p>
       {actions.map((action) => {
         const Icon = ACTION_ICON_MAP[action.icon] || Lightning;
         const isConfirming = confirming === action.actionId;
@@ -317,10 +322,10 @@ function ActionButtons({
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                {isConfirming ? '¿Confirmar acción?' : action.label}
+                {isConfirming ? t('confirmAction') : action.label}
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                {isConfirming ? `Click de nuevo para ejecutar · ${action.creditCost} créditos` : action.description}
+                {isConfirming ? t('clickToExecute', { cost: action.creditCost }) : action.description}
               </div>
             </div>
             {!isConfirming && (
@@ -330,7 +335,7 @@ function ActionButtons({
             )}
             {isConfirming && (
               <span className="text-[10px] font-bold px-2 py-1 rounded bg-amber-500 text-white shrink-0 animate-pulse">
-                Confirmar
+                {t('confirmLabel')}
               </span>
             )}
           </button>
@@ -342,6 +347,7 @@ function ActionButtons({
 
 // ─── Chat message bubble ─────────────────────────────────────────
 function MessageBubble({ message, isLatest, onActionExecute, executingAction }: { message: ChatMessage; isLatest: boolean; onActionExecute: (action: AiSuggestedAction) => void; executingAction: string | null }) {
+  const t = useTranslations('ai');
   const isUser = message.role === 'user';
   const actionConfig = message.tipoAccion
     ? ACTION_TYPES.find((a) => a.value === message.tipoAccion)
@@ -376,7 +382,7 @@ function MessageBubble({ message, isLatest, onActionExecute, executingAction }: 
             {actionConfig && message.tipoAccion && (
               <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${actionBadgeColor[message.tipoAccion]}`}>
                 {React.createElement(actionConfig.icon, { size: 10, weight: 'fill' as const })}
-                {actionConfig.label}
+                {t(actionConfig.labelKey)}
               </span>
             )}
             {message.creditosUsados != null && (
@@ -441,6 +447,8 @@ function TypingIndicator() {
 // MAIN PAGE
 // ═════════════════════════════════════════════════════════════════
 export default function AiPage() {
+  const t = useTranslations('ai');
+  const tc = useTranslations('common');
   const [credits, setCredits] = useState<AiCreditBalance | null>(null);
   const [, setStats] = useState<AiUsageStats | null>(null);
   const [selectedAction, setSelectedAction] = useState<ActionType>('pregunta');
@@ -522,13 +530,13 @@ export default function AiPage() {
           : prev
       );
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Error al procesar tu solicitud');
+      toast.error(err instanceof Error ? err.message : t('errorProcessing'));
       setMessages((prev) => [
         ...prev,
         {
           id: crypto.randomUUID(),
           role: 'assistant',
-          content: 'Lo siento, ocurrio un error al procesar tu solicitud. Intenta de nuevo.',
+          content: t('errorMessage'),
           timestamp: new Date(),
         },
       ]);
@@ -570,7 +578,7 @@ export default function AiPage() {
         toast.error(result.message);
       }
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Error al ejecutar la acción');
+      toast.error(err instanceof Error ? err.message : t('errorExecuting'));
     } finally {
       setExecutingAction(null);
     }
@@ -619,11 +627,11 @@ export default function AiPage() {
   return (
     <PageHeader
       breadcrumbs={[
-        { label: 'Inicio', href: '/dashboard' },
-        { label: 'Asistente IA' },
+        { label: tc('home'), href: '/dashboard' },
+        { label: t('title') },
       ]}
-      title="Asistente IA"
-      subtitle="Usa inteligencia artificial para analizar tus datos de negocio"
+      title={t('title')}
+      subtitle={t('subtitle')}
     >
       {/* Container — full height chat layout */}
       <div className="flex flex-col h-[calc(100vh-180px)] sm:h-[calc(100vh-220px)] min-h-[400px] sm:min-h-[500px]">
@@ -640,7 +648,7 @@ export default function AiPage() {
                   <span className="font-bold text-gray-900 dark:text-white tabular-nums">
                     {credits.disponibles}
                   </span>
-                  <span className="text-gray-400 text-xs">créditos</span>
+                  <span className="text-gray-400 text-xs">{t('credits')}</span>
                 </div>
                 <div className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
                 <span className="text-xs font-medium text-violet-600 dark:text-violet-400 capitalize">{credits.plan}</span>
@@ -656,7 +664,7 @@ export default function AiPage() {
             <div className="relative">
               <div className="w-12 h-12 rounded-full border-2 border-violet-200 dark:border-violet-800 border-t-violet-500 animate-spin" />
             </div>
-            <p className="text-sm text-gray-400">Cargando asistente...</p>
+            <p className="text-sm text-gray-400">{t('loadingAssistant')}</p>
           </div>
         ) : noPlan ? (
           <NoPlanGate />
@@ -692,7 +700,7 @@ export default function AiPage() {
                     }`}
                   >
                     <Icon size={13} weight={isSelected ? 'fill' : 'regular'} />
-                    {action.label}
+                    {t(action.labelKey)}
                     <span className="text-[10px] opacity-60">{action.cost}cr</span>
                   </button>
                 );
@@ -715,15 +723,7 @@ export default function AiPage() {
                     onKeyDown={handleKeyDown}
                     onFocus={() => setInputFocused(true)}
                     onBlur={() => setInputFocused(false)}
-                    placeholder={
-                      selectedAction === 'resumen'
-                        ? 'Pega las notas o datos que quieras resumir...'
-                        : selectedAction === 'insight'
-                          ? 'Describe los datos que quieres analizar...'
-                          : selectedAction === 'pregunta'
-                            ? 'Escribe tu pregunta sobre el negocio...'
-                            : 'Describe qué pronóstico necesitas...'
-                    }
+                    placeholder={t(`placeholders.${selectedAction}`)}
                     rows={1}
                     maxLength={2000}
                     className="flex-1 py-2 bg-transparent text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none resize-none text-sm leading-relaxed"
@@ -755,15 +755,15 @@ export default function AiPage() {
                   {selectedActionConfig.cost} cr
                 </span>
                 {credits && (
-                  <span className="ml-1">· {credits.disponibles} disp.</span>
+                  <span className="ml-1">· {credits.disponibles} {t('available')}</span>
                 )}
               </p>
               <p className="text-[10px] sm:text-[11px] text-gray-400 hidden sm:block">
                 <kbd className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-[10px] font-mono">Enter</kbd>
-                <span className="ml-1">enviar</span>
+                <span className="ml-1">{t('send')}</span>
                 <span className="hidden lg:inline ml-2">
                   <kbd className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-[10px] font-mono">Shift+Enter</kbd>
-                  <span className="ml-1">nueva línea</span>
+                  <span className="ml-1">{t('newLine')}</span>
                 </span>
               </p>
             </div>

@@ -3,6 +3,7 @@
 import React from 'react';
 import { Search, Download, Loader2 } from 'lucide-react';
 import { DateTimePicker } from '@/components/ui/DateTimePicker';
+import { useTranslations } from 'next-intl';
 
 interface ReportFiltersProps {
   desde: string;
@@ -18,21 +19,22 @@ interface ReportFiltersProps {
 }
 
 export function ReportFilters({ desde, hasta, onDesdeChange, onHastaChange, onApply, loading, children, onExportPDF, exporting }: ReportFiltersProps) {
+  const t = useTranslations('reports.filters');
   return (
     <div className="flex flex-wrap items-end gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200" data-tour="report-filters">
       <DateTimePicker
         mode="date"
-        label="Desde"
+        label={t('from')}
         value={desde}
         onChange={onDesdeChange}
-        placeholder="Fecha inicio..."
+        placeholder={t('fromPlaceholder')}
       />
       <DateTimePicker
         mode="date"
-        label="Hasta"
+        label={t('to')}
         value={hasta}
         onChange={onHastaChange}
-        placeholder="Fecha fin..."
+        placeholder={t('toPlaceholder')}
       />
       {children}
       <button
@@ -41,17 +43,17 @@ export function ReportFilters({ desde, hasta, onDesdeChange, onHastaChange, onAp
         className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50"
       >
         <Search className="w-3.5 h-3.5" />
-        {loading ? 'Cargando...' : 'Consultar'}
+        {loading ? t('loading') : t('apply')}
       </button>
       {onExportPDF && (
         <button
           onClick={onExportPDF}
           disabled={exporting}
           className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 ml-auto"
-          title="Exportar a PDF"
+          title={t('exportPDF')}
         >
           {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-          {exporting ? 'Exportando...' : 'PDF'}
+          {exporting ? t('exporting') : 'PDF'}
         </button>
       )}
     </div>

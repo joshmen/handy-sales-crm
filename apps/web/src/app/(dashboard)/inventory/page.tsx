@@ -45,6 +45,7 @@ import { HelpTooltip } from '@/components/help/HelpTooltip';
 import { ListPagination } from '@/components/ui/ListPagination';
 import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
 import { useFormatters } from '@/hooks/useFormatters';
+import { useTranslations } from 'next-intl';
 
 // ─── Almacén tab types ───────────────────────────────────────────────
 const inventorySchema = z.object({
@@ -85,6 +86,8 @@ interface ProductOption {
 type ActiveTab = 'almacen' | 'movimientos';
 
 export default function InventoryPage() {
+  const t = useTranslations('inventory');
+  const tc = useTranslations('common');
   const router = useRouter();
   const searchParams = useSearchParams();
   const { formatDate } = useFormatters();
@@ -189,8 +192,8 @@ export default function InventoryPage() {
       setTotalPages(alertFilter ? 1 : response.totalPages);
     } catch (err) {
       console.error('Error al cargar inventario:', err);
-      setError('Error al cargar el inventario. Intenta de nuevo.');
-      toast.error('Error al cargar el inventario');
+      setError(t('errorLoadingRetry'));
+      toast.error(t('errorLoading'));
     } finally {
       setLoading(false);
     }
@@ -216,7 +219,7 @@ export default function InventoryPage() {
       setProducts(availableProducts);
     } catch (err) {
       console.error('Error loading products:', err);
-      toast.error('Error al cargar los productos disponibles');
+      toast.error(t('errorLoadingProducts'));
     } finally {
       setLoadingProducts(false);
     }
@@ -224,7 +227,7 @@ export default function InventoryPage() {
 
   const handleRefresh = () => {
     fetchInventory();
-    toast.success('Inventario actualizado');
+    toast.success(t('inventoryUpdated'));
   };
 
   const handleDeleteImage = async () => {
@@ -286,7 +289,7 @@ export default function InventoryPage() {
   const handleSubmit = rhfSubmit(async (data) => {
     if (modalMode === 'create') {
       if (!data.productoId) {
-        toast.error('Selecciona un producto');
+        toast.error(t('selectProduct'));
         return;
       }
       try {
@@ -296,15 +299,15 @@ export default function InventoryPage() {
           try {
             await productService.uploadProductImage(data.productoId, imageFile);
           } catch {
-            toast.error('Inventario creado, pero hubo un error al subir la imagen');
+            toast.error(t('imageErrorOnCreate'));
           }
         }
-        toast.success('Inventario creado correctamente');
+        toast.success(t('inventoryCreated'));
         setModalOpen(false);
         fetchInventory();
       } catch (err: unknown) {
         const e = err as { response?: { data?: { message?: string } }; message?: string };
-        const msg = e?.response?.data?.message || e?.message || 'Error al crear inventario';
+        const msg = e?.response?.data?.message || e?.message || t('errorCreating');
         toast.error(msg);
       } finally {
         setSubmitting(false);
@@ -323,15 +326,15 @@ export default function InventoryPage() {
           try {
             await productService.uploadProductImage(selectedItem.productId, imageFile);
           } catch {
-            toast.error('Inventario actualizado, pero hubo un error al subir la imagen');
+            toast.error(t('imageErrorOnUpdate'));
           }
         }
-        toast.success('Inventario actualizado correctamente');
+        toast.success(t('inventoryUpdatedOk'));
         setModalOpen(false);
         fetchInventory();
       } catch (err: unknown) {
         const e = err as { response?: { data?: { message?: string } }; message?: string };
-        const msg = e?.response?.data?.message || e?.message || 'Error al actualizar inventario';
+        const msg = e?.response?.data?.message || e?.message || t('errorUpdating');
         toast.error(msg);
       } finally {
         setSubmitting(false);
@@ -371,8 +374,8 @@ export default function InventoryPage() {
       setMovTotalPages(response.totalPages);
     } catch (err) {
       console.error('Error al cargar movimientos:', err);
-      setMovError('Error al cargar los movimientos. Intenta de nuevo.');
-      toast.error('Error al cargar movimientos de inventario');
+      setMovError(t('errorLoadingMovements'));
+      toast.error(t('errorLoadingMovementsShort'));
     } finally {
       setMovLoading(false);
     }
@@ -453,7 +456,7 @@ export default function InventoryPage() {
 
   const handleCreateMovement = movRhfSubmit(async (data) => {
     if (!data.productoId || data.cantidad <= 0) {
-      toast.error('Selecciona un producto y una cantidad válida');
+      toast.error(t('movements.selectProductAndQuantity'));
       return;
     }
 
@@ -462,16 +465,16 @@ export default function InventoryPage() {
       const result = await inventoryMovementService.createMovement(data);
 
       if (result.success) {
-        toast.success('Movimiento registrado correctamente');
+        toast.success(t('movements.registered'));
         setShowMovModal(false);
         movResetForm({ productoId: 0, tipoMovimiento: 'ENTRADA', cantidad: 0, motivo: '', comentario: '' });
         fetchMovements();
       } else {
-        toast.error(result.error || 'Error al registrar movimiento');
+        toast.error(result.error || t('movements.errorRegistering'));
       }
     } catch (err) {
       console.error('Error al crear movimiento:', err);
-      toast.error('Error al registrar movimiento');
+      toast.error(t('movements.errorRegistering'));
     } finally {
       setMovSubmitting(false);
     }
@@ -479,7 +482,7 @@ export default function InventoryPage() {
 
   const handleMovRefresh = () => {
     fetchMovements();
-    toast.success('Movimientos actualizados');
+    toast.success(t('movements.updated'));
   };
 
   // Movement type badge colors
@@ -500,52 +503,52 @@ export default function InventoryPage() {
   };
 
   const typeOptions = [
-    { value: 'all', label: 'Todos los tipos' },
-    { value: 'ENTRADA', label: 'Entrada' },
-    { value: 'SALIDA', label: 'Salida' },
-    { value: 'AJUSTE', label: 'Ajuste' },
+    { value: 'all', label: t('filters.allTypes') },
+    { value: 'ENTRADA', label: t('filters.entry') },
+    { value: 'SALIDA', label: t('filters.exit') },
+    { value: 'AJUSTE', label: t('filters.adjustment') },
   ];
 
   const reasonOptions = [
-    { value: 'all', label: 'Todos los motivos' },
-    { value: 'COMPRA', label: 'Compra' },
-    { value: 'VENTA', label: 'Venta' },
-    { value: 'DEVOLUCION', label: 'Devolución' },
-    { value: 'AJUSTE_INVENTARIO', label: 'Ajuste de inventario' },
-    { value: 'MERMA', label: 'Merma' },
-    { value: 'TRANSFERENCIA', label: 'Transferencia' },
+    { value: 'all', label: t('filters.allReasons') },
+    { value: 'COMPRA', label: t('reasons.purchase') },
+    { value: 'VENTA', label: t('reasons.sale') },
+    { value: 'DEVOLUCION', label: t('reasons.return') },
+    { value: 'AJUSTE_INVENTARIO', label: t('reasons.inventoryAdjustment') },
+    { value: 'MERMA', label: t('reasons.shrinkage') },
+    { value: 'TRANSFERENCIA', label: t('reasons.transfer') },
   ];
 
   const reasonLabels: Record<string, string> = {
-    'COMPRA': 'Compra',
-    'VENTA': 'Venta',
-    'DEVOLUCION': 'Devolución',
-    'AJUSTE_INVENTARIO': 'Ajuste inv.',
-    'MERMA': 'Merma',
-    'TRANSFERENCIA': 'Transferencia',
+    'COMPRA': t('reasons.purchase'),
+    'VENTA': t('reasons.sale'),
+    'DEVOLUCION': t('reasons.return'),
+    'AJUSTE_INVENTARIO': t('reasons.adjustmentShort'),
+    'MERMA': t('reasons.shrinkage'),
+    'TRANSFERENCIA': t('reasons.transfer'),
   };
 
   const movementTypeConfig: Record<MovementType, { label: string; icon: React.ReactNode; activeClass: string }> = {
-    ENTRADA: { label: 'Entrada', icon: <ArrowDownToLine className="w-4 h-4" />, activeClass: 'bg-green-100 border-green-500 text-green-700' },
-    SALIDA: { label: 'Salida', icon: <ArrowUpFromLine className="w-4 h-4" />, activeClass: 'bg-red-100 border-red-500 text-red-700' },
-    AJUSTE: { label: 'Ajuste', icon: <SlidersHorizontal className="w-4 h-4" />, activeClass: 'bg-yellow-100 border-yellow-500 text-yellow-700' },
+    ENTRADA: { label: t('movementDrawer.entry'), icon: <ArrowDownToLine className="w-4 h-4" />, activeClass: 'bg-green-100 border-green-500 text-green-700' },
+    SALIDA: { label: t('movementDrawer.exit'), icon: <ArrowUpFromLine className="w-4 h-4" />, activeClass: 'bg-red-100 border-red-500 text-red-700' },
+    AJUSTE: { label: t('movementDrawer.adjustment'), icon: <SlidersHorizontal className="w-4 h-4" />, activeClass: 'bg-yellow-100 border-yellow-500 text-yellow-700' },
   };
 
   const motivosPorTipo: Record<MovementType, { value: string; label: string }[]> = {
     ENTRADA: [
-      { value: 'COMPRA', label: 'Compra' },
-      { value: 'DEVOLUCION', label: 'Devolución de cliente' },
-      { value: 'TRANSFERENCIA', label: 'Transferencia' },
+      { value: 'COMPRA', label: t('reasons.purchase') },
+      { value: 'DEVOLUCION', label: t('reasons.customerReturn') },
+      { value: 'TRANSFERENCIA', label: t('reasons.transfer') },
     ],
     SALIDA: [
-      { value: 'VENTA', label: 'Venta' },
-      { value: 'MERMA', label: 'Merma' },
-      { value: 'DEVOLUCION', label: 'Devolución a proveedor' },
-      { value: 'TRANSFERENCIA', label: 'Transferencia' },
+      { value: 'VENTA', label: t('reasons.sale') },
+      { value: 'MERMA', label: t('reasons.shrinkage') },
+      { value: 'DEVOLUCION', label: t('reasons.supplierReturn') },
+      { value: 'TRANSFERENCIA', label: t('reasons.transfer') },
     ],
     AJUSTE: [
-      { value: 'AJUSTE_INVENTARIO', label: 'Ajuste de inventario' },
-      { value: 'MERMA', label: 'Merma' },
+      { value: 'AJUSTE_INVENTARIO', label: t('reasons.inventoryAdjustment') },
+      { value: 'MERMA', label: t('reasons.shrinkage') },
     ],
   };
 
@@ -600,7 +603,7 @@ export default function InventoryPage() {
         className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
       >
         <Plus className="w-4 h-4" />
-        <span>Nuevo producto</span>
+        <span>{t('warehouse.newProduct')}</span>
       </button>
     </>
   );
@@ -624,7 +627,7 @@ export default function InventoryPage() {
         className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
       >
         <Plus className="w-4 h-4" />
-        <span>Nuevo movimiento</span>
+        <span>{t('movements.newMovement')}</span>
       </button>
     </div>
   );
@@ -632,10 +635,10 @@ export default function InventoryPage() {
   return (
     <PageHeader
       breadcrumbs={[
-        { label: 'Inicio', href: '/dashboard' },
-        { label: 'Inventario' },
+        { label: tc('home'), href: '/dashboard' },
+        { label: t('title') },
       ]}
-      title="Inventario"
+      title={t('title')}
       subtitle={activeTab === 'almacen'
         ? (totalItems > 0 ? `${totalItems} producto${totalItems !== 1 ? 's' : ''}` : undefined)
         : (movTotalItems > 0 ? `${movTotalItems} movimiento${movTotalItems !== 1 ? 's' : ''}` : undefined)
@@ -651,7 +654,7 @@ export default function InventoryPage() {
               activeTab === 'almacen' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            Almacen
+            {t('tabs.warehouse')}
           </button>
           <button
             onClick={() => setActiveTab('movimientos')}
@@ -659,7 +662,7 @@ export default function InventoryPage() {
               activeTab === 'movimientos' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            Movimientos
+            {t('tabs.movements')}
           </button>
         </div>
 
@@ -745,10 +748,10 @@ export default function InventoryPage() {
                 onRowClick={(item) => handleOpenEdit(item)}
                 pagination={{ currentPage, totalPages, totalItems, pageSize, onPageChange: setCurrentPage }}
                 loading={loading}
-                loadingMessage="Cargando inventario..."
+                loadingMessage={t('warehouse.loadingInventory')}
                 emptyIcon={<Package className="w-12 h-12 text-indigo-300" />}
-                emptyTitle="No hay inventario"
-                emptyMessage={searchTerm ? 'No se encontraron resultados para tu búsqueda' : 'Crea tu primer registro de inventario para comenzar'}
+                emptyTitle={t('warehouse.noInventory')}
+                emptyMessage={searchTerm ? t('warehouse.noInventorySearch') : t('warehouse.noInventoryDefault')}
                 mobileCardRenderer={(item) => {
                   const color = getProductColor(0);
                   const lowStock = isLowStock(item);
@@ -852,11 +855,11 @@ export default function InventoryPage() {
                 <div className="flex items-center justify-center h-64 bg-white text-gray-400">
                   <div className="text-center">
                     <Package className="w-12 h-12 mx-auto mb-4 text-indigo-300" />
-                    <p className="text-lg font-medium">No hay movimientos</p>
+                    <p className="text-lg font-medium">{t('movements.noMovements')}</p>
                     <p className="text-sm">
                       {movSearchTerm || typeFilter !== 'all' || reasonFilter !== 'all'
-                        ? 'No se encontraron resultados con los filtros aplicados'
-                        : 'Aun no se han registrado movimientos de inventario'}
+                        ? t('movements.noMovementsFiltered')
+                        : t('movements.noMovementsDefault')}
                     </p>
                   </div>
                 </div>
@@ -1002,7 +1005,7 @@ export default function InventoryPage() {
         ref={drawerRef}
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        title={modalMode === 'create' ? 'Agregar Inventario' : 'Editar Inventario'}
+        title={modalMode === 'create' ? t('drawer.addTitle') : t('drawer.editTitle')}
         icon={<Warehouse className="w-5 h-5 text-green-600" />}
         width="md"
         isDirty={isDirty || imageFile !== null}
@@ -1014,7 +1017,7 @@ export default function InventoryPage() {
             </Button>
             <Button type="button" variant="success" onClick={handleSubmit} disabled={submitting || (modalMode === 'create' && !watch('productoId'))} className="flex items-center gap-2">
               {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-              {modalMode === 'create' ? 'Crear Ajuste' : 'Guardar Cambios'}
+              {modalMode === 'create' ? t('drawer.createAdjustment') : t('drawer.saveChanges')}
             </Button>
           </div>
         }
@@ -1187,7 +1190,7 @@ export default function InventoryPage() {
         ref={movDrawerRef}
         isOpen={showMovModal}
         onClose={() => setShowMovModal(false)}
-        title="Nuevo Movimiento"
+        title={t('movementDrawer.title')}
         icon={<ArrowLeftRight className="w-5 h-5 text-indigo-500" />}
         width="md"
         isDirty={movIsDirty}

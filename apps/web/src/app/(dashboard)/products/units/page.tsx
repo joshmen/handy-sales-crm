@@ -16,6 +16,7 @@ import { InactiveToggle } from '@/components/ui/InactiveToggle';
 import { ActiveToggle } from '@/components/ui/ActiveToggle';
 import { DataGrid, type DataGridColumn } from '@/components/ui/DataGrid';
 import { api } from '@/lib/api';
+import { useTranslations } from 'next-intl';
 import {
   Plus,
   Edit2,
@@ -34,6 +35,8 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 export default function UnitsPage() {
+  const t = useTranslations('units');
+  const tc = useTranslations('common');
   // State
   const [units, setUnits] = useState<Unit[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -66,7 +69,7 @@ export default function UnitsPage() {
       setUnits(data);
     } catch (error) {
       console.error('Error loading units:', error);
-      toast.error('No se pudieron cargar las unidades de medida');
+      toast.error(t('errorLoading'));
     } finally {
       setLoading(false);
     }
@@ -146,16 +149,16 @@ export default function UnitsPage() {
 
       if (editingUnit) {
         await unitService.update(editingUnit.id, data);
-        toast.success(`Unidad "${data.nombre}" actualizada`);
+        toast.success(t('unitUpdated', { name: data.nombre }));
       } else {
         await unitService.create(data);
-        toast.success(`Unidad "${data.nombre}" creada`);
+        toast.success(t('unitCreated', { name: data.nombre }));
       }
 
       setIsModalOpen(false);
       await loadUnits();
     } catch (error: unknown) {
-      const message = (error as { message?: string })?.message || 'Error al guardar la unidad';
+      const message = (error as { message?: string })?.message || t('errorSaving');
       toast.error(message);
     } finally {
       setActionLoading(false);
@@ -168,12 +171,12 @@ export default function UnitsPage() {
       setTogglingId(unit.id);
       const newActive = !unit.activo;
       await api.patch(`/unidades-medida/${unit.id}/activo`, { activo: newActive });
-      toast.success(newActive ? 'Unidad activada' : 'Unidad desactivada');
+      toast.success(newActive ? t('unitActivated') : t('unitDeactivated'));
       setUnits(prev => prev.map(u =>
         u.id === unit.id ? { ...u, activo: newActive } : u
       ));
     } catch {
-      toast.error('Error al cambiar el estado');
+      toast.error(tc('errorChangingStatus'));
     } finally {
       setTogglingId(null);
     }
@@ -183,29 +186,29 @@ export default function UnitsPage() {
   const handleDelete = async (id: number) => {
     try {
       await unitService.delete(id);
-      toast.success('Unidad eliminada');
+      toast.success(t('unitDeleted'));
       await loadUnits();
     } catch {
-      toast.error('Error al eliminar la unidad');
+      toast.error(t('errorDeleting'));
     }
   };
 
   return (
     <PageHeader
       breadcrumbs={[
-        { label: 'Inicio', href: '/dashboard' },
-        { label: 'Productos', href: '/products' },
-        { label: 'Unidades de medida' },
+        { label: tc('home'), href: '/dashboard' },
+        { label: t('breadcrumbProducts'), href: '/products' },
+        { label: t('breadcrumbUnits') },
       ]}
-      title="Unidades de medida"
-      subtitle={totalItems > 0 ? `${totalItems} unidad${totalItems !== 1 ? 'es' : ''}` : undefined}
+      title={t('title')}
+      subtitle={totalItems > 0 ? (totalItems !== 1 ? t('subtitlePlural', { count: totalItems }) : t('subtitle', { count: totalItems })) : undefined}
       actions={
         <button
           onClick={handleOpenCreate}
           className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-success rounded-lg hover:bg-success/90 transition-colors"
         >
           <Plus className="w-4 h-4" />
-          <span>Nueva unidad</span>
+          <span>{t('newUnit')}</span>
         </button>
       }
     >
@@ -215,14 +218,14 @@ export default function UnitsPage() {
           <SearchBar
             value={searchTerm}
             onChange={(v) => { setSearchTerm(v); setCurrentPage(1); }}
-            placeholder="Buscar unidad..."
+            placeholder={t('searchPlaceholder')}
           />
           <button
             onClick={loadUnits}
             className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-white bg-success rounded-lg hover:bg-success/90 transition-colors"
           >
             <RefreshCw className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Actualizar</span>
+            <span className="hidden sm:inline">{tc('refresh')}</span>
           </button>
 
           <div className="ml-auto">
@@ -236,10 +239,10 @@ export default function UnitsPage() {
         {/* DataGrid */}
         <DataGrid<Unit>
           columns={[
-            { key: 'id', label: 'ID', width: 60, sortable: true, cellRenderer: (item) => <span className="font-mono text-gray-500">{item.id}</span> },
-            { key: 'nombre', label: 'Nombre', width: 'flex', sortable: true, cellRenderer: (item) => <span className="font-medium text-gray-900">{item.nombre}</span> },
-            { key: 'abreviatura', label: 'Abreviatura', width: 120, sortable: true, cellRenderer: (item) => <span className="text-gray-500 font-mono">{item.abreviatura || '-'}</span> },
-            { key: 'activo', label: 'Activo', width: 50, align: 'center', cellRenderer: (item) => (
+            { key: 'id', label: t('columnId'), width: 60, sortable: true, cellRenderer: (item) => <span className="font-mono text-gray-500">{item.id}</span> },
+            { key: 'nombre', label: t('columnName'), width: 'flex', sortable: true, cellRenderer: (item) => <span className="font-medium text-gray-900">{item.nombre}</span> },
+            { key: 'abreviatura', label: t('abbreviationLabel'), width: 120, sortable: true, cellRenderer: (item) => <span className="text-gray-500 font-mono">{item.abreviatura || '-'}</span> },
+            { key: 'activo', label: t('columnActive'), width: 50, align: 'center', cellRenderer: (item) => (
               <div onClick={e => e.stopPropagation()}>
                 <ActiveToggle isActive={item.activo} onToggle={() => handleToggleActive(item)} isLoading={togglingId === item.id} />
               </div>
@@ -265,10 +268,10 @@ export default function UnitsPage() {
           pagination={{ currentPage, totalPages, totalItems, pageSize, onPageChange: setCurrentPage }}
           sort={{ key: sortKey, direction: sortDir, onSort: handleSortChange }}
           loading={loading}
-          loadingMessage="Cargando unidades..."
+          loadingMessage={t('loadingMessage')}
           emptyIcon={<Ruler className="w-16 h-16 text-orange-300" />}
-          emptyTitle={searchTerm ? 'No se encontraron unidades' : 'No hay unidades'}
-          emptyMessage={searchTerm ? 'No se encontraron unidades con ese término' : 'Crea tu primera unidad de medida para comenzar'}
+          emptyTitle={searchTerm ? t('emptySearchTitle') : t('emptyTitle')}
+          emptyMessage={searchTerm ? t('emptySearchMessage') : t('emptyMessage')}
           mobileCardRenderer={(unit) => (
             <div className={!unit.activo ? 'opacity-60' : ''}>
               <div className="flex items-center gap-3 mb-2">
@@ -284,7 +287,7 @@ export default function UnitsPage() {
                 <ActiveToggle isActive={unit.activo} onToggle={() => handleToggleActive(unit)} isLoading={togglingId === unit.id} />
                 <div className="flex items-center gap-1">
                   <button onClick={() => handleOpenEdit(unit)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors">
-                    <Edit2 className="w-3.5 h-3.5 text-amber-400" /><span>Editar</span>
+                    <Edit2 className="w-3.5 h-3.5 text-amber-400" /><span>{tc('edit')}</span>
                   </button>
                   {deleteConfirmId === unit.id ? (
                     <div className="flex items-center gap-1">
@@ -306,7 +309,7 @@ export default function UnitsPage() {
         ref={drawerRef}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editingUnit ? 'Editar Unidad' : 'Nueva Unidad'}
+        title={editingUnit ? t('drawerTitleEdit') : t('drawerTitleCreate')}
         icon={<Ruler className="w-5 h-5" />}
         width="sm"
         isDirty={isDirty}
@@ -314,11 +317,11 @@ export default function UnitsPage() {
         footer={
           <div className="flex items-center justify-end gap-3">
             <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()} disabled={actionLoading}>
-              Cancelar
+              {tc('cancel')}
             </Button>
             <Button type="button" variant="success" onClick={handleSubmit} disabled={actionLoading} className="flex items-center gap-2">
               {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-              {editingUnit ? 'Guardar Cambios' : 'Crear Unidad'}
+              {editingUnit ? tc('saveChanges') : t('createUnit')}
             </Button>
           </div>
         }
@@ -326,19 +329,19 @@ export default function UnitsPage() {
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="space-y-2">
             <label className="text-sm font-medium">
-              Nombre <span className="text-red-500">*</span>
+              {tc('name')} <span className="text-red-500">*</span>
             </label>
             <Input
-              placeholder="Ej: Pieza, Kilogramo, Litro..."
+              placeholder={t('namePlaceholder')}
               {...register('nombre')}
             />
             {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre.message}</p>}
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Abreviatura</label>
+            <label className="text-sm font-medium">{t('abbreviationLabel')}</label>
             <Input
-              placeholder="Ej: PZA, KG, LT..."
+              placeholder={t('abbreviationPlaceholder')}
               {...register('abreviatura')}
             />
           </div>

@@ -1,8 +1,10 @@
 'use client';
 
 import React, { Suspense, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Loader2 } from 'lucide-react';
+import { SrLoadingText } from '@/components/common/SrLoadingText';
 
 import { MiembrosTab } from './components/MiembrosTab';
 import { DispositivosTab } from './components/DispositivosTab';
@@ -10,19 +12,21 @@ import { DispositivosTab } from './components/DispositivosTab';
 type TeamTab = 'miembros' | 'dispositivos';
 
 function TeamPageContent() {
+  const t = useTranslations('team');
+  const tCommon = useTranslations('common');
   const [activeTab, setActiveTab] = useState<TeamTab>('miembros');
 
   return (
     <PageHeader
       breadcrumbs={[
-        { label: 'Inicio', href: '/dashboard' },
-        { label: 'Equipo' },
+        { label: tCommon('home'), href: '/dashboard' },
+        { label: t('title') },
       ]}
-      title="Equipo"
-      subtitle="Gestiona los miembros y dispositivos de tu equipo"
+      title={t('title')}
+      subtitle={t('subtitle')}
     >
       {/* Tabs */}
-      <div role="tablist" aria-label="Equipo" className="flex items-center gap-1 mb-6 border-b border-border">
+      <div role="tablist" aria-label={t('title')} className="flex items-center gap-1 mb-6 border-b border-border">
         <button
           role="tab"
           aria-selected={activeTab === 'miembros'}
@@ -33,7 +37,7 @@ function TeamPageContent() {
               : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
-          Miembros
+          {t('tabs.members')}
         </button>
         <button
           role="tab"
@@ -45,7 +49,7 @@ function TeamPageContent() {
               : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
-          Dispositivos
+          {t('tabs.devices')}
         </button>
       </div>
 
@@ -57,7 +61,7 @@ function TeamPageContent() {
 
 export default function TeamPage() {
   return (
-    <Suspense fallback={<div role="status" className="flex items-center justify-center min-h-[400px]"><Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" /><span className="sr-only">Cargando...</span></div>}>
+    <Suspense fallback={<div role="status" className="flex items-center justify-center min-h-[400px]"><Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" /><SrLoadingText /></div>}>
       <TeamPageContent />
     </Suspense>
   );

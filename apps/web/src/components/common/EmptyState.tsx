@@ -1,7 +1,10 @@
+'use client';
+
 import React from 'react'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 import { AlertCircle } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import {
   SbClients,
   SbProducts,
@@ -213,17 +216,18 @@ export const EmptySearchResults: React.FC<{
   searchTerm?: string
   onClearSearch?: () => void
 }> = ({ searchTerm, onClearSearch }) => {
+  const tc = useTranslations('common')
   return (
     <EmptyState
       icon={SbSearch}
-      title="No se encontraron resultados"
+      title={tc('noResults')}
       description={
-        searchTerm 
-          ? `No hay resultados para "${searchTerm}". Intenta con otros términos de búsqueda.`
-          : "No se encontraron resultados para tu búsqueda."
+        searchTerm
+          ? tc('noResultsFor', { query: searchTerm })
+          : tc('noResults')
       }
       action={onClearSearch ? {
-        label: 'Limpiar búsqueda',
+        label: tc('csvImport.clearSearch'),
         onClick: onClearSearch,
         variant: 'outline'
       } : undefined}
@@ -252,18 +256,19 @@ export const ErrorState: React.FC<{
   title?: string
   description?: string
   onRetry?: () => void
-}> = ({ 
-  title = "Algo salió mal",
-  description = "Ocurrió un error inesperado. Por favor intenta de nuevo.",
+}> = ({
+  title,
+  description,
   onRetry
 }) => {
+  const tc = useTranslations('common')
   return (
     <EmptyState
       icon={AlertCircle}
-      title={title}
-      description={description}
+      title={title ?? tc('somethingWentWrong')}
+      description={description ?? tc('unexpectedError')}
       action={onRetry ? {
-        label: 'Reintentar',
+        label: tc('retry'),
         onClick: onRetry
       } : undefined}
     />

@@ -5,6 +5,7 @@ import React from 'react';
 import { SearchBar } from '@/components/common/SearchBar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { PromotionType, PromotionStatus } from '@/types/promotions';
+import { useTranslations } from 'next-intl';
 
 interface PromotionFiltersProps {
   searchTerm: string;
@@ -29,23 +30,25 @@ export const PromotionFilters: React.FC<PromotionFiltersProps> = ({
   onZoneChange,
   availableZones = [],
 }) => {
+  const t = useTranslations('promotions.filterForm');
+
   const typeOptions = [
-    { value: 'all', label: 'Todos los tipos' },
-    { value: PromotionType.PERCENTAGE, label: 'Por porcentaje' },
-    { value: PromotionType.SPECIAL_CLUB, label: 'Club especial por recomendación' },
-    { value: PromotionType.BUY_X_GET_Y, label: 'Compra X obtén Y' },
+    { value: 'all', label: t('allTypes') },
+    { value: PromotionType.PERCENTAGE, label: t('typePercentage') },
+    { value: PromotionType.SPECIAL_CLUB, label: t('typeSpecialClub') },
+    { value: PromotionType.BUY_X_GET_Y, label: t('typeBuyXGetY') },
   ];
 
   const statusOptions = [
-    { value: 'all', label: 'Todos los estados' },
-    { value: PromotionStatus.ACTIVE, label: 'Activas' },
-    { value: PromotionStatus.PAUSED, label: 'Pausadas' },
-    { value: PromotionStatus.FINISHED, label: 'Finalizadas' },
-    { value: PromotionStatus.DRAFT, label: 'Borradores' },
+    { value: 'all', label: t('allStatuses') },
+    { value: PromotionStatus.ACTIVE, label: t('statusActive') },
+    { value: PromotionStatus.PAUSED, label: t('statusPaused') },
+    { value: PromotionStatus.FINISHED, label: t('statusFinished') },
+    { value: PromotionStatus.DRAFT, label: t('statusDraft') },
   ];
 
   const zoneOptions = [
-    { value: 'all', label: 'Todas las zonas' },
+    { value: 'all', label: t('allZones') },
     ...availableZones.map(zone => ({ value: zone, label: zone })),
   ];
 
@@ -57,7 +60,7 @@ export const PromotionFilters: React.FC<PromotionFiltersProps> = ({
           <SearchBar
             value={searchTerm}
             onChange={onSearchChange}
-            placeholder="Buscar promociones por nombre o descripción..."
+            placeholder={t('searchPlaceholder')}
           />
         </div>
 

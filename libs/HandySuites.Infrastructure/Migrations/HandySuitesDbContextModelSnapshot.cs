@@ -753,6 +753,72 @@ namespace HandySuites.Infrastructure.Migrations
                     b.ToTable("AutomationExecutions");
                 });
 
+            modelBuilder.Entity("HandySuites.Domain.Entities.AutomationSchedule", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("Attempt")
+                        .HasColumnType("integer")
+                        .HasColumnName("attempt");
+
+                    b.Property<int>("AutomationId")
+                        .HasColumnType("integer")
+                        .HasColumnName("automation_id");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("error_message");
+
+                    b.Property<DateTime?>("PickedAt")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("picked_at");
+
+                    b.Property<DateTime>("ScheduledAt")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("scheduled_at");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<string>("TemplateSlug")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("template_slug");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("integer")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AutomationId");
+
+                    b.HasIndex("Status", "ScheduledAt")
+                        .HasDatabaseName("idx_schedule_pending")
+                        .HasFilter("status = 0");
+
+                    b.HasIndex("TenantId", "AutomationId", "Status")
+                        .HasDatabaseName("idx_schedule_tenant_automation");
+
+                    b.ToTable("AutomationSchedules");
+                });
+
             modelBuilder.Entity("HandySuites.Domain.Entities.AutomationTemplate", b =>
                 {
                     b.Property<int>("Id")
@@ -1111,6 +1177,10 @@ namespace HandySuites.Infrastructure.Migrations
                         .HasColumnType("double precision")
                         .HasColumnName("longitud_inicio");
 
+                    b.Property<string>("MobileRecordId")
+                        .HasColumnType("text")
+                        .HasColumnName("mobile_record_id");
+
                     b.Property<string>("Notas")
                         .HasColumnType("text")
                         .HasColumnName("notas");
@@ -1211,6 +1281,10 @@ namespace HandySuites.Infrastructure.Migrations
                     b.Property<int>("MetodoPago")
                         .HasColumnType("integer")
                         .HasColumnName("metodo_pago");
+
+                    b.Property<string>("MobileRecordId")
+                        .HasColumnType("text")
+                        .HasColumnName("mobile_record_id");
 
                     b.Property<decimal>("Monto")
                         .HasColumnType("numeric")
@@ -1382,6 +1456,10 @@ namespace HandySuites.Infrastructure.Migrations
                     b.Property<string>("ActualizadoPor")
                         .HasColumnType("text")
                         .HasColumnName("actualizado_por");
+
+                    b.Property<bool>("AutoFacturarConRfc")
+                        .HasColumnType("boolean")
+                        .HasColumnName("auto_facturar_con_rfc");
 
                     b.Property<string>("CloudinaryFolder")
                         .HasColumnType("text")
@@ -3327,6 +3405,10 @@ namespace HandySuites.Infrastructure.Migrations
                         .HasColumnType("double precision")
                         .HasColumnName("longitud");
 
+                    b.Property<string>("MobileRecordId")
+                        .HasColumnType("text")
+                        .HasColumnName("mobile_record_id");
+
                     b.Property<string>("Notas")
                         .HasColumnType("text")
                         .HasColumnName("notas");
@@ -4554,7 +4636,7 @@ namespace HandySuites.Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("ActivatedBy")
+                    b.Property<int?>("ActivatedBy")
                         .HasColumnType("integer")
                         .HasColumnName("activated_by");
 
@@ -5176,6 +5258,17 @@ namespace HandySuites.Infrastructure.Migrations
                 });
 
             modelBuilder.Entity("HandySuites.Domain.Entities.AutomationExecution", b =>
+                {
+                    b.HasOne("HandySuites.Domain.Entities.TenantAutomation", "Automation")
+                        .WithMany()
+                        .HasForeignKey("AutomationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Automation");
+                });
+
+            modelBuilder.Entity("HandySuites.Domain.Entities.AutomationSchedule", b =>
                 {
                     b.HasOne("HandySuites.Domain.Entities.TenantAutomation", "Automation")
                         .WithMany()
@@ -5876,8 +5969,7 @@ namespace HandySuites.Infrastructure.Migrations
                     b.HasOne("HandySuites.Domain.Entities.Usuario", "ActivatedByUser")
                         .WithMany()
                         .HasForeignKey("ActivatedBy")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("HandySuites.Domain.Entities.AutomationTemplate", "Template")
                         .WithMany("TenantAutomations")

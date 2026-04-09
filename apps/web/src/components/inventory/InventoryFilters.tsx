@@ -4,6 +4,7 @@ import { SearchBar } from '@/components/common/SearchBar';
 import { Button } from '@/components/ui/Button';
 import { Filter } from 'lucide-react';
 import { InventoryFilters as IInventoryFilters } from '@/types/inventory';
+import { useTranslations } from 'next-intl';
 
 interface InventoryFiltersProps {
   filters: IInventoryFilters;
@@ -16,6 +17,7 @@ export function InventoryFilters({
   onFiltersChange,
   onClearFilters,
 }: InventoryFiltersProps) {
+  const t = useTranslations('inventory.filterForm');
   const handleSearchChange = (value: string) => {
     onFiltersChange({ ...filters, search: value });
   };
@@ -37,7 +39,7 @@ export function InventoryFilters({
           <SearchBar
             value={filters.search || ''}
             onChange={handleSearchChange}
-            placeholder="Buscar por producto o código..."
+            placeholder={t('searchPlaceholder')}
           />
         </div>
 
@@ -48,7 +50,7 @@ export function InventoryFilters({
             size="sm"
             onClick={() => handleFilterToggle('lowStock')}
           >
-            Stock Bajo
+            {t('lowStock')}
           </Button>
 
           <Button
@@ -56,12 +58,12 @@ export function InventoryFilters({
             size="sm"
             onClick={() => handleFilterToggle('outOfStock')}
           >
-            Sin Stock
+            {t('outOfStock')}
           </Button>
 
           <Button variant="outline" size="sm">
             <Filter className="h-4 w-4 mr-2" />
-            Más Filtros
+            {t('moreFilters')}
           </Button>
 
           {hasActiveFilters && onClearFilters && (
@@ -71,7 +73,7 @@ export function InventoryFilters({
               onClick={onClearFilters}
               className="text-muted-foreground"
             >
-              Limpiar
+              {t('clear')}
             </Button>
           )}
         </div>
@@ -80,20 +82,20 @@ export function InventoryFilters({
       {/* Active filters indicator */}
       {hasActiveFilters && (
         <div className="flex items-center gap-2 mt-3 pt-3 border-t">
-          <span className="text-sm text-muted-foreground">Filtros activos:</span>
+          <span className="text-sm text-muted-foreground">{t('activeFilters')}</span>
           {filters.lowStock && (
             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-orange-100 text-orange-800">
-              Stock Bajo
+              {t('lowStock')}
             </span>
           )}
           {filters.outOfStock && (
             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-red-100 text-red-800">
-              Sin Stock
+              {t('outOfStock')}
             </span>
           )}
           {filters.search && filters.search.trim() !== '' && (
             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
-              Búsqueda: `&quot;`{filters.search}`&quot;`
+              {t('searchLabel')} `&quot;`{filters.search}`&quot;`
             </span>
           )}
         </div>

@@ -12,6 +12,7 @@ import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { tenantService } from '@/services/api/tenants';
 import { getInitials } from '@/lib/utils';
 import { useFormatters } from '@/hooks/useFormatters';
+import { useTranslations } from 'next-intl';
 import type { GlobalUser, Tenant } from '@/types/tenant';
 
 const ROLE_OPTIONS = [
@@ -53,6 +54,9 @@ function getUserColor(id: number): string {
 }
 
 export default function GlobalUsersPage() {
+  const t = useTranslations('admin.globalUsers');
+  const ta = useTranslations('admin');
+  const tc = useTranslations('common');
   const { formatDate } = useFormatters();
   const [users, setUsers] = useState<GlobalUser[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]);
@@ -87,7 +91,7 @@ export default function GlobalUsersPage() {
       setTotalCount(result.totalCount);
       setTotalPages(result.totalPages);
     } catch {
-      toast.error('Error al cargar usuarios');
+      toast.error(t('loadError'));
       setUsers([]);
       setTotalCount(0);
       setTotalPages(0);
@@ -117,16 +121,16 @@ export default function GlobalUsersPage() {
       {/* Header */}
       <div className="bg-white px-8 py-6 border-b border-gray-200">
         <div className="flex items-center gap-2 text-[13px] mb-4">
-          <span className="text-gray-500">Administracion</span>
+          <span className="text-gray-500">{ta('breadcrumb')}</span>
           <ChevronRight className="w-4 h-4 text-gray-400" />
-          <span className="text-gray-900 font-semibold">Usuarios Global</span>
+          <span className="text-gray-900 font-semibold">{t('breadcrumb')}</span>
         </div>
 
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Usuarios Global</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
             <p className="text-sm text-gray-500 mt-1">
-              {totalCount.toLocaleString()} usuarios en todas las empresas
+              {t('subtitle', { count: totalCount.toLocaleString() })}
             </p>
           </div>
         </div>
@@ -137,7 +141,7 @@ export default function GlobalUsersPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Buscar por nombre, email..."
+              placeholder={t('searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-[280px] pl-10 pr-3 py-2.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -188,15 +192,15 @@ export default function GlobalUsersPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
-                  <span className="text-sm text-gray-500">Cargando usuarios...</span>
+                  <span className="text-sm text-gray-500">{t('loadingUsers')}</span>
                 </div>
               </div>
             ) : users.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-64 py-20">
                 <Users className="w-10 h-10 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold text-gray-700 mb-2">No hay usuarios</h3>
+                <h3 className="text-lg font-semibold text-gray-700 mb-2">{t('noUsers')}</h3>
                 <p className="text-sm text-gray-500 text-center">
-                  No se encontraron usuarios para los filtros seleccionados
+                  {t('noUsersDesc')}
                 </p>
               </div>
             ) : (
@@ -204,12 +208,12 @@ export default function GlobalUsersPage() {
                 {/* Desktop Table */}
                 <div className="hidden md:block">
                   <div className="flex items-center bg-gray-50 px-4 h-10 border-b border-gray-200">
-                    <div className="w-[200px] text-xs font-semibold text-gray-600">Usuario</div>
-                    <div className="w-[220px] text-xs font-semibold text-gray-600">Email</div>
-                    <div className="w-[180px] text-xs font-semibold text-gray-600">Empresa</div>
-                    <div className="w-[110px] text-xs font-semibold text-gray-600">Rol</div>
-                    <div className="w-[80px] text-xs font-semibold text-gray-600">Estado</div>
-                    <div className="flex-1 text-xs font-semibold text-gray-600">Registrado</div>
+                    <div className="w-[200px] text-xs font-semibold text-gray-600">{t('colUser')}</div>
+                    <div className="w-[220px] text-xs font-semibold text-gray-600">{t('colEmail')}</div>
+                    <div className="w-[180px] text-xs font-semibold text-gray-600">{t('colCompany')}</div>
+                    <div className="w-[110px] text-xs font-semibold text-gray-600">{t('colRole')}</div>
+                    <div className="w-[80px] text-xs font-semibold text-gray-600">{t('colStatus')}</div>
+                    <div className="flex-1 text-xs font-semibold text-gray-600">{t('colRegistered')}</div>
                   </div>
 
                   {users.map((user) => (
@@ -247,11 +251,11 @@ export default function GlobalUsersPage() {
                       <div className="w-[80px]">
                         {user.activo ? (
                           <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-green-100 text-green-700">
-                            Activo
+                            {t('statusActive')}
                           </span>
                         ) : (
                           <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-gray-100 text-gray-500">
-                            Inactivo
+                            {t('statusInactive')}
                           </span>
                         )}
                       </div>
@@ -289,7 +293,7 @@ export default function GlobalUsersPage() {
                       </div>
                       <div className="flex items-center justify-between text-[12px] text-gray-500">
                         <span>{user.tenantNombre}</span>
-                        <span>{user.activo ? 'Activo' : 'Inactivo'}</span>
+                        <span>{user.activo ? t('statusActive') : t('statusInactive')}</span>
                       </div>
                     </div>
                   ))}
@@ -302,7 +306,7 @@ export default function GlobalUsersPage() {
           {!loading && totalCount > 0 && (
             <div className="flex items-center justify-between pt-4">
               <span className="text-sm text-gray-500">
-                Mostrando {startItem}-{endItem} de {totalCount.toLocaleString()} usuarios
+                {t('showingRange', { start: startItem, end: endItem, total: totalCount.toLocaleString() })}
               </span>
               <div className="flex items-center gap-2">
                 <button
@@ -311,7 +315,7 @@ export default function GlobalUsersPage() {
                   className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-gray-600 border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <ChevronLeft className="w-4 h-4" />
-                  <span>Anterior</span>
+                  <span>{t('previous')}</span>
                 </button>
 
                 {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
@@ -345,7 +349,7 @@ export default function GlobalUsersPage() {
                   disabled={currentPage === totalPages}
                   className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-gray-600 border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  <span>Siguiente</span>
+                  <span>{t('next')}</span>
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>

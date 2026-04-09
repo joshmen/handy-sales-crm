@@ -30,6 +30,7 @@ import {
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, subDays, subWeeks, subMonths } from 'date-fns';
 import { useFormatters } from '@/hooks/useFormatters';
 import { formatDate as libFmtDate } from '@/lib/formatters';
+import { useTranslations } from 'next-intl';
 
 type ViewMode = 'list' | 'calendar';
 
@@ -115,6 +116,8 @@ const formatTime = (dateStr?: string) => {
 };
 
 function VisitsPageContent() {
+  const t = useTranslations('visits');
+  const tc = useTranslations('common');
   const searchParams = useSearchParams();
   const router = useRouter();
   const viewParam = searchParams.get('view') as ViewMode | null;
@@ -171,8 +174,8 @@ function VisitsPageContent() {
       setTotalItems(response.totalItems);
     } catch (err) {
       console.error('Error al cargar visitas:', err);
-      setError('Error al cargar las visitas. Intenta de nuevo.');
-      toast.error('Error al cargar las visitas');
+      setError(t('errorLoadingRetry'));
+      toast.error(t('errorLoading'));
     } finally {
       setLoading(false);
     }
@@ -365,7 +368,7 @@ function VisitsPageContent() {
       const detail = await visitService.getVisitById(visitId);
       setVisitDetail(detail);
     } catch {
-      toast.error('Error al cargar los detalles de la visita');
+      toast.error(t('errorLoadingDetail'));
       setShowDetailDrawer(false);
     } finally {
       setDetailLoading(false);
@@ -375,7 +378,7 @@ function VisitsPageContent() {
   const handleSaveVisit = async (data: ClienteVisitaCreateDto) => {
     try {
       await visitService.createVisit(data);
-      toast.success('Visita programada correctamente');
+      toast.success(t('visitCreated'));
       await fetchVisits();
       await fetchSummary();
       if (currentView === 'calendar') {
@@ -384,7 +387,7 @@ function VisitsPageContent() {
       }
       setShowVisitForm(false);
     } catch {
-      toast.error('Error al programar la visita');
+      toast.error(t('errorCreating'));
     }
   };
 
@@ -422,7 +425,7 @@ function VisitsPageContent() {
           }`}
         >
           <List className="w-4 h-4" />
-          Lista
+          {t('views.list')}
         </button>
         <button
           onClick={() => setView('calendar')}
@@ -431,7 +434,7 @@ function VisitsPageContent() {
           }`}
         >
           <CalendarDays className="w-4 h-4" />
-          Calendario
+          {t('views.calendar')}
         </button>
       </div>
       <button
@@ -439,8 +442,8 @@ function VisitsPageContent() {
         className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
       >
         <Plus className="w-4 h-4" />
-        <span className="hidden sm:inline">Programar Visita</span>
-        <span className="sm:hidden">Nueva</span>
+        <span className="hidden sm:inline">{t('newVisit')}</span>
+        <span className="sm:hidden">{t('newVisitShort')}</span>
       </button>
     </>
   );
@@ -448,11 +451,11 @@ function VisitsPageContent() {
   return (
     <PageHeader
       breadcrumbs={[
-        { label: 'Inicio', href: '/dashboard' },
-        { label: 'Visitas' },
+        { label: tc('home'), href: '/dashboard' },
+        { label: t('title') },
       ]}
-      title="Visitas"
-      subtitle="Administra las visitas a clientes de tu equipo de ventas"
+      title={t('title')}
+      subtitle={t('subtitle')}
       actions={headerActions}
     >
       <div className="space-y-4">
@@ -535,7 +538,7 @@ function VisitsPageContent() {
                 className="flex items-center gap-1 px-3 py-2 text-xs text-gray-500 hover:text-gray-700 border border-gray-200 rounded hover:bg-gray-50"
               >
                 <X className="w-3.5 h-3.5" />
-                Limpiar
+                {t('clearFilters')}
               </button>
             )}
           </div>
@@ -552,10 +555,10 @@ function VisitsPageContent() {
               data={sortedVisits}
               keyExtractor={(v) => v.id}
               loading={loading}
-              loadingMessage="Cargando visitas..."
+              loadingMessage={t('loadingVisits')}
               emptyIcon={<MapPin className="w-12 h-12 text-gray-300" />}
-              emptyTitle="No hay visitas"
-              emptyMessage="Programa una nueva visita para comenzar"
+              emptyTitle={t('emptyTitle')}
+              emptyMessage={t('emptyDefault')}
               sort={{
                 key: sortKey,
                 direction: sortDir,
@@ -628,7 +631,7 @@ function VisitsPageContent() {
       <Drawer
         isOpen={showVisitForm}
         onClose={() => setShowVisitForm(false)}
-        title="Programar Nueva Visita"
+        title={t('detail.scheduleTitle')}
         icon={<CalendarDays className="w-5 h-5 text-green-600" />}
         width="md"
       >
@@ -646,7 +649,7 @@ function VisitsPageContent() {
       <Drawer
         isOpen={showDetailDrawer}
         onClose={() => { setShowDetailDrawer(false); setVisitDetail(null); }}
-        title="Detalle de Visita"
+        title={t('detail.title')}
         icon={<Eye className="w-5 h-5 text-blue-600" />}
         width="md"
       >
@@ -790,7 +793,7 @@ function VisitsPageContent() {
             })()}
 
             {/* Check-in/out only available from mobile app */}
-            <p className="text-sm text-muted-foreground text-center py-3">Inicia y finaliza visitas desde la app móvil</p>
+            <p className="text-sm text-muted-foreground text-center py-3">{t('detail.mobileOnlyHint')}</p>
           </div>
         )}
       </Drawer>

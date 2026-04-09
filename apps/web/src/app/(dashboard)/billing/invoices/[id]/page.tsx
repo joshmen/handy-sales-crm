@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import {
@@ -17,18 +18,19 @@ import { toast } from '@/hooks/useToast';
 
 // ── Status helpers ──
 
-const ESTADO_CONFIG: Record<FacturaEstado, { label: string; color: string; bg: string }> = {
-  PENDIENTE: { label: 'Pendiente', color: 'text-amber-700', bg: 'bg-amber-100' },
-  TIMBRADA:  { label: 'Timbrada',  color: 'text-green-700', bg: 'bg-green-100' },
-  CANCELADA: { label: 'Cancelada', color: 'text-red-700',   bg: 'bg-red-100' },
-  ERROR:     { label: 'Error',     color: 'text-red-700',   bg: 'bg-red-100' },
+const ESTADO_STYLE: Record<FacturaEstado, { key: string; color: string; bg: string }> = {
+  PENDIENTE: { key: 'pending', color: 'text-amber-700', bg: 'bg-amber-100' },
+  TIMBRADA:  { key: 'stamped',  color: 'text-green-700', bg: 'bg-green-100' },
+  CANCELADA: { key: 'cancelled', color: 'text-red-700',   bg: 'bg-red-100' },
+  ERROR:     { key: 'error',     color: 'text-red-700',   bg: 'bg-red-100' },
 };
 
 function StatusBadge({ estado }: { estado: FacturaEstado }) {
-  const cfg = ESTADO_CONFIG[estado] ?? { label: estado, color: 'text-gray-700', bg: 'bg-gray-100' };
+  const t = useTranslations('billing.invoiceDetail');
+  const cfg = ESTADO_STYLE[estado] ?? { key: estado.toLowerCase(), color: 'text-gray-700', bg: 'bg-gray-100' };
   return (
     <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${cfg.color} ${cfg.bg}`}>
-      {cfg.label}
+      {t(`status.${cfg.key}` as 'status.pending')}
     </span>
   );
 }
@@ -58,6 +60,8 @@ function InfoRow({ label, value }: { label: string; value: string | number | nul
 export default function InvoiceDetailPage() {
   const router = useRouter();
   const params = useParams();
+  const t = useTranslations('billing.invoiceDetail');
+  const tc = useTranslations('common');
   const facturaId = Number(params.id);
 
   const [factura, setFactura] = useState<FacturaDetail | null>(null);
@@ -349,7 +353,7 @@ export default function InvoiceDetailPage() {
                 <InfoRow label="Impuestos retenidos" value={formatCurrency(factura.totalImpuestosRetenidos)} />
               )}
               <div className="border-t border-gray-200 pt-2 flex justify-between">
-                <span className="text-base font-semibold text-gray-900">Total</span>
+                <span className="text-base font-semibold text-gray-900">{tc('total')}</span>
                 <span className="text-base font-bold text-gray-900">{formatCurrency(factura.total)}</span>
               </div>
               <InfoRow label="Moneda" value={factura.moneda} />

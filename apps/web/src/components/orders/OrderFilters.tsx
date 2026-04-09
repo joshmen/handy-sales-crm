@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/Input';
 import { SelectCompat as Select } from '@/components/ui/SelectCompat';
 import { Button } from '@/components/ui/Button';
 import { Search, X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface OrderFiltersProps {
   searchTerm: string;
@@ -20,34 +21,6 @@ interface OrderFiltersProps {
   className?: string;
 }
 
-const statusOptions = [
-  { value: '', label: 'Todos los estados' },
-  { value: 'draft', label: 'Borrador' },
-  { value: 'pending', label: 'Pendiente' },
-  { value: 'confirmed', label: 'Confirmado' },
-  { value: 'in_progress', label: 'En Progreso' },
-  { value: 'delivered', label: 'Entregado' },
-  { value: 'cancelled', label: 'Cancelado' },
-];
-
-const priorityOptions = [
-  { value: '', label: 'Todas las prioridades' },
-  { value: 'low', label: 'Baja' },
-  { value: 'normal', label: 'Normal' },
-  { value: 'high', label: 'Alta' },
-  { value: 'urgent', label: 'Urgente' },
-];
-
-const dateOptions = [
-  { value: '', label: 'Cualquier fecha' },
-  { value: 'today', label: 'Hoy' },
-  { value: 'yesterday', label: 'Ayer' },
-  { value: 'this_week', label: 'Esta semana' },
-  { value: 'last_week', label: 'Semana pasada' },
-  { value: 'this_month', label: 'Este mes' },
-  { value: 'last_month', label: 'Mes pasado' },
-];
-
 export const OrderFilters: React.FC<OrderFiltersProps> = ({
   searchTerm,
   statusFilter,
@@ -63,8 +36,38 @@ export const OrderFilters: React.FC<OrderFiltersProps> = ({
   clients = [],
   className = '',
 }) => {
+  const t = useTranslations('orders.filterForm');
+
+  const statusOptions = [
+    { value: '', label: t('allStatuses') },
+    { value: 'draft', label: t('statusDraft') },
+    { value: 'pending', label: t('statusPending') },
+    { value: 'confirmed', label: t('statusConfirmed') },
+    { value: 'in_progress', label: t('statusInProgress') },
+    { value: 'delivered', label: t('statusDelivered') },
+    { value: 'cancelled', label: t('statusCancelled') },
+  ];
+
+  const priorityOptions = [
+    { value: '', label: t('allPriorities') },
+    { value: 'low', label: t('priorityLow') },
+    { value: 'normal', label: t('priorityNormal') },
+    { value: 'high', label: t('priorityHigh') },
+    { value: 'urgent', label: t('priorityUrgent') },
+  ];
+
+  const dateOptions = [
+    { value: '', label: t('anyDate') },
+    { value: 'today', label: t('today') },
+    { value: 'yesterday', label: t('yesterday') },
+    { value: 'this_week', label: t('thisWeek') },
+    { value: 'last_week', label: t('lastWeek') },
+    { value: 'this_month', label: t('thisMonth') },
+    { value: 'last_month', label: t('lastMonth') },
+  ];
+
   const clientOptions = [
-    { value: '', label: 'Todos los clientes' },
+    { value: '', label: t('allClients') },
     ...clients.map(client => ({
       value: client.id,
       label: client.name,
@@ -84,7 +87,7 @@ export const OrderFilters: React.FC<OrderFiltersProps> = ({
           className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
         />
         <Input
-          placeholder="Buscar por código, cliente o notas..."
+          placeholder={t('searchPlaceholder')}
           value={searchTerm}
           onChange={e => onSearchChange(e.target.value)}
           className="pl-10"
@@ -149,10 +152,10 @@ export const OrderFilters: React.FC<OrderFiltersProps> = ({
       {/* Botón para limpiar filtros */}
       {hasActiveFilters && (
         <div className="flex justify-between items-center pt-2 border-t">
-          <span className="text-sm text-gray-500">Filtros activos aplicados</span>
+          <span className="text-sm text-gray-500">{t('activeFilters')}</span>
           <Button variant="outline" size="sm" onClick={onClearFilters} className="text-gray-600">
             <X size={16} className="mr-1" />
-            Limpiar filtros
+            {t('clearFilters')}
           </Button>
         </div>
       )}

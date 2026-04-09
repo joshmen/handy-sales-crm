@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Play, X } from 'lucide-react';
 import { useTour } from '@/hooks/useTour';
+import { useTranslations } from 'next-intl';
 
 const PROMPT_STORAGE_KEY = 'handy-tours-prompt';
 
@@ -31,6 +32,7 @@ function savePromptState(state: PromptState): void {
 const MAX_PROMPT_SHOWS = 3;
 
 export function TourPrompt() {
+  const t = useTranslations('help.tourPrompt');
   const { hasTour, tourConfig, isCompleted, startTour } = useTour();
   const [visible, setVisible] = useState(false);
   const [animateIn, setAnimateIn] = useState(false);
@@ -134,7 +136,7 @@ export function TourPrompt() {
           <div className="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center">
             <Play className="w-3.5 h-3.5 text-green-600 ml-0.5" />
           </div>
-          <span className="text-sm font-semibold text-green-900">Tour disponible</span>
+          <span className="text-sm font-semibold text-green-900">{t('tourAvailable')}</span>
         </div>
         <button
           type="button"
@@ -161,14 +163,14 @@ export function TourPrompt() {
           className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
         >
           <Play className="w-3.5 h-3.5 ml-0.5" />
-          Iniciar tour
+          {t('startTour')}
         </button>
         <button
           type="button"
           onClick={handleCollapse}
           className="px-3 py-2 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
         >
-          Ahora no
+          {t('notNow')}
         </button>
       </div>
 
@@ -179,7 +181,7 @@ export function TourPrompt() {
           onClick={handleNeverShow}
           className="text-xs text-gray-400 hover:text-gray-500 transition-colors"
         >
-          No volver a mostrar
+          {t('dontShowAgain')}
         </button>
       </div>
     </div>

@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/Label';
 import { Separator } from '@/components/ui/Separator';
 import { Zone, ZoneForm, ZONE_COLORS } from '@/types/zones';
 import { User } from '@/types/users';
+import { useTranslations } from 'next-intl';
 
 interface ZoneModalProps {
   open: boolean;
@@ -36,6 +37,8 @@ export function ZoneModal({
     userIds: [],
   });
 
+  const t = useTranslations('zones.modal');
+  const tCommon = useTranslations('common');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Reset form when dialog opens/closes or zone changes
@@ -74,11 +77,11 @@ export function ZoneModal({
     const newErrors: Record<string, string> = {};
     
     if (!formData.name.trim()) {
-      newErrors.name = 'El nombre es requerido';
+      newErrors.name = t('nameRequired');
     }
     
     if (!formData.color) {
-      newErrors.color = 'Selecciona un color';
+      newErrors.color = t('selectColor');
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -95,7 +98,7 @@ export function ZoneModal({
   };
 
   const getModalTitle = () => {
-    return mode === 'edit' ? 'Editar zona' : 'Crear zona';
+    return mode === 'edit' ? t('editZone') : t('createZone');
   };
 
   // Filtrar colores disponibles
@@ -121,24 +124,24 @@ export function ZoneModal({
         {/* Información básica */}
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Nombre de la zona *</Label>
+            <Label htmlFor="name">{t('zoneName')}</Label>
             <Input
               id="name"
               value={formData.name}
               onChange={(e) => updateFormData({ name: e.target.value })}
               error={errors.name}
-              placeholder="Ej: Zona Norte, Centro Comercial, etc."
+              placeholder={t('zoneNamePlaceholder')}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Descripción</Label>
+            <Label htmlFor="description">{t('descriptionLabel')}</Label>
             <textarea
               id="description"
               value={formData.description}
               onChange={(e) => updateFormData({ description: e.target.value })}
               className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
-              placeholder="Describe la zona geográfica o comercial..."
+              placeholder={t('descriptionPlaceholder')}
               rows={3}
             />
           </div>
@@ -148,9 +151,9 @@ export function ZoneModal({
 
         {/* Color de la zona */}
         <div className="space-y-3">
-          <Label>Color de identificación *</Label>
+          <Label>{t('identificationColor')}</Label>
           <p className="text-sm text-muted-foreground">
-            Este color se usará para identificar la zona en el mapa
+            {t('colorMapHint')}
           </p>
           
           <div className="grid grid-cols-5 gap-3">
@@ -178,7 +181,7 @@ export function ZoneModal({
           
           {availableColors.length === 0 && (
             <p className="text-sm text-amber-600">
-              Todos los colores están en uso. Considera editar o eliminar zonas existentes.
+              {t('allColorsUsed')}
             </p>
           )}
           
@@ -191,9 +194,9 @@ export function ZoneModal({
 
         {/* Usuarios asignados */}
         <div className="space-y-3">
-          <Label>Usuarios asignados</Label>
+          <Label>{t('assignedUsers')}</Label>
           <p className="text-sm text-muted-foreground">
-            Selecciona los usuarios que trabajarán en esta zona
+            {t('assignedUsersDesc')}
           </p>
           
           <div className="space-y-2">
@@ -228,7 +231,7 @@ export function ZoneModal({
           
           {userOptions.length === 0 && (
             <p className="text-sm text-gray-500">
-              No hay usuarios disponibles para asignar
+              {t('noUsersAvailable')}
             </p>
           )}
         </div>
@@ -237,7 +240,7 @@ export function ZoneModal({
 
         {/* Estado de la zona */}
         <div className="space-y-3">
-          <Label>Estado de la zona</Label>
+          <Label>{t('zoneStatus')}</Label>
           <div className="flex items-center space-x-3">
             <input
               type="checkbox"
@@ -248,10 +251,10 @@ export function ZoneModal({
             />
             <div>
               <Label htmlFor="isEnabled" className="text-sm font-normal cursor-pointer">
-                Zona activa
+                {t('activeZone')}
               </Label>
               <p className="text-xs text-muted-foreground">
-                Las zonas inactivas no aparecerán en las asignaciones
+                {t('inactiveZonesHint')}
               </p>
             </div>
           </div>
@@ -265,14 +268,14 @@ export function ZoneModal({
             onClick={() => onOpenChange(false)}
             disabled={loading}
           >
-            Cancelar
+            {tCommon('cancel')}
           </Button>
           <Button
             type="submit"
             loading={loading}
             disabled={!formData.name.trim() || !formData.color}
           >
-            {mode === 'edit' ? 'Actualizar' : 'Crear'} Zona
+            {mode === 'edit' ? t('updateZone') : t('createZoneBtn')}
           </Button>
         </div>
       </form>

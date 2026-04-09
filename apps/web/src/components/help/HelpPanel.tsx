@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { X, BookOpen, ChevronDown, ChevronRight } from 'lucide-react';
 import { helpPages, type HelpArticle } from '@/data/help-content';
 import { TourButton } from './TourButton';
+import { useTranslations } from 'next-intl';
 
 interface HelpPanelProps {
   isOpen: boolean;
@@ -45,6 +46,7 @@ function ArticleItem({ article, defaultExpanded = false }: { article: HelpArticl
 }
 
 export function HelpPanel({ isOpen, onClose }: HelpPanelProps) {
+  const t = useTranslations('help.panel');
   const pathname = usePathname();
 
   // Find matching help page - try exact match first, then parent paths
@@ -109,14 +111,14 @@ export function HelpPanel({ isOpen, onClose }: HelpPanelProps) {
           <div className="flex items-center gap-2.5">
             <BookOpen className="w-5 h-5 text-blue-600" />
             <h2 className="text-base font-semibold text-blue-900">
-              Ayuda{helpPage ? ` - ${helpPage.title}` : ''}
+              {helpPage ? t('helpTitleWithPage', { page: helpPage.title }) : t('helpTitle')}
             </h2>
           </div>
           <button
             type="button"
             onClick={onClose}
             className="p-1 text-gray-500 hover:text-gray-700 hover:bg-blue-100 rounded transition-colors"
-            aria-label="Cerrar panel de ayuda"
+            aria-label={t('closePanel')}
           >
             <X className="w-4 h-4" />
           </button>
@@ -146,10 +148,10 @@ export function HelpPanel({ isOpen, onClose }: HelpPanelProps) {
             <div className="flex flex-col items-center justify-center h-full px-6 text-center">
               <BookOpen className="w-12 h-12 text-gray-300 mb-4" />
               <p className="text-sm text-gray-500 mb-2">
-                No hay contenido de ayuda para esta página.
+                {t('noContentTitle')}
               </p>
               <p className="text-xs text-gray-400">
-                Navega a una sección del sistema para ver la ayuda contextual.
+                {t('noContentHint')}
               </p>
             </div>
           )}

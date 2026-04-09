@@ -40,6 +40,7 @@ import type { IconProps } from '@phosphor-icons/react';
 import { Switch } from '@/components/ui/Switch';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useSession } from 'next-auth/react';
+import { useTranslations } from 'next-intl';
 
 const CATEGORIES = ['Todas', ...Object.keys(CATEGORY_LABELS)];
 
@@ -85,6 +86,8 @@ function StatusBadge({ status, size = 'sm' }: { status: string; size?: 'sm' | 'x
 }
 
 export default function AutomationsPage() {
+  const t = useTranslations('automations');
+  const tc = useTranslations('common');
   const { formatDate, formatNumber } = useFormatters();
   const { data: session } = useSession();
   const subscriptionStatus = (session?.user as Record<string, unknown>)?.subscriptionStatus as string | undefined;
@@ -119,7 +122,7 @@ export default function AutomationsPage() {
       const data = await automationService.getTemplates();
       setTemplates(data);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Error al cargar automatizaciones');
+      setError(err instanceof Error ? err.message : t('errorLoading'));
     } finally {
       setLoading(false);
     }
@@ -133,7 +136,7 @@ export default function AutomationsPage() {
       setHistorialTotal(total);
       setHistorialPage(page);
     } catch {
-      toast({ title: 'Error', description: 'No se pudo cargar el historial de ejecuciones', variant: 'destructive' });
+      toast({ title: tc('error'), description: t('errorLoadingHistory'), variant: 'destructive' });
     } finally {
       setHistorialLoading(false);
     }
@@ -157,14 +160,14 @@ export default function AutomationsPage() {
     try {
       if (template.activada) {
         await automationService.desactivar(template.slug);
-        toast({ title: 'Automatización desactivada', description: template.nombre });
+        toast({ title: t('deactivated'), description: template.nombre });
       } else {
         await automationService.activar(template.slug, template.defaultParamsJson || undefined);
-        toast({ title: 'Automatización activada', description: template.nombre });
+        toast({ title: t('activated'), description: template.nombre });
       }
       await loadTemplates();
     } catch (err: unknown) {
-      toast({ title: 'Error', description: err instanceof Error ? err.message : 'Error', variant: 'destructive' });
+      toast({ title: tc('error'), description: err instanceof Error ? err.message : tc('error'), variant: 'destructive' });
     } finally {
       setTogglingSlug(null);
     }
@@ -190,11 +193,11 @@ export default function AutomationsPage() {
     setSavingConfig(true);
     try {
       await automationService.configurar(configTemplate.slug, JSON.stringify(configParams));
-      toast({ title: 'Configuración guardada', description: configTemplate.nombre });
+      toast({ title: t('configSaved'), description: configTemplate.nombre });
       setConfigDrawerOpen(false);
       await loadTemplates();
     } catch (err: unknown) {
-      toast({ title: 'Error', description: err instanceof Error ? err.message : 'Error', variant: 'destructive' });
+      toast({ title: tc('error'), description: err instanceof Error ? err.message : tc('error'), variant: 'destructive' });
     } finally {
       setSavingConfig(false);
     }
@@ -205,14 +208,14 @@ export default function AutomationsPage() {
     try {
       const result = await automationService.test(slug);
       if (result.success) {
-        toast({ title: 'Prueba exitosa', description: result.action });
+        toast({ title: t('testSuccess'), description: result.action });
       } else {
-        toast({ title: 'Prueba falló', description: result.error || 'Error desconocido', variant: 'destructive' });
+        toast({ title: t('testFailed'), description: result.error || t('unknownError'), variant: 'destructive' });
       }
       await loadTemplates();
       loadHistorial();
     } catch (err: unknown) {
-      toast({ title: 'Error', description: err instanceof Error ? err.message : 'Error al probar', variant: 'destructive' });
+      toast({ title: tc('error'), description: err instanceof Error ? err.message : t('testError'), variant: 'destructive' });
     } finally {
       setTestingSlug(null);
     }
@@ -239,11 +242,11 @@ export default function AutomationsPage() {
     <>
       <PageHeader
         breadcrumbs={[
-          { label: 'Inicio', href: '/dashboard' },
-          { label: 'Automatizaciones' },
+          { label: tc('home'), href: '/dashboard' },
+          { label: t('title') },
         ]}
-        title="Automatizaciones"
-        subtitle="Activa recetas para que el sistema trabaje por ti"
+        title={t('title')}
+        subtitle={t('subtitle')}
         actions={
           <button
             onClick={() => loadTemplates()}
@@ -252,7 +255,7 @@ export default function AutomationsPage() {
             data-tour="automations-refresh"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline">Actualizar</span>
+            <span className="hidden sm:inline">{tc('refresh')}</span>
           </button>
         }
       >
@@ -265,23 +268,23 @@ export default function AutomationsPage() {
               <Lightning size={18} weight="fill" className="flex-shrink-0 opacity-60" />
               <div>
                 <p className="text-lg font-bold leading-none">{loading ? '—' : activeCount}</p>
-                <p className="text-[11px] opacity-70 mt-0.5">Activas de {templates.length}</p>
+                <p className="text-[11px] opacity-70 mt-0.5">{t('activeOf', { total: templates.length })}</p>
               </div>
             </div>
             <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 text-gray-700">
               <Sparkle size={18} weight="fill" className="flex-shrink-0 opacity-60" />
               <div>
                 <p className="text-lg font-bold leading-none">{loading ? '—' : totalExecutions}</p>
-                <p className="text-[11px] opacity-70 mt-0.5">Ejecuciones total</p>
+                <p className="text-[11px] opacity-70 mt-0.5">{t('totalExecutions')}</p>
               </div>
             </div>
             <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 text-gray-700">
               <Clock size={18} weight="fill" className="flex-shrink-0 opacity-60" />
               <div>
                 <p className="text-lg font-bold leading-none truncate">
-                  {loading ? '—' : lastExecution ? formatTimeAgo(lastExecution) : 'Ninguna'}
+                  {loading ? '—' : lastExecution ? formatTimeAgo(lastExecution) : t('noExecution')}
                 </p>
-                <p className="text-[11px] opacity-70 mt-0.5">Última ejecución</p>
+                <p className="text-[11px] opacity-70 mt-0.5">{t('lastExecution')}</p>
               </div>
             </div>
           </div>
@@ -298,7 +301,7 @@ export default function AutomationsPage() {
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
-                {cat === 'Operacion' ? 'Operación' : cat}
+                {cat === 'Todas' ? t('allCategories') : cat === 'Operacion' ? t('operationCategory') : cat}
               </button>
             ))}
           </div>
@@ -328,18 +331,18 @@ export default function AutomationsPage() {
               <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-4">
                 <Robot size={20} className="text-muted-foreground" />
               </div>
-              <p className="font-semibold text-gray-700 mb-1">Sin automatizaciones en esta categoría</p>
+              <p className="font-semibold text-gray-700 mb-1">{t('noCategory')}</p>
               <p className="text-sm text-gray-400 max-w-sm mx-auto">
                 {activeCategory !== 'Todas'
-                  ? `No hay recetas de tipo "${CATEGORY_LABELS[activeCategory] || activeCategory}". Prueba con otra categoría.`
-                  : 'Las automatizaciones aparecerán aquí cuando estén disponibles.'}
+                  ? t('noCategoryDesc', { category: CATEGORY_LABELS[activeCategory] || activeCategory })
+                  : t('emptyDefault')}
               </p>
               {activeCategory !== 'Todas' && (
                 <button
                   onClick={() => setActiveCategory('Todas')}
                   className="mt-4 px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
                 >
-                  Ver todas
+                  {t('viewAll')}
                 </button>
               )}
             </div>
@@ -415,7 +418,7 @@ export default function AutomationsPage() {
                         })()}
                         {template.activada && template.totalEjecuciones > 0 && (
                           <span className="text-[10px] text-gray-400">
-                            {template.totalEjecuciones} ejec.{template.ultimaEjecucion ? ` · ${formatTimeAgo(template.ultimaEjecucion)}` : ''}
+                            {t('executionCount', { count: template.totalEjecuciones })}{template.ultimaEjecucion ? ` · ${formatTimeAgo(template.ultimaEjecucion)}` : ''}
                           </span>
                         )}
                         <span className="ml-auto inline-flex items-center gap-1">
@@ -423,8 +426,8 @@ export default function AutomationsPage() {
                               onClick={() => handleTest(template.slug, template.nombre)}
                               disabled={testingSlug === template.slug}
                               className="text-gray-400 hover:text-green-600 text-xs transition-colors disabled:opacity-50"
-                              aria-label={`Probar ${template.nombre}`}
-                              title="Probar ahora"
+                              aria-label={`${t('testNow')} ${template.nombre}`}
+                              title={t('testNow')}
                             >
                               {testingSlug === template.slug ? <CircleNotch size={14} className="animate-spin" /> : <Play size={14} weight="fill" />}
                             </button>
@@ -433,8 +436,8 @@ export default function AutomationsPage() {
                               onClick={() => handleOpenConfig(template)}
                               className="text-gray-400 hover:text-gray-600 text-xs transition-colors"
                               data-tour="automations-config-btn"
-                              aria-label={`Configurar ${template.nombre}`}
-                              title="Configurar"
+                              aria-label={`${t('configure')} ${template.nombre}`}
+                              title={t('configure')}
                             >
                               <GearSix size={14} />
                             </button>
@@ -459,7 +462,7 @@ export default function AutomationsPage() {
             >
               <div className="flex items-center gap-2">
                 <Lightning size={18} className="text-amber-500" />
-                <span className="font-semibold text-sm text-gray-900">Historial de ejecuciones</span>
+                <span className="font-semibold text-sm text-gray-900">{t('historyTitle')}</span>
                 {historialTotal > 0 && (
                   <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-md">
                     {historialTotal}
@@ -474,13 +477,13 @@ export default function AutomationsPage() {
                 {historialLoading ? (
                   <div className="py-12 text-center">
                     <RefreshCw className="w-6 h-6 mx-auto mb-2 text-gray-300 animate-spin" />
-                    <p className="text-sm text-gray-400">Cargando historial...</p>
+                    <p className="text-sm text-gray-400">{tc('loading')}</p>
                   </div>
                 ) : historial.length === 0 ? (
                   <div className="py-12 text-center">
                     <Clock size={32} className="mx-auto mb-2 text-gray-200" />
-                    <p className="text-sm text-gray-400">Sin ejecuciones registradas</p>
-                    <p className="text-xs text-gray-300 mt-1">Las ejecuciones aparecerán aquí cuando las automatizaciones se ejecuten.</p>
+                    <p className="text-sm text-gray-400">{t('emptyHistoryTitle')}</p>
+                    <p className="text-xs text-gray-300 mt-1">{t('emptyHistoryDesc')}</p>
                   </div>
                 ) : (
                   <>
@@ -489,10 +492,10 @@ export default function AutomationsPage() {
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="bg-gray-50 border-b border-gray-100">
-                            <th className="text-left px-5 py-2.5 font-medium text-gray-500">Fecha</th>
-                            <th className="text-left px-5 py-2.5 font-medium text-gray-500">Automatización</th>
-                            <th className="text-left px-5 py-2.5 font-medium text-gray-500">Resultado</th>
-                            <th className="text-left px-5 py-2.5 font-medium text-gray-500">Acción</th>
+                            <th className="text-left px-5 py-2.5 font-medium text-gray-500">{t('columns.date')}</th>
+                            <th className="text-left px-5 py-2.5 font-medium text-gray-500">{t('columns.automation')}</th>
+                            <th className="text-left px-5 py-2.5 font-medium text-gray-500">{t('columns.result')}</th>
+                            <th className="text-left px-5 py-2.5 font-medium text-gray-500">{t('columns.action')}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -540,17 +543,17 @@ export default function AutomationsPage() {
                           disabled={historialPage <= 1}
                           className="text-xs text-gray-500 hover:text-gray-700 disabled:opacity-50 transition-colors"
                         >
-                          Anterior
+                          {tc('previous')}
                         </button>
                         <span className="text-xs text-gray-400">
-                          Página {historialPage} de {Math.ceil(historialTotal / 10)}
+                          {tc('page')} {historialPage} {tc('of')} {Math.ceil(historialTotal / 10)}
                         </span>
                         <button
                           onClick={() => loadHistorial(historialPage + 1)}
                           disabled={historialPage >= Math.ceil(historialTotal / 10)}
                           className="text-xs text-gray-500 hover:text-gray-700 disabled:opacity-50 transition-colors"
                         >
-                          Siguiente
+                          {tc('next')}
                         </button>
                       </div>
                     )}
@@ -566,9 +569,9 @@ export default function AutomationsPage() {
         <div className="mx-4 mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-3">
           <Warning size={20} className="text-amber-600 shrink-0" />
           <div>
-            <p className="text-sm font-medium text-amber-800">Tu suscripción ha expirado</p>
+            <p className="text-sm font-medium text-amber-800">{t('subscriptionExpired')}</p>
             <p className="text-xs text-amber-600 mt-0.5">
-              Las automatizaciones están pausadas. Suscríbete para reactivarlas.
+              {t('subscriptionExpiredDesc')}
             </p>
           </div>
         </div>
@@ -578,17 +581,17 @@ export default function AutomationsPage() {
       <Drawer
         isOpen={configDrawerOpen}
         onClose={() => setConfigDrawerOpen(false)}
-        title={`Configurar: ${configTemplate?.nombre || ''}`}
-        description="Ajusta los parámetros de esta automatización"
+        title={t('configurePrefix', { name: configTemplate?.nombre || '' })}
+        description={t('drawerConfigDesc')}
         icon={<GearSix size={20} className="text-gray-500" />}
         footer={
           <div className="flex gap-3 justify-end" data-tour="automations-drawer-actions">
             <Button type="button" variant="outline" onClick={() => setConfigDrawerOpen(false)}>
-              Cancelar
+              {tc('cancel')}
             </Button>
             <Button type="button" variant="success" onClick={handleSaveConfig} disabled={savingConfig} className="flex items-center gap-2">
               {savingConfig && <Loader2 className="w-4 h-4 animate-spin" />}
-              Guardar Cambios
+              {t('saveChanges')}
             </Button>
           </div>
         }
@@ -661,7 +664,7 @@ export default function AutomationsPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 />
                 {config.min !== undefined && config.max !== undefined && (
-                  <p className="text-[11px] text-gray-400 mt-1">Rango: {config.min} – {config.max}</p>
+                  <p className="text-[11px] text-gray-400 mt-1">{t('range', { min: config.min, max: config.max })}</p>
                 )}
               </div>
             );
@@ -673,15 +676,15 @@ export default function AutomationsPage() {
       <Modal
         isOpen={!!confirmDeactivate}
         onClose={() => setConfirmDeactivate(null)}
-        title="Desactivar automatización"
+        title={t('confirmDeactivateTitle')}
         size="sm"
       >
         <p className="text-sm text-gray-600 mb-4">
-          ¿Deseas desactivar <strong>{confirmDeactivate?.nombre}</strong>? Esta automatización dejará de ejecutarse hasta que la reactives.
+          {t('confirmDeactivateDesc', { name: confirmDeactivate?.nombre || '' })}
         </p>
         <div className="flex gap-3 justify-end">
           <Button type="button" variant="outline" onClick={() => setConfirmDeactivate(null)}>
-            Cancelar
+            {tc('cancel')}
           </Button>
           <Button type="button" variant="destructive" onClick={async () => {
               if (confirmDeactivate) {
@@ -689,7 +692,7 @@ export default function AutomationsPage() {
                 await executeToggle(confirmDeactivate);
               }
             }}>
-            Desactivar
+            {tc('deactivate')}
           </Button>
         </div>
       </Modal>

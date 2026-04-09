@@ -8,8 +8,10 @@ import { subscriptionService } from '@/services/api/subscriptions';
 import type { SubscriptionStatus } from '@/types/subscription';
 import { UserRole } from '@/types/users';
 import { useFormatters } from '@/hooks/useFormatters';
+import { useTranslations } from 'next-intl';
 
 export function ExpirationBanner() {
+  const ts = useTranslations('subscription');
   const { formatDate } = useFormatters();
   const { data: session } = useSession();
   const router = useRouter();
@@ -49,26 +51,26 @@ export function ExpirationBanner() {
 
   if (status === 'PastDue') {
     bannerType = 'danger';
-    message = 'Hubo un problema con tu pago. Actualiza tu método de pago para evitar la suspensión del servicio.';
-    actionLabel = 'Actualizar pago';
+    message = ts('paymentProblem');
+    actionLabel = ts('updatePayment');
   } else if (status === 'Expired' && graceEnd && graceEnd > now) {
     const daysLeft = Math.ceil((graceEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
     bannerType = 'danger';
-    message = `Tu suscripción ha expirado. Tienes ${daysLeft} día${daysLeft !== 1 ? 's' : ''} para renovar antes de que se suspenda el acceso.`;
-    actionLabel = 'Renovar ahora';
+    message = ts('expiredGrace', { days: daysLeft });
+    actionLabel = ts('renewNow');
   } else if (status === 'Cancelled') {
     if (expDate && expDate > now) {
       const daysLeft = Math.ceil((expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
       bannerType = 'warning';
-      message = `Tu suscripción fue cancelada. El acceso continúa hasta el ${formatDate(expDate, { year: 'numeric', month: 'long', day: 'numeric' })} (${daysLeft} día${daysLeft !== 1 ? 's' : ''}).`;
-      actionLabel = 'Reactivar';
+      message = ts('cancelledAccess', { date: formatDate(expDate, { year: 'numeric', month: 'long', day: 'numeric' }), days: daysLeft });
+      actionLabel = ts('reactivate');
     }
   } else if (expDate && status === 'Active') {
     const daysUntilExpiry = Math.ceil((expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
     if (daysUntilExpiry <= 7 && daysUntilExpiry > 0) {
       bannerType = 'warning';
-      message = `Tu suscripción expira en ${daysUntilExpiry} día${daysUntilExpiry !== 1 ? 's' : ''}. Renueva para mantener el acceso sin interrupciones.`;
-      actionLabel = 'Renovar';
+      message = ts('expiresIn', { days: daysUntilExpiry, plural: daysUntilExpiry !== 1 ? 's' : '' });
+      actionLabel = ts('renew');
     }
   }
 

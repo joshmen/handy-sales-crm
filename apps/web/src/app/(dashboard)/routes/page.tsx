@@ -39,6 +39,7 @@ import { DataGrid, DataGridColumn } from '@/components/ui/DataGrid';
 import { Path } from '@phosphor-icons/react';
 import { useFormatters } from '@/hooks/useFormatters';
 import { dateOnlyToUTC } from '@/lib/formatters';
+import { useTranslations } from 'next-intl';
 
 interface ZoneOption {
   id: number;
@@ -64,6 +65,8 @@ const routeSchema = z.object({
 type RouteFormData = z.infer<typeof routeSchema>;
 
 export default function RoutesPage() {
+  const t = useTranslations('routes');
+  const tc = useTranslations('common');
   const router = useRouter();
   const { formatDateOnly } = useFormatters();
   const { data: session } = useSession();
@@ -128,8 +131,8 @@ export default function RoutesPage() {
       setTotalPages(Math.ceil(response.total / pageSize) || 1);
     } catch (err) {
       console.error('Error al cargar rutas:', err);
-      setError('Error al cargar las rutas. Intenta de nuevo.');
-      toast.error('Error al cargar rutas');
+      setError(t('errorLoadingRetry'));
+      toast.error(t('errorLoading'));
     } finally {
       setLoading(false);
     }
@@ -166,7 +169,7 @@ export default function RoutesPage() {
 
   const handleRefresh = () => {
     fetchRoutes();
-    toast.success('Las rutas se han actualizado correctamente');
+    toast.success(t('routesUpdated'));
   };
 
   // Sort state
@@ -197,7 +200,7 @@ export default function RoutesPage() {
   const routeColumns = useMemo<DataGridColumn<RouteListItem>[]>(() => [
     {
       key: 'nombre',
-      label: 'Nombre',
+      label: t('columns.name'),
       sortable: true,
       width: 'flex',
       cellRenderer: (route) => (
@@ -208,27 +211,27 @@ export default function RoutesPage() {
     },
     {
       key: 'zonaNombre',
-      label: 'Zona',
+      label: t('columns.zone'),
       width: 120,
       cellRenderer: (route) => <span className="text-[13px] text-gray-600 truncate block">{route.zonaNombre || '-'}</span>,
     },
     {
       key: 'usuarioNombre',
-      label: 'Usuario',
+      label: t('columns.user'),
       sortable: true,
       width: 140,
       cellRenderer: (route) => <span className="text-[13px] text-gray-600 truncate block">{route.usuarioNombre}</span>,
     },
     {
       key: 'fecha',
-      label: 'Fecha',
+      label: t('columns.date'),
       sortable: true,
       width: 100,
       cellRenderer: (route) => <span className="text-[13px] text-gray-900">{formatDateOnly(route.fecha)}</span>,
     },
     {
       key: 'horario',
-      label: 'Horario',
+      label: t('columns.schedule'),
       width: 110,
       align: 'center',
       cellRenderer: (route) => (
@@ -241,7 +244,7 @@ export default function RoutesPage() {
     },
     {
       key: 'estado',
-      label: 'Estado',
+      label: t('columns.status'),
       width: 110,
       align: 'center',
       cellRenderer: (route) => {
@@ -251,7 +254,7 @@ export default function RoutesPage() {
     },
     {
       key: 'paradas',
-      label: 'Paradas',
+      label: t('columns.stops'),
       width: 80,
       align: 'center',
       cellRenderer: (route) => (
@@ -264,7 +267,7 @@ export default function RoutesPage() {
     },
     {
       key: 'activo',
-      label: 'Activo',
+      label: t('columns.active'),
       width: 50,
       align: 'center',
       cellRenderer: (route) => (
@@ -279,7 +282,7 @@ export default function RoutesPage() {
       width: 32,
       cellRenderer: (route) => (
         <div onClick={(e) => e.stopPropagation()}>
-          <button onClick={() => handleOpenEdit(route)} disabled={loading} className="p-1 text-amber-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors disabled:opacity-50" title="Editar">
+          <button onClick={() => handleOpenEdit(route)} disabled={loading} className="p-1 text-amber-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors disabled:opacity-50" title={tc('edit')}>
             <Pencil className="w-4 h-4" />
           </button>
         </div>
@@ -287,22 +290,22 @@ export default function RoutesPage() {
     },
     {
       key: 'contextAction',
-      label: 'Acción',
+      label: t('columns.action'),
       width: 80,
       align: 'center',
       cellRenderer: (route) => (
         <div onClick={(e) => e.stopPropagation()}>
           {(route.estado === 0) && (
-            <button onClick={() => router.push(`/routes/manage/${route.id}/load`)} className="text-[11px] font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-md transition-colors">Cargar</button>
+            <button onClick={() => router.push(`/routes/manage/${route.id}/load`)} className="text-[11px] font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-md transition-colors">{t('actions.load')}</button>
           )}
           {(route.estado === 1 || route.estado === 4 || route.estado === 5) && (
-            <button onClick={() => router.push(`/routes/manage/${route.id}/load`)} className="text-[11px] font-medium text-gray-600 hover:text-gray-800 bg-gray-50 hover:bg-gray-100 px-2.5 py-1 rounded-md transition-colors">Ver carga</button>
+            <button onClick={() => router.push(`/routes/manage/${route.id}/load`)} className="text-[11px] font-medium text-gray-600 hover:text-gray-800 bg-gray-50 hover:bg-gray-100 px-2.5 py-1 rounded-md transition-colors">{t('actions.viewLoad')}</button>
           )}
           {route.estado === 2 && (
-            <button onClick={() => router.push(`/routes/manage/${route.id}/close`)} className="text-[11px] font-medium text-green-600 hover:text-green-800 bg-green-50 hover:bg-green-100 px-2.5 py-1 rounded-md transition-colors">Cerrar</button>
+            <button onClick={() => router.push(`/routes/manage/${route.id}/close`)} className="text-[11px] font-medium text-green-600 hover:text-green-800 bg-green-50 hover:bg-green-100 px-2.5 py-1 rounded-md transition-colors">{t('actions.close')}</button>
           )}
           {route.estado === 6 && (
-            <button onClick={() => router.push(`/routes/manage/${route.id}/close`)} className="text-[11px] font-medium text-gray-500 bg-gray-50 px-2.5 py-1 rounded-md">Cerrado</button>
+            <button onClick={() => router.push(`/routes/manage/${route.id}/close`)} className="text-[11px] font-medium text-gray-500 bg-gray-50 px-2.5 py-1 rounded-md">{t('actions.closed')}</button>
           )}
         </div>
       ),
@@ -326,7 +329,7 @@ export default function RoutesPage() {
       batch.completeBatch();
       fetchRoutes();
     } catch {
-      toast.error('Error al actualizar rutas');
+      toast.error(t('errorUpdating'));
       batch.setBatchLoading(false);
     }
   };
@@ -338,14 +341,14 @@ export default function RoutesPage() {
     setRoutes(prev => prev.map(r => r.id === route.id ? { ...r, activo: newActivo } : r));
     try {
       await routeService.toggleActivo(route.id, newActivo);
-      toast.success(`Ruta ${newActivo ? 'activada' : 'desactivada'}`);
+      toast.success(newActivo ? t('routeActivated') : t('routeDeactivated'));
       if (!showInactive && !newActivo) {
         setRoutes(prev => prev.filter(r => r.id !== route.id));
         setTotalItems(prev => prev - 1);
       }
     } catch {
       setRoutes(prev => prev.map(r => r.id === route.id ? { ...r, activo: !newActivo } : r));
-      toast.error('Error al cambiar estado');
+      toast.error(t('errorUpdating'));
     } finally {
       setTogglingId(null);
     }
@@ -399,10 +402,10 @@ export default function RoutesPage() {
           notas: data.notas || undefined,
         };
         await routeService.updateRuta(editingRoute.id, updateData);
-        toast.success('Ruta actualizada exitosamente');
+        toast.success(t('routeUpdated'));
       } else {
         if (!data.usuarioId) {
-          toast.error('Selecciona un usuario');
+          toast.error(t('selectUser'));
           setActionLoading(false);
           return;
         }
@@ -418,13 +421,13 @@ export default function RoutesPage() {
           notas: data.notas || undefined,
         };
         await routeService.createRuta(createData);
-        toast.success('Ruta creada exitosamente');
+        toast.success(t('routeCreated'));
       }
       setIsModalOpen(false);
       fetchRoutes();
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } }; message?: string };
-      const msg = e?.response?.data?.message || e?.message || 'Error al guardar ruta';
+      const msg = e?.response?.data?.message || e?.message || t('errorSaving');
       toast.error(msg);
     } finally {
       setActionLoading(false);
@@ -434,40 +437,40 @@ export default function RoutesPage() {
   // Estado badge
   const getEstadoBadge = (estado: number) => {
     switch (estado) {
-      case 0: return { label: 'Planificada', cls: 'bg-gray-100 text-gray-600' };
-      case 1: return { label: 'En progreso', cls: 'bg-cyan-100 text-cyan-700' };
-      case 2: return { label: 'Completada', cls: 'bg-green-100 text-green-600' };
-      case 3: return { label: 'Cancelada', cls: 'bg-red-100 text-red-600' };
-      case 4: return { label: 'Pend. aceptar', cls: 'bg-yellow-100 text-yellow-700' };
-      case 5: return { label: 'Carga aceptada', cls: 'bg-blue-100 text-blue-700' };
-      case 6: return { label: 'Cerrada', cls: 'bg-emerald-100 text-emerald-700' };
-      default: return { label: 'Desconocido', cls: 'bg-gray-100 text-gray-600' };
+      case 0: return { label: t('status.planned'), cls: 'bg-gray-100 text-gray-600' };
+      case 1: return { label: t('status.inProgress'), cls: 'bg-cyan-100 text-cyan-700' };
+      case 2: return { label: t('status.completed'), cls: 'bg-green-100 text-green-600' };
+      case 3: return { label: t('status.cancelled'), cls: 'bg-red-100 text-red-600' };
+      case 4: return { label: t('status.pendingAccept'), cls: 'bg-yellow-100 text-yellow-700' };
+      case 5: return { label: t('status.loadAccepted'), cls: 'bg-blue-100 text-blue-700' };
+      case 6: return { label: t('status.closed'), cls: 'bg-emerald-100 text-emerald-700' };
+      default: return { label: t('status.unknown'), cls: 'bg-gray-100 text-gray-600' };
     }
   };
 
   const estadoOptions = [
-    { value: 'all', label: 'Todos los estados' },
-    { value: '0', label: 'Planificada' },
-    { value: '1', label: 'En progreso' },
-    { value: '2', label: 'Completada' },
-    { value: '3', label: 'Cancelada' },
-    { value: '4', label: 'Pend. aceptar' },
-    { value: '5', label: 'Carga aceptada' },
-    { value: '6', label: 'Cerrada' },
+    { value: 'all', label: t('filters.allStatuses') },
+    { value: '0', label: t('status.planned') },
+    { value: '1', label: t('status.inProgress') },
+    { value: '2', label: t('status.completed') },
+    { value: '3', label: t('status.cancelled') },
+    { value: '4', label: t('status.pendingAccept') },
+    { value: '5', label: t('status.loadAccepted') },
+    { value: '6', label: t('status.closed') },
   ];
 
   const zonaOptions = [
-    { value: 'all', label: 'Todas las zonas' },
+    { value: 'all', label: t('filters.allZones') },
     ...zones.map(z => ({ value: z.id.toString(), label: z.name })),
   ];
 
   return (
     <PageHeader
       breadcrumbs={[
-        { label: 'Inicio', href: '/dashboard' },
-        { label: 'Rutas' },
+        { label: tc('home'), href: '/dashboard' },
+        { label: t('title') },
       ]}
-      title="Rutas"
+      title={t('title')}
       subtitle={totalItems > 0 ? `${totalItems} ruta${totalItems !== 1 ? 's' : ''}` : undefined}
       actions={
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
@@ -477,7 +480,7 @@ export default function RoutesPage() {
             className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
           >
             <Download className="w-3.5 h-3.5 text-emerald-500" />
-            <span className="hidden sm:inline">Exportar</span>
+            <span className="hidden sm:inline">{tc('export')}</span>
           </button>
           <button
             data-tour="routes-new-btn"
@@ -485,7 +488,7 @@ export default function RoutesPage() {
             className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
           >
             <Plus className="w-4 h-4" />
-            <span>Nueva ruta</span>
+            <span>{t('newRoute')}</span>
           </button>
         </div>
       }
@@ -496,7 +499,7 @@ export default function RoutesPage() {
           <SearchBar
             value={searchTerm}
             onChange={(v) => { setSearchTerm(v); setCurrentPage(1); }}
-            placeholder="Buscar ruta..."
+            placeholder={t('searchPlaceholder')}
             dataTour="routes-search"
           />
 
@@ -505,7 +508,7 @@ export default function RoutesPage() {
               options={estadoOptions}
               value={estadoFilter}
               onChange={(val) => { setEstadoFilter(val ? String(val) : 'all'); setCurrentPage(1); }}
-              placeholder="Todos los estados"
+              placeholder={t('filters.allStatuses')}
             />
           </div>
 
@@ -514,7 +517,7 @@ export default function RoutesPage() {
               options={zonaOptions}
               value={zonaFilter}
               onChange={(val) => { setZonaFilter(val ? String(val) : 'all'); setCurrentPage(1); }}
-              placeholder="Todas las zonas"
+              placeholder={t('filters.allZones')}
             />
           </div>
 
@@ -522,12 +525,12 @@ export default function RoutesPage() {
           <div className="min-w-[160px]">
             <SearchableSelect
               options={[
-                { value: 'all', label: 'Todos los vendedores' },
+                { value: 'all', label: t('filters.allVendors') },
                 ...usuarios.map(u => ({ value: u.id.toString(), label: u.nombre })),
               ]}
               value={usuarioFilter}
               onChange={(val) => { setUsuarioFilter(val ? String(val) : 'all'); setCurrentPage(1); }}
-              placeholder="Todos los vendedores"
+              placeholder={t('filters.allVendors')}
             />
           </div>
           )}
@@ -538,7 +541,7 @@ export default function RoutesPage() {
             className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 text-white ${loading ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline">Actualizar</span>
+            <span className="hidden sm:inline">{tc('refresh')}</span>
           </button>
 
           <div data-tour="routes-toggle-inactive" className="ml-auto">
@@ -570,10 +573,10 @@ export default function RoutesPage() {
             data={sortedRoutes}
             keyExtractor={(r) => r.id}
             loading={loading}
-            loadingMessage="Cargando rutas..."
+            loadingMessage={t('loadingMessage')}
             emptyIcon={<MapPin className="w-16 h-16 text-cyan-300" />}
-            emptyTitle="No hay rutas"
-            emptyMessage={searchTerm || estadoFilter !== 'all' || zonaFilter !== 'all' ? 'No se encontraron resultados con los filtros aplicados' : 'Crea tu primera ruta de venta para comenzar'}
+            emptyTitle={t('emptyTitle')}
+            emptyMessage={searchTerm || estadoFilter !== 'all' || zonaFilter !== 'all' ? t('emptyFiltered') : t('emptyDefault')}
             onRowClick={(route) => handleOpenEdit(route)}
             sort={{
               key: sortKey,
@@ -603,7 +606,7 @@ export default function RoutesPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium text-gray-900 truncate">{route.nombre}</div>
-                      <div className="text-xs text-gray-500 truncate">{route.zonaNombre || 'Sin zona'}</div>
+                      <div className="text-xs text-gray-500 truncate">{route.zonaNombre || t('noZone')}</div>
                     </div>
                     <div onClick={(e) => e.stopPropagation()}>
                       <ActiveToggle isActive={route.activo} onToggle={() => handleToggleActive(route)} disabled={loading} isLoading={togglingId === route.id} />
@@ -616,7 +619,7 @@ export default function RoutesPage() {
                     <span className="text-xs text-gray-500">{formatDateOnly(route.fecha)}</span>
                   </div>
                   <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
-                    <button onClick={() => handleOpenEdit(route)} disabled={loading} className="px-3 py-1.5 text-xs font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 transition-colors disabled:opacity-50">Editar</button>
+                    <button onClick={() => handleOpenEdit(route)} disabled={loading} className="px-3 py-1.5 text-xs font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 transition-colors disabled:opacity-50">{tc('edit')}</button>
                   </div>
                 </>
               );
@@ -634,8 +637,8 @@ export default function RoutesPage() {
         selectedCount={batch.selectedCount}
         entityLabel="ruta"
         loading={batch.batchLoading}
-        consequenceActivate="Las rutas activadas volverán a estar disponibles."
-        consequenceDeactivate="Las rutas desactivadas no estarán disponibles."
+        consequenceActivate={t('batchConsequenceActivate')}
+        consequenceDeactivate={t('batchConsequenceDeactivate')}
       />
 
       {/* Create/Edit Route Drawer */}
@@ -643,7 +646,7 @@ export default function RoutesPage() {
         ref={drawerRef}
         isOpen={isModalOpen}
         onClose={() => !actionLoading && setIsModalOpen(false)}
-        title={editingRoute ? 'Editar Ruta' : 'Nueva Ruta'}
+        title={editingRoute ? t('drawer.editTitle') : t('drawer.createTitle')}
         icon={<Map className="w-5 h-5 text-teal-500" />}
         width="lg"
         isDirty={isDirty}
@@ -655,7 +658,7 @@ export default function RoutesPage() {
               disabled={actionLoading}
               className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
             >
-              Cancelar
+              {tc('cancel')}
             </button>
             <button
               onClick={rhfSubmit(handleSubmit)}
@@ -663,7 +666,7 @@ export default function RoutesPage() {
               className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
             >
               {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-              {editingRoute ? 'Guardar cambios' : 'Crear ruta'}
+              {editingRoute ? t('drawer.saveChanges') : t('drawer.createRoute')}
             </button>
           </div>
         }
@@ -671,19 +674,19 @@ export default function RoutesPage() {
         <form onSubmit={rhfSubmit(handleSubmit)} className="p-6 space-y-5">
           {/* ── Información general ── */}
           <div className="space-y-4">
-            <h4 className="text-xs font-semibold text-gray-400">Información general</h4>
+            <h4 className="text-xs font-semibold text-gray-400">{t('drawer.generalInfo')}</h4>
 
             {/* Nombre */}
             <div data-tour="routes-drawer-nombre">
               <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
                 <Map className="w-3.5 h-3.5 text-teal-500" />
-                Nombre <span className="text-red-500">*</span>
+                {t('columns.name')} <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 {...register('nombre')}
                 maxLength={100}
-                placeholder="Ej: Ruta Centro - Lunes"
+                placeholder={t('drawer.namePlaceholder')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
               />
               {errors.nombre && <p className="text-xs text-red-500 mt-1">{errors.nombre.message}</p>}
@@ -693,13 +696,13 @@ export default function RoutesPage() {
             <div data-tour="routes-drawer-vendedor">
               <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
                 <User className="w-3.5 h-3.5 text-blue-500" />
-                Vendedor <span className="text-red-500">*</span>
+                {t('drawer.vendor')} <span className="text-red-500">*</span>
               </label>
               <SearchableSelect
                 options={usuarios.map(u => ({ value: u.id.toString(), label: u.nombre }))}
                 value={watch('usuarioId') ? watch('usuarioId').toString() : ''}
                 onChange={(val) => setValue('usuarioId', val ? parseInt(String(val)) : 0, { shouldDirty: true })}
-                placeholder="Seleccionar vendedor..."
+                placeholder={t('drawer.selectVendor')}
               />
             </div>
 
@@ -707,16 +710,16 @@ export default function RoutesPage() {
             <div data-tour="routes-drawer-zona">
               <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
                 <MapPinned className="w-3.5 h-3.5 text-violet-500" />
-                Zona
+                {t('columns.zone')}
               </label>
               <SearchableSelect
                 options={[
-                  { value: '', label: 'Sin zona' },
+                  { value: '', label: t('drawer.noZone') },
                   ...zones.map(z => ({ value: z.id.toString(), label: z.name })),
                 ]}
                 value={watch('zonaId') ? watch('zonaId')!.toString() : ''}
                 onChange={(val) => setValue('zonaId', val ? parseInt(String(val)) : null, { shouldDirty: true })}
-                placeholder="Seleccionar zona..."
+                placeholder={t('drawer.selectZone')}
               />
             </div>
           </div>
@@ -725,13 +728,13 @@ export default function RoutesPage() {
 
           {/* ── Programación ── */}
           <div className="space-y-4">
-            <h4 className="text-xs font-semibold text-gray-400">Programación</h4>
+            <h4 className="text-xs font-semibold text-gray-400">{t('drawer.scheduling')}</h4>
 
             {/* Fecha */}
             <div data-tour="routes-drawer-fecha">
               <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
                 <Calendar className="w-3.5 h-3.5 text-amber-500" />
-                Fecha <span className="text-red-500">*</span>
+                {t('columns.date')} <span className="text-red-500">*</span>
               </label>
               <DateTimePicker
                 mode="date"
@@ -746,7 +749,7 @@ export default function RoutesPage() {
               <div>
                 <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
                   <Clock className="w-3.5 h-3.5 text-cyan-500" />
-                  Hora inicio
+                  {t('drawer.startTime')}
                 </label>
                 <input
                   type="time"
@@ -757,7 +760,7 @@ export default function RoutesPage() {
               <div>
                 <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
                   <Clock className="w-3.5 h-3.5 text-cyan-500" />
-                  Hora fin
+                  {t('drawer.endTime')}
                 </label>
                 <input
                   type="time"
@@ -772,17 +775,17 @@ export default function RoutesPage() {
 
           {/* ── Detalles adicionales ── */}
           <div className="space-y-4">
-            <h4 className="text-xs font-semibold text-gray-400">Detalles adicionales</h4>
+            <h4 className="text-xs font-semibold text-gray-400">{t('drawer.additionalDetails')}</h4>
 
             {/* Descripción */}
             <div data-tour="routes-drawer-descripcion">
               <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                Descripción
+                {tc('description')}
               </label>
               <textarea
                 {...register('descripcion')}
                 rows={2}
-                placeholder="Descripción de la ruta..."
+                placeholder={t('drawer.descriptionPlaceholder')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
               />
             </div>
@@ -790,12 +793,12 @@ export default function RoutesPage() {
             {/* Notas */}
             <div data-tour="routes-drawer-notas">
               <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                Notas
+                {tc('notes')}
               </label>
               <textarea
                 {...register('notas')}
                 rows={2}
-                placeholder="Notas adicionales..."
+                placeholder={t('drawer.notesPlaceholder')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
               />
             </div>

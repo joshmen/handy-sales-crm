@@ -43,6 +43,7 @@ import { MapPin as MapPinIcon, CaretRight } from '@phosphor-icons/react';
 import { GoogleMapWrapper, Circle } from '@/components/maps/GoogleMapWrapper';
 import type { MapMarker } from '@/components/maps/GoogleMapWrapper';
 import { GoogleMap, useJsApiLoader, Marker as GMarker, Circle as GCircle, Autocomplete } from '@react-google-maps/api';
+import { useTranslations } from 'next-intl';
 
 const DEFAULT_CENTER = { lat: 20.6597, lng: -103.3496 }; // Guadalajara, México
 const MAPS_LIBRARIES: ('places')[] = ['places'];
@@ -68,6 +69,8 @@ const zoneFormSchema = z.object({
 type ZoneFormData = z.infer<typeof zoneFormSchema>;
 
 export default function ZonesPage() {
+  const t = useTranslations('zones');
+  const tc = useTranslations('common');
   const drawerRef = useRef<DrawerHandle>(null);
   const [zones, setZones] = useState<Zone[]>([]);
   const [loading, setLoading] = useState(true);
@@ -175,8 +178,8 @@ export default function ZonesPage() {
       setTotalPages(response.totalPages || 1);
     } catch (err) {
       console.error('Error al cargar zonas:', err);
-      setError('Error al cargar las zonas. Intenta de nuevo.');
-      toast.error('Error al cargar las zonas');
+      setError(t('errorLoadingRetry'));
+      toast.error(t('errorLoading'));
     } finally {
       setLoading(false);
     }
@@ -219,10 +222,10 @@ export default function ZonesPage() {
           id: editingZone.id,
           ...data,
         });
-        toast.success('Zona actualizada correctamente');
+        toast.success(t('zoneUpdated'));
       } else {
         await zoneService.createZone(data);
-        toast.success('Zona creada correctamente');
+        toast.success(t('zoneCreated'));
       }
       await fetchZones();
       setShowZoneForm(false);
@@ -231,7 +234,7 @@ export default function ZonesPage() {
     } catch (err) {
       console.error('Error al guardar zona:', err);
       const apiErr = err as { message?: string };
-      toast.error(apiErr?.message || 'Error al guardar la zona');
+      toast.error(apiErr?.message || t('errorSaving'));
     } finally {
       setSavingZone(false);
     }
@@ -276,7 +279,7 @@ export default function ZonesPage() {
       setAllZonesForMap(response.zones);
       setIsMapOpen(true);
     } catch {
-      toast.error('Error al cargar zonas para el mapa');
+      toast.error(t('errorLoadingMap'));
     }
   };
 
@@ -286,7 +289,7 @@ export default function ZonesPage() {
       setTogglingId(zone.id);
       const newActive = !zone.isEnabled;
       await api.patch(`/zonas/${zone.id}/activo`, { activo: newActive });
-      toast.success(newActive ? 'Zona activada' : 'Zona desactivada');
+      toast.success(newActive ? t('zoneActivated') : t('zoneDeactivated'));
       if (!showInactive && !newActive) {
         setZones(prev => prev.filter(z => z.id !== zone.id));
       } else {
@@ -296,7 +299,7 @@ export default function ZonesPage() {
       }
     } catch (err: unknown) {
       console.error('Error al cambiar estado:', err);
-      const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Error al cambiar el estado de la zona';
+      const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('errorChangingStatus');
       toast.error(message);
     } finally {
       setTogglingId(null);
@@ -312,10 +315,10 @@ export default function ZonesPage() {
   const handleDelete = async (id: string) => {
     try {
       await zoneService.deleteZone(id);
-      toast.success('Zona eliminada');
+      toast.success(t('zoneDeleted'));
       fetchZones();
     } catch {
-      toast.error('Error al eliminar la zona');
+      toast.error(t('errorDeleting'));
     }
   };
 
@@ -356,16 +359,16 @@ export default function ZonesPage() {
 
   const handleRefresh = () => {
     fetchZones();
-    toast.success('Las zonas se han actualizado correctamente');
+    toast.success(t('zonesUpdated'));
   };
 
   return (
     <PageHeader
       breadcrumbs={[
-        { label: 'Inicio', href: '/dashboard' },
-        { label: 'Zonas' },
+        { label: tc('home'), href: '/dashboard' },
+        { label: t('title') },
       ]}
-      title="Zonas"
+      title={t('title')}
       subtitle={totalZones > 0 ? `${totalZones} zona${totalZones !== 1 ? 's' : ''}` : undefined}
       actions={
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
@@ -414,7 +417,7 @@ export default function ZonesPage() {
             className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-success rounded-lg hover:bg-success/90 transition-colors"
           >
             <Plus className="w-4 h-4" />
-            <span>Nueva zona</span>
+            <span>{t('newZone')}</span>
           </button>
         </div>
       }
@@ -422,7 +425,7 @@ export default function ZonesPage() {
       <div className="space-y-4">
         {/* Toolbar */}
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          <SearchBar value={searchTerm} onChange={(v) => { setSearchTerm(v); setCurrentPage(1); }} placeholder="Buscar zona..." dataTour="zones-search" />
+          <SearchBar value={searchTerm} onChange={(v) => { setSearchTerm(v); setCurrentPage(1); }} placeholder={t('searchPlaceholder')} dataTour="zones-search" />
 
           <button
             onClick={handleRefresh}
@@ -466,9 +469,9 @@ export default function ZonesPage() {
             {!loading && zones.length === 0 && (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <MapPin className="w-12 h-12 text-teal-300 mb-4" />
-                <p className="text-lg font-medium text-gray-900">No hay zonas</p>
+                <p className="text-lg font-medium text-gray-900">{t('emptyTitle')}</p>
                 <p className="text-sm text-gray-500 mb-4">
-                  {searchTerm ? 'No se encontraron resultados' : 'Crea tu primera zona para comenzar'}
+                  {searchTerm ? t('emptyFiltered') : t('emptyDefault')}
                 </p>
               </div>
             )}
@@ -506,7 +509,7 @@ export default function ZonesPage() {
                       {zone.name}
                     </div>
                     <div className="text-xs text-gray-500 truncate">
-                      {zone.description || 'Sin descripción'}
+                      {zone.description || t('noDescription')}
                     </div>
                   </div>
 
@@ -584,7 +587,7 @@ export default function ZonesPage() {
                     <MapPin className="w-12 h-12 mx-auto mb-4 text-teal-300" />
                     <p className="text-lg font-medium">No hay zonas</p>
                     <p className="text-sm">
-                      {searchTerm ? 'No se encontraron resultados' : 'Crea tu primera zona para comenzar'}
+                      {searchTerm ? t('emptyFiltered') : t('emptyDefault')}
                     </p>
                   </div>
                 </div>
@@ -680,7 +683,7 @@ export default function ZonesPage() {
           <Modal
             isOpen={isMapOpen}
             onClose={() => setIsMapOpen(false)}
-            title="Mapa de Zonas"
+            title={t('mapTitle')}
             size="2xl"
           >
             <div className="space-y-3">

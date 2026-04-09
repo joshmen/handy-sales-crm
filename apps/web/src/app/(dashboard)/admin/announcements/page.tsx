@@ -39,27 +39,29 @@ import {
 import { tenantService } from '@/services/api/tenants';
 import type { Tenant } from '@/types/tenant';
 import { useFormatters } from '@/hooks/useFormatters';
+import { useTranslations } from 'next-intl';
 
-const tipoLabels: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
-  Broadcast: { label: 'Broadcast', icon: <Radio className="h-4 w-4" />, color: 'bg-purple-100 text-purple-700' },
-  Maintenance: { label: 'Mantenimiento', icon: <Wrench className="h-4 w-4" />, color: 'bg-red-100 text-red-700' },
-  Banner: { label: 'Banner', icon: <Info className="h-4 w-4" />, color: 'bg-blue-100 text-blue-700' },
+const tipoIcons: Record<string, { icon: React.ReactNode; color: string }> = {
+  Broadcast: { icon: <Radio className="h-4 w-4" />, color: 'bg-purple-100 text-purple-700' },
+  Maintenance: { icon: <Wrench className="h-4 w-4" />, color: 'bg-red-100 text-red-700' },
+  Banner: { icon: <Info className="h-4 w-4" />, color: 'bg-blue-100 text-blue-700' },
 };
 
-const prioridadLabels: Record<string, { label: string; color: string }> = {
-  Low: { label: 'Baja', color: 'bg-gray-100 text-gray-600' },
-  Normal: { label: 'Normal', color: 'bg-blue-100 text-blue-600' },
-  High: { label: 'Alta', color: 'bg-amber-100 text-amber-700' },
-  Critical: { label: 'Critica', color: 'bg-red-100 text-red-700' },
+const prioridadColors: Record<string, string> = {
+  Low: 'bg-gray-100 text-gray-600',
+  Normal: 'bg-blue-100 text-blue-600',
+  High: 'bg-amber-100 text-amber-700',
+  Critical: 'bg-red-100 text-red-700',
 };
 
-const displayModeLabels: Record<string, { label: string; icon: React.ReactNode; color: string; desc: string }> = {
-  Banner: { label: 'Banner', icon: <Monitor className="h-4 w-4" />, color: 'bg-blue-100 text-blue-700', desc: 'Barra superior' },
-  Notification: { label: 'Notificación', icon: <Bell className="h-4 w-4" />, color: 'bg-teal-100 text-teal-700', desc: 'Campana' },
-  Both: { label: 'Ambos', icon: <Layers className="h-4 w-4" />, color: 'bg-purple-100 text-purple-700', desc: 'Banner + Campana' },
+const displayModeIcons: Record<string, { icon: React.ReactNode; color: string }> = {
+  Banner: { icon: <Monitor className="h-4 w-4" />, color: 'bg-blue-100 text-blue-700' },
+  Notification: { icon: <Bell className="h-4 w-4" />, color: 'bg-teal-100 text-teal-700' },
+  Both: { icon: <Layers className="h-4 w-4" />, color: 'bg-purple-100 text-purple-700' },
 };
 
 export default function AnnouncementsPage() {
+  const t = useTranslations('admin.announcements');
   const { formatDate } = useFormatters();
   const { data: session } = useSession();
   const router = useRouter();
@@ -95,6 +97,12 @@ export default function AnnouncementsPage() {
   const [maintenanceMsg, setMaintenanceMsg] = useState('');
   const [togglingMaintenance, setTogglingMaintenance] = useState(false);
 
+  // Translation maps (inside component to use t())
+  const tipoLabelMap: Record<string, string> = { Broadcast: t('typeBroadcast'), Maintenance: t('typeMaintenance'), Banner: t('typeBanner') };
+  const prioridadLabelMap: Record<string, string> = { Low: t('priorityLow'), Normal: t('priorityNormal'), High: t('priorityHigh'), Critical: t('priorityCritical') };
+  const displayModeLabelMap: Record<string, string> = { Banner: t('destinationBanner'), Notification: t('destinationNotification'), Both: t('destinationBoth') };
+  const displayModeDescMap: Record<string, string> = { Banner: t('destinationBannerDesc'), Notification: t('destinationNotificationDesc'), Both: t('destinationBothDesc') };
+
   // Check access
   const userRole = (session?.user as { role?: string })?.role;
   useEffect(() => {
@@ -116,11 +124,11 @@ export default function AnnouncementsPage() {
       );
       setMaintenanceActive(hasMaintenance);
     } catch {
-      toast.error('Error al cargar anuncios');
+      toast.error(t('errorLoading'));
     } finally {
       setLoading(false);
     }
-  }, [page]);
+  }, [page, t]);
 
   useEffect(() => {
     if (userRole === 'SUPER_ADMIN') {
@@ -131,15 +139,15 @@ export default function AnnouncementsPage() {
 
   const handleCreate = async () => {
     if (!form.titulo.trim() || !form.mensaje.trim()) {
-      toast.error('Titulo y mensaje son requeridos');
+      toast.error(t('titleRequired'));
       return;
     }
     if (targetMode === 'tenants' && selectedTenantIds.length === 0) {
-      toast.error('Selecciona al menos una empresa');
+      toast.error(t('selectAtLeastOneTenant'));
       return;
     }
     if (targetMode === 'roles' && selectedRoles.length === 0) {
-      toast.error('Selecciona al menos un rol');
+      toast.error(t('selectAtLeastOneRole'));
       return;
     }
     setCreating(true);
@@ -150,7 +158,7 @@ export default function AnnouncementsPage() {
         targetRoles: targetMode === 'roles' ? selectedRoles : undefined,
       };
       await createAnnouncement(payload);
-      toast.success('Anuncio creado exitosamente');
+      toast.success(t('announcementCreated'));
       setDrawerOpen(false);
       setForm({ titulo: '', mensaje: '', tipo: 'Banner', prioridad: 'Normal', displayMode: 'Banner', isDismissible: true });
       setTargetMode('all');
@@ -158,7 +166,7 @@ export default function AnnouncementsPage() {
       setSelectedRoles([]);
       fetchData();
     } catch {
-      toast.error('Error al crear anuncio');
+      toast.error(t('errorCreating'));
     } finally {
       setCreating(false);
     }
@@ -167,10 +175,10 @@ export default function AnnouncementsPage() {
   const handleDelete = async (id: number) => {
     try {
       await deleteAnnouncement(id);
-      toast.success('Anuncio expirado');
+      toast.success(t('announcementExpired'));
       fetchData();
     } catch {
-      toast.error('Error al expirar anuncio');
+      toast.error(t('errorExpiring'));
     }
   };
 
@@ -179,16 +187,16 @@ export default function AnnouncementsPage() {
     try {
       if (maintenanceActive) {
         await deactivateMaintenance();
-        toast.success('Modo mantenimiento desactivado');
+        toast.success(t('maintenanceDeactivated'));
         setMaintenanceActive(false);
       } else {
         await activateMaintenance(maintenanceMsg || undefined);
-        toast.success('Modo mantenimiento activado');
+        toast.success(t('maintenanceActivated'));
         setMaintenanceActive(true);
       }
       fetchData();
     } catch {
-      toast.error('Error al cambiar modo mantenimiento');
+      toast.error(t('maintenanceError'));
     } finally {
       setTogglingMaintenance(false);
     }
@@ -203,10 +211,10 @@ export default function AnnouncementsPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <Megaphone className="h-6 w-6 text-purple-600" />
-            Anuncios
+            {t('title')}
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            Envía comunicaciones a tenants y gestiona el modo mantenimiento
+            {t('subtitle')}
           </p>
         </div>
         <button
@@ -214,7 +222,7 @@ export default function AnnouncementsPage() {
           className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
         >
           <Plus className="h-4 w-4" />
-          Nuevo anuncio
+          {t('newAnnouncement')}
         </button>
       </div>
 
@@ -227,13 +235,13 @@ export default function AnnouncementsPage() {
             </div>
             <div>
               <h3 className="font-medium text-gray-900">
-                Modo Mantenimiento
+                {t('maintenanceMode')}
                 <span className={`ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${maintenanceActive ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'}`}>
-                  {maintenanceActive ? 'ACTIVO' : 'Inactivo'}
+                  {maintenanceActive ? t('maintenanceActive') : t('maintenanceInactive')}
                 </span>
               </h3>
               <p className="text-xs text-gray-500 mt-0.5">
-                Bloquea operaciones de escritura para usuarios no-SuperAdmin
+                {t('maintenanceDesc')}
               </p>
             </div>
           </div>
@@ -241,7 +249,7 @@ export default function AnnouncementsPage() {
             {!maintenanceActive && (
               <input
                 type="text"
-                placeholder="Mensaje (opcional)"
+                placeholder={t('maintenanceMessagePlaceholder')}
                 value={maintenanceMsg}
                 onChange={(e) => setMaintenanceMsg(e.target.value)}
                 className="h-9 px-3 border border-gray-300 rounded-lg text-sm w-64 hidden sm:block"
@@ -263,7 +271,7 @@ export default function AnnouncementsPage() {
               ) : (
                 <Power className="h-4 w-4" />
               )}
-              {maintenanceActive ? 'Desactivar' : 'Activar'}
+              {maintenanceActive ? t('deactivate') : t('activate')}
             </button>
           </div>
         </div>
@@ -273,7 +281,7 @@ export default function AnnouncementsPage() {
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100">
           <h2 className="font-medium text-gray-900">
-            Historial de anuncios ({total})
+            {t('historyTitle', { count: total })}
           </h2>
         </div>
 
@@ -284,13 +292,13 @@ export default function AnnouncementsPage() {
         ) : announcements.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-gray-400">
             <Megaphone className="h-12 w-12 mb-3" />
-            <p className="text-sm">No hay anuncios</p>
+            <p className="text-sm">{t('noAnnouncements')}</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
             {announcements.map((ann) => {
-              const tipo = tipoLabels[ann.tipo] || tipoLabels.Banner;
-              const prioridad = prioridadLabels[ann.prioridad] || prioridadLabels.Normal;
+              const tipo = tipoIcons[ann.tipo] || tipoIcons.Banner;
+              const prioridadColor = prioridadColors[ann.prioridad] || prioridadColors.Normal;
 
               return (
                 <div key={ann.id} className="px-4 py-3 hover:bg-gray-50 transition-colors">
@@ -302,19 +310,19 @@ export default function AnnouncementsPage() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-medium text-gray-900 text-sm">{ann.titulo}</span>
                         <span className={`px-1.5 py-0.5 rounded-md text-xs font-medium ${tipo.color}`}>
-                          {tipo.label}
+                          {tipoLabelMap[ann.tipo] || ann.tipo}
                         </span>
-                        <span className={`px-1.5 py-0.5 rounded-md text-xs font-medium ${prioridad.color}`}>
-                          {prioridad.label}
+                        <span className={`px-1.5 py-0.5 rounded-md text-xs font-medium ${prioridadColor}`}>
+                          {prioridadLabelMap[ann.prioridad] || ann.prioridad}
                         </span>
-                        {ann.displayMode && displayModeLabels[ann.displayMode] && (
-                          <span className={`px-1.5 py-0.5 rounded-md text-xs font-medium ${displayModeLabels[ann.displayMode].color}`}>
-                            {displayModeLabels[ann.displayMode].label}
+                        {ann.displayMode && displayModeIcons[ann.displayMode] && (
+                          <span className={`px-1.5 py-0.5 rounded-md text-xs font-medium ${displayModeIcons[ann.displayMode].color}`}>
+                            {displayModeLabelMap[ann.displayMode] || ann.displayMode}
                           </span>
                         )}
                         {!ann.activo && (
                           <span className="px-1.5 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-500">
-                            Expirado
+                            {t('expired')}
                           </span>
                         )}
                       </div>
@@ -327,12 +335,12 @@ export default function AnnouncementsPage() {
                         {ann.sentCount > 0 && (
                           <span className="flex items-center gap-1">
                             <Bell className="h-3 w-3" />
-                            {ann.sentCount} enviados
+                            {ann.sentCount} {t('sent')}
                           </span>
                         )}
                         <span className="flex items-center gap-1">
                           <Eye className="h-3 w-3" />
-                          {ann.readCount} leídos
+                          {ann.readCount} {t('read')}
                         </span>
                       </div>
                     </div>
@@ -340,7 +348,7 @@ export default function AnnouncementsPage() {
                       <button
                         onClick={() => handleDelete(ann.id)}
                         className="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                        title="Expirar anuncio"
+                        title={t('expireAnnouncement')}
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -356,7 +364,7 @@ export default function AnnouncementsPage() {
         {total > 20 && (
           <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between text-sm text-gray-500">
             <span>
-              Mostrando {(page - 1) * 20 + 1}-{Math.min(page * 20, total)} de {total}
+              {t('showingRange', { start: (page - 1) * 20 + 1, end: Math.min(page * 20, total), total })}
             </span>
             <div className="flex gap-2">
               <button
@@ -364,14 +372,14 @@ export default function AnnouncementsPage() {
                 disabled={page === 1}
                 className="px-3 py-1 border rounded-md disabled:opacity-50 hover:bg-gray-50"
               >
-                Anterior
+                {t('previous')}
               </button>
               <button
                 onClick={() => setPage(p => p + 1)}
                 disabled={page * 20 >= total}
                 className="px-3 py-1 border rounded-md disabled:opacity-50 hover:bg-gray-50"
               >
-                Siguiente
+                {t('next')}
               </button>
             </div>
           </div>
@@ -382,16 +390,16 @@ export default function AnnouncementsPage() {
       <Drawer
         isOpen={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        title="Nuevo anuncio"
-        description="Crea un anuncio para los usuarios de la plataforma"
+        title={t('drawerTitle')}
+        description={t('drawerDescription')}
       >
         <div className="space-y-4 p-6">
           {/* Tipo */}
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-gray-700">Tipo</label>
+            <label className="text-sm font-medium text-gray-700">{t('typeLabel')}</label>
             <div className="grid grid-cols-3 gap-2">
               {(['Banner', 'Broadcast', 'Maintenance'] as const).map((tipo) => {
-                const t = tipoLabels[tipo];
+                const tipoMeta = tipoIcons[tipo];
                 return (
                   <button
                     key={tipo}
@@ -407,8 +415,8 @@ export default function AnnouncementsPage() {
                         : 'border-gray-200 text-gray-600 hover:bg-gray-50'
                     }`}
                   >
-                    {t.icon}
-                    {t.label}
+                    {tipoMeta.icon}
+                    {tipoLabelMap[tipo]}
                   </button>
                 );
               })}
@@ -418,10 +426,10 @@ export default function AnnouncementsPage() {
           {/* DisplayMode — hidden for Maintenance (forced to Banner) */}
           {form.tipo !== 'Maintenance' && (
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-gray-700">Destino</label>
+              <label className="text-sm font-medium text-gray-700">{t('destinationLabel')}</label>
               <div className="grid grid-cols-3 gap-2">
                 {(['Banner', 'Notification', 'Both'] as const).map((mode) => {
-                  const m = displayModeLabels[mode];
+                  const m = displayModeIcons[mode];
                   return (
                     <button
                       key={mode}
@@ -433,8 +441,8 @@ export default function AnnouncementsPage() {
                       }`}
                     >
                       {m.icon}
-                      <span className="font-medium">{m.label}</span>
-                      <span className="text-[10px] opacity-60">{m.desc}</span>
+                      <span className="font-medium">{displayModeLabelMap[mode]}</span>
+                      <span className="text-[10px] opacity-60">{displayModeDescMap[mode]}</span>
                     </button>
                   );
                 })}
@@ -444,7 +452,7 @@ export default function AnnouncementsPage() {
 
           {/* Destinatarios */}
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-gray-700">Destinatarios</label>
+            <label className="text-sm font-medium text-gray-700">{t('recipientsLabel')}</label>
             <div className="grid grid-cols-3 gap-2">
               <button
                 onClick={() => { setTargetMode('all'); setSelectedTenantIds([]); setSelectedRoles([]); setTenantSearch(''); }}
@@ -455,8 +463,8 @@ export default function AnnouncementsPage() {
                 }`}
               >
                 <Globe className="h-4 w-4" />
-                <span className="font-medium">Todos</span>
-                <span className="text-[10px] opacity-60">Todas las empresas</span>
+                <span className="font-medium">{t('recipientsAll')}</span>
+                <span className="text-[10px] opacity-60">{t('recipientsAllDesc')}</span>
               </button>
               <button
                 onClick={() => { setTargetMode('tenants'); setSelectedRoles([]); }}
@@ -467,8 +475,8 @@ export default function AnnouncementsPage() {
                 }`}
               >
                 <Building2 className="h-4 w-4" />
-                <span className="font-medium">Empresas</span>
-                <span className="text-[10px] opacity-60">Seleccionar</span>
+                <span className="font-medium">{t('recipientsTenants')}</span>
+                <span className="text-[10px] opacity-60">{t('recipientsTenantsDesc')}</span>
               </button>
               <button
                 onClick={() => { setTargetMode('roles'); setSelectedTenantIds([]); setTenantSearch(''); }}
@@ -479,8 +487,8 @@ export default function AnnouncementsPage() {
                 }`}
               >
                 <Users className="h-4 w-4" />
-                <span className="font-medium">Por rol</span>
-                <span className="text-[10px] opacity-60">Admin, Vendedor</span>
+                <span className="font-medium">{t('recipientsByRole')}</span>
+                <span className="text-[10px] opacity-60">{t('recipientsByRoleDesc')}</span>
               </button>
             </div>
 
@@ -492,7 +500,7 @@ export default function AnnouncementsPage() {
                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
                     <input
                       type="text"
-                      placeholder="Buscar empresa..."
+                      placeholder={t('searchTenant')}
                       value={tenantSearch}
                       onChange={(e) => setTenantSearch(e.target.value)}
                       className="w-full h-8 pl-8 pr-3 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
@@ -505,8 +513,8 @@ export default function AnnouncementsPage() {
                     const filtered = tenantSearch.trim()
                       ? activeTenants.filter(t => t.nombreEmpresa.toLowerCase().includes(tenantSearch.toLowerCase()))
                       : activeTenants;
-                    if (activeTenants.length === 0) return <p className="text-xs text-gray-400 text-center py-2">No hay empresas activas</p>;
-                    if (filtered.length === 0) return <p className="text-xs text-gray-400 text-center py-2">Sin resultados para &quot;{tenantSearch}&quot;</p>;
+                    if (activeTenants.length === 0) return <p className="text-xs text-gray-400 text-center py-2">{t('noActiveTenants')}</p>;
+                    if (filtered.length === 0) return <p className="text-xs text-gray-400 text-center py-2">{t('noSearchResults', { query: tenantSearch })}</p>;
                     const allFilteredSelected = filtered.every(t => selectedTenantIds.includes(t.id));
                     return (
                       <>
@@ -525,7 +533,7 @@ export default function AnnouncementsPage() {
                             }}
                             className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                           />
-                          <span className="text-sm text-purple-700 font-medium">Seleccionar todos</span>
+                          <span className="text-sm text-purple-700 font-medium">{t('selectAll')}</span>
                           <span className="text-xs text-gray-400 ml-auto">{filtered.length}</span>
                         </label>
                         {filtered.map(t => (
@@ -549,14 +557,14 @@ export default function AnnouncementsPage() {
                 {selectedTenantIds.length > 0 && (
                   <div className="px-2 py-1.5 border-t border-gray-100 bg-purple-50 flex items-center justify-between">
                     <p className="text-xs text-purple-700 font-medium">
-                      {selectedTenantIds.length} empresa{selectedTenantIds.length > 1 ? 's' : ''} seleccionada{selectedTenantIds.length > 1 ? 's' : ''}
+                      {t('tenantsSelected', { count: selectedTenantIds.length })}
                     </p>
                     <button
                       type="button"
                       onClick={() => setSelectedTenantIds([])}
                       className="text-xs text-purple-600 hover:text-purple-800 underline"
                     >
-                      Limpiar
+                      {t('clearSelection')}
                     </button>
                   </div>
                 )}
@@ -576,12 +584,12 @@ export default function AnnouncementsPage() {
                       )}
                       className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                     />
-                    <span className="text-sm text-gray-700">{role === 'Admin' ? 'Administradores' : 'Vendedores'}</span>
+                    <span className="text-sm text-gray-700">{role === 'Admin' ? t('roleAdmins') : t('roleSellers')}</span>
                   </label>
                 ))}
                 {selectedRoles.length > 0 && (
                   <p className="text-xs text-purple-600 font-medium pt-1 border-t">
-                    Solo usuarios con rol: {selectedRoles.join(', ')}
+                    {t('onlyUsersWithRole', { roles: selectedRoles.join(', ') })}
                   </p>
                 )}
               </div>
@@ -591,7 +599,7 @@ export default function AnnouncementsPage() {
           {/* Titulo */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-gray-700">Titulo</label>
+              <label className="text-sm font-medium text-gray-700">{t('titleLabel')}</label>
               <span className={`text-xs ${form.titulo.length > 140 ? 'text-amber-600 font-medium' : 'text-gray-400'}`}>
                 {form.titulo.length}/150
               </span>
@@ -603,7 +611,7 @@ export default function AnnouncementsPage() {
                 if (e.target.value.length <= 150) setForm(f => ({ ...f, titulo: e.target.value }));
               }}
               maxLength={150}
-              placeholder="Titulo del anuncio"
+              placeholder={t('titlePlaceholder')}
               className="w-full h-10 px-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
             />
           </div>
@@ -611,7 +619,7 @@ export default function AnnouncementsPage() {
           {/* Mensaje */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-gray-700">Mensaje</label>
+              <label className="text-sm font-medium text-gray-700">{t('messageLabel')}</label>
               <span className={`text-xs ${form.mensaje.length > 450 ? 'text-amber-600 font-medium' : 'text-gray-400'}`}>
                 {form.mensaje.length}/500
               </span>
@@ -622,7 +630,7 @@ export default function AnnouncementsPage() {
                 if (e.target.value.length <= 500) setForm(f => ({ ...f, mensaje: e.target.value }));
               }}
               maxLength={500}
-              placeholder="Contenido del anuncio..."
+              placeholder={t('messagePlaceholder')}
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none resize-none"
             />
@@ -630,16 +638,16 @@ export default function AnnouncementsPage() {
 
           {/* Prioridad */}
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-gray-700">Prioridad</label>
+            <label className="text-sm font-medium text-gray-700">{t('priorityLabel')}</label>
             <select
               value={form.prioridad}
               onChange={(e) => setForm(f => ({ ...f, prioridad: e.target.value }))}
               className="w-full h-10 px-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none bg-white"
             >
-              <option value="Low">Baja</option>
-              <option value="Normal">Normal</option>
-              <option value="High">Alta</option>
-              <option value="Critical">Critica</option>
+              <option value="Low">{t('priorityLow')}</option>
+              <option value="Normal">{t('priorityNormal')}</option>
+              <option value="High">{t('priorityHigh')}</option>
+              <option value="Critical">{t('priorityCritical')}</option>
             </select>
           </div>
 
@@ -654,14 +662,14 @@ export default function AnnouncementsPage() {
                 className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
               />
               <label htmlFor="dismissible" className="text-sm text-gray-700">
-                Permitir que los usuarios cierren este anuncio
+                {t('dismissibleLabel')}
               </label>
             </div>
           )}
 
           {/* Expiration */}
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-gray-700">Expiración (opcional)</label>
+            <label className="text-sm font-medium text-gray-700">{t('expirationLabel')}</label>
             <DateTimePicker
               mode="datetime"
               value={form.expiresAt || ''}
@@ -675,8 +683,7 @@ export default function AnnouncementsPage() {
               <div className="flex items-start gap-2">
                 <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5" />
                 <p className="text-sm text-amber-800">
-                  Este tipo activará el modo mantenimiento. Las operaciones de escritura serán
-                  bloqueadas para todos los usuarios excepto SuperAdmin.
+                  {t('maintenanceWarning')}
                 </p>
               </div>
             </div>
@@ -694,7 +701,7 @@ export default function AnnouncementsPage() {
               ) : (
                 <Megaphone className="h-4 w-4" />
               )}
-              {creating ? 'Creando...' : 'Crear anuncio'}
+              {creating ? t('creating') : t('createAnnouncement')}
             </button>
           </div>
         </div>

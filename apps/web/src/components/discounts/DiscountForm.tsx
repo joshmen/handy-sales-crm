@@ -7,12 +7,13 @@ import { Label } from '@/components/ui/Label';
 import { SelectCompat as Select } from '@/components/ui/SelectCompat';
 import { Badge } from '@/components/ui/Badge';
 import { Plus, Trash2, Search, Package } from 'lucide-react';
-import { 
-  DiscountType, 
-  DiscountMethod, 
+import {
+  DiscountType,
+  DiscountMethod,
   QuantityRange,
-  CreateDiscountDto 
+  CreateDiscountDto
 } from '@/types/discounts';
+import { useTranslations } from 'next-intl';
 
 interface Product {
   id: string;
@@ -32,8 +33,9 @@ export function DiscountForm({
   formData, 
   onFormChange, 
   products = [],
-  onTypeChange 
+  onTypeChange
 }: DiscountFormProps) {
+  const t = useTranslations('discounts.form');
   const [productSearch, setProductSearch] = useState('');
   const [showProductSearch, setShowProductSearch] = useState(false);
 
@@ -91,7 +93,7 @@ export function DiscountForm({
       {/* Tipo de descuento */}
       <Card>
         <CardHeader>
-          <CardTitle>Tipo de descuento</CardTitle>
+          <CardTitle>{t('discountType')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -103,9 +105,9 @@ export function DiscountForm({
                   : 'border-gray-200 hover:border-gray-300'
               }`}
             >
-              <div className="font-medium">Descuento global</div>
+              <div className="font-medium">{t('globalDiscount')}</div>
               <div className="text-sm text-gray-600">
-                Aplica a cualquier producto según cantidad total
+                {t('globalDiscountDesc')}
               </div>
             </button>
             
@@ -117,9 +119,9 @@ export function DiscountForm({
                   : 'border-gray-200 hover:border-gray-300'
               }`}
             >
-              <div className="font-medium">Descuento por producto</div>
+              <div className="font-medium">{t('productDiscount')}</div>
               <div className="text-sm text-gray-600">
-                Aplica solo a un producto específico
+                {t('productDiscountDesc')}
               </div>
             </button>
           </div>
@@ -129,24 +131,24 @@ export function DiscountForm({
       {/* Información básica */}
       <Card>
         <CardHeader>
-          <CardTitle>Información básica</CardTitle>
+          <CardTitle>{t('basicInfo')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label htmlFor="name">Nombre del descuento</Label>
+            <Label htmlFor="name">{t('discountName')}</Label>
             <Input
               id="name"
-              placeholder="Ej: Descuento por volumen estándar"
+              placeholder={t('discountNamePlaceholder')}
               value={formData.name}
               onChange={(e) => onFormChange({ ...formData, name: e.target.value })}
             />
           </div>
 
           <div>
-            <Label htmlFor="description">Descripción (opcional)</Label>
+            <Label htmlFor="description">{t('descriptionOptional')}</Label>
             <Input
               id="description"
-              placeholder="Describe cómo funciona este descuento"
+              placeholder={t('descriptionPlaceholder')}
               value={formData.description}
               onChange={(e) => onFormChange({ ...formData, description: e.target.value })}
             />
@@ -154,13 +156,13 @@ export function DiscountForm({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="method">Método de descuento</Label>
+              <Label htmlFor="method">{t('discountMethod')}</Label>
               <Select
                 value={formData.method}
                 onChange={(e) => onFormChange({ ...formData, method: e.target.value as DiscountMethod })}
               >
-                <option value={DiscountMethod.PERCENTAGE}>Porcentaje (%)</option>
-                <option value={DiscountMethod.FIXED_AMOUNT}>Monto fijo ($)</option>
+                <option value={DiscountMethod.PERCENTAGE}>{t('percentage')}</option>
+                <option value={DiscountMethod.FIXED_AMOUNT}>{t('fixedAmount')}</option>
               </Select>
             </div>
 
@@ -172,7 +174,7 @@ export function DiscountForm({
                   onChange={(e) => onFormChange({ ...formData, isStackable: e.target.checked })}
                   className="rounded"
                 />
-                <span className="text-sm">Combinable con otros descuentos</span>
+                <span className="text-sm">{t('stackableWithOthers')}</span>
               </label>
             </div>
           </div>
@@ -180,12 +182,12 @@ export function DiscountForm({
           {/* Selector de producto para descuentos específicos */}
           {formData.type === DiscountType.PRODUCT_SPECIFIC && (
             <div>
-              <Label>Producto</Label>
+              <Label>{t('productLabel')}</Label>
               <div className="relative">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <Input
-                    placeholder="Buscar producto por nombre o código..."
+                    placeholder={t('searchProductPlaceholder')}
                     value={productSearch}
                     onChange={(e) => {
                       setProductSearch(e.target.value);
@@ -217,7 +219,7 @@ export function DiscountForm({
                         )}
                         <div>
                           <div className="font-medium">{product.name}</div>
-                          <div className="text-sm text-gray-500">Código: {product.code}</div>
+                          <div className="text-sm text-gray-500">{t('codeLabel')} {product.code}</div>
                         </div>
                       </button>
                     ))}
@@ -227,7 +229,7 @@ export function DiscountForm({
               {selectedProduct && (
                 <div className="mt-2">
                   <Badge variant="outline" className="bg-blue-50 text-blue-700">
-                    Producto seleccionado: {selectedProduct.name}
+                    {t('selectedProduct')} {selectedProduct.name}
                   </Badge>
                 </div>
               )}
@@ -239,14 +241,14 @@ export function DiscountForm({
       {/* Rangos de cantidad */}
       <Card>
         <CardHeader>
-          <CardTitle>Rangos de descuento</CardTitle>
+          <CardTitle>{t('discountRanges')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {formData.quantityRanges.map((range, index) => (
             <div key={index} className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg">
               <div className="flex-1 grid grid-cols-3 gap-4">
                 <div>
-                  <Label>Cantidad mínima</Label>
+                  <Label>{t('minQuantity')}</Label>
                   <Input
                     type="number"
                     min="1"
@@ -255,16 +257,16 @@ export function DiscountForm({
                   />
                 </div>
                 <div>
-                  <Label>Cantidad máxima</Label>
+                  <Label>{t('maxQuantity')}</Label>
                   <Input
                     type="number"
-                    placeholder="Sin límite"
+                    placeholder={t('noLimit')}
                     value={range.maxQuantity || ''}
                     onChange={(e) => updateQuantityRange(index, 'maxQuantity', e.target.value ? parseInt(e.target.value) : undefined)}
                   />
                 </div>
                 <div>
-                  <Label>Descuento ({formData.method === DiscountMethod.PERCENTAGE ? '%' : '$'})</Label>
+                  <Label>{t('discountValue')} ({formData.method === DiscountMethod.PERCENTAGE ? '%' : '$'})</Label>
                   <Input
                     type="number"
                     min="0"
@@ -292,7 +294,7 @@ export function DiscountForm({
             className="w-full"
           >
             <Plus size={16} className="mr-2" />
-            Agregar rango
+            {t('addRange')}
           </Button>
         </CardContent>
       </Card>
@@ -300,18 +302,18 @@ export function DiscountForm({
       {/* Configuraciones avanzadas */}
       <Card>
         <CardHeader>
-          <CardTitle>Configuraciones avanzadas</CardTitle>
+          <CardTitle>{t('advancedSettings')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="minimumAmount">Monto mínimo de compra ($)</Label>
+              <Label htmlFor="minimumAmount">{t('minPurchaseAmount')}</Label>
               <Input
                 id="minimumAmount"
                 type="number"
                 min="0"
                 step="0.01"
-                placeholder="Sin mínimo"
+                placeholder={t('noMinimum')}
                 value={formData.minimumAmount || ''}
                 onChange={(e) => onFormChange({ 
                   ...formData, 
@@ -320,13 +322,13 @@ export function DiscountForm({
               />
             </div>
             <div>
-              <Label htmlFor="maximumDiscount">Descuento máximo ($)</Label>
+              <Label htmlFor="maximumDiscount">{t('maxDiscountAmount')}</Label>
               <Input
                 id="maximumDiscount"
                 type="number"
                 min="0"
                 step="0.01"
-                placeholder="Sin límite"
+                placeholder={t('noLimit')}
                 value={formData.maximumDiscount || ''}
                 onChange={(e) => onFormChange({ 
                   ...formData, 
@@ -341,7 +343,7 @@ export function DiscountForm({
       {/* Vigencia */}
       <Card>
         <CardHeader>
-          <CardTitle>Vigencia del descuento</CardTitle>
+          <CardTitle>{t('discountValidity')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <label className="flex items-center gap-2">
@@ -351,13 +353,13 @@ export function DiscountForm({
               onChange={(e) => onFormChange({ ...formData, isPermanent: e.target.checked })}
               className="rounded"
             />
-            <span>Descuento permanente</span>
+            <span>{t('permanentDiscount')}</span>
           </label>
 
           {!formData.isPermanent && (
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="validFrom">Fecha de inicio</Label>
+                <Label htmlFor="validFrom">{t('startDate')}</Label>
                 <DateTimePicker
                   id="validFrom"
                   mode="date"
@@ -369,7 +371,7 @@ export function DiscountForm({
                 />
               </div>
               <div>
-                <Label htmlFor="validTo">Fecha de fin</Label>
+                <Label htmlFor="validTo">{t('endDate')}</Label>
                 <DateTimePicker
                   id="validTo"
                   mode="date"

@@ -2,12 +2,14 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useClientOnly } from '@/hooks/useClientOnly';
 import { useCompany } from '@/contexts/CompanyContext';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { Palette, Database, Building, Building2, Bell, Shield, Loader2 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
+import { SrLoadingText } from '@/components/common/SrLoadingText';
 
 // Import tab components (admin-only settings)
 import { CompanyTab } from './components/CompanyTab';
@@ -18,6 +20,8 @@ import { NotificationsTab } from './components/NotificationsTab';
 import { SecurityTab } from './components/SecurityTab';
 
 function SettingsPageContent() {
+  const t = useTranslations('settings');
+  const tCommon = useTranslations('common');
   const { data: session } = useSession();
   useClientOnly();
   const { settings, isUpdating, updateSettings, uploadLogo, deleteLogo } = useCompany();
@@ -81,11 +85,11 @@ function SettingsPageContent() {
   return (
     <PageHeader
       breadcrumbs={[
-        { label: 'Inicio', href: '/dashboard' },
-        { label: 'Configuración' },
+        { label: tCommon('home'), href: '/dashboard' },
+        { label: t('title') },
       ]}
-      title="Configuración"
-      subtitle="Configuración de la empresa y el sistema"
+      title={t('title')}
+      subtitle={t('subtitle')}
     >
       <Tabs
         value={activeTab}
@@ -100,27 +104,27 @@ function SettingsPageContent() {
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="perfil-empresa" className="flex items-center gap-2">
             <Building2 className="h-4 w-4" />
-            <span className="hidden sm:inline">Perfil</span>
+            <span className="hidden sm:inline">{t('tabs.companyProfile')}</span>
           </TabsTrigger>
           <TabsTrigger value="company" className="flex items-center gap-2">
             <Building className="h-4 w-4" />
-            <span className="hidden sm:inline">Marca</span>
+            <span className="hidden sm:inline">{t('tabs.brand')}</span>
           </TabsTrigger>
           <TabsTrigger value="appearance" className="flex items-center gap-2">
             <Palette className="h-4 w-4" />
-            <span className="hidden sm:inline">Apariencia</span>
+            <span className="hidden sm:inline">{t('tabs.appearance')}</span>
           </TabsTrigger>
           <TabsTrigger value="notifications" className="flex items-center gap-2">
             <Bell className="h-4 w-4" />
-            <span className="hidden sm:inline">Notificaciones</span>
+            <span className="hidden sm:inline">{t('tabs.notifications')}</span>
           </TabsTrigger>
           <TabsTrigger value="system" className="flex items-center gap-2">
             <Database className="h-4 w-4" />
-            <span className="hidden sm:inline">Sistema</span>
+            <span className="hidden sm:inline">{t('tabs.system')}</span>
           </TabsTrigger>
           <TabsTrigger value="security" className="flex items-center gap-2">
             <Shield className="h-4 w-4" />
-            <span className="hidden sm:inline">Seguridad</span>
+            <span className="hidden sm:inline">{t('tabs.security')}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -181,7 +185,7 @@ function SettingsPageContent() {
 
 export default function SettingsPage() {
   return (
-    <Suspense fallback={<div role="status" className="flex items-center justify-center min-h-[400px]"><Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" /><span className="sr-only">Cargando...</span></div>}>
+    <Suspense fallback={<div role="status" className="flex items-center justify-center min-h-[400px]"><Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" /><SrLoadingText /></div>}>
       <SettingsPageContent />
     </Suspense>
   );

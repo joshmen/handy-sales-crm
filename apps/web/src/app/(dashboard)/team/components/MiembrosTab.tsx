@@ -34,6 +34,7 @@ import {
   Shield,
   Trash2,
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { getInitials, formatTimeAgo } from '@/lib/utils';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useBatchOperations } from '@/hooks/useBatchOperations';
@@ -84,12 +85,13 @@ function KPICard({
   );
 }
 
-function PresenceBadge({ isOnline, lastActivity }: { isOnline?: boolean; lastActivity?: string }) {
+interface PresenceLabels { online: string; agoMinutes: (min: number) => string; disconnected: string }
+function PresenceBadge({ isOnline, lastActivity, labels }: { isOnline?: boolean; lastActivity?: string; labels: PresenceLabels }) {
   if (isOnline) {
     return (
       <span className="inline-flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-400">
         <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
-        En linea
+        {labels.online}
       </span>
     );
   }
@@ -100,7 +102,7 @@ function PresenceBadge({ isOnline, lastActivity }: { isOnline?: boolean; lastAct
       return (
         <span className="inline-flex items-center gap-1 text-xs text-amber-700 dark:text-amber-400">
           <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
-          Hace {minutesAgo} min
+          {labels.agoMinutes(minutesAgo)}
         </span>
       );
     }
@@ -109,7 +111,7 @@ function PresenceBadge({ isOnline, lastActivity }: { isOnline?: boolean; lastAct
   return (
     <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
       <span className="w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600 inline-block" />
-      Desconectado
+      {labels.disconnected}
     </span>
   );
 }
@@ -131,20 +133,24 @@ function getDeviceIcon(deviceType: number) {
 
 function getSessionStatusConfig(status: number) {
   switch (status) {
-    case 0: return { label: 'Activo', className: 'text-green-700 bg-green-100' };
-    case 1: return { label: 'Cerrada', className: 'text-gray-600 bg-gray-100' };
-    case 2: return { label: 'Expirada', className: 'text-gray-600 bg-gray-100' };
-    case 3: return { label: 'Revocada (Admin)', className: 'text-red-700 bg-red-100' };
-    case 4: return { label: 'Revocada (Usuario)', className: 'text-orange-700 bg-orange-100' };
-    case 5: return { label: 'Desvinculando...', className: 'text-yellow-700 bg-yellow-100 animate-pulse' };
-    case 6: return { label: 'Desvinculado', className: 'text-purple-700 bg-purple-100' };
-    default: return { label: 'Desconocido', className: 'text-gray-600 bg-gray-100' };
+    case 0: return { labelKey: 'activeStatus', className: 'text-green-700 bg-green-100' };
+    case 1: return { labelKey: 'loggedOut', className: 'text-gray-600 bg-gray-100' };
+    case 2: return { labelKey: 'expired', className: 'text-gray-600 bg-gray-100' };
+    case 3: return { labelKey: 'revokedAdmin', className: 'text-red-700 bg-red-100' };
+    case 4: return { labelKey: 'revokedUser', className: 'text-orange-700 bg-orange-100' };
+    case 5: return { labelKey: 'unbinding', className: 'text-yellow-700 bg-yellow-100 animate-pulse' };
+    case 6: return { labelKey: 'unbound', className: 'text-purple-700 bg-purple-100' };
+    default: return { labelKey: 'unknown', className: 'text-gray-600 bg-gray-100' };
   }
 }
 
 // ============ Supervisor View ============
 
 function SupervisorView() {
+  const t = useTranslations('team.members.supervisor');
+  const td = useTranslations('team.devices');
+  const tc = useTranslations('common');
+  const presenceLabels: PresenceLabels = { online: t('onlineStatus'), agoMinutes: (min: number) => t('minutesAgo', { min }), disconnected: t('disconnected') };
   const { formatCurrency } = useFormatters();
   const { data: session } = useSession();
   const [vendedores, setVendedores] = useState<SupervisorVendedor[]>([]);
@@ -179,7 +185,7 @@ function SupervisorView() {
         setVendedores(v);
       }
     } catch {
-      toast({ title: 'Error al cargar datos del equipo', variant: 'destructive' });
+      toast({ title: t('errorLoading'), variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -196,7 +202,7 @@ function SupervisorView() {
       setShowAsignar(true);
       setSelectedIds(new Set());
     } catch {
-      toast({ title: 'Error al cargar vendedores disponibles', variant: 'destructive' });
+      toast({ title: t('errorLoadingAvailable'), variant: 'destructive' });
     }
   };
 
@@ -205,11 +211,11 @@ function SupervisorView() {
     setAssignLoading(true);
     try {
       await supervisorService.asignarVendedores(Number(userId), Array.from(selectedIds));
-      toast({ title: `${selectedIds.size} vendedor(es) asignados` });
+      toast({ title: t('sellersAssigned', { count: selectedIds.size }) });
       setShowAsignar(false);
       loadData();
     } catch {
-      toast({ title: 'Error al asignar vendedores', variant: 'destructive' });
+      toast({ title: t('errorAssigning'), variant: 'destructive' });
     } finally {
       setAssignLoading(false);
     }
@@ -219,11 +225,11 @@ function SupervisorView() {
     if (!userId || !confirmDesasignar) return;
     try {
       await supervisorService.desasignarVendedor(Number(userId), confirmDesasignar.id);
-      toast({ title: `${confirmDesasignar.nombre} desasignado` });
+      toast({ title: t('sellerUnassigned', { name: confirmDesasignar.nombre }) });
       setConfirmDesasignar(null);
       loadData();
     } catch {
-      toast({ title: 'Error al desasignar vendedor', variant: 'destructive' });
+      toast({ title: t('errorUnassigning'), variant: 'destructive' });
     }
   };
 
@@ -240,7 +246,7 @@ function SupervisorView() {
     return (
       <div role="status" className="flex items-center justify-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" />
-        <span className="sr-only">Cargando...</span>
+        <span className="sr-only">{tc('loading')}</span>
       </div>
     );
   }
@@ -255,7 +261,7 @@ function SupervisorView() {
           className="gap-1.5"
         >
           <RefreshCw className="h-4 w-4" />
-          Actualizar
+          {t("refresh")}
         </Button>
         {isAdmin && (
           <Button
@@ -263,7 +269,7 @@ function SupervisorView() {
             className="gap-1.5 bg-green-600 hover:bg-green-700 text-white"
           >
             <UserPlus className="h-4 w-4" />
-            Asignar Vendedores
+            {t("assignSellers")}
           </Button>
         )}
       </div>
@@ -273,31 +279,31 @@ function SupervisorView() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <KPICard
             icon={<Users className="h-5 w-5 text-indigo-600" />}
-            label="Vendedores"
+            label={t('sellers')}
             value={dashboard.totalVendedores}
             color="indigo"
           />
           <KPICard
             icon={<ShoppingBag className="h-5 w-5 text-emerald-600" />}
-            label="Pedidos Hoy"
+            label={t('ordersToday')}
             value={dashboard.pedidosHoy}
             color="emerald"
           />
           <KPICard
             icon={<ShoppingBag className="h-5 w-5 text-blue-600" />}
-            label="Pedidos Mes"
+            label={t('ordersMonth')}
             value={dashboard.pedidosMes}
             color="blue"
           />
           <KPICard
             icon={<Building2 className="h-5 w-5 text-amber-600" />}
-            label="Clientes"
+            label={t('clients')}
             value={dashboard.totalClientes}
             color="amber"
           />
           <KPICard
             icon={<TrendingUp className="h-5 w-5 text-rose-600" />}
-            label="Ventas Mes"
+            label={t('salesMonth')}
             value={formatCurrency(dashboard.ventasMes)}
             color="rose"
           />
@@ -308,20 +314,20 @@ function SupervisorView() {
       <div className="bg-card rounded-xl border border-border overflow-hidden">
         <div className="px-6 py-4 border-b border-border">
           <h2 className="text-lg font-semibold text-foreground">
-            {isAdmin ? `Equipo (${filteredVendedores.length})` : `Vendedores del Equipo (${filteredVendedores.length})`}
+            {isAdmin ? t('teamTitle', { count: filteredVendedores.length }) : t('sellersTeamTitle', { count: filteredVendedores.length })}
           </h2>
         </div>
 
         {filteredVendedores.length === 0 ? (
           <div className="px-6 py-12 text-center">
             <Users className="h-12 w-12 text-muted-foreground/40 mx-auto mb-3" />
-            <p className="text-muted-foreground text-sm">No hay vendedores asignados</p>
+            <p className="text-muted-foreground text-sm">{t("noAssignedSellers")}</p>
             {isAdmin && (
               <button
                 onClick={handleOpenAsignar}
                 className="mt-3 text-sm text-green-600 hover:text-green-700 font-medium"
               >
-                Asignar vendedores
+                {t('assignSellersLink')}
               </button>
             )}
           </div>
@@ -347,9 +353,9 @@ function SupervisorView() {
                       ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
                       : 'bg-muted text-muted-foreground'
                   }`}>
-                    {v.activo ? 'Activo' : 'Inactivo'}
+                    {v.activo ? t('active') : t('inactive')}
                   </span>
-                  <PresenceBadge isOnline={v.isOnline} lastActivity={v.lastActivity} />
+                  <PresenceBadge isOnline={v.isOnline} lastActivity={v.lastActivity} labels={presenceLabels} />
                   <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
                     {v.rol}
                   </span>
@@ -357,7 +363,7 @@ function SupervisorView() {
                     <button
                       onClick={() => setConfirmDesasignar({ id: v.id, nombre: v.nombre })}
                       className="p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
-                      aria-label={`Desasignar a ${v.nombre}`}
+                      aria-label={t('unassignSeller')}
                     >
                       <UserMinus className="h-4 w-4" />
                     </button>
@@ -381,17 +387,17 @@ function SupervisorView() {
           >
             <UserMinus className="h-10 w-10 text-red-500 mx-auto mb-3" />
             <h3 id="confirm-desasignar-title" className="text-lg font-semibold text-foreground mb-2">
-              ¿Desasignar vendedor?
+              {t('unassignTitle')}
             </h3>
             <p className="text-sm text-muted-foreground mb-5">
-              {confirmDesasignar.nombre} sera removido de tu equipo.
+              {t('unassignDesc', { name: confirmDesasignar.nombre })}
             </p>
             <div className="flex gap-3">
               <Button variant="outline" className="flex-1" onClick={() => setConfirmDesasignar(null)}>
-                Cancelar
+                {t('cancel')}
               </Button>
               <Button className="flex-1 bg-red-600 hover:bg-red-700 text-white" onClick={handleDesasignar}>
-                Desasignar
+                {t('unassign')}
               </Button>
             </div>
           </div>
@@ -409,15 +415,15 @@ function SupervisorView() {
             onClick={e => e.stopPropagation()}
           >
             <div className="px-6 py-4 border-b border-border">
-              <h3 id="asignar-title" className="text-lg font-semibold text-foreground">Asignar Vendedores</h3>
+              <h3 id="asignar-title" className="text-lg font-semibold text-foreground">{t("assignTitle")}</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Selecciona los vendedores a asignar al equipo
+                {t('assignDesc')}
               </p>
             </div>
             <div className="px-6 py-4 max-h-80 overflow-y-auto">
               {disponibles.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">
-                  No hay vendedores disponibles
+                  {t('noAvailableSellers')}
                 </p>
               ) : (
                 <div className="space-y-2">
@@ -451,7 +457,7 @@ function SupervisorView() {
             </div>
             <div className="px-6 py-4 border-t border-border flex justify-end gap-2">
               <Button variant="outline" onClick={() => setShowAsignar(false)}>
-                Cancelar
+                {t('cancel')}
               </Button>
               <Button
                 onClick={handleAsignar}
@@ -459,7 +465,7 @@ function SupervisorView() {
                 className="bg-green-600 hover:bg-green-700 text-white gap-1.5"
               >
                 {assignLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-                Asignar ({selectedIds.size})
+                {t('assign', { count: selectedIds.size })}
               </Button>
             </div>
           </div>
@@ -472,6 +478,10 @@ function SupervisorView() {
 // ============ Admin/CRUD View ============
 
 function AdminUsersView() {
+  const t = useTranslations('team.members');
+  const td = useTranslations('team.devices');
+  const tc = useTranslations('common');
+  const presenceLabels: PresenceLabels = { online: t('online'), agoMinutes: (min: number) => t('supervisor.minutesAgo', { min }), disconnected: t('supervisor.disconnected') };
   const { formatDate } = useFormatters();
   const {
     users: apiUsers,
@@ -623,15 +633,15 @@ function AdminUsersView() {
   const getRoleLabel = (role: UserRole) => {
     switch (role) {
       case UserRole.SUPER_ADMIN:
-        return 'Super Admin';
+        return t('roleSuperAdmin');
       case UserRole.ADMIN:
-        return 'Administrador de compania';
+        return t('roleAdmin');
       case UserRole.SUPERVISOR:
-        return 'Supervisor';
+        return t('roleSupervisor');
       case UserRole.VENDEDOR:
-        return 'Usuario movil';
+        return t('roleVendedor');
       default:
-        return 'Visor';
+        return t('roleViewer');
     }
   };
 
@@ -653,12 +663,12 @@ function AdminUsersView() {
         telefono: formData.telefono,
         rol: formData.role,
       });
-      toast.success('Usuario creado exitosamente');
+      toast.success(t('userCreated'));
       setIsCreateModalOpen(false);
       setFormData({ email: '', nombre: '', password: '', telefono: '', role: 'VENDEDOR' });
       loadUsers();
     } catch (_error) {
-      toast.error('Error al crear usuario');
+      toast.error(t('errorCreating'));
     }
   };
 
@@ -672,18 +682,18 @@ function AdminUsersView() {
         activo: selectedUser.status === UserStatus.ACTIVE,
         telefono: selectedUser.phone,
       });
-      toast.success('Usuario actualizado');
+      toast.success(t('userUpdated'));
       setIsEditModalOpen(false);
       setSelectedUser(null);
       loadUsers();
     } catch (_error) {
-      toast.error('Error al actualizar usuario');
+      toast.error(t('errorUpdating'));
     }
   };
 
   const handleRefresh = () => {
     loadUsers();
-    toast.success('Lista actualizada');
+    toast.success(t('listUpdated'));
   };
 
   const visibleIds = displayUsers.map(u => parseInt(u.id));
@@ -704,18 +714,16 @@ function AdminUsersView() {
       const result = await usersService.batchToggleActive(ids, activo);
 
       if (result.success) {
-        toast.success(
-          `${ids.length} usuario${ids.length > 1 ? 's' : ''} ${activo ? 'activado' : 'desactivado'}${ids.length > 1 ? 's' : ''} exitosamente`
-        );
+        toast.success(t('batchSuccess', { count: ids.length, action: activo ? tc('activate') : tc('deactivate') }));
         loadUsers();
         batch.completeBatch();
       } else {
-        toast.error(result.error || 'Error al cambiar el estado de los usuarios');
+        toast.error(result.error || t('batchError'));
         batch.setBatchLoading(false);
       }
     } catch (error) {
       console.error('Error en batch toggle:', error);
-      toast.error('Error al cambiar el estado de los usuarios');
+      toast.error(t('batchError'));
       batch.setBatchLoading(false);
     }
   };
@@ -746,10 +754,10 @@ function AdminUsersView() {
       if (result.success && result.data) {
         setUbicaciones(result.data);
       } else {
-        toast.error('Error al cargar ubicaciones');
+        toast.error(t('errorLoadingLocations'));
       }
     } catch {
-      toast.error('Error al cargar ubicaciones');
+      toast.error(t('errorLoadingLocations'));
     } finally {
       setUbicacionesLoading(false);
     }
@@ -764,7 +772,7 @@ function AdminUsersView() {
     info: (
       <div>
         <p className="font-semibold">{u.nombre}</p>
-        {u.clienteNombre && <p className="text-gray-600">Visitando: {u.clienteNombre}</p>}
+        {u.clienteNombre && <p className="text-gray-600">{u.clienteNombre}</p>}
         {u.fechaUbicacion && (
           <p className="text-gray-500 text-xs mt-1">
             {formatDate(u.fechaUbicacion)}
@@ -821,13 +829,13 @@ function AdminUsersView() {
   // B6: CSV export
   const handleDescargar = () => {
     const csvData = displayUsers.map(u => ({
-      Nombre: u.name,
+      Name: u.name,
       Email: u.email,
       Rol: getRoleLabel(u.role),
-      Estado: u.status === UserStatus.ACTIVE ? 'Activo' : 'Inactivo',
-      Telefono: u.phone || '',
-      'Ultima actividad': u.lastLogin ? formatDate(u.lastLogin) : 'N/A',
-      'Fecha creacion': u.createdAt ? formatDate(u.createdAt) : '',
+      Status: u.status === UserStatus.ACTIVE ? 'Active' : 'Inactive',
+      Phone: u.phone || '',
+      'Last activity': u.lastLogin ? formatDate(u.lastLogin) : 'N/A',
+      'Created': u.createdAt ? formatDate(u.createdAt) : '',
     }));
 
     const csv = Papa.unparse(csvData);
@@ -840,7 +848,7 @@ function AdminUsersView() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    toast.success('Archivo CSV descargado');
+    toast.success(t('csvDownloaded'));
   };
 
   // Device sessions drawer
@@ -851,7 +859,7 @@ function AdminUsersView() {
       const sessions = await deviceSessionService.getSessionsByUser(parseInt(user.id));
       setDrawerSessions(sessions);
     } catch {
-      toast.error('Error al cargar sesiones del usuario');
+      toast.error(t('errorLoadingSessions'));
       setDrawerSessions([]);
     } finally {
       setDrawerLoading(false);
@@ -860,13 +868,13 @@ function AdminUsersView() {
 
   const handleRevokeSession = async (sessionItem: DeviceSessionDto) => {
     if (sessionItem.esSesionActual) {
-      toast.warning('No puedes revocar tu propia sesion activa');
+      toast.warning(t('cannotRevokeOwn'));
       return;
     }
     try {
       setRevokingId(sessionItem.id);
-      await deviceSessionService.revokeSession(sessionItem.id, 'Revocada por administrador');
-      toast.success(`Sesion de ${sessionItem.usuarioNombre} revocada exitosamente`);
+      await deviceSessionService.revokeSession(sessionItem.id, 'Revoked by admin');
+      toast.success(t('sessionRevoked', { name: sessionItem.usuarioNombre }));
       // Refresh drawer sessions
       if (drawerUser) {
         const sessions = await deviceSessionService.getSessionsByUser(parseInt(drawerUser.id));
@@ -874,7 +882,7 @@ function AdminUsersView() {
       }
       loadUsers();
     } catch {
-      toast.error('Error al revocar la sesion');
+      toast.error(t('errorRevoking'));
     } finally {
       setRevokingId(null);
     }
@@ -884,14 +892,14 @@ function AdminUsersView() {
     try {
       setCleaningExpired(true);
       const count = await deviceSessionService.cleanExpiredSessions(30);
-      toast.success(`${count} sesion${count !== 1 ? 'es' : ''} expirada${count !== 1 ? 's' : ''} eliminada${count !== 1 ? 's' : ''}`);
+      toast.success(t('expiredCleaned', { count }));
       // Refresh drawer if open
       if (drawerUser) {
         const sessions = await deviceSessionService.getSessionsByUser(parseInt(drawerUser.id));
         setDrawerSessions(sessions);
       }
     } catch {
-      toast.error('Error al limpiar sesiones expiradas');
+      toast.error(t('errorCleaningExpired'));
     } finally {
       setCleaningExpired(false);
     }
@@ -926,13 +934,13 @@ function AdminUsersView() {
         ? 'bg-green-100 text-green-600'
         : 'bg-gray-100 text-gray-500'
     }`}>
-      {user.status === UserStatus.ACTIVE ? 'Activo' : 'Inactivo'}
+      {user.status === UserStatus.ACTIVE ? t('statusActive') : t('statusInactive')}
     </span>
   );
 
   const renderLastActivity = (user: User) => (
     <span className="text-xs text-gray-500">
-      {user.lastLogin ? formatDate(user.lastLogin) : 'Sin actividad'}
+      {user.lastLogin ? formatDate(user.lastLogin) : t('noActivity')}
     </span>
   );
 
@@ -950,7 +958,7 @@ function AdminUsersView() {
             : 'bg-gray-100 text-gray-400'
         }`}
       >
-        {count > 0 ? `${count} activa${count !== 1 ? 's' : ''}` : '0'}
+        {count > 0 ? t('activeSessionsCount', { active: count, total: count }) : '0'}
       </button>
     );
   };
@@ -971,7 +979,7 @@ function AdminUsersView() {
   const columns: DataGridColumn<User>[] = [
     {
       key: 'nombre',
-      label: 'Nombre',
+      label: t('columnName'),
       width: 'flex',
       sortable: true,
       cellRenderer: (user) => (
@@ -986,10 +994,10 @@ function AdminUsersView() {
         </div>
       ),
     },
-    { key: 'role', label: 'Rol', width: 120, sortable: true, cellRenderer: renderRolBadge },
-    { key: 'status', label: 'Estado', width: 100, cellRenderer: renderStatusBadge },
-    { key: 'lastLogin', label: 'Ultima actividad', width: 150, sortable: true, hiddenOnMobile: true, cellRenderer: renderLastActivity },
-    { key: 'sesiones', label: 'Sesiones', width: 90, align: 'center', hiddenOnMobile: true, cellRenderer: renderSesionCount },
+    { key: 'role', label: t('columnRole'), width: 120, sortable: true, cellRenderer: renderRolBadge },
+    { key: 'status', label: t('columnStatus'), width: 100, cellRenderer: renderStatusBadge },
+    { key: 'lastLogin', label: t('columnLastActivity'), width: 150, sortable: true, hiddenOnMobile: true, cellRenderer: renderLastActivity },
+    { key: 'sesiones', label: t('columnSessions'), width: 90, align: 'center', hiddenOnMobile: true, cellRenderer: renderSesionCount },
     { key: 'actions', label: '', width: 80, align: 'right', cellRenderer: renderActions },
   ];
 
@@ -1027,7 +1035,7 @@ function AdminUsersView() {
                 ? 'bg-green-100 text-green-600'
                 : 'bg-gray-100 text-gray-500'
             }`}>
-              {user.status === UserStatus.ACTIVE ? 'Activo' : 'Inactivo'}
+              {user.status === UserStatus.ACTIVE ? t('statusActive') : t('statusInactive')}
             </span>
             {sessionCount > 0 && (
               <button
@@ -1037,7 +1045,7 @@ function AdminUsersView() {
                 }}
                 className="px-2 py-0.5 text-[11px] font-medium rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200"
               >
-                {sessionCount} sesion{sessionCount !== 1 ? 'es' : ''}
+                {t('activeSessionsCount', { active: sessionCount, total: sessionCount })}
               </button>
             )}
           </div>
@@ -1062,20 +1070,20 @@ function AdminUsersView() {
         {/* KPI Strip */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
           <div className="bg-white rounded-xl border border-gray-200 p-4">
-            <p className="text-[11px] font-medium text-gray-500 uppercase">Total usuarios</p>
+            <p className="text-[11px] font-medium text-gray-500 uppercase">{t('totalUsers')}</p>
             <p className="text-2xl font-bold text-gray-900 mt-1">{totalCount}</p>
           </div>
           <div className="bg-white rounded-xl border border-gray-200 p-4">
-            <p className="text-[11px] font-medium text-gray-500 uppercase">Activos</p>
+            <p className="text-[11px] font-medium text-gray-500 uppercase">{t('activeUsers')}</p>
             <p className="text-2xl font-bold text-emerald-600 mt-1">{displayUsers.filter(u => u.status === UserStatus.ACTIVE).length}</p>
           </div>
           <div className="bg-white rounded-xl border border-gray-200 p-4">
-            <p className="text-[11px] font-medium text-gray-500 uppercase">En linea</p>
+            <p className="text-[11px] font-medium text-gray-500 uppercase">{t('onlineUsers')}</p>
             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             <p className="text-2xl font-bold text-blue-600 mt-1">{apiUsers.filter((u: any) => u.isOnline).length}</p>
           </div>
           <div className="bg-white rounded-xl border border-gray-200 p-4">
-            <p className="text-[11px] font-medium text-gray-500 uppercase">Sesiones activas</p>
+            <p className="text-[11px] font-medium text-gray-500 uppercase">{t('activeSessions')}</p>
             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             <p className="text-2xl font-bold text-amber-600 mt-1">{apiUsers.reduce((sum: number, u: any) => sum + (u.activeSessionCount || 0), 0)}</p>
           </div>
@@ -1089,28 +1097,28 @@ function AdminUsersView() {
             className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
           >
             <Plus className="w-4 h-4" />
-            <span>Nuevo usuario</span>
+            <span>{t('newUser')}</span>
           </button>
           <button
             onClick={handleOpenUbicaciones}
             className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-blue-700 border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors"
           >
             <MapPin className="w-4 h-4" />
-            <span>Ubicacion</span>
+            <span>{t('location')}</span>
           </button>
           <button
             onClick={handleOpenDistancia}
             className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-violet-700 border border-violet-300 rounded-lg hover:bg-violet-50 transition-colors"
           >
             <Ruler className="w-4 h-4" />
-            <span>Distancia</span>
+            <span>{t('distance')}</span>
           </button>
           <button
             onClick={handleDescargar}
             className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-emerald-700 border border-emerald-300 rounded-lg hover:bg-emerald-50 transition-colors"
           >
             <Download className="w-4 h-4" />
-            <span>Descargar</span>
+            <span>{t('download')}</span>
           </button>
           <button
             onClick={handleCleanExpired}
@@ -1122,7 +1130,7 @@ function AdminUsersView() {
             ) : (
               <Trash2 className="w-4 h-4" />
             )}
-            <span>Limpiar expiradas</span>
+            <span>{t('cleanExpired')}</span>
           </button>
         </div>
 
@@ -1132,12 +1140,12 @@ function AdminUsersView() {
           <div className="min-w-[150px]">
             <SearchableSelect
               options={[
-                { value: 'all', label: 'Todas las zonas' },
+                { value: 'all', label: t('allZones') },
                 ...zones.map(z => ({ value: z.id, label: z.name })),
               ]}
               value={filterZona}
               onChange={(val) => setFilterZona(val ? String(val) : 'all')}
-              placeholder="Todas las zonas"
+              placeholder={t('allZones')}
             />
           </div>
 
@@ -1145,12 +1153,12 @@ function AdminUsersView() {
           <div className="flex-1 min-w-[200px]" data-tour="users-role-filter">
             <SearchableSelect
               options={[
-                { value: 'all', label: 'Todos los roles' },
+                { value: 'all', label: t('allRoles') },
                 ...roles.map(r => ({ value: r.nombre, label: r.nombre })),
               ]}
               value={filterRole}
               onChange={(val) => setFilterRole(val ? String(val) : 'all')}
-              placeholder="Todos los roles"
+              placeholder={t('allRoles')}
             />
           </div>
 
@@ -1158,13 +1166,13 @@ function AdminUsersView() {
           <div className="flex-1 min-w-[160px]">
             <SearchableSelect
               options={[
-                { value: 'all', label: 'Todos los estados' },
-                { value: UserStatus.ACTIVE, label: 'Activo' },
-                { value: UserStatus.INACTIVE, label: 'Inactivo' },
+                { value: 'all', label: t('allStatuses') },
+                { value: UserStatus.ACTIVE, label: t('statusActive') },
+                { value: UserStatus.INACTIVE, label: t('statusInactive') },
               ]}
               value={filterStatus}
               onChange={(val) => setFilterStatus(val ? String(val) : 'all')}
-              placeholder="Todos los estados"
+              placeholder={t('allStatuses')}
             />
           </div>
 
@@ -1172,14 +1180,14 @@ function AdminUsersView() {
           <div className="flex-1 min-w-[170px]">
             <SearchableSelect
               options={[
-                { value: 'all', label: 'Todas las sesiones' },
-                { value: 'online', label: 'En línea' },
-                { value: 'with_session', label: 'Con sesión' },
-                { value: 'no_session', label: 'Sin sesión' },
+                { value: 'all', label: t('allSessions') },
+                { value: 'online', label: t('online') },
+                { value: 'with_session', label: t('withSession') },
+                { value: 'no_session', label: t('noSession') },
               ]}
               value={filterSession}
               onChange={(val) => setFilterSession(val ? String(val) : 'all')}
-              placeholder="Todas las sesiones"
+              placeholder={t('allSessions')}
             />
           </div>
 
@@ -1189,7 +1197,7 @@ function AdminUsersView() {
             className="flex items-center gap-2 px-4 py-2 h-10 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
-            <span>Actualizar</span>
+            <span>{t('refresh')}</span>
           </button>
         </div>
 
@@ -1197,7 +1205,7 @@ function AdminUsersView() {
         <BatchActionBar
           selectedCount={batch.selectedCount}
           totalItems={totalCount}
-          entityLabel="usuarios"
+          entityLabel="users"
           onActivate={() => batch.openBatchAction('activate')}
           onDeactivate={() => batch.openBatchAction('deactivate')}
           onClear={batch.handleClearSelection}
@@ -1227,8 +1235,8 @@ function AdminUsersView() {
           loading={isLoading}
           loadingMessage="Cargando usuarios..."
           emptyIcon={<Users className="w-12 h-12" />}
-          emptyTitle="No hay usuarios"
-          emptyMessage="Crea un nuevo usuario para comenzar"
+          emptyTitle={t('noUsers')}
+          emptyMessage={t('noUsersDesc')}
           mobileCardRenderer={mobileCardRenderer}
           pagination={totalCount > pageSize ? {
             currentPage,
@@ -1244,7 +1252,7 @@ function AdminUsersView() {
       <Drawer
         isOpen={drawerUser !== null}
         onClose={() => { setDrawerUser(null); setDrawerSessions([]); }}
-        title={drawerUser ? `Sesiones de ${drawerUser.name}` : 'Sesiones'}
+        title={drawerUser ? t('sessionsOf', { name: drawerUser.name }) : t('sessions')}
         icon={<Smartphone className="w-5 h-5 text-blue-600" />}
         width="lg"
       >
@@ -1252,19 +1260,18 @@ function AdminUsersView() {
           {drawerLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
-              <span className="ml-2 text-sm text-gray-500">Cargando sesiones...</span>
+              <span className="ml-2 text-sm text-gray-500">{t("loadingSessions")}</span>
             </div>
           ) : drawerSessions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-gray-500">
               <Smartphone className="w-12 h-12 text-gray-300 mb-3" />
-              <p className="text-sm font-medium">Sin sesiones</p>
-              <p className="text-xs text-gray-400 mt-1">Este usuario no tiene sesiones registradas</p>
+              <p className="text-sm font-medium">{t("noSessions")}</p>
+              <p className="text-xs text-gray-400 mt-1">{t("noSessionsDesc")}</p>
             </div>
           ) : (
             <div className="space-y-3">
               <p className="text-sm text-gray-600">
-                {drawerSessions.filter(s => s.status === 0).length} sesion{drawerSessions.filter(s => s.status === 0).length !== 1 ? 'es' : ''} activa{drawerSessions.filter(s => s.status === 0).length !== 1 ? 's' : ''}
-                {' '}de {drawerSessions.length} total
+                {t('activeSessionsCount', { active: drawerSessions.filter(s => s.status === 0).length, total: drawerSessions.length })}
               </p>
               {drawerSessions.map((s) => {
                 const DeviceIcon = getDeviceIcon(s.deviceType);
@@ -1287,7 +1294,7 @@ function AdminUsersView() {
                           </span>
                           {s.esSesionActual && (
                             <span className="text-[10px] font-medium text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full flex-shrink-0">
-                              Tu sesion
+                              {t('yourSession')}
                             </span>
                           )}
                         </div>
@@ -1296,14 +1303,14 @@ function AdminUsersView() {
                         </div>
                       </div>
                       <span className={`px-2 py-1 text-[11px] font-medium rounded-full ${statusCfg.className}`}>
-                        {statusCfg.label}
+                        {td(statusCfg.labelKey)}
                       </span>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
                       {s.ipAddress && <span>IP: {s.ipAddress}</span>}
-                      <span>Conectado: {formatDate(s.loggedInAt, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
-                      <span>Actividad: {formatTimeAgo(s.lastActivity)}</span>
+                      <span>{t('connected')} {formatDate(s.loggedInAt, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                      <span>{t('activity')} {formatTimeAgo(s.lastActivity)}</span>
                     </div>
 
                     {s.status === 0 && !s.esSesionActual && (
@@ -1318,7 +1325,7 @@ function AdminUsersView() {
                           ) : (
                             <Shield className="w-3.5 h-3.5" />
                           )}
-                          <span>Revocar</span>
+                          <span>{t('revoke')}</span>
                         </button>
                       </div>
                     )}
@@ -1335,11 +1342,11 @@ function AdminUsersView() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="bg-white dark:bg-card rounded-xl shadow-xl w-full max-w-md mx-4 border border-border">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">Crear nuevo usuario</h2>
+              <h2 className="text-lg font-semibold text-gray-900">{t("createUserTitle")}</h2>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre completo *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("fullName")} *</label>
                 <input
                   type="text"
                   value={formData.nombre}
@@ -1349,7 +1356,7 @@ function AdminUsersView() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("email")} *</label>
                 <input
                   type="email"
                   value={formData.email}
@@ -1359,7 +1366,7 @@ function AdminUsersView() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Contrasena *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("password")} *</label>
                 <input
                   type="password"
                   value={formData.password}
@@ -1369,7 +1376,7 @@ function AdminUsersView() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Telefono</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("phone")}</label>
                 <input
                   type="tel"
                   value={formData.telefono}
@@ -1379,14 +1386,14 @@ function AdminUsersView() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Rol</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("role")}</label>
                 <SearchableSelect
                   options={roles
                     .filter(role => isSuperAdmin || role.nombre.toUpperCase() !== 'ADMIN')
                     .map(role => ({ value: role.nombre, label: role.nombre }))}
                   value={formData.role || null}
                   onChange={(val) => setFormData({ ...formData, role: val ? String(val) : '' })}
-                  placeholder="Seleccionar rol"
+                  placeholder={t("selectRole")}
                 />
               </div>
             </div>
@@ -1395,13 +1402,13 @@ function AdminUsersView() {
                 onClick={() => setIsCreateModalOpen(false)}
                 className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
               >
-                Cancelar
+                {tc('cancel')}
               </button>
               <button
                 onClick={handleCreateUser}
                 className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
               >
-                Crear usuario
+                {t('createUser')}
               </button>
             </div>
           </div>
@@ -1418,8 +1425,8 @@ function AdminUsersView() {
         selectedCount={batch.selectedCount}
         entityLabel="usuario"
         loading={batch.batchLoading}
-        consequenceDeactivate="Los usuarios desactivados no podran iniciar sesion."
-        consequenceActivate="Los usuarios activados podran iniciar sesion nuevamente."
+        consequenceDeactivate={t('deactivateConsequence')}
+        consequenceActivate={t('activateConsequence')}
       />
 
       {/* Edit Modal */}
@@ -1427,11 +1434,11 @@ function AdminUsersView() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">Editar usuario</h2>
+              <h2 className="text-lg font-semibold text-gray-900">{t("editUserTitle")}</h2>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre completo</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("fullName")}</label>
                 <input
                   type="text"
                   value={selectedUser.name}
@@ -1440,7 +1447,7 @@ function AdminUsersView() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("email")}</label>
                 <input
                   type="email"
                   value={selectedUser.email}
@@ -1449,7 +1456,7 @@ function AdminUsersView() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Telefono</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('phone')}</label>
                 <input
                   type="tel"
                   value={selectedUser.phone || ''}
@@ -1458,16 +1465,16 @@ function AdminUsersView() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('status')}</label>
                 <SearchableSelect
                   options={[
-                    { value: UserStatus.ACTIVE, label: 'Activo' },
-                    { value: UserStatus.INACTIVE, label: 'Inactivo' },
-                    { value: UserStatus.SUSPENDED, label: 'Suspendido' },
+                    { value: UserStatus.ACTIVE, label: t('statusActive') },
+                    { value: UserStatus.INACTIVE, label: t('statusInactive') },
+                    { value: UserStatus.SUSPENDED, label: t('statusSuspended') },
                   ]}
                   value={selectedUser.status || null}
                   onChange={(val) => setSelectedUser({ ...selectedUser, status: val as UserStatus })}
-                  placeholder="Seleccionar estado"
+                  placeholder={t('selectStatus')}
                 />
               </div>
             </div>
@@ -1479,13 +1486,13 @@ function AdminUsersView() {
                 }}
                 className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
               >
-                Cancelar
+                {t('cancel')}
               </button>
               <button
                 onClick={handleUpdateUser}
                 className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
               >
-                Guardar cambios
+                {t('saveChanges')}
               </button>
             </div>
           </div>
@@ -1498,8 +1505,8 @@ function AdminUsersView() {
           <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">Ubicacion de vendedores</h2>
-                <p className="text-sm text-gray-500">Ultima posicion conocida de cada vendedor</p>
+                <h2 className="text-lg font-semibold text-gray-900">{t("vendorLocation")}</h2>
+                <p className="text-sm text-gray-500">{t("lastKnownPosition")}</p>
               </div>
               <button onClick={() => setIsLocationModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg">
                 <X className="w-5 h-5 text-gray-400" />
@@ -1509,22 +1516,22 @@ function AdminUsersView() {
               {ubicacionesLoading ? (
                 <div className="flex items-center justify-center h-[400px]">
                   <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-                  <span className="ml-2 text-gray-500">Cargando ubicaciones...</span>
+                  <span className="ml-2 text-gray-500">{t("loadingLocations")}</span>
                 </div>
               ) : ubicaciones.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-[400px] text-gray-500">
                   <MapPin className="w-12 h-12 text-gray-300 mb-3" />
-                  <p className="font-medium">Sin datos de ubicacion</p>
-                  <p className="text-sm">Los vendedores aun no han registrado visitas con GPS</p>
+                  <p className="font-medium">{t("noLocationData")}</p>
+                  <p className="text-sm">{t("vendorsNoGps")}</p>
                 </div>
               ) : (
                 <>
                   <div className="mb-3 text-sm text-gray-600">
-                    {ubicaciones.length} vendedor{ubicaciones.length !== 1 ? 'es' : ''} con ubicacion registrada
+                    {t('vendorsWithLocation', { count: ubicaciones.length })}
                   </div>
                   <GoogleMapWrapper markers={locationMarkers} height="450px" />
                   <p className="mt-3 text-xs text-gray-400">
-                    Solo se muestran vendedores que han registrado al menos una visita con GPS activo desde la app movil. Si un vendedor no aparece, es porque aun no ha realizado check-in con ubicacion.
+                    {t('locationNote')}
                   </p>
                 </>
               )}
@@ -1540,8 +1547,8 @@ function AdminUsersView() {
           <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">Distancia de vendedores</h2>
-                <p className="text-sm text-gray-500">Distancia desde el punto base (promedio de ubicaciones)</p>
+                <h2 className="text-lg font-semibold text-gray-900">{t("vendorDistance")}</h2>
+                <p className="text-sm text-gray-500">{t("distanceFromBase")}</p>
               </div>
               <button onClick={() => setIsDistanceModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg">
                 <X className="w-5 h-5 text-gray-400" />
@@ -1551,21 +1558,21 @@ function AdminUsersView() {
               {ubicacionesLoading ? (
                 <div className="flex items-center justify-center h-40">
                   <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
-                  <span className="ml-2 text-gray-500">Calculando distancias...</span>
+                  <span className="ml-2 text-gray-500">{t("calculatingDistances")}</span>
                 </div>
               ) : distanceRows.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-40 text-gray-500">
                   <Ruler className="w-12 h-12 text-gray-300 mb-3" />
-                  <p className="font-medium">Sin datos de ubicacion</p>
+                  <p className="font-medium">{t("noLocationData")}</p>
                 </div>
               ) : (<>
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-200 text-left text-gray-500">
-                      <th className="pb-3 font-medium">Vendedor</th>
-                      <th className="pb-3 font-medium">Ultimo cliente</th>
-                      <th className="pb-3 font-medium text-right">Distancia</th>
-                      <th className="pb-3 font-medium text-right">Hace</th>
+                      <th className="pb-3 font-medium">{t("vendor")}</th>
+                      <th className="pb-3 font-medium">{t("lastClient")}</th>
+                      <th className="pb-3 font-medium text-right">{t("distanceCol")}</th>
+                      <th className="pb-3 font-medium text-right">{t("agoCol")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1592,7 +1599,7 @@ function AdminUsersView() {
                   </tbody>
                 </table>
                 <p className="mt-3 text-xs text-gray-400">
-                  Solo se muestran vendedores con al menos una visita GPS registrada desde la app movil.
+                  {t('distanceNote')}
                 </p>
               </>)}
             </div>

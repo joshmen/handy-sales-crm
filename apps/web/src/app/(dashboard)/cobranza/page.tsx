@@ -49,6 +49,7 @@ import { formatCurrency } from '@/lib/utils';
 import { toast } from '@/hooks/useToast';
 import { useFormatters } from '@/hooks/useFormatters';
 import { formatDate } from '@/lib/formatters';
+import { useTranslations } from 'next-intl';
 
 // ─── Zod Schema ───────────────────────────────────────
 
@@ -88,19 +89,19 @@ const metodoPagoColors: Record<number, string> = {
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 
 const DATE_PRESETS: { label: string; calc: () => { desde: string; hasta: string } }[] = [
-  { label: 'Hoy', calc: () => { const t = iso(new Date()); return { desde: t, hasta: t }; } },
-  { label: 'Esta semana', calc: () => {
+  { label: 'today', calc: () => { const t = iso(new Date()); return { desde: t, hasta: t }; } },
+  { label: 'thisWeek', calc: () => {
     const now = new Date();
     const day = now.getDay();
     const mon = new Date(now);
     mon.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
     return { desde: iso(mon), hasta: iso(now) };
   }},
-  { label: 'Este mes', calc: () => {
+  { label: 'thisMonth', calc: () => {
     const now = new Date();
     return { desde: iso(new Date(now.getFullYear(), now.getMonth(), 1)), hasta: iso(now) };
   }},
-  { label: 'Últimos 90d', calc: () => {
+  { label: 'last90Days', calc: () => {
     const now = new Date();
     const past = new Date(now);
     past.setDate(past.getDate() - 90);
@@ -113,6 +114,8 @@ type Tab = 'cobros' | 'saldos';
 // ─── Page ─────────────────────────────────────────────
 
 export default function CobranzaPage() {
+  const t = useTranslations('collections');
+  const tc = useTranslations('common');
   const { formatCurrency, formatDate } = useFormatters();
   const drawerEstadoCuentaRef = useRef<DrawerHandle>(null);
   const drawerNewCobroRef = useRef<DrawerHandle>(null);
@@ -177,14 +180,14 @@ export default function CobranzaPage() {
   // ─── Data fetching ──────────────────────────────────
 
   const fetchResumen = useCallback(async () => {
-    try { setResumen(await getResumenCartera()); } catch { toast.error('Error al cargar resumen'); }
+    try { setResumen(await getResumenCartera()); } catch { toast.error(t('errorLoadingSummary')); }
   }, []);
 
   const fetchCobros = useCallback(async () => {
     try {
       setCobrosLoading(true);
       setCobros(await getCobros({ desde: dates.desde, hasta: dates.hasta }));
-    } catch { toast.error('Error al cargar cobros'); }
+    } catch { toast.error(t('errorLoadingPayments')); }
     finally { setCobrosLoading(false); }
   }, [dates]);
 
@@ -192,7 +195,7 @@ export default function CobranzaPage() {
     try {
       setSaldosLoading(true);
       setSaldos(await getSaldos());
-    } catch { toast.error('Error al cargar saldos'); }
+    } catch { toast.error(t('errorLoadingBalances')); }
     finally { setSaldosLoading(false); }
   }, []);
 
@@ -253,7 +256,7 @@ export default function CobranzaPage() {
     setEstadoCuentaHistorico(historico);
     setEstadoCuentaLoading(true);
     try { setEstadoCuenta(await getEstadoCuenta(clienteId, historico)); }
-    catch { toast.error('Error al cargar estado de cuenta'); }
+    catch { toast.error(t('errorLoadingStatement')); }
     finally { setEstadoCuentaLoading(false); }
   };
 
@@ -263,7 +266,7 @@ export default function CobranzaPage() {
     setEstadoCuentaHistorico(nuevoHistorico);
     setEstadoCuentaLoading(true);
     try { setEstadoCuenta(await getEstadoCuenta(detailClienteId, nuevoHistorico)); }
-    catch { toast.error('Error al cargar estado de cuenta'); }
+    catch { toast.error(t('errorLoadingStatement')); }
     finally { setEstadoCuentaLoading(false); }
   };
 
@@ -288,12 +291,12 @@ export default function CobranzaPage() {
         referencia: data.referencia,
         notas: data.notas,
       });
-      toast.success('Cobro registrado correctamente');
+      toast.success(t('paymentCreated'));
       setShowNewCobro(false);
       setFormPedidos([]);
       fetchCobros();
       fetchResumen();
-    } catch { toast.error('Error al registrar cobro'); }
+    } catch { toast.error(t('errorCreatingPayment')); }
     finally { setCreating(false); }
   };
 
@@ -304,11 +307,11 @@ export default function CobranzaPage() {
     try {
       setDeleting(true);
       await deleteCobro(deleteId);
-      toast.success('Cobro anulado');
+      toast.success(t('paymentVoided'));
       setDeleteId(null);
       fetchCobros();
       fetchResumen();
-    } catch { toast.error('Error al anular cobro'); }
+    } catch { toast.error(t('errorDeletingPayment')); }
     finally { setDeleting(false); }
   };
 
@@ -326,7 +329,7 @@ export default function CobranzaPage() {
         metodoPago: inlineCobroData.metodoPago,
         referencia: inlineCobroData.referencia || undefined,
       });
-      toast.success('Cobro registrado');
+      toast.success(t('paymentCreated'));
       setInlineCobroPedidoId(null);
       setInlineCobroData({ monto: 0, metodoPago: 0, referencia: '' });
       // Re-fetch estado de cuenta IN PLACE → user sees progress bar animate
@@ -336,7 +339,7 @@ export default function CobranzaPage() {
       fetchSaldos();
       fetchResumen();
       fetchCobros();
-    } catch { toast.error('Error al registrar cobro'); }
+    } catch { toast.error(t('errorCreatingPayment')); }
     finally { setInlineCobroSaving(false); }
   };
 
@@ -400,20 +403,20 @@ export default function CobranzaPage() {
     <>
       <PageHeader
         breadcrumbs={[
-          { label: 'Inicio', href: '/dashboard' },
-          { label: 'Cobranza' },
+          { label: tc('home'), href: '/dashboard' },
+          { label: t('title') },
         ]}
-        title="Cobranza"
+        title={t('title')}
         actions={
           <>
-            <ExportButton entity="cobros" label="Exportar" params={{ desde: dates.desde, hasta: dates.hasta }} />
+            <ExportButton entity="cobros" label={tc('export')} params={{ desde: dates.desde, hasta: dates.hasta }} />
             <button
               data-tour="cobranza-new-btn"
               onClick={() => setShowNewCobro(true)}
               className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
             >
               <Plus className="w-4 h-4" />
-              <span>Nuevo cobro</span>
+              <span>{t('newPayment')}</span>
             </button>
           </>
         }
@@ -428,7 +431,7 @@ export default function CobranzaPage() {
                     <DollarSign className="w-4 h-4 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-[11px] text-gray-500 flex items-center gap-1">Total vendido <HelpTooltip tooltipKey="cobranza-total-vendido" /></p>
+                    <p className="text-[11px] text-gray-500 flex items-center gap-1">{t('kpis.totalSold')} <HelpTooltip tooltipKey="cobranza-total-vendido" /></p>
                     <p className="text-sm font-bold text-gray-900">
                       {formatCurrency(resumen.totalFacturado)}
                     </p>
@@ -439,7 +442,7 @@ export default function CobranzaPage() {
                     <CreditCard className="w-4 h-4 text-green-600" />
                   </div>
                   <div>
-                    <p className="text-[11px] text-gray-500 flex items-center gap-1">Cobrado <HelpTooltip tooltipKey="cobranza-cobrado" /></p>
+                    <p className="text-[11px] text-gray-500 flex items-center gap-1">{t('kpis.collected')} <HelpTooltip tooltipKey="cobranza-cobrado" /></p>
                     <p className="text-sm font-bold text-gray-900">
                       {formatCurrency(resumen.totalCobrado)}
                     </p>
@@ -450,7 +453,7 @@ export default function CobranzaPage() {
                     <AlertCircle className="w-4 h-4 text-amber-600" />
                   </div>
                   <div>
-                    <p className="text-[11px] text-gray-500 flex items-center gap-1">Por cobrar <HelpTooltip tooltipKey="cobranza-por-cobrar" /></p>
+                    <p className="text-[11px] text-gray-500 flex items-center gap-1">{t('kpis.outstanding')} <HelpTooltip tooltipKey="cobranza-por-cobrar" /></p>
                     <p className="text-sm font-bold text-amber-600">
                       {formatCurrency(resumen.totalPendiente)}
                     </p>
@@ -461,7 +464,7 @@ export default function CobranzaPage() {
                     <Users className="w-4 h-4 text-red-600" />
                   </div>
                   <div>
-                    <p className="text-[11px] text-gray-500 flex items-center gap-1">Clientes que deben <HelpTooltip tooltipKey="cobranza-clientes-deben" /></p>
+                    <p className="text-[11px] text-gray-500 flex items-center gap-1">{t('kpis.clientsOwing')} <HelpTooltip tooltipKey="cobranza-clientes-deben" /></p>
                     <p className="text-sm font-bold text-gray-900">
                       {resumen.clientesConSaldo}
                     </p>
@@ -491,7 +494,7 @@ export default function CobranzaPage() {
               <SearchBar
                 value={searchCobros}
                 onChange={setSearchCobros}
-                placeholder="Buscar cobro por cliente, pedido o referencia..."
+                placeholder={t('searchPlaceholder')}
                 className="w-full"
               />
             </div>
@@ -505,7 +508,7 @@ export default function CobranzaPage() {
                 mode="date"
                 value={dates.desde}
                 onChange={(val) => { setDates(d => ({ ...d, desde: val })); setActivePreset(null); }}
-                placeholder="Desde"
+                placeholder={tc('from')}
               />
             </div>
             <span className="text-xs text-gray-400">—</span>
@@ -515,7 +518,7 @@ export default function CobranzaPage() {
                 mode="date"
                 value={dates.hasta}
                 onChange={(val) => { setDates(d => ({ ...d, hasta: val })); setActivePreset(null); }}
-                placeholder="Hasta"
+                placeholder={tc('to')}
                 min={dates.desde}
               />
             </div>
@@ -525,7 +528,7 @@ export default function CobranzaPage() {
               className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
             >
               <RefreshCw className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Actualizar</span>
+              <span className="hidden sm:inline">{tc('refresh')}</span>
             </button>
 
             {/* Date presets */}
@@ -540,7 +543,7 @@ export default function CobranzaPage() {
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
-                  {p.label}
+                  {tc(p.label)}
                 </button>
               ))}
             </div>
@@ -555,7 +558,7 @@ export default function CobranzaPage() {
                     : 'text-gray-500 border-transparent hover:text-gray-700'
                 }`}
               >
-                Historial de cobros
+                {t('tabs.payments')}
               </button>
               <button
                 onClick={() => setTab('saldos')}
@@ -565,7 +568,7 @@ export default function CobranzaPage() {
                     : 'text-gray-500 border-transparent hover:text-gray-700'
                 }`}
               >
-                ¿Quién debe?
+                {t('tabs.balances')}
               </button>
             </div>
           </div>
@@ -583,7 +586,7 @@ export default function CobranzaPage() {
                   {!cobrosLoading && filteredCobros.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-12">
                       <CreditCard className="w-8 h-8 text-muted-foreground mb-3" />
-                      <p className="text-sm text-gray-500">{searchCobros ? 'Sin resultados' : 'No hay cobros'}</p>
+                      <p className="text-sm text-gray-500">{searchCobros ? tc('noResults') : t('noPayments')}</p>
                     </div>
                   ) : (
                     filteredCobros.map((c) => (
@@ -626,16 +629,16 @@ export default function CobranzaPage() {
                           <button
                             onClick={(e) => { e.stopPropagation(); openDetail(c.clienteId); }}
                             className="px-3 py-1.5 text-xs font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
-                            title="Ver estado de cuenta"
+                            title={t('viewAccountStatement')}
                           >
-                            Ver detalles
+                            {tc('details')}
                           </button>
                           <button
                             onClick={(e) => { e.stopPropagation(); setDeleteId(c.id); }}
                             className="px-3 py-1.5 text-xs font-medium text-red-600 border border-red-300 rounded hover:bg-red-50 transition-colors"
-                            title="Anular cobro"
+                            title={t('voidPayment')}
                           >
-                            Anular
+                            {t('void')}
                           </button>
                         </div>
                       </div>
@@ -651,37 +654,37 @@ export default function CobranzaPage() {
                     className="w-[100px] text-xs font-semibold text-gray-700 cursor-pointer hover:text-gray-900 select-none"
                     onClick={() => handleSort('fechaCobro')}
                   >
-                    Fecha <SortIcon col="fechaCobro" />
+                    {t('columns.date')} <SortIcon col="fechaCobro" />
                   </div>
-                  <div className="flex-1 text-xs font-semibold text-gray-700">Cliente</div>
-                  <div className="w-[100px] text-xs font-semibold text-gray-700">Pedido</div>
+                  <div className="flex-1 text-xs font-semibold text-gray-700">{t('columns.client')}</div>
+                  <div className="w-[100px] text-xs font-semibold text-gray-700">{t('columns.order')}</div>
                   <div
                     className="w-[110px] text-xs font-semibold text-gray-700 text-right cursor-pointer hover:text-gray-900 select-none"
                     onClick={() => handleSort('monto')}
                   >
-                    Monto <SortIcon col="monto" />
+                    {t('columns.amount')} <SortIcon col="monto" />
                   </div>
-                  <div className="w-[120px] text-xs font-semibold text-gray-700 pl-4">Método</div>
-                  <div className="w-[100px] text-xs font-semibold text-gray-700">Vendedor</div>
-                  <div className="w-[100px] text-xs font-semibold text-gray-700">Referencia</div>
-                  <div className="w-[80px] text-xs font-semibold text-gray-700 text-center">Acciones</div>
+                  <div className="w-[120px] text-xs font-semibold text-gray-700 pl-4">{t('columns.method')}</div>
+                  <div className="w-[100px] text-xs font-semibold text-gray-700">{t('columns.vendor')}</div>
+                  <div className="w-[100px] text-xs font-semibold text-gray-700">{t('columns.reference')}</div>
+                  <div className="w-[80px] text-xs font-semibold text-gray-700 text-center">{tc('actions')}</div>
                 </div>
 
                 {/* Table Body */}
                 <div className="relative min-h-[200px]">
-                  <TableLoadingOverlay loading={cobrosLoading} message="Cargando cobros..." />
+                  <TableLoadingOverlay loading={cobrosLoading} />
 
                   {/* Empty State */}
                   {!cobrosLoading && filteredCobros.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-20">
                       <CreditCard className="w-10 h-10 text-muted-foreground mb-4" />
                       <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                        {searchCobros ? 'Sin resultados' : 'No hay cobros en este período'}
+                        {searchCobros ? t('noResults') : t('emptyPayments')}
                       </h3>
                       <p className="text-sm text-gray-500 text-center">
                         {searchCobros
-                          ? `No se encontraron cobros para "${searchCobros}"`
-                          : 'Registra cobros usando el botón superior'}
+                          ? t('emptyPaymentsSearch', { search: searchCobros })
+                          : t('emptyPaymentsHint')}
                       </p>
                     </div>
                   ) : (
@@ -724,14 +727,14 @@ export default function CobranzaPage() {
                             <button
                               onClick={(e) => { e.stopPropagation(); openDetail(c.clienteId); }}
                               className="p-1.5 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                              title="Ver estado de cuenta"
+                              title={t('viewAccountStatement')}
                             >
                               <Eye className="w-4 h-4" />
                             </button>
                             <button
                               onClick={(e) => { e.stopPropagation(); setDeleteId(c.id); }}
                               className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                              title="Anular cobro"
+                              title={t('voidPayment')}
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -743,10 +746,10 @@ export default function CobranzaPage() {
                       {cobros.length > 0 && (
                         <div className="flex items-center px-4 py-3 bg-gray-50 border-t border-gray-300 min-w-[800px]">
                           <div className="w-[100px] text-xs font-semibold text-gray-700">
-                            Total
+                            {tc('total')}
                           </div>
                           <div className="flex-1 text-xs text-gray-500">
-                            {cobros.length} cobro{cobros.length !== 1 ? 's' : ''}
+                            {t('paymentCount', { count: cobros.length })}
                           </div>
                           <div className="w-[100px]" />
                           <div className="w-[110px] text-[13px] font-bold text-gray-900 text-right">
@@ -778,7 +781,7 @@ export default function CobranzaPage() {
                   {!saldosLoading && saldos.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-12">
                       <DollarSign className="w-12 h-12 text-emerald-300 mb-3" />
-                      <p className="text-sm text-gray-500">No hay saldos pendientes</p>
+                      <p className="text-sm text-gray-500">{t('emptyBalances')}</p>
                     </div>
                   ) : (
                     saldos.map((s) => {
@@ -834,7 +837,7 @@ export default function CobranzaPage() {
                             <button
                               onClick={(e) => { e.stopPropagation(); openDetail(s.clienteId); }}
                               className="px-3 py-1.5 text-xs font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
-                              title="Ver estado de cuenta"
+                              title={t('viewAccountStatement')}
                             >
                               Ver detalles
                             </button>
@@ -849,24 +852,24 @@ export default function CobranzaPage() {
                 <div data-tour="cobranza-saldos-table" className="hidden sm:block bg-white border border-gray-200 rounded-lg overflow-x-auto">
                 {/* Table Header */}
                 <div className="flex items-center bg-gray-50 px-4 h-10 border-b border-gray-200 min-w-[740px]">
-                  <div className="flex-1 text-xs font-semibold text-gray-700">Cliente</div>
-                  <div className="w-[100px] text-xs font-semibold text-gray-700 text-center">Pedidos</div>
-                  <div className="w-[130px] text-xs font-semibold text-gray-700 text-right">Vendido</div>
-                  <div className="w-[130px] text-xs font-semibold text-gray-700 text-right">Cobrado</div>
-                  <div className="w-[130px] text-xs font-semibold text-gray-700 text-right">Debe</div>
-                  <div className="w-[100px] text-xs font-semibold text-gray-700 text-center">Avance</div>
-                  <div className="w-[100px] text-xs font-semibold text-gray-700 text-center">Acciones</div>
+                  <div className="flex-1 text-xs font-semibold text-gray-700">{t('columns.client')}</div>
+                  <div className="w-[100px] text-xs font-semibold text-gray-700 text-center">{t('columns.orders')}</div>
+                  <div className="w-[130px] text-xs font-semibold text-gray-700 text-right">{t('columns.sold')}</div>
+                  <div className="w-[130px] text-xs font-semibold text-gray-700 text-right">{t('columns.collected')}</div>
+                  <div className="w-[130px] text-xs font-semibold text-gray-700 text-right">{t('columns.owes')}</div>
+                  <div className="w-[100px] text-xs font-semibold text-gray-700 text-center">{t('columns.progress')}</div>
+                  <div className="w-[100px] text-xs font-semibold text-gray-700 text-center">{tc('actions')}</div>
                 </div>
 
                 {/* Table Body */}
                 <div className="relative min-h-[200px]">
-                  <TableLoadingOverlay loading={saldosLoading} message="Cargando saldos..." />
+                  <TableLoadingOverlay loading={saldosLoading} />
 
                   {!saldosLoading && saldos.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-20">
                       <DollarSign className="w-16 h-16 text-emerald-300 mb-4" />
-                      <h3 className="text-lg font-semibold text-gray-700 mb-2">No hay saldos pendientes</h3>
-                      <p className="text-sm text-gray-500">Todos los clientes están al corriente</p>
+                      <h3 className="text-lg font-semibold text-gray-700 mb-2">{t('emptyBalances')}</h3>
+                      <p className="text-sm text-gray-500">{t('emptyBalancesHint')}</p>
                     </div>
                   ) : (
                     <div className={`transition-opacity duration-200 ${saldosLoading ? 'opacity-50' : 'opacity-100'}`}>
@@ -908,14 +911,14 @@ export default function CobranzaPage() {
                               <button
                                 onClick={(e) => { e.stopPropagation(); openQuickCobro(s.clienteId); }}
                                 className="p-1.5 text-green-500 hover:text-green-700 hover:bg-green-50 rounded transition-colors"
-                                title="Cobrar"
+                                title={t('collect')}
                               >
                                 <CurrencyDollar className="w-4 h-4" weight="bold" />
                               </button>
                               <button
                                 onClick={(e) => { e.stopPropagation(); openDetail(s.clienteId); }}
                                 className="p-1.5 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                                title="Ver estado de cuenta"
+                                title={t('viewAccountStatement')}
                               >
                                 <Eye className="w-4 h-4" />
                               </button>
@@ -928,7 +931,7 @@ export default function CobranzaPage() {
                       {saldos.length > 0 && (
                         <div className="flex items-center px-4 py-3 bg-gray-50 border-t border-gray-300 min-w-[740px]">
                           <div className="flex-1 text-xs font-semibold text-gray-700">
-                            Total ({saldos.length} cliente{saldos.length !== 1 ? 's' : ''})
+                            {tc('total')} ({t('clientCount', { count: saldos.length })})
                           </div>
                           <div className="w-[100px]" />
                           <div className="w-[130px] text-[13px] font-bold text-gray-900 text-right">
@@ -959,7 +962,7 @@ export default function CobranzaPage() {
         ref={drawerEstadoCuentaRef}
         isOpen={detailClienteId !== null}
         onClose={closeDetail}
-        title={estadoCuenta ? estadoCuenta.clienteNombre : 'Estado de Cuenta'}
+        title={estadoCuenta ? estadoCuenta.clienteNombre : t('accountStatement')}
         icon={<FileText className="w-5 h-5 text-violet-500" />}
         width="lg"
         footer={
@@ -1289,7 +1292,7 @@ export default function CobranzaPage() {
           resetForm({ clienteId: 0, pedidoId: 0, monto: 0, metodoPago: 0, fechaCobro: '', referencia: '', notas: '' });
           setFormPedidos([]);
         }}
-        title="Nuevo Cobro"
+        title={t('drawer.title')}
         icon={<DollarSign className="w-5 h-5 text-emerald-500" />}
         width="md"
         isDirty={isDirty}
@@ -1301,7 +1304,7 @@ export default function CobranzaPage() {
             </Button>
             <Button type="button" variant="success" onClick={rhfSubmit(handleCreateCobro)} disabled={creating} className="flex items-center gap-2">
               {creating && <Loader2 className="w-4 h-4 animate-spin" />}
-              {creating ? 'Guardando...' : 'Crear Cobro'}
+              {creating ? t('drawer.creating') : t('drawer.create')}
             </Button>
           </div>
         }
@@ -1423,15 +1426,15 @@ export default function CobranzaPage() {
       <Modal
         isOpen={deleteId !== null}
         onClose={() => setDeleteId(null)}
-        title="Anular cobro"
+        title={t('voidPayment')}
         size="sm"
       >
         <div className="py-2 space-y-2">
           <p className="text-sm text-gray-600">
-            ¿Estás seguro de anular este cobro?
+            {t('voidConfirm')}
           </p>
           <p className="text-xs text-gray-500">
-            El cobro se marcará como anulado y la deuda del cliente aumentará de nuevo por ese monto. Esta acción no se puede deshacer.
+            {t('voidConsequence')}
           </p>
         </div>
         <div className="flex justify-end gap-3 pt-4 border-t">
@@ -1448,7 +1451,7 @@ export default function CobranzaPage() {
             className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center gap-2"
           >
             {deleting && <Loader2 className="w-4 h-4 animate-spin" />}
-            {deleting ? 'Anulando...' : 'Anular'}
+            {deleting ? t('voiding') : t('void')}
           </button>
         </div>
       </Modal>

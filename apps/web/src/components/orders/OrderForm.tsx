@@ -11,19 +11,23 @@ import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { Order, OrderItem } from '@/types/orders';
 import { Client, Product } from '@/types';
 import { Trash2, Package, ShoppingCart } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
-// Schema de validación para pedidos
-const orderFormSchema = z.object({
-  clientId: z.string().min(1, 'Debe seleccionar un cliente'),
-  deliveryDate: z.string().optional(),
-  priority: z.enum(['low', 'normal', 'high', 'urgent']).default('normal'),
-  paymentMethod: z.enum(['cash', 'credit', 'transfer', 'check']).default('cash'),
-  notes: z.string().max(2000, 'Las notas no pueden exceder 2000 caracteres').optional(),
-  address: z.string().max(500, 'La dirección no puede exceder 500 caracteres').optional(),
-});
+// Schema factory — needs t() for translated messages
+function createOrderFormSchema(t: (key: string) => string) {
+  return z.object({
+    clientId: z.string().min(1, t('mustSelectClient')),
+    deliveryDate: z.string().optional(),
+    priority: z.enum(['low', 'normal', 'high', 'urgent']).default('normal'),
+    paymentMethod: z.enum(['cash', 'credit', 'transfer', 'check']).default('cash'),
+    notes: z.string().max(2000, t('notesMaxLength')).optional(),
+    address: z.string().max(500, t('addressMaxLength')).optional(),
+  });
+}
 
-type OrderFormData = z.infer<typeof orderFormSchema>;
-type OrderFormInput = z.input<typeof orderFormSchema>;
+type OrderFormSchema = ReturnType<typeof createOrderFormSchema>;
+type OrderFormData = z.infer<OrderFormSchema>;
+type OrderFormInput = z.input<OrderFormSchema>;
 
 export interface OrderFormHandle {
   submit: () => void;
@@ -48,6 +52,8 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
   onCancel,
   onDirtyChange,
 }, ref) => {
+  const t = useTranslations('orders.form');
+  const orderFormSchema = createOrderFormSchema(t);
   const {
     register,
     handleSubmit,
@@ -100,22 +106,22 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
   }));
 
   const priorityOptions = [
-    { value: 'low', label: 'Baja' },
-    { value: 'normal', label: 'Normal' },
-    { value: 'high', label: 'Alta' },
-    { value: 'urgent', label: 'Urgente' },
+    { value: 'low', label: t('priorityLow') },
+    { value: 'normal', label: t('priorityNormal') },
+    { value: 'high', label: t('priorityHigh') },
+    { value: 'urgent', label: t('priorityUrgent') },
   ];
 
   const paymentOptions = [
-    { value: 'cash', label: 'Efectivo' },
-    { value: 'credit', label: 'Crédito' },
-    { value: 'transfer', label: 'Transferencia' },
-    { value: 'check', label: 'Cheque' },
+    { value: 'cash', label: t('paymentCash') },
+    { value: 'credit', label: t('paymentCredit') },
+    { value: 'transfer', label: t('paymentTransfer') },
+    { value: 'check', label: t('paymentCheck') },
   ];
 
   const handleAddProduct = () => {
     if (!selectedProduct || quantity <= 0) {
-      alert('Selecciona un producto y cantidad válida');
+      alert(t('selectProductAndQty'));
       return;
     }
 
@@ -189,7 +195,7 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
   const onFormSubmit = (formData: OrderFormInput) => {
     const data = formData as OrderFormData;
     if (orderItems.length === 0) {
-      setItemsError('Debe agregar al menos un producto');
+      setItemsError(t('mustAddProduct'));
       return;
     }
     setItemsError(null);
@@ -215,7 +221,7 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
       {/* Tipo de Venta */}
       {!order && (
         <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-gray-50 dark:bg-gray-800/50 dark:border-gray-700">
-          <span className="text-[13px] font-medium text-gray-700 dark:text-gray-300">Tipo de venta:</span>
+          <span className="text-[13px] font-medium text-gray-700 dark:text-gray-300">{t('saleType')}</span>
           <div className="flex rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
             <button
               type="button"
@@ -226,7 +232,7 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
                   : 'bg-white text-gray-600 hover:bg-gray-100 dark:bg-gray-700 dark:text-gray-300'
               }`}
             >
-              Preventa
+              {t('presale')}
             </button>
             <button
               type="button"
@@ -237,12 +243,12 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
                   : 'bg-white text-gray-600 hover:bg-gray-100 dark:bg-gray-700 dark:text-gray-300'
               }`}
             >
-              Venta Directa
+              {t('directSale')}
             </button>
           </div>
           {tipoVenta === 1 && (
             <span className="text-[11px] text-green-600 dark:text-green-400">
-              Se entrega y descuenta inventario al crear
+              {t('directSaleHint')}
             </span>
           )}
         </div>
@@ -252,14 +258,14 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
       <div className="space-y-4">
         <div data-tour="order-client-selector">
           <label className="block text-[13px] font-medium text-gray-700 mb-1">
-            Cliente <span className="text-red-500">*</span>
+            {t('client')} <span className="text-red-500">*</span>
           </label>
           <SearchableSelect
             options={clientOptions}
             value={watch('clientId') || null}
             onChange={(val) => setValue('clientId', val ? String(val) : '', { shouldValidate: true })}
-            placeholder="Seleccionar cliente"
-            searchPlaceholder="Buscar cliente..."
+            placeholder={t('selectClient')}
+            searchPlaceholder={t('searchClient')}
             error={!!errors.clientId}
           />
           {errors.clientId && (
@@ -270,7 +276,7 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-[13px] font-medium text-gray-700 mb-1">
-              Fecha de entrega
+              {t('deliveryDate')}
             </label>
             <DateTimePicker
               mode="date"
@@ -281,14 +287,14 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
 
           <div>
             <label className="block text-[13px] font-medium text-gray-700 mb-1">
-              Prioridad
+              {t('priority')}
             </label>
             <div data-field="priority">
               <SearchableSelect
                 options={priorityOptions}
                 value={watch('priority') || null}
                 onChange={(val) => setValue('priority', val ? String(val) as 'low' | 'normal' | 'high' | 'urgent' : 'normal', { shouldValidate: true })}
-                placeholder="Seleccionar prioridad"
+                placeholder={t('selectPriority')}
               />
             </div>
           </div>
@@ -297,26 +303,26 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-[13px] font-medium text-gray-700 mb-1">
-              Método de pago
+              {t('paymentMethod')}
             </label>
             <div data-field="paymentMethod">
               <SearchableSelect
                 options={paymentOptions}
                 value={watch('paymentMethod') || null}
                 onChange={(val) => setValue('paymentMethod', val ? String(val) as 'cash' | 'credit' | 'transfer' | 'check' : 'cash', { shouldValidate: true })}
-                placeholder="Seleccionar método de pago"
+                placeholder={t('selectPaymentMethod')}
               />
             </div>
           </div>
 
           <div>
             <label className="block text-[13px] font-medium text-gray-700 mb-1">
-              Dirección de entrega
+              {t('deliveryAddress')}
             </label>
             <input
               type="text"
               {...register('address')}
-              placeholder="Dirección de entrega"
+              placeholder={t('deliveryAddress')}
               className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
                 errors.address ? 'border-red-500' : 'border-gray-300'
               }`}
@@ -333,15 +339,15 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
 
       {/* Agregar productos */}
       <div className="space-y-3" data-tour="order-add-product">
-        <h3 className="text-sm font-semibold text-gray-800">Agregar Producto</h3>
+        <h3 className="text-sm font-semibold text-gray-800">{t('addProduct')}</h3>
         <div className="flex gap-2">
           <div className="flex-1">
             <SearchableSelect
               options={productOptions}
               value={selectedProduct || null}
               onChange={(val) => setSelectedProduct(val ? String(val) : '')}
-              placeholder="Buscar producto..."
-              searchPlaceholder="Buscar producto..."
+              placeholder={t('searchProduct')}
+              searchPlaceholder={t('searchProduct')}
             />
           </div>
           <Input
@@ -350,10 +356,10 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
             onChange={e => setQuantity(parseInt(e.target.value) || 1)}
             min="1"
             className="w-[70px] text-center"
-            placeholder="Cant."
+            placeholder={t('qty')}
           />
           <Button type="button" onClick={handleAddProduct} className="bg-green-600 hover:bg-green-700 text-white px-4">
-            Agregar
+            {t('add')}
           </Button>
         </div>
       </div>
@@ -363,10 +369,10 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
         <div className="border border-gray-200 rounded-lg overflow-hidden" data-tour="order-products-list">
           {/* Table header */}
           <div className="flex items-center bg-gray-50 px-3 h-9 border-b border-gray-200">
-            <div className="flex-1 text-xs font-semibold text-gray-600">Producto</div>
-            <div className="w-[60px] text-xs font-semibold text-gray-600 text-center">Cant.</div>
-            <div className="w-[80px] text-xs font-semibold text-gray-600 text-right">P. Unit.</div>
-            <div className="w-[90px] text-xs font-semibold text-gray-600 text-right">Total</div>
+            <div className="flex-1 text-xs font-semibold text-gray-600">{t('product')}</div>
+            <div className="w-[60px] text-xs font-semibold text-gray-600 text-center">{t('qty')}</div>
+            <div className="w-[80px] text-xs font-semibold text-gray-600 text-right">{t('unitPrice')}</div>
+            <div className="w-[90px] text-xs font-semibold text-gray-600 text-right">{t('total')}</div>
             <div className="w-[36px]" />
           </div>
 
@@ -418,16 +424,16 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
           {/* Totals */}
           <div className="bg-gray-50 px-3 py-3 space-y-1.5">
             <div className="flex justify-between text-[13px]">
-              <span className="text-gray-500">Subtotal:</span>
+              <span className="text-gray-500">{t('subtotal')}</span>
               <span className="text-gray-900">${subtotal.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-[13px]">
-              <span className="text-gray-500">IVA (16%):</span>
+              <span className="text-gray-500">{t('iva')}</span>
               <span className="text-gray-900">${tax.toFixed(2)}</span>
             </div>
             <div className="h-px bg-gray-200" />
             <div className="flex justify-between text-base font-bold">
-              <span className="text-gray-900">Total:</span>
+              <span className="text-gray-900">{t('total')}</span>
               <span className="text-green-600">${total.toFixed(2)}</span>
             </div>
           </div>
@@ -435,8 +441,8 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
       ) : (
         <div className="text-center py-10 border border-dashed border-gray-200 rounded-lg" data-tour="order-products-list">
           <ShoppingCart className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-          <p className="text-sm text-gray-500">No hay productos agregados</p>
-          <p className="text-xs text-gray-400">Selecciona productos para agregar al pedido</p>
+          <p className="text-sm text-gray-500">{t('noProductsAdded')}</p>
+          <p className="text-xs text-gray-400">{t('noProductsHint')}</p>
         </div>
       )}
       {itemsError && (
@@ -445,10 +451,10 @@ export const OrderForm = forwardRef<OrderFormHandle, OrderFormProps>(({
 
       {/* Notas */}
       <div data-tour="order-notes">
-        <label className="block text-[13px] font-medium text-gray-700 mb-1">Notas del pedido</label>
+        <label className="block text-[13px] font-medium text-gray-700 mb-1">{t('orderNotes')}</label>
         <textarea
           {...register('notes')}
-          placeholder="Comentarios adicionales..."
+          placeholder={t('additionalComments')}
           rows={3}
           className={`w-full p-3 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${
             errors.notes ? 'border-red-500' : 'border-gray-300'

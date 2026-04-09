@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/Button';
 import { ZoneFilters } from '@/types/zones';
 import { Search, Filter, Download, X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface ZoneFiltersProps {
   filters: ZoneFilters;
@@ -20,6 +21,7 @@ export function ZoneFiltersComponent({
   totalZones,
   loading = false,
 }: ZoneFiltersProps) {
+  const t = useTranslations('zones.filterForm');
   const updateFilter = (key: keyof ZoneFilters, value: unknown) => {
     onFiltersChange({
       ...filters,
@@ -55,7 +57,7 @@ export function ZoneFiltersComponent({
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
-              placeholder="Buscar zonas por nombre o descripción..."
+              placeholder={t('searchPlaceholder')}
               value={filters.search || ''}
               onChange={(e) => updateFilter('search', e.target.value)}
               className="pl-10"
@@ -74,9 +76,9 @@ export function ZoneFiltersComponent({
             <SelectValue placeholder="Estado" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos los estados</SelectItem>
-            <SelectItem value="true">Activas</SelectItem>
-            <SelectItem value="false">Inactivas</SelectItem>
+            <SelectItem value="all">{t('allStatuses')}</SelectItem>
+            <SelectItem value="true">{t('statusActive')}</SelectItem>
+            <SelectItem value="false">{t('statusInactive')}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -91,9 +93,9 @@ export function ZoneFiltersComponent({
             <SelectValue placeholder="Usuarios" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Con y sin usuarios</SelectItem>
-            <SelectItem value="true">Con usuarios</SelectItem>
-            <SelectItem value="false">Sin usuarios</SelectItem>
+            <SelectItem value="all">{t('withAndWithoutUsers')}</SelectItem>
+            <SelectItem value="true">{t('withUsers')}</SelectItem>
+            <SelectItem value="false">{t('withoutUsers')}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -113,12 +115,12 @@ export function ZoneFiltersComponent({
             <SelectValue placeholder="Ordenar por" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="name-asc">Nombre A-Z</SelectItem>
-            <SelectItem value="name-desc">Nombre Z-A</SelectItem>
-            <SelectItem value="createdAt-desc">Más recientes</SelectItem>
-            <SelectItem value="createdAt-asc">Más antiguos</SelectItem>
-            <SelectItem value="clientCount-desc">Más clientes</SelectItem>
-            <SelectItem value="userCount-desc">Más usuarios</SelectItem>
+            <SelectItem value="name-asc">{t('nameAZ')}</SelectItem>
+            <SelectItem value="name-desc">{t('nameZA')}</SelectItem>
+            <SelectItem value="createdAt-desc">{t('mostRecent')}</SelectItem>
+            <SelectItem value="createdAt-asc">{t('oldest')}</SelectItem>
+            <SelectItem value="clientCount-desc">{t('mostClients')}</SelectItem>
+            <SelectItem value="userCount-desc">{t('mostUsers')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -127,7 +129,7 @@ export function ZoneFiltersComponent({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">
-            {totalZones} zona{totalZones !== 1 ? 's' : ''} encontrada{totalZones !== 1 ? 's' : ''}
+            {t('zonesFound', { count: totalZones, plural: totalZones !== 1 ? 's' : '', plural2: totalZones !== 1 ? 's' : '' })}
           </span>
 
           {hasActiveFilters && (
@@ -138,7 +140,7 @@ export function ZoneFiltersComponent({
               className="h-7 gap-1 text-xs"
             >
               <X className="h-3 w-3" />
-              Limpiar filtros
+              {t('clearFilters')}
             </Button>
           )}
         </div>
@@ -153,14 +155,14 @@ export function ZoneFiltersComponent({
               className="gap-2"
             >
               <Download className="h-4 w-4" />
-              Exportar
+              {t('exportLabel')}
             </Button>
           )}
 
           {hasActiveFilters && (
             <div className="flex items-center gap-1 text-xs text-blue-600">
               <Filter className="h-3 w-3" />
-              Filtros activos
+              {t('activeFilters')}
             </div>
           )}
         </div>
@@ -171,7 +173,7 @@ export function ZoneFiltersComponent({
         <div className="flex flex-wrap gap-2">
           {filters.search && (
             <div className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded-md text-xs">
-              <span>Búsqueda: &quot;{filters.search}&quot;</span>
+              <span>{t('searchLabel')} &quot;{filters.search}&quot;</span>
               <button
                 onClick={() => updateFilter('search', '')}
                 className="hover:bg-blue-100 rounded-full p-0.5"
@@ -183,7 +185,7 @@ export function ZoneFiltersComponent({
 
           {filters.isEnabled !== undefined && (
             <div className="inline-flex items-center gap-1 px-2 py-1 bg-green-50 text-green-700 rounded-md text-xs">
-              <span>{filters.isEnabled ? 'Activas' : 'Inactivas'}</span>
+              <span>{filters.isEnabled ? t('statusActive') : t('statusInactive')}</span>
               <button
                 onClick={() => updateFilter('isEnabled', undefined)}
                 className="hover:bg-green-100 rounded-full p-0.5"
@@ -195,7 +197,7 @@ export function ZoneFiltersComponent({
 
           {filters.hasUsers !== undefined && (
             <div className="inline-flex items-center gap-1 px-2 py-1 bg-purple-50 text-purple-700 rounded-md text-xs">
-              <span>{filters.hasUsers ? 'Con usuarios' : 'Sin usuarios'}</span>
+              <span>{filters.hasUsers ? t('withUsers') : t('withoutUsers')}</span>
               <button
                 onClick={() => updateFilter('hasUsers', undefined)}
                 className="hover:bg-purple-100 rounded-full p-0.5"

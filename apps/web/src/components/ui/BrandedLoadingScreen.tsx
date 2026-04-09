@@ -1,13 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 interface BrandedLoadingScreenProps {
   message?: string;
 }
 
-export function BrandedLoadingScreen({ message = 'Cargando...' }: BrandedLoadingScreenProps) {
-  const [displayMessage, setDisplayMessage] = useState(message);
+export function BrandedLoadingScreen({ message }: BrandedLoadingScreenProps) {
+  const tc = useTranslations('common');
+  const resolvedMessage = message ?? tc('loading');
+  const [displayMessage, setDisplayMessage] = useState(resolvedMessage);
 
   useEffect(() => {
     try {
@@ -15,15 +18,15 @@ export function BrandedLoadingScreen({ message = 'Cargando...' }: BrandedLoading
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed?.state?.isImpersonating && parsed?.state?.tenant?.name) {
-          setDisplayMessage(`Accediendo a ${parsed.state.tenant.name}...`);
+          setDisplayMessage(tc('accessingTenant', { name: parsed.state.tenant.name }));
           return;
         }
       }
     } catch {
       // ignore parse errors
     }
-    setDisplayMessage(message);
-  }, [message]);
+    setDisplayMessage(resolvedMessage);
+  }, [resolvedMessage, tc]);
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#16A34A]">

@@ -13,22 +13,14 @@ import {
 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
+import { useTranslations } from 'next-intl';
 import { activityLogService, type ActivityLogDto } from '@/services/api/activityLogs';
 import { tenantService } from '@/services/api/tenants';
 import { getInitials } from '@/lib/utils';
 import { useFormatters } from '@/hooks/useFormatters';
 import type { Tenant } from '@/types/tenant';
 
-const actionLabels: Record<string, string> = {
-  create: 'Crear',
-  update: 'Actualizar',
-  delete: 'Eliminar',
-  login: 'Login',
-  logout: 'Logout',
-  view: 'Ver',
-  export: 'Exportar',
-  error: 'Error',
-};
+// Action labels resolved via useTranslations at render time
 
 const actionColors: Record<string, string> = {
   create: 'bg-green-100 text-green-700',
@@ -41,15 +33,7 @@ const actionColors: Record<string, string> = {
   error: 'bg-red-100 text-red-700',
 };
 
-const categoryLabels: Record<string, string> = {
-  auth: 'Autenticación',
-  users: 'Usuarios',
-  products: 'Productos',
-  orders: 'Pedidos',
-  clients: 'Clientes',
-  system: 'Sistema',
-  security: 'Seguridad',
-};
+// Category labels resolved via useTranslations at render time
 
 const statusColors: Record<string, string> = {
   success: 'text-green-600',
@@ -92,9 +76,32 @@ function getDateRange(filter: string): { dateFrom?: string; dateTo?: string } {
 }
 
 export default function ActivityLogsPage() {
+  const t = useTranslations('activity');
+  const tc = useTranslations('common');
   const { data: session } = useSession();
   const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN';
   const { formatDate, formatNumber } = useFormatters();
+
+  const actionLabels: Record<string, string> = {
+    create: t('actions.create'),
+    update: t('actions.update'),
+    delete: t('actions.delete'),
+    login: t('actions.login'),
+    logout: t('actions.logout'),
+    view: t('actions.view'),
+    export: t('actions.export'),
+    error: t('actions.error'),
+  };
+
+  const categoryLabels: Record<string, string> = {
+    auth: t('categories.auth'),
+    users: t('categories.users'),
+    products: t('categories.products'),
+    orders: t('categories.orders'),
+    clients: t('categories.clients'),
+    system: t('categories.system'),
+    security: t('categories.security'),
+  };
   const [logs, setLogs] = useState<ActivityLogDto[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(true);
@@ -132,7 +139,7 @@ export default function ActivityLogsPage() {
       setTotalCount(result.totalCount);
       setTotalPages(result.totalPages);
     } catch {
-      toast.error('Error al cargar los logs de actividad');
+      toast.error(t('errorLoading'));
       setLogs([]);
       setTotalCount(0);
       setTotalPages(0);
@@ -152,10 +159,10 @@ export default function ActivityLogsPage() {
 
   const handleExport = () => {
     if (logs.length === 0) {
-      toast.error('No hay datos para exportar');
+      toast.error(t('noDataExport'));
       return;
     }
-    const headers = ['Fecha', 'Usuario', 'Acción', 'Categoría', 'Estado', 'Descripción', 'IP'];
+    const headers = [t('columns.dateTime'), t('columns.user'), t('columns.action'), t('columns.category'), t('columns.status'), t('columns.description'), t('columns.ip')];
     const rows = logs.map(log => [
       formatDate(log.createdAt),
       log.userName,
@@ -175,7 +182,7 @@ export default function ActivityLogsPage() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast.success('Logs exportados correctamente');
+    toast.success(t('exported'));
   };
 
   const formatDateTime = (dateStr: string) => {
@@ -196,10 +203,10 @@ export default function ActivityLogsPage() {
   return (
     <PageHeader
       breadcrumbs={[
-        { label: 'Inicio', href: '/dashboard' },
-        { label: 'Registro de actividad' },
+        { label: tc('home'), href: '/dashboard' },
+        { label: t('title') },
       ]}
-      title="Registro de actividad"
+      title={t('title')}
       actions={
         <button
           data-tour="logs-export-btn"
@@ -207,7 +214,7 @@ export default function ActivityLogsPage() {
           className="flex items-center gap-2 px-4 py-2.5 text-[13px] font-medium text-gray-700 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
         >
           <Download className="w-4 h-4" />
-          <span>Exportar CSV</span>
+          <span>{tc('exportCsv')}</span>
         </button>
       }
     >
@@ -219,7 +226,7 @@ export default function ActivityLogsPage() {
               <input
                 data-tour="logs-search"
                 type="text"
-                placeholder="Buscar por descripción, IP..."
+                placeholder={t('searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-[280px] pl-10 pr-3 py-2.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -230,18 +237,12 @@ export default function ActivityLogsPage() {
             <div data-tour="logs-filter-action" className="min-w-[170px]">
               <SearchableSelect
                 options={[
-                  { value: 'all', label: 'Todas las acciones' },
-                  { value: 'create', label: 'Crear' },
-                  { value: 'update', label: 'Actualizar' },
-                  { value: 'delete', label: 'Eliminar' },
-                  { value: 'login', label: 'Login' },
-                  { value: 'logout', label: 'Logout' },
-                  { value: 'view', label: 'Ver' },
-                  { value: 'error', label: 'Error' },
+                  { value: 'all', label: t('allActions') },
+                  ...Object.entries(actionLabels).map(([k, v]) => ({ value: k, label: v })),
                 ]}
                 value={filterAction}
                 onChange={(val) => setFilterAction(val ? String(val) : 'all')}
-                placeholder="Todas las acciones"
+                placeholder={t('allActions')}
               />
             </div>
 
@@ -249,18 +250,12 @@ export default function ActivityLogsPage() {
             <div className="min-w-[170px]">
               <SearchableSelect
                 options={[
-                  { value: 'all', label: 'Todas las categorías' },
-                  { value: 'auth', label: 'Autenticación' },
-                  { value: 'users', label: 'Usuarios' },
-                  { value: 'products', label: 'Productos' },
-                  { value: 'orders', label: 'Pedidos' },
-                  { value: 'clients', label: 'Clientes' },
-                  { value: 'security', label: 'Seguridad' },
-                  { value: 'system', label: 'Sistema' },
+                  { value: 'all', label: t('allCategories') },
+                  ...Object.entries(categoryLabels).map(([k, v]) => ({ value: k, label: v })),
                 ]}
                 value={filterCategory}
                 onChange={(val) => setFilterCategory(val ? String(val) : 'all')}
-                placeholder="Todas las categorías"
+                placeholder={t('allCategories')}
               />
             </div>
 
@@ -268,14 +263,14 @@ export default function ActivityLogsPage() {
             <div className="min-w-[170px]">
               <SearchableSelect
                 options={[
-                  { value: 'today', label: 'Hoy' },
-                  { value: '7days', label: 'Últimos 7 días' },
-                  { value: '30days', label: 'Últimos 30 días' },
-                  { value: 'all', label: 'Todo el tiempo' },
+                  { value: 'today', label: t('today') },
+                  { value: '7days', label: t('last7Days') },
+                  { value: '30days', label: t('last30Days') },
+                  { value: 'all', label: t('allTime') },
                 ]}
                 value={filterDate}
                 onChange={(val) => setFilterDate(val ? String(val) : '7days')}
-                placeholder="Últimos 7 días"
+                placeholder={t('last7Days')}
               />
             </div>
 
@@ -284,12 +279,12 @@ export default function ActivityLogsPage() {
               <div className="min-w-[200px]">
                 <SearchableSelect
                   options={[
-                    { value: 'all', label: 'Todas las empresas' },
+                    { value: 'all', label: t('allCompanies') },
                     ...tenants.map((t) => ({ value: String(t.id), label: t.nombreEmpresa })),
                   ]}
                   value={filterTenant}
                   onChange={(val) => setFilterTenant(val ? String(val) : 'all')}
-                  placeholder="Todas las empresas"
+                  placeholder={t('allCompanies')}
                 />
               </div>
             )}
@@ -299,14 +294,14 @@ export default function ActivityLogsPage() {
               {loading ? (
                 <div role="status" className="flex items-center justify-center h-64 gap-2">
                   <Loader2 className="h-5 w-5 animate-spin text-green-600" aria-hidden="true" />
-                  <span className="text-sm text-muted-foreground">Cargando registros...</span>
+                  <span className="text-sm text-muted-foreground">{t('loadingRecords')}</span>
                 </div>
               ) : logs.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-64 py-20">
                   <FileText className="w-10 h-10 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-700 mb-2">No hay registros</h3>
+                  <h3 className="text-lg font-semibold text-gray-700 mb-2">{t('noRecords')}</h3>
                   <p className="text-sm text-gray-500 text-center">
-                    No se encontraron logs de actividad para los filtros seleccionados
+                    {t('noRecordsDesc')}
                   </p>
                 </div>
               ) : (
@@ -315,16 +310,16 @@ export default function ActivityLogsPage() {
                   <div className="hidden md:block">
                     {/* Table Header */}
                     <div className="flex items-center bg-gray-50 px-4 h-10 border-b border-gray-200">
-                      <div className="w-[160px] text-xs font-semibold text-gray-600">Usuario</div>
+                      <div className="w-[160px] text-xs font-semibold text-gray-600">{t('columns.user')}</div>
                       {isSuperAdmin && (
-                        <div className="w-[140px] text-xs font-semibold text-gray-600">Empresa</div>
+                        <div className="w-[140px] text-xs font-semibold text-gray-600">{t('columns.company')}</div>
                       )}
-                      <div className="w-[100px] text-xs font-semibold text-gray-600">Acción</div>
-                      <div className="w-[110px] text-xs font-semibold text-gray-600">Categoría</div>
-                      <div className="w-[80px] text-xs font-semibold text-gray-600">Estado</div>
-                      <div className="flex-1 text-xs font-semibold text-gray-600">Descripción</div>
-                      <div className="w-[140px] text-xs font-semibold text-gray-600">Fecha/Hora</div>
-                      <div className="w-[120px] text-xs font-semibold text-gray-600">IP</div>
+                      <div className="w-[100px] text-xs font-semibold text-gray-600">{t('columns.action')}</div>
+                      <div className="w-[110px] text-xs font-semibold text-gray-600">{t('columns.category')}</div>
+                      <div className="w-[80px] text-xs font-semibold text-gray-600">{t('columns.status')}</div>
+                      <div className="flex-1 text-xs font-semibold text-gray-600">{t('columns.description')}</div>
+                      <div className="w-[140px] text-xs font-semibold text-gray-600">{t('columns.dateTime')}</div>
+                      <div className="w-[120px] text-xs font-semibold text-gray-600">{t('columns.ip')}</div>
                     </div>
 
                     {/* Table Rows */}
@@ -408,7 +403,7 @@ export default function ActivityLogsPage() {
             {!loading && totalCount > 0 && (
               <div className="flex items-center justify-between pt-4">
                 <span className="text-sm text-gray-500">
-                  Mostrando {startItem}-{endItem} de {totalCount.toLocaleString()} registros
+                  {t('showingRange', { start: startItem, end: endItem, total: formatNumber(totalCount) })}
                 </span>
                 <div className="flex items-center gap-2">
                   <button
@@ -418,7 +413,7 @@ export default function ActivityLogsPage() {
 
                   >
                     <ChevronLeft className="w-4 h-4" />
-                    <span>Anterior</span>
+                    <span>{tc('previous')}</span>
                   </button>
 
                   {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
@@ -453,7 +448,7 @@ export default function ActivityLogsPage() {
                     className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-gray-600 border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 
                   >
-                    <span>Siguiente</span>
+                    <span>{tc('next')}</span>
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>

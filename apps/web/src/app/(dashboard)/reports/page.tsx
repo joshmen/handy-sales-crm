@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { ArrowLeft, Lock } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { getReportTierInfo, ReportTierInfo } from '@/services/api/reports';
@@ -56,97 +57,25 @@ type ReportId =
 
 interface ReportCard {
   id: ReportId;
-  label: string;
-  description: string;
+  labelKey: string;
+  descKey: string;
   icon: React.ComponentType<{ size?: number; className?: string }>;
-  section: string;
+  sectionKey: string;
 }
 
 const reports: ReportCard[] = [
-  {
-    id: 'ejecutivo',
-    label: 'Dashboard Ejecutivo',
-    description: 'Resumen general con KPIs de ventas, pedidos, clientes y tendencias del período.',
-    icon: SbDashboard,
-    section: 'General',
-  },
-  {
-    id: 'ventas-periodo',
-    label: 'Ventas por Período',
-    description: 'Analiza ventas agrupadas por día, semana o mes con gráficas de tendencia.',
-    icon: SbTrendingUp,
-    section: 'Ventas',
-  },
-  {
-    id: 'ventas-vendedor',
-    label: 'Ventas por Vendedor',
-    description: 'Ranking de vendedores con métricas de ventas, pedidos y efectividad.',
-    icon: SbClients,
-    section: 'Ventas',
-  },
-  {
-    id: 'ventas-producto',
-    label: 'Ventas por Producto',
-    description: 'Productos más vendidos, con mayor venta y productos sin movimiento.',
-    icon: SbProducts,
-    section: 'Ventas',
-  },
-  {
-    id: 'ventas-zona',
-    label: 'Ventas por Zona',
-    description: 'Distribución de ventas por zona geográfica con totales y clientes.',
-    icon: SbMap,
-    section: 'Ventas',
-  },
-  {
-    id: 'actividad-clientes',
-    label: 'Actividad de Clientes',
-    description: 'Historial de pedidos, visitas y ventas por cliente con filtros por zona.',
-    icon: SbBarChart,
-    section: 'Clientes',
-  },
-  {
-    id: 'nuevos-clientes',
-    label: 'Nuevos Clientes',
-    description: 'Clientes registrados en el período seleccionado con tendencia mensual.',
-    icon: SbUserPlus,
-    section: 'Clientes',
-  },
-  {
-    id: 'inventario',
-    label: 'Inventario Actual',
-    description: 'Estado del inventario con semáforo de stock: normal, bajo, sin stock y exceso.',
-    icon: SbInventory,
-    section: 'Inventario',
-  },
-  {
-    id: 'cartera-vencida',
-    label: 'Cartera Vencida',
-    description: 'Análisis de cuentas por cobrar agrupadas por antigüedad (0-30, 31-60, 61-90, 90+ días).',
-    icon: SbWallet,
-    section: 'Cobranza',
-  },
-  {
-    id: 'cumplimiento-metas',
-    label: 'Cumplimiento de Metas',
-    description: 'Progreso de vendedores vs sus metas de ventas, visitas y pedidos asignadas.',
-    icon: SbGoals,
-    section: 'Desempeño',
-  },
-  {
-    id: 'comparativo',
-    label: 'Comparativo de Períodos',
-    description: 'Compara métricas clave entre dos períodos personalizados con deltas y tendencias.',
-    icon: SbCompare,
-    section: 'Análisis',
-  },
-  {
-    id: 'insights',
-    label: 'Auto-Insights',
-    description: 'Análisis automático que detecta tendencias, oportunidades y alertas en tu negocio.',
-    icon: SbLightbulb,
-    section: 'Análisis',
-  },
+  { id: 'ejecutivo', labelKey: 'cards.ejecutivo', descKey: 'cards.ejecutivoDesc', icon: SbDashboard, sectionKey: 'sections.general' },
+  { id: 'ventas-periodo', labelKey: 'cards.ventasPeriodo', descKey: 'cards.ventasPeriodoDesc', icon: SbTrendingUp, sectionKey: 'sections.sales' },
+  { id: 'ventas-vendedor', labelKey: 'cards.ventasVendedor', descKey: 'cards.ventasVendedorDesc', icon: SbClients, sectionKey: 'sections.sales' },
+  { id: 'ventas-producto', labelKey: 'cards.ventasProducto', descKey: 'cards.ventasProductoDesc', icon: SbProducts, sectionKey: 'sections.sales' },
+  { id: 'ventas-zona', labelKey: 'cards.ventasZona', descKey: 'cards.ventasZonaDesc', icon: SbMap, sectionKey: 'sections.sales' },
+  { id: 'actividad-clientes', labelKey: 'cards.actividadClientes', descKey: 'cards.actividadClientesDesc', icon: SbBarChart, sectionKey: 'sections.clients' },
+  { id: 'nuevos-clientes', labelKey: 'cards.nuevosClientes', descKey: 'cards.nuevosClientesDesc', icon: SbUserPlus, sectionKey: 'sections.clients' },
+  { id: 'inventario', labelKey: 'cards.inventario', descKey: 'cards.inventarioDesc', icon: SbInventory, sectionKey: 'sections.inventory' },
+  { id: 'cartera-vencida', labelKey: 'cards.carteraVencida', descKey: 'cards.carteraVencidaDesc', icon: SbWallet, sectionKey: 'sections.collections' },
+  { id: 'cumplimiento-metas', labelKey: 'cards.cumplimientoMetas', descKey: 'cards.cumplimientoMetasDesc', icon: SbGoals, sectionKey: 'sections.performance' },
+  { id: 'comparativo', labelKey: 'cards.comparativo', descKey: 'cards.comparativoDesc', icon: SbCompare, sectionKey: 'sections.analysis' },
+  { id: 'insights', labelKey: 'cards.insights', descKey: 'cards.insightsDesc', icon: SbLightbulb, sectionKey: 'sections.analysis' },
 ];
 
 const reportComponents: Record<ReportId, React.ComponentType> = {
@@ -170,6 +99,8 @@ const reportComponents: Record<ReportId, React.ComponentType> = {
 
 
 export default function ReportsPage() {
+  const t = useTranslations('reports');
+  const tc = useTranslations('common');
   const [activeReport, setActiveReport] = useState<ReportId | null>(null);
   const [tierInfo, setTierInfo] = useState<ReportTierInfo | null>(null);
 
@@ -184,7 +115,7 @@ export default function ReportsPage() {
 
   const handleReportClick = (reportId: ReportId) => {
     if (isReportLocked(reportId)) {
-      toast.error(`Este reporte requiere un plan superior. Tu plan actual: ${tierInfo?.currentTier?.toUpperCase() || 'FREE'}`);
+      toast.error(t('lockedReport', { plan: tierInfo?.currentTier?.toUpperCase() || 'FREE' }));
       return;
     }
     setActiveReport(reportId);
@@ -193,28 +124,30 @@ export default function ReportsPage() {
   const activeCard = reports.find(r => r.id === activeReport);
   const ActiveComponent = activeReport ? reportComponents[activeReport] : null;
 
-  // Group reports by section
+  // Group reports by sectionKey
   const sections = reports.reduce<Record<string, ReportCard[]>>((acc, r) => {
-    (acc[r.section] ??= []).push(r);
+    (acc[r.sectionKey] ??= []).push(r);
     return acc;
   }, {});
 
+  const activeLabel = activeCard ? t(activeCard.labelKey) : '';
+
   const breadcrumbs = [
-    { label: 'Inicio', href: '/dashboard' },
+    { label: tc('home'), href: '/dashboard' },
     ...(activeCard
-      ? [{ label: 'Reportes', onClick: () => setActiveReport(null) }, { label: activeCard.label }]
-      : [{ label: 'Reportes' }]
+      ? [{ label: t('title'), onClick: () => setActiveReport(null) }, { label: activeLabel }]
+      : [{ label: t('title') }]
     ),
   ];
 
   return (
     <PageHeader
       breadcrumbs={breadcrumbs}
-      title={activeCard ? activeCard.label : 'Reportes y Análisis'}
+      title={activeCard ? activeLabel : t('title')}
       actions={activeCard ? (
         <button
           onClick={() => setActiveReport(null)}
-          aria-label="Volver a reportes"
+          aria-label={t('backToReports')}
           className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-muted transition-colors"
         >
           <ArrowLeft className="w-5 h-5 text-gray-600" />
@@ -227,10 +160,10 @@ export default function ReportsPage() {
           </div>
         ) : (
           <div className="space-y-6" data-tour="reports-cards">
-            {Object.entries(sections).map(([sectionName, sectionReports]) => (
-              <div key={sectionName}>
+            {Object.entries(sections).map(([sectionKey, sectionReports]) => (
+              <div key={sectionKey}>
                 <h2 className="text-xs font-semibold text-gray-400 mb-3 px-1">
-                  {sectionName}
+                  {t(sectionKey)}
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                   {sectionReports.map(report => {
@@ -245,10 +178,10 @@ export default function ReportsPage() {
                           <Icon size={36} />
                         </div>
                         <div className="flex items-center gap-1.5">
-                          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{report.label}</h3>
+                          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{t(report.labelKey)}</h3>
                           {isReportLocked(report.id) && <Lock className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />}
                         </div>
-                        <p className="text-xs text-gray-500 leading-relaxed">{report.description}</p>
+                        <p className="text-xs text-gray-500 leading-relaxed">{t(report.descKey)}</p>
                       </button>
                     );
                   })}

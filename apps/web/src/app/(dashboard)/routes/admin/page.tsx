@@ -28,6 +28,7 @@ import {
   CalendarPlus,
   Route,
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface ZoneOption {
   id: number;
@@ -58,6 +59,8 @@ const assignSchema = z.object({
 type AssignFormData = z.infer<typeof assignSchema>;
 
 export default function RouteAdminPage() {
+  const t = useTranslations('routes');
+  const tc = useTranslations('common');
   // Data
   const [templates, setTemplates] = useState<RouteTemplate[]>([]);
   const [zones, setZones] = useState<ZoneOption[]>([]);
@@ -119,7 +122,7 @@ export default function RouteAdminPage() {
       const data = await routeService.getTemplates();
       setTemplates(data);
     } catch {
-      toast.error('Error al cargar templates');
+      toast.error(t('templates.errorLoading'));
     } finally {
       setLoading(false);
     }
@@ -202,7 +205,7 @@ export default function RouteAdminPage() {
           zonaId: data.zonaId,
         };
         await routeService.updateTemplate(editingTemplate.id, updateData);
-        toast.success('Template actualizado');
+        toast.success(t('templates.templateUpdated'));
       } else {
         const createData: RouteTemplateCreate = {
           nombre: data.nombre,
@@ -212,13 +215,13 @@ export default function RouteAdminPage() {
           esTemplate: true,
         };
         await routeService.createTemplate(createData);
-        toast.success('Template creado');
+        toast.success(t('templates.templateCreated'));
       }
       setIsDrawerOpen(false);
       fetchTemplates();
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } }; message?: string };
-      const msg = e?.response?.data?.message || e?.message || 'Error al guardar template';
+      const msg = e?.response?.data?.message || e?.message || t('templates.errorSaving');
       toast.error(msg);
     } finally {
       setActionLoading(false);
@@ -231,24 +234,24 @@ export default function RouteAdminPage() {
     try {
       setActionLoading(true);
       await routeService.duplicateTemplate(template.id);
-      toast.success('Template duplicado (con paradas)');
+      toast.success(t('templates.templateDuplicated'));
       fetchTemplates();
     } catch {
-      toast.error('Error al duplicar template');
+      toast.error(t('templates.errorDuplicating'));
     } finally {
       setActionLoading(false);
     }
   };
 
   const handleDelete = async (template: RouteTemplate) => {
-    if (!confirm(`¿Eliminar el template "${template.nombre}"?`)) return;
+    if (!confirm(t('templates.confirmDelete', { name: template.nombre }))) return;
     try {
       setActionLoading(true);
       await routeService.deleteTemplate(template.id);
-      toast.success('Template eliminado');
+      toast.success(t('templates.templateDeleted'));
       fetchTemplates();
     } catch {
-      toast.error('Error al eliminar template');
+      toast.error(t('templates.errorDeleting'));
     } finally {
       setActionLoading(false);
     }
@@ -274,11 +277,11 @@ export default function RouteAdminPage() {
         fecha: `${data.fecha}T12:00:00.000Z`,
       };
       await routeService.instantiateTemplate(assigningTemplate.id, req);
-      toast.success(`Ruta creada desde template "${assigningTemplate.nombre}"`);
+      toast.success(t('templates.routeCreatedFromTemplate', { name: assigningTemplate.nombre }));
       setIsAssignOpen(false);
     } catch (err: unknown) {
       const e = err as { response?: { data?: { error?: string } }; message?: string };
-      const msg = e?.response?.data?.error || e?.message || 'Error al asignar template';
+      const msg = e?.response?.data?.error || e?.message || t('templates.errorAssigning');
       toast.error(msg);
     } finally {
       setActionLoading(false);
@@ -317,11 +320,11 @@ export default function RouteAdminPage() {
   return (
     <PageHeader
       breadcrumbs={[
-        { label: 'Inicio', href: '/dashboard' },
-        { label: 'Rutas', href: '/routes' },
-        { label: 'Plantillas de Rutas' },
+        { label: tc('home'), href: '/dashboard' },
+        { label: t('title'), href: '/routes' },
+        { label: t('templates.title') },
       ]}
-      title="Plantillas de Rutas"
+      title={t('templates.title')}
       subtitle={
         totalTemplates > 0
           ? `${totalTemplates} template${totalTemplates !== 1 ? 's' : ''}`
@@ -333,7 +336,7 @@ export default function RouteAdminPage() {
           className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
         >
           <Plus className="w-4 h-4" />
-          <span>Nuevo Template</span>
+          <span>{t('templates.newTemplate')}</span>
         </button>
       }
     >
@@ -343,7 +346,7 @@ export default function RouteAdminPage() {
           <Card className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Templates</p>
+                <p className="text-sm text-gray-600">{t('templates.stats.templates')}</p>
                 <p className="text-2xl font-bold">{totalTemplates}</p>
               </div>
               <Map size={24} className="text-blue-500" />
@@ -352,7 +355,7 @@ export default function RouteAdminPage() {
           <Card className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Zonas Cubiertas</p>
+                <p className="text-sm text-gray-600">{t('templates.stats.zonesCovered')}</p>
                 <p className="text-2xl font-bold">{zonasCubiertas}</p>
               </div>
               <MapPin size={24} className="text-green-500" />
@@ -361,7 +364,7 @@ export default function RouteAdminPage() {
           <Card className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Total Paradas</p>
+                <p className="text-sm text-gray-600">{t('templates.stats.totalStops')}</p>
                 <p className="text-2xl font-bold">{totalParadas}</p>
               </div>
               <Users size={24} className="text-purple-500" />
@@ -370,7 +373,7 @@ export default function RouteAdminPage() {
           <Card className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Dist. Promedio</p>
+                <p className="text-sm text-gray-600">{t('templates.stats.avgDistance')}</p>
                 <p className="text-2xl font-bold">
                   {distanciaPromedio > 0 ? `${distanciaPromedio} km` : '--'}
                 </p>
@@ -385,7 +388,7 @@ export default function RouteAdminPage() {
           <div className="flex-1">
             <Input
               type="text"
-              placeholder="Buscar templates..."
+              placeholder={t('templates.searchPlaceholder')}
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
             />
@@ -413,15 +416,15 @@ export default function RouteAdminPage() {
             <Route className="w-12 h-12 text-gray-300 mb-3" />
             <p className="text-gray-500 text-sm">
               {searchTerm || filterZone !== 'all'
-                ? 'No se encontraron templates con esos filtros'
-                : 'No hay templates creados'}
+                ? t('templates.noTemplatesFiltered')
+                : t('templates.noTemplates')}
             </p>
             {!searchTerm && filterZone === 'all' && (
               <button
                 onClick={handleOpenCreate}
                 className="mt-4 text-sm text-green-600 hover:text-green-700 font-medium"
               >
-                Crear primer template
+                {t('templates.createFirst')}
               </button>
             )}
           </div>
@@ -449,14 +452,14 @@ export default function RouteAdminPage() {
                   <div className="space-y-2 mb-4">
                     <div className="flex items-center text-sm">
                       <MapPin size={15} className="mr-2 text-gray-400 flex-shrink-0" />
-                      <span className="text-gray-500">Zona:</span>
+                      <span className="text-gray-500">{t('templates.zone')}:</span>
                       <span className="ml-1.5 font-medium text-gray-700 truncate">
-                        {template.zonaNombre || 'Sin zona'}
+                        {template.zonaNombre || t('templates.noZone')}
                       </span>
                     </div>
                     <div className="flex items-center text-sm">
                       <Users size={15} className="mr-2 text-gray-400 flex-shrink-0" />
-                      <span className="text-gray-500">Paradas:</span>
+                      <span className="text-gray-500">{t('templates.stops')}:</span>
                       <span className="ml-1.5 font-medium text-gray-700">
                         {template.totalParadas}
                       </span>
@@ -464,7 +467,7 @@ export default function RouteAdminPage() {
                     {template.kilometrosEstimados != null && template.kilometrosEstimados > 0 && (
                       <div className="flex items-center text-sm">
                         <Navigation size={15} className="mr-2 text-gray-400 flex-shrink-0" />
-                        <span className="text-gray-500">Distancia:</span>
+                        <span className="text-gray-500">{t('templates.distance')}:</span>
                         <span className="ml-1.5 font-medium text-gray-700">
                           {template.kilometrosEstimados} km
                         </span>
@@ -480,7 +483,7 @@ export default function RouteAdminPage() {
                       title="Asignar a vendedor"
                     >
                       <CalendarPlus size={14} />
-                      Asignar
+                      {t('templates.assign')}
                     </button>
                     <button
                       onClick={() => handleOpenEdit(template)}
@@ -519,7 +522,7 @@ export default function RouteAdminPage() {
         ref={drawerRef}
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
-        title={editingTemplate ? 'Editar Template' : 'Nuevo Template'}
+        title={editingTemplate ? t('templates.editTemplate') : t('templates.newTemplate')}
         isDirty={isDirty}
         width="md"
         footer={
@@ -529,7 +532,7 @@ export default function RouteAdminPage() {
               onClick={() => setIsDrawerOpen(false)}
               className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
             >
-              Cancelar
+              {tc('cancel')}
             </button>
             <button
               type="button"
@@ -538,7 +541,7 @@ export default function RouteAdminPage() {
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50"
             >
               {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-              {editingTemplate ? 'Actualizar' : 'Crear'}
+              {editingTemplate ? t('templates.update') : t('templates.create')}
             </button>
           </div>
         }
@@ -546,11 +549,11 @@ export default function RouteAdminPage() {
         <form onSubmit={rhfSubmit(handleSubmitTemplate)} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nombre <span className="text-red-500">*</span>
+              {t('columns.name')} <span className="text-red-500">*</span>
             </label>
             <input
               {...register('nombre')}
-              placeholder="Ej: Ruta Centro Norte - Lunes"
+              placeholder={t('templates.namePlaceholder')}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
             />
             {errors.nombre && (
@@ -559,31 +562,31 @@ export default function RouteAdminPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Descripcion</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('templates.descriptionLabel')}</label>
             <textarea
               {...register('descripcion')}
               rows={3}
-              placeholder="Describe la ruta..."
+              placeholder={t('templates.descriptionPlaceholder')}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Zona</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('columns.zone')}</label>
             <SearchableSelect
               options={zonaFormOptions}
               value={watch('zonaId')}
               onChange={val => setValue('zonaId', val != null ? Number(val) : null, { shouldDirty: true })}
-              placeholder="Seleccionar zona"
+              placeholder={t('drawer.selectZone')}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notas</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{tc('notes')}</label>
             <textarea
               {...register('notas')}
               rows={2}
-              placeholder="Notas adicionales..."
+              placeholder={t('templates.notesPlaceholder')}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none"
             />
           </div>
@@ -595,12 +598,12 @@ export default function RouteAdminPage() {
         <Modal
           isOpen={isAssignOpen}
           onClose={() => setIsAssignOpen(false)}
-          title="Asignar Ruta"
+          title={t('templates.assignRoute')}
         >
           <form onSubmit={rhfAssignSubmit(handleAssign)} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Template seleccionado
+                {t('templates.selectedTemplate')}
               </label>
               <div className="p-3 bg-gray-50 rounded-lg">
                 <p className="font-medium text-sm">{assigningTemplate.nombre}</p>
@@ -616,13 +619,13 @@ export default function RouteAdminPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Vendedor <span className="text-red-500">*</span>
+                {t('drawer.vendor')} <span className="text-red-500">*</span>
               </label>
               <SearchableSelect
                 options={usuarioOptions}
                 value={watchAssign('usuarioId') || null}
                 onChange={val => setAssignValue('usuarioId', val != null ? Number(val) : 0, { shouldDirty: true })}
-                placeholder="Seleccionar vendedor"
+                placeholder={t('drawer.selectVendor')}
                 error={!!assignErrors.usuarioId}
               />
               {assignErrors.usuarioId && (
@@ -632,7 +635,7 @@ export default function RouteAdminPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Fecha <span className="text-red-500">*</span>
+                {t('columns.date')} <span className="text-red-500">*</span>
               </label>
               <DateTimePicker
                 mode="date"
@@ -650,7 +653,7 @@ export default function RouteAdminPage() {
                 onClick={() => setIsAssignOpen(false)}
                 className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
               >
-                Cancelar
+                {tc('cancel')}
               </button>
               <button
                 type="submit"
@@ -658,7 +661,7 @@ export default function RouteAdminPage() {
                 className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50"
               >
                 {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                Asignar Ruta
+                {t('templates.assignRoute')}
               </button>
             </div>
           </form>

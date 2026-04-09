@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   ChevronLeft,
   ChevronRight,
@@ -23,13 +24,7 @@ import { toast } from '@/hooks/useToast';
 
 type NotificationType = 'order' | 'alert' | 'route' | 'inventory' | 'general';
 
-const typeLabels: Record<string, string> = {
-  order: 'Pedidos',
-  alert: 'Alertas',
-  route: 'Rutas',
-  inventory: 'Inventario',
-  general: 'General',
-};
+// Type labels are resolved via translations at render time
 
 const typeIcons: Record<string, React.ElementType> = {
   order: ShoppingCart,
@@ -47,12 +42,7 @@ const typeColors: Record<string, { bg: string; icon: string; darkBg: string; dar
   general: { bg: 'bg-gray-100', icon: 'text-gray-600', darkBg: 'dark:bg-gray-700/50', darkIcon: 'dark:text-gray-400' },
 };
 
-const statusLabels: Record<string, string> = {
-  sent: 'Enviada',
-  pending: 'Pendiente',
-  failed: 'Fallida',
-  read: 'Leída',
-};
+// Status labels are resolved via translations at render time
 
 const statusColors: Record<string, string> = {
   sent: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
@@ -64,7 +54,23 @@ const statusColors: Record<string, string> = {
 const PAGE_SIZE = 10;
 
 export default function NotificationsPage() {
+  const t = useTranslations('notifications');
   const { formatDate } = useFormatters();
+
+  const typeLabels: Record<string, string> = {
+    order: t('typeOrders'),
+    alert: t('typeAlerts'),
+    route: t('typeRoutes'),
+    inventory: t('typeInventory'),
+    general: t('typeGeneral'),
+  };
+  const statusLabels: Record<string, string> = {
+    sent: t('statusSent'),
+    pending: t('statusPending'),
+    failed: t('statusFailed'),
+    read: t('statusRead'),
+  };
+
   const [notifications, setNotifications] = useState<NotificationDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -99,7 +105,7 @@ export default function NotificationsPage() {
     } catch {
       toast({
         title: 'Error',
-        description: 'No se pudieron cargar las notificaciones',
+        description: t('errorLoading'),
         variant: 'destructive',
       });
     } finally {
@@ -136,15 +142,15 @@ export default function NotificationsPage() {
       const response = await notificationService.markAllAsRead();
       if (response.success) {
         toast({
-          title: 'Notificaciones actualizadas',
-          description: `${response.data?.marcadas ?? 0} notificaciones marcadas como leídas`,
+          title: t('updated'),
+          description: t('markedAsRead', { count: response.data?.marcadas ?? 0 }),
         });
         fetchNotifications();
       }
     } catch {
       toast({
         title: 'Error',
-        description: 'No se pudieron marcar las notificaciones',
+        description: t('errorMarking'),
         variant: 'destructive',
       });
     }
@@ -155,12 +161,12 @@ export default function NotificationsPage() {
     try {
       const response = await notificationService.deleteNotification(id);
       if (response.success) {
-        toast({ title: 'Notificación eliminada' });
+        toast({ title: t('deleted') });
         fetchNotifications();
       } else {
         toast({
           title: 'Error',
-          description: response.error || 'No se pudo eliminar',
+          description: response.error || t('errorDeleting'),
           variant: 'destructive',
         });
       }
@@ -177,10 +183,10 @@ export default function NotificationsPage() {
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
-    if (minutes < 60) return `Hace ${minutes} min`;
-    if (hours < 24) return `Hace ${hours} horas`;
-    if (days === 1) return 'Hace un día';
-    if (days < 7) return `Hace ${days} días`;
+    if (minutes < 60) return t('agoMinutes', { count: minutes });
+    if (hours < 24) return t('agoHours', { count: hours });
+    if (days === 1) return t('agoOneDay');
+    if (days < 7) return t('agoDays', { count: days });
     return formatDate(date);
   };
 
@@ -201,16 +207,16 @@ export default function NotificationsPage() {
       <div className="bg-white dark:bg-gray-900 px-8 py-6 border-b border-gray-200 dark:border-gray-700">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-[13px] mb-4">
-          <span className="text-gray-500 dark:text-gray-400">Administración</span>
+          <span className="text-gray-500 dark:text-gray-400">{t('breadcrumbAdmin')}</span>
           <ChevronRight className="w-4 h-4 text-gray-400" />
-          <span className="text-gray-900 dark:text-gray-100 font-semibold">Notificaciones</span>
+          <span className="text-gray-900 dark:text-gray-100 font-semibold">{t('breadcrumbNotifications')}</span>
         </div>
 
         {/* Title Row */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              Notificaciones
+              {t('title')}
             </h1>
             {unreadCount > 0 && (
               <span className="inline-flex items-center justify-center min-w-[24px] h-6 px-2 text-xs font-bold text-white bg-red-500 rounded-full">
@@ -225,7 +231,7 @@ export default function NotificationsPage() {
               onClick={handleMarkAllAsRead}
             >
               <CheckCheck className="w-4 h-4 mr-2" />
-              Marcar todas como leídas
+              {t('markAllRead')}
             </Button>
           )}
         </div>
@@ -238,7 +244,7 @@ export default function NotificationsPage() {
             <input
               data-tour="notifications-search"
               type="text"
-              placeholder="Buscar notificación..."
+              placeholder={t('searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-[280px] pl-10 pr-3 py-2.5 text-sm border border-gray-200 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -249,16 +255,16 @@ export default function NotificationsPage() {
           <div data-tour="notifications-filter-type" className="min-w-[170px]">
             <SearchableSelect
               options={[
-                { value: 'all', label: 'Todos los tipos' },
-                { value: 'order', label: 'Pedidos' },
-                { value: 'alert', label: 'Alertas' },
-                { value: 'route', label: 'Rutas' },
-                { value: 'inventory', label: 'Inventario' },
-                { value: 'general', label: 'General' },
+                { value: 'all', label: t('allTypes') },
+                { value: 'order', label: t('typeOrders') },
+                { value: 'alert', label: t('typeAlerts') },
+                { value: 'route', label: t('typeRoutes') },
+                { value: 'inventory', label: t('typeInventory') },
+                { value: 'general', label: t('typeGeneral') },
               ]}
               value={filterType}
               onChange={(val) => setFilterType(val ? String(val) : 'all')}
-              placeholder="Todos los tipos"
+              placeholder={t('allTypes')}
             />
           </div>
 
@@ -266,12 +272,12 @@ export default function NotificationsPage() {
           <div className="min-w-[170px]">
             <SearchableSelect
               options={[
-                { value: 'all', label: 'Todas' },
-                { value: 'unread', label: 'No leídas' },
+                { value: 'all', label: t('filterAll') },
+                { value: 'unread', label: t('filterUnread') },
               ]}
               value={filterUnread}
               onChange={(val) => setFilterUnread(val ? String(val) : 'all')}
-              placeholder="Todas"
+              placeholder={t('filterAll')}
             />
           </div>
         </div>
@@ -287,11 +293,11 @@ export default function NotificationsPage() {
           ) : displayedNotifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 py-20">
               <Bell className="w-16 h-16 text-gray-300 dark:text-gray-600 mb-4" />
-              <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">No hay notificaciones</h3>
+              <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">{t('emptyTitle')}</h3>
               <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
                 {searchTerm
-                  ? 'No se encontraron notificaciones para tu búsqueda'
-                  : 'No se encontraron notificaciones para los filtros seleccionados'}
+                  ? t('emptySearchMessage')
+                  : t('emptyFilterMessage')}
               </p>
             </div>
           ) : (
@@ -355,7 +361,7 @@ export default function NotificationsPage() {
                                 onClick={(e) => { e.stopPropagation(); handleMarkAsRead(notification.id); }}
                                 disabled={actionLoading === notification.id}
                                 className="p-1.5 rounded-md text-gray-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
-                                title="Marcar como leída"
+                                title={t('markAsRead')}
                               >
                                 <Check className="w-4 h-4" />
                               </button>
@@ -364,7 +370,7 @@ export default function NotificationsPage() {
                               onClick={(e) => { e.stopPropagation(); handleDelete(notification.id); }}
                               disabled={actionLoading === notification.id}
                               className="p-1.5 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                              title="Eliminar"
+                              title={t('deleted')}
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -382,7 +388,7 @@ export default function NotificationsPage() {
           {!loading && totalItems > 0 && (
             <div className="flex items-center justify-between pt-4">
               <span className="text-sm text-gray-500 dark:text-gray-400">
-                Mostrando {startItem}-{endItem} de {totalItems} notificaciones
+                {t('showing', { start: startItem, end: endItem, total: totalItems })}
               </span>
               <div className="flex items-center gap-2">
                 <button

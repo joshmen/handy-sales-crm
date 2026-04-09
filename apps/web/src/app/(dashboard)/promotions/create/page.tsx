@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 import { Card, CardContent } from '@/components/ui/Card';
@@ -70,6 +71,8 @@ const promotionCreateSchema = z.object({
 });
 
 export default function CreatePromotionPage() {
+  const t = useTranslations('promotions');
+  const tc = useTranslations('common');
   const router = useRouter();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -101,7 +104,7 @@ export default function CreatePromotionPage() {
       router.push('/promotions');
     } catch (error) {
       console.error('Error creating promotion:', error);
-      setErrors({ general: 'Error al crear la promoción. Intente nuevamente.' });
+      setErrors({ general: t('createPage.generalError') });
     } finally {
       setIsSubmitting(false);
     }
@@ -123,9 +126,9 @@ export default function CreatePromotionPage() {
             <ArrowLeft size={20} />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">Crear nueva promoción</h1>
+            <h1 className="text-2xl font-bold">{t('createPage.title')}</h1>
             <p className="text-gray-600">
-              Crea promociones especiales para los clientes configurando productos de aplicación, recompensas y limitantes
+              {t('createPage.subtitle')}
             </p>
           </div>
         </div>
@@ -140,7 +143,7 @@ export default function CreatePromotionPage() {
         {/* Mostrar errores de validación */}
         {Object.keys(errors).length > 0 && !errors.general && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="font-medium text-red-700 mb-2">Por favor corrija los siguientes errores:</p>
+            <p className="font-medium text-red-700 mb-2">{t('createPage.validationErrorsTitle')}</p>
             <ul className="list-disc list-inside text-red-600 text-sm">
               {Object.entries(errors).map(([field, message]) => (
                 <li key={field}>{message}</li>
@@ -155,12 +158,12 @@ export default function CreatePromotionPage() {
               <div className="flex items-start space-x-3">
                 <div className="text-blue-600 text-lg">💡</div>
                 <div>
-                  <h4 className="font-medium text-blue-800 mb-1">Consejos para crear promociones efectivas:</h4>
+                  <h4 className="font-medium text-blue-800 mb-1">{t('createPage.tipsTitle')}</h4>
                   <ul className="text-sm text-blue-700 space-y-1">
-                    <li>• Define claramente qué productos debe comprar el cliente para obtener la recompensa</li>
-                    <li>• Establece límites de presupuesto y uso para controlar el impacto financiero</li>
-                    <li>• Considera las fechas de vigencia para promociones temporales</li>
-                    <li>• Revisa que los productos de recompensa estén disponibles en inventario</li>
+                    <li>{t('createPage.tip1')}</li>
+                    <li>{t('createPage.tip2')}</li>
+                    <li>{t('createPage.tip3')}</li>
+                    <li>{t('createPage.tip4')}</li>
                   </ul>
                 </div>
               </div>
@@ -179,7 +182,7 @@ export default function CreatePromotionPage() {
           <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-lg shadow-xl flex items-center gap-4">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-              <span>Guardando promoción...</span>
+              <span>{t('createPage.savingPromotion')}</span>
             </div>
           </div>
         )}

@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useFormatters } from '@/hooks/useFormatters';
+import { useTranslations } from 'next-intl';
 
 interface PedidoOption {
   id: number;
@@ -41,6 +42,8 @@ interface PedidoOption {
 }
 
 export default function RouteDetailPage() {
+  const t = useTranslations('routes');
+  const tc = useTranslations('common');
   const { formatDateOnly, formatCurrency } = useFormatters();
   const params = useParams();
   const router = useRouter();
@@ -76,7 +79,7 @@ export default function RouteDetailPage() {
       setRoute(data);
       setPedidos(pedidosData);
     } catch {
-      toast.error('Error al cargar la ruta');
+      toast.error(t('detail.errorLoading'));
     } finally {
       setLoading(false);
     }
@@ -110,10 +113,10 @@ export default function RouteDetailPage() {
     try {
       setActionLoading(true);
       await routeService.iniciarRuta(route.id);
-      toast.success('Ruta iniciada');
+      toast.success(t('detail.routeStarted'));
       fetchRoute();
     } catch {
-      toast.error('Error al iniciar la ruta');
+      toast.error(t('detail.errorStarting'));
     } finally {
       setActionLoading(false);
     }
@@ -124,10 +127,10 @@ export default function RouteDetailPage() {
     try {
       setActionLoading(true);
       await routeService.completarRuta(route.id);
-      toast.success('Ruta completada');
+      toast.success(t('detail.routeCompleted'));
       fetchRoute();
     } catch {
-      toast.error('Error al completar la ruta');
+      toast.error(t('detail.errorCompleting'));
     } finally {
       setActionLoading(false);
     }
@@ -138,12 +141,12 @@ export default function RouteDetailPage() {
     try {
       setActionLoading(true);
       await routeService.cancelarRuta(route.id, cancelMotivo || undefined);
-      toast.success('Ruta cancelada');
+      toast.success(t('detail.routeCancelled'));
       setIsCancelOpen(false);
       setCancelMotivo('');
       fetchRoute();
     } catch {
-      toast.error('Error al cancelar la ruta');
+      toast.error(t('detail.errorCancelling'));
     } finally {
       setActionLoading(false);
     }
@@ -152,7 +155,7 @@ export default function RouteDetailPage() {
   // Stops
   const handleAddStop = async () => {
     if (!route || !stopForm.clienteId) {
-      toast.error('Selecciona un cliente');
+      toast.error(t('detail.selectClient'));
       return;
     }
     try {
@@ -167,12 +170,12 @@ export default function RouteDetailPage() {
         notas: stopForm.notas || undefined,
       };
       await routeService.addParada(route.id, data);
-      toast.success('Parada agregada');
+      toast.success(t('detail.stopAdded'));
       setIsAddStopOpen(false);
       setStopForm({ clienteId: 0, duracion: 30, notas: '' });
       fetchRoute();
     } catch {
-      toast.error('Error al agregar parada');
+      toast.error(t('detail.errorAddingStop'));
     } finally {
       setActionLoading(false);
     }
@@ -182,10 +185,10 @@ export default function RouteDetailPage() {
     if (!route) return;
     try {
       await routeService.deleteParada(route.id, detalleId);
-      toast.success('Parada eliminada');
+      toast.success(t('detail.stopDeleted'));
       fetchRoute();
     } catch {
-      toast.error('Error al eliminar parada');
+      toast.error(t('detail.errorDeletingStop'));
     }
   };
 
@@ -203,7 +206,7 @@ export default function RouteDetailPage() {
       await routeService.reorderParadas(route.id, newOrder);
       fetchRoute();
     } catch {
-      toast.error('Error al reordenar');
+      toast.error(t('detail.errorReordering'));
     }
   };
 
@@ -224,7 +227,7 @@ export default function RouteDetailPage() {
       const assignedIds = new Set(pedidos.map(p => p.pedidoId));
       setAvailablePedidos(all.filter(p => !assignedIds.has(p.id)));
     } catch {
-      toast.error('Error al cargar pedidos disponibles');
+      toast.error(t('detail.errorLoadingOrders'));
     } finally {
       setLoadingPedidos(false);
     }
@@ -234,12 +237,12 @@ export default function RouteDetailPage() {
     if (!route) return;
     try {
       await routeService.addPedido(route.id, pedidoId);
-      toast.success('Pedido asignado a la ruta');
+      toast.success(t('detail.orderAssigned'));
       setIsPedidoModalOpen(false);
       const pedidosData = await routeService.getPedidosAsignados(route.id);
       setPedidos(pedidosData);
     } catch (err: unknown) {
-      toast.error((err instanceof Error ? err.message : null) || 'Error al asignar pedido');
+      toast.error((err instanceof Error ? err.message : null) || t('detail.errorAssigningOrder'));
     }
   };
 
@@ -247,11 +250,11 @@ export default function RouteDetailPage() {
     if (!route) return;
     try {
       await routeService.removePedido(route.id, pedidoId);
-      toast.success('Pedido removido de la ruta');
+      toast.success(t('detail.orderRemoved'));
       const pedidosData = await routeService.getPedidosAsignados(route.id);
       setPedidos(pedidosData);
     } catch {
-      toast.error('Error al remover pedido');
+      toast.error(t('detail.errorRemovingOrder'));
     }
   };
 
@@ -263,11 +266,11 @@ export default function RouteDetailPage() {
 
   const getParadaBadge = (estado: number) => {
     switch (estado) {
-      case 0: return { label: 'Pendiente', cls: 'bg-gray-100 text-gray-600' };
-      case 1: return { label: 'En camino', cls: 'bg-blue-100 text-blue-600' };
-      case 2: return { label: 'Visitado', cls: 'bg-green-100 text-green-600' };
-      case 3: return { label: 'Omitido', cls: 'bg-red-100 text-red-600' };
-      default: return { label: 'Desconocido', cls: 'bg-gray-100 text-gray-600' };
+      case 0: return { label: t('detail.stopPending'), cls: 'bg-gray-100 text-gray-600' };
+      case 1: return { label: t('detail.stopEnRoute'), cls: 'bg-blue-100 text-blue-600' };
+      case 2: return { label: t('detail.stopVisited'), cls: 'bg-green-100 text-green-600' };
+      case 3: return { label: t('detail.stopSkipped'), cls: 'bg-red-100 text-red-600' };
+      default: return { label: t('status.unknown'), cls: 'bg-gray-100 text-gray-600' };
     }
   };
 
@@ -282,8 +285,8 @@ export default function RouteDetailPage() {
   if (!route) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
-        <p className="text-gray-500">Ruta no encontrada</p>
-        <Link href="/routes" className="text-green-600 hover:underline text-sm">Volver a rutas</Link>
+        <p className="text-gray-500">{t('detail.notFound')}</p>
+        <Link href="/routes" className="text-green-600 hover:underline text-sm">{t('detail.backToRoutes')}</Link>
       </div>
     );
   }
@@ -296,8 +299,8 @@ export default function RouteDetailPage() {
       {/* Header */}
       <div className="bg-white px-8 py-6 border-b border-gray-200">
         <Breadcrumb items={[
-          { label: 'Inicio', href: '/dashboard' },
-          { label: 'Rutas', href: '/routes' },
+          { label: tc('home'), href: '/dashboard' },
+          { label: t('title'), href: '/routes' },
           { label: route.nombre },
         ]} />
 
@@ -322,7 +325,7 @@ export default function RouteDetailPage() {
                   className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
                 >
                   <Play className="w-4 h-4" />
-                  Iniciar ruta
+                  {t('detail.startRoute')}
                 </button>
                 <button
                   onClick={() => setIsCancelOpen(true)}
@@ -330,7 +333,7 @@ export default function RouteDetailPage() {
                   className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-red-600 border border-red-200 rounded hover:bg-red-50 transition-colors disabled:opacity-50"
                 >
                   <XCircle className="w-4 h-4" />
-                  Cancelar
+                  {tc('cancel')}
                 </button>
               </>
             )}
@@ -342,7 +345,7 @@ export default function RouteDetailPage() {
                   className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
                 >
                   <CheckCircle className="w-4 h-4" />
-                  Completar ruta
+                  {t('detail.completeRoute')}
                 </button>
                 <button
                   onClick={() => setIsCancelOpen(true)}
@@ -350,7 +353,7 @@ export default function RouteDetailPage() {
                   className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-red-600 border border-red-200 rounded hover:bg-red-50 transition-colors disabled:opacity-50"
                 >
                   <XCircle className="w-4 h-4" />
-                  Cancelar
+                  {tc('cancel')}
                 </button>
               </>
             )}
@@ -361,7 +364,7 @@ export default function RouteDetailPage() {
                   className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
                 >
                   <Truck className="w-4 h-4" />
-                  Ver carga
+                  {t('actions.viewLoad')}
                 </Link>
                 <button
                   onClick={() => setIsCancelOpen(true)}
@@ -369,7 +372,7 @@ export default function RouteDetailPage() {
                   className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-red-600 border border-red-200 rounded hover:bg-red-50 transition-colors disabled:opacity-50"
                 >
                   <XCircle className="w-4 h-4" />
-                  Cancelar
+                  {tc('cancel')}
                 </button>
               </>
             )}
@@ -379,7 +382,7 @@ export default function RouteDetailPage() {
                 className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
               >
                 <Truck className="w-4 h-4" />
-                Ver carga
+                {t('actions.viewLoad')}
               </Link>
             )}
             {route?.estado === ESTADO_RUTA.Completada && (
@@ -388,7 +391,7 @@ export default function RouteDetailPage() {
                 className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-emerald-600 border border-emerald-200 rounded-lg hover:bg-emerald-50 transition-colors"
               >
                 <FileCheck className="w-4 h-4" />
-                Cerrar ruta
+                {t('detail.closeRoute')}
               </Link>
             )}
             {route?.estado === ESTADO_RUTA.Cerrada && (
@@ -397,7 +400,7 @@ export default function RouteDetailPage() {
                 className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <ExternalLink className="w-4 h-4" />
-                Ver cierre
+                {t('detail.viewClosure')}
               </Link>
             )}
           </div>
@@ -412,21 +415,21 @@ export default function RouteDetailPage() {
             <div className="flex items-start gap-2">
               <User className="w-4 h-4 text-gray-400 mt-0.5" />
               <div>
-                <p className="text-[11px] text-gray-500">Usuario</p>
+                <p className="text-[11px] text-gray-500">{t('columns.user')}</p>
                 <p className="text-[13px] font-medium text-gray-900">{route.usuarioNombre}</p>
               </div>
             </div>
             <div className="flex items-start gap-2">
               <MapPin className="w-4 h-4 text-gray-400 mt-0.5" />
               <div>
-                <p className="text-[11px] text-gray-500">Zona</p>
-                <p className="text-[13px] font-medium text-gray-900">{route.zonaNombre || 'Sin zona'}</p>
+                <p className="text-[11px] text-gray-500">{t('columns.zone')}</p>
+                <p className="text-[13px] font-medium text-gray-900">{route.zonaNombre || t('noZone')}</p>
               </div>
             </div>
             <div className="flex items-start gap-2">
               <Calendar className="w-4 h-4 text-gray-400 mt-0.5" />
               <div>
-                <p className="text-[11px] text-gray-500">Fecha</p>
+                <p className="text-[11px] text-gray-500">{t('columns.date')}</p>
                 <p className="text-[13px] font-medium text-gray-900">
                   {formatDateOnly(route.fecha)}
                 </p>
@@ -435,7 +438,7 @@ export default function RouteDetailPage() {
             <div className="flex items-start gap-2">
               <Clock className="w-4 h-4 text-gray-400 mt-0.5" />
               <div>
-                <p className="text-[11px] text-gray-500">Horario</p>
+                <p className="text-[11px] text-gray-500">{t('columns.schedule')}</p>
                 <p className="text-[13px] font-medium text-gray-900">
                   {route.horaInicioEstimada || '--:--'} - {route.horaFinEstimada || '--:--'}
                 </p>
@@ -444,13 +447,13 @@ export default function RouteDetailPage() {
           </div>
           {route.notas && (
             <div className="mt-3 pt-3 border-t border-gray-100">
-              <p className="text-[11px] text-gray-500 mb-1">Notas</p>
+              <p className="text-[11px] text-gray-500 mb-1">{tc('notes')}</p>
               <p className="text-[13px] text-gray-700">{route.notas}</p>
             </div>
           )}
           <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-6">
             <div>
-              <span className="text-[11px] text-gray-500">Paradas: </span>
+              <span className="text-[11px] text-gray-500">{t('columns.stops')}: </span>
               <span className="text-[13px] font-medium">
                 <span className={route.paradasCompletadas === route.totalParadas && route.totalParadas > 0 ? 'text-green-600' : ''}>
                   {route.paradasCompletadas}
@@ -460,7 +463,7 @@ export default function RouteDetailPage() {
             </div>
             {route.kilometrosEstimados && (
               <div>
-                <span className="text-[11px] text-gray-500">Km estimados: </span>
+                <span className="text-[11px] text-gray-500">{t('detail.estimatedKm')}: </span>
                 <span className="text-[13px] font-medium">
                   {route.kilometrosEstimados}
                 </span>
@@ -474,7 +477,7 @@ export default function RouteDetailPage() {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-semibold text-gray-900">
-                Pedidos asignados
+                {t('detail.assignedOrders')}
               </h2>
               <span className="inline-flex px-2 py-0.5 text-[10px] font-medium rounded-full bg-blue-100 text-blue-700">
                 {pedidos.length}
@@ -486,7 +489,7 @@ export default function RouteDetailPage() {
                 className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" />
-                Asignar pedido
+                {t('detail.assignOrder')}
               </button>
             )}
           </div>
@@ -494,13 +497,13 @@ export default function RouteDetailPage() {
           <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
             {/* Table Header */}
             <div className="flex items-center gap-3 bg-gray-50 px-4 h-10 border-b border-gray-200">
-              <div className="w-[100px] text-xs font-semibold text-gray-600"># Pedido</div>
-              <div className="flex-1 min-w-[160px] text-xs font-semibold text-gray-600">Cliente</div>
-              <div className="w-[120px] text-xs font-semibold text-gray-600 text-right">Monto</div>
-              <div className="w-[60px] text-xs font-semibold text-gray-600 text-center">Prods.</div>
-              <div className="w-[110px] text-xs font-semibold text-gray-600 text-center">Estado</div>
+              <div className="w-[100px] text-xs font-semibold text-gray-600">{t('detail.orderNumber')}</div>
+              <div className="flex-1 min-w-[160px] text-xs font-semibold text-gray-600">{t('detail.client')}</div>
+              <div className="w-[120px] text-xs font-semibold text-gray-600 text-right">{t('detail.amount')}</div>
+              <div className="w-[60px] text-xs font-semibold text-gray-600 text-center">{t('detail.products')}</div>
+              <div className="w-[110px] text-xs font-semibold text-gray-600 text-center">{t('columns.status')}</div>
               {isEditable && (
-                <div className="w-[70px] text-xs font-semibold text-gray-600 text-center">Acciones</div>
+                <div className="w-[70px] text-xs font-semibold text-gray-600 text-center">{tc('actions')}</div>
               )}
             </div>
 
@@ -508,15 +511,15 @@ export default function RouteDetailPage() {
             {pedidos.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16">
                 <Package className="w-12 h-12 text-gray-300 mb-3" />
-                <p className="text-sm font-medium text-gray-700 mb-1">Sin pedidos asignados</p>
-                <p className="text-xs text-gray-500 mb-3">Asigna pedidos confirmados a esta ruta</p>
+                <p className="text-sm font-medium text-gray-700 mb-1">{t('detail.noOrders')}</p>
+                <p className="text-xs text-gray-500 mb-3">{t('detail.assignConfirmedOrders')}</p>
                 {isEditable && (
                   <button
                     onClick={handleOpenAddPedido}
                     className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    Asignar pedido
+                    {t('detail.assignOrder')}
                   </button>
                 )}
               </div>
@@ -548,7 +551,7 @@ export default function RouteDetailPage() {
                       <button
                         onClick={() => handleRemovePedido(p.pedidoId)}
                         className="p-1 text-gray-400 hover:text-red-600 rounded"
-                        title="Remover pedido"
+                        title={t('detail.removeOrder')}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -564,7 +567,7 @@ export default function RouteDetailPage() {
         <div>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-semibold text-gray-900">
-              Paradas ({route.totalParadas})
+              {t('columns.stops')} ({route.totalParadas})
             </h2>
             {isEditable && (
               <button
@@ -572,7 +575,7 @@ export default function RouteDetailPage() {
                 className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" />
-                Agregar parada
+                {t('detail.addStop')}
               </button>
             )}
           </div>
@@ -581,12 +584,12 @@ export default function RouteDetailPage() {
             {/* Table Header */}
             <div className="flex items-center gap-3 bg-gray-50 px-4 h-10 border-b border-gray-200">
               <div className="w-[50px] text-xs font-semibold text-gray-600 text-center">#</div>
-              <div className="flex-1 min-w-[160px] text-xs font-semibold text-gray-600">Cliente</div>
-              <div className="w-[200px] text-xs font-semibold text-gray-600">Dirección</div>
-              <div className="w-[60px] text-xs font-semibold text-gray-600 text-center">Min.</div>
-              <div className="w-[90px] text-xs font-semibold text-gray-600 text-center">Estado</div>
+              <div className="flex-1 min-w-[160px] text-xs font-semibold text-gray-600">{t('detail.client')}</div>
+              <div className="w-[200px] text-xs font-semibold text-gray-600">{tc('address')}</div>
+              <div className="w-[60px] text-xs font-semibold text-gray-600 text-center">{t('detail.minutes')}</div>
+              <div className="w-[90px] text-xs font-semibold text-gray-600 text-center">{t('columns.status')}</div>
               {isEditable && (
-                <div className="w-[90px] text-xs font-semibold text-gray-600 text-center">Acciones</div>
+                <div className="w-[90px] text-xs font-semibold text-gray-600 text-center">{tc('actions')}</div>
               )}
             </div>
 
@@ -594,15 +597,15 @@ export default function RouteDetailPage() {
             {sortedStops.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16">
                 <MapPin className="w-12 h-12 text-gray-300 mb-3" />
-                <p className="text-sm font-medium text-gray-700 mb-1">Sin paradas</p>
-                <p className="text-xs text-gray-500 mb-3">Agrega clientes para planificar la ruta</p>
+                <p className="text-sm font-medium text-gray-700 mb-1">{t('detail.noStops')}</p>
+                <p className="text-xs text-gray-500 mb-3">{t('detail.addClientsHint')}</p>
                 {isEditable && (
                   <button
                     onClick={() => setIsAddStopOpen(true)}
                     className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    Agregar parada
+                    {t('detail.addStop')}
                   </button>
                 )}
               </div>
@@ -642,7 +645,7 @@ export default function RouteDetailPage() {
                           onClick={() => handleMoveStop(stop, 'up')}
                           disabled={idx === 0}
                           className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30 rounded"
-                          title="Subir"
+                          title={t('detail.moveUp')}
                         >
                           <ChevronUp className="w-3.5 h-3.5" />
                         </button>
@@ -650,14 +653,14 @@ export default function RouteDetailPage() {
                           onClick={() => handleMoveStop(stop, 'down')}
                           disabled={idx === sortedStops.length - 1}
                           className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30 rounded"
-                          title="Bajar"
+                          title={t('detail.moveDown')}
                         >
                           <ChevronDown className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => handleDeleteStop(stop.id)}
                           className="p-1 text-gray-400 hover:text-red-600 rounded"
-                          title="Eliminar"
+                          title={tc('delete')}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -675,23 +678,23 @@ export default function RouteDetailPage() {
       <Modal
         isOpen={isAddStopOpen}
         onClose={() => !actionLoading && setIsAddStopOpen(false)}
-        title="Agregar parada"
+        title={t('detail.addStop')}
       >
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Cliente <span className="text-red-500">*</span>
+              {t('detail.client')} <span className="text-red-500">*</span>
             </label>
             <SearchableSelect
               options={clients}
               value={stopForm.clienteId ? stopForm.clienteId.toString() : ''}
               onChange={(val) => setStopForm({ ...stopForm, clienteId: val ? parseInt(String(val)) : 0 })}
-              placeholder="Buscar cliente..."
+              placeholder={t('detail.searchClient')}
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Duración estimada (minutos)
+              {t('detail.estimatedDuration')}
             </label>
             <input
               type="number"
@@ -701,12 +704,12 @@ export default function RouteDetailPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notas</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{tc('notes')}</label>
             <textarea
               value={stopForm.notas}
               onChange={(e) => setStopForm({ ...stopForm, notas: e.target.value })}
               rows={2}
-              placeholder="Notas para esta parada..."
+              placeholder={t('detail.stopNotesPlaceholder')}
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
             />
           </div>
@@ -724,7 +727,7 @@ export default function RouteDetailPage() {
               className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
             >
               {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-              Agregar
+              {t('detail.add')}
             </button>
           </div>
         </div>
@@ -734,19 +737,19 @@ export default function RouteDetailPage() {
       <Modal
         isOpen={isCancelOpen}
         onClose={() => !actionLoading && setIsCancelOpen(false)}
-        title="Cancelar ruta"
+        title={t('detail.cancelRoute')}
       >
         <div className="space-y-4">
           <p className="text-sm text-gray-600">
-            ¿Estás seguro de que deseas cancelar esta ruta? Esta acción no se puede deshacer.
+            {t('detail.cancelConfirm')}
           </p>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Motivo (opcional)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('detail.reasonOptional')}</label>
             <textarea
               value={cancelMotivo}
               onChange={(e) => setCancelMotivo(e.target.value)}
               rows={2}
-              placeholder="Motivo de la cancelación..."
+              placeholder={t('detail.reasonPlaceholder')}
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
             />
           </div>
@@ -756,7 +759,7 @@ export default function RouteDetailPage() {
               disabled={actionLoading}
               className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
             >
-              Volver
+              {tc('back')}
             </button>
             <button
               onClick={handleCancelar}
@@ -764,7 +767,7 @@ export default function RouteDetailPage() {
               className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50 flex items-center gap-2"
             >
               {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-              Cancelar ruta
+              {t('detail.cancelRoute')}
             </button>
           </div>
         </div>
@@ -774,7 +777,7 @@ export default function RouteDetailPage() {
       <Modal
         isOpen={isPedidoModalOpen}
         onClose={() => setIsPedidoModalOpen(false)}
-        title="Asignar pedido a la ruta"
+        title={t('detail.assignOrderToRoute')}
         size="lg"
       >
         <div className="space-y-4">
@@ -784,7 +787,7 @@ export default function RouteDetailPage() {
               type="text"
               value={pedidoSearch}
               onChange={(e) => setPedidoSearch(e.target.value)}
-              placeholder="Buscar por cliente o número de pedido..."
+              placeholder={t('detail.searchOrderPlaceholder')}
               className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
             />
           </div>
@@ -815,7 +818,7 @@ export default function RouteDetailPage() {
                         #{p.numeroPedido || p.id}
                       </span>
                       <span className="text-xs text-gray-500 ml-2">
-                        {p.clienteNombre || 'Sin cliente'}
+                        {p.clienteNombre || t('detail.noClient')}
                       </span>
                       <span className="text-xs text-gray-400 ml-2">
                         {formatCurrency(p.total || 0)}
@@ -825,13 +828,13 @@ export default function RouteDetailPage() {
                       onClick={() => handleAddPedido(p.id)}
                       className="px-3 py-1 text-xs font-medium rounded bg-green-600 text-white hover:bg-green-700 transition-colors"
                     >
-                      Asignar
+                      {t('detail.assign')}
                     </button>
                   </div>
                 ))}
               {availablePedidos.length === 0 && !loadingPedidos && (
                 <p className="text-xs text-gray-400 text-center py-4">
-                  No hay pedidos confirmados disponibles
+                  {t('detail.noConfirmedOrders')}
                 </p>
               )}
             </div>

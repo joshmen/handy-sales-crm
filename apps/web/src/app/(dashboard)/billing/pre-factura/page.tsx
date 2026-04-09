@@ -7,7 +7,9 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { toast } from '@/hooks/useToast';
 import { extractBillingError } from '@/lib/billingApi';
+import { useTranslations } from 'next-intl';
 import { TimbresModal } from '@/components/billing/TimbresModal';
+import { SrLoadingText } from '@/components/common/SrLoadingText';
 import {
   previewFacturaFromOrder,
   createFacturaFromOrder,
@@ -25,11 +27,11 @@ import type {
 const formatMXN = (value: number) =>
   new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value);
 
-const SOURCE_STYLES: Record<PreFacturaLineDto['mappingSource'], { bg: string; label: string }> = {
-  mapping: { bg: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', label: 'Mapeo' },
-  producto: { bg: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400', label: 'Producto' },
-  default: { bg: 'bg-gray-100 text-gray-700 dark:bg-zinc-700 dark:text-zinc-300', label: 'Default' },
-  fallback: { bg: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400', label: 'Fallback' },
+const SOURCE_STYLES: Record<PreFacturaLineDto['mappingSource'], { bg: string; key: string }> = {
+  mapping: { bg: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', key: 'sourceMapping' },
+  producto: { bg: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400', key: 'sourceProduct' },
+  default: { bg: 'bg-gray-100 text-gray-700 dark:bg-zinc-700 dark:text-zinc-300', key: 'sourceDefault' },
+  fallback: { bg: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400', key: 'sourceFallback' },
 };
 
 // ─── Autocomplete Hook ───
@@ -149,7 +151,7 @@ function AutocompleteDropdown<T>({
 
 export default function PreFacturaPage() {
   return (
-    <Suspense fallback={<div role="status" className="flex items-center justify-center min-h-[60vh]"><Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" /><span className="sr-only">Cargando...</span></div>}>
+    <Suspense fallback={<div role="status" className="flex items-center justify-center min-h-[60vh]"><Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" /><SrLoadingText /></div>}>
       <PreFacturaContent />
     </Suspense>
   );
@@ -158,6 +160,8 @@ export default function PreFacturaPage() {
 function PreFacturaContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const t = useTranslations('billing.preInvoice');
+  const tc = useTranslations('common');
   const pedidoId = Number(searchParams.get('pedidoId') || 0);
 
   const [preview, setPreview] = useState<PreFacturaDto | null>(null);
@@ -261,7 +265,7 @@ function PreFacturaContent() {
   if (loading) return (
     <div role="status" className="flex items-center justify-center min-h-[60vh]">
       <Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" />
-      <span className="sr-only">Cargando...</span>
+      <span className="sr-only">{tc('loading')}</span>
     </div>
   );
 
@@ -315,17 +319,16 @@ function PreFacturaContent() {
           <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
           <div>
             <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
-              {preview.unmappedCount} producto{preview.unmappedCount > 1 ? 's' : ''} sin mapeo fiscal
+              {t('unmappedWarning', { count: preview.unmappedCount, plural: preview.unmappedCount > 1 ? 's' : '' })}
             </p>
             <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
-              Se usaron claves por defecto o fallback. Puedes editar las claves SAT directamente en la tabla
-              o configurar los mapeos desde{' '}
+              {t('unmappedHint')}{' '}
               <button
                 type="button"
                 onClick={() => router.push('/billing/fiscal-mapping')}
                 className="underline hover:no-underline font-medium"
               >
-                Configuración Fiscal
+                {t('fiscalConfig')}
               </button>
               .
             </p>
@@ -347,7 +350,7 @@ function PreFacturaContent() {
 
         {/* Receptor */}
         <div className="bg-card border border-border rounded-xl p-5">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Receptor</h3>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">{t('receptor')}</h3>
           <p className="font-medium text-sm">{preview.receptorNombre}</p>
           <p className="text-sm text-muted-foreground">RFC: {preview.receptorRfc}</p>
           {preview.receptorRegimenFiscal && (
@@ -380,21 +383,21 @@ function PreFacturaContent() {
         <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Resumen de Montos</h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div>
-            <span className="text-xs text-muted-foreground">Subtotal</span>
+            <span className="text-xs text-muted-foreground">{t('subtotal')}</span>
             <p className="text-sm font-medium tabular-nums">{formatMXN(preview.subtotal)}</p>
           </div>
           <div>
-            <span className="text-xs text-muted-foreground">Descuento</span>
+            <span className="text-xs text-muted-foreground">{t('discountLabel')}</span>
             <p className="text-sm font-medium tabular-nums text-red-600 dark:text-red-400">
               {preview.descuento > 0 ? `- ${formatMXN(preview.descuento)}` : formatMXN(0)}
             </p>
           </div>
           <div>
-            <span className="text-xs text-muted-foreground">IVA</span>
+            <span className="text-xs text-muted-foreground">{t('ivaLabel')}</span>
             <p className="text-sm font-medium tabular-nums">{formatMXN(preview.impuestos)}</p>
           </div>
           <div>
-            <span className="text-xs text-muted-foreground">Total</span>
+            <span className="text-xs text-muted-foreground">{t('totalLabel')}</span>
             <p className="text-lg font-bold tabular-nums text-green-700 dark:text-green-400">
               {formatMXN(preview.total)}
             </p>
@@ -409,12 +412,12 @@ function PreFacturaContent() {
             <thead>
               <tr className="border-b border-border bg-muted/50">
                 <th className="text-left px-3 py-3 font-medium text-muted-foreground text-xs">#</th>
-                <th className="text-left px-3 py-3 font-medium text-muted-foreground text-xs">Producto</th>
-                <th className="text-right px-3 py-3 font-medium text-muted-foreground text-xs">Cantidad</th>
-                <th className="text-right px-3 py-3 font-medium text-muted-foreground text-xs">Precio</th>
-                <th className="text-left px-3 py-3 font-medium text-muted-foreground text-xs w-44">ClaveProdServ</th>
-                <th className="text-left px-3 py-3 font-medium text-muted-foreground text-xs w-36">ClaveUnidad</th>
-                <th className="text-center px-3 py-3 font-medium text-muted-foreground text-xs">Origen</th>
+                <th className="text-left px-3 py-3 font-medium text-muted-foreground text-xs">{t('product')}</th>
+                <th className="text-right px-3 py-3 font-medium text-muted-foreground text-xs">{t('quantity')}</th>
+                <th className="text-right px-3 py-3 font-medium text-muted-foreground text-xs">{t('price')}</th>
+                <th className="text-left px-3 py-3 font-medium text-muted-foreground text-xs w-44">{t('claveProdServ')}</th>
+                <th className="text-left px-3 py-3 font-medium text-muted-foreground text-xs w-36">{t('claveUnidad')}</th>
+                <th className="text-center px-3 py-3 font-medium text-muted-foreground text-xs">{t('source')}</th>
               </tr>
             </thead>
             <tbody>
@@ -495,6 +498,7 @@ function LineRow({
   claveUnidadValue: string;
   onUpdateOverride: (productoId: number, field: 'claveProdServ' | 'claveUnidad', value: string) => void;
 }) {
+  const t = useTranslations('billing.preInvoice');
   const prodServAc = useAutocomplete(
     searchCatalogoProdServ,
     (item: CatalogoProdServItem) => item.descripcion,
@@ -525,7 +529,7 @@ function LineRow({
           ac={prodServAc}
           value={claveProdServValue}
           onSelect={(key) => onUpdateOverride(line.productoId, 'claveProdServ', key)}
-          placeholder="Buscar clave SAT..."
+          placeholder={t('searchSatKey')}
         />
       </td>
       <td className="px-3 py-2.5">
@@ -533,12 +537,12 @@ function LineRow({
           ac={unidadAc}
           value={claveUnidadValue}
           onSelect={(key) => onUpdateOverride(line.productoId, 'claveUnidad', key)}
-          placeholder="Buscar unidad..."
+          placeholder={t('searchUnit')}
         />
       </td>
       <td className="px-3 py-2.5 text-center">
         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${source.bg}`}>
-          {source.label}
+          {t(source.key)}
         </span>
       </td>
     </tr>
@@ -558,6 +562,7 @@ function MobileLineCard({
   claveUnidadValue: string;
   onUpdateOverride: (productoId: number, field: 'claveProdServ' | 'claveUnidad', value: string) => void;
 }) {
+  const t = useTranslations('billing.preInvoice');
   const prodServAc = useAutocomplete(
     searchCatalogoProdServ,
     (item: CatalogoProdServItem) => item.descripcion,
@@ -582,7 +587,7 @@ function MobileLineCard({
           )}
         </div>
         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ml-2 ${source.bg}`}>
-          {source.label}
+          {t(source.key)}
         </span>
       </div>
 
@@ -595,21 +600,21 @@ function MobileLineCard({
 
       <div className="grid grid-cols-1 gap-2">
         <div>
-          <label className="text-xs text-muted-foreground mb-1 block">ClaveProdServ</label>
+          <label className="text-xs text-muted-foreground mb-1 block">{t('claveProdServ')}</label>
           <AutocompleteDropdown
             ac={prodServAc}
             value={claveProdServValue}
             onSelect={(key) => onUpdateOverride(line.productoId, 'claveProdServ', key)}
-            placeholder="Buscar clave SAT..."
+            placeholder={t('searchSatKey')}
           />
         </div>
         <div>
-          <label className="text-xs text-muted-foreground mb-1 block">ClaveUnidad</label>
+          <label className="text-xs text-muted-foreground mb-1 block">{t('claveUnidad')}</label>
           <AutocompleteDropdown
             ac={unidadAc}
             value={claveUnidadValue}
             onSelect={(key) => onUpdateOverride(line.productoId, 'claveUnidad', key)}
-            placeholder="Buscar unidad..."
+            placeholder={t('searchUnit')}
           />
         </div>
       </div>

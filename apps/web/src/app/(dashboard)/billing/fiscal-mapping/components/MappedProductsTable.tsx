@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslations } from 'next-intl';
 import { ChevronLeft, ChevronRight, Check, Trash2, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import type { MapeoFiscalProducto } from '@/types/billing';
@@ -36,6 +37,7 @@ export function MappedProductsTable({
   onDelete,
   onSetMappingsPage,
 }: MappedProductsTableProps) {
+  const tc = useTranslations('common');
   return (
     <>
       {/* Desktop table */}
@@ -105,7 +107,7 @@ export function MappedProductsTable({
                       })}
                       className="p-1.5 rounded-md hover:bg-amber-50 dark:hover:bg-amber-900/20 text-muted-foreground hover:text-amber-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1"
                       aria-label={`Editar mapeo de ${m.productoNombre || m.productoId}`}
-                      title="Editar mapeo"
+                      title={tc('editMapping')}
                     >
                       <Pencil className="w-4 h-4" />
                     </button>
@@ -113,7 +115,7 @@ export function MappedProductsTable({
                       onClick={() => onDelete(m.productoId)}
                       className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-muted-foreground hover:text-red-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1"
                       aria-label={`Eliminar mapeo de ${m.productoNombre || m.productoId}`}
-                      title="Eliminar mapeo"
+                      title={tc('deleteMapping')}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>

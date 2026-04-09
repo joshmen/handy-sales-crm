@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Product, RouteProduct } from "@/types";
 import { Card, CardHeader, CardContent, Button, Input } from "@/components/ui";
+import { useTranslations } from "next-intl";
 
 interface InventoryLoaderProps {
   products: Product[];
@@ -17,6 +18,8 @@ export const InventoryLoader: React.FC<InventoryLoaderProps> = ({
   onProductRemove,
   onQuantityChange,
 }) => {
+  const t = useTranslations("routes.inventoryLoader");
+  const tCommon = useTranslations("common");
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddProduct, setShowAddProduct] = useState(false);
 
@@ -32,14 +35,14 @@ export const InventoryLoader: React.FC<InventoryLoaderProps> = ({
         <div className="flex justify-between items-center">
           <h3 className="font-semibold flex items-center">
             <span className="mr-2">📦</span>
-            Asignar productos para venta
+            {t("assignProducts")}
           </h3>
           <Button
             variant="outline"
             size="sm"
             onClick={() => setShowAddProduct(!showAddProduct)}
           >
-            {showAddProduct ? "Cancelar" : "Agregar Producto"}
+            {showAddProduct ? tCommon("cancel") : t("addProduct")}
           </Button>
         </div>
       </CardHeader>
@@ -47,7 +50,7 @@ export const InventoryLoader: React.FC<InventoryLoaderProps> = ({
         {/* Lista de productos asignados */}
         {routeProducts.length > 0 && (
           <div className="mb-6">
-            <h4 className="font-medium mb-3">Productos asignados</h4>
+            <h4 className="font-medium mb-3">{t("assignedProducts")}</h4>
             <div className="space-y-2">
               {routeProducts.map((routeProduct) => (
                 <div
@@ -61,7 +64,7 @@ export const InventoryLoader: React.FC<InventoryLoaderProps> = ({
                     <div>
                       <p className="font-medium">{routeProduct.product.name}</p>
                       <p className="text-sm text-gray-500">
-                        ${routeProduct.product.price} • Stock:{" "}
+                        ${routeProduct.product.price} • {t("stock")}{" "}
                         {routeProduct.product.stock}
                       </p>
                     </div>
@@ -96,9 +99,9 @@ export const InventoryLoader: React.FC<InventoryLoaderProps> = ({
         {/* Agregar nuevo producto */}
         {showAddProduct && (
           <div>
-            <h4 className="font-medium mb-3">Buscar productos</h4>
+            <h4 className="font-medium mb-3">{t("searchProducts")}</h4>
             <Input
-              placeholder="Buscar producto..."
+              placeholder={t("searchPlaceholder")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="mb-3"
@@ -116,7 +119,7 @@ export const InventoryLoader: React.FC<InventoryLoaderProps> = ({
                     <div>
                       <p className="font-medium">{product.name}</p>
                       <p className="text-sm text-gray-500">
-                        ${product.price} • Stock: {product.stock}
+                        ${product.price} • {t("stock")} {product.stock}
                       </p>
                     </div>
                   </div>
@@ -128,13 +131,13 @@ export const InventoryLoader: React.FC<InventoryLoaderProps> = ({
                     }}
                     disabled={product.stock === 0}
                   >
-                    Agregar
+                    {t("add")}
                   </Button>
                 </div>
               ))}
               {filteredProducts.length === 0 && (
                 <p className="text-gray-500 text-center py-4">
-                  No se encontraron productos
+                  {t("noProductsFound")}
                 </p>
               )}
             </div>
@@ -143,9 +146,9 @@ export const InventoryLoader: React.FC<InventoryLoaderProps> = ({
 
         {routeProducts.length === 0 && !showAddProduct && (
           <div className="text-center py-8 text-gray-500">
-            <p>No hay productos asignados</p>
+            <p>{t("noProductsAssigned")}</p>
             <p className="text-sm">
-              Haz clic en Agregar Producto para comenzar
+              {t("clickToAdd")}
             </p>
           </div>
         )}

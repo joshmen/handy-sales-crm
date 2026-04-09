@@ -20,6 +20,7 @@ import {
   FileText,
   Loader2,
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface CommandPaletteProps {
   open: boolean;
@@ -36,6 +37,8 @@ const groupHeadingCls = "[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:
 const itemCls = "flex items-center gap-3 px-2 py-2.5 rounded-lg cursor-pointer text-sm text-foreground aria-selected:bg-accent aria-selected:text-accent-foreground";
 
 export const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onOpenChange }) => {
+  const t = useTranslations('commandPalette');
+  const tc = useTranslations('common');
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
@@ -115,7 +118,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onOpenChan
     <Command.Dialog
       open={open}
       onOpenChange={onOpenChange}
-      label="Buscar"
+      label={tc('search')}
       shouldFilter={false}
       overlayClassName="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100]"
       contentClassName="fixed top-[20%] left-1/2 -translate-x-1/2 w-full max-w-lg z-[101] bg-card border border-border rounded-xl shadow-2xl overflow-hidden focus:outline-none"
@@ -126,7 +129,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onOpenChan
         <Command.Input
           value={query}
           onValueChange={setQuery}
-          placeholder="Buscar clientes, productos, pedidos..."
+          placeholder={t('searchPlaceholder')}
           className="flex-1 h-12 px-3 text-sm bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none"
         />
         {loading && <Loader2 className="h-4 w-4 text-muted-foreground animate-spin flex-shrink-0" />}
@@ -157,47 +160,47 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onOpenChan
           <Command.Empty className="py-8 text-center">
             <Search className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />
             <p className="text-sm text-muted-foreground">
-              No se encontraron resultados para &ldquo;{debouncedQuery}&rdquo;
+              {tc('noResultsFor', { query: debouncedQuery })}
             </p>
           </Command.Empty>
         )}
 
         {/* Quick actions (empty state) */}
         {showQuickActions && !loading && (
-          <Command.Group heading="Acciones rápidas" className={groupHeadingCls}>
+          <Command.Group heading={t('quickActions')} className={groupHeadingCls}>
             <Command.Item value="nuevo-pedido" onSelect={() => navigate('/orders')} className={itemCls}>
               <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-green-100 dark:bg-green-950/40">
                 <Plus className="h-4 w-4 text-green-600 dark:text-green-400" />
               </div>
-              <span>Nuevo pedido</span>
+              <span>{t('newOrder')}</span>
               <ArrowRight className="h-3.5 w-3.5 ml-auto text-muted-foreground/50" />
             </Command.Item>
             <Command.Item value="nuevo-cliente" onSelect={() => navigate('/clients/new')} className={itemCls}>
               <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-blue-100 dark:bg-blue-950/40">
                 <Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               </div>
-              <span>Nuevo cliente</span>
+              <span>{t('newClient')}</span>
               <ArrowRight className="h-3.5 w-3.5 ml-auto text-muted-foreground/50" />
             </Command.Item>
             <Command.Item value="nuevo-producto" onSelect={() => navigate('/products')} className={itemCls}>
               <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-amber-100 dark:bg-amber-950/40">
                 <Package className="h-4 w-4 text-amber-600 dark:text-amber-400" />
               </div>
-              <span>Nuevo producto</span>
+              <span>{t('newProduct')}</span>
               <ArrowRight className="h-3.5 w-3.5 ml-auto text-muted-foreground/50" />
             </Command.Item>
             <Command.Item value="ir-a-reportes" onSelect={() => navigate('/reports')} className={itemCls}>
               <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-purple-100 dark:bg-purple-950/40">
                 <BarChart3 className="h-4 w-4 text-purple-600 dark:text-purple-400" />
               </div>
-              <span>Ir a reportes</span>
+              <span>{t('goToReports')}</span>
               <ArrowRight className="h-3.5 w-3.5 ml-auto text-muted-foreground/50" />
             </Command.Item>
             <Command.Item value="ir-a-configuracion" onSelect={() => navigate('/settings')} className={itemCls}>
               <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-gray-100 dark:bg-gray-800">
                 <Settings className="h-4 w-4 text-gray-600 dark:text-gray-400" />
               </div>
-              <span>Ir a configuración</span>
+              <span>{t('goToSettings')}</span>
               <ArrowRight className="h-3.5 w-3.5 ml-auto text-muted-foreground/50" />
             </Command.Item>
           </Command.Group>
@@ -205,7 +208,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onOpenChan
 
         {/* Clients results */}
         {results.clients.length > 0 && (
-          <Command.Group heading="Clientes" className={groupHeadingCls}>
+          <Command.Group heading={t('clients')} className={groupHeadingCls}>
             {results.clients.map(client => (
               <Command.Item
                 key={`client-${client.id}`}
@@ -230,7 +233,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onOpenChan
 
         {/* Products results */}
         {results.products.length > 0 && (
-          <Command.Group heading="Productos" className={groupHeadingCls}>
+          <Command.Group heading={t('products')} className={groupHeadingCls}>
             {results.products.map(product => (
               <Command.Item
                 key={`product-${product.id}`}
@@ -255,7 +258,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onOpenChan
 
         {/* Orders results */}
         {results.orders.length > 0 && (
-          <Command.Group heading="Pedidos" className={groupHeadingCls}>
+          <Command.Group heading={t('orders')} className={groupHeadingCls}>
             {results.orders.map(order => (
               <Command.Item
                 key={`order-${order.id}`}
@@ -286,15 +289,15 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onOpenChan
         <div className="flex items-center gap-3">
           <span className="flex items-center gap-1">
             <kbd className="inline-flex h-4 items-center rounded border border-border bg-muted px-1 font-mono text-[10px]">↑↓</kbd>
-            navegar
+            {tc('navigate')}
           </span>
           <span className="flex items-center gap-1">
             <kbd className="inline-flex h-4 items-center rounded border border-border bg-muted px-1 font-mono text-[10px]">↵</kbd>
-            abrir
+            {tc('open')}
           </span>
           <span className="flex items-center gap-1">
             <kbd className="inline-flex h-4 items-center rounded border border-border bg-muted px-1 font-mono text-[10px]">esc</kbd>
-            cerrar
+            {tc('close')}
           </span>
         </div>
       </div>

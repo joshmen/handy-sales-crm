@@ -14,9 +14,11 @@ import {
 import { signOut } from 'next-auth/react';
 import { subscriptionService } from '@/services/api/subscriptions';
 import type { SubscriptionPlan, SubscriptionStatus } from '@/types/subscription';
+import { useTranslations } from 'next-intl';
 import { useFormatters } from '@/hooks/useFormatters';
 
 export default function SubscriptionExpiredPage() {
+  const te = useTranslations('subscription.expired');
   const { formatCurrency } = useFormatters();
   const router = useRouter();
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
@@ -73,12 +75,12 @@ export default function SubscriptionExpiredPage() {
             </div>
             <div className="flex-1">
               <h1 className="text-2xl font-bold text-red-900 mb-1">
-                Tu suscripción ha expirado
+                {te('title')}
               </h1>
               <p className="text-red-700 text-sm">
                 {daysLeft !== null && daysLeft > 0
-                  ? `Tienes ${daysLeft} día${daysLeft !== 1 ? 's' : ''} de gracia para renovar. Tu información está segura.`
-                  : 'Para continuar usando Handy Suites, por favor renueva tu suscripción. Tu información está segura.'}
+                  ? te('graceMessage', { days: daysLeft, plural: daysLeft !== 1 ? 's' : '' })
+                  : te('renewMessage')}
               </p>
             </div>
           </div>
@@ -87,10 +89,10 @@ export default function SubscriptionExpiredPage() {
         {/* Plans */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-center mb-1">
-            Elige el plan perfecto para tu negocio
+            {te('choosePlan')}
           </h2>
           <p className="text-center text-gray-500 text-sm mb-8">
-            Todos los planes incluyen actualizaciones y soporte
+            {te('allPlansInclude')}
           </p>
 
           {loading ? (
@@ -113,7 +115,7 @@ export default function SubscriptionExpiredPage() {
                     {isMostPopular && (
                       <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                         <span className="bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-medium">
-                          Más Popular
+                          {te('mostPopular')}
                         </span>
                       </div>
                     )}
@@ -121,15 +123,15 @@ export default function SubscriptionExpiredPage() {
                     <div className="text-center mb-6">
                       <h3 className="text-lg font-bold mb-1">{plan.nombre}</h3>
                       <p className="text-xs text-gray-500 mb-4">
-                        Hasta {plan.maxUsuarios} usuarios
+                        {te('upToUsers', { count: plan.maxUsuarios })}
                       </p>
                       <div className="text-3xl font-bold text-gray-900">
                         {formatPrice(plan.precioMensual)}
-                        <span className="text-sm font-normal text-gray-500">/mes</span>
+                        <span className="text-sm font-normal text-gray-500">{te('perMonth')}</span>
                       </div>
                       {plan.precioAnual > 0 && (
                         <p className="text-xs text-green-600 mt-1">
-                          {formatPrice(plan.precioAnual)}/año (ahorra {Math.round((1 - plan.precioAnual / (plan.precioMensual * 12)) * 100)}%)
+                          {formatPrice(plan.precioAnual)}{te('perYear')} ({te('savePercent', { percent: Math.round((1 - plan.precioAnual / (plan.precioMensual * 12)) * 100) })})
                         </p>
                       )}
                     </div>
@@ -137,26 +139,26 @@ export default function SubscriptionExpiredPage() {
                     <ul className="space-y-2.5 mb-6">
                       <li className="flex items-start gap-2 text-sm">
                         <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                        Hasta {plan.maxUsuarios} usuarios
+                        {te('upToUsers', { count: plan.maxUsuarios })}
                       </li>
                       <li className="flex items-start gap-2 text-sm">
                         <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                        {plan.maxProductos > 0 ? `${plan.maxProductos} productos` : 'Productos ilimitados'}
+                        {plan.maxProductos > 0 ? te('products', { count: plan.maxProductos }) : te('unlimitedProducts')}
                       </li>
                       <li className="flex items-start gap-2 text-sm">
                         <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                        {plan.maxClientesPorMes > 0 ? `${plan.maxClientesPorMes} clientes/mes` : 'Clientes ilimitados'}
+                        {plan.maxClientesPorMes > 0 ? te('clientsPerMonth', { count: plan.maxClientesPorMes }) : te('unlimitedClients')}
                       </li>
                       {plan.incluyeReportes && (
                         <li className="flex items-start gap-2 text-sm">
                           <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                          Reportes avanzados
+                          {te('advancedReports')}
                         </li>
                       )}
                       {plan.incluyeSoportePrioritario && (
                         <li className="flex items-start gap-2 text-sm">
                           <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                          Soporte prioritario
+                          {te('prioritySupport')}
                         </li>
                       )}
                     </ul>
@@ -173,7 +175,7 @@ export default function SubscriptionExpiredPage() {
                       {checkoutLoading === plan.codigo ? (
                         <Loader2 className="h-4 w-4 animate-spin mx-auto" />
                       ) : (
-                        'Activar Plan'
+                        te('activatePlan')
                       )}
                     </button>
                   </div>
@@ -186,16 +188,16 @@ export default function SubscriptionExpiredPage() {
         {/* Contact Options */}
         <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8">
           <h3 className="text-lg font-bold mb-5 text-center">
-            ¿Necesitas ayuda para renovar?
+            {te('needHelp')}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center">
               <div className="p-3 bg-blue-50 rounded-full inline-block mb-3">
                 <Phone className="h-5 w-5 text-blue-600" />
               </div>
-              <h4 className="font-medium text-sm mb-1">Llámanos</h4>
+              <h4 className="font-medium text-sm mb-1">{te('callUs')}</h4>
               <p className="text-sm text-gray-500">+52 555 123 4567</p>
-              <p className="text-xs text-gray-400">Lun-Vie 9am-6pm</p>
+              <p className="text-xs text-gray-400">{te('monFri')}</p>
             </div>
             <div className="text-center">
               <div className="p-3 bg-green-50 rounded-full inline-block mb-3">
@@ -203,7 +205,7 @@ export default function SubscriptionExpiredPage() {
               </div>
               <h4 className="font-medium text-sm mb-1">WhatsApp</h4>
               <p className="text-sm text-gray-500">+52 555 123 4567</p>
-              <p className="text-xs text-gray-400">Respuesta inmediata</p>
+              <p className="text-xs text-gray-400">{te('immediateResponse')}</p>
             </div>
             <div className="text-center">
               <div className="p-3 bg-purple-50 rounded-full inline-block mb-3">
@@ -211,7 +213,7 @@ export default function SubscriptionExpiredPage() {
               </div>
               <h4 className="font-medium text-sm mb-1">Email</h4>
               <p className="text-sm text-gray-500">ventas@handysuites.com</p>
-              <p className="text-xs text-gray-400">24-48 horas</p>
+              <p className="text-xs text-gray-400">{te('responseTime')}</p>
             </div>
           </div>
         </div>
@@ -220,8 +222,8 @@ export default function SubscriptionExpiredPage() {
         <div className="bg-white border border-gray-200 rounded-xl p-5 mb-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
             <div>
-              <h3 className="font-medium text-sm mb-0.5">Métodos de pago aceptados</h3>
-              <p className="text-xs text-gray-500">Pago seguro con encriptación SSL</p>
+              <h3 className="font-medium text-sm mb-0.5">{te('paymentMethods')}</h3>
+              <p className="text-xs text-gray-500">{te('securePayment')}</p>
             </div>
             <div className="flex items-center gap-3 text-gray-500">
               <CreditCard className="h-6 w-6" />
@@ -238,7 +240,7 @@ export default function SubscriptionExpiredPage() {
             onClick={handleLogout}
             className="px-6 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
           >
-            Cerrar Sesión
+            {te('logout')}
           </button>
         </div>
       </div>

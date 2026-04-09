@@ -4,6 +4,11 @@ import React from "react";
 import { useLoading } from "@/contexts/LoadingContext";
 import { Loading } from "./Loading";
 
+const getLoadingText = () => {
+  try { return JSON.parse(localStorage.getItem('company_settings') || '{}').language === 'en' ? 'Loading...' : 'Cargando...'; }
+  catch { return 'Cargando...'; }
+};
+
 export const GlobalLoadingIndicator: React.FC = () => {
   const { isLoading } = useLoading();
 
@@ -15,7 +20,7 @@ export const GlobalLoadingIndicator: React.FC = () => {
         <div className="flex flex-col items-center gap-3">
           <Loading size="lg" className="border-teal-500 border-t-transparent" />
           <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
-            Cargando...
+            {getLoadingText()}
           </span>
         </div>
       </div>

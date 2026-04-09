@@ -8,9 +8,11 @@ import { ShieldAlert, ShieldCheck, ChevronLeft, ChevronRight, Loader2 } from 'lu
 import { impersonationService } from '@/services/api/impersonation';
 import { ImpersonationSession } from '@/types/impersonation';
 import { useFormatters } from '@/hooks/useFormatters';
+import { useTranslations } from 'next-intl';
 
 export const ImpersonationHistoryCard: React.FC = () => {
   const { formatDate } = useFormatters();
+  const t = useTranslations('impersonationHistory');
   const [sessions, setSessions] = useState<ImpersonationSession[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
@@ -39,11 +41,11 @@ export const ImpersonationHistoryCard: React.FC = () => {
   const statusBadge = (status: string) => {
     switch (status) {
       case 'ACTIVE':
-        return <Badge variant="warning" className="text-xs">En curso</Badge>;
+        return <Badge variant="warning" className="text-xs">{t('statusActive')}</Badge>;
       case 'ENDED':
-        return <Badge variant="success" className="text-xs">Finalizada</Badge>;
+        return <Badge variant="success" className="text-xs">{t('statusEnded')}</Badge>;
       case 'EXPIRED':
-        return <Badge variant="secondary" className="text-xs">Expirada</Badge>;
+        return <Badge variant="secondary" className="text-xs">{t('statusExpired')}</Badge>;
       default:
         return <Badge variant="secondary" className="text-xs">{status}</Badge>;
     }
@@ -51,9 +53,9 @@ export const ImpersonationHistoryCard: React.FC = () => {
 
   const accessBadge = (level: string) => {
     if (level === 'READ_ONLY') {
-      return <Badge variant="outline" className="text-xs text-blue-600 border-blue-200 bg-blue-50">Solo lectura</Badge>;
+      return <Badge variant="outline" className="text-xs text-blue-600 border-blue-200 bg-blue-50">{t('readOnly')}</Badge>;
     }
-    return <Badge variant="outline" className="text-xs text-amber-600 border-amber-200 bg-amber-50">Lectura/escritura</Badge>;
+    return <Badge variant="outline" className="text-xs text-amber-600 border-amber-200 bg-amber-50">{t('readWrite')}</Badge>;
   };
 
   return (
@@ -61,23 +63,23 @@ export const ImpersonationHistoryCard: React.FC = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <ShieldAlert className="h-5 w-5" />
-          Accesos de Soporte
+          {t('title')}
         </CardTitle>
         <CardDescription>
-          Historial de accesos del equipo de soporte a su cuenta
+          {t('description')}
         </CardDescription>
       </CardHeader>
       <CardContent>
         {loading ? (
           <div className="flex items-center gap-2 py-6 justify-center text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
-            <span className="text-sm">Cargando historial...</span>
+            <span className="text-sm">{t('loadingHistory')}</span>
           </div>
         ) : sessions.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-8 text-muted-foreground">
             <ShieldCheck className="h-8 w-8 text-green-500" />
-            <p className="text-sm font-medium">Ningún acceso de soporte registrado</p>
-            <p className="text-xs">Su cuenta no ha sido accedida por el equipo de soporte.</p>
+            <p className="text-sm font-medium">{t('noAccessTitle')}</p>
+            <p className="text-xs">{t('noAccessDesc')}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -86,12 +88,12 @@ export const ImpersonationHistoryCard: React.FC = () => {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b text-muted-foreground text-xs">
-                    <th className="text-left py-2 font-medium">Administrador</th>
-                    <th className="text-left py-2 font-medium">Motivo</th>
-                    <th className="text-left py-2 font-medium">Acceso</th>
-                    <th className="text-left py-2 font-medium">Fecha</th>
-                    <th className="text-left py-2 font-medium">Duración</th>
-                    <th className="text-left py-2 font-medium">Estado</th>
+                    <th className="text-left py-2 font-medium">{t('columnAdmin')}</th>
+                    <th className="text-left py-2 font-medium">{t('columnReason')}</th>
+                    <th className="text-left py-2 font-medium">{t('columnAccess')}</th>
+                    <th className="text-left py-2 font-medium">{t('columnDate')}</th>
+                    <th className="text-left py-2 font-medium">{t('columnDuration')}</th>
+                    <th className="text-left py-2 font-medium">{t('columnStatus')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -140,7 +142,7 @@ export const ImpersonationHistoryCard: React.FC = () => {
             {totalPages > 1 && (
               <div className="flex items-center justify-between pt-2">
                 <span className="text-xs text-muted-foreground">
-                  {totalCount} acceso{totalCount !== 1 ? 's' : ''} en total
+                  {t('totalAccess', { count: totalCount })}
                 </span>
                 <div className="flex items-center gap-1">
                   <Button

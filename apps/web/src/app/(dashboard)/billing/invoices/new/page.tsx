@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Plus, Trash2, Loader2 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
@@ -45,6 +46,9 @@ const emptyLine = (key: number): LineItem => ({
 });
 
 export default function NewInvoicePage() {
+  const t = useTranslations('billing.newInvoicePage');
+  const tBilling = useTranslations('billing');
+  const tCommon = useTranslations('common');
   const router = useRouter();
   const { formatCurrency } = useFormatters();
   const [config, setConfig] = useState<ConfiguracionFiscal | null>(null);
@@ -73,7 +77,7 @@ export default function NewInvoicePage() {
         setConfig(cfg);
         setCatalogos(cats);
       } catch {
-        toast({ title: 'Error al cargar configuración fiscal', variant: 'destructive' });
+        toast({ title: t('errorLoadingConfig'), variant: 'destructive' });
       } finally {
         setLoading(false);
       }
@@ -102,15 +106,15 @@ export default function NewInvoicePage() {
 
   const handleSubmit = async (timbrar: boolean) => {
     if (!config) {
-      toast({ title: 'Configure los datos fiscales primero', variant: 'destructive' });
+      toast({ title: t('configureFiscalFirst'), variant: 'destructive' });
       return;
     }
     if (!receptorRfc.trim() || !receptorNombre.trim()) {
-      toast({ title: 'Complete los datos del receptor', variant: 'destructive' });
+      toast({ title: t('completeReceptorData'), variant: 'destructive' });
       return;
     }
     if (lines.some(l => !l.descripcion.trim() || l.valorUnitario <= 0)) {
-      toast({ title: 'Complete todos los conceptos con descripción y precio', variant: 'destructive' });
+      toast({ title: t('completeConceptsData'), variant: 'destructive' });
       return;
     }
 
@@ -154,17 +158,17 @@ export default function NewInvoicePage() {
       if (timbrar && created.id) {
         try {
           await timbrarFactura(created.id);
-          toast({ title: 'Factura creada y timbrada exitosamente' });
+          toast({ title: t('createdAndStamped') });
         } catch {
-          toast({ title: 'Factura creada, pero falló el timbrado. Puede timbrar desde la lista.', variant: 'destructive' });
+          toast({ title: t('stampFailed'), variant: 'destructive' });
         }
       } else {
-        toast({ title: 'Factura guardada como borrador' });
+        toast({ title: t('savedAsDraft') });
       }
 
       router.push('/billing/invoices');
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Error al crear factura';
+      const msg = err instanceof Error ? err.message : t('errorCreating');
       toast({ title: msg, variant: 'destructive' });
     } finally {
       setSaving(false);
@@ -174,7 +178,7 @@ export default function NewInvoicePage() {
   if (loading) return (
     <div role="status" className="flex items-center justify-center min-h-[60vh]">
       <Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" />
-      <span className="sr-only">Cargando...</span>
+      <span className="sr-only">Loading...</span>
     </div>
   );
 
@@ -182,21 +186,21 @@ export default function NewInvoicePage() {
     return (
       <PageHeader
         breadcrumbs={[
-          { label: 'Facturación', href: '/billing' },
-          { label: 'Facturas', href: '/billing/invoices' },
-          { label: 'Nueva' },
+          { label: t('breadcrumbBilling'), href: '/billing' },
+          { label: t('breadcrumbInvoices'), href: '/billing/invoices' },
+          { label: t('breadcrumbNew') },
         ]}
-        title="Nueva Factura"
+        title={t('title')}
       >
         <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-6 text-center">
           <p className="text-amber-800 dark:text-amber-300 font-medium mb-2">
-            Configure sus datos fiscales primero
+            {t('configureFiscalFirst')}
           </p>
           <p className="text-sm text-amber-600 dark:text-amber-400 mb-4">
-            Necesita configurar su RFC, régimen fiscal y certificados CSD antes de poder emitir facturas.
+            {t('configureFiscalDesc')}
           </p>
           <Button onClick={() => router.push('/billing/settings')} className="bg-amber-600 hover:bg-amber-700 text-white">
-            Ir a configuración fiscal
+            {t('goToFiscalSettings')}
           </Button>
         </div>
       </PageHeader>
@@ -206,20 +210,20 @@ export default function NewInvoicePage() {
   return (
     <PageHeader
       breadcrumbs={[
-        { label: 'Facturación', href: '/billing' },
-        { label: 'Facturas', href: '/billing/invoices' },
-        { label: 'Nueva' },
+        { label: t('breadcrumbBilling'), href: '/billing' },
+        { label: t('breadcrumbInvoices'), href: '/billing/invoices' },
+        { label: t('breadcrumbNew') },
       ]}
-      title="Nueva Factura"
-      subtitle={`Emisor: ${config.razonSocial} (${config.rfc})`}
+      title={t('title')}
+      subtitle={t('issuerLabel', { name: config.razonSocial ?? '', rfc: config.rfc ?? '' })}
     >
       <div className="space-y-6 max-w-4xl">
         {/* Datos del comprobante */}
         <section className="bg-card border border-border rounded-xl p-5">
-          <h2 className="text-sm font-semibold text-foreground mb-4">Datos del comprobante</h2>
+          <h2 className="text-sm font-semibold text-foreground mb-4">{t('voucherData')}</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Tipo</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">{t('typeLabel')}</label>
               <select
                 value={tipoComprobante}
                 onChange={e => setTipoComprobante(e.target.value)}
@@ -231,7 +235,7 @@ export default function NewInvoicePage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Método de pago</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">{t('paymentMethod')}</label>
               <select
                 value={metodoPago}
                 onChange={e => setMetodoPago(e.target.value)}
@@ -246,7 +250,7 @@ export default function NewInvoicePage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Forma de pago</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">{t('paymentForm')}</label>
               <select
                 value={formaPago}
                 onChange={e => setFormaPago(e.target.value)}
@@ -258,7 +262,7 @@ export default function NewInvoicePage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Uso CFDI</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">{t('cfdiUse')}</label>
               <select
                 value={usoCfdi}
                 onChange={e => setUsoCfdi(e.target.value)}
@@ -274,10 +278,10 @@ export default function NewInvoicePage() {
 
         {/* Receptor */}
         <section className="bg-card border border-border rounded-xl p-5">
-          <h2 className="text-sm font-semibold text-foreground mb-4">Receptor</h2>
+          <h2 className="text-sm font-semibold text-foreground mb-4">{t('receptor')}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">RFC *</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">{t('rfcRequired')}</label>
               <input
                 type="text"
                 value={receptorRfc}
@@ -288,17 +292,17 @@ export default function NewInvoicePage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Nombre o razón social *</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">{t('businessNameRequired')}</label>
               <input
                 type="text"
                 value={receptorNombre}
                 onChange={e => setReceptorNombre(e.target.value)}
-                placeholder="Nombre del cliente"
+                placeholder={t('clientNamePlaceholder')}
                 className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-green-500/30"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Uso CFDI</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">{t('receptorCfdiUse')}</label>
               <select
                 value={receptorUsoCfdi}
                 onChange={e => setReceptorUsoCfdi(e.target.value)}
@@ -310,7 +314,7 @@ export default function NewInvoicePage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Código postal fiscal</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">{t('fiscalPostalCode')}</label>
               <input
                 type="text"
                 value={receptorDomicilioFiscal}
@@ -326,26 +330,26 @@ export default function NewInvoicePage() {
         {/* Conceptos */}
         <section className="bg-card border border-border rounded-xl p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-foreground">Conceptos</h2>
+            <h2 className="text-sm font-semibold text-foreground">{t('concepts')}</h2>
             <Button variant="outline" size="sm" onClick={addLine}>
-              <Plus className="w-3.5 h-3.5 mr-1" /> Agregar línea
+              <Plus className="w-3.5 h-3.5 mr-1" /> {t('addLine')}
             </Button>
           </div>
           <div className="space-y-4">
             {lines.map((line, idx) => (
               <div key={line.key} className="grid grid-cols-12 gap-2 items-end">
                 <div className="col-span-12 sm:col-span-4">
-                  <label className="block text-xs text-muted-foreground mb-1">Descripción *</label>
+                  <label className="block text-xs text-muted-foreground mb-1">{t('descriptionRequired')}</label>
                   <input
                     type="text"
                     value={line.descripcion}
                     onChange={e => updateLine(line.key, 'descripcion', e.target.value)}
-                    placeholder="Producto o servicio"
+                    placeholder={t('productOrServicePlaceholder')}
                     className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-green-500/30"
                   />
                 </div>
                 <div className="col-span-4 sm:col-span-2">
-                  <label className="block text-xs text-muted-foreground mb-1">Cantidad</label>
+                  <label className="block text-xs text-muted-foreground mb-1">{t('quantity')}</label>
                   <input
                     type="number"
                     min="0.000001"
@@ -356,7 +360,7 @@ export default function NewInvoicePage() {
                   />
                 </div>
                 <div className="col-span-4 sm:col-span-2">
-                  <label className="block text-xs text-muted-foreground mb-1">Precio unitario</label>
+                  <label className="block text-xs text-muted-foreground mb-1">{t('unitPrice')}</label>
                   <input
                     type="number"
                     min="0.01"
@@ -367,7 +371,7 @@ export default function NewInvoicePage() {
                   />
                 </div>
                 <div className="col-span-3 sm:col-span-2">
-                  <label className="block text-xs text-muted-foreground mb-1">Importe</label>
+                  <label className="block text-xs text-muted-foreground mb-1">{t('amount')}</label>
                   <div className="px-3 py-2 text-sm bg-muted/50 border border-border rounded-lg tabular-nums">
                     {formatCurrency(line.cantidad * line.valorUnitario - line.descuento)}
                   </div>
@@ -391,15 +395,15 @@ export default function NewInvoicePage() {
         <section className="bg-card border border-border rounded-xl p-5">
           <div className="max-w-xs ml-auto space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Subtotal</span>
+              <span className="text-muted-foreground">{t('subtotal')}</span>
               <span className="font-medium tabular-nums">{formatCurrency(subtotal)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">IVA (16%)</span>
+              <span className="text-muted-foreground">{t('ivaLabel')}</span>
               <span className="font-medium tabular-nums">{formatCurrency(iva)}</span>
             </div>
             <div className="border-t border-border pt-2 flex justify-between text-base">
-              <span className="font-semibold">Total</span>
+              <span className="font-semibold">{tCommon('total')}</span>
               <span className="font-bold tabular-nums text-green-600 dark:text-green-400">{formatCurrency(total)}</span>
             </div>
           </div>
@@ -407,13 +411,13 @@ export default function NewInvoicePage() {
 
         {/* Observaciones */}
         <section className="bg-card border border-border rounded-xl p-5">
-          <label className="block text-xs font-medium text-muted-foreground mb-1">Observaciones (opcional)</label>
+          <label className="block text-xs font-medium text-muted-foreground mb-1">{t('observationsOptional')}</label>
           <textarea
             value={observaciones}
             onChange={e => setObservaciones(e.target.value)}
             rows={2}
             className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-green-500/30 resize-none"
-            placeholder="Notas internas o comentarios..."
+            placeholder={t('observationsPlaceholder')}
           />
         </section>
 
@@ -424,7 +428,7 @@ export default function NewInvoicePage() {
             onClick={() => router.push('/billing/invoices')}
             disabled={saving}
           >
-            Cancelar
+            {tCommon('cancel')}
           </Button>
           <Button
             variant="outline"
@@ -432,7 +436,7 @@ export default function NewInvoicePage() {
             disabled={saving}
           >
             {saving && !timbrarAfter ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-            Guardar borrador
+            {t('saveDraft')}
           </Button>
           <Button
             onClick={() => handleSubmit(true)}
@@ -440,7 +444,7 @@ export default function NewInvoicePage() {
             className="bg-green-600 hover:bg-green-700 text-white"
           >
             {saving && timbrarAfter ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-            Guardar y timbrar
+            {t('saveAndStamp')}
           </Button>
         </div>
       </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -12,6 +13,7 @@ import { datosEmpresaService } from '@/services/api/datosEmpresa';
 import type { DatosEmpresa, DatosEmpresaUpdate } from '@/types/datosEmpresa';
 
 export const PerfilEmpresaTab: React.FC = () => {
+  const t = useTranslations('settings.companyProfile');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +60,7 @@ export const PerfilEmpresaTab: React.FC = () => {
         setForm(formData);
         setOriginal(formData);
       } catch (err) {
-        setError('No se pudieron cargar los datos de la empresa');
+        setError(t('errorLoading'));
         console.error('Error loading datos empresa:', err);
       } finally {
         setLoading(false);
@@ -80,9 +82,9 @@ export const PerfilEmpresaTab: React.FC = () => {
       const formData = mapToForm(result);
       setForm(formData);
       setOriginal(formData);
-      toast.success('Datos de empresa actualizados correctamente');
+      toast.success(t('savedSuccess'));
     } catch (err) {
-      toast.error('Error al guardar los datos de empresa');
+      toast.error(t('saveError'));
       console.error('Error saving datos empresa:', err);
     } finally {
       setSaving(false);
@@ -98,7 +100,7 @@ export const PerfilEmpresaTab: React.FC = () => {
       <Card>
         <CardContent className="flex items-center justify-center py-12">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          <span className="ml-2 text-muted-foreground">Cargando datos de empresa...</span>
+          <span className="ml-2 text-muted-foreground">{t('loadingData')}</span>
         </CardContent>
       </Card>
     );
@@ -120,30 +122,30 @@ export const PerfilEmpresaTab: React.FC = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Building2 className="h-5 w-5" />
-          Perfil de Empresa
+          {t('title')}
         </CardTitle>
         <p className="text-sm text-muted-foreground">
-          Datos fiscales y de contacto de tu empresa
+          {t('subtitle')}
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Datos fiscales */}
         <div className="space-y-4">
           <h3 className="text-sm font-medium text-muted-foreground">
-            Datos Fiscales
+            {t('fiscalData')}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="razonSocial">Razón Social</Label>
+              <Label htmlFor="razonSocial">{t('razonSocial')}</Label>
               <Input
                 id="razonSocial"
                 value={form.razonSocial}
                 onChange={e => handleChange('razonSocial', e.target.value)}
-                placeholder="Distribuidora XYZ S.A. de C.V."
+                placeholder={t('razonSocialPlaceholder')}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="identificadorFiscal">Identificador Fiscal</Label>
+              <Label htmlFor="identificadorFiscal">{t('identificadorFiscal')}</Label>
               <Input
                 id="identificadorFiscal"
                 value={form.identificadorFiscal}
@@ -152,11 +154,11 @@ export const PerfilEmpresaTab: React.FC = () => {
                 maxLength={20}
               />
               <p className="text-xs text-muted-foreground">
-                RFC (México), NIT (Colombia), CUIT (Argentina), CNPJ (Brasil), RUT (Chile), RUC (Perú)
+                {t('identificadorFiscalHint')}
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="tipoIdentificadorFiscal">Tipo de Identificador</Label>
+              <Label htmlFor="tipoIdentificadorFiscal">{t('tipoIdentificador')}</Label>
               <select
                 id="tipoIdentificadorFiscal"
                 value={form.tipoIdentificadorFiscal || 'RFC'}
@@ -179,44 +181,44 @@ export const PerfilEmpresaTab: React.FC = () => {
         {/* Contacto */}
         <div className="space-y-4">
           <h3 className="text-sm font-medium text-muted-foreground">
-            Contacto
+            {t('contact')}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="contacto">Persona de Contacto</Label>
+              <Label htmlFor="contacto">{t('contactPerson')}</Label>
               <Input
                 id="contacto"
                 value={form.contacto}
                 onChange={e => handleChange('contacto', e.target.value)}
-                placeholder="Juan Pérez"
+                placeholder={t('contactPersonPlaceholder')}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Correo Electrónico</Label>
+              <Label htmlFor="email">{t('emailLabel')}</Label>
               <Input
                 id="email"
                 type="email"
                 value={form.email}
                 onChange={e => handleChange('email', e.target.value)}
-                placeholder="contacto@empresa.com"
+                placeholder={t('emailPlaceholder')}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="telefono">Teléfono</Label>
+              <Label htmlFor="telefono">{t('phoneLabel')}</Label>
               <Input
                 id="telefono"
                 value={form.telefono}
                 onChange={e => handleChange('telefono', e.target.value)}
-                placeholder="+52 644 123 4567"
+                placeholder={t('phonePlaceholder')}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="sitioWeb">Sitio Web</Label>
+              <Label htmlFor="sitioWeb">{t('website')}</Label>
               <Input
                 id="sitioWeb"
                 value={form.sitioWeb}
                 onChange={e => handleChange('sitioWeb', e.target.value)}
-                placeholder="https://www.empresa.com"
+                placeholder={t('websitePlaceholder')}
               />
             </div>
           </div>
@@ -227,44 +229,44 @@ export const PerfilEmpresaTab: React.FC = () => {
         {/* Dirección */}
         <div className="space-y-4">
           <h3 className="text-sm font-medium text-muted-foreground">
-            Dirección
+            {t('addressSection')}
           </h3>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="direccion">Calle y Número</Label>
+              <Label htmlFor="direccion">{t('streetAndNumber')}</Label>
               <Input
                 id="direccion"
                 value={form.direccion}
                 onChange={e => handleChange('direccion', e.target.value)}
-                placeholder="Av. Reforma 500, Col. Centro"
+                placeholder={t('streetPlaceholder')}
               />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="ciudad">Ciudad</Label>
+                <Label htmlFor="ciudad">{t('city')}</Label>
                 <Input
                   id="ciudad"
                   value={form.ciudad}
                   onChange={e => handleChange('ciudad', e.target.value)}
-                  placeholder="Ciudad Obregón"
+                  placeholder={t('cityPlaceholder')}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="estado">Estado</Label>
+                <Label htmlFor="estado">{t('state')}</Label>
                 <Input
                   id="estado"
                   value={form.estado}
                   onChange={e => handleChange('estado', e.target.value)}
-                  placeholder="Sonora"
+                  placeholder={t('statePlaceholder')}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="codigoPostal">Código Postal</Label>
+                <Label htmlFor="codigoPostal">{t('postalCode')}</Label>
                 <Input
                   id="codigoPostal"
                   value={form.codigoPostal}
                   onChange={e => handleChange('codigoPostal', e.target.value)}
-                  placeholder="85000"
+                  placeholder={t('postalCodePlaceholder')}
                   maxLength={5}
                 />
               </div>
@@ -276,12 +278,12 @@ export const PerfilEmpresaTab: React.FC = () => {
 
         {/* Descripción */}
         <div className="space-y-2">
-          <Label htmlFor="descripcion">Descripción</Label>
+          <Label htmlFor="descripcion">{t('descriptionLabel')}</Label>
           <textarea
             id="descripcion"
             value={form.descripcion}
             onChange={e => handleChange('descripcion', e.target.value)}
-            placeholder="Breve descripción de la empresa y su giro..."
+            placeholder={t('descriptionPlaceholder')}
             rows={3}
             className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
           />
@@ -291,7 +293,7 @@ export const PerfilEmpresaTab: React.FC = () => {
         <div className="flex justify-end gap-3">
           {hasChanges && (
             <Button variant="outline" onClick={handleReset} disabled={saving}>
-              Descartar cambios
+              {t('discardChanges')}
             </Button>
           )}
           <Button onClick={handleSave} disabled={saving || !hasChanges}>
@@ -300,7 +302,7 @@ export const PerfilEmpresaTab: React.FC = () => {
             ) : (
               <Save className="mr-2 h-4 w-4" />
             )}
-            {saving ? 'Guardando...' : 'Guardar cambios'}
+            {saving ? t('saving') : t('saveChanges')}
           </Button>
         </div>
       </CardContent>

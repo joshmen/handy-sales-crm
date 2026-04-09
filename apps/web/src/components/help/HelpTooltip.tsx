@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Info } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/Popover';
 import { tooltips } from '@/data/help-content';
 
@@ -11,7 +12,10 @@ interface HelpTooltipProps {
 }
 
 export function HelpTooltip({ tooltipKey, className }: HelpTooltipProps) {
-  const text = tooltips[tooltipKey];
+  const t = useTranslations('tooltips');
+  // Try i18n first, fallback to hardcoded help-content
+  let text: string;
+  try { text = t(tooltipKey); } catch { text = tooltips[tooltipKey]; }
   if (!text) return null;
 
   return (
@@ -20,7 +24,7 @@ export function HelpTooltip({ tooltipKey, className }: HelpTooltipProps) {
         <button
           type="button"
           className={`inline-flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors focus:outline-none ${className ?? ''}`}
-          aria-label="Más información"
+          aria-label={t('moreInfo')}
         >
           <Info className="w-3.5 h-3.5" />
         </button>

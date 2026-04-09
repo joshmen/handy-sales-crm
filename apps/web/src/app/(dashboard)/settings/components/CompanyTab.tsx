@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -60,6 +61,8 @@ export const CompanyTab: React.FC<CompanyTabProps> = ({
   deleteLogo,
   settings,
 }) => {
+  const t = useTranslations('settings.company');
+
   const handleLogoUpload = async (file: File) => {
     const result = await uploadLogo(file);
     if (result) {
@@ -73,22 +76,22 @@ export const CompanyTab: React.FC<CompanyTabProps> = ({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Configuración de Empresa</CardTitle>
+        <CardTitle>{t('title')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="company-name">Nombre de la Empresa</Label>
+            <Label htmlFor="company-name">{t('companyName')}</Label>
             <Input
               id="company-name"
               value={companySettings.name}
               onChange={e => setCompanySettings({ ...companySettings, name: e.target.value })}
-              placeholder="Tu empresa"
+              placeholder={t('companyNamePlaceholder')}
             />
           </div>
 
           <div className="space-y-2">
-            <Label>Logo de la Empresa</Label>
+            <Label>{t('companyLogo')}</Label>
             <div className="flex items-center gap-4">
               <ImageUpload
                 variant="avatar"
@@ -98,7 +101,7 @@ export const CompanyTab: React.FC<CompanyTabProps> = ({
                 fallbackClassName="bg-emerald-600/15 text-emerald-700 dark:text-emerald-400"
                 size="md"
                 maxSizeMB={2}
-                hint="PNG, JPG o WebP. Máx. 2 MB."
+                hint={t('logoHint')}
                 disabled={isUpdating}
                 onUpload={handleLogoUpload}
                 onDelete={deleteLogo}
@@ -109,11 +112,11 @@ export const CompanyTab: React.FC<CompanyTabProps> = ({
           <Separator />
 
           <div className="space-y-2">
-            <Label>Colores de la Marca</Label>
+            <Label>{t('brandColors')}</Label>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="primary-color" className="text-sm">
-                  Color Primario
+                  {t('primaryColor')}
                 </Label>
                 <div className="flex items-center gap-2">
                   <Input
@@ -143,7 +146,7 @@ export const CompanyTab: React.FC<CompanyTabProps> = ({
 
               <div className="space-y-2">
                 <Label htmlFor="secondary-color" className="text-sm">
-                  Color Secundario
+                  {t('secondaryColor')}
                 </Label>
                 <div className="flex items-center gap-2">
                   <Input
@@ -172,7 +175,7 @@ export const CompanyTab: React.FC<CompanyTabProps> = ({
               </div>
             </div>
             <p className="text-xs text-muted-foreground">
-              Los colores se aplicarán a botones y elementos de la interfaz
+              {t('colorsHint')}
             </p>
           </div>
         </div>
@@ -195,7 +198,7 @@ export const CompanyTab: React.FC<CompanyTabProps> = ({
             disabled={isUpdating || !hasChanges}
           >
             {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-            {isUpdating ? 'Guardando...' : 'Guardar configuración'}
+            {isUpdating ? t('saving') : t('saveConfig')}
           </Button>
         </div>
       </CardContent>

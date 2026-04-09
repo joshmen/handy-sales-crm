@@ -63,6 +63,7 @@ import {
 } from '@/services/api/monitoring';
 import { useFormatters } from '@/hooks/useFormatters';
 import { formatDate as libFmtDate } from '@/lib/formatters';
+import { useTranslations } from 'next-intl';
 
 const PAGE_SIZE = 20;
 
@@ -174,6 +175,7 @@ const API_NAMES: { key: keyof LogLevels; label: string }[] = [
 ];
 
 function LogLevelControls() {
+  const t = useTranslations('admin.crashReports');
   const [open, setOpen] = useState(false);
   const [levels, setLevels] = useState<LogLevels | null>(null);
   const [draft, setDraft] = useState<Record<keyof LogLevels, LogLevelValue>>({
@@ -198,7 +200,7 @@ function LogLevelControls() {
         });
       })
       .catch(() => {
-        toast.error('No se pudieron cargar los niveles de logging');
+        toast.error(t('logLevelLoadError'));
       })
       .finally(() => setLoadingLevels(false));
   }, [open, levels]);
@@ -232,10 +234,10 @@ function LogLevelControls() {
       await Promise.all(changes.map(c => monitoringService.setLogLevel(c.apiName, c.level)));
       setLevels({ ...draft });
       toast.success(
-        `Nivel de logging actualizado para ${changes.length} servicio${changes.length > 1 ? 's' : ''}`
+        t('logLevelUpdated', { count: changes.length })
       );
     } catch {
-      toast.error('Error al aplicar los niveles de logging');
+      toast.error(t('logLevelError'));
     } finally {
       setApplying(false);
     }
@@ -249,7 +251,7 @@ function LogLevelControls() {
       >
         <span className="flex items-center gap-2 text-sm font-semibold text-gray-700">
           <GearSix size={18} weight="duotone" className="text-gray-500" />
-          Nivel de Logging
+          {t('logLevel')}
         </span>
         {open ? (
           <CaretDown size={16} className="text-gray-400" />
@@ -328,6 +330,7 @@ function LogLevelControls() {
 }
 
 function CloudWatchTab() {
+  const t = useTranslations('admin.crashReports');
   const [stats, setStats] = useState<MonitoringStats | null>(null);
   const [recentErrors, setRecentErrors] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -411,7 +414,7 @@ function CloudWatchTab() {
                 <SelectValue placeholder="Log Group" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ALL">Todos los servicios</SelectItem>
+                <SelectItem value="ALL">{t('allServices')}</SelectItem>
                 <SelectItem value="api-main">api-main</SelectItem>
                 <SelectItem value="api-billing">api-billing</SelectItem>
                 <SelectItem value="api-mobile">api-mobile</SelectItem>
@@ -436,7 +439,7 @@ function CloudWatchTab() {
           </button>
           <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
-            Actualizar
+            {t('apply')}
           </Button>
         </div>
       </div>
@@ -446,7 +449,7 @@ function CloudWatchTab() {
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">Errores 24h</p>
+              <p className="text-sm font-medium text-gray-500">{t('errors24h')}</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
                 {loading ? (
                   <span className="inline-block h-8 w-12 bg-gray-200 rounded-md animate-pulse" />
@@ -464,7 +467,7 @@ function CloudWatchTab() {
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">Warnings 24h</p>
+              <p className="text-sm font-medium text-gray-500">{t('warnings24h')}</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
                 {loading ? (
                   <span className="inline-block h-8 w-12 bg-gray-200 rounded-md animate-pulse" />
@@ -482,7 +485,7 @@ function CloudWatchTab() {
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">Crashes 24h</p>
+              <p className="text-sm font-medium text-gray-500">{t('crashes24h')}</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
                 {loading ? (
                   <span className="inline-block h-8 w-12 bg-gray-200 rounded-md animate-pulse" />
@@ -500,7 +503,7 @@ function CloudWatchTab() {
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">APIs con errores</p>
+              <p className="text-sm font-medium text-gray-500">{t('apisWithErrors')}</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
                 {loading ? (
                   <span className="inline-block h-8 w-12 bg-gray-200 rounded-md animate-pulse" />
@@ -518,12 +521,12 @@ function CloudWatchTab() {
 
       {/* Bar Chart — Errors by Hour */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-        <h3 className="text-sm font-semibold text-gray-700 mb-4">Errores por hora (ultimas 24h)</h3>
+        <h3 className="text-sm font-semibold text-gray-700 mb-4">{t('errorsByHour')}</h3>
         {loading ? (
           <div className="h-64 w-full bg-gray-50 rounded-lg animate-pulse" />
         ) : chartData.length === 0 ? (
           <div className="h-64 flex items-center justify-center text-sm text-gray-400">
-            Sin datos en las ultimas 24 horas
+            {t('noDataLast24h')}
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={280}>
@@ -545,7 +548,7 @@ function CloudWatchTab() {
       {/* Recent Errors Table */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100">
-          <h3 className="text-sm font-semibold text-gray-700">Errores recientes</h3>
+          <h3 className="text-sm font-semibold text-gray-700">{t('recentErrors')}</h3>
         </div>
 
         {errorsLoading ? (
@@ -559,8 +562,8 @@ function CloudWatchTab() {
         ) : recentErrors.length === 0 ? (
           <div className="px-6 py-12 text-center">
             <CheckCircle size={48} weight="duotone" className="mx-auto text-green-300 mb-3" />
-            <p className="text-gray-500 text-sm">Sin errores recientes</p>
-            <p className="text-gray-400 text-xs mt-1">No se encontraron errores para los filtros seleccionados</p>
+            <p className="text-gray-500 text-sm">{t('noRecentErrors')}</p>
+            <p className="text-gray-400 text-xs mt-1">{t('noRecentErrorsDesc')}</p>
           </div>
         ) : (
           <>
@@ -683,6 +686,7 @@ function CloudWatchTab() {
 // ============ MOBILE CRASHES TAB ============
 
 function MobileCrashesTab() {
+  const t = useTranslations('admin.crashReports');
   const { isConnected, on, off } = useSignalR();
 
   // Data state
@@ -746,7 +750,7 @@ function MobileCrashesTab() {
       console.error('Error loading crash reports:', error);
       toast({
         title: 'Error',
-        description: 'No se pudieron cargar los crash reports',
+        description: t('loadError'),
         variant: 'destructive',
       });
     } finally {
@@ -831,7 +835,7 @@ function MobileCrashesTab() {
     try {
       setResolverLoading(true);
       await crashReportService.marcarResuelto(selectedReport.id, resolverNota || undefined);
-      toast.success('Crash report marcado como resuelto');
+      toast.success(t('crashResolved'));
       setResolverOpen(false);
       setResolverNota('');
       loadReports();
@@ -840,7 +844,7 @@ function MobileCrashesTab() {
         prev ? { ...prev, resuelto: true, notaResolucion: resolverNota || null } : null
       );
     } catch {
-      toast.error('No se pudo marcar como resuelto');
+      toast.error(t('crashResolveError'));
     } finally {
       setResolverLoading(false);
     }
@@ -868,7 +872,7 @@ function MobileCrashesTab() {
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">Hoy</p>
+              <p className="text-sm font-medium text-gray-500">{t('today')}</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
                 {statsLoading ? (
                   <span className="inline-block h-8 w-12 bg-gray-200 rounded-md animate-pulse" />
@@ -886,7 +890,7 @@ function MobileCrashesTab() {
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">Sin resolver</p>
+              <p className="text-sm font-medium text-gray-500">{t('unresolved')}</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
                 {statsLoading ? (
                   <span className="inline-block h-8 w-12 bg-gray-200 rounded-md animate-pulse" />
@@ -904,7 +908,7 @@ function MobileCrashesTab() {
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">Crashes</p>
+              <p className="text-sm font-medium text-gray-500">{t('crashes')}</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
                 {statsLoading ? (
                   <span className="inline-block h-8 w-12 bg-gray-200 rounded-md animate-pulse" />
@@ -922,7 +926,7 @@ function MobileCrashesTab() {
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">Errors</p>
+              <p className="text-sm font-medium text-gray-500">{t('errors')}</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
                 {statsLoading ? (
                   <span className="inline-block h-8 w-12 bg-gray-200 rounded-md animate-pulse" />
@@ -950,7 +954,7 @@ function MobileCrashesTab() {
                 <SelectValue placeholder="Severidad" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ALL">Todas las severidades</SelectItem>
+                <SelectItem value="ALL">{t('allSeverities')}</SelectItem>
                 <SelectItem value="CRASH">Crash</SelectItem>
                 <SelectItem value="ERROR">Error</SelectItem>
                 <SelectItem value="WARNING">Warning</SelectItem>
@@ -964,9 +968,9 @@ function MobileCrashesTab() {
                 <SelectValue placeholder="Estado" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ALL">Todos los estados</SelectItem>
-                <SelectItem value="false">Pendientes</SelectItem>
-                <SelectItem value="true">Resueltos</SelectItem>
+                <SelectItem value="ALL">{t('allStatuses')}</SelectItem>
+                <SelectItem value="false">{t('pending')}</SelectItem>
+                <SelectItem value="true">{t('resolved')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -976,7 +980,7 @@ function MobileCrashesTab() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Buscar por version de app..."
+                placeholder={t('searchByVersion')}
                 value={searchVersion}
                 onChange={e => setSearchVersion(e.target.value)}
                 className="w-full h-10 pl-10 pr-8 rounded-md border border-input bg-background text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
@@ -1358,25 +1362,27 @@ function MobileCrashesTab() {
 // ============ MAIN PAGE ============
 
 export default function CrashReportsPage() {
+  const t = useTranslations('admin.crashReports');
+  const ta = useTranslations('admin');
   const [activeTab, setActiveTab] = useState<ActiveTab>('cloudwatch');
 
   return (
     <div className="space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center space-x-2 text-sm text-gray-500">
-        <span>Administracion</span>
+        <span>{ta('breadcrumb')}</span>
         <ChevronRight className="h-4 w-4" />
-        <span className="text-gray-900 font-medium">Monitor de Errores</span>
+        <span className="text-gray-900 font-medium">{t('title')}</span>
       </nav>
 
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
           <Bug size={28} weight="duotone" className="text-red-500" />
-          Monitor de Errores
+          {t('title')}
         </h1>
         <p className="text-sm text-gray-500 mt-1">
-          Monitoreo centralizado de errores en todos los servicios
+          {t('subtitle')}
         </p>
       </div>
 
@@ -1393,7 +1399,7 @@ export default function CrashReportsPage() {
           >
             <span className="flex items-center gap-2">
               <CloudArrowUp size={16} weight="duotone" />
-              Monitor CloudWatch
+              {t('tabCloudWatch')}
             </span>
           </button>
           <button
@@ -1406,7 +1412,7 @@ export default function CrashReportsPage() {
           >
             <span className="flex items-center gap-2">
               <DeviceMobile size={16} weight="duotone" />
-              Crashes Movil
+              {t('tabMobileCrashes')}
             </span>
           </button>
         </nav>

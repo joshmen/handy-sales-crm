@@ -7,6 +7,7 @@ import Papa from 'papaparse';
 import { importFilteredCsv, downloadTemplate, ImportResult, ImportEntity } from '@/services/api/importExport';
 import { toast } from '@/hooks/useToast';
 import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
+import { useTranslations } from 'next-intl';
 
 const MAX_FILE_SIZE_MB = 5;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
@@ -25,6 +26,8 @@ interface CsvImportModalProps {
 type Step = 'upload' | 'preview' | 'result';
 
 export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess, infoNote }: CsvImportModalProps) {
+  const t = useTranslations('common.csvImport');
+  const tc = useTranslations('common');
   const drawerRef = useRef<DrawerHandle>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -119,12 +122,12 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
     setParseError(null);
 
     if (!selectedFile.name.toLowerCase().endsWith('.csv')) {
-      toast.error('Solo se aceptan archivos CSV');
+      toast.error(t('onlyCsvAccepted'));
       return;
     }
 
     if (selectedFile.size > MAX_FILE_SIZE_BYTES) {
-      toast.error(`El archivo excede el límite de ${MAX_FILE_SIZE_MB} MB`);
+      toast.error(t('fileTooLarge', { size: MAX_FILE_SIZE_MB }));
       return;
     }
 
@@ -135,7 +138,7 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
       complete: (results) => {
         const data = results.data as string[][];
         if (data.length < 2) {
-          setParseError('El archivo no contiene datos (solo encabezados o está vacío)');
+          setParseError(t('noDataInFile'));
           return;
         }
 
@@ -143,7 +146,7 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
         const csvRows = data.slice(1).filter(row => !row.every(cell => !cell || cell.trim() === ''));
 
         if (csvRows.length === 0) {
-          setParseError('El archivo no contiene filas de datos');
+          setParseError(t('noDataRows'));
           return;
         }
 
@@ -154,7 +157,7 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
         setStep('preview');
       },
       error: () => {
-        setParseError('Error al leer el archivo CSV');
+        setParseError(t('errorReadingCsv'));
       }
     });
   }, []);
@@ -202,7 +205,7 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
 
   const handleImport = async () => {
     if (selectedCount === 0) {
-      toast.error('Selecciona al menos una fila para importar');
+      toast.error(t('selectAtLeastOne'));
       return;
     }
 
@@ -215,17 +218,17 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
       setStep('result');
 
       if (importResult.importados > 0) {
-        toast.success(`${importResult.importados} ${entityLabel} importados correctamente`);
+        toast.success(t('importedSuccessfully', { count: importResult.importados, entity: entityLabel }));
         onSuccess?.();
       }
       if (importResult.errores > 0) {
-        toast.error(`${importResult.errores} filas con errores`);
+        toast.error(t('rowsWithErrors', { count: importResult.errores }));
       }
     } catch (err: unknown) {
       console.error('Error al importar:', err);
 
       // Extract detailed error message from backend response
-      let errorMessage = 'Error desconocido al importar el archivo';
+      let errorMessage = t('errorUnknown');
 
       if (err && typeof err === 'object' && 'response' in err) {
         const axiosErr = err as { response?: { status?: number; data?: Record<string, unknown> }; message?: string };
@@ -233,35 +236,33 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
         const data = axiosErr.response?.data;
 
         if (status === 400) {
-          // Backend validation: { error: "mensaje" }
-          errorMessage = (data?.error as string) || (data?.message as string) || 'Archivo inválido — revisa el formato CSV';
+          errorMessage = (data?.error as string) || (data?.message as string) || t('errorBadRequest');
         } else if (status === 401) {
-          errorMessage = 'Sesión expirada — vuelve a iniciar sesión e intenta de nuevo';
+          errorMessage = t('errorSessionExpired');
         } else if (status === 413) {
-          errorMessage = 'El archivo es demasiado grande para el servidor';
+          errorMessage = t('errorFileTooLarge');
         } else if (status === 500) {
-          // Server error — often CsvHelper parsing failure
           const serverMsg = (data?.message as string) || (data?.title as string) || '';
           if (serverMsg.toLowerCase().includes('header') || serverMsg.toLowerCase().includes('csv')) {
-            errorMessage = `Error al procesar el CSV en el servidor. Verifica que los encabezados coincidan con el template: ${headers.join(', ')}`;
+            errorMessage = t('errorServerCsv', { headers: headers.join(', ') });
           } else {
             errorMessage = serverMsg
-              ? `Error del servidor: ${serverMsg}`
-              : 'Error interno del servidor — revisa que el formato del CSV sea correcto y los encabezados coincidan con el template';
+              ? t('errorServer', { message: serverMsg })
+              : t('errorServerGeneric');
           }
         } else if (status) {
-          errorMessage = `Error ${status}: ${(data?.error as string) || (data?.message as string) || 'respuesta inesperada del servidor'}`;
+          errorMessage = t('errorStatus', { status, message: (data?.error as string) || (data?.message as string) || t('errorStatusFallback') });
         }
       } else if (err instanceof Error) {
         if (err.message.includes('Network Error') || err.message.includes('timeout')) {
-          errorMessage = 'Error de red — verifica tu conexión a internet y que el servidor esté disponible';
+          errorMessage = t('errorNetwork');
         } else {
           errorMessage = err.message;
         }
       }
 
       setImportError(errorMessage);
-      toast.error('Error al importar — revisa los detalles');
+      toast.error(t('errorImporting'));
     } finally {
       setImporting(false);
     }
@@ -270,10 +271,10 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
   const handleDownloadTemplate = async () => {
     try {
       await downloadTemplate(entity);
-      toast.success('Template descargado');
+      toast.success(t('templateDownloaded'));
     } catch (err) {
       console.error('Error al descargar template:', err);
-      toast.error('Error al descargar template');
+      toast.error(t('errorDownloadingTemplate'));
     }
   };
 
@@ -320,13 +321,13 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
             onClick={handleReset}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
           >
-            Importar otro archivo
+            {t('importAnother')}
           </button>
           <button
             onClick={handleClose}
             className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700"
           >
-            Cerrar
+            {t('close')}
           </button>
         </div>
       );
@@ -335,14 +336,14 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
       return (
         <div className="flex items-center justify-between">
           <span className="text-xs text-gray-500">
-            {selectedCount} de {totalRows} filas seleccionadas
+            {t('selectedOfTotalRows', { selected: selectedCount, total: totalRows })}
           </span>
           <div className="flex items-center gap-3">
             <button
               onClick={handleBackToUpload}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
             >
-              Atrás
+              {t('back')}
             </button>
             <button
               onClick={handleImport}
@@ -352,12 +353,12 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
               {importing ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Importando...
+                  {t('importing')}
                 </>
               ) : (
                 <>
                   <Upload className="w-4 h-4" />
-                  Importar {selectedCount} {selectedCount === 1 ? 'fila' : 'filas'}
+                  {t('importBtn', { count: selectedCount, rowLabel: selectedCount === 1 ? t('row') : t('rows') })}
                 </>
               )}
             </button>
@@ -372,7 +373,7 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
           onClick={() => drawerRef.current?.requestClose()}
           className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
         >
-          Cancelar
+          {tc('cancel')}
         </button>
       </div>
     );
@@ -383,7 +384,7 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
   const stepIndicator = (
     <div className="flex items-center gap-2 mb-4">
       {(['upload', 'preview', 'result'] as Step[]).map((s, i) => {
-        const labels = ['Archivo', 'Revisión', 'Resultado'];
+        const labels = [t('stepFile'), t('stepReview'), t('stepResult')];
         const isActive = s === step;
         const isCompleted = (['upload', 'preview', 'result'].indexOf(step)) > i;
         return (
@@ -412,7 +413,7 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
       ref={drawerRef}
       isOpen={isOpen}
       onClose={handleClose}
-      title={`Importar ${entityLabel}`}
+      title={t('importTitle', { entity: entityLabel })}
       icon={<Upload className="w-5 h-5 text-green-600" />}
       width="xl"
       isDirty={step === 'preview'}
@@ -435,21 +436,21 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
             {/* Template download */}
             <div className="flex items-center justify-between p-3 bg-muted/50 border border-border rounded-lg">
               <span className="text-sm text-muted-foreground">
-                Descarga el template CSV para ver el formato requerido
+                {t('downloadTemplate')}
               </span>
               <button
                 onClick={handleDownloadTemplate}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-foreground bg-background border border-border rounded hover:bg-muted"
               >
                 <Download className="w-3.5 h-3.5" />
-                Template
+                {t('template')}
               </button>
             </div>
 
             {/* File size limit info */}
             <div className="flex items-center gap-2 text-xs text-gray-500">
               <Info className="w-3.5 h-3.5" />
-              Tamaño máximo: {MAX_FILE_SIZE_MB} MB
+              {t('maxFileSize', { size: MAX_FILE_SIZE_MB })}
             </div>
 
             {/* Drop zone */}
@@ -464,9 +465,9 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
             >
               <SbDownload size={40} className="mb-3" />
               <p className="text-sm font-medium text-gray-700">
-                Arrastra un archivo CSV aquí o haz clic para seleccionar
+                {t('dragOrClick')}
               </p>
-              <p className="text-xs text-gray-500 mt-1">Solo archivos .csv</p>
+              <p className="text-xs text-gray-500 mt-1">{t('csvOnly')}</p>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -498,10 +499,10 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
                 <p className="text-xs text-gray-500">
-                  {(file.size / 1024).toFixed(1)} KB · {totalRows} {totalRows === 1 ? 'fila' : 'filas'} · {headers.length} columnas
+                  {t('fileInfo', { size: (file.size / 1024).toFixed(1), rows: totalRows, rowLabel: totalRows === 1 ? t('row') : t('rows'), cols: headers.length })}
                 </p>
               </div>
-              <button onClick={handleBackToUpload} className="text-gray-400 hover:text-gray-600" title="Cambiar archivo">
+              <button onClick={handleBackToUpload} className="text-gray-400 hover:text-gray-600" title={t('changeFile')}>
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -511,11 +512,11 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
               <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
                 <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-red-800">Error al importar</p>
+                  <p className="text-sm font-medium text-red-800">{t('importError')}</p>
                   <p className="text-xs text-red-700 mt-0.5 whitespace-pre-wrap">{importError}</p>
                   {headers.length > 0 && (
                     <p className="text-[11px] text-red-500 mt-1">
-                      Encabezados detectados: {headers.join(', ')}
+                      {t('detectedHeaders')} {headers.join(', ')}
                     </p>
                   )}
                 </div>
@@ -560,10 +561,10 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
                   {someVisibleSelected && <Minus className="w-3 h-3 text-white" strokeWidth={3} />}
                 </button>
                 <span className="text-xs font-medium text-green-800">
-                  {selectedCount === 0 ? 'Ninguna seleccionada' :
-                   selectedCount === totalRows ? 'Todas seleccionadas' :
-                   `${selectedCount} de ${totalRows} seleccionadas`}
-                  {searchTerm && ` · ${filteredRows.length} visible${filteredRows.length !== 1 ? 's' : ''}`}
+                  {selectedCount === 0 ? t('noneSelected') :
+                   selectedCount === totalRows ? t('allSelected') :
+                   t('selectedOfTotal', { selected: selectedCount, total: totalRows })}
+                  {searchTerm && ` · ${filteredRows.length} ${t('visible', { plural: filteredRows.length !== 1 ? 's' : '' })}`}
                 </span>
               </div>
               {selectedCount > 0 && (
@@ -571,7 +572,7 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
                   onClick={() => setSelectedIndices(new Set())}
                   className="text-xs text-green-700 hover:text-green-900 underline"
                 >
-                  Deseleccionar todo
+                  {t('deselectAll')}
                 </button>
               )}
             </div>
@@ -580,9 +581,9 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
             {searchTerm && filteredRows.length === 0 && (
               <div className="flex flex-col items-center py-8 text-gray-400">
                 <Search className="w-8 h-8 mb-2" />
-                <p className="text-sm">No se encontraron filas con &quot;{searchTerm}&quot;</p>
+                <p className="text-sm">{t('noRowsFound')} &quot;{searchTerm}&quot;</p>
                 <button onClick={() => setSearchTerm('')} className="text-xs text-green-600 hover:text-green-700 mt-1 underline">
-                  Limpiar búsqueda
+                  {t('clearSearch')}
                 </button>
               </div>
             )}
@@ -648,7 +649,7 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
                             }`}
                             title={cell}
                           >
-                            {cell || <span className="text-gray-300 italic">vacío</span>}
+                            {cell || <span className="text-gray-300 italic">{t('empty')}</span>}
                           </td>
                         ))}
                       </tr>
@@ -713,19 +714,19 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
                 <p className="text-2xl font-bold text-gray-900">
                   {result.totalFilas}
                 </p>
-                <p className="text-xs text-gray-500">Total filas</p>
+                <p className="text-xs text-gray-500">{t('totalRows')}</p>
               </div>
               <div className="p-3 bg-green-50 rounded-lg text-center">
                 <p className="text-2xl font-bold text-green-700">
                   {result.importados}
                 </p>
-                <p className="text-xs text-green-600">Importados</p>
+                <p className="text-xs text-green-600">{t('imported')}</p>
               </div>
               <div className={`p-3 rounded-lg text-center ${result.errores > 0 ? 'bg-red-50' : 'bg-gray-50'}`}>
                 <p className={`text-2xl font-bold ${result.errores > 0 ? 'text-red-700' : 'text-gray-400'}`}>
                   {result.errores}
                 </p>
-                <p className={`text-xs ${result.errores > 0 ? 'text-red-600' : 'text-gray-500'}`}>Con errores</p>
+                <p className={`text-xs ${result.errores > 0 ? 'text-red-600' : 'text-gray-500'}`}>{t('withErrors')}</p>
               </div>
             </div>
 
@@ -734,7 +735,7 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
               <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
                 <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
                 <p className="text-sm text-green-800">
-                  {result.importados} {entityLabel} importados correctamente
+                  {t('importedSuccessfully', { count: result.importados, entity: entityLabel })}
                 </p>
               </div>
             )}
@@ -742,13 +743,13 @@ export function CsvImportModal({ isOpen, onClose, entity, entityLabel, onSuccess
             {/* Error details */}
             {result.detalleErrores.length > 0 && (
               <div className="space-y-2">
-                <p className="text-xs font-medium text-red-700">Detalle de errores:</p>
+                <p className="text-xs font-medium text-red-700">{t('errorDetails')}</p>
                 <div className="max-h-64 overflow-auto space-y-2">
                   {result.detalleErrores.map((err, i) => (
                     <div key={i} className="p-2.5 bg-red-50 border border-red-100 rounded-lg text-xs">
                       <div className="flex items-center gap-1.5 mb-1">
                         <AlertCircle className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
-                        <span className="font-semibold text-red-800">Fila {err.fila}</span>
+                        <span className="font-semibold text-red-800">{t('rowN', { n: err.fila })}</span>
                         <span className="text-red-600">— {err.nombre}</span>
                       </div>
                       <ul className="ml-5 space-y-0.5">

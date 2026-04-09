@@ -1,5 +1,8 @@
+'use client';
+
 import React from 'react'
 import { cn } from '@/lib/utils'
+import { useTranslations } from 'next-intl'
 
 interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg' | 'xl'
@@ -66,8 +69,9 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
   isLoading,
   children,
   className,
-  message = 'Cargando...'
+  message,
 }) => {
+  const tc = useTranslations('common')
   return (
     <div className={cn('relative', className)}>
       {children}
@@ -75,7 +79,7 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
         <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="flex flex-col items-center space-y-2">
             <LoadingSpinner size="lg" />
-            <p className="text-sm text-muted-foreground">{message}</p>
+            <p className="text-sm text-muted-foreground">{message ?? tc('loading')}</p>
           </div>
         </div>
       )}
@@ -89,9 +93,10 @@ interface LoadingPageProps {
 }
 
 export const LoadingPage: React.FC<LoadingPageProps> = ({
-  message = 'Cargando...',
+  message,
   className
 }) => {
+  const tc = useTranslations('common')
   return (
     <div className={cn(
       'flex items-center justify-center min-h-[400px] w-full',
@@ -100,9 +105,9 @@ export const LoadingPage: React.FC<LoadingPageProps> = ({
       <div className="flex flex-col items-center space-y-4">
         <LoadingSpinner size="xl" />
         <div className="text-center">
-          <h3 className="text-lg font-medium">{message}</h3>
+          <h3 className="text-lg font-medium">{message ?? tc('loading')}</h3>
           <p className="text-sm text-muted-foreground mt-1">
-            Por favor espera un momento
+            {tc('pleaseWait')}
           </p>
         </div>
       </div>

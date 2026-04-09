@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Switch } from '@/components/ui/Switch';
@@ -45,6 +46,7 @@ function ToggleRow({ label, description, checked, onChange, disabled, icon }: {
 }
 
 export const NotificationsTab: React.FC<NotificationsTabProps> = ({ isSuperAdmin, isAdmin }) => {
+  const t = useTranslations('settings.notifications');
   const [settings, setSettings] = useState<NotificationSettings>(DEFAULT_SETTINGS);
   const [original, setOriginal] = useState<NotificationSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
@@ -55,7 +57,7 @@ export const NotificationsTab: React.FC<NotificationsTabProps> = ({ isSuperAdmin
   useEffect(() => {
     notificationSettingsService.get()
       .then((data) => { setSettings(data); setOriginal(data); })
-      .catch(() => toast({ title: 'Error', description: 'No se pudo cargar la configuracion', variant: 'destructive' }))
+      .catch(() => toast({ title: t('loadError'), variant: 'destructive' }))
       .finally(() => setLoading(false));
   }, []);
 
@@ -64,9 +66,9 @@ export const NotificationsTab: React.FC<NotificationsTabProps> = ({ isSuperAdmin
     try {
       await notificationSettingsService.save(settings);
       setOriginal(settings);
-      toast({ title: 'Guardado', description: 'Configuracion de notificaciones actualizada' });
+      toast({ title: t('saved') });
     } catch {
-      toast({ title: 'Error', description: 'No se pudo guardar', variant: 'destructive' });
+      toast({ title: t('saveError'), variant: 'destructive' });
     } finally {
       setSaving(false);
     }
@@ -83,13 +85,13 @@ export const NotificationsTab: React.FC<NotificationsTabProps> = ({ isSuperAdmin
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Bell className="h-5 w-5" />
-            Control Global
+            {t('globalControl')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           <ToggleRow
-            label="Push Notifications"
-            description="Habilitar/deshabilitar todas las notificaciones push al movil"
+            label={t('pushNotifications')}
+            description={t('pushDesc')}
             checked={settings.pushEnabled}
             onChange={(v) => update('pushEnabled', v)}
             disabled={loading || !canEdit}
@@ -97,8 +99,8 @@ export const NotificationsTab: React.FC<NotificationsTabProps> = ({ isSuperAdmin
           />
           <Separator />
           <ToggleRow
-            label="Notificaciones por Email"
-            description="Habilitar/deshabilitar todos los correos automaticos"
+            label={t('emailNotifications')}
+            description={t('emailDesc')}
             checked={settings.emailEnabled}
             onChange={(v) => update('emailEnabled', v)}
             disabled={loading || !canEdit}
@@ -112,14 +114,14 @@ export const NotificationsTab: React.FC<NotificationsTabProps> = ({ isSuperAdmin
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ShoppingCart className="h-5 w-5 text-blue-500" />
-            Pedidos
+            {t('orders')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-1">
-          <ToggleRow label="Pedido confirmado" description="Cuando un pedido se confirma" checked={settings.orderConfirmed} onChange={(v) => update('orderConfirmed', v)} disabled={loading || !canEdit || !settings.pushEnabled} />
-          <ToggleRow label="Pedido en ruta" description="Cuando un pedido sale a entrega" checked={settings.orderEnRoute} onChange={(v) => update('orderEnRoute', v)} disabled={loading || !canEdit || !settings.pushEnabled} />
-          <ToggleRow label="Pedido entregado" description="Cuando un pedido se entrega al cliente" checked={settings.orderDelivered} onChange={(v) => update('orderDelivered', v)} disabled={loading || !canEdit || !settings.pushEnabled} />
-          <ToggleRow label="Pedido cancelado" description="Cuando un pedido se cancela" checked={settings.orderCancelled} onChange={(v) => update('orderCancelled', v)} disabled={loading || !canEdit || !settings.pushEnabled} />
+          <ToggleRow label={t('orderConfirmed')} description={t('orderConfirmedDesc')} checked={settings.orderConfirmed} onChange={(v) => update('orderConfirmed', v)} disabled={loading || !canEdit || !settings.pushEnabled} />
+          <ToggleRow label={t('orderEnRoute')} description={t('orderEnRouteDesc')} checked={settings.orderEnRoute} onChange={(v) => update('orderEnRoute', v)} disabled={loading || !canEdit || !settings.pushEnabled} />
+          <ToggleRow label={t('orderDelivered')} description={t('orderDeliveredDesc')} checked={settings.orderDelivered} onChange={(v) => update('orderDelivered', v)} disabled={loading || !canEdit || !settings.pushEnabled} />
+          <ToggleRow label={t('orderCancelled')} description={t('orderCancelledDesc')} checked={settings.orderCancelled} onChange={(v) => update('orderCancelled', v)} disabled={loading || !canEdit || !settings.pushEnabled} />
         </CardContent>
       </Card>
 
@@ -128,11 +130,11 @@ export const NotificationsTab: React.FC<NotificationsTabProps> = ({ isSuperAdmin
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <MapPin className="h-5 w-5 text-indigo-500" />
-            Rutas
+            {t('routes')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-1">
-          <ToggleRow label="Ruta asignada" description="Cuando se asigna o actualiza una ruta a un vendedor" checked={settings.routeAssigned} onChange={(v) => update('routeAssigned', v)} disabled={loading || !canEdit || !settings.pushEnabled} />
+          <ToggleRow label={t('routeAssigned')} description={t('routeAssignedDesc')} checked={settings.routeAssigned} onChange={(v) => update('routeAssigned', v)} disabled={loading || !canEdit || !settings.pushEnabled} />
         </CardContent>
       </Card>
 
@@ -141,13 +143,13 @@ export const NotificationsTab: React.FC<NotificationsTabProps> = ({ isSuperAdmin
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Package className="h-5 w-5 text-orange-500" />
-            Inventario
+            {t('inventory')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-1">
-          <ToggleRow label="Stock bajo" description="Cuando un producto baja del minimo" checked={settings.stockLow} onChange={(v) => update('stockLow', v)} disabled={loading || !canEdit || !settings.pushEnabled} />
-          <ToggleRow label="Alerta stock bajo (automatizacion)" description="Revision periodica de productos con stock bajo" checked={settings.stockBajoAlerta} onChange={(v) => update('stockBajoAlerta', v)} disabled={loading || !canEdit || !settings.pushEnabled} />
-          <ToggleRow label="Inventario critico" description="Cuando un producto llega a 0 unidades" checked={settings.inventarioCritico} onChange={(v) => update('inventarioCritico', v)} disabled={loading || !canEdit || !settings.pushEnabled} />
+          <ToggleRow label={t('stockLow')} description={t('stockLowDesc')} checked={settings.stockLow} onChange={(v) => update('stockLow', v)} disabled={loading || !canEdit || !settings.pushEnabled} />
+          <ToggleRow label={t('stockLowAlert')} description={t('stockLowAlertDesc')} checked={settings.stockBajoAlerta} onChange={(v) => update('stockBajoAlerta', v)} disabled={loading || !canEdit || !settings.pushEnabled} />
+          <ToggleRow label={t('criticalInventory')} description={t('criticalInventoryDesc')} checked={settings.inventarioCritico} onChange={(v) => update('inventarioCritico', v)} disabled={loading || !canEdit || !settings.pushEnabled} />
         </CardContent>
       </Card>
 
@@ -156,12 +158,12 @@ export const NotificationsTab: React.FC<NotificationsTabProps> = ({ isSuperAdmin
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CreditCard className="h-5 w-5 text-green-500" />
-            Cobranza
+            {t('collections')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-1">
-          <ToggleRow label="Cobro exitoso" description="Cuando se registra un cobro" checked={settings.cobroExitoso} onChange={(v) => update('cobroExitoso', v)} disabled={loading || !canEdit || !settings.pushEnabled} />
-          <ToggleRow label="Cobros vencidos" description="Recordatorio diario de cobros pendientes" checked={settings.cobroVencido} onChange={(v) => update('cobroVencido', v)} disabled={loading || !canEdit || !settings.pushEnabled} />
+          <ToggleRow label={t('paymentSuccess')} description={t('paymentSuccessDesc')} checked={settings.cobroExitoso} onChange={(v) => update('cobroExitoso', v)} disabled={loading || !canEdit || !settings.pushEnabled} />
+          <ToggleRow label={t('paymentOverdue')} description={t('paymentOverdueDesc')} checked={settings.cobroVencido} onChange={(v) => update('cobroVencido', v)} disabled={loading || !canEdit || !settings.pushEnabled} />
         </CardContent>
       </Card>
 
@@ -170,14 +172,14 @@ export const NotificationsTab: React.FC<NotificationsTabProps> = ({ isSuperAdmin
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5 text-purple-500" />
-            Operacion
+            {t('operations')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-1">
-          <ToggleRow label="Meta no cumplida" description="Cuando un vendedor no alcanza su meta" checked={settings.metaNoCumplida} onChange={(v) => update('metaNoCumplida', v)} disabled={loading || !canEdit || !settings.pushEnabled} />
-          <ToggleRow label="Cliente inactivo" description="Clientes sin visitar por varios dias" checked={settings.clienteInactivo} onChange={(v) => update('clienteInactivo', v)} disabled={loading || !canEdit || !settings.pushEnabled} />
-          <ToggleRow label="Bienvenida cliente" description="Aviso cuando se registra un nuevo cliente" checked={settings.bienvenidaCliente} onChange={(v) => update('bienvenidaCliente', v)} disabled={loading || !canEdit || !settings.pushEnabled} />
-          <ToggleRow label="Resumen diario" description="Resumen de KPIs al final del dia" checked={settings.resumenDiario} onChange={(v) => update('resumenDiario', v)} disabled={loading || !canEdit || !settings.pushEnabled} />
+          <ToggleRow label={t('goalNotMet')} description={t('goalNotMetDesc')} checked={settings.metaNoCumplida} onChange={(v) => update('metaNoCumplida', v)} disabled={loading || !canEdit || !settings.pushEnabled} />
+          <ToggleRow label={t('inactiveClient')} description={t('inactiveClientDesc')} checked={settings.clienteInactivo} onChange={(v) => update('clienteInactivo', v)} disabled={loading || !canEdit || !settings.pushEnabled} />
+          <ToggleRow label={t('welcomeClient')} description={t('welcomeClientDesc')} checked={settings.bienvenidaCliente} onChange={(v) => update('bienvenidaCliente', v)} disabled={loading || !canEdit || !settings.pushEnabled} />
+          <ToggleRow label={t('dailySummary')} description={t('dailySummaryDesc')} checked={settings.resumenDiario} onChange={(v) => update('resumenDiario', v)} disabled={loading || !canEdit || !settings.pushEnabled} />
         </CardContent>
       </Card>
 
@@ -185,13 +187,12 @@ export const NotificationsTab: React.FC<NotificationsTabProps> = ({ isSuperAdmin
       <div className="flex justify-end">
         <Button onClick={handleSave} disabled={loading || saving || !hasChanges || !canEdit}>
           <Save className="mr-2 h-4 w-4" />
-          {saving ? 'Guardando...' : 'Guardar configuracion'}
+          {saving ? t('saving') : t('saveConfig')}
         </Button>
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Estas configuraciones aplican a nivel empresa. Cada usuario puede tener preferencias adicionales desde su perfil.
-        Los toggles deshabilitados dependen del toggle global de Push.
+        {t('footerNote')}
       </p>
     </div>
   );

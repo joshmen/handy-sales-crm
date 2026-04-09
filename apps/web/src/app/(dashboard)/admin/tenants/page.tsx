@@ -37,6 +37,7 @@ import {
 import { tenantService } from '@/services/api/tenants';
 import { toast } from '@/hooks/useToast';
 import { useFormatters } from '@/hooks/useFormatters';
+import { useTranslations } from 'next-intl';
 
 interface TenantFormData {
   nombreEmpresa: string;
@@ -57,6 +58,9 @@ interface TenantFormData {
 type DrawerMode = 'none' | 'create' | 'edit';
 
 export default function TenantsPage() {
+  const t = useTranslations('admin.tenants');
+  const ta = useTranslations('admin');
+  const tc = useTranslations('common');
   const { formatDate: _fmtDate } = useFormatters();
   const router = useRouter();
 
@@ -129,8 +133,8 @@ export default function TenantsPage() {
     } catch (error) {
       console.error('Error loading tenants:', error);
       toast({
-        title: 'Error',
-        description: 'No se pudieron cargar las empresas',
+        title: tc('error'),
+        description: t('loadError'),
         variant: 'destructive',
       });
     } finally {
@@ -171,8 +175,8 @@ export default function TenantsPage() {
     } catch (error) {
       console.error('Error loading tenant details:', error);
       toast({
-        title: 'Error',
-        description: 'No se pudo cargar la información de la empresa',
+        title: tc('error'),
+        description: t('loadDetailError'),
         variant: 'destructive',
       });
     }
@@ -197,8 +201,8 @@ export default function TenantsPage() {
         };
         await tenantService.update(selectedTenant.id, updateData);
         toast({
-          title: 'Empresa actualizada',
-          description: 'Los cambios se guardaron correctamente',
+          title: t('companyUpdated'),
+          description: t('changesSaved'),
         });
       } else {
         const createData: TenantCreateRequest = {
@@ -225,8 +229,8 @@ export default function TenantsPage() {
           } catch (adminError) {
             console.error('Error creating admin user:', adminError);
             toast({
-              title: 'Empresa creada',
-              description: 'La empresa se creó pero hubo un error al crear el administrador',
+              title: t('companyCreated'),
+              description: t('companyCreatedAdminError'),
               variant: 'destructive',
             });
             handleCloseDrawer();
@@ -236,10 +240,10 @@ export default function TenantsPage() {
         }
 
         toast({
-          title: 'Empresa creada',
+          title: t('companyCreated'),
           description: data.adminEmail
-            ? 'La empresa y su administrador se crearon correctamente'
-            : 'La empresa se creó correctamente',
+            ? t('companyCreatedWithAdmin')
+            : t('companyCreatedWithoutAdmin'),
         });
       }
       handleCloseDrawer();
@@ -250,8 +254,8 @@ export default function TenantsPage() {
         title: 'Error',
         description:
           drawerMode === 'edit'
-            ? 'No se pudo actualizar la empresa'
-            : 'No se pudo crear la empresa',
+            ? t('updateError')
+            : t('createError'),
         variant: 'destructive',
       });
     } finally {
@@ -264,8 +268,7 @@ export default function TenantsPage() {
       setTogglingId(tenant.id);
       await tenantService.toggleActivo(tenant.id, !tenant.activo);
       toast({
-        title: tenant.activo ? 'Empresa desactivada' : 'Empresa activada',
-        description: `${tenant.nombreEmpresa} fue ${tenant.activo ? 'desactivada' : 'activada'} correctamente`,
+        title: tenant.activo ? t('companyDeactivated') : t('companyActivated'),
       });
       if (!showInactive && tenant.activo) {
         setTenants(prev => prev.map(t => t.id === tenant.id ? { ...t, activo: false } : t));
@@ -276,7 +279,7 @@ export default function TenantsPage() {
       console.error('Error toggling tenant:', error);
       toast({
         title: 'Error',
-        description: 'No se pudo cambiar el estado de la empresa',
+        description: t('toggleError'),
         variant: 'destructive',
       });
     } finally {
@@ -300,7 +303,7 @@ export default function TenantsPage() {
       await tenantService.batchToggle(ids, activo);
       toast({
         title: `${ids.length} empresa${ids.length > 1 ? 's' : ''} ${activo ? 'activada' : 'desactivada'}${ids.length > 1 ? 's' : ''}`,
-        description: 'Los cambios se aplicaron correctamente',
+        description: t('batchApplied'),
       });
       setTenants(prev => prev.map(t =>
         ids.includes(t.id) ? { ...t, activo } : t
@@ -310,7 +313,7 @@ export default function TenantsPage() {
       console.error('Error en batch toggle:', error);
       toast({
         title: 'Error',
-        description: 'No se pudo cambiar el estado de las empresas',
+        description: t('batchToggleError'),
         variant: 'destructive',
       });
       batch.setBatchLoading(false);
@@ -335,13 +338,13 @@ export default function TenantsPage() {
   const getPlanLabel = (plan: string | null) => {
     switch (plan) {
       case 'free':
-        return 'Gratis';
+        return t('planFree');
       case 'basic':
-        return 'Básico';
+        return t('planBasic');
       case 'pro':
-        return 'Pro';
+        return t('planPro');
       default:
-        return 'Sin plan';
+        return t('noPlan');
     }
   };
 
@@ -369,7 +372,7 @@ export default function TenantsPage() {
         className="px-4 py-2 text-muted-foreground bg-card border border-border rounded-lg hover:bg-accent transition-colors"
         disabled={submitting}
       >
-        Cancelar
+        {tc('cancel')}
       </button>
       <button
         type="submit"
@@ -380,10 +383,10 @@ export default function TenantsPage() {
         {submitting ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />
-            Guardando...
+            {tc('saving')}
           </>
         ) : (
-          'Guardar'
+          tc('save')
         )}
       </button>
     </div>
@@ -392,11 +395,11 @@ export default function TenantsPage() {
   return (
     <PageHeader
       breadcrumbs={[
-        { label: 'Administración' },
-        { label: 'Gestión de Empresas' },
+        { label: ta('breadcrumb') },
+        { label: t('breadcrumb') },
       ]}
-      title="Gestión de Empresas"
-      subtitle="Administra las empresas registradas en el sistema"
+      title={t('title')}
+      subtitle={t('subtitle')}
       actions={
         <button
           onClick={handleOpenCreate}
@@ -413,17 +416,17 @@ export default function TenantsPage() {
         <SearchBar
           value={searchTerm}
           onChange={(v) => { setSearchTerm(v); }}
-          placeholder="Buscar empresa..."
+          placeholder={t('searchPlaceholder')}
         />
         <select
           value={planFilter}
           onChange={(e) => setPlanFilter(e.target.value as 'todos' | 'free' | 'basic' | 'pro')}
           className="px-3 py-2 text-xs border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
         >
-          <option value="todos">Todos los planes</option>
-          <option value="free">Gratis</option>
-          <option value="basic">Básico</option>
-          <option value="pro">Pro</option>
+          <option value="todos">{t('allPlans')}</option>
+          <option value="free">{t('planFree')}</option>
+          <option value="basic">{t('planBasic')}</option>
+          <option value="pro">{t('planPro')}</option>
         </select>
 
         <InactiveToggle
@@ -466,28 +469,28 @@ export default function TenantsPage() {
               ) : null}
             </button>
           </div>
-          <div className="flex-1 min-w-[200px] text-[11px] font-medium text-gray-500">Empresa</div>
-          <div className="w-[90px] text-[11px] font-medium text-gray-500">Plan</div>
-          <div className="w-[80px] text-[11px] font-medium text-gray-500">Usuarios</div>
-          <div className="w-[50px] text-[11px] font-medium text-gray-500 text-center">Activo</div>
-          <div className="w-[100px] text-[11px] font-medium text-gray-500 hidden lg:block">Expiración</div>
+          <div className="flex-1 min-w-[200px] text-[11px] font-medium text-gray-500">{t('colCompany')}</div>
+          <div className="w-[90px] text-[11px] font-medium text-gray-500">{t('colPlan')}</div>
+          <div className="w-[80px] text-[11px] font-medium text-gray-500">{t('colUsers')}</div>
+          <div className="w-[50px] text-[11px] font-medium text-gray-500 text-center">{t('colActive')}</div>
+          <div className="w-[100px] text-[11px] font-medium text-gray-500 hidden lg:block">{t('colExpiration')}</div>
           <div className="w-[80px]"></div>
         </div>
 
         {/* Table Body with loading overlay */}
         <div className="relative min-h-[200px]">
-          <TableLoadingOverlay loading={loading} message="Cargando tenants..." />
+          <TableLoadingOverlay loading={loading} message={t('loadingTenants')} />
 
           {/* Empty State */}
           {!loading && filteredTenants.length === 0 ? (
             <div className="flex items-center justify-center h-64 bg-card text-muted-foreground">
               <div className="text-center">
                 <Building2 className="h-12 w-12 text-muted-foreground/50 mx-auto mb-2" />
-                <p className="text-lg font-medium">No hay empresas</p>
+                <p className="text-lg font-medium">{t('noCompanies')}</p>
                 <p className="text-sm">
                   {searchTerm || planFilter !== 'todos'
-                    ? 'No se encontraron empresas con los filtros aplicados'
-                    : 'Comienza registrando tu primera empresa'}
+                    ? t('noCompaniesFiltered')
+                    : t('startRegistering')}
                 </p>
                 {!searchTerm && planFilter === 'todos' && (
                   <button
@@ -495,7 +498,7 @@ export default function TenantsPage() {
                     className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
                   >
                     <Plus className="w-4 h-4" />
-                    Nueva Empresa
+                    {t('newCompany')}
                   </button>
                 )}
               </div>
@@ -603,7 +606,7 @@ export default function TenantsPage() {
       {!loading && filteredTenants.length > 0 && (
         <div className="hidden md:flex items-center justify-between pt-4">
           <span className="text-sm text-muted-foreground">
-            Mostrando {startItem}-{endItem} de {filteredTenants.length} empresas
+            {t('showingRange', { start: startItem, end: endItem, total: filteredTenants.length })}
           </span>
           <div className="flex items-center gap-2">
             <button
@@ -612,7 +615,7 @@ export default function TenantsPage() {
               className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-muted-foreground border border-border rounded-md hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronLeft className="w-4 h-4" />
-              <span>Anterior</span>
+              <span>{tc('previous')}</span>
             </button>
 
             {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
@@ -646,7 +649,7 @@ export default function TenantsPage() {
               disabled={currentPage === totalPages}
               className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-muted-foreground border border-border rounded-md hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              <span>Siguiente</span>
+              <span>{tc('next')}</span>
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
@@ -671,8 +674,8 @@ export default function TenantsPage() {
               <p className="text-lg font-medium">No hay empresas</p>
               <p className="text-sm mt-1">
                 {searchTerm || planFilter !== 'todos'
-                  ? 'No se encontraron resultados'
-                  : 'Comienza registrando tu primera empresa'}
+                  ? t('noResults')
+                  : t('startRegistering')}
               </p>
               {!searchTerm && planFilter === 'todos' && (
                 <button
@@ -680,7 +683,7 @@ export default function TenantsPage() {
                   className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
                 >
                   <Plus className="w-4 h-4" />
-                  Nueva Empresa
+                  {t('newCompany')}
                 </button>
               )}
             </div>
@@ -751,14 +754,14 @@ export default function TenantsPage() {
                 className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-green-600 hover:bg-green-50 dark:hover:bg-green-950 rounded-md transition-colors"
               >
                 <Eye className="w-3.5 h-3.5" />
-                <span>Detalle</span>
+                <span>{t('detail')}</span>
               </button>
               <button
                 onClick={() => handleOpenEdit(tenant)}
                 className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-accent rounded-md transition-colors"
               >
                 <Pencil className="w-3.5 h-3.5 text-amber-400" />
-                <span>Editar</span>
+                <span>{tc('edit')}</span>
               </button>
             </div>
           </div>
@@ -768,7 +771,7 @@ export default function TenantsPage() {
         {!loading && filteredTenants.length > 0 && (
           <div className="flex flex-col items-center gap-3 pt-2">
             <span className="text-sm text-muted-foreground">
-              Mostrando {startItem}-{endItem} de {filteredTenants.length} empresas
+              {t('showingRange', { start: startItem, end: endItem, total: filteredTenants.length })}
             </span>
             {totalPages > 1 && (
               <div className="flex items-center gap-2">
@@ -778,7 +781,7 @@ export default function TenantsPage() {
                   className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-muted-foreground border border-border rounded-md hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <ChevronLeft className="w-4 h-4" />
-                  <span>Anterior</span>
+                  <span>{tc('previous')}</span>
                 </button>
 
                 {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
@@ -812,7 +815,7 @@ export default function TenantsPage() {
                   disabled={currentPage === totalPages}
                   className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-muted-foreground border border-border rounded-md hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  <span>Siguiente</span>
+                  <span>{tc('next')}</span>
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>

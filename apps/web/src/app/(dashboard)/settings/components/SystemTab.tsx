@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Label } from '@/components/ui/Label';
@@ -33,6 +34,7 @@ export const SystemTab: React.FC<SystemTabProps> = ({
   isAdmin,
   isSuperAdmin
 }) => {
+  const t = useTranslations('settings.system');
   const { formatDate } = useFormatters();
   const { theme } = useTheme();
   const isDarkMode = theme === 'dark';
@@ -76,33 +78,33 @@ export const SystemTab: React.FC<SystemTabProps> = ({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Información del sistema</CardTitle>
+        <CardTitle>{t('title')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
-            <Label>Versión de la aplicación</Label>
+            <Label>{t('appVersion')}</Label>
             {healthLoading ? (
               <div className="flex items-center gap-2">
                 <Loader2 className="h-3 w-3 animate-spin text-gray-400" />
-                <p className="text-sm text-muted-foreground">Cargando...</p>
+                <p className="text-sm text-muted-foreground">{t('loading')}</p>
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">
-                {health?.version ? `v${health.version}` : 'No disponible'}
+                {health?.version ? `v${health.version}` : t('notAvailable')}
               </p>
             )}
           </div>
 
           <div className="space-y-2">
-            <Label>Última verificación</Label>
+            <Label>{t('lastCheck')}</Label>
             <p className="text-sm text-muted-foreground">
-              {health?.timestamp ? formatTimestamp(health.timestamp) : 'No disponible'}
+              {health?.timestamp ? formatTimestamp(health.timestamp) : t('notAvailable')}
             </p>
           </div>
 
           <div className="space-y-2">
-            <Label>Base de datos</Label>
+            <Label>{t('database')}</Label>
             <div className="flex items-center gap-2">
               {healthLoading ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin text-gray-400" />
@@ -112,13 +114,13 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                 <CheckCircle className="h-3.5 w-3.5 text-green-500" />
               )}
               <p className="text-sm text-muted-foreground">
-                {healthLoading ? 'Verificando...' : healthError ? 'Error de conexión' : 'Conectado'}
+                {healthLoading ? t('verifying') : healthError ? t('connectionError') : t('connected')}
               </p>
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label>Servidor</Label>
+            <Label>{t('server')}</Label>
             <div className="flex items-center gap-2">
               {healthLoading ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin text-gray-400" />
@@ -128,7 +130,7 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                 <CheckCircle className="h-3.5 w-3.5 text-green-500" />
               )}
               <p className="text-sm text-muted-foreground">
-                {healthLoading ? 'Verificando...' : healthError ? 'Sin respuesta' : health?.status === 'healthy' ? 'Online' : 'Degradado'}
+                {healthLoading ? t('verifying') : healthError ? t('noResponse') : health?.status === 'healthy' ? t('online') : t('degraded')}
               </p>
             </div>
           </div>
@@ -137,7 +139,7 @@ export const SystemTab: React.FC<SystemTabProps> = ({
         <Separator />
 
         <div className="space-y-4">
-          <h3 className="text-lg font-medium">Acciones del sistema</h3>
+          <h3 className="text-lg font-medium">{t('systemActions')}</h3>
 
           <div className="space-y-4">
             <div className="rounded-lg border p-4">
@@ -145,11 +147,10 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <Trash2 className="h-4 w-4 text-muted-foreground" />
-                    <h4 className="font-medium">Limpiar Caché</h4>
+                    <h4 className="font-medium">{t('clearCache')}</h4>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Elimina datos temporales almacenados localmente. Útil si experimentas
-                    problemas de rendimiento o datos desactualizados.
+                    {t('clearCacheDesc')}
                   </p>
                 </div>
                 <Button
@@ -167,12 +168,12 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                     keysToRemove.forEach(k => localStorage.removeItem(k));
                     sessionStorage.clear();
                     toast({
-                      title: 'Caché limpiado',
-                      description: 'Los datos temporales han sido eliminados',
+                      title: t('cacheCleared'),
+                      description: t('cacheDesc'),
                     });
                   }}
                 >
-                  Limpiar
+                  {t('clear')}
                 </Button>
               </div>
             </div>
@@ -182,11 +183,10 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <Download className="h-4 w-4 text-muted-foreground" />
-                    <h4 className="font-medium">Exportar Configuración</h4>
+                    <h4 className="font-medium">{t('exportConfig')}</h4>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Descarga un archivo JSON con todas tus preferencias y configuraciones.
-                    Útil para respaldo o migración a otro dispositivo.
+                    {t('exportConfigDesc')}
                   </p>
                 </div>
                 <Button
@@ -208,12 +208,12 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                     a.click();
                     URL.revokeObjectURL(url);
                     toast({
-                      title: 'Configuración exportada',
-                      description: 'El archivo se ha descargado correctamente',
+                      title: t('configExported'),
+                      description: t('configExportedDesc'),
                     });
                   }}
                 >
-                  Exportar
+                  {t('exportBtn')}
                 </Button>
               </div>
             </div>
@@ -224,12 +224,10 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                   <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
                   <div className="space-y-1">
                     <h4 className="font-medium text-yellow-900 dark:text-yellow-300">
-                      Información para Administradores
+                      {t('adminInfo')}
                     </h4>
                     <p className="text-sm text-yellow-800 dark:text-yellow-400">
-                      Como administrador, tienes acceso completo a todas las
-                      configuraciones. Los cambios que realices afectarán a todos los
-                      usuarios de tu organización.
+                      {t('adminInfoDesc')}
                     </p>
                   </div>
                 </div>

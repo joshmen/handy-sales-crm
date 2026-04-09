@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { Loader2, Settings2, CheckCheck } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
@@ -35,6 +36,10 @@ type TabKey = 'todos' | 'sin-mapear';
 // ─── Main Page ───
 
 export default function FiscalMappingPage() {
+  const t = useTranslations('billing.fiscalMapping');
+  const tBilling = useTranslations('billing');
+  const tCommon = useTranslations('common');
+
   // Tab state
   const [activeTab, setActiveTab] = useState<TabKey>('todos');
 
@@ -84,7 +89,7 @@ export default function FiscalMappingPage() {
       setMappingsTotal(data.totalCount ?? 0);
     } catch (err) {
       const apiError = extractBillingError(err);
-      toast({ title: 'Error al cargar mapeos fiscales', description: apiError.message, variant: 'destructive' });
+      toast({ title: t('errorLoadingMappings'), description: apiError.message, variant: 'destructive' });
     }
   }, [mappingsPage]);
 
@@ -95,7 +100,7 @@ export default function FiscalMappingPage() {
       setUnmappedTotal(data.totalCount ?? 0);
     } catch (err) {
       const apiError = extractBillingError(err);
-      toast({ title: 'Error al cargar productos sin mapear', description: apiError.message, variant: 'destructive' });
+      toast({ title: t('errorLoadingUnmapped'), description: apiError.message, variant: 'destructive' });
     }
   }, [unmappedPage]);
 
@@ -123,18 +128,18 @@ export default function FiscalMappingPage() {
 
   const handleSaveDefaults = async () => {
     if (!defaults.claveProdServDefault && !defaults.claveUnidadDefault) {
-      toast({ title: 'Ingresa al menos un valor predeterminado', variant: 'destructive' });
+      toast({ title: t('enterDefaultValue'), variant: 'destructive' });
       return;
     }
     setSavingDefaults(true);
     try {
       await setFiscalDefaults(defaults);
-      toast({ title: 'Valores predeterminados guardados' });
+      toast({ title: t('defaultsSaved') });
       setDefaultsEditProdServ(false);
       setDefaultsEditUnidad(false);
     } catch (err) {
       const apiError = extractBillingError(err);
-      toast({ title: 'Error al guardar valores predeterminados', description: apiError.message, variant: 'destructive' });
+      toast({ title: t('errorSavingDefaults'), description: apiError.message, variant: 'destructive' });
     } finally {
       setSavingDefaults(false);
     }
@@ -144,11 +149,11 @@ export default function FiscalMappingPage() {
     try {
       setSaving(true);
       await deleteFiscalMapping(productoId);
-      toast({ title: 'Mapeo eliminado' });
+      toast({ title: t('mappingDeleted') });
       await loadAll();
     } catch (err) {
       const apiError = extractBillingError(err);
-      toast({ title: 'Error al eliminar mapeo', description: apiError.message, variant: 'destructive' });
+      toast({ title: t('errorDeletingMapping'), description: apiError.message, variant: 'destructive' });
     } finally {
       setSaving(false);
     }
@@ -158,12 +163,12 @@ export default function FiscalMappingPage() {
     try {
       setSaving(true);
       await upsertFiscalMapping({ productoId, claveProdServ, claveUnidad });
-      toast({ title: 'Mapeo guardado' });
+      toast({ title: t('mappingSaved') });
       setEditingProduct(null);
       await loadAll();
     } catch (err) {
       const apiError = extractBillingError(err);
-      toast({ title: 'Error al guardar mapeo', description: apiError.message, variant: 'destructive' });
+      toast({ title: t('errorSavingMapping'), description: apiError.message, variant: 'destructive' });
     } finally {
       setSaving(false);
     }
@@ -177,7 +182,7 @@ export default function FiscalMappingPage() {
   const handleBatchAssign = async () => {
     if (selectedIds.size === 0) return;
     if (!batchProdServ && !batchUnidad) {
-      toast({ title: 'Selecciona al menos una clave SAT', variant: 'destructive' });
+      toast({ title: t('selectSatKey'), variant: 'destructive' });
       return;
     }
     setSaving(true);
@@ -193,7 +198,7 @@ export default function FiscalMappingPage() {
         };
       });
       await batchUpsertFiscalMappings(requests);
-      toast({ title: `${selectedIds.size} productos actualizados` });
+      toast({ title: t('productsUpdated', { count: selectedIds.size }) });
       setSelectedIds(new Set());
       setShowBatchAssign(false);
       setBatchProdServ('');
@@ -201,7 +206,7 @@ export default function FiscalMappingPage() {
       await Promise.all([loadMappings(), loadUnmapped()]);
     } catch (err) {
       const apiError = extractBillingError(err);
-      toast({ title: 'Error en asignacion masiva', description: apiError.message, variant: 'destructive' });
+      toast({ title: t('batchAssignError'), description: apiError.message, variant: 'destructive' });
     } finally {
       setSaving(false);
     }
@@ -233,7 +238,7 @@ export default function FiscalMappingPage() {
   if (loading && mappings.length === 0 && unmapped.length === 0) return (
     <div role="status" className="flex items-center justify-center min-h-[60vh]">
       <Loader2 className="h-8 w-8 animate-spin text-green-600" aria-hidden="true" />
-      <span className="sr-only">Cargando...</span>
+      <span className="sr-only">Loading...</span>
     </div>
   );
 
@@ -244,11 +249,11 @@ export default function FiscalMappingPage() {
   return (
     <PageHeader
       breadcrumbs={[
-        { label: 'Facturación', href: '/billing' },
-        { label: 'Mapeo Fiscal' },
+        { label: tBilling('title'), href: '/billing' },
+        { label: t('title') },
       ]}
-      title="Mapeo Fiscal"
-      subtitle="Asignar códigos SAT a productos para facturación"
+      title={t('title')}
+      subtitle={t('subtitle')}
       actions={
         <div className="flex items-center gap-2">
           {selectedIds.size > 0 && (
@@ -257,7 +262,7 @@ export default function FiscalMappingPage() {
               className="bg-green-600 hover:bg-green-700 text-white"
             >
               <CheckCheck className="w-4 h-4 mr-2" />
-              Asignar a {selectedIds.size} productos
+              {t('assignToProducts', { count: selectedIds.size })}
             </Button>
           )}
           <Button
@@ -267,7 +272,7 @@ export default function FiscalMappingPage() {
             aria-controls="defaults-panel"
           >
             <Settings2 className="w-4 h-4 mr-2" />
-            Predeterminados
+            {t('defaults')}
           </Button>
         </div>
       }
@@ -308,7 +313,7 @@ export default function FiscalMappingPage() {
       )}
 
       {/* ─── Tabs ─── */}
-      <div role="tablist" aria-label="Vista de productos" className="flex items-center gap-1 mb-4 border-b border-border">
+      <div role="tablist" aria-label={t('productView')} className="flex items-center gap-1 mb-4 border-b border-border">
         <button
           role="tab"
           aria-selected={activeTab === 'todos'}
@@ -321,7 +326,7 @@ export default function FiscalMappingPage() {
               : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
-          Todos ({mappingsTotal})
+          {t('allTab')} ({mappingsTotal})
         </button>
         <button
           role="tab"
@@ -335,7 +340,7 @@ export default function FiscalMappingPage() {
               : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
-          Sin Mapear
+          {t('unmappedTab')}
           {unmappedTotal > 0 && (
             <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
               {unmappedTotal}
@@ -354,11 +359,11 @@ export default function FiscalMappingPage() {
               onChange={() => toggleSelectAll(currentIds)}
               className="rounded border-border text-green-600 focus:ring-green-500"
             />
-            Seleccionar todos
+            {t('selectAll')}
           </label>
           {selectedIds.size > 0 && (
             <span className="text-xs text-muted-foreground">
-              {selectedIds.size} seleccionado{selectedIds.size > 1 ? 's' : ''}
+              {t('selectedCount', { count: selectedIds.size, plural: selectedIds.size > 1 ? 's' : '' })}
             </span>
           )}
         </div>
@@ -412,7 +417,7 @@ export default function FiscalMappingPage() {
       {saving && (
         <div className="fixed bottom-4 right-4 bg-card border border-border rounded-lg shadow-lg px-4 py-2 flex items-center gap-2 text-sm z-50">
           <Loader2 className="w-4 h-4 animate-spin text-green-600" />
-          Guardando...
+          {tCommon('saving')}
         </div>
       )}
     </PageHeader>

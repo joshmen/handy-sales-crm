@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -26,6 +27,8 @@ import { toast } from '@/hooks/useToast';
 import { useFormatters } from '@/hooks/useFormatters';
 
 export const SecurityTab: React.FC = () => {
+  const t = useTranslations('settings.security');
+  const tc = useTranslations('common');
   const { formatDate } = useFormatters();
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === 'ADMIN';
@@ -65,15 +68,15 @@ export const SecurityTab: React.FC = () => {
 
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
-      toast.error('Completa todos los campos');
+      toast.error(t('fillAllFields'));
       return;
     }
     if (newPassword !== confirmPassword) {
-      toast.error('Las contraseñas no coinciden');
+      toast.error(t('passwordsMismatch'));
       return;
     }
     if (newPassword.length < 6) {
-      toast.error('La contraseña debe tener al menos 6 caracteres');
+      toast.error(t('passwordTooShort'));
       return;
     }
 
@@ -81,15 +84,15 @@ export const SecurityTab: React.FC = () => {
     try {
       const response = await profileService.changePassword({ currentPassword, newPassword });
       if (response.success) {
-        toast.success('Contraseña actualizada exitosamente');
+        toast.success(t('passwordUpdated'));
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
       } else {
-        toast.error(response.error || 'Error al cambiar contraseña');
+        toast.error(response.error || t('passwordError'));
       }
     } catch {
-      toast.error('Error al cambiar contraseña');
+      toast.error(t('passwordError'));
     } finally {
       setChangingPassword(false);
     }
@@ -98,7 +101,7 @@ export const SecurityTab: React.FC = () => {
   const handleRegenerateRecoveryCodes = async () => {
     const cleanCode = regenerateCode.replace(/\s/g, '');
     if (cleanCode.length !== 6) {
-      toast.error('Ingresa un código de 6 dígitos');
+      toast.error(t('enterSixDigits'));
       return;
     }
 
@@ -109,16 +112,16 @@ export const SecurityTab: React.FC = () => {
         const codes = response.data;
         // Copy to clipboard
         navigator.clipboard.writeText(codes.join('\n'));
-        toast.success(`${codes.length} códigos nuevos generados y copiados al portapapeles`);
+        toast.success(t('codesRegenerated', { count: codes.length }));
         setRegenerateOpen(false);
         setRegenerateCode('');
         loadTfaStatus();
       } else {
-        toast.error(response.error || 'Código inválido');
+        toast.error(response.error || t('invalidCode'));
         setRegenerateCode('');
       }
     } catch {
-      toast.error('Error al regenerar códigos');
+      toast.error(t('regenerateError'));
     } finally {
       setRegenerating(false);
     }
@@ -131,18 +134,18 @@ export const SecurityTab: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Lock className="h-5 w-5" />
-            Cambiar contraseña
+            {t('changePassword')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="current-password">Contraseña actual</Label>
+            <Label htmlFor="current-password">{t('currentPassword')}</Label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 id="current-password"
                 type="password"
-                placeholder="Ingresa tu contraseña actual"
+                placeholder={t('currentPasswordPlaceholder')}
                 className="pl-10"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
@@ -151,13 +154,13 @@ export const SecurityTab: React.FC = () => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="new-password">Nueva contraseña</Label>
+            <Label htmlFor="new-password">{t('newPassword')}</Label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 id="new-password"
                 type="password"
-                placeholder="Ingresa tu nueva contraseña"
+                placeholder={t('newPasswordPlaceholder')}
                 className="pl-10"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
@@ -166,13 +169,13 @@ export const SecurityTab: React.FC = () => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="confirm-password">Confirmar nueva contraseña</Label>
+            <Label htmlFor="confirm-password">{t('confirmPassword')}</Label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 id="confirm-password"
                 type="password"
-                placeholder="Confirma tu nueva contraseña"
+                placeholder={t('confirmPasswordPlaceholder')}
                 className="pl-10"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -187,7 +190,7 @@ export const SecurityTab: React.FC = () => {
               loading={changingPassword}
             >
               <Save className="mr-2 h-4 w-4" />
-              Actualizar contraseña
+              {t('updatePassword')}
             </Button>
           </div>
         </CardContent>
@@ -200,15 +203,15 @@ export const SecurityTab: React.FC = () => {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Shield className="h-5 w-5" />
-                Autenticación de dos factores (2FA)
+                {t('twoFactorTitle')}
               </CardTitle>
               <CardDescription className="mt-1">
-                Protege tu cuenta con un código de verificación de tu app de autenticación
+                {t('twoFactorDesc')}
               </CardDescription>
             </div>
             {tfaStatus && (
               <Badge variant={tfaStatus.enabled ? 'success' : 'secondary'}>
-                {tfaStatus.enabled ? 'Activo' : 'Inactivo'}
+                {tfaStatus.enabled ? t('tfaActive') : t('tfaInactive')}
               </Badge>
             )}
           </div>
@@ -217,7 +220,7 @@ export const SecurityTab: React.FC = () => {
           {tfaLoading ? (
             <div className="flex items-center gap-2 py-4 text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span className="text-sm">Cargando estado de 2FA...</span>
+              <span className="text-sm">{t('loadingTfa')}</span>
             </div>
           ) : tfaStatus?.enabled ? (
             /* 2FA Enabled State */
@@ -225,12 +228,12 @@ export const SecurityTab: React.FC = () => {
               <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-lg">
                 <ShieldCheck className="h-6 w-6 text-green-600 flex-shrink-0" />
                 <div className="flex-1">
-                  <p className="font-medium text-green-800">2FA está activo</p>
+                  <p className="font-medium text-green-800">{t('tfaIsActive')}</p>
                   <p className="text-sm text-green-700">
                     {tfaStatus.enabledAt && (
-                      <>Activado el {formatDate(tfaStatus.enabledAt, {
+                      <>{t('tfaActivatedOn', { date: formatDate(tfaStatus.enabledAt, {
                         year: 'numeric', month: 'long', day: 'numeric',
-                      })}</>
+                      }) })}</>
                     )}
                   </p>
                 </div>
@@ -241,7 +244,7 @@ export const SecurityTab: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <KeyRound className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">
-                    Códigos de recuperación restantes:{' '}
+                    {t('recoveryCodesRemaining')}{' '}
                     <span className={`font-semibold ${
                       tfaStatus.remainingRecoveryCodes <= 2 ? 'text-destructive' : ''
                     }`}>
@@ -255,13 +258,13 @@ export const SecurityTab: React.FC = () => {
                   onClick={() => setRegenerateOpen(true)}
                 >
                   <RefreshCw className="mr-1 h-3 w-3" />
-                  Regenerar
+                  {t('regenerate')}
                 </Button>
               </div>
 
               {tfaStatus.remainingRecoveryCodes <= 2 && (
                 <p className="text-sm text-destructive">
-                  Tienes pocos códigos de recuperación. Te recomendamos regenerarlos.
+                  {t('fewRecoveryCodes')}
                 </p>
               )}
 
@@ -273,7 +276,7 @@ export const SecurityTab: React.FC = () => {
                 onClick={() => setDisableOpen(true)}
               >
                 <ShieldOff className="mr-2 h-4 w-4" />
-                Desactivar 2FA
+                {t('disableTfa')}
               </Button>
             </div>
           ) : (
@@ -282,16 +285,16 @@ export const SecurityTab: React.FC = () => {
               <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
                 <Shield className="h-6 w-6 text-muted-foreground flex-shrink-0" />
                 <div className="flex-1">
-                  <p className="font-medium">2FA no está configurado</p>
+                  <p className="font-medium">{t('tfaNotConfigured')}</p>
                   <p className="text-sm text-muted-foreground">
-                    Agrega una capa extra de seguridad usando Google Authenticator, Microsoft Authenticator u otra app compatible con TOTP.
+                    {t('tfaNotConfiguredDesc')}
                   </p>
                 </div>
               </div>
 
               <Button onClick={() => setSetupOpen(true)}>
                 <Shield className="mr-2 h-4 w-4" />
-                Configurar 2FA
+                {t('configureTfa')}
               </Button>
             </div>
           )}
@@ -323,10 +326,10 @@ export const SecurityTab: React.FC = () => {
             <div>
               <h3 className="text-lg font-semibold flex items-center gap-2">
                 <RefreshCw className="h-5 w-5" />
-                Regenerar códigos de recuperación
+                {t('regenerateTitle')}
               </h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Los códigos anteriores serán invalidados. Ingresa un código TOTP para confirmar.
+                {t('regenerateDesc')}
               </p>
             </div>
 
@@ -354,14 +357,14 @@ export const SecurityTab: React.FC = () => {
 
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => { setRegenerateOpen(false); setRegenerateCode(''); }}>
-                Cancelar
+                {tc('cancel')}
               </Button>
               <Button
                 onClick={handleRegenerateRecoveryCodes}
                 disabled={regenerateCode.replace(/\s/g, '').length !== 6 || regenerating}
                 loading={regenerating}
               >
-                Regenerar
+                {t('regenerateBtn')}
               </Button>
             </div>
           </div>

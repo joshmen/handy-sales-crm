@@ -40,6 +40,7 @@ import { useBatchOperations } from '@/hooks/useBatchOperations';
 import { BatchActionBar } from '@/components/shared/BatchActionBar';
 import { BatchConfirmModal } from '@/components/shared/BatchConfirmModal';
 import { useFormatters } from '@/hooks/useFormatters';
+import { useTranslations } from 'next-intl';
 
 // Tipos locales para los catálogos (coinciden con el backend)
 interface FamiliaProducto {
@@ -87,6 +88,8 @@ const productSchema = z.object({
 type ProductFormData = z.infer<typeof productSchema>;
 
 export default function ProductsPage() {
+  const t = useTranslations('products');
+  const tc = useTranslations('common');
   const { formatCurrency } = useFormatters();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -180,8 +183,8 @@ export default function ProductsPage() {
       setTotalPages(response.totalPages);
     } catch (err) {
       console.error('Error al cargar productos:', err);
-      setError('Error al cargar los productos. Intenta de nuevo.');
-      toast.error('Error al cargar los productos');
+      setError(t('errorLoadingRetry'));
+      toast.error(t('errorLoading'));
     } finally {
       setLoading(false);
     }
@@ -265,11 +268,11 @@ export default function ProductsPage() {
       if (editingProduct) {
         productId = parseInt(editingProduct.id);
         await productService.updateProduct(productId, payload);
-        toast.success('Producto actualizado correctamente');
+        toast.success(t('productUpdated'));
       } else {
         const result = await productService.createProduct(payload);
         productId = result.id;
-        toast.success('Producto creado correctamente');
+        toast.success(t('productCreated'));
       }
 
       // Upload image if one was selected
@@ -277,10 +280,10 @@ export default function ProductsPage() {
         try {
           setUploadingImage(true);
           await productService.uploadProductImage(productId, imageFile);
-          toast.success('Imagen subida correctamente');
+          toast.success(tc('imageUploaded'));
         } catch (imgErr) {
           console.error('Error al subir imagen:', imgErr);
-          toast.error('El producto se guardó pero hubo un error al subir la imagen');
+          toast.error(t('errorSaving'));
         } finally {
           setUploadingImage(false);
         }
@@ -292,7 +295,7 @@ export default function ProductsPage() {
     } catch (err: unknown) {
       console.error('Error al guardar producto:', err);
       const e = err as { response?: { data?: { message?: string } }; message?: string };
-      toast.error(e?.response?.data?.message || e?.message || 'Error al guardar el producto');
+      toast.error(e?.response?.data?.message || e?.message || t('errorSaving'));
     } finally {
       setSavingProduct(false);
     }
@@ -312,7 +315,7 @@ export default function ProductsPage() {
       setTogglingId(product.id);
       const newActive = !product.isActive;
       await productService.toggleActive(product.id, newActive);
-      toast.success(newActive ? 'Producto activado' : 'Producto desactivado');
+      toast.success(newActive ? t('productActivated') : t('productDeactivated'));
       if (!showInactive && !newActive) {
         setProducts(prev => prev.filter(p => p.id !== product.id));
       } else {
@@ -322,7 +325,7 @@ export default function ProductsPage() {
       }
     } catch (err) {
       console.error('Error al cambiar estado:', err);
-      toast.error('Error al cambiar el estado del producto');
+      toast.error(t('errorChangingStatus'));
     } finally {
       setTogglingId(null);
     }
@@ -356,7 +359,7 @@ export default function ProductsPage() {
   const productColumns = useMemo<DataGridColumn<Product>[]>(() => [
     {
       key: 'image',
-      label: 'Imagen',
+      label: t('columns.image'),
       width: 45,
       cellRenderer: (product) => product.images[0] ? (
         <img src={product.images[0]} alt={product.name} className="w-9 h-9 rounded-md object-cover" />
@@ -368,27 +371,27 @@ export default function ProductsPage() {
     },
     {
       key: 'code',
-      label: 'Código',
+      label: t('columns.code'),
       width: 95,
       cellRenderer: (product) => <span className="text-[13px] font-mono text-gray-500 truncate block">{product.code}</span>,
     },
     {
       key: 'name',
-      label: 'Nombre',
+      label: t('columns.name'),
       sortable: true,
       width: 'flex',
       cellRenderer: (product) => <span className="text-[13px] font-medium text-gray-900 truncate block">{product.name}</span>,
     },
     {
       key: 'price',
-      label: 'Precio',
+      label: t('columns.price'),
       sortable: true,
       width: 90,
       cellRenderer: (product) => <span className="text-[13px] font-medium text-gray-900">{formatCurrency(product.price)}</span>,
     },
     {
       key: 'stock',
-      label: 'Existencia',
+      label: t('columns.stock'),
       sortable: true,
       width: 90,
       cellRenderer: (product) => (
@@ -399,26 +402,26 @@ export default function ProductsPage() {
     },
     {
       key: 'family',
-      label: 'Familia',
+      label: t('columns.family'),
       width: 100,
       hiddenOnMobile: true,
       cellRenderer: (product) => <span className="text-[13px] text-blue-600 truncate block">{product.family || '-'}</span>,
     },
     {
       key: 'category',
-      label: 'Categoría',
+      label: t('columns.category'),
       width: 130,
       hiddenOnMobile: true,
       cellRenderer: (product) => <span className="text-[13px] text-gray-500 truncate block">{product.category || '-'}</span>,
     },
     {
       key: 'isActive',
-      label: 'Activo',
+      label: t('columns.active'),
       width: 50,
       align: 'center',
       cellRenderer: (product) => (
         <div onClick={(e) => e.stopPropagation()}>
-          <ActiveToggle isActive={product.isActive} onToggle={() => handleToggleActive(product)} disabled={loading} isLoading={togglingId === product.id} title={product.isActive ? 'Desactivar producto' : 'Activar producto'} />
+          <ActiveToggle isActive={product.isActive} onToggle={() => handleToggleActive(product)} disabled={loading} isLoading={togglingId === product.id} title={product.isActive ? t('deactivateProduct') : t('activateProduct')} />
         </div>
       ),
     },
@@ -428,7 +431,7 @@ export default function ProductsPage() {
       width: 64,
       cellRenderer: (product) => (
         <div className="flex items-center justify-center gap-1" onClick={(e) => e.stopPropagation()}>
-          <button onClick={() => handleEditProduct(product)} disabled={loading} className="p-1 hover:bg-amber-50 rounded transition-colors disabled:opacity-50" title="Editar">
+          <button onClick={() => handleEditProduct(product)} disabled={loading} className="p-1 hover:bg-amber-50 rounded transition-colors disabled:opacity-50" title={tc('edit')}>
             <Pencil className="w-4 h-4 text-amber-400 hover:text-amber-600" />
           </button>
           {deleteConfirmId === product.id ? (
@@ -437,7 +440,7 @@ export default function ProductsPage() {
               <button onClick={() => setDeleteConfirmId(null)} className="p-1 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X className="w-4 h-4" /></button>
             </>
           ) : (
-            <button onClick={() => setDeleteConfirmId(product.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Eliminar"><Trash2 className="w-4 h-4" /></button>
+            <button onClick={() => setDeleteConfirmId(product.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title={tc('delete')}><Trash2 className="w-4 h-4" /></button>
           )}
         </div>
       ),
@@ -453,10 +456,10 @@ export default function ProductsPage() {
   const handleDelete = async (id: string) => {
     try {
       await productService.deleteProduct(id);
-      toast.success('Producto eliminado');
+      toast.success(t('productDeleted'));
       fetchProducts();
     } catch {
-      toast.error('Error al eliminar el producto');
+      toast.error(t('errorDeleting'));
     }
   };
 
@@ -471,7 +474,7 @@ export default function ProductsPage() {
       await productService.batchToggleActive(ids, activo);
 
       toast.success(
-        `${ids.length} producto${ids.length > 1 ? 's' : ''} ${activo ? 'activado' : 'desactivado'}${ids.length > 1 ? 's' : ''} exitosamente`
+        t('batchSuccess', { count: ids.length, plural: ids.length > 1 ? 's' : '', action: activo ? tc('activate').toLowerCase() : tc('deactivate').toLowerCase() })
       );
 
       batch.completeBatch();
@@ -484,7 +487,7 @@ export default function ProductsPage() {
       }
     } catch (error) {
       console.error('Error en batch toggle:', error);
-      toast.error('Error al cambiar el estado de los productos');
+      toast.error(t('errorBatchToggle'));
     } finally {
       batch.setBatchLoading(false);
     }
@@ -492,11 +495,11 @@ export default function ProductsPage() {
   return (
       <PageHeader
         breadcrumbs={[
-          { label: 'Inicio', href: '/dashboard' },
-          { label: 'Productos' },
+          { label: tc('home'), href: '/dashboard' },
+          { label: t('title') },
         ]}
-        title="Productos"
-        subtitle={totalProducts > 0 ? `${totalProducts} producto${totalProducts !== 1 ? 's' : ''}` : undefined}
+        title={t('title')}
+        subtitle={totalProducts > 0 ? t('subtitle', { count: totalProducts, plural: totalProducts !== 1 ? 's' : '' }) : undefined}
         actions={
           <>
             <div className="relative" data-tour="products-import-export">
@@ -505,7 +508,7 @@ export default function ProductsPage() {
                 className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
               >
                 <Download className="w-3.5 h-3.5 text-emerald-500" />
-                <span className="hidden sm:inline">Importar / Exportar</span>
+                <span className="hidden sm:inline">{tc('importExport')}</span>
                 <ChevronDown className="w-3 h-3 text-gray-400" />
               </button>
               {showDataMenu && (
@@ -513,18 +516,18 @@ export default function ProductsPage() {
                   <div className="fixed inset-0 z-10" onClick={() => setShowDataMenu(false)} />
                   <div className="absolute right-0 mt-1 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1">
                     <button
-                      onClick={async () => { setShowDataMenu(false); try { await exportToCsv('productos'); toast.success('Archivo CSV descargado'); } catch { toast.error('Error al exportar datos'); } }}
+                      onClick={async () => { setShowDataMenu(false); try { await exportToCsv('productos'); toast.success(tc('csvDownloaded')); } catch { toast.error(tc('errorExporting')); } }}
                       className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
                     >
                       <Download className="w-3.5 h-3.5 text-emerald-500" />
-                      Exportar CSV
+                      {tc('exportCsv')}
                     </button>
                     <button
                       onClick={() => { setShowDataMenu(false); setIsImportOpen(true); }}
                       className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
                     >
                       <Upload className="w-3.5 h-3.5 text-blue-500" />
-                      Importar CSV
+                      {tc('importCsv')}
                     </button>
                   </div>
                 </>
@@ -536,7 +539,7 @@ export default function ProductsPage() {
               className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
             >
               <Plus className="w-4 h-4" />
-              <span>Nuevo producto</span>
+              <span>{t('newProduct')}</span>
             </button>
           </>
         }
@@ -544,7 +547,7 @@ export default function ProductsPage() {
         <div className="space-y-4">
           {/* Filter Row */}
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <SearchBar value={searchTerm} onChange={(v) => { setSearchTerm(v); setCurrentPage(1); }} placeholder="Buscar producto..." dataTour="products-search" />
+            <SearchBar value={searchTerm} onChange={(v) => { setSearchTerm(v); setCurrentPage(1); }} placeholder={t('searchPlaceholder')} dataTour="products-search" />
             <div className="min-w-[180px] max-w-[300px]" data-tour="products-family-filter">
               <SearchableSelect
                 options={familias.map(f => ({ value: f.id, label: f.nombre, description: f.descripcion }))}
@@ -553,8 +556,8 @@ export default function ProductsPage() {
                   setSelectedFamiliaId(val ? Number(val) : null);
                   setCurrentPage(1);
                 }}
-                placeholder="Todas las familias"
-                searchPlaceholder="Buscar familia..."
+                placeholder={t('filters.allFamilies')}
+                searchPlaceholder={t('filters.searchFamily')}
               />
             </div>
             <div className="min-w-[150px] max-w-[250px]" data-tour="products-category-filter">
@@ -565,8 +568,8 @@ export default function ProductsPage() {
                   setSelectedCategoriaId(val ? Number(val) : null);
                   setCurrentPage(1);
                 }}
-                placeholder="Todas las categorías"
-                searchPlaceholder="Buscar categoría..."
+                placeholder={t('filters.allCategories')}
+                searchPlaceholder={t('filters.searchCategory')}
               />
             </div>
             <button
@@ -574,7 +577,7 @@ export default function ProductsPage() {
               className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
             >
               <RefreshCw className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Actualizar</span>
+              <span className="hidden sm:inline">{tc('refresh')}</span>
             </button>
 
             {/* Toggle para mostrar inactivos */}
@@ -604,10 +607,10 @@ export default function ProductsPage() {
               data={sortedProducts}
               keyExtractor={(p) => parseInt(p.id)}
               loading={loading}
-              loadingMessage="Cargando productos..."
+              loadingMessage={t('loadingProducts')}
               emptyIcon={<Package className="w-16 h-16 text-purple-300" />}
-              emptyTitle="No hay productos"
-              emptyMessage={searchTerm ? 'No se encontraron resultados para tu búsqueda' : 'Crea tu primer producto para comenzar'}
+              emptyTitle={t('emptyTitle')}
+              emptyMessage={searchTerm ? t('emptySearchMessage') : t('emptyMessage')}
               sort={{
                 key: sortKey,
                 direction: sortDir,
@@ -645,7 +648,7 @@ export default function ProductsPage() {
                       </div>
                     </div>
                     <div onClick={(e) => e.stopPropagation()}>
-                      <ActiveToggle isActive={product.isActive} onToggle={() => handleToggleActive(product)} disabled={loading} isLoading={togglingId === product.id} title={product.isActive ? 'Desactivar producto' : 'Activar producto'} />
+                      <ActiveToggle isActive={product.isActive} onToggle={() => handleToggleActive(product)} disabled={loading} isLoading={togglingId === product.id} title={product.isActive ? t('deactivateProduct') : t('activateProduct')} />
                     </div>
                   </div>
                   <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-500">
@@ -656,7 +659,7 @@ export default function ProductsPage() {
                   </div>
                   <div className="mt-2.5 flex items-center justify-end gap-1 border-t border-gray-100 pt-2" onClick={(e) => e.stopPropagation()}>
                     <button onClick={() => handleEditProduct(product)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-green-600 hover:bg-green-50 rounded">
-                      <Pencil className="w-3.5 h-3.5 text-amber-400" /> Editar
+                      <Pencil className="w-3.5 h-3.5 text-amber-400" /> {tc('edit')}
                     </button>
                     {deleteConfirmId === product.id ? (
                       <div className="flex items-center gap-1">
@@ -691,8 +694,8 @@ export default function ProductsPage() {
           selectedCount={batch.selectedCount}
           entityLabel="productos"
           loading={batch.batchLoading}
-          consequenceDeactivate="Los productos desactivados no aparecerán en las listas activas."
-          consequenceActivate="Los productos activados volverán a aparecer en las listas activas."
+          consequenceDeactivate={t('consequenceDeactivate')}
+          consequenceActivate={t('consequenceActivate')}
         />
 
         {/* Product Form Drawer */}
@@ -700,7 +703,7 @@ export default function ProductsPage() {
           ref={drawerRef}
           isOpen={showProductForm}
           onClose={handleCancelForm}
-          title={editingProduct ? 'Editar Producto' : 'Nuevo Producto'}
+          title={editingProduct ? t('drawer.titleEdit') : t('drawer.titleNew')}
           icon={<Package className="w-5 h-5 text-green-600" />}
           width="lg"
           isDirty={formIsDirtyWithImage}
@@ -711,11 +714,11 @@ export default function ProductsPage() {
           footer={
             <div className="flex justify-end gap-3" data-tour="product-drawer-actions">
               <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()} disabled={savingProduct}>
-                Cancelar
+                {tc('cancel')}
               </Button>
               <Button type="submit" form="product-form" variant="success" disabled={savingProduct || loadingCatalogs || !watch('familiaId')} className="flex items-center gap-2">
                 {savingProduct && <Loader2 className="w-4 h-4 animate-spin" />}
-                {editingProduct ? 'Guardar Cambios' : 'Crear Producto'}
+                {editingProduct ? tc('saveChanges') : t('drawer.createProduct')}
               </Button>
             </div>
           }
@@ -724,13 +727,13 @@ export default function ProductsPage() {
               {/* Nombre */}
               <div data-tour="product-drawer-name">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nombre <span className="text-red-500">*</span>
+                  {t('drawer.nameLabel')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   {...register('nombre')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
-                  placeholder="Nombre del producto"
+                  placeholder={t('drawer.namePlaceholder')}
                 />
                 {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre.message}</p>}
               </div>
@@ -738,13 +741,13 @@ export default function ProductsPage() {
               {/* Codigo de Barras */}
               <div data-tour="product-drawer-barcode">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Codigo de Barras <span className="text-red-500">*</span>
+                  {t('drawer.barcode')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   {...register('codigoBarra')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent font-mono"
-                  placeholder="7501234567890"
+                  placeholder={t('drawer.barcodePlaceholder')}
                 />
                 {errors.codigoBarra && <p className="text-red-500 text-xs mt-1">{errors.codigoBarra.message}</p>}
               </div>
@@ -752,12 +755,12 @@ export default function ProductsPage() {
               {/* Descripcion */}
               <div data-tour="product-drawer-description">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Descripcion
+                  {t('drawer.description')}
                 </label>
                 <textarea
                   {...register('descripcion')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
-                  placeholder="Descripcion del producto"
+                  placeholder={t('drawer.descriptionPlaceholder')}
                   rows={2}
                 />
               </div>
@@ -765,7 +768,7 @@ export default function ProductsPage() {
               {/* Imagen del producto */}
               <div data-tour="product-drawer-image">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Imagen del producto
+                  {t('drawer.productImage')}
                 </label>
                 <ImageUpload
                   variant="square"
@@ -775,7 +778,7 @@ export default function ProductsPage() {
                   size="md"
                   maxSizeMB={5}
                   accept="image/jpeg,image/png,image/webp"
-                  hint="PNG, JPG o WebP. Máx. 5 MB."
+                  hint={t('drawer.imageHint')}
                   onUpload={(file) => {
                     setImageFile(file);
                     setImagePreview(URL.createObjectURL(file));
@@ -785,10 +788,10 @@ export default function ProductsPage() {
                       try {
                         await productService.deleteProductImage(editingProduct.id);
                         setCurrentImageUrl(null);
-                        toast.success('Imagen eliminada');
+                        toast.success(tc('imageDeleted'));
                         await fetchProducts();
                       } catch {
-                        toast.error('Error al eliminar la imagen');
+                        toast.error(tc('errorDeletingImage'));
                       }
                     } else {
                       setImageFile(null);
@@ -801,12 +804,12 @@ export default function ProductsPage() {
               {/* Familia de Productos */}
               <div data-tour="product-drawer-family">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Familia de Productos <span className="text-red-500">*</span>
+                  {t('drawer.productFamily')} <span className="text-red-500">*</span>
                 </label>
                 {loadingCatalogs ? (
                   <div className="flex items-center gap-2 text-sm text-gray-500">
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Cargando...
+                    {tc('loading')}
                   </div>
                 ) : (
                   <>
@@ -814,8 +817,8 @@ export default function ProductsPage() {
                       options={familias.map(f => ({ value: f.id, label: f.nombre, description: f.descripcion }))}
                       value={watch('familiaId') || null}
                       onChange={(val) => setValue('familiaId', val ? Number(val) : 0, { shouldDirty: true })}
-                      placeholder="Selecciona una familia"
-                      searchPlaceholder="Buscar familia..."
+                      placeholder={t('drawer.selectFamily')}
+                      searchPlaceholder={t('drawer.searchFamily')}
                     />
                     {errors.familiaId && <p className="text-red-500 text-xs mt-1">{errors.familiaId.message}</p>}
                   </>
@@ -825,12 +828,12 @@ export default function ProductsPage() {
               {/* Categoria de Productos */}
               <div data-tour="product-drawer-category">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Categoria <span className="text-red-500">*</span>
+                  {t('drawer.category')} <span className="text-red-500">*</span>
                 </label>
                 {loadingCatalogs ? (
                   <div className="flex items-center gap-2 text-sm text-gray-500">
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Cargando...
+                    {tc('loading')}
                   </div>
                 ) : (
                   <>
@@ -838,8 +841,8 @@ export default function ProductsPage() {
                       options={categorias.map(c => ({ value: c.id, label: c.nombre, description: c.descripcion }))}
                       value={watch('categoraId') || null}
                       onChange={(val) => setValue('categoraId', val ? Number(val) : 0, { shouldDirty: true })}
-                      placeholder="Selecciona una categoria"
-                      searchPlaceholder="Buscar categoria..."
+                      placeholder={t('drawer.selectCategory')}
+                      searchPlaceholder={t('drawer.searchCategory')}
                     />
                     {errors.categoraId && <p className="text-red-500 text-xs mt-1">{errors.categoraId.message}</p>}
                   </>
@@ -849,12 +852,12 @@ export default function ProductsPage() {
               {/* Unidad de Medida */}
               <div data-tour="product-drawer-unit">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Unidad de Medida <span className="text-red-500">*</span>
+                  {t('drawer.unit')} <span className="text-red-500">*</span>
                 </label>
                 {loadingCatalogs ? (
                   <div className="flex items-center gap-2 text-sm text-gray-500">
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Cargando...
+                    {tc('loading')}
                   </div>
                 ) : (
                   <>
@@ -862,8 +865,8 @@ export default function ProductsPage() {
                       options={unidades.map(u => ({ value: u.id, label: `${u.nombre}${u.abreviatura ? ` (${u.abreviatura})` : ''}` }))}
                       value={watch('unidadMedidaId') || null}
                       onChange={(val) => setValue('unidadMedidaId', val ? Number(val) : 0, { shouldDirty: true })}
-                      placeholder="Selecciona una unidad"
-                      searchPlaceholder="Buscar unidad..."
+                      placeholder={t('drawer.selectUnit')}
+                      searchPlaceholder={t('drawer.searchUnit')}
                     />
                     {errors.unidadMedidaId && <p className="text-red-500 text-xs mt-1">{errors.unidadMedidaId.message}</p>}
                   </>
@@ -873,7 +876,7 @@ export default function ProductsPage() {
               {/* Precio Base */}
               <div data-tour="product-drawer-price">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Precio Base <span className="text-red-500">*</span>
+                  {t('drawer.basePrice')} <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-500" />
