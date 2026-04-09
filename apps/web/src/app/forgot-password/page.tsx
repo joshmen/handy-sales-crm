@@ -104,7 +104,7 @@ export default function ForgotPasswordPage() {
               />
               {errors.email && (
                 <p className="text-xs text-red-500 mt-1">
-                  {errors.email.message}
+                  <FieldError message={errors.email?.message} />
                 </p>
               )}
             </div>

@@ -706,7 +706,7 @@ export default function TenantDetailPage() {
               placeholder="Ej: Mi Empresa SA de CV"
             />
             {errors.nombreEmpresa && (
-              <p className="text-sm text-red-600 mt-1">{errors.nombreEmpresa.message}</p>
+              <FieldError message={errors.nombreEmpresa?.message} />
             )}
           </div>
 

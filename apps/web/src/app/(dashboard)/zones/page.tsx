@@ -840,7 +840,7 @@ export default function ZonesPage() {
                     placeholder="Nombre de la zona"
                   />
                   {errors.name && (
-                    <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>
+                    <FieldError message={errors.name?.message} />
                   )}
                 </div>
 
@@ -886,7 +886,7 @@ export default function ZonesPage() {
                   rows={2}
                 />
                 {errors.description && (
-                  <p className="mt-1 text-xs text-red-600">{errors.description.message}</p>
+                  <FieldError message={errors.description?.message} />
                 )}
               </div>
             </div>

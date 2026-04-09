@@ -690,7 +690,7 @@ export default function RoutesPage() {
                 placeholder={t('drawer.namePlaceholder')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
               />
-              {errors.nombre && <p className="text-xs text-red-500 mt-1">{errors.nombre.message}</p>}
+              {errors.nombre && <FieldError message={errors.nombre?.message} />}
             </div>
 
             {/* Usuario */}
@@ -742,7 +742,7 @@ export default function RoutesPage() {
                 value={watch('fecha')}
                 onChange={(val) => setValue('fecha', val, { shouldValidate: true, shouldDirty: true })}
               />
-              {errors.fecha && <p className="text-xs text-red-500 mt-1">{errors.fecha.message}</p>}
+              {errors.fecha && <FieldError message={errors.fecha?.message} />}
             </div>
 
             {/* Hora inicio / Hora fin (2 columnas) */}

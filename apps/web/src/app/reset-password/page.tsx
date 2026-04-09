@@ -1,4 +1,5 @@
 'use client';
+import { FieldError } from '@/components/forms/FieldError';
 
 import { useState, Suspense } from 'react';
 import { useForm } from 'react-hook-form';
@@ -152,7 +153,7 @@ function ResetPasswordForm() {
           </div>
           {errors.password && (
             <p className="text-xs text-red-500 mt-1">
-              {errors.password.message}
+              <FieldError message={errors.password?.message} />
             </p>
           )}
         </div>
@@ -182,7 +183,7 @@ function ResetPasswordForm() {
           </div>
           {errors.confirmPassword && (
             <p className="text-xs text-red-500 mt-1">
-              {errors.confirmPassword.message}
+              <FieldError message={errors.confirmPassword?.message} />
             </p>
           )}
         </div>

@@ -1107,7 +1107,7 @@ export default function InventoryPage() {
               placeholder="0"
             />
             {errors.cantidadActual && (
-              <p className="mt-1 text-xs text-red-600">{errors.cantidadActual.message}</p>
+              <FieldError message={errors.cantidadActual?.message} />
             )}
           </div>
 
@@ -1122,7 +1122,7 @@ export default function InventoryPage() {
                 placeholder="0"
               />
               {errors.stockMinimo && (
-                <p className="mt-1 text-xs text-red-600">{errors.stockMinimo.message}</p>
+                <FieldError message={errors.stockMinimo?.message} />
               )}
             </div>
             <div>
@@ -1135,7 +1135,7 @@ export default function InventoryPage() {
                 placeholder="0"
               />
               {errors.stockMaximo && (
-                <p className="mt-1 text-xs text-red-600">{errors.stockMaximo.message}</p>
+                <FieldError message={errors.stockMaximo?.message} />
               )}
             </div>
           </div>

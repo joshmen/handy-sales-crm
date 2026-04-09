@@ -850,7 +850,7 @@ export default function TenantsPage() {
               placeholder="Ej: Mi Empresa SA de CV"
             />
             {errors.nombreEmpresa && (
-              <p className="text-sm text-red-600 mt-1">{errors.nombreEmpresa.message}</p>
+              <FieldError message={errors.nombreEmpresa?.message} />
             )}
           </div>
 
@@ -876,7 +876,7 @@ export default function TenantsPage() {
                   />
                 </div>
                 {errors.identificadorFiscal && (
-                  <p className="text-sm text-red-600 mt-1">{errors.identificadorFiscal.message}</p>
+                  <FieldError message={errors.identificadorFiscal?.message} />
                 )}
               </div>
 
@@ -913,7 +913,7 @@ export default function TenantsPage() {
                   />
                 </div>
                 {errors.email && (
-                  <p className="text-sm text-red-600 mt-1">{errors.email.message}</p>
+                  <FieldError message={errors.email?.message} />
                 )}
               </div>
 
@@ -987,7 +987,7 @@ export default function TenantsPage() {
               />
             </div>
             {errors.maxUsuarios && (
-              <p className="text-sm text-red-600 mt-1">{errors.maxUsuarios.message}</p>
+              <FieldError message={errors.maxUsuarios?.message} />
             )}
           </div>
 
@@ -1036,7 +1036,7 @@ export default function TenantsPage() {
                   />
                 </div>
                 {errors.adminEmail && (
-                  <p className="text-sm text-red-600 mt-1">{errors.adminEmail.message}</p>
+                  <FieldError message={errors.adminEmail?.message} />
                 )}
               </div>
 
@@ -1054,7 +1054,7 @@ export default function TenantsPage() {
                   placeholder="Contraseña temporal"
                 />
                 {errors.adminPassword && (
-                  <p className="text-sm text-red-600 mt-1">{errors.adminPassword.message}</p>
+                  <FieldError message={errors.adminPassword?.message} />
                 )}
               </div>
             </>

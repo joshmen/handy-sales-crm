@@ -529,7 +529,7 @@ export default function MetasPage() {
                   ))}
                 </select>
                 {errors.usuarioId && (
-                  <p className="text-red-500 text-xs mt-1">{errors.usuarioId.message}</p>
+                  <FieldError message={errors.usuarioId?.message} />
                 )}
               </>
             ) : (
@@ -552,7 +552,7 @@ export default function MetasPage() {
                 <option key={t.value} value={t.value}>{t.label}</option>
               ))}
             </select>
-            {errors.tipo && <FieldError message={errors.tipo.message} />}
+            {errors.tipo && <FieldError message={errors.tipo?.message} />}
           </div>
 
           {/* Período */}
@@ -596,7 +596,7 @@ export default function MetasPage() {
               className="w-full h-10 border border-gray-300 rounded-lg text-sm px-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder={watchedTipo === 'ventas' ? '50000.00' : '20'}
             />
-            {errors.monto && <FieldError message={errors.monto.message} />}
+            {errors.monto && <FieldError message={errors.monto?.message} />}
           </div>
 
           {/* Fechas */}
@@ -611,7 +611,7 @@ export default function MetasPage() {
                 onChange={(val) => setValue('fechaInicio', val, { shouldValidate: true, shouldDirty: true })}
               />
               {errors.fechaInicio && (
-                <p className="text-red-500 text-xs mt-1">{errors.fechaInicio.message}</p>
+                <FieldError message={errors.fechaInicio?.message} />
               )}
             </div>
             <div>
@@ -625,7 +625,7 @@ export default function MetasPage() {
                 min={watch('fechaInicio')}
               />
               {errors.fechaFin && (
-                <p className="text-red-500 text-xs mt-1">{errors.fechaFin.message}</p>
+                <FieldError message={errors.fechaFin?.message} />
               )}
             </div>
           </div>

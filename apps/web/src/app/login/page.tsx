@@ -403,7 +403,7 @@ function LoginContent() {
                   {errors.email && (
                     <p className="text-xs text-red-500 flex items-center gap-1">
                       <span className="inline-block w-1 h-1 rounded-full bg-red-400" />
-                      {errors.email.message}
+                      <FieldError message={errors.email?.message} />
                     </p>
                   )}
                 </div>
@@ -440,7 +440,7 @@ function LoginContent() {
                   {errors.password && (
                     <p className="text-xs text-red-500 flex items-center gap-1">
                       <span className="inline-block w-1 h-1 rounded-full bg-red-400" />
-                      {errors.password.message}
+                      <FieldError message={errors.password?.message} />
                     </p>
                   )}
                 </div>
