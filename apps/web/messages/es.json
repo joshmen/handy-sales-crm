@@ -1179,6 +1179,7 @@
   },
   "routes": {
     "title": "Rutas",
+    "routeCount": "{count} ruta{count, plural, one {} other {s}}",
     "newRoute": "Nueva ruta",
     "errorLoading": "Error al cargar las rutas",
     "errorLoadingRetry": "Error al cargar las rutas. Intenta de nuevo.",
@@ -2790,6 +2791,7 @@
   },
   "zones": {
     "title": "Zonas",
+    "zoneCount": "{count} zona{count, plural, one {} other {s}}",
     "newZone": "Nueva zona",
     "zoneCreated": "Zona creada correctamente",
     "zoneUpdated": "Zona actualizada correctamente",
@@ -4507,6 +4509,9 @@
       "noResults": "No se encontraron resultados"
     },
     "tenantDetail": {
+      "active": "Activa",
+      "suspended": "Suspendida",
+      "maxUsers": "usuarios máx.",
       "companyNotFound": "Empresa no encontrada",
       "companyNotFoundDesc": "La empresa solicitada no existe o fue eliminada",
       "backToCompanies": "Volver a Empresas",

@@ -472,7 +472,7 @@ export default function RoutesPage() {
         { label: t('title') },
       ]}
       title={t('title')}
-      subtitle={totalItems > 0 ? `${totalItems} ruta${totalItems !== 1 ? 's' : ''}` : undefined}
+      subtitle={totalItems > 0 ? t('routeCount', { count: totalItems }) : undefined}
       actions={
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           <button

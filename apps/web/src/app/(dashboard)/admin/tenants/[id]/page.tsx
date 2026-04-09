@@ -459,7 +459,7 @@ export default function TenantDetailPage() {
         { label: tenant.nombreEmpresa },
       ]}
       title={tenant.nombreEmpresa}
-      subtitle={`${getPlanLabel(tenant.planTipo)} · ${tenant.activo ? 'Activa' : 'Suspendida'} · ${tenant.maxUsuarios} usuarios máx.`}
+      subtitle={`${getPlanLabel(tenant.planTipo)} · ${tenant.activo ? t('active') : t('suspended')} · ${tenant.maxUsuarios} ${t('maxUsers')}`}
       actions={headerActions}
     >
       <div className="space-y-6">

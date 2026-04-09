@@ -370,7 +370,7 @@ export default function ZonesPage() {
         { label: t('title') },
       ]}
       title={t('title')}
-      subtitle={totalZones > 0 ? `${totalZones} zona${totalZones !== 1 ? 's' : ''}` : undefined}
+      subtitle={totalZones > 0 ? t('zoneCount', { count: totalZones }) : undefined}
       actions={
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           <button

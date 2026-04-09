@@ -1179,6 +1179,7 @@
   },
   "routes": {
     "title": "Routes",
+    "routeCount": "{count} route{count, plural, one {} other {s}}",
     "newRoute": "New route",
     "errorLoading": "Error loading routes",
     "errorLoadingRetry": "Error loading routes. Please try again.",
@@ -2790,6 +2791,7 @@
   },
   "zones": {
     "title": "Zones",
+    "zoneCount": "{count} zone{count, plural, one {} other {s}}",
     "newZone": "New zone",
     "zoneCreated": "Zone created successfully",
     "zoneUpdated": "Zone updated successfully",
@@ -4507,6 +4509,9 @@
       "noResults": "No results found"
     },
     "tenantDetail": {
+      "active": "Active",
+      "suspended": "Suspended",
+      "maxUsers": "max users",
       "companyNotFound": "Company not found",
       "companyNotFoundDesc": "The requested company does not exist or was deleted",
       "backToCompanies": "Back to Companies",
