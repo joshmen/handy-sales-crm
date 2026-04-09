@@ -39,6 +39,22 @@ const ERROR_MAP: Record<string, { es: string; en: string }> = {
   // Already exists (generic)
   'Ya existe un registro con esos datos': { es: 'Ya existe un registro con esos datos', en: 'A record with this data already exists' },
   'Ya existe un registro con esos datos.': { es: 'Ya existe un registro con esos datos.', en: 'A record with this data already exists.' },
+  'Ya existe un registro con ese nombre.': { es: 'Ya existe un registro con ese nombre.', en: 'A record with that name already exists.' },
+  'Ya existe una familia con ese nombre.': { es: 'Ya existe una familia con ese nombre.', en: 'A family with that name already exists.' },
+  'Ya existe una unidad con ese nombre.': { es: 'Ya existe una unidad con ese nombre.', en: 'A unit with that name already exists.' },
+  'Se requiere al menos un ID': { es: 'Se requiere al menos un ID', en: 'At least one ID is required' },
+
+  'Ya existe una promoción con esos datos.': { es: 'Ya existe una promoción con esos datos.', en: 'A promotion with this data already exists.' },
+  'Ya existe una unidad de medida con ese nombre.': { es: 'Ya existe una unidad de medida con ese nombre.', en: 'A unit of measure with that name already exists.' },
+  'Ya existe una lista de precios con ese nombre.': { es: 'Ya existe una lista de precios con ese nombre.', en: 'A price list with that name already exists.' },
+  'Lista de IDs inválida (máx. 1000)': { es: 'Lista de IDs inválida (máx. 1000)', en: 'Invalid ID list (max 1000)' },
+
+  // Product/catalog specific
+  'El producto no existe': { es: 'El producto no existe', en: 'Product does not exist' },
+  'La familia no existe': { es: 'La familia no existe', en: 'Family does not exist' },
+  'La categoría no existe': { es: 'La categoría no existe', en: 'Category does not exist' },
+  'La unidad no existe': { es: 'La unidad no existe', en: 'Unit does not exist' },
+  'La lista de precios no existe': { es: 'La lista de precios no existe', en: 'Price list does not exist' },
 
   // Limits
   'Has alcanzado el límite de usuarios': { es: 'Has alcanzado el límite de usuarios', en: 'You have reached the user limit' },
