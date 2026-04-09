@@ -4641,6 +4641,16 @@
     "companyNameRequired": "El nombre de la empresa es obligatorio",
     "selectOrder": "Selecciona un pedido",
     "amountGreaterThanZero": "El monto debe ser mayor a 0",
-    "selectPaymentMethod": "Selecciona un método de pago"
+    "selectPaymentMethod": "Selecciona un método de pago",
+    "endDateAfterStart": "La fecha de fin debe ser posterior a la de inicio",
+    "discountMax100": "El porcentaje de descuento no puede exceder 100%",
+    "min2Chars": "Mínimo 2 caracteres",
+    "max20Chars": "Máximo 20 caracteres",
+    "min6Chars": "Mínimo 6 caracteres",
+    "minOneUser": "Mínimo 1 usuario",
+    "maxUsers1000": "Máximo 1000 usuarios",
+    "selectProductForDiscount": "Debe seleccionar un producto para descuentos por producto",
+    "minOneUnit": "Mínimo 1 unidad",
+    "minOnePercent": "Mínimo 1%"
   }
 }

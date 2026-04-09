@@ -700,7 +700,7 @@ export default function TenantDetailPage() {
               type="text"
               {...register('nombreEmpresa', {
                 required: 'nameRequired',
-                minLength: { value: 2, message: 'Mínimo 2 caracteres' },
+                minLength: { value: 2, message: 'min2Chars' },
               })}
               className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-green-500 focus:border-transparent"
               placeholder="Ej: Mi Empresa SA de CV"
@@ -836,7 +836,7 @@ export default function TenantDetailPage() {
                   required: 'El email es requerido',
                   pattern: {
                     value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: 'Email inválido',
+                    message: 'emailInvalid',
                   },
                 })}
                 className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-green-500 focus:border-transparent"
@@ -856,7 +856,7 @@ export default function TenantDetailPage() {
               type="text"
               {...registerUser('nombre', {
                 required: 'nameRequired',
-                minLength: { value: 2, message: 'Mínimo 2 caracteres' },
+                minLength: { value: 2, message: 'min2Chars' },
               })}
               className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-green-500 focus:border-transparent"
               placeholder="Nombre del usuario"
@@ -888,7 +888,7 @@ export default function TenantDetailPage() {
                 type="text"
                 {...registerUser('password', {
                   required: 'La contraseña es requerida',
-                  minLength: { value: 6, message: 'Mínimo 6 caracteres' },
+                  minLength: { value: 6, message: 'min6Chars' },
                 })}
                 className="flex-1 px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-green-500 focus:border-transparent font-mono text-sm"
                 placeholder="Contraseña temporal"

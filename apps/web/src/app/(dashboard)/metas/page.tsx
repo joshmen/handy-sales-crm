@@ -59,7 +59,7 @@ const metaSchema = z.object({
   fechaFin: z.string().min(1, 'endDateRequired'),
   autoRenovar: z.boolean(),
 }).refine(d => d.fechaFin > d.fechaInicio, {
-  message: 'La fecha de fin debe ser posterior a la de inicio',
+  message: 'endDateAfterStart',
   path: ['fechaFin'],
 });
 

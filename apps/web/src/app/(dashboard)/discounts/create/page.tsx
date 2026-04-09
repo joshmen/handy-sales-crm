@@ -47,7 +47,7 @@ const discountCreateSchema = z.object({
   }
   return true;
 }, {
-  message: 'Debe seleccionar un producto para descuentos por producto',
+  message: 'selectProductForDiscount',
   path: ['productId'],
 }).refine(data => {
   // Validar que los rangos de porcentaje no excedan 100%
@@ -56,7 +56,7 @@ const discountCreateSchema = z.object({
   }
   return true;
 }, {
-  message: 'El porcentaje de descuento no puede exceder 100%',
+  message: 'discountMax100',
   path: ['quantityRanges'],
 });
 

@@ -57,7 +57,7 @@ const promotionCreateSchema = z.object({
   );
   return !hasInvalidPercentage;
 }, {
-  message: 'El porcentaje de descuento no puede exceder 100%',
+  message: 'discountMax100',
   path: ['rewardProducts'],
 }).refine(data => {
   // Si hay fechas, la fecha de fin debe ser posterior a la de inicio
@@ -66,7 +66,7 @@ const promotionCreateSchema = z.object({
   }
   return true;
 }, {
-  message: 'La fecha de fin debe ser posterior a la fecha de inicio',
+  message: 'endDateAfterStart',
   path: ['limits.endDate'],
 });
 

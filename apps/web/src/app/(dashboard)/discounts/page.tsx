@@ -43,11 +43,11 @@ type TipoAplicacion = 'Global' | 'Producto';
 
 const discountSchema = z.object({
   productoId: z.number(),
-  cantidadMinima: z.number().min(1, 'Mínimo 1 unidad'),
-  descuentoPorcentaje: z.number().min(1, 'Mínimo 1%').max(100, 'Máximo 100%'),
+  cantidadMinima: z.number().min(1, 'minOneUnit'),
+  descuentoPorcentaje: z.number().min(1, 'minOnePercent').max(100, 'discountMax100'),
   tipoAplicacion: z.enum(['Global', 'Producto']),
 }).refine(data => data.tipoAplicacion !== 'Producto' || data.productoId > 0, {
-  message: 'Selecciona un producto',
+  message: 'selectProduct',
   path: ['productoId'],
 });
 

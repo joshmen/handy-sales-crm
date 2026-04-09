@@ -56,7 +56,7 @@ const promotionSchema = z.object({
   fechaInicio: z.string().min(1, 'startDateRequired'),
   fechaFin: z.string().min(1, 'endDateRequired'),
 }).refine(data => !data.fechaFin || !data.fechaInicio || data.fechaFin > data.fechaInicio, {
-  message: 'La fecha de fin debe ser posterior a la de inicio',
+  message: 'endDateAfterStart',
   path: ['fechaFin'],
 });
 
