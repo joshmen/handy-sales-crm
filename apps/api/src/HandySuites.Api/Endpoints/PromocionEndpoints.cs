@@ -32,9 +32,9 @@ public static class PromocionesEndpoints
                 var id = await servicio.CrearPromocionAsync(dto);
                 return Results.Created($"/promociones/{id}", new { id });
             }
-            catch (InvalidOperationException)
+            catch (InvalidOperationException ex)
             {
-                return Results.Conflict(new { message = "Ya existe una promoción con esos datos." });
+                return Results.Conflict(new { message = ex.Message });
             }
         }).RequireAuthorization();
 
@@ -53,9 +53,9 @@ public static class PromocionesEndpoints
                 var actualizado = await servicio.ActualizarPromocionAsync(id, dto);
                 return actualizado ? Results.NoContent() : Results.NotFound();
             }
-            catch (InvalidOperationException)
+            catch (InvalidOperationException ex)
             {
-                return Results.Conflict(new { message = "Ya existe una promoción con esos datos." });
+                return Results.Conflict(new { message = ex.Message });
             }
         }).RequireAuthorization();
 
