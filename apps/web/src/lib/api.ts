@@ -1,6 +1,7 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { API_CONFIG } from '@/lib/constants';
 import { getSession, signOut } from 'next-auth/react';
+import { translateError } from '@/lib/translateError';
 
 // Create axios instance
 const apiInstance: AxiosInstance = axios.create({
@@ -300,8 +301,9 @@ export const handleApiError = (error: unknown): ApiError => {
     }
 
     const rawMessage = responseData?.message || responseData?.error;
+    const fallback = getApiFallbackMessage();
     return {
-      message: sanitizeMessage(rawMessage, 'Ocurrió un error. Intenta nuevamente.'),
+      message: translateError(sanitizeMessage(rawMessage, fallback)),
       status: error.response?.status || 0,
       errors: responseData?.errors || [],
       validationErrors,
@@ -309,7 +311,7 @@ export const handleApiError = (error: unknown): ApiError => {
   }
 
   return {
-    message: 'Ocurrió un error inesperado. Intenta nuevamente.',
+    message: translateError(getApiFallbackMessage()),
     status: 0,
   };
 };

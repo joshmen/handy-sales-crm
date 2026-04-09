@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { getSession } from 'next-auth/react';
+import { translateError } from '@/lib/translateError';
 
 const BILLING_API_URL = process.env.NEXT_PUBLIC_BILLING_API_URL || 'http://localhost:1051';
 
@@ -130,5 +131,5 @@ export function extractBillingError(err: unknown): BillingApiError {
     lowerMsg.includes('actualiza tu plan') ||
     lowerMsg.includes('facturación electrónica');
 
-  return { message, code, details, status, isTimbresError };
+  return { message: translateError(message), code, details, status, isTimbresError };
 }
