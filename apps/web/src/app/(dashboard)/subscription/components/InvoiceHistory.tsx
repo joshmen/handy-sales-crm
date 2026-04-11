@@ -9,13 +9,13 @@ import { Loader2, FileText, Download, Receipt } from "lucide-react";
 const invoiceStatusMap: Record<string, { label: string; className: string }> = {
   paid: { label: "Pagado", className: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300" },
   open: { label: "Pendiente", className: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300" },
-  draft: { label: "Borrador", className: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300" },
+  draft: { label: "Borrador", className: "bg-surface-3 text-gray-800 dark:bg-gray-800 dark:text-gray-300" },
   uncollectible: { label: "Incobrable", className: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300" },
-  void: { label: "Anulado", className: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400" },
+  void: { label: "Anulado", className: "bg-surface-3 text-foreground/70 dark:bg-gray-800 dark:text-muted-foreground" },
 };
 
 function InvoiceStatusBadge({ status }: { status: string }) {
-  const info = invoiceStatusMap[status] || { label: status, className: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300" };
+  const info = invoiceStatusMap[status] || { label: status, className: "bg-surface-3 text-gray-800 dark:bg-gray-800 dark:text-gray-300" };
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${info.className}`}>
       {info.label}

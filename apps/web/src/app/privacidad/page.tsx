@@ -14,7 +14,7 @@ export default function PrivacidadPage() {
 
       <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
         <h1 className="text-3xl font-bold text-gray-900">Aviso de Privacidad</h1>
-        <p className="mt-2 text-sm text-gray-500">Última actualización: febrero 2026</p>
+        <p className="mt-2 text-sm text-muted-foreground">Última actualización: febrero 2026</p>
 
         <div className="mt-8 space-y-8 text-gray-700 leading-relaxed">
           <section>
@@ -149,7 +149,7 @@ export default function PrivacidadPage() {
           </section>
         </div>
 
-        <div className="mt-12 border-t border-gray-200 pt-6 text-center text-sm text-gray-500">
+        <div className="mt-12 border-t border-border-subtle pt-6 text-center text-sm text-muted-foreground">
           <p>© {new Date().getFullYear()} Handy Suites® — Todos los derechos reservados</p>
           <div className="mt-2 flex justify-center gap-4">
             <Link href="/terminos" className="text-blue-600 hover:underline">Términos de uso</Link>

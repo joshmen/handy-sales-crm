@@ -170,7 +170,7 @@ function CreateDiscountForm() {
             <h1 className="text-2xl font-bold">
               {discountType === DiscountType.GLOBAL ? t('createPage.titleGlobal') : t('createPage.titleProduct')}
             </h1>
-            <p className="text-gray-600">
+            <p className="text-foreground/70">
               {discountType === DiscountType.GLOBAL
                 ? t('createPage.subtitleGlobal')
                 : t('createPage.subtitleProduct')

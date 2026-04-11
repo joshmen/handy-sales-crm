@@ -22,13 +22,13 @@ export default async function NotFound() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-surface-1 px-4">
       <div className="max-w-md w-full text-center space-y-6">
-        <div className="mx-auto w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
-          <FileQuestion className="w-8 h-8 text-gray-400" />
+        <div className="mx-auto w-16 h-16 rounded-full bg-surface-3 flex items-center justify-center">
+          <FileQuestion className="w-8 h-8 text-muted-foreground" />
         </div>
         <div className="space-y-2">
           <h1 className="text-5xl font-bold text-gray-300">404</h1>
           <h2 className="text-xl font-semibold text-gray-900">{t.title}</h2>
-          <p className="text-sm text-gray-500">{t.description}</p>
+          <p className="text-sm text-muted-foreground">{t.description}</p>
         </div>
         <a
           href="/dashboard"

@@ -86,7 +86,7 @@ export const SystemTab: React.FC<SystemTabProps> = ({
             <Label>{t('appVersion')}</Label>
             {healthLoading ? (
               <div className="flex items-center gap-2">
-                <Loader2 className="h-3 w-3 animate-spin text-gray-400" />
+                <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">{t('loading')}</p>
               </div>
             ) : (
@@ -107,7 +107,7 @@ export const SystemTab: React.FC<SystemTabProps> = ({
             <Label>{t('database')}</Label>
             <div className="flex items-center gap-2">
               {healthLoading ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin text-gray-400" />
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
               ) : healthError ? (
                 <XCircle className="h-3.5 w-3.5 text-red-500" />
               ) : (
@@ -123,7 +123,7 @@ export const SystemTab: React.FC<SystemTabProps> = ({
             <Label>{t('server')}</Label>
             <div className="flex items-center gap-2">
               {healthLoading ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin text-gray-400" />
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
               ) : healthError ? (
                 <XCircle className="h-3.5 w-3.5 text-red-500" />
               ) : (

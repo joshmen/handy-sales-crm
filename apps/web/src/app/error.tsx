@@ -24,10 +24,10 @@ export default function GlobalError({
         </div>
         <div className="space-y-2">
           <h1 className="text-2xl font-bold text-gray-900">Algo salió mal</h1>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-muted-foreground">
             Ocurrió un error inesperado. Puedes intentar recargar la página o volver al inicio.
           </p>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-muted-foreground">
             Si el problema persiste, contacta a soporte.
             {error.digest && <span className="font-mono ml-1">(Ref: {error.digest})</span>}
           </p>
@@ -42,7 +42,7 @@ export default function GlobalError({
           </button>
           <a
             href="/dashboard"
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-surface-2 text-gray-700 text-sm font-medium rounded-lg border border-gray-300 hover:bg-surface-1 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-surface-2 text-gray-700 text-sm font-medium rounded-lg border border-border-default hover:bg-surface-1 transition-colors"
           >
             <Home className="w-4 h-4" />
             Ir al inicio

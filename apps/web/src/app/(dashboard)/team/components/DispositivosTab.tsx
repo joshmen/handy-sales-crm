@@ -49,12 +49,12 @@ function getStatusKey(status: number): string {
 function getStatusClassName(status: number): string {
   switch (status) {
     case 0: return 'text-green-700 bg-green-100';
-    case 1: case 2: return 'text-gray-600 bg-gray-100';
+    case 1: case 2: return 'text-foreground/70 bg-surface-3';
     case 3: return 'text-red-700 bg-red-100';
     case 4: return 'text-orange-700 bg-orange-100';
     case 5: return 'text-yellow-700 bg-yellow-100 animate-pulse';
     case 6: return 'text-purple-700 bg-purple-100';
-    default: return 'text-gray-600 bg-gray-100';
+    default: return 'text-foreground/70 bg-surface-3';
   }
 }
 
@@ -208,10 +208,10 @@ export function DispositivosTab() {
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input type="text" placeholder={t('searchPlaceholder')} aria-label={t('searchLabel')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input type="text" placeholder={t('searchPlaceholder')} aria-label={t('searchLabel')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-9 pr-3 py-2 text-xs border border-border-subtle rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent" />
         </div>
-        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} aria-label={t('filterLabel')} className="w-full sm:w-48 px-3 py-2 text-xs border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-surface-2">
+        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} aria-label={t('filterLabel')} className="w-full sm:w-48 px-3 py-2 text-xs border border-border-subtle rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-surface-2">
           <option value="all">{t('allStatuses')}</option>
           <option value="0">{t('activeStatus')}</option>
           <option value="1">{t('loggedOut')}</option>
@@ -221,13 +221,13 @@ export function DispositivosTab() {
           <option value="5">{t('unbinding')}</option>
           <option value="6">{t('unbound')}</option>
         </select>
-        <div className="hidden sm:block ml-auto text-xs text-gray-500">{!loading && t('sessionCount', { count: totalItems })}</div>
+        <div className="hidden sm:block ml-auto text-xs text-muted-foreground">{!loading && t('sessionCount', { count: totalItems })}</div>
       </div>
 
       {!loading && !error && sessions.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           {[
-            { label: t('total'), value: stats.total, icon: TabletSmartphone, color: 'text-gray-700 bg-surface-1 border-gray-200' },
+            { label: t('total'), value: stats.total, icon: TabletSmartphone, color: 'text-gray-700 bg-surface-1 border-border-subtle' },
             { label: t('activeLabel'), value: stats.active, icon: Wifi, color: 'text-green-700 bg-green-50 border-green-200' },
             { label: 'Android', value: stats.android, icon: Smartphone, color: 'text-green-700 bg-green-50 border-green-200' },
             { label: 'iOS', value: stats.ios, icon: Smartphone, color: 'text-blue-700 bg-blue-50 border-blue-200' },
@@ -241,14 +241,14 @@ export function DispositivosTab() {
         </div>
       )}
 
-      {error && !loading && <div className="bg-surface-2 border border-gray-200 rounded-lg overflow-hidden">{renderError()}</div>}
+      {error && !loading && <div className="bg-surface-2 border border-border-subtle rounded-lg overflow-hidden">{renderError()}</div>}
 
       {!error && (<>
         <div className="md:hidden space-y-3">
           {loading && Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="border border-gray-200 rounded-lg p-4 bg-surface-2 animate-pulse space-y-3">
-              <div className="flex items-center gap-3"><div className="w-10 h-10 bg-gray-200 rounded-full" /><div className="flex-1 space-y-1.5"><div className="h-4 bg-gray-200 rounded w-32" /><div className="h-3 bg-gray-100 rounded w-24" /></div></div>
-              <div className="flex justify-between"><div className="h-5 bg-gray-200 rounded-full w-16" /><div className="h-7 bg-gray-200 rounded w-20" /></div>
+            <div key={i} className="border border-border-subtle rounded-lg p-4 bg-surface-2 animate-pulse space-y-3">
+              <div className="flex items-center gap-3"><div className="w-10 h-10 bg-surface-3 rounded-full" /><div className="flex-1 space-y-1.5"><div className="h-4 bg-surface-3 rounded w-32" /><div className="h-3 bg-surface-3 rounded w-24" /></div></div>
+              <div className="flex justify-between"><div className="h-5 bg-surface-3 rounded-full w-16" /><div className="h-7 bg-surface-3 rounded w-20" /></div>
             </div>
           ))}
           {!loading && paginatedSessions.length === 0 && renderEmpty()}
@@ -257,18 +257,18 @@ export function DispositivosTab() {
             const sKey = getStatusKey(session.status);
             const sClass = getStatusClassName(session.status);
             return (
-              <div key={session.id} className={`border border-gray-200 rounded-lg p-4 bg-surface-2 ${session.esSesionActual ? 'ring-2 ring-green-200 border-green-300' : ''}`}>
+              <div key={session.id} className={`border border-border-subtle rounded-lg p-4 bg-surface-2 ${session.esSesionActual ? 'ring-2 ring-green-200 border-green-300' : ''}`}>
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0"><DeviceIcon className="w-5 h-5 text-gray-500" /></div>
+                  <div className="w-10 h-10 rounded-full bg-surface-3 flex items-center justify-center flex-shrink-0"><DeviceIcon className="w-5 h-5 text-muted-foreground" /></div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-gray-900 truncate">{session.usuarioNombre}</span>
                       {session.esSesionActual && <span className="text-[10px] font-medium text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full flex-shrink-0">{t('yourSession')}</span>}
                     </div>
-                    <div className="text-xs text-gray-500 truncate">{session.deviceName || session.deviceTypeNombre}{session.osVersion && ` - ${session.osVersion}`}</div>
+                    <div className="text-xs text-muted-foreground truncate">{session.deviceName || session.deviceTypeNombre}{session.osVersion && ` - ${session.osVersion}`}</div>
                   </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 mb-3">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground mb-3">
                   {session.ipAddress && <span>IP: {session.ipAddress}</span>}
                   {session.appVersion && <span>v{session.appVersion}</span>}
                   <span>{t('since')} {formatDate(session.loggedInAt, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
@@ -288,7 +288,7 @@ export function DispositivosTab() {
           })}
         </div>
 
-        <div className="hidden md:block bg-surface-2 border border-gray-200 rounded-lg overflow-hidden">
+        <div className="hidden md:block bg-surface-2 border border-border-subtle rounded-lg overflow-hidden">
           {loading ? renderSkeleton() : paginatedSessions.length === 0 ? renderEmpty() : (
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-surface-1">
@@ -308,16 +308,16 @@ export function DispositivosTab() {
                   const sClass = getStatusClassName(session.status);
                   return (
                     <tr key={session.id} className={`hover:bg-amber-50 transition-colors ${session.esSesionActual ? 'bg-green-50/40' : ''}`}>
-                      <td className="px-4 py-3"><div className="flex items-center gap-2"><div><div className="text-sm font-medium text-gray-900">{session.usuarioNombre}</div>{session.ipAddress && <div className="text-[11px] text-gray-400">{session.ipAddress}</div>}</div>{session.esSesionActual && <span className="text-[10px] font-medium text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full flex-shrink-0">{t('yourSession')}</span>}</div></td>
-                      <td className="px-4 py-3"><div className="flex items-center gap-2"><DeviceIcon className="w-4 h-4 text-gray-400 flex-shrink-0" /><div><div className="text-sm text-gray-900">{session.deviceName || session.deviceTypeNombre}</div><div className="text-[11px] text-gray-400">{[session.osVersion, session.appVersion ? `v${session.appVersion}` : null, session.deviceModel].filter(Boolean).join(' / ')}</div></div></div></td>
-                      <td className="px-4 py-3"><div className="text-sm text-gray-700" title={formatDate(session.loggedInAt)}>{formatDate(session.loggedInAt, { day: '2-digit', month: 'short' })}</div><div className="text-[11px] text-gray-400">{formatDate(session.loggedInAt, { hour: '2-digit', minute: '2-digit' })}</div></td>
+                      <td className="px-4 py-3"><div className="flex items-center gap-2"><div><div className="text-sm font-medium text-gray-900">{session.usuarioNombre}</div>{session.ipAddress && <div className="text-[11px] text-muted-foreground">{session.ipAddress}</div>}</div>{session.esSesionActual && <span className="text-[10px] font-medium text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full flex-shrink-0">{t('yourSession')}</span>}</div></td>
+                      <td className="px-4 py-3"><div className="flex items-center gap-2"><DeviceIcon className="w-4 h-4 text-muted-foreground flex-shrink-0" /><div><div className="text-sm text-gray-900">{session.deviceName || session.deviceTypeNombre}</div><div className="text-[11px] text-muted-foreground">{[session.osVersion, session.appVersion ? `v${session.appVersion}` : null, session.deviceModel].filter(Boolean).join(' / ')}</div></div></div></td>
+                      <td className="px-4 py-3"><div className="text-sm text-gray-700" title={formatDate(session.loggedInAt)}>{formatDate(session.loggedInAt, { day: '2-digit', month: 'short' })}</div><div className="text-[11px] text-muted-foreground">{formatDate(session.loggedInAt, { hour: '2-digit', minute: '2-digit' })}</div></td>
                       <td className="px-4 py-3"><div className="text-sm text-gray-700" title={formatDate(session.lastActivity)}>{formatTimeAgo(session.lastActivity)}</div></td>
                       <td className="px-4 py-3"><span className={`inline-flex px-2 py-1 text-[11px] font-medium rounded-full ${sClass}`}>{t(sKey)}</span></td>
                       <td className="px-4 py-3 text-right">{session.status === 0 && !session.esSesionActual ? (
                         <button onClick={() => handleRevokeSession(session)} disabled={revokingId === session.id} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded-md hover:bg-red-100 transition-colors disabled:opacity-50">
                           {revokingId === session.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Shield className="w-3.5 h-3.5" />}<span>{t('revoke')}</span>
                         </button>
-                      ) : <span className="text-xs text-gray-400">&mdash;</span>}</td>
+                      ) : <span className="text-xs text-muted-foreground">&mdash;</span>}</td>
                     </tr>
                   );
                 })}
@@ -328,13 +328,13 @@ export function DispositivosTab() {
 
         {!loading && totalItems > pageSize && (
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <span className="text-sm text-gray-500">{t('showing', { start: startItem, end: endItem, total: totalItems })}</span>
+            <span className="text-sm text-muted-foreground">{t('showing', { start: startItem, end: endItem, total: totalItems })}</span>
             <div className="flex items-center gap-2">
-              <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} aria-label={t('prevPage')} className="px-3 py-2 border border-gray-200 rounded-md text-gray-600 hover:bg-surface-1 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"><ChevronLeft className="w-4 h-4" /></button>
+              <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} aria-label={t('prevPage')} className="px-3 py-2 border border-border-subtle rounded-md text-foreground/70 hover:bg-surface-1 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"><ChevronLeft className="w-4 h-4" /></button>
               {Array.from({ length: totalPages }, (_, i) => i + 1).filter((page) => { if (totalPages <= 5) return true; if (page === 1 || page === totalPages) return true; return Math.abs(page - currentPage) <= 1; }).reduce<(number | string)[]>((acc, page, idx, arr) => { if (idx > 0) { const prev = arr[idx - 1]; if (page - prev > 1) acc.push('...'); } acc.push(page); return acc; }, []).map((page, idx) => (
-                <button key={typeof page === 'number' ? `page-${page}` : `ellipsis-${idx}`} onClick={() => typeof page === 'number' && setCurrentPage(page)} disabled={page === '...'} className={`min-w-[32px] px-2 py-1.5 text-sm rounded-md transition-colors ${page === currentPage ? 'bg-success text-success-foreground' : page === '...' ? 'text-gray-400 cursor-default' : 'text-gray-600 hover:bg-gray-100'}`}>{page}</button>
+                <button key={typeof page === 'number' ? `page-${page}` : `ellipsis-${idx}`} onClick={() => typeof page === 'number' && setCurrentPage(page)} disabled={page === '...'} className={`min-w-[32px] px-2 py-1.5 text-sm rounded-md transition-colors ${page === currentPage ? 'bg-success text-success-foreground' : page === '...' ? 'text-muted-foreground cursor-default' : 'text-foreground/70 hover:bg-surface-3'}`}>{page}</button>
               ))}
-              <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} aria-label={t('nextPage')} className="px-3 py-2 border border-gray-200 rounded-md text-gray-600 hover:bg-surface-1 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"><ChevronRight className="w-4 h-4" /></button>
+              <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} aria-label={t('nextPage')} className="px-3 py-2 border border-border-subtle rounded-md text-foreground/70 hover:bg-surface-1 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"><ChevronRight className="w-4 h-4" /></button>
             </div>
           </div>
         )}
@@ -343,20 +343,20 @@ export function DispositivosTab() {
       <Modal isOpen={confirmAction !== null} onClose={() => setConfirmAction(null)} title={confirmAction?.type === 'revoke' ? t('revokeSession') : t('cleanExpiredSessions')} size="sm">
         {confirmAction?.type === 'revoke' && confirmAction.session && (
           <div className="space-y-4">
-            <p className="text-sm text-gray-600">{t('revokeConfirm', { user: confirmAction.session.usuarioNombre, device: confirmAction.session.deviceName || confirmAction.session.deviceTypeNombre })}</p>
+            <p className="text-sm text-foreground/70">{t('revokeConfirm', { user: confirmAction.session.usuarioNombre, device: confirmAction.session.deviceName || confirmAction.session.deviceTypeNombre })}</p>
             <div className="bg-red-50 border border-red-200 rounded-md px-3 py-2"><p className="text-xs text-red-700">{t('revokeWarning')}</p></div>
             <div className="flex justify-end gap-2">
-              <button onClick={() => setConfirmAction(null)} className="px-4 py-2 text-xs font-medium text-gray-700 border border-gray-200 rounded-md hover:bg-surface-1 transition-colors">{tc('cancel')}</button>
+              <button onClick={() => setConfirmAction(null)} className="px-4 py-2 text-xs font-medium text-gray-700 border border-border-subtle rounded-md hover:bg-surface-1 transition-colors">{tc('cancel')}</button>
               <button onClick={executeRevoke} className="px-4 py-2 text-xs font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors">{t('revokeSessionBtn')}</button>
             </div>
           </div>
         )}
         {confirmAction?.type === 'clean' && (
           <div className="space-y-4">
-            <p className="text-sm text-gray-600">{t('cleanConfirm')}</p>
+            <p className="text-sm text-foreground/70">{t('cleanConfirm')}</p>
             <div className="bg-amber-50 border border-amber-200 rounded-md px-3 py-2"><p className="text-xs text-amber-700">{t('cleanWarning')}</p></div>
             <div className="flex justify-end gap-2">
-              <button onClick={() => setConfirmAction(null)} className="px-4 py-2 text-xs font-medium text-gray-700 border border-gray-200 rounded-md hover:bg-surface-1 transition-colors">{tc('cancel')}</button>
+              <button onClick={() => setConfirmAction(null)} className="px-4 py-2 text-xs font-medium text-gray-700 border border-border-subtle rounded-md hover:bg-surface-1 transition-colors">{tc('cancel')}</button>
               <button onClick={executeCleanExpired} className="px-4 py-2 text-xs font-medium text-white bg-amber-600 rounded-md hover:bg-amber-700 transition-colors">{t('cleanExpiredBtn')}</button>
             </div>
           </div>

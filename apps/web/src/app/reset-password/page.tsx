@@ -53,7 +53,7 @@ function ResetPasswordForm() {
         <h2 className="text-xl font-bold text-gray-900 mb-2">
           Enlace inválido
         </h2>
-        <p className="text-sm text-gray-600 mb-6">
+        <p className="text-sm text-foreground/70 mb-6">
           El enlace para restablecer la contraseña es inválido o ha expirado.
           Solicite uno nuevo.
         </p>
@@ -97,7 +97,7 @@ function ResetPasswordForm() {
         <h2 className="text-xl font-bold text-gray-900 mb-2">
           Contraseña actualizada
         </h2>
-        <p className="text-sm text-gray-600 mb-6">
+        <p className="text-sm text-foreground/70 mb-6">
           Su contraseña ha sido restablecida exitosamente. Ya puede iniciar
           sesión con su nueva contraseña.
         </p>
@@ -120,7 +120,7 @@ function ResetPasswordForm() {
         <h2 className="text-xl font-bold text-gray-900 mb-1">
           Nueva contraseña
         </h2>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-muted-foreground">
           Ingrese su nueva contraseña para la cuenta{' '}
           <strong>{email}</strong>
         </p>
@@ -142,7 +142,7 @@ function ResetPasswordForm() {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground/70"
             >
               {showPassword ? (
                 <EyeOff className="w-4 h-4" />
@@ -172,7 +172,7 @@ function ResetPasswordForm() {
             <button
               type="button"
               onClick={() => setShowConfirm(!showConfirm)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground/70"
             >
               {showConfirm ? (
                 <EyeOff className="w-4 h-4" />

@@ -297,7 +297,7 @@ export default function DiscountsPage() {
       cellRenderer: (d: DescuentoPorCantidadDto) => (
         <div>
           <div className="text-[13px] font-medium text-gray-900">{d.productoNombre || '-'}</div>
-          <div className="text-xs text-gray-400">{d.productoCodigo || ''}</div>
+          <div className="text-xs text-muted-foreground">{d.productoCodigo || ''}</div>
         </div>
       ),
     }] : []),
@@ -309,7 +309,7 @@ export default function DiscountsPage() {
       cellRenderer: (d) => (
         <div>
           <div className="text-[13px] font-medium text-green-600">{d.creadoPor || '-'}</div>
-          <div className="text-xs text-gray-400">{formatRelativeTime(d.creadoEn)}</div>
+          <div className="text-xs text-muted-foreground">{formatRelativeTime(d.creadoEn)}</div>
         </div>
       ),
     },
@@ -321,7 +321,7 @@ export default function DiscountsPage() {
       cellRenderer: (d) => (
         <div>
           <div className="text-[13px] font-medium text-green-600">{d.actualizadoPor || d.creadoPor || '-'}</div>
-          <div className="text-xs text-gray-400">{formatRelativeTime(d.actualizadoEn || d.creadoEn)}</div>
+          <div className="text-xs text-muted-foreground">{formatRelativeTime(d.actualizadoEn || d.creadoEn)}</div>
         </div>
       ),
     },
@@ -348,10 +348,10 @@ export default function DiscountsPage() {
           {deleteConfirmId === d.id ? (
             <>
               <button onClick={() => { handleDelete(d.id); setDeleteConfirmId(null); }} className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"><Check className="w-4 h-4" /></button>
-              <button onClick={() => setDeleteConfirmId(null)} className="p-1 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X className="w-4 h-4" /></button>
+              <button onClick={() => setDeleteConfirmId(null)} className="p-1 text-muted-foreground hover:bg-surface-3 rounded transition-colors"><X className="w-4 h-4" /></button>
             </>
           ) : (
-            <button onClick={() => setDeleteConfirmId(d.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title={tc('delete')}><Trash2 className="w-4 h-4" /></button>
+            <button onClick={() => setDeleteConfirmId(d.id)} className="p-1 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded transition-colors" title={tc('delete')}><Trash2 className="w-4 h-4" /></button>
           )}
         </div>
       ),
@@ -415,16 +415,16 @@ export default function DiscountsPage() {
           <div className="relative" data-tour="discounts-import-export">
             <button
               onClick={() => setShowDataMenu(!showDataMenu)}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-surface-1 transition-colors"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-border-subtle rounded hover:bg-surface-1 transition-colors"
             >
               <Download className="w-3.5 h-3.5 text-emerald-500" />
               <span className="hidden sm:inline">{tc('importExport')}</span>
-              <ChevronDown className="w-3 h-3 text-gray-400" />
+              <ChevronDown className="w-3 h-3 text-muted-foreground" />
             </button>
             {showDataMenu && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowDataMenu(false)} />
-                <div className="absolute right-0 mt-1 w-44 bg-surface-2 border border-gray-200 rounded-lg shadow-lg z-20 py-1">
+                <div className="absolute right-0 mt-1 w-44 bg-surface-2 border border-border-subtle rounded-lg shadow-lg z-20 py-1">
                   <button
                     onClick={async () => { setShowDataMenu(false); try { await exportToCsv('descuentos'); toast.success(tc('csvDownloaded')); } catch { toast.error(tc('errorExporting')); } }}
                     className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-surface-1"
@@ -449,7 +449,7 @@ export default function DiscountsPage() {
               <span>{t('newDiscount')}</span>
               <ChevronDown className="w-3.5 h-3.5" />
             </button>
-            <div className="absolute right-0 top-full mt-1 w-56 bg-surface-2 border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20">
+            <div className="absolute right-0 top-full mt-1 w-56 bg-surface-2 border border-border-subtle rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20">
               <button
                 onClick={() => handleOpenCreate('Global')}
                 className="w-full px-4 py-2.5 text-left text-[13px] text-gray-700 hover:bg-surface-1 first:rounded-t-lg"
@@ -468,13 +468,13 @@ export default function DiscountsPage() {
       }
     >
           {/* Tabs */}
-          <div className="flex items-center border-b border-gray-200 mb-4" data-tour="discounts-tabs">
+          <div className="flex items-center border-b border-border-subtle mb-4" data-tour="discounts-tabs">
             <button
               onClick={() => { setActiveTab('global'); setCurrentPage(1); }}
               className={`px-5 py-2 text-[13px] font-medium border-b-2 transition-colors ${
                 activeTab === 'global'
                   ? 'text-green-600 border-green-600'
-                  : 'text-gray-500 border-transparent hover:text-gray-700'
+                  : 'text-muted-foreground border-transparent hover:text-gray-700'
               }`}
             >
               {t('tabGlobal', { count: globalCount })}
@@ -484,7 +484,7 @@ export default function DiscountsPage() {
               className={`px-5 py-2 text-[13px] font-medium border-b-2 transition-colors ${
                 activeTab === 'product'
                   ? 'text-green-600 border-green-600'
-                  : 'text-gray-500 border-transparent hover:text-gray-700'
+                  : 'text-muted-foreground border-transparent hover:text-gray-700'
               }`}
             >
               {t('tabProduct', { count: productCount })}
@@ -576,29 +576,29 @@ export default function DiscountsPage() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-gray-900">{discount.descuentoPorcentaje}% de descuento</p>
-                        {discount.tipoAplicacion === 'Producto' && <p className="text-xs text-gray-500 truncate">{discount.productoNombre || '-'}</p>}
+                        {discount.tipoAplicacion === 'Producto' && <p className="text-xs text-muted-foreground truncate">{discount.productoNombre || '-'}</p>}
                       </div>
                     </div>
                     <div onClick={(e) => e.stopPropagation()}>
                       <ActiveToggle isActive={discount.activo} onToggle={() => handleToggleActive(discount)} disabled={loading} isLoading={togglingId === discount.id} />
                     </div>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                     <span className={`inline-flex px-2 py-0.5 rounded-full ${discount.tipoAplicacion === 'Global' ? 'bg-blue-100 text-blue-600' : 'bg-purple-100 text-purple-600'}`}>{discount.tipoAplicacion}</span>
                     <span>{t('startingFrom', { count: discount.cantidadMinima })}</span>
-                    {discount.tipoAplicacion === 'Producto' && discount.productoCodigo && <span className="text-gray-400">- {discount.productoCodigo}</span>}
+                    {discount.tipoAplicacion === 'Producto' && discount.productoCodigo && <span className="text-muted-foreground">- {discount.productoCodigo}</span>}
                   </div>
                   <div className="mt-2.5 flex items-center justify-end gap-1 border-t border-gray-100 pt-2" onClick={(e) => e.stopPropagation()}>
-                    <button onClick={() => handleOpenEdit(discount)} disabled={loading} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 bg-surface-2 border border-gray-200 rounded hover:bg-surface-1 transition-colors disabled:opacity-50">
+                    <button onClick={() => handleOpenEdit(discount)} disabled={loading} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 bg-surface-2 border border-border-subtle rounded hover:bg-surface-1 transition-colors disabled:opacity-50">
                       <Pencil className="w-3 h-3 text-amber-400" /><span>{tc('edit')}</span>
                     </button>
                     {deleteConfirmId === discount.id ? (
                       <div className="flex items-center gap-1">
                         <button onClick={() => { handleDelete(discount.id); setDeleteConfirmId(null); }} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"><Check size={16} /></button>
-                        <button onClick={() => setDeleteConfirmId(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X size={16} /></button>
+                        <button onClick={() => setDeleteConfirmId(null)} className="p-1.5 text-muted-foreground hover:bg-surface-3 rounded transition-colors"><X size={16} /></button>
                       </div>
                     ) : (
-                      <button onClick={() => setDeleteConfirmId(discount.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"><Trash2 size={16} /></button>
+                      <button onClick={() => setDeleteConfirmId(discount.id)} className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded transition-colors"><Trash2 size={16} /></button>
                     )}
                   </div>
                 </>
@@ -641,9 +641,9 @@ export default function DiscountsPage() {
                   max="100"
                   placeholder="10"
                   {...register('descuentoPorcentaje', { valueAsNumber: true })}
-                  className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                  className="w-full px-3 py-2 pr-8 border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">%</span>
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
               </div>
               {errors.descuentoPorcentaje && <FieldError message={errors.descuentoPorcentaje.message} />}
             </div>
@@ -657,7 +657,7 @@ export default function DiscountsPage() {
                 min="1"
                 placeholder="10"
                 {...register('cantidadMinima', { valueAsNumber: true })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                className="w-full px-3 py-2 border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
               />
               {errors.cantidadMinima && <FieldError message={errors.cantidadMinima.message} />}
             </div>

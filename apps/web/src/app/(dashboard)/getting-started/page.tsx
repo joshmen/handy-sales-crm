@@ -474,13 +474,13 @@ export default function GettingStartedPage() {
   return (
     <div className="flex flex-col">
       {/* Header */}
-      <div className="bg-surface-2 px-4 py-4 sm:px-8 sm:py-6 border-b border-gray-200">
+      <div className="bg-surface-2 px-4 py-4 sm:px-8 sm:py-6 border-b border-border-subtle">
         <div className="page-animate">
           <div className="flex items-center gap-2 text-sm mb-3">
-            <Link href="/dashboard" className="text-gray-500 hover:text-gray-700 transition-colors">
+            <Link href="/dashboard" className="text-muted-foreground hover:text-gray-700 transition-colors">
               {tc('home')}
             </Link>
-            <span className="text-gray-400">/</span>
+            <span className="text-muted-foreground">/</span>
             <span className="text-gray-900 font-medium">{t('breadcrumbTitle')}</span>
           </div>
         </div>
@@ -489,7 +489,7 @@ export default function GettingStartedPage() {
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
               {t('title')}
             </h1>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               {t('subtitle')}
             </p>
           </div>
@@ -504,7 +504,7 @@ export default function GettingStartedPage() {
             </button>
             <button
               onClick={handleDismiss}
-              className="flex items-center gap-1.5 h-9 px-3 text-xs font-medium text-gray-500 border border-gray-200 rounded-lg hover:bg-surface-1 transition-colors"
+              className="flex items-center gap-1.5 h-9 px-3 text-xs font-medium text-muted-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors"
             >
               <X className="w-3.5 h-3.5" />
               <span className="sm:hidden">{t('skipShort')}</span>
@@ -519,7 +519,7 @@ export default function GettingStartedPage() {
 
         {/* Global Progress */}
         <div className="page-animate page-animate-delay-2">
-          <div className="bg-surface-2 border border-gray-200 rounded-xl p-5 sm:p-6">
+          <div className="bg-surface-2 border border-border-subtle rounded-xl p-5 sm:p-6">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
                 {allDone ? (
@@ -535,7 +535,7 @@ export default function GettingStartedPage() {
                   <h2 className="font-semibold text-gray-900">
                     {allDone ? t('progressComplete') : t('progressTitle')}
                   </h2>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-muted-foreground">
                     {allDone
                       ? t('businessReady')
                       : t('stepsCompleted', { completed: completedSteps, total: totalSteps })}
@@ -545,7 +545,7 @@ export default function GettingStartedPage() {
             </div>
 
             {/* Progress bar */}
-            <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-2.5 bg-surface-3 rounded-full overflow-hidden">
               <div
                 className="h-full rounded-full transition-all duration-700 ease-out"
                 style={{
@@ -600,19 +600,19 @@ export default function GettingStartedPage() {
                   <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${phaseCompleted ? 'bg-green-500' : phase.colorDot}`} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <h3 className={`font-semibold text-sm ${phaseCompleted ? 'text-gray-500 dark:text-gray-400' : phase.colorText}`}>
+                      <h3 className={`font-semibold text-sm ${phaseCompleted ? 'text-muted-foreground dark:text-muted-foreground' : phase.colorText}`}>
                         {phase.title}
                       </h3>
                       {phaseCompleted && (
                         <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
                       )}
                     </div>
-                    <p className="text-xs text-gray-500 mt-0.5">{phase.description}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{phase.description}</p>
                   </div>
-                  <span className="text-xs text-gray-400 font-medium flex-shrink-0">
+                  <span className="text-xs text-muted-foreground font-medium flex-shrink-0">
                     {phaseStepsCompleted}/{phase.steps.length}
                   </span>
-                  <ChevronRight className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} />
+                  <ChevronRight className={`w-4 h-4 text-muted-foreground flex-shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} />
                 </button>
 
                 {/* Steps (animated accordion) */}
@@ -621,7 +621,7 @@ export default function GettingStartedPage() {
                   style={{ gridTemplateRows: isExpanded ? '1fr' : '0fr' }}
                 >
                   <div className="overflow-hidden">
-                    <div className="border-t border-gray-200/60">
+                    <div className="border-t border-border-subtle/60">
                       {phase.steps.map((step) => (
                         <div
                           key={step.id}
@@ -643,10 +643,10 @@ export default function GettingStartedPage() {
 
                           {/* Text */}
                           <div className="flex-1 min-w-0">
-                            <p className={`text-sm font-medium ${step.completed ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
+                            <p className={`text-sm font-medium ${step.completed ? 'text-muted-foreground line-through' : 'text-gray-900'}`}>
                               {step.title}
                             </p>
-                            <p className="text-xs text-gray-500 truncate">{step.description}</p>
+                            <p className="text-xs text-muted-foreground truncate">{step.description}</p>
                           </div>
 
                           {/* Action buttons */}
@@ -685,7 +685,7 @@ export default function GettingStartedPage() {
                                   scheduleTourContinuation(step.tourId!);
                                   router.push(step.href);
                                 }}
-                                className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-400 border border-gray-200 rounded-lg hover:bg-surface-1 transition-colors whitespace-nowrap opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                                className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-muted-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors whitespace-nowrap opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                                 title={t('repeatTour')}
                               >
                                 <Compass className="w-3 h-3" />
@@ -695,7 +695,7 @@ export default function GettingStartedPage() {
                             {step.completed && (
                               <Link
                                 href={step.href}
-                                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-400 border border-gray-200 rounded-lg hover:bg-surface-1 transition-colors whitespace-nowrap opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-muted-foreground border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors whitespace-nowrap opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                               >
                                 {t('view')}
                                 <ChevronRight className="w-3 h-3" />
@@ -714,7 +714,7 @@ export default function GettingStartedPage() {
 
         {/* Help text */}
         <div className="text-center py-4 page-animate page-animate-delay-4">
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-muted-foreground">
             {t('progressHelp')}
           </p>
         </div>

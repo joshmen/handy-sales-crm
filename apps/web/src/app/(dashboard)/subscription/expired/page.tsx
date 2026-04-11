@@ -91,13 +91,13 @@ export default function SubscriptionExpiredPage() {
           <h2 className="text-2xl font-bold text-center mb-1">
             {te('choosePlan')}
           </h2>
-          <p className="text-center text-gray-500 text-sm mb-8">
+          <p className="text-center text-muted-foreground text-sm mb-8">
             {te('allPlansInclude')}
           </p>
 
           {loading ? (
             <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -109,7 +109,7 @@ export default function SubscriptionExpiredPage() {
                     className={`rounded-xl border p-6 bg-surface-2 ${
                       isMostPopular
                         ? 'border-2 border-blue-500 shadow-xl relative'
-                        : 'border-gray-200'
+                        : 'border-border-subtle'
                     }`}
                   >
                     {isMostPopular && (
@@ -122,12 +122,12 @@ export default function SubscriptionExpiredPage() {
 
                     <div className="text-center mb-6">
                       <h3 className="text-lg font-bold mb-1">{plan.nombre}</h3>
-                      <p className="text-xs text-gray-500 mb-4">
+                      <p className="text-xs text-muted-foreground mb-4">
                         {te('upToUsers', { count: plan.maxUsuarios })}
                       </p>
                       <div className="text-3xl font-bold text-gray-900">
                         {formatPrice(plan.precioMensual)}
-                        <span className="text-sm font-normal text-gray-500">{te('perMonth')}</span>
+                        <span className="text-sm font-normal text-muted-foreground">{te('perMonth')}</span>
                       </div>
                       {plan.precioAnual > 0 && (
                         <p className="text-xs text-green-600 mt-1">
@@ -186,7 +186,7 @@ export default function SubscriptionExpiredPage() {
         </div>
 
         {/* Contact Options */}
-        <div className="bg-surface-2 border border-gray-200 rounded-xl p-6 mb-8">
+        <div className="bg-surface-2 border border-border-subtle rounded-xl p-6 mb-8">
           <h3 className="text-lg font-bold mb-5 text-center">
             {te('needHelp')}
           </h3>
@@ -196,36 +196,36 @@ export default function SubscriptionExpiredPage() {
                 <Phone className="h-5 w-5 text-blue-600" />
               </div>
               <h4 className="font-medium text-sm mb-1">{te('callUs')}</h4>
-              <p className="text-sm text-gray-500">+52 555 123 4567</p>
-              <p className="text-xs text-gray-400">{te('monFri')}</p>
+              <p className="text-sm text-muted-foreground">+52 555 123 4567</p>
+              <p className="text-xs text-muted-foreground">{te('monFri')}</p>
             </div>
             <div className="text-center">
               <div className="p-3 bg-green-50 rounded-full inline-block mb-3">
                 <MessageSquare className="h-5 w-5 text-green-600" />
               </div>
               <h4 className="font-medium text-sm mb-1">WhatsApp</h4>
-              <p className="text-sm text-gray-500">+52 555 123 4567</p>
-              <p className="text-xs text-gray-400">{te('immediateResponse')}</p>
+              <p className="text-sm text-muted-foreground">+52 555 123 4567</p>
+              <p className="text-xs text-muted-foreground">{te('immediateResponse')}</p>
             </div>
             <div className="text-center">
               <div className="p-3 bg-purple-50 rounded-full inline-block mb-3">
                 <Mail className="h-5 w-5 text-purple-600" />
               </div>
               <h4 className="font-medium text-sm mb-1">Email</h4>
-              <p className="text-sm text-gray-500">ventas@handysuites.com</p>
-              <p className="text-xs text-gray-400">{te('responseTime')}</p>
+              <p className="text-sm text-muted-foreground">ventas@handysuites.com</p>
+              <p className="text-xs text-muted-foreground">{te('responseTime')}</p>
             </div>
           </div>
         </div>
 
         {/* Payment Methods */}
-        <div className="bg-surface-2 border border-gray-200 rounded-xl p-5 mb-8">
+        <div className="bg-surface-2 border border-border-subtle rounded-xl p-5 mb-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
             <div>
               <h3 className="font-medium text-sm mb-0.5">{te('paymentMethods')}</h3>
-              <p className="text-xs text-gray-500">{te('securePayment')}</p>
+              <p className="text-xs text-muted-foreground">{te('securePayment')}</p>
             </div>
-            <div className="flex items-center gap-3 text-gray-500">
+            <div className="flex items-center gap-3 text-muted-foreground">
               <CreditCard className="h-6 w-6" />
               <span className="text-xs">VISA</span>
               <span className="text-xs">MasterCard</span>
@@ -238,7 +238,7 @@ export default function SubscriptionExpiredPage() {
         <div className="text-center pb-8">
           <button
             onClick={handleLogout}
-            className="px-6 py-2 text-sm font-medium text-gray-700 bg-surface-2 border border-gray-300 rounded-lg hover:bg-surface-1 transition-colors"
+            className="px-6 py-2 text-sm font-medium text-gray-700 bg-surface-2 border border-border-default rounded-lg hover:bg-surface-1 transition-colors"
           >
             {te('logout')}
           </button>

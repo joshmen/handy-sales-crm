@@ -201,7 +201,7 @@ export default function SubscriptionPlansAdminPage() {
   const activePlans = plans.filter(p => p.activo).length;
   const totalTenants = plans.reduce((sum, p) => sum + p.tenantCount, 0);
 
-  const inputClasses = 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm';
+  const inputClasses = 'w-full px-3 py-2 border border-border-default rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm';
 
   // --- Drawer ---
   const renderDrawer = () => (
@@ -214,7 +214,7 @@ export default function SubscriptionPlansAdminPage() {
             <CreditCard className="h-5 w-5 text-blue-600" weight="duotone" />
             {drawerMode === 'edit' ? t('drawerTitleEdit') : t('drawerTitleCreate')}
           </h2>
-          <button onClick={closeDrawer} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+          <button onClick={closeDrawer} className="p-2 hover:bg-surface-3 rounded-lg transition-colors">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -249,7 +249,7 @@ export default function SubscriptionPlansAdminPage() {
                 placeholder={t('codePlaceholder')}
                 maxLength={20}
               />
-              <p className="text-xs text-gray-500 mt-1">{t('codeHint')}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t('codeHint')}</p>
             </div>
           )}
 
@@ -284,7 +284,7 @@ export default function SubscriptionPlansAdminPage() {
           </div>
 
           {/* Límites */}
-          <div className="border-t border-gray-200 pt-4 mt-4">
+          <div className="border-t border-border-subtle pt-4 mt-4">
             <h3 className="text-sm font-semibold text-gray-900 mb-3">
               {t('planLimits')}
             </h3>
@@ -295,7 +295,7 @@ export default function SubscriptionPlansAdminPage() {
                 {t('maxUsersLabel')}
               </label>
               <div className="relative">
-                <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" weight="regular" />
+                <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" weight="regular" />
                 <input
                   type="number"
                   min="1"
@@ -310,7 +310,7 @@ export default function SubscriptionPlansAdminPage() {
                 {t('maxProductsLabel')}
               </label>
               <div className="relative">
-                <Package className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" weight="regular" />
+                <Package className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" weight="regular" />
                 <input
                   type="number"
                   min="1"
@@ -325,7 +325,7 @@ export default function SubscriptionPlansAdminPage() {
                 {t('maxClientsLabel')}
               </label>
               <div className="relative">
-                <UsersFour className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" weight="regular" />
+                <UsersFour className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" weight="regular" />
                 <input
                   type="number"
                   min="1"
@@ -352,11 +352,11 @@ export default function SubscriptionPlansAdminPage() {
           </div>
 
           {/* Características */}
-          <div className="border-t border-gray-200 pt-4 mt-4">
+          <div className="border-t border-border-subtle pt-4 mt-4">
             <h3 className="text-sm font-semibold text-gray-900 mb-1">
               {t('includedFeatures')}
             </h3>
-            <p className="text-xs text-gray-500 mb-3">
+            <p className="text-xs text-muted-foreground mb-3">
               {t('featuresSelected', { selected: caracteristicas.length, total: AVAILABLE_FEATURES.length })}
             </p>
           </div>
@@ -369,12 +369,12 @@ export default function SubscriptionPlansAdminPage() {
                   className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-surface-1 cursor-pointer"
                   onClick={() => toggleFeature(feature)}
                 >
-                  <span className={`text-sm ${checked ? 'text-gray-900 font-medium' : 'text-gray-600'}`}>
+                  <span className={`text-sm ${checked ? 'text-gray-900 font-medium' : 'text-foreground/70'}`}>
                     {feature}
                   </span>
                   <div
                     className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                      checked ? 'bg-blue-600' : 'bg-gray-200'
+                      checked ? 'bg-blue-600' : 'bg-surface-3'
                     }`}
                   >
                     <span
@@ -389,7 +389,7 @@ export default function SubscriptionPlansAdminPage() {
           </div>
 
           {/* Configuración */}
-          <div className="border-t border-gray-200 pt-4 mt-4">
+          <div className="border-t border-border-subtle pt-4 mt-4">
             <h3 className="text-sm font-semibold text-gray-900 mb-3">
               {t('configSection')}
             </h3>
@@ -399,10 +399,10 @@ export default function SubscriptionPlansAdminPage() {
               className="flex items-center justify-between py-2 px-2 rounded-lg hover:bg-surface-1 cursor-pointer"
               onClick={() => setIncluyeReportes(!incluyeReportes)}
             >
-              <span className={`text-sm ${incluyeReportes ? 'text-gray-900 font-medium' : 'text-gray-600'}`}>
+              <span className={`text-sm ${incluyeReportes ? 'text-gray-900 font-medium' : 'text-foreground/70'}`}>
                 {t('includesReports')}
               </span>
-              <div className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${incluyeReportes ? 'bg-blue-600' : 'bg-gray-200'}`}>
+              <div className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${incluyeReportes ? 'bg-blue-600' : 'bg-surface-3'}`}>
                 <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-surface-2 transition-transform ${incluyeReportes ? 'translate-x-4' : 'translate-x-0.5'}`} />
               </div>
             </div>
@@ -410,10 +410,10 @@ export default function SubscriptionPlansAdminPage() {
               className="flex items-center justify-between py-2 px-2 rounded-lg hover:bg-surface-1 cursor-pointer"
               onClick={() => setIncluyeSoportePrioritario(!incluyeSoportePrioritario)}
             >
-              <span className={`text-sm ${incluyeSoportePrioritario ? 'text-gray-900 font-medium' : 'text-gray-600'}`}>
+              <span className={`text-sm ${incluyeSoportePrioritario ? 'text-gray-900 font-medium' : 'text-foreground/70'}`}>
                 {t('prioritySupport')}
               </span>
-              <div className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${incluyeSoportePrioritario ? 'bg-blue-600' : 'bg-gray-200'}`}>
+              <div className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${incluyeSoportePrioritario ? 'bg-blue-600' : 'bg-surface-3'}`}>
                 <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-surface-2 transition-transform ${incluyeSoportePrioritario ? 'translate-x-4' : 'translate-x-0.5'}`} />
               </div>
             </div>
@@ -425,7 +425,7 @@ export default function SubscriptionPlansAdminPage() {
                 <span className={`text-sm ${activo ? 'text-green-700 font-medium' : 'text-red-600 font-medium'}`}>
                   {activo ? t('planActive') : t('planInactive')}
                 </span>
-                <div className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${activo ? 'bg-green-600' : 'bg-gray-200'}`}>
+                <div className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${activo ? 'bg-green-600' : 'bg-surface-3'}`}>
                   <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-surface-2 transition-transform ${activo ? 'translate-x-4' : 'translate-x-0.5'}`} />
                 </div>
               </div>
@@ -438,7 +438,7 @@ export default function SubscriptionPlansAdminPage() {
           <button
             type="button"
             onClick={closeDrawer}
-            className="px-4 py-2 text-gray-700 bg-surface-2 border border-gray-300 rounded-lg hover:bg-surface-1 transition-colors"
+            className="px-4 py-2 text-gray-700 bg-surface-2 border border-border-default rounded-lg hover:bg-surface-1 transition-colors"
             disabled={saving}
           >
             {tc('cancel')}
@@ -466,7 +466,7 @@ export default function SubscriptionPlansAdminPage() {
   return (
     <div className="p-6 space-y-6">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-gray-600">
+      <div className="flex items-center gap-2 text-sm text-foreground/70">
         <span>{ta('breadcrumb')}</span>
         <ChevronRight className="h-4 w-4" />
         <span className="text-gray-900 font-medium">{t('breadcrumb')}</span>
@@ -479,7 +479,7 @@ export default function SubscriptionPlansAdminPage() {
             <CreditCard className="h-6 w-6 text-blue-600" weight="duotone" />
             {t('title')}
           </h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-muted-foreground">
             {t('subtitle')}
           </p>
         </div>
@@ -487,7 +487,7 @@ export default function SubscriptionPlansAdminPage() {
           <button
             onClick={fetchPlans}
             disabled={loading}
-            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 bg-surface-2 border border-gray-300 rounded-lg hover:bg-surface-1 transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 bg-surface-2 border border-border-default rounded-lg hover:bg-surface-1 transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             {tc('refresh')}
@@ -504,35 +504,35 @@ export default function SubscriptionPlansAdminPage() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-lg border border-gray-200 bg-surface-2 p-4">
+        <div className="rounded-lg border border-border-subtle bg-surface-2 p-4">
           <div className="flex items-center gap-3">
             <div className="rounded-lg bg-blue-100 p-2">
               <CreditCard className="h-5 w-5 text-blue-600" weight="duotone" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">{t('totalPlans')}</p>
+              <p className="text-sm text-muted-foreground">{t('totalPlans')}</p>
               <p className="text-2xl font-bold text-gray-900">{totalPlans}</p>
             </div>
           </div>
         </div>
-        <div className="rounded-lg border border-gray-200 bg-surface-2 p-4">
+        <div className="rounded-lg border border-border-subtle bg-surface-2 p-4">
           <div className="flex items-center gap-3">
             <div className="rounded-lg bg-green-100 p-2">
               <CheckCircle className="h-5 w-5 text-green-600" weight="duotone" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">{t('activePlans')}</p>
+              <p className="text-sm text-muted-foreground">{t('activePlans')}</p>
               <p className="text-2xl font-bold text-gray-900">{activePlans}</p>
             </div>
           </div>
         </div>
-        <div className="rounded-lg border border-gray-200 bg-surface-2 p-4">
+        <div className="rounded-lg border border-border-subtle bg-surface-2 p-4">
           <div className="flex items-center gap-3">
             <div className="rounded-lg bg-violet-100 p-2">
               <Buildings className="h-5 w-5 text-violet-600" weight="duotone" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">{t('companiesWithPlan')}</p>
+              <p className="text-sm text-muted-foreground">{t('companiesWithPlan')}</p>
               <p className="text-2xl font-bold text-gray-900">{totalTenants}</p>
             </div>
           </div>
@@ -542,12 +542,12 @@ export default function SubscriptionPlansAdminPage() {
       {/* Table */}
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       ) : plans.length === 0 ? (
-        <div className="rounded-lg border border-gray-200 bg-surface-2 p-12 text-center">
+        <div className="rounded-lg border border-border-subtle bg-surface-2 p-12 text-center">
           <CreditCard className="mx-auto h-12 w-12 text-gray-300" weight="duotone" />
-          <p className="mt-4 text-gray-500">{t('noPlans')}</p>
+          <p className="mt-4 text-muted-foreground">{t('noPlans')}</p>
           <button
             onClick={openCreate}
             className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700"
@@ -559,20 +559,20 @@ export default function SubscriptionPlansAdminPage() {
       ) : (
         <>
           {/* Desktop Table */}
-          <div className="hidden overflow-hidden rounded-lg border border-gray-200 bg-surface-2 md:block">
+          <div className="hidden overflow-hidden rounded-lg border border-border-subtle bg-surface-2 md:block">
             <table className="w-full text-sm">
-              <thead className="border-b border-gray-200 bg-surface-1 text-left">
+              <thead className="border-b border-border-subtle bg-surface-1 text-left">
                 <tr>
-                  <th className="px-4 py-3 font-medium text-gray-500">{t('tablePlan')}</th>
-                  <th className="px-4 py-3 font-medium text-gray-500">{t('tableCode')}</th>
-                  <th className="px-4 py-3 font-medium text-gray-500 text-right">{t('tableMonthly')}</th>
-                  <th className="px-4 py-3 font-medium text-gray-500 text-right">{t('tableAnnual')}</th>
-                  <th className="px-4 py-3 font-medium text-gray-500 text-center">{t('tableUsers')}</th>
-                  <th className="px-4 py-3 font-medium text-gray-500 text-center">{t('tableProducts')}</th>
-                  <th className="px-4 py-3 font-medium text-gray-500 text-center">{t('tableFeatures')}</th>
-                  <th className="px-4 py-3 font-medium text-gray-500 text-center">{t('tableCompanies')}</th>
-                  <th className="px-4 py-3 font-medium text-gray-500 text-center">{t('tableStatus')}</th>
-                  <th className="px-4 py-3 font-medium text-gray-500 text-right">{t('tableActions')}</th>
+                  <th className="px-4 py-3 font-medium text-muted-foreground">{t('tablePlan')}</th>
+                  <th className="px-4 py-3 font-medium text-muted-foreground">{t('tableCode')}</th>
+                  <th className="px-4 py-3 font-medium text-muted-foreground text-right">{t('tableMonthly')}</th>
+                  <th className="px-4 py-3 font-medium text-muted-foreground text-right">{t('tableAnnual')}</th>
+                  <th className="px-4 py-3 font-medium text-muted-foreground text-center">{t('tableUsers')}</th>
+                  <th className="px-4 py-3 font-medium text-muted-foreground text-center">{t('tableProducts')}</th>
+                  <th className="px-4 py-3 font-medium text-muted-foreground text-center">{t('tableFeatures')}</th>
+                  <th className="px-4 py-3 font-medium text-muted-foreground text-center">{t('tableCompanies')}</th>
+                  <th className="px-4 py-3 font-medium text-muted-foreground text-center">{t('tableStatus')}</th>
+                  <th className="px-4 py-3 font-medium text-muted-foreground text-right">{t('tableActions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -582,20 +582,20 @@ export default function SubscriptionPlansAdminPage() {
                       {plan.nombre}
                     </td>
                     <td className="px-4 py-3">
-                      <span className="inline-flex px-2 py-0.5 text-xs font-mono font-medium rounded-md border border-gray-200 text-gray-600">
+                      <span className="inline-flex px-2 py-0.5 text-xs font-mono font-medium rounded-md border border-border-subtle text-foreground/70">
                         {plan.codigo}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-right text-gray-600">
+                    <td className="px-4 py-3 text-right text-foreground/70">
                       {formatPrice(plan.precioMensual)}
                     </td>
-                    <td className="px-4 py-3 text-right text-gray-600">
+                    <td className="px-4 py-3 text-right text-foreground/70">
                       {formatPrice(plan.precioAnual)}
                     </td>
-                    <td className="px-4 py-3 text-center text-gray-600">
+                    <td className="px-4 py-3 text-center text-foreground/70">
                       {plan.maxUsuarios}
                     </td>
-                    <td className="px-4 py-3 text-center text-gray-600">
+                    <td className="px-4 py-3 text-center text-foreground/70">
                       {plan.maxProductos}
                     </td>
                     <td className="px-4 py-3 text-center">
@@ -605,14 +605,14 @@ export default function SubscriptionPlansAdminPage() {
                     </td>
                     <td className="px-4 py-3 text-center">
                       <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
-                        plan.tenantCount > 0 ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'
+                        plan.tenantCount > 0 ? 'bg-blue-100 text-blue-700' : 'bg-surface-3 text-muted-foreground'
                       }`}>
                         {plan.tenantCount}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center">
                       <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
-                        plan.activo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                        plan.activo ? 'bg-green-100 text-green-700' : 'bg-surface-3 text-muted-foreground'
                       }`}>
                         {plan.activo ? tc('active') : tc('inactive')}
                       </span>
@@ -656,51 +656,51 @@ export default function SubscriptionPlansAdminPage() {
             {plans.map((plan) => (
               <div
                 key={plan.id}
-                className="rounded-lg border border-gray-200 bg-surface-2 p-4"
+                className="rounded-lg border border-border-subtle bg-surface-2 p-4"
               >
                 <div className="flex items-start justify-between">
                   <div>
                     <h3 className="font-medium text-gray-900">{plan.nombre}</h3>
-                    <span className="inline-flex mt-1 px-2 py-0.5 text-xs font-mono font-medium rounded-md border border-gray-200 text-gray-600">
+                    <span className="inline-flex mt-1 px-2 py-0.5 text-xs font-mono font-medium rounded-md border border-border-subtle text-foreground/70">
                       {plan.codigo}
                     </span>
                   </div>
                   <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
-                    plan.activo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                    plan.activo ? 'bg-green-100 text-green-700' : 'bg-surface-3 text-muted-foreground'
                   }`}>
                     {plan.activo ? 'Activo' : 'Inactivo'}
                   </span>
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
                   <div>
-                    <span className="text-gray-500">{t('tableMonthly')}:</span>{' '}
+                    <span className="text-muted-foreground">{t('tableMonthly')}:</span>{' '}
                     <span className="font-medium">{formatPrice(plan.precioMensual)}</span>
                   </div>
                   <div>
-                    <span className="text-gray-500">{t('tableAnnual')}:</span>{' '}
+                    <span className="text-muted-foreground">{t('tableAnnual')}:</span>{' '}
                     <span className="font-medium">{formatPrice(plan.precioAnual)}</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <Users className="h-3.5 w-3.5 text-gray-400" />
-                    <span className="text-gray-500">{t('tableUsers')}:</span> {plan.maxUsuarios}
+                    <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-muted-foreground">{t('tableUsers')}:</span> {plan.maxUsuarios}
                   </div>
                   <div className="flex items-center gap-1">
-                    <Package className="h-3.5 w-3.5 text-gray-400" />
-                    <span className="text-gray-500">{t('tableProducts')}:</span> {plan.maxProductos}
+                    <Package className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-muted-foreground">{t('tableProducts')}:</span> {plan.maxProductos}
                   </div>
                   <div className="flex items-center gap-1">
-                    <UsersFour className="h-3.5 w-3.5 text-gray-400" />
-                    <span className="text-gray-500">{t('maxClientsLabel')}:</span> {plan.maxClientesPorMes}
+                    <UsersFour className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-muted-foreground">{t('maxClientsLabel')}:</span> {plan.maxClientesPorMes}
                   </div>
                   <div className="flex items-center gap-1">
-                    <Buildings className="h-3.5 w-3.5 text-gray-400" />
-                    <span className="text-gray-500">{t('tableCompanies')}:</span> {plan.tenantCount}
+                    <Buildings className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-muted-foreground">{t('tableCompanies')}:</span> {plan.tenantCount}
                   </div>
                 </div>
                 <div className="mt-3 flex gap-2 border-t border-gray-100 pt-3">
                   <button
                     onClick={() => openEdit(plan)}
-                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm text-gray-700 bg-surface-2 border border-gray-300 rounded-lg hover:bg-surface-1 transition-colors"
+                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm text-gray-700 bg-surface-2 border border-border-default rounded-lg hover:bg-surface-1 transition-colors"
                   >
                     <Pencil className="h-3.5 w-3.5 text-amber-600" />
                     {tc('edit')}
@@ -709,7 +709,7 @@ export default function SubscriptionPlansAdminPage() {
                     onClick={() => handleToggle(plan)}
                     className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm border rounded-lg transition-colors ${
                       plan.activo && plan.tenantCount > 0
-                        ? 'text-gray-400 border-gray-200 cursor-not-allowed'
+                        ? 'text-muted-foreground border-border-subtle cursor-not-allowed'
                         : plan.activo
                           ? 'text-red-600 border-red-200 hover:bg-red-50'
                           : 'text-green-600 border-green-200 hover:bg-green-50'

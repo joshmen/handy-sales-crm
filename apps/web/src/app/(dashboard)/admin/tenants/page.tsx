@@ -326,13 +326,13 @@ export default function TenantsPage() {
   const getPlanBadgeColor = (plan: string | null) => {
     switch (plan) {
       case 'free':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-surface-3 text-gray-800';
       case 'basic':
         return 'bg-blue-100 text-blue-800';
       case 'pro':
         return 'bg-purple-100 text-purple-800';
       default:
-        return 'bg-gray-100 text-gray-600';
+        return 'bg-surface-3 text-foreground/70';
     }
   };
 
@@ -449,9 +449,9 @@ export default function TenantsPage() {
       />
 
       {/* Desktop Table */}
-      <div className="hidden md:block border border-gray-200 rounded-lg overflow-hidden overflow-x-auto">
+      <div className="hidden md:block border border-border-subtle rounded-lg overflow-hidden overflow-x-auto">
         {/* Table Header */}
-        <div className="flex items-center gap-3 bg-surface-1 px-5 h-10 border-b border-gray-200">
+        <div className="flex items-center gap-3 bg-surface-1 px-5 h-10 border-b border-border-subtle">
           <div className="w-[28px] flex items-center justify-center">
             <button
               onClick={batch.handleSelectAllVisible}
@@ -460,7 +460,7 @@ export default function TenantsPage() {
                   ? 'bg-blue-600 border-blue-600 text-white'
                   : batch.someVisibleSelected
                   ? 'bg-blue-100 border-blue-600'
-                  : 'border-gray-300 hover:border-blue-500'
+                  : 'border-border-default hover:border-blue-500'
               }`}
             >
               {batch.allVisibleSelected ? (
@@ -470,11 +470,11 @@ export default function TenantsPage() {
               ) : null}
             </button>
           </div>
-          <div className="flex-1 min-w-[200px] text-[11px] font-medium text-gray-500">{t('colCompany')}</div>
-          <div className="w-[90px] text-[11px] font-medium text-gray-500">{t('colPlan')}</div>
-          <div className="w-[80px] text-[11px] font-medium text-gray-500">{t('colUsers')}</div>
-          <div className="w-[50px] text-[11px] font-medium text-gray-500 text-center">{t('colActive')}</div>
-          <div className="w-[100px] text-[11px] font-medium text-gray-500 hidden lg:block">{t('colExpiration')}</div>
+          <div className="flex-1 min-w-[200px] text-[11px] font-medium text-muted-foreground">{t('colCompany')}</div>
+          <div className="w-[90px] text-[11px] font-medium text-muted-foreground">{t('colPlan')}</div>
+          <div className="w-[80px] text-[11px] font-medium text-muted-foreground">{t('colUsers')}</div>
+          <div className="w-[50px] text-[11px] font-medium text-muted-foreground text-center">{t('colActive')}</div>
+          <div className="w-[100px] text-[11px] font-medium text-muted-foreground hidden lg:block">{t('colExpiration')}</div>
           <div className="w-[80px]"></div>
         </div>
 
@@ -521,7 +521,7 @@ export default function TenantsPage() {
                       className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
                         batch.selectedIds.has(tenant.id)
                           ? 'bg-blue-600 border-blue-600 text-white'
-                          : 'border-gray-300 hover:border-blue-500'
+                          : 'border-border-default hover:border-blue-500'
                       }`}
                     >
                       {batch.selectedIds.has(tenant.id) && <Check className="w-3 h-3" />}
@@ -538,7 +538,7 @@ export default function TenantsPage() {
                         {tenant.nombreEmpresa}
                       </div>
                       {tenant.identificadorFiscal && (
-                        <div className="text-[11px] text-gray-500">{tenant.identificadorFiscal}</div>
+                        <div className="text-[11px] text-muted-foreground">{tenant.identificadorFiscal}</div>
                       )}
                     </div>
                   </div>
@@ -556,7 +556,7 @@ export default function TenantsPage() {
 
                   {/* Usuarios */}
                   <div className="w-[80px]">
-                    <div className="flex items-center gap-1 text-[13px] text-gray-600">
+                    <div className="flex items-center gap-1 text-[13px] text-foreground/70">
                       <Users className="h-3.5 w-3.5" />
                       {tenant.usuarioCount}
                     </div>
@@ -574,7 +574,7 @@ export default function TenantsPage() {
 
                   {/* Expiración */}
                   <div className="w-[100px] hidden lg:block">
-                    <span className="text-[13px] text-gray-500">
+                    <span className="text-[13px] text-muted-foreground">
                       {tenant.fechaExpiracion ? formatDate(tenant.fechaExpiracion) : '-'}
                     </span>
                   </div>
@@ -583,14 +583,14 @@ export default function TenantsPage() {
                   <div className="w-[80px] flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => navigateToDetail(tenant.id)}
-                      className="p-1.5 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                      className="p-1.5 text-foreground/70 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
                       title="Ver detalle"
                     >
                       <Eye className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => handleOpenEdit(tenant)}
-                      className="p-1.5 text-gray-600 hover:text-amber-600 hover:bg-amber-50 rounded-md transition-colors"
+                      className="p-1.5 text-foreground/70 hover:text-amber-600 hover:bg-amber-50 rounded-md transition-colors"
                       title={tc('edit')}
                     >
                       <Pencil className="h-4 w-4 text-amber-400" />
@@ -707,7 +707,7 @@ export default function TenantsPage() {
                 className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
                   batch.selectedIds.has(tenant.id)
                     ? 'bg-blue-600 border-blue-600 text-white'
-                    : 'border-gray-300 hover:border-blue-500'
+                    : 'border-border-default hover:border-blue-500'
                 }`}
               >
                 {batch.selectedIds.has(tenant.id) && <Check className="w-3 h-3" />}
@@ -724,7 +724,7 @@ export default function TenantsPage() {
                   {tenant.nombreEmpresa}
                 </div>
                 {tenant.identificadorFiscal && (
-                  <div className="text-xs text-gray-500">{tenant.identificadorFiscal}</div>
+                  <div className="text-xs text-muted-foreground">{tenant.identificadorFiscal}</div>
                 )}
               </div>
 

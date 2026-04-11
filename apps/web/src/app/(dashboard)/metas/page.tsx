@@ -378,7 +378,7 @@ export default function MetasPage() {
           data-tour="metas-tipo-filter"
           value={filterTipo}
           onChange={e => { setFilterTipo(e.target.value); setCurrentPage(1); }}
-          className="h-9 border border-gray-300 rounded-lg text-sm px-3 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="h-9 border border-border-default rounded-lg text-sm px-3 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         >
           <option value="">{t('allTypes')}</option>
           {TIPO_OPTIONS.map(t => (
@@ -409,14 +409,14 @@ export default function MetasPage() {
           columns={[
             { key: 'usuarioNombre', label: t('vendor'), width: 'flex', sortable: true, cellRenderer: (item) => <span className="font-medium text-gray-900">{item.usuarioNombre || `#${item.usuarioId}`}</span> },
             { key: 'tipo', label: tc('type'), width: 100, sortable: true, cellRenderer: (item) => (
-              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${TIPO_COLORS[item.tipo] ?? 'bg-gray-100 text-gray-700'}`}>
+              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${TIPO_COLORS[item.tipo] ?? 'bg-surface-3 text-gray-700'}`}>
                 {TIPO_LABELS[item.tipo] ?? item.tipo}
               </span>
             )},
-            { key: 'periodo', label: t('period'), width: 100, sortable: true, hiddenOnMobile: true, cellRenderer: (item) => <span className="text-gray-600">{PERIODO_LABELS[item.periodo] ?? item.periodo}</span> },
+            { key: 'periodo', label: t('period'), width: 100, sortable: true, hiddenOnMobile: true, cellRenderer: (item) => <span className="text-foreground/70">{PERIODO_LABELS[item.periodo] ?? item.periodo}</span> },
             { key: 'monto', label: t('title'), width: 120, sortable: true, align: 'right', cellRenderer: (item) => <span className="font-semibold text-gray-900">{item.tipo === 'ventas' ? formatCurrency(item.monto) : formatNumber(item.monto)}</span> },
             { key: 'fechaInicio', label: t('validity'), width: 180, sortable: true, hiddenOnMobile: true, cellRenderer: (item) => (
-              <div className="flex items-center gap-1.5 text-gray-500 text-xs whitespace-nowrap">
+              <div className="flex items-center gap-1.5 text-muted-foreground text-xs whitespace-nowrap">
                 <span>{formatDate(item.fechaInicio)} - {formatDate(item.fechaFin)}</span>
                 {item.autoRenovar && <RefreshCw className="w-3 h-3 text-blue-500" />}
               </div>
@@ -426,7 +426,7 @@ export default function MetasPage() {
                 {isAdmin ? (
                   <ActiveToggle isActive={item.activo} isLoading={togglingId === item.id} onToggle={() => handleToggle(item)} />
                 ) : (
-                  <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${item.activo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                  <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${item.activo ? 'bg-green-100 text-green-700' : 'bg-surface-3 text-muted-foreground'}`}>
                     {item.activo ? tc('active') : tc('inactive')}
                   </span>
                 )}
@@ -439,10 +439,10 @@ export default function MetasPage() {
               align: 'center' as const,
               cellRenderer: (item: MetaVendedor) => (
                 <div className="flex items-center justify-center gap-1" onClick={e => e.stopPropagation()}>
-                  <button onClick={() => openEdit(item)} className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors" title={tc('edit')}>
+                  <button onClick={() => openEdit(item)} className="p-1.5 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors" title={tc('edit')}>
                     <Edit2 className="w-3.5 h-3.5" />
                   </button>
-                  <button onClick={() => setConfirmDeleteId(item.id)} className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title={tc('delete')}>
+                  <button onClick={() => setConfirmDeleteId(item.id)} className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title={tc('delete')}>
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -463,23 +463,23 @@ export default function MetasPage() {
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-gray-900 truncate">{meta.usuarioNombre || `#${meta.usuarioId}`}</p>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${TIPO_COLORS[meta.tipo] ?? 'bg-gray-100 text-gray-700'}`}>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${TIPO_COLORS[meta.tipo] ?? 'bg-surface-3 text-gray-700'}`}>
                       {TIPO_LABELS[meta.tipo] ?? meta.tipo}
                     </span>
-                    <span className="text-xs text-gray-500">{PERIODO_LABELS[meta.periodo]}</span>
+                    <span className="text-xs text-muted-foreground">{PERIODO_LABELS[meta.periodo]}</span>
                   </div>
                 </div>
                 {isAdmin && <ActiveToggle isActive={meta.activo} isLoading={togglingId === meta.id} onToggle={() => handleToggle(meta)} />}
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-gray-400 mb-0.5">{t('objective')}</p>
+                  <p className="text-xs text-muted-foreground mb-0.5">{t('objective')}</p>
                   <p className="font-semibold text-gray-900">{meta.tipo === 'ventas' ? formatCurrency(meta.monto) : formatNumber(meta.monto)}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs text-gray-400 mb-0.5">{t('validity')}</p>
+                  <p className="text-xs text-muted-foreground mb-0.5">{t('validity')}</p>
                   <div className="flex items-center gap-1">
-                    <p className="text-xs text-gray-600">{formatDate(meta.fechaInicio)} - {formatDate(meta.fechaFin)}</p>
+                    <p className="text-xs text-foreground/70">{formatDate(meta.fechaInicio)} - {formatDate(meta.fechaFin)}</p>
                     {meta.autoRenovar && <RefreshCw className="w-3 h-3 text-blue-500" />}
                   </div>
                 </div>
@@ -521,7 +521,7 @@ export default function MetasPage() {
                 <select
                   value={watchedUsuarioId || ''}
                   onChange={e => setValue('usuarioId', Number(e.target.value), { shouldValidate: true })}
-                  className="w-full h-10 border border-gray-300 rounded-lg text-sm px-3 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full h-10 border border-border-default rounded-lg text-sm px-3 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">{t('selectVendor')}</option>
                   {usuarios.map(u => (
@@ -533,7 +533,7 @@ export default function MetasPage() {
                 )}
               </>
             ) : (
-              <div className="h-10 border border-gray-200 rounded-lg text-sm px-3 flex items-center text-gray-500 bg-surface-1">
+              <div className="h-10 border border-border-subtle rounded-lg text-sm px-3 flex items-center text-muted-foreground bg-surface-1">
                 {editingMeta.usuarioNombre}
               </div>
             )}
@@ -546,7 +546,7 @@ export default function MetasPage() {
             </label>
             <select
               {...register('tipo')}
-              className="w-full h-10 border border-gray-300 rounded-lg text-sm px-3 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full h-10 border border-border-default rounded-lg text-sm px-3 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               {TIPO_OPTIONS.map(t => (
                 <option key={t.value} value={t.value}>{t.label}</option>
@@ -569,7 +569,7 @@ export default function MetasPage() {
                   className={`flex-1 h-10 rounded-lg border text-sm font-medium transition-colors ${
                     watchedPeriodo === p.value
                       ? 'border-blue-600 bg-blue-50 text-blue-700'
-                      : 'border-gray-300 text-gray-600 hover:border-gray-400'
+                      : 'border-border-default text-foreground/70 hover:border-gray-400'
                   }`}
                 >
                   {p.label}
@@ -593,7 +593,7 @@ export default function MetasPage() {
               step={watchedTipo === 'ventas' ? '0.01' : '1'}
               min="0"
               {...register('monto', { valueAsNumber: true })}
-              className="w-full h-10 border border-gray-300 rounded-lg text-sm px-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full h-10 border border-border-default rounded-lg text-sm px-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder={watchedTipo === 'ventas' ? '50000.00' : '20'}
             />
             {errors.monto && <FieldError message={errors.monto?.message} />}
@@ -636,11 +636,11 @@ export default function MetasPage() {
               type="checkbox"
               id="autoRenovar"
               {...register('autoRenovar')}
-              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              className="mt-0.5 h-4 w-4 rounded border-border-default text-blue-600 focus:ring-blue-500"
             />
             <label htmlFor="autoRenovar" className="text-sm">
               <span className="font-medium text-gray-700">{t('autoRenew')}</span>
-              <p className="text-xs text-gray-500 mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {t('autoRenewDesc')}
               </p>
             </label>
@@ -664,7 +664,7 @@ export default function MetasPage() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-surface-2 rounded-xl shadow-xl p-6 max-w-sm w-full mx-4 page-animate">
             <h3 className="font-semibold text-gray-900 mb-2">{t('deleteTitle')}</h3>
-            <p className="text-sm text-gray-600 mb-6">{t('deleteConfirm')}</p>
+            <p className="text-sm text-foreground/70 mb-6">{t('deleteConfirm')}</p>
             <div className="flex gap-3">
               <Button type="button" variant="outline" onClick={() => setConfirmDeleteId(null)} className="flex-1">
                 {tc('cancel')}

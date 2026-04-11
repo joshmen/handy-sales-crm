@@ -61,10 +61,10 @@ export default function ForgotPasswordPage() {
           <h2 className="text-xl font-bold text-gray-900 mb-2">
             {t('forgotPasswordSuccess')}
           </h2>
-          <p className="text-sm text-gray-600 mb-6">
+          <p className="text-sm text-foreground/70 mb-6">
             {t('forgotPasswordSuccessDesc')}
           </p>
-          <p className="text-xs text-gray-400 mb-6">
+          <p className="text-xs text-muted-foreground mb-6">
             {t('checkSpam')}
           </p>
           <Link
@@ -85,7 +85,7 @@ export default function ForgotPasswordPage() {
             <h2 className="text-xl font-bold text-gray-900 mb-1">
               {t('forgotPasswordTitle')}
             </h2>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               {t('forgotPasswordSubtitle')}
             </p>
           </div>
@@ -128,7 +128,7 @@ export default function ForgotPasswordPage() {
             <div className="text-center">
               <Link
                 href="/login"
-                className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700"
+                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-gray-700"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 {t('backToLogin')}

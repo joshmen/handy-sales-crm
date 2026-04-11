@@ -261,7 +261,7 @@ export default function EditClientPage() {
       <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center">
         <div className="flex items-center gap-3">
           <Loader2 className="w-6 h-6 animate-spin text-green-600" />
-          <span className="text-gray-600">{t('loadingClient')}</span>
+          <span className="text-foreground/70">{t('loadingClient')}</span>
         </div>
       </div>
     );
@@ -273,7 +273,7 @@ export default function EditClientPage() {
         <div className="text-center">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">{t('clientNotFound')}</h2>
-          <p className="text-gray-600 mb-4">{t('clientNotFoundMessage')}</p>
+          <p className="text-foreground/70 mb-4">{t('clientNotFoundMessage')}</p>
           <button
             onClick={() => router.push('/clients')}
             className="px-4 py-2 bg-success text-success-foreground rounded hover:bg-success/90"
@@ -288,7 +288,7 @@ export default function EditClientPage() {
   return (
     <div className="min-h-screen bg-[#F9FAFB]">
       {/* Header */}
-      <div className="bg-surface-2 px-4 sm:px-8 py-4 border-b border-gray-200">
+      <div className="bg-surface-2 px-4 sm:px-8 py-4 border-b border-border-subtle">
         <Breadcrumb items={[
           { label: t('breadcrumbHome'), href: '/dashboard' },
           { label: t('breadcrumbClients'), href: '/clients' },
@@ -303,7 +303,7 @@ export default function EditClientPage() {
             <button
               type="button"
               onClick={handleCancel}
-              className="px-4 py-2 text-[13px] font-medium text-gray-700 border border-gray-300 rounded hover:bg-surface-1 transition-colors"
+              className="px-4 py-2 text-[13px] font-medium text-gray-700 border border-border-default rounded hover:bg-surface-1 transition-colors"
             >
               Cancelar
             </button>
@@ -337,7 +337,7 @@ export default function EditClientPage() {
           {/* Left Column */}
           <div className="flex-1 flex flex-col gap-6">
             {/* === Información General === */}
-            <div className="bg-surface-2 rounded-lg p-6">
+            <div className="bg-surface-2 rounded-xl p-6">
               <SectionTitle>{t("generalInfo")}</SectionTitle>
 
               <div className="flex flex-wrap items-center gap-5 mb-4">
@@ -375,7 +375,7 @@ export default function EditClientPage() {
             </div>
 
             {/* === Precios y descuento === */}
-            <div className="bg-surface-2 rounded-lg p-6">
+            <div className="bg-surface-2 rounded-xl p-6">
               <SectionTitle subtitle={t("pricingOptional")}>{t("pricingTitle")}</SectionTitle>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -405,13 +405,13 @@ export default function EditClientPage() {
             </div>
 
             {/* === Pago, venta y crédito === */}
-            <div className="bg-surface-2 rounded-lg p-6">
+            <div className="bg-surface-2 rounded-xl p-6">
               <SectionTitle>{t("paymentTitle")}</SectionTitle>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <FormField label={t("balanceLabel")}>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[13px]">$</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[13px]">$</span>
                     <input
                       type="number"
                       {...register('saldo', { valueAsNumber: true })}
@@ -421,7 +421,7 @@ export default function EditClientPage() {
                 </FormField>
                 <FormField label={t("creditLimitLabel")}>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[13px]">$</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[13px]">$</span>
                     <input
                       type="number"
                       {...register('limiteCredito', { valueAsNumber: true })}
@@ -431,7 +431,7 @@ export default function EditClientPage() {
                 </FormField>
                 <FormField label={t("minEffectiveSale")} hint={t("minEffectiveSaleHint")}>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[13px]">$</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[13px]">$</span>
                     <input
                       type="number"
                       {...register('ventaMinimaEfectiva', { valueAsNumber: true })}
@@ -443,7 +443,7 @@ export default function EditClientPage() {
             </div>
 
             {/* === Config entregas === */}
-            <div className="bg-surface-2 rounded-lg p-6">
+            <div className="bg-surface-2 rounded-xl p-6">
               <SectionTitle>{t("deliveryTitle")}</SectionTitle>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -484,7 +484,7 @@ export default function EditClientPage() {
             </div>
 
             {/* === Datos fiscales === */}
-            <div className="bg-surface-2 rounded-lg p-6">
+            <div className="bg-surface-2 rounded-xl p-6">
               <SectionTitle>{t("fiscalTitle")}</SectionTitle>
 
               <div className="mb-4">
@@ -548,7 +548,7 @@ export default function EditClientPage() {
                   </FormField>
                 </div>
               ) : (
-                <p className="text-[12px] text-gray-400">
+                <p className="text-[12px] text-muted-foreground">
                   {t("fiscalInactiveHint")}
                 </p>
               )}
@@ -558,7 +558,7 @@ export default function EditClientPage() {
           {/* Right Column */}
           <div className="w-full lg:w-[480px] flex flex-col gap-6">
             {/* === Dirección y geolocalización === */}
-            <div className="bg-surface-2 rounded-lg p-6">
+            <div className="bg-surface-2 rounded-xl p-6">
               <SectionTitle>{t("addressTitle")}</SectionTitle>
 
               <div className="flex flex-col gap-4">
@@ -623,7 +623,7 @@ export default function EditClientPage() {
                       step="0.000001"
                       {...register('latitud', { valueAsNumber: true })}
                       readOnly
-                      className={`${inputClass()} bg-surface-1 text-gray-500 cursor-default`}
+                      className={`${inputClass()} bg-surface-1 text-muted-foreground cursor-default`}
                     />
                   </FormField>
                   <FormField label={t("longitudeLabel")}>
@@ -632,7 +632,7 @@ export default function EditClientPage() {
                       step="0.000001"
                       {...register('longitud', { valueAsNumber: true })}
                       readOnly
-                      className={`${inputClass()} bg-surface-1 text-gray-500 cursor-default`}
+                      className={`${inputClass()} bg-surface-1 text-muted-foreground cursor-default`}
                     />
                   </FormField>
                 </div>
@@ -666,7 +666,7 @@ export default function EditClientPage() {
             </div>
 
             {/* === Datos de contacto === */}
-            <div className="bg-surface-2 rounded-lg p-6">
+            <div className="bg-surface-2 rounded-xl p-6">
               <SectionTitle>{t("contactTitle")}</SectionTitle>
 
               <div className="flex flex-col gap-4">
@@ -688,7 +688,7 @@ export default function EditClientPage() {
                   <input type="email" {...register('email')} className={inputClass(errors.email)} />
                 </FormField>
 
-                <p className="text-[11px] text-gray-400">
+                <p className="text-[11px] text-muted-foreground">
                   {t("emailsHint")}
                 </p>
               </div>

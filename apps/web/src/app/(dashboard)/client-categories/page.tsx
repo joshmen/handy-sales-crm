@@ -211,16 +211,16 @@ export default function ClientCategoriesPage() {
             <div className="relative" data-tour="client-categories-import-export">
               <button
                 onClick={() => setShowDataMenu(!showDataMenu)}
-                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-surface-1 transition-colors"
+                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-border-subtle rounded hover:bg-surface-1 transition-colors"
               >
                 <Download className="w-3.5 h-3.5 text-emerald-500" />
                 <span className="hidden sm:inline">{tc('importExport')}</span>
-                <ChevronDown className="w-3 h-3 text-gray-400" />
+                <ChevronDown className="w-3 h-3 text-muted-foreground" />
               </button>
               {showDataMenu && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setShowDataMenu(false)} />
-                  <div className="absolute right-0 mt-1 w-44 bg-surface-2 border border-gray-200 rounded-lg shadow-lg z-20 py-1">
+                  <div className="absolute right-0 mt-1 w-44 bg-surface-2 border border-border-subtle rounded-lg shadow-lg z-20 py-1">
                     <button
                       onClick={async () => { setShowDataMenu(false); try { await exportToCsv('categorias-clientes'); toast.success(tc('csvDownloaded')); } catch { toast.error(tc('errorExporting')); } }}
                       className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-surface-1"
@@ -278,9 +278,9 @@ export default function ClientCategoriesPage() {
             <div data-tour="client-categories-table">
               <DataGrid<ClientCategory>
                 columns={[
-                  { key: 'id', label: tc('id'), width: 80, sortable: true, cellRenderer: (item) => <span className="font-mono text-gray-500">{item.id}</span> },
+                  { key: 'id', label: tc('id'), width: 80, sortable: true, cellRenderer: (item) => <span className="font-mono text-muted-foreground">{item.id}</span> },
                   { key: 'nombre', label: tc('name'), width: 'flex', sortable: true, cellRenderer: (item) => <span className="font-medium text-gray-900">{item.nombre}</span> },
-                  { key: 'descripcion', label: tc('description'), width: 'flex', sortable: true, hiddenOnMobile: true, cellRenderer: (item) => <span className="text-gray-500 truncate">{item.descripcion || '-'}</span> },
+                  { key: 'descripcion', label: tc('description'), width: 'flex', sortable: true, hiddenOnMobile: true, cellRenderer: (item) => <span className="text-muted-foreground truncate">{item.descripcion || '-'}</span> },
                   { key: 'activo', label: tc('active'), width: 50, align: 'center', cellRenderer: (item) => (
                     <div onClick={e => e.stopPropagation()}>
                       <ActiveToggle isActive={item.activo} onToggle={() => handleToggleActive(item)} disabled={loading} isLoading={togglingId === item.id} title={item.activo ? t('deactivateCategory') : t('activateCategory')} />
@@ -294,10 +294,10 @@ export default function ClientCategoriesPage() {
                       {deleteConfirmId === item.id ? (
                         <>
                           <button onClick={() => { handleDelete(item.id); setDeleteConfirmId(null); }} className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"><Check className="w-4 h-4" /></button>
-                          <button onClick={() => setDeleteConfirmId(null)} className="p-1 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X className="w-4 h-4" /></button>
+                          <button onClick={() => setDeleteConfirmId(null)} className="p-1 text-muted-foreground hover:bg-surface-3 rounded transition-colors"><X className="w-4 h-4" /></button>
                         </>
                       ) : (
-                        <button onClick={() => setDeleteConfirmId(item.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title={tc('delete')}><Trash2 className="w-4 h-4" /></button>
+                        <button onClick={() => setDeleteConfirmId(item.id)} className="p-1 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded transition-colors" title={tc('delete')}><Trash2 className="w-4 h-4" /></button>
                       )}
                     </div>
                   )},
@@ -319,20 +319,20 @@ export default function ClientCategoriesPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium text-gray-900 truncate">{category.nombre}</div>
-                        <div className="text-xs text-gray-500 truncate">{category.descripcion || tc('noDescription')}</div>
+                        <div className="text-xs text-muted-foreground truncate">{category.descripcion || tc('noDescription')}</div>
                       </div>
                     </div>
                     <div className="flex items-center justify-end gap-3">
-                      <button onClick={() => handleOpenEdit(category)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors">
+                      <button onClick={() => handleOpenEdit(category)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors">
                         <Edit2 className="w-3.5 h-3.5 text-amber-400 hover:text-amber-600" /><span>{tc('edit')}</span>
                       </button>
                       {deleteConfirmId === category.id ? (
                         <div className="flex items-center gap-1">
                           <button onClick={() => { handleDelete(category.id); setDeleteConfirmId(null); }} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"><Check size={16} /></button>
-                          <button onClick={() => setDeleteConfirmId(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X size={16} /></button>
+                          <button onClick={() => setDeleteConfirmId(null)} className="p-1.5 text-muted-foreground hover:bg-surface-3 rounded transition-colors"><X size={16} /></button>
                         </div>
                       ) : (
-                        <button onClick={() => setDeleteConfirmId(category.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"><Trash2 size={16} /></button>
+                        <button onClick={() => setDeleteConfirmId(category.id)} className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded transition-colors"><Trash2 size={16} /></button>
                       )}
                       <ActiveToggle isActive={category.activo} onToggle={() => handleToggleActive(category)} disabled={loading} isLoading={togglingId === category.id} title={category.activo ? t('deactivateCategory') : t('activateCategory')} />
                     </div>

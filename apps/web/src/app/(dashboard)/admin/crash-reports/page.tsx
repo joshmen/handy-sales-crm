@@ -110,8 +110,8 @@ function getEstadoBadge(resuelto: boolean) {
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-700">
-      <Clock size={14} weight="fill" className="text-gray-500" />
+    <span className="inline-flex items-center gap-1 rounded-full bg-surface-3 px-2.5 py-0.5 text-xs font-semibold text-gray-700">
+      <Clock size={14} weight="fill" className="text-muted-foreground" />
       Pendiente
     </span>
   );
@@ -148,7 +148,7 @@ const LOG_GROUP_COLORS: Record<string, { bg: string; text: string; dot: string }
 };
 
 function getLogGroupBadge(logGroup: string) {
-  const colors = LOG_GROUP_COLORS[logGroup] || { bg: 'bg-gray-100', text: 'text-gray-700', dot: '#6b7280' };
+  const colors = LOG_GROUP_COLORS[logGroup] || { bg: 'bg-surface-3', text: 'text-gray-700', dot: '#6b7280' };
   return (
     <span className={`inline-flex items-center gap-1.5 rounded-full ${colors.bg} px-2.5 py-0.5 text-xs font-semibold ${colors.text}`}>
       <span className="w-2 h-2 rounded-full" style={{ backgroundColor: colors.dot }} />
@@ -244,19 +244,19 @@ function LogLevelControls() {
   };
 
   return (
-    <div className="bg-surface-2 rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <div className="bg-surface-2 rounded-xl border border-border-subtle shadow-sm overflow-hidden">
       <button
         onClick={() => setOpen(prev => !prev)}
         className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-surface-1 transition-colors"
       >
         <span className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-          <GearSix size={18} weight="duotone" className="text-gray-500" />
+          <GearSix size={18} weight="duotone" className="text-muted-foreground" />
           {t('logLevel')}
         </span>
         {open ? (
-          <CaretDown size={16} className="text-gray-400" />
+          <CaretDown size={16} className="text-muted-foreground" />
         ) : (
-          <CaretRight size={16} className="text-gray-400" />
+          <CaretRight size={16} className="text-muted-foreground" />
         )}
       </button>
 
@@ -265,7 +265,7 @@ function LogLevelControls() {
           {loadingLevels ? (
             <div className="space-y-3">
               {[1, 2, 3].map(i => (
-                <div key={i} className="h-8 w-full bg-gray-100 rounded-md animate-pulse" />
+                <div key={i} className="h-8 w-full bg-surface-3 rounded-md animate-pulse" />
               ))}
             </div>
           ) : (
@@ -273,7 +273,7 @@ function LogLevelControls() {
               <div className="space-y-3">
                 {API_NAMES.map(({ key, label }) => (
                   <div key={key} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                    <span className="text-sm font-medium text-gray-600 w-36 shrink-0">{label}</span>
+                    <span className="text-sm font-medium text-foreground/70 w-36 shrink-0">{label}</span>
                     <div className="flex items-center gap-4">
                       {LOG_LEVEL_OPTIONS.map(opt => (
                         <label
@@ -288,7 +288,7 @@ function LogLevelControls() {
                             onChange={() =>
                               setDraft(prev => ({ ...prev, [key]: opt.value as LogLevelValue }))
                             }
-                            className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                            className="h-4 w-4 text-blue-600 border-border-default focus:ring-blue-500"
                           />
                           <span className="text-sm text-gray-700">{opt.label}</span>
                         </label>
@@ -431,7 +431,7 @@ function CloudWatchTab() {
             className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition-colors ${
               autoRefresh
                 ? 'bg-green-50 border-green-200 text-green-700'
-                : 'bg-surface-2 border-gray-200 text-gray-500 hover:bg-surface-1'
+                : 'bg-surface-2 border-border-subtle text-muted-foreground hover:bg-surface-1'
             }`}
           >
             <ArrowsClockwise size={14} weight={autoRefresh ? 'fill' : 'regular'} className={autoRefresh ? 'animate-spin' : ''} />
@@ -446,13 +446,13 @@ function CloudWatchTab() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-surface-2 rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">{t('errors24h')}</p>
+              <p className="text-sm font-medium text-muted-foreground">{t('errors24h')}</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
                 {loading ? (
-                  <span className="inline-block h-8 w-12 bg-gray-200 rounded-md animate-pulse" />
+                  <span className="inline-block h-8 w-12 bg-surface-3 rounded-md animate-pulse" />
                 ) : (
                   stats?.errorsLast24h ?? 0
                 )}
@@ -464,13 +464,13 @@ function CloudWatchTab() {
           </div>
         </div>
 
-        <div className="bg-surface-2 rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">{t('warnings24h')}</p>
+              <p className="text-sm font-medium text-muted-foreground">{t('warnings24h')}</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
                 {loading ? (
-                  <span className="inline-block h-8 w-12 bg-gray-200 rounded-md animate-pulse" />
+                  <span className="inline-block h-8 w-12 bg-surface-3 rounded-md animate-pulse" />
                 ) : (
                   stats?.warningsLast24h ?? 0
                 )}
@@ -482,13 +482,13 @@ function CloudWatchTab() {
           </div>
         </div>
 
-        <div className="bg-surface-2 rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">{t('crashes24h')}</p>
+              <p className="text-sm font-medium text-muted-foreground">{t('crashes24h')}</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
                 {loading ? (
-                  <span className="inline-block h-8 w-12 bg-gray-200 rounded-md animate-pulse" />
+                  <span className="inline-block h-8 w-12 bg-surface-3 rounded-md animate-pulse" />
                 ) : (
                   stats?.crashesLast24h ?? 0
                 )}
@@ -500,13 +500,13 @@ function CloudWatchTab() {
           </div>
         </div>
 
-        <div className="bg-surface-2 rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">{t('apisWithErrors')}</p>
+              <p className="text-sm font-medium text-muted-foreground">{t('apisWithErrors')}</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
                 {loading ? (
-                  <span className="inline-block h-8 w-12 bg-gray-200 rounded-md animate-pulse" />
+                  <span className="inline-block h-8 w-12 bg-surface-3 rounded-md animate-pulse" />
                 ) : (
                   stats?.apisWithErrors ?? 0
                 )}
@@ -520,12 +520,12 @@ function CloudWatchTab() {
       </div>
 
       {/* Bar Chart — Errors by Hour */}
-      <div className="bg-surface-2 rounded-xl border border-gray-200 p-6 shadow-sm">
+      <div className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm">
         <h3 className="text-sm font-semibold text-gray-700 mb-4">{t('errorsByHour')}</h3>
         {loading ? (
           <div className="h-64 w-full bg-surface-1 rounded-lg animate-pulse" />
         ) : chartData.length === 0 ? (
-          <div className="h-64 flex items-center justify-center text-sm text-gray-400">
+          <div className="h-64 flex items-center justify-center text-sm text-muted-foreground">
             {t('noDataLast24h')}
           </div>
         ) : (
@@ -546,7 +546,7 @@ function CloudWatchTab() {
       </div>
 
       {/* Recent Errors Table */}
-      <div className="bg-surface-2 rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-surface-2 rounded-xl border border-border-subtle shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100">
           <h3 className="text-sm font-semibold text-gray-700">{t('recentErrors')}</h3>
         </div>
@@ -555,15 +555,15 @@ function CloudWatchTab() {
           <div className="divide-y divide-gray-100">
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="px-6 py-4">
-                <div className="h-4 w-full bg-gray-100 rounded-md animate-pulse" />
+                <div className="h-4 w-full bg-surface-3 rounded-md animate-pulse" />
               </div>
             ))}
           </div>
         ) : recentErrors.length === 0 ? (
           <div className="px-6 py-12 text-center">
             <CheckCircle size={48} weight="duotone" className="mx-auto text-green-300 mb-3" />
-            <p className="text-gray-500 text-sm">{t('noRecentErrors')}</p>
-            <p className="text-gray-400 text-xs mt-1">{t('noRecentErrorsDesc')}</p>
+            <p className="text-muted-foreground text-sm">{t('noRecentErrors')}</p>
+            <p className="text-muted-foreground text-xs mt-1">{t('noRecentErrorsDesc')}</p>
           </div>
         ) : (
           <>
@@ -572,10 +572,10 @@ function CloudWatchTab() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-surface-1">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 w-8" />
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Timestamp</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Log Group</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Mensaje</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground w-8" />
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground">Timestamp</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground">Log Group</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground">Mensaje</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -588,12 +588,12 @@ function CloudWatchTab() {
                       >
                         <td className="px-6 py-3">
                           {expandedRows.has(idx) ? (
-                            <CaretDown size={14} className="text-gray-400" />
+                            <CaretDown size={14} className="text-muted-foreground" />
                           ) : (
-                            <CaretRight size={14} className="text-gray-400" />
+                            <CaretRight size={14} className="text-muted-foreground" />
                           )}
                         </td>
-                        <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-600">
+                        <td className="px-6 py-3 whitespace-nowrap text-sm text-foreground/70">
                           {formatDate(entry.timestamp)}
                         </td>
                         <td className="px-6 py-3 whitespace-nowrap">
@@ -607,13 +607,13 @@ function CloudWatchTab() {
                         <tr key={`detail-${idx}`}>
                           <td colSpan={4} className="px-6 py-4 bg-surface-1">
                             <div className="space-y-3">
-                              <div className="flex gap-4 text-xs text-gray-500">
+                              <div className="flex gap-4 text-xs text-muted-foreground">
                                 <span><span className="font-medium">Nivel:</span> {entry.level}</span>
                                 <span><span className="font-medium">Log Stream:</span> {entry.logStream}</span>
                               </div>
                               <div>
-                                <p className="text-xs font-medium text-gray-600 mb-1">Mensaje:</p>
-                                <pre className="text-xs bg-gray-100 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-all text-gray-800">
+                                <p className="text-xs font-medium text-foreground/70 mb-1">Mensaje:</p>
+                                <pre className="text-xs bg-surface-3 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-all text-gray-800">
 {entry.message}
                                 </pre>
                               </div>
@@ -627,11 +627,11 @@ function CloudWatchTab() {
                               )}
                               {Object.keys(entry.properties).length > 0 && (
                                 <div>
-                                  <p className="text-xs font-medium text-gray-600 mb-1">Propiedades:</p>
+                                  <p className="text-xs font-medium text-foreground/70 mb-1">Propiedades:</p>
                                   <div className="grid grid-cols-2 gap-1 text-xs">
                                     {Object.entries(entry.properties).map(([k, v]) => (
                                       <div key={k} className="flex gap-1">
-                                        <span className="text-gray-500 font-medium">{k}:</span>
+                                        <span className="text-muted-foreground font-medium">{k}:</span>
                                         <span className="text-gray-700 truncate">{v}</span>
                                       </div>
                                     ))}
@@ -658,12 +658,12 @@ function CloudWatchTab() {
                 >
                   <div className="flex items-center justify-between mb-1.5">
                     {getLogGroupBadge(entry.logGroup)}
-                    <span className="text-xs text-gray-400">{formatDate(entry.timestamp)}</span>
+                    <span className="text-xs text-muted-foreground">{formatDate(entry.timestamp)}</span>
                   </div>
                   <p className="text-sm text-gray-900 line-clamp-2">{entry.message}</p>
                   {expandedRows.has(idx) && (
                     <div className="mt-2 space-y-2">
-                      <pre className="text-xs bg-gray-100 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-all text-gray-800">
+                      <pre className="text-xs bg-surface-3 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-all text-gray-800">
 {entry.message}
                       </pre>
                       {entry.exception && (
@@ -869,13 +869,13 @@ function MobileCrashesTab() {
     <div className="space-y-6">
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-surface-2 rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">{t('today')}</p>
+              <p className="text-sm font-medium text-muted-foreground">{t('today')}</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
                 {statsLoading ? (
-                  <span className="inline-block h-8 w-12 bg-gray-200 rounded-md animate-pulse" />
+                  <span className="inline-block h-8 w-12 bg-surface-3 rounded-md animate-pulse" />
                 ) : (
                   estadisticas?.totalHoy ?? 0
                 )}
@@ -887,13 +887,13 @@ function MobileCrashesTab() {
           </div>
         </div>
 
-        <div className="bg-surface-2 rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">{t('unresolved')}</p>
+              <p className="text-sm font-medium text-muted-foreground">{t('unresolved')}</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
                 {statsLoading ? (
-                  <span className="inline-block h-8 w-12 bg-gray-200 rounded-md animate-pulse" />
+                  <span className="inline-block h-8 w-12 bg-surface-3 rounded-md animate-pulse" />
                 ) : (
                   estadisticas?.sinResolver ?? 0
                 )}
@@ -905,13 +905,13 @@ function MobileCrashesTab() {
           </div>
         </div>
 
-        <div className="bg-surface-2 rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">{t('crashes')}</p>
+              <p className="text-sm font-medium text-muted-foreground">{t('crashes')}</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
                 {statsLoading ? (
-                  <span className="inline-block h-8 w-12 bg-gray-200 rounded-md animate-pulse" />
+                  <span className="inline-block h-8 w-12 bg-surface-3 rounded-md animate-pulse" />
                 ) : (
                   estadisticas?.totalCrashes ?? 0
                 )}
@@ -923,13 +923,13 @@ function MobileCrashesTab() {
           </div>
         </div>
 
-        <div className="bg-surface-2 rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div className="bg-surface-2 rounded-xl border border-border-subtle p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">{t('errors')}</p>
+              <p className="text-sm font-medium text-muted-foreground">{t('errors')}</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
                 {statsLoading ? (
-                  <span className="inline-block h-8 w-12 bg-gray-200 rounded-md animate-pulse" />
+                  <span className="inline-block h-8 w-12 bg-surface-3 rounded-md animate-pulse" />
                 ) : (
                   estadisticas?.totalErrors ?? 0
                 )}
@@ -943,7 +943,7 @@ function MobileCrashesTab() {
       </div>
 
       {/* Filters + Refresh */}
-      <div className="bg-surface-2 rounded-xl border border-gray-200 p-4 shadow-sm">
+      <div className="bg-surface-2 rounded-xl border border-border-subtle p-4 shadow-sm">
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
           <div className="w-full sm:w-48">
             <Select
@@ -977,7 +977,7 @@ function MobileCrashesTab() {
 
           <form onSubmit={handleSearchSubmit} className="flex-1 flex gap-2 w-full sm:w-auto">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <input
                 type="text"
                 placeholder={t('searchByVersion')}
@@ -989,9 +989,9 @@ function MobileCrashesTab() {
                 <button
                   type="button"
                   onClick={handleClearSearch}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md hover:bg-gray-100"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md hover:bg-surface-3"
                 >
-                  <X className="h-3 w-3 text-gray-400" />
+                  <X className="h-3 w-3 text-muted-foreground" />
                 </button>
               )}
             </div>
@@ -1007,37 +1007,37 @@ function MobileCrashesTab() {
       </div>
 
       {/* Desktop Table */}
-      <div className="hidden md:block bg-surface-2 rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="hidden md:block bg-surface-2 rounded-xl border border-border-subtle shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-surface-1">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Fecha</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Severidad</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Error</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Dispositivo</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Version</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Estado</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground">Fecha</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground">Severidad</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground">Error</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground">Dispositivo</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground">Version</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground">Estado</th>
               </tr>
             </thead>
             <tbody className="bg-surface-2 divide-y divide-gray-100">
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i}>
-                    <td className="px-6 py-4"><div className="h-4 w-32 bg-gray-100 rounded-md animate-pulse" /></td>
-                    <td className="px-6 py-4"><div className="h-5 w-16 bg-gray-100 rounded-full animate-pulse" /></td>
-                    <td className="px-6 py-4"><div className="h-4 w-48 bg-gray-100 rounded-md animate-pulse" /></td>
-                    <td className="px-6 py-4"><div className="h-4 w-28 bg-gray-100 rounded-md animate-pulse" /></td>
-                    <td className="px-6 py-4"><div className="h-4 w-16 bg-gray-100 rounded-md animate-pulse" /></td>
-                    <td className="px-6 py-4"><div className="h-5 w-20 bg-gray-100 rounded-full animate-pulse" /></td>
+                    <td className="px-6 py-4"><div className="h-4 w-32 bg-surface-3 rounded-md animate-pulse" /></td>
+                    <td className="px-6 py-4"><div className="h-5 w-16 bg-surface-3 rounded-full animate-pulse" /></td>
+                    <td className="px-6 py-4"><div className="h-4 w-48 bg-surface-3 rounded-md animate-pulse" /></td>
+                    <td className="px-6 py-4"><div className="h-4 w-28 bg-surface-3 rounded-md animate-pulse" /></td>
+                    <td className="px-6 py-4"><div className="h-4 w-16 bg-surface-3 rounded-md animate-pulse" /></td>
+                    <td className="px-6 py-4"><div className="h-5 w-20 bg-surface-3 rounded-full animate-pulse" /></td>
                   </tr>
                 ))
               ) : reports.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center">
                     <Bug size={48} weight="duotone" className="mx-auto text-gray-300 mb-3" />
-                    <p className="text-gray-500 text-sm">No se encontraron crash reports</p>
-                    <p className="text-gray-400 text-xs mt-1">Ajusta los filtros o espera a que se reporten errores</p>
+                    <p className="text-muted-foreground text-sm">No se encontraron crash reports</p>
+                    <p className="text-muted-foreground text-xs mt-1">Ajusta los filtros o espera a que se reporten errores</p>
                   </td>
                 </tr>
               ) : (
@@ -1047,7 +1047,7 @@ function MobileCrashesTab() {
                     onClick={() => handleRowClick(report)}
                     className="hover:bg-surface-1 cursor-pointer transition-colors"
                   >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground/70">
                       {formatDate(report.creadoEn)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -1058,13 +1058,13 @@ function MobileCrashesTab() {
                         {truncateText(report.errorMessage, 60)}
                       </div>
                       {report.componentName && (
-                        <div className="text-xs text-gray-400 mt-0.5">en {report.componentName}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">en {report.componentName}</div>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground/70">
                       {report.deviceName || report.deviceId || '-'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground/70">
                       {report.appVersion || '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -1078,7 +1078,7 @@ function MobileCrashesTab() {
         </div>
 
         {totalCount > 0 && (
-          <div className="border-t border-gray-200 px-4">
+          <div className="border-t border-border-subtle px-4">
             <Pagination
               currentPage={page}
               totalPages={totalPages}
@@ -1098,26 +1098,26 @@ function MobileCrashesTab() {
       <div className="md:hidden space-y-3">
         {loading ? (
           Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="bg-surface-2 rounded-xl border border-gray-200 p-4 shadow-sm animate-pulse">
+            <div key={i} className="bg-surface-2 rounded-xl border border-border-subtle p-4 shadow-sm animate-pulse">
               <div className="flex justify-between mb-3">
-                <div className="h-5 w-16 bg-gray-100 rounded-full" />
-                <div className="h-5 w-20 bg-gray-100 rounded-full" />
+                <div className="h-5 w-16 bg-surface-3 rounded-full" />
+                <div className="h-5 w-20 bg-surface-3 rounded-full" />
               </div>
-              <div className="h-4 w-full bg-gray-100 rounded-md mb-2" />
-              <div className="h-4 w-2/3 bg-gray-100 rounded-md" />
+              <div className="h-4 w-full bg-surface-3 rounded-md mb-2" />
+              <div className="h-4 w-2/3 bg-surface-3 rounded-md" />
             </div>
           ))
         ) : reports.length === 0 ? (
-          <div className="bg-surface-2 rounded-xl border border-gray-200 p-8 text-center shadow-sm">
+          <div className="bg-surface-2 rounded-xl border border-border-subtle p-8 text-center shadow-sm">
             <Bug size={48} weight="duotone" className="mx-auto text-gray-300 mb-3" />
-            <p className="text-gray-500 text-sm">No se encontraron crash reports</p>
+            <p className="text-muted-foreground text-sm">No se encontraron crash reports</p>
           </div>
         ) : (
           reports.map(report => (
             <div
               key={report.id}
               onClick={() => handleRowClick(report)}
-              className="bg-surface-2 rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+              className="bg-surface-2 rounded-xl border border-border-subtle p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
             >
               <div className="flex items-center justify-between mb-2">
                 {getSeverityBadge(report.severity)}
@@ -1127,9 +1127,9 @@ function MobileCrashesTab() {
                 {report.errorMessage}
               </p>
               {report.componentName && (
-                <p className="text-xs text-gray-400 mb-2">en {report.componentName}</p>
+                <p className="text-xs text-muted-foreground mb-2">en {report.componentName}</p>
               )}
-              <div className="flex items-center justify-between text-xs text-gray-500">
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <DeviceMobile size={12} />
                   {report.deviceName || report.deviceId || '-'}
@@ -1137,7 +1137,7 @@ function MobileCrashesTab() {
                 <span>{formatDate(report.creadoEn)}</span>
               </div>
               {report.appVersion && (
-                <div className="text-xs text-gray-400 mt-1">v{report.appVersion}</div>
+                <div className="text-xs text-muted-foreground mt-1">v{report.appVersion}</div>
               )}
             </div>
           ))
@@ -1177,7 +1177,7 @@ function MobileCrashesTab() {
                     value={resolverNota}
                     onChange={e => setResolverNota(e.target.value)}
                     placeholder="Describe como se resolvio el problema..."
-                    className="w-full h-24 rounded-md border border-gray-300 px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
+                    className="w-full h-24 rounded-md border border-border-default px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
                   />
                   <div className="flex gap-2 justify-end">
                     <Button
@@ -1234,8 +1234,8 @@ function MobileCrashesTab() {
           <div className="p-6 space-y-4">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i}>
-                <div className="h-3 w-20 bg-gray-200 rounded-md animate-pulse mb-2" />
-                <div className="h-5 w-full bg-gray-100 rounded-md animate-pulse" />
+                <div className="h-3 w-20 bg-surface-3 rounded-md animate-pulse mb-2" />
+                <div className="h-5 w-full bg-surface-3 rounded-md animate-pulse" />
               </div>
             ))}
           </div>
@@ -1247,7 +1247,7 @@ function MobileCrashesTab() {
             </div>
 
             <div>
-              <h3 className="text-xs font-semibold text-gray-500 mb-2 flex items-center gap-1.5">
+              <h3 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
                 <Warning size={14} className="text-orange-500" />
                 Mensaje de error
               </h3>
@@ -1258,7 +1258,7 @@ function MobileCrashesTab() {
 
             {selectedReport.componentName && (
               <div>
-                <h3 className="text-xs font-semibold text-gray-500 mb-2 flex items-center gap-1.5">
+                <h3 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
                   <Code size={14} className="text-purple-500" />
                   Componente
                 </h3>
@@ -1270,7 +1270,7 @@ function MobileCrashesTab() {
 
             {selectedReport.stackTrace && (
               <div>
-                <h3 className="text-xs font-semibold text-gray-500 mb-2 flex items-center gap-1.5">
+                <h3 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
                   <Code size={14} className="text-indigo-500" />
                   Stack Trace
                 </h3>
@@ -1281,38 +1281,38 @@ function MobileCrashesTab() {
             )}
 
             <div>
-              <h3 className="text-xs font-semibold text-gray-500 mb-3 flex items-center gap-1.5">
+              <h3 className="text-xs font-semibold text-muted-foreground mb-3 flex items-center gap-1.5">
                 <DeviceMobile size={14} className="text-cyan-500" />
                 Dispositivo
               </h3>
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-surface-1 rounded-lg px-3 py-2">
-                  <p className="text-xs text-gray-400">Nombre</p>
+                  <p className="text-xs text-muted-foreground">Nombre</p>
                   <p className="text-sm text-gray-900 font-medium">{selectedReport.deviceName || '-'}</p>
                 </div>
                 <div className="bg-surface-1 rounded-lg px-3 py-2">
-                  <p className="text-xs text-gray-400">Device ID</p>
+                  <p className="text-xs text-muted-foreground">Device ID</p>
                   <p className="text-sm text-gray-900 font-mono truncate">{selectedReport.deviceId || '-'}</p>
                 </div>
                 <div className="bg-surface-1 rounded-lg px-3 py-2">
-                  <p className="text-xs text-gray-400">Version App</p>
+                  <p className="text-xs text-muted-foreground">Version App</p>
                   <p className="text-sm text-gray-900 font-medium">{selectedReport.appVersion || '-'}</p>
                 </div>
                 <div className="bg-surface-1 rounded-lg px-3 py-2">
-                  <p className="text-xs text-gray-400">OS Version</p>
+                  <p className="text-xs text-muted-foreground">OS Version</p>
                   <p className="text-sm text-gray-900 font-medium">{selectedReport.osVersion || '-'}</p>
                 </div>
               </div>
             </div>
 
             <div>
-              <h3 className="text-xs font-semibold text-gray-500 mb-3 flex items-center gap-1.5">
+              <h3 className="text-xs font-semibold text-muted-foreground mb-3 flex items-center gap-1.5">
                 <User size={14} className="text-emerald-500" />
                 Contexto
               </h3>
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-surface-1 rounded-lg px-3 py-2">
-                  <p className="text-xs text-gray-400 flex items-center gap-1">
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
                     <Buildings size={12} />
                     Empresa
                   </p>
@@ -1321,7 +1321,7 @@ function MobileCrashesTab() {
                   </p>
                 </div>
                 <div className="bg-surface-1 rounded-lg px-3 py-2">
-                  <p className="text-xs text-gray-400 flex items-center gap-1">
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
                     <User size={12} />
                     Usuario
                   </p>
@@ -1334,7 +1334,7 @@ function MobileCrashesTab() {
             </div>
 
             <div>
-              <h3 className="text-xs font-semibold text-gray-500 mb-2 flex items-center gap-1.5">
+              <h3 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
                 <CalendarDots size={14} className="text-blue-500" />
                 Fecha de reporte
               </h3>
@@ -1343,7 +1343,7 @@ function MobileCrashesTab() {
 
             {selectedReport.resuelto && selectedReport.notaResolucion && (
               <div>
-                <h3 className="text-xs font-semibold text-gray-500 mb-2 flex items-center gap-1.5">
+                <h3 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
                   <CheckCircle size={14} className="text-green-500" />
                   Nota de resolucion
                 </h3>
@@ -1369,7 +1369,7 @@ export default function CrashReportsPage() {
   return (
     <div className="space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center space-x-2 text-sm text-gray-500">
+      <nav className="flex items-center space-x-2 text-sm text-muted-foreground">
         <span>{ta('breadcrumb')}</span>
         <ChevronRight className="h-4 w-4" />
         <span className="text-gray-900 font-medium">{t('title')}</span>
@@ -1381,20 +1381,20 @@ export default function CrashReportsPage() {
           <Bug size={28} weight="duotone" className="text-red-500" />
           {t('title')}
         </h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <p className="text-sm text-muted-foreground mt-1">
           {t('subtitle')}
         </p>
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200">
+      <div className="border-b border-border-subtle">
         <nav className="flex gap-6" aria-label="Tabs">
           <button
             onClick={() => setActiveTab('cloudwatch')}
             className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'cloudwatch'
                 ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                : 'border-transparent text-muted-foreground hover:text-gray-700 hover:border-border-default'
             }`}
           >
             <span className="flex items-center gap-2">
@@ -1407,7 +1407,7 @@ export default function CrashReportsPage() {
             className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'mobile'
                 ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                : 'border-transparent text-muted-foreground hover:text-gray-700 hover:border-border-default'
             }`}
           >
             <span className="flex items-center gap-2">

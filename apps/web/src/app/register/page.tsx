@@ -182,7 +182,7 @@ function RegisterContent() {
   const inputClassName = (hasError: boolean) =>
     `w-full h-12 px-3.5 border rounded-[10px] text-[15px] focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors ${
       hasError ? 'border-red-500' : 'border-[#D1D5DB]'
-    } disabled:bg-surface-1 disabled:text-gray-500`;
+    } disabled:bg-surface-1 disabled:text-muted-foreground`;
 
   return (
     <AuthLayout>
@@ -218,7 +218,7 @@ function RegisterContent() {
               <input
                 {...googleForm.register('email')}
                 readOnly
-                className={`${inputClassName(false)} bg-surface-1 text-gray-500 cursor-not-allowed`}
+                className={`${inputClassName(false)} bg-surface-1 text-muted-foreground cursor-not-allowed`}
               />
             </div>
 
@@ -262,7 +262,7 @@ function RegisterContent() {
                   type="checkbox"
                   {...googleForm.register('aceptaTerminos')}
                   disabled={submitting}
-                  className="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                  className="mt-0.5 h-4 w-4 rounded border-border-default text-indigo-600 focus:ring-indigo-500"
                 />
                 <span className="text-[13px] text-[#64748B] leading-tight">
                   {t('termsAndConditions').split(t('termsLink'))[0]}
@@ -333,7 +333,7 @@ function RegisterContent() {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-gray-600"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-foreground/70"
                       tabIndex={-1}
                     >
                       {showPassword ? <EyeOff className="h-[18px] w-[18px]" /> : <Eye className="h-[18px] w-[18px]" />}
@@ -356,7 +356,7 @@ function RegisterContent() {
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-gray-600"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-foreground/70"
                       tabIndex={-1}
                     >
                       {showConfirmPassword ? <EyeOff className="h-[18px] w-[18px]" /> : <Eye className="h-[18px] w-[18px]" />}
@@ -408,7 +408,7 @@ function RegisterContent() {
                     type="checkbox"
                     {...manualForm.register('aceptaTerminos')}
                     disabled={submitting}
-                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    className="mt-0.5 h-4 w-4 rounded border-border-default text-indigo-600 focus:ring-indigo-500"
                   />
                   <span className="text-[13px] text-[#64748B] leading-tight">
                     Acepto los{' '}

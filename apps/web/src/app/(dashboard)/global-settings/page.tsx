@@ -128,7 +128,7 @@ export default function GlobalSettingsPage() {
   if (!settings) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">{t('errorLoading')}</p>
+        <p className="text-muted-foreground">{t('errorLoading')}</p>
       </div>
     );
   }
@@ -143,7 +143,7 @@ export default function GlobalSettingsPage() {
               </div>
               <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
             </div>
-            <p className="text-gray-600">
+            <p className="text-foreground/70">
               {t('subtitle')}
             </p>
             <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full bg-red-100 text-red-800 text-sm font-medium">
@@ -249,7 +249,7 @@ export default function GlobalSettingsPage() {
               <div className="flex items-center space-x-3 mb-6">
                 <Globe className="h-5 w-5 text-green-600" />
                 <h2 className="text-xl font-semibold text-gray-900">{t('regional.title')}</h2>
-                <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{t('regional.comingSoon')}</span>
+                <span className="text-xs bg-surface-3 text-muted-foreground px-2 py-0.5 rounded-full">{t('regional.comingSoon')}</span>
               </div>
 
               <div data-tour="settings-regional" className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -298,7 +298,7 @@ export default function GlobalSettingsPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-sm font-medium text-gray-900">{t('security.selfRegistration')}</h3>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-muted-foreground">
                       {t('security.selfRegistrationDesc')}
                     </p>
                   </div>
@@ -315,7 +315,7 @@ export default function GlobalSettingsPage() {
                     <h3 className="text-sm font-medium text-gray-900">
                       {t('security.emailVerification')}
                     </h3>
-                    <p className="text-sm text-gray-500">{t('security.emailVerificationDesc')}</p>
+                    <p className="text-sm text-muted-foreground">{t('security.emailVerificationDesc')}</p>
                   </div>
                   <Switch
                     checked={settings.requireEmailVerification}
@@ -342,7 +342,7 @@ export default function GlobalSettingsPage() {
                       }
                       placeholder={t('security.noLimit')}
                     />
-                    <p className="text-xs text-gray-400 mt-1">{t('security.maxUsersHint')}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{t('security.maxUsersHint')}</p>
                   </div>
 
                   <div>
@@ -378,7 +378,7 @@ export default function GlobalSettingsPage() {
                   <p className="text-sm text-gray-700">
                     {t('maintenance.description')}
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     {t('maintenance.currentStatus')} {settings.maintenanceMode ? (
                       <span className="text-red-600 font-medium">{t('maintenance.statusActive')}</span>
                     ) : (
@@ -429,7 +429,7 @@ export default function GlobalSettingsPage() {
           </div>
 
           {/* Footer Info */}
-          <div className="text-center text-sm text-gray-500">
+          <div className="text-center text-sm text-muted-foreground">
             {t('lastUpdated', { date: formatDate(settings.updatedAt) })}
           </div>
       </div>

@@ -117,7 +117,7 @@ export default function LandingPage() {
                 para tu negocio
               </h1>
 
-              <p className="text-lg text-gray-500 mt-5 max-w-lg leading-relaxed page-animate page-animate-delay-3">
+              <p className="text-lg text-muted-foreground mt-5 max-w-lg leading-relaxed page-animate page-animate-delay-3">
                 Gestiona clientes, ventas, rutas, inventario y facturación
                 desde un solo lugar. Diseñado para PYMEs en Latinoamérica.
               </p>
@@ -132,13 +132,13 @@ export default function LandingPage() {
                 </Link>
                 <a
                   href="#caracteristicas"
-                  className="inline-flex items-center justify-center border border-gray-300 text-gray-700 hover:bg-surface-1 px-6 py-3.5 rounded-xl font-medium text-base transition-colors"
+                  className="inline-flex items-center justify-center border border-border-default text-gray-700 hover:bg-surface-1 px-6 py-3.5 rounded-xl font-medium text-base transition-colors"
                 >
                   Ver características
                 </a>
               </div>
 
-              <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-6 text-xs text-gray-500 page-animate page-animate-delay-5">
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-6 text-xs text-muted-foreground page-animate page-animate-delay-5">
                 <span className="flex items-center gap-1"><Check className="w-3.5 h-3.5 text-emerald-500" /> Sin tarjeta de crédito</span>
                 <span className="flex items-center gap-1"><Check className="w-3.5 h-3.5 text-emerald-500" /> Soporte incluido</span>
                 <span className="flex items-center gap-1"><Check className="w-3.5 h-3.5 text-emerald-500" /> Cancela cuando quieras</span>
@@ -147,16 +147,16 @@ export default function LandingPage() {
 
             {/* Right: Browser chrome + screenshot */}
             <div className="relative page-animate page-animate-delay-6">
-              <div className="rounded-2xl shadow-2xl border border-gray-200 overflow-hidden bg-surface-2">
+              <div className="rounded-2xl shadow-2xl border border-border-subtle overflow-hidden bg-surface-2">
                 {/* Browser bar */}
-                <div className="bg-gray-100 px-4 py-2.5 flex items-center gap-2">
+                <div className="bg-surface-3 px-4 py-2.5 flex items-center gap-2">
                   <div className="flex gap-1.5">
                     <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
                     <div className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
                     <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
                   </div>
                   <div className="flex-1 mx-4">
-                    <div className="bg-surface-2 rounded-md px-3 py-1 text-xs text-gray-400 max-w-xs">
+                    <div className="bg-surface-2 rounded-md px-3 py-1 text-xs text-muted-foreground max-w-xs">
                       app.handysuites.com/dashboard
                     </div>
                   </div>
@@ -175,7 +175,7 @@ export default function LandingPage() {
               <div className="absolute -bottom-4 -right-2 lg:-right-4 bg-surface-2 rounded-xl shadow-lg border border-gray-100 px-4 py-2.5 flex items-center gap-2.5">
                 <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                 <span className="text-sm font-semibold text-gray-900">En vivo</span>
-                <span className="text-xs text-gray-500">datos en tiempo real</span>
+                <span className="text-xs text-muted-foreground">datos en tiempo real</span>
               </div>
             </div>
           </div>
@@ -185,7 +185,7 @@ export default function LandingPage() {
       {/* ===== SOCIAL PROOF STRIP ===== */}
       <section className="py-10 bg-surface-2 border-y border-gray-100">
         <ScrollReveal className="max-w-7xl mx-auto px-6">
-          <p className="text-xs text-gray-400 text-center mb-6">
+          <p className="text-xs text-muted-foreground text-center mb-6">
             Empresas que confían en Handy Suites
           </p>
           <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-5">
@@ -259,7 +259,7 @@ export default function LandingPage() {
                     <prop.Icon size={42} />
                   </div>
                   <h3 className="font-semibold text-gray-900 text-base">{prop.title}</h3>
-                  <p className="text-sm text-gray-500 mt-2 leading-relaxed">{prop.desc}</p>
+                  <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{prop.desc}</p>
                 </div>
               </ScrollReveal>
             ))}
@@ -292,7 +292,7 @@ export default function LandingPage() {
                     {s.step}
                   </div>
                   <h3 className="font-semibold text-gray-900 text-lg">{s.title}</h3>
-                  <p className="text-sm text-gray-500 mt-2 leading-relaxed">{s.desc}</p>
+                  <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{s.desc}</p>
                 </div>
               </ScrollReveal>
             ))}
@@ -308,7 +308,7 @@ export default function LandingPage() {
             <h2 className={`text-3xl lg:text-4xl font-bold text-gray-900 tracking-tight ${plusJakarta.className}`}>
               Una plataforma. Infinitas posibilidades.
             </h2>
-            <p className="text-gray-500 mt-3 max-w-xl mx-auto">
+            <p className="text-muted-foreground mt-3 max-w-xl mx-auto">
               Desde el primer contacto con tu cliente hasta la factura final, todo en un solo sistema.
             </p>
           </ScrollReveal>
@@ -321,7 +321,7 @@ export default function LandingPage() {
                     <feat.Icon size={36} />
                   </div>
                   <h3 className="font-semibold text-gray-900 mt-4">{feat.title}</h3>
-                  <p className="text-sm text-gray-500 mt-2 leading-relaxed">{feat.description}</p>
+                  <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{feat.description}</p>
                 </div>
               </ScrollReveal>
             ))}
@@ -335,15 +335,15 @@ export default function LandingPage() {
           {/* Row 1: Clients */}
           <ScrollReveal>
             <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-              <div className="rounded-2xl shadow-xl border border-gray-200 overflow-hidden bg-surface-2">
-                <div className="bg-gray-100 px-4 py-2.5 flex items-center gap-2">
+              <div className="rounded-2xl shadow-xl border border-border-subtle overflow-hidden bg-surface-2">
+                <div className="bg-surface-3 px-4 py-2.5 flex items-center gap-2">
                   <div className="flex gap-1.5">
                     <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
                     <div className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
                     <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
                   </div>
                   <div className="flex-1 mx-4">
-                    <div className="bg-surface-2 rounded-md px-3 py-1 text-xs text-gray-400 max-w-xs">
+                    <div className="bg-surface-2 rounded-md px-3 py-1 text-xs text-muted-foreground max-w-xs">
                       app.handysuites.com/clientes
                     </div>
                   </div>
@@ -359,17 +359,17 @@ export default function LandingPage() {
               <div>
                 <div className="flex items-center gap-2.5 mb-4">
                   <div className="w-6 h-[3px] rounded-full bg-gradient-to-r from-rose-400 to-rose-500" />
-                  <span className="text-[11px] font-medium text-gray-400">CRM</span>
+                  <span className="text-[11px] font-medium text-muted-foreground">CRM</span>
                 </div>
                 <h3 className={`text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight ${plusJakarta.className}`}>
                   Conoce a tus clientes como nunca antes
                 </h3>
-                <p className="text-gray-500 mt-3 leading-relaxed">
+                <p className="text-muted-foreground mt-3 leading-relaxed">
                   Toda la información de tus clientes en un solo lugar. Historial de compras, visitas, categorías y zonas geográficas.
                 </p>
                 <ul className="mt-5 space-y-2.5">
                   {['Historial completo de interacciones', 'Segmentación por categoría y zona', 'Seguimiento de visitas en campo'].map((item) => (
-                    <li key={item} className="flex items-center gap-2.5 text-sm text-gray-600">
+                    <li key={item} className="flex items-center gap-2.5 text-sm text-foreground/70">
                       <Check className="w-4 h-4 text-rose-500 flex-shrink-0" />
                       {item}
                     </li>
@@ -382,15 +382,15 @@ export default function LandingPage() {
           {/* Row 2: Orders (reversed) */}
           <ScrollReveal>
             <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-              <div className="lg:order-2 rounded-2xl shadow-xl border border-gray-200 overflow-hidden bg-surface-2">
-                <div className="bg-gray-100 px-4 py-2.5 flex items-center gap-2">
+              <div className="lg:order-2 rounded-2xl shadow-xl border border-border-subtle overflow-hidden bg-surface-2">
+                <div className="bg-surface-3 px-4 py-2.5 flex items-center gap-2">
                   <div className="flex gap-1.5">
                     <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
                     <div className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
                     <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
                   </div>
                   <div className="flex-1 mx-4">
-                    <div className="bg-surface-2 rounded-md px-3 py-1 text-xs text-gray-400 max-w-xs">
+                    <div className="bg-surface-2 rounded-md px-3 py-1 text-xs text-muted-foreground max-w-xs">
                       app.handysuites.com/pedidos
                     </div>
                   </div>
@@ -406,17 +406,17 @@ export default function LandingPage() {
               <div className="lg:order-1">
                 <div className="flex items-center gap-2.5 mb-4">
                   <div className="w-6 h-[3px] rounded-full bg-gradient-to-r from-indigo-400 to-indigo-500" />
-                  <span className="text-[11px] font-medium text-gray-400">Ventas</span>
+                  <span className="text-[11px] font-medium text-muted-foreground">Ventas</span>
                 </div>
                 <h3 className={`text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight ${plusJakarta.className}`}>
                   Pedidos ágiles, ventas más rápidas
                 </h3>
-                <p className="text-gray-500 mt-3 leading-relaxed">
+                <p className="text-muted-foreground mt-3 leading-relaxed">
                   Crea pedidos en segundos con búsqueda inteligente de productos, precios automáticos y descuentos por cantidad.
                 </p>
                 <ul className="mt-5 space-y-2.5">
                   {['Creación rápida con catálogo integrado', 'Precios y descuentos automáticos', 'Seguimiento de estado en tiempo real'].map((item) => (
-                    <li key={item} className="flex items-center gap-2.5 text-sm text-gray-600">
+                    <li key={item} className="flex items-center gap-2.5 text-sm text-foreground/70">
                       <Check className="w-4 h-4 text-indigo-500 flex-shrink-0" />
                       {item}
                     </li>
@@ -447,7 +447,7 @@ export default function LandingPage() {
                       <Star key={j} className="w-4 h-4 text-amber-400 fill-amber-400" />
                     ))}
                   </div>
-                  <p className="text-gray-600 text-sm leading-relaxed italic">
+                  <p className="text-foreground/70 text-sm leading-relaxed italic">
                     &ldquo;{t.quote}&rdquo;
                   </p>
                   <div className="mt-4 pt-4 border-t border-gray-100 flex items-center gap-3">
@@ -456,7 +456,7 @@ export default function LandingPage() {
                     </div>
                     <div>
                       <p className="font-medium text-gray-900 text-sm">{t.company}</p>
-                      <p className="text-xs text-gray-500">{t.attribution}</p>
+                      <p className="text-xs text-muted-foreground">{t.attribution}</p>
                     </div>
                   </div>
                 </div>
@@ -474,7 +474,7 @@ export default function LandingPage() {
               <ScrollReveal key={stat.label} delay={i * 0.06}>
                 <div className="text-center">
                   <p className={`text-3xl lg:text-4xl font-bold ${stat.color}`}>{stat.value}</p>
-                  <p className="text-sm text-gray-500 mt-1">{stat.label}</p>
+                  <p className="text-sm text-muted-foreground mt-1">{stat.label}</p>
                 </div>
               </ScrollReveal>
             ))}
@@ -511,7 +511,7 @@ export default function LandingPage() {
       </section>
 
       {/* ===== FOOTER ===== */}
-      <footer className="bg-gray-900 text-gray-400 py-16">
+      <footer className="bg-gray-900 text-muted-foreground py-16">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid md:grid-cols-4 gap-10">
             {/* Brand */}
@@ -520,8 +520,8 @@ export default function LandingPage() {
                 <Image src="/logo-icon.svg" alt="Handy Suites" width={32} height={32} />
                 <div className="flex items-baseline gap-1">
                   <span className="text-lg font-black text-white tracking-tight">Handy</span>
-                  <span className="text-lg font-normal text-gray-500 tracking-tight">
-                    Suites<sup className="text-[9px] text-gray-500">®</sup>
+                  <span className="text-lg font-normal text-muted-foreground tracking-tight">
+                    Suites<sup className="text-[9px] text-muted-foreground">®</sup>
                   </span>
                 </div>
               </div>

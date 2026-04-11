@@ -41,7 +41,7 @@ const resultadoKeys = ['pending', 'withSale', 'noSale', 'notFound', 'rescheduled
 const resultadoColorArr = [
   { color: 'bg-yellow-100 text-yellow-800', dotColor: 'bg-yellow-400' },
   { color: 'bg-green-100 text-green-800', dotColor: 'bg-green-400' },
-  { color: 'bg-gray-100 text-gray-800', dotColor: 'bg-gray-400' },
+  { color: 'bg-surface-3 text-gray-800', dotColor: 'bg-gray-400' },
   { color: 'bg-orange-100 text-orange-800', dotColor: 'bg-orange-400' },
   { color: 'bg-blue-100 text-blue-800', dotColor: 'bg-blue-400' },
   { color: 'bg-red-100 text-red-800', dotColor: 'bg-red-400' },
@@ -51,7 +51,7 @@ const resultadoStringMap: Record<string, number> = {
 };
 
 const tipoKeys = ['routine', 'collection', 'delivery', 'prospecting', 'followUp', 'other'];
-const tipoColorArr = ['text-blue-600', 'text-green-600', 'text-purple-600', 'text-orange-600', 'text-cyan-600', 'text-gray-600'];
+const tipoColorArr = ['text-blue-600', 'text-green-600', 'text-purple-600', 'text-orange-600', 'text-cyan-600', 'text-foreground/70'];
 const tipoStringMap: Record<string, number> = {
   Rutina: 0, Cobranza: 1, Entrega: 2, Prospeccion: 3, Seguimiento: 4, Otro: 5,
 };
@@ -278,7 +278,7 @@ function VisitsPageContent() {
       cellRenderer: (visit) => (
         <div>
           <p className="text-[13px] font-medium text-gray-900 truncate">{visit.clienteNombre}</p>
-          {visit.clienteDireccion && <p className="text-[11px] text-gray-500 truncate">{visit.clienteDireccion}</p>}
+          {visit.clienteDireccion && <p className="text-[11px] text-muted-foreground truncate">{visit.clienteDireccion}</p>}
         </div>
       ),
     },
@@ -297,9 +297,9 @@ function VisitsPageContent() {
       sortable: true,
       width: 110,
       cellRenderer: (visit) => (
-        <div className="text-[12px] text-gray-600">
+        <div className="text-[12px] text-foreground/70">
           {formatDate(visit.fechaProgramada)}
-          {visit.fechaHoraInicio && <span className="block text-[11px] text-gray-400">{formatTime(visit.fechaHoraInicio)}</span>}
+          {visit.fechaHoraInicio && <span className="block text-[11px] text-muted-foreground">{formatTime(visit.fechaHoraInicio)}</span>}
         </div>
       ),
     },
@@ -322,7 +322,7 @@ function VisitsPageContent() {
       label: t('columns.duration'),
       width: 70,
       align: 'center',
-      cellRenderer: (visit) => <span className="text-[13px] text-gray-600">{visit.duracionMinutos ? `${visit.duracionMinutos} min` : '-'}</span>,
+      cellRenderer: (visit) => <span className="text-[13px] text-foreground/70">{visit.duracionMinutos ? `${visit.duracionMinutos} min` : '-'}</span>,
     },
     {
       key: 'pedido',
@@ -339,7 +339,7 @@ function VisitsPageContent() {
         const isCompleted = !!visit.fechaHoraFin;
         return (
           <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => handleViewDetails(visit.id)} className="p-1.5 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50 transition-colors" title={t('view')}>
+            <button onClick={() => handleViewDetails(visit.id)} className="p-1.5 text-muted-foreground hover:text-blue-600 rounded hover:bg-blue-50 transition-colors" title={t('view')}>
               <Eye className="w-4 h-4" />
             </button>
             {isCompleted && (
@@ -416,11 +416,11 @@ function VisitsPageContent() {
   // View toggle + create button for actions
   const headerActions = (
     <>
-      <div className="inline-flex bg-gray-100 rounded-lg p-1">
+      <div className="inline-flex bg-surface-3 rounded-lg p-1">
         <button
           onClick={() => setView('list')}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-            currentView === 'list' ? 'bg-surface-2 text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+            currentView === 'list' ? 'bg-surface-2 text-gray-900 shadow-sm' : 'text-muted-foreground hover:text-gray-700'
           }`}
         >
           <List className="w-4 h-4" />
@@ -429,7 +429,7 @@ function VisitsPageContent() {
         <button
           onClick={() => setView('calendar')}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-            currentView === 'calendar' ? 'bg-surface-2 text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+            currentView === 'calendar' ? 'bg-surface-2 text-gray-900 shadow-sm' : 'text-muted-foreground hover:text-gray-700'
           }`}
         >
           <CalendarDays className="w-4 h-4" />
@@ -534,7 +534,7 @@ function VisitsPageContent() {
             {hasFilters && (
               <button
                 onClick={handleClearFilters}
-                className="flex items-center gap-1 px-3 py-2 text-xs text-gray-500 hover:text-gray-700 border border-gray-200 rounded hover:bg-surface-1"
+                className="flex items-center gap-1 px-3 py-2 text-xs text-muted-foreground hover:text-gray-700 border border-border-subtle rounded hover:bg-surface-1"
               >
                 <X className="w-3.5 h-3.5" />
                 {t('clearFilters')}
@@ -586,22 +586,22 @@ function VisitsPageContent() {
                       {visit.tienePedido && <ShoppingCart className="w-4 h-4 text-green-600" />}
                     </div>
                     <div className="flex items-center gap-2 mb-1">
-                      <User className="w-3.5 h-3.5 text-gray-400" />
+                      <User className="w-3.5 h-3.5 text-muted-foreground" />
                       <span className="text-sm font-medium truncate">{visit.clienteNombre}</span>
                     </div>
                     {visit.clienteDireccion && (
                       <div className="flex items-center gap-2 mb-1">
-                        <MapPin className="w-3.5 h-3.5 text-gray-400" />
-                        <span className="text-xs text-gray-500 truncate">{visit.clienteDireccion}</span>
+                        <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground truncate">{visit.clienteDireccion}</span>
                       </div>
                     )}
                     <div className="flex items-center gap-2 mb-2">
-                      <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                      <span className="text-xs text-gray-500">{formatDate(visit.fechaProgramada)}</span>
-                      {visit.duracionMinutos && <span className="text-xs text-gray-400 ml-auto">{visit.duracionMinutos} min</span>}
+                      <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">{formatDate(visit.fechaProgramada)}</span>
+                      {visit.duracionMinutos && <span className="text-xs text-muted-foreground ml-auto">{visit.duracionMinutos} min</span>}
                     </div>
                     <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                      <button onClick={() => handleViewDetails(visit.id)} className="flex items-center gap-1 px-3 py-1.5 text-xs border border-gray-200 rounded hover:bg-surface-1">
+                      <button onClick={() => handleViewDetails(visit.id)} className="flex items-center gap-1 px-3 py-1.5 text-xs border border-border-subtle rounded hover:bg-surface-1">
                         <Eye className="w-3.5 h-3.5" /> Ver
                       </button>
                     </div>
@@ -673,18 +673,18 @@ function VisitsPageContent() {
             {/* Cliente */}
             <div className="bg-surface-1 rounded-lg p-4 space-y-2">
               <div className="flex items-center gap-2">
-                <User className="w-4 h-4 text-gray-400" />
+                <User className="w-4 h-4 text-muted-foreground" />
                 <span className="font-medium">{visitDetail.clienteNombre}</span>
               </div>
               {visitDetail.clienteDireccion && (
                 <div className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm text-gray-600">{visitDetail.clienteDireccion}</span>
+                  <MapPin className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm text-foreground/70">{visitDetail.clienteDireccion}</span>
                 </div>
               )}
               <div className="flex items-center gap-2">
-                <User className="w-4 h-4 text-gray-400" />
-                <span className="text-sm text-gray-500">Vendedor: {visitDetail.usuarioNombre}</span>
+                <User className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Vendedor: {visitDetail.usuarioNombre}</span>
               </div>
             </div>
 
@@ -692,29 +692,29 @@ function VisitsPageContent() {
             <div className="space-y-2">
               {visitDetail.fechaProgramada && (
                 <div className="flex items-center gap-2 text-sm">
-                  <Calendar className="w-4 h-4 text-gray-400" />
-                  <span className="text-gray-500">Programada:</span>
+                  <Calendar className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-muted-foreground">Programada:</span>
                   <span>{formatDate(visitDetail.fechaProgramada)}</span>
                 </div>
               )}
               {visitDetail.fechaHoraInicio && (
                 <div className="flex items-center gap-2 text-sm">
-                  <Clock className="w-4 h-4 text-gray-400" />
-                  <span className="text-gray-500">Inicio:</span>
+                  <Clock className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-muted-foreground">Inicio:</span>
                   <span>{formatDate(visitDetail.fechaHoraInicio)} {formatTime(visitDetail.fechaHoraInicio)}</span>
                 </div>
               )}
               {visitDetail.fechaHoraFin && (
                 <div className="flex items-center gap-2 text-sm">
-                  <Clock className="w-4 h-4 text-gray-400" />
-                  <span className="text-gray-500">Fin:</span>
+                  <Clock className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-muted-foreground">Fin:</span>
                   <span>{formatDate(visitDetail.fechaHoraFin)} {formatTime(visitDetail.fechaHoraFin)}</span>
                 </div>
               )}
               {visitDetail.duracionMinutos && (
                 <div className="flex items-center gap-2 text-sm">
-                  <Clock className="w-4 h-4 text-gray-400" />
-                  <span className="text-gray-500">Duración:</span>
+                  <Clock className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-muted-foreground">Duración:</span>
                   <span className="font-medium">{visitDetail.duracionMinutos} min</span>
                 </div>
               )}
@@ -731,7 +731,7 @@ function VisitsPageContent() {
             {/* Notas */}
             {visitDetail.notas && (
               <div>
-                <p className="text-xs font-medium text-gray-500 mb-1">Notas</p>
+                <p className="text-xs font-medium text-muted-foreground mb-1">Notas</p>
                 <p className="text-sm text-gray-700 bg-surface-1 rounded p-3">{visitDetail.notas}</p>
               </div>
             )}
@@ -761,13 +761,13 @@ function VisitsPageContent() {
               }
               return (
                 <div className="space-y-2">
-                  <p className="text-xs font-medium text-gray-500">{t('detail.location')}</p>
+                  <p className="text-xs font-medium text-muted-foreground">{t('detail.location')}</p>
                   <GoogleMapWrapper
                     markers={markers}
                     zoom={15}
                     height="200px"
                   />
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                     {visitDetail.latitudInicio && (
                       <span className="flex items-center gap-1">
                         <span className="w-2 h-2 rounded-full bg-green-500" />

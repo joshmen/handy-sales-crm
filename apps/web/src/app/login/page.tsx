@@ -398,7 +398,7 @@ function LoginContent() {
                     disabled={isDisabled}
                     className={`auth-input w-full h-12 px-3.5 border rounded-[10px] text-[15px] bg-surface-1/50 outline-none ${
                       errors.email ? 'border-red-400 bg-red-50/30' : 'border-[#D1D5DB]'
-                    } disabled:bg-surface-1 disabled:text-gray-500`}
+                    } disabled:bg-surface-1 disabled:text-muted-foreground`}
                   />
                   {errors.email && (
                     <p className="text-xs text-red-500 flex items-center gap-1">
@@ -426,12 +426,12 @@ function LoginContent() {
                       disabled={isDisabled}
                       className={`auth-input w-full h-12 px-3.5 pr-10 border rounded-[10px] text-[15px] bg-surface-1/50 outline-none ${
                         errors.password ? 'border-red-400 bg-red-50/30' : 'border-[#D1D5DB]'
-                      } disabled:bg-surface-1 disabled:text-gray-500`}
+                      } disabled:bg-surface-1 disabled:text-muted-foreground`}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground/70 transition-colors"
                       tabIndex={-1}
                     >
                       {showPassword ? <EyeOff className="h-[18px] w-[18px]" /> : <Eye className="h-[18px] w-[18px]" />}
@@ -472,7 +472,7 @@ function LoginContent() {
                   <div className="w-full auth-separator" />
                 </div>
                 <div className="relative flex justify-center text-xs">
-                  <span className="bg-surface-2 px-4 text-gray-400 uppercase tracking-widest text-[11px]">o</span>
+                  <span className="bg-surface-2 px-4 text-muted-foreground uppercase tracking-widest text-[11px]">o</span>
                 </div>
               </div>
 
@@ -506,12 +506,12 @@ function LoginContent() {
 
               {process.env.NODE_ENV === 'development' && (
                 <div className="p-3 bg-surface-1 rounded-lg border border-gray-100 auth-animate auth-animate-delay-7">
-                  <p className="text-xs text-gray-500 mb-1.5 font-medium">{t('testCredentials')}</p>
+                  <p className="text-xs text-muted-foreground mb-1.5 font-medium">{t('testCredentials')}</p>
                   <div className="space-y-0.5">
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-muted-foreground">
                       <span className="font-medium">Admin:</span> admin@jeyma.com / test123
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-muted-foreground">
                       <span className="font-medium">Vendedor:</span> vendedor1@jeyma.com / test123
                     </p>
                   </div>

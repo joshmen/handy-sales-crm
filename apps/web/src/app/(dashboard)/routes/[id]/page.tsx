@@ -358,16 +358,16 @@ export default function RouteDetailPage() {
   // Badges — use shared constants for all 7 states
   const getEstadoBadge = (estado: number) => ({
     label: ESTADO_RUTA_KEYS[estado] ? ts(ESTADO_RUTA_KEYS[estado]) : ts('unknown'),
-    cls: ESTADO_RUTA_COLORS[estado] || 'bg-gray-100 text-gray-600',
+    cls: ESTADO_RUTA_COLORS[estado] || 'bg-surface-3 text-foreground/70',
   });
 
   const getParadaBadge = (estado: number) => {
     switch (estado) {
-      case 0: return { label: t('detail.stopPending'), cls: 'bg-gray-100 text-gray-600' };
+      case 0: return { label: t('detail.stopPending'), cls: 'bg-surface-3 text-foreground/70' };
       case 1: return { label: t('detail.stopEnRoute'), cls: 'bg-blue-100 text-blue-600' };
       case 2: return { label: t('detail.stopVisited'), cls: 'bg-green-100 text-green-600' };
       case 3: return { label: t('detail.stopSkipped'), cls: 'bg-red-100 text-red-600' };
-      default: return { label: t('status.unknown'), cls: 'bg-gray-100 text-gray-600' };
+      default: return { label: t('status.unknown'), cls: 'bg-surface-3 text-foreground/70' };
     }
   };
 
@@ -382,7 +382,7 @@ export default function RouteDetailPage() {
   if (!route) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
-        <p className="text-gray-500">{t('detail.notFound')}</p>
+        <p className="text-muted-foreground">{t('detail.notFound')}</p>
         <Link href="/routes" className="text-green-600 hover:underline text-sm">{t('detail.backToRoutes')}</Link>
       </div>
     );
@@ -394,7 +394,7 @@ export default function RouteDetailPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="bg-surface-2 px-8 py-6 border-b border-gray-200">
+      <div className="bg-surface-2 px-8 py-6 border-b border-border-subtle">
         <Breadcrumb items={[
           { label: tc('home'), href: '/dashboard' },
           { label: t('title'), href: '/routes' },
@@ -403,7 +403,7 @@ export default function RouteDetailPage() {
 
         <div className="flex items-center justify-between mt-1">
           <div className="flex items-center gap-3">
-            <button onClick={() => router.push('/routes')} className="p-1 text-gray-400 hover:text-gray-600 rounded">
+            <button onClick={() => router.push('/routes')} className="p-1 text-muted-foreground hover:text-foreground/70 rounded">
               <ArrowLeft className="w-5 h-5" />
             </button>
             <h1 className="text-2xl font-bold text-gray-900">
@@ -494,7 +494,7 @@ export default function RouteDetailPage() {
             {route?.estado === ESTADO_RUTA.Cerrada && (
               <Link
                 href={`/routes/manage/${route.id}/close`}
-                className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-surface-1 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-foreground/70 border border-border-subtle rounded-lg hover:bg-surface-1 transition-colors"
               >
                 <ExternalLink className="w-4 h-4" />
                 {t('detail.viewClosure')}
@@ -507,12 +507,12 @@ export default function RouteDetailPage() {
       {/* Body */}
       <div className="flex-1 px-8 py-6 space-y-6 overflow-auto">
         {/* Info Card */}
-        <div className="bg-surface-2 border border-gray-200 rounded-lg p-5">
+        <div className="bg-surface-2 border border-border-subtle rounded-lg p-5">
           {isEditable && (
             <div className="flex justify-end mb-3">
               <button
                 onClick={handleOpenEditDrawer}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-md hover:bg-surface-1 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-foreground/70 border border-border-subtle rounded-md hover:bg-surface-1 transition-colors"
               >
                 <Pencil className="w-3.5 h-3.5 text-amber-500" />
                 {tc('edit')}
@@ -521,32 +521,32 @@ export default function RouteDetailPage() {
           )}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="flex items-start gap-2">
-              <User className="w-4 h-4 text-gray-400 mt-0.5" />
+              <User className="w-4 h-4 text-muted-foreground mt-0.5" />
               <div>
-                <p className="text-[11px] text-gray-500">{t('columns.user')}</p>
+                <p className="text-[11px] text-muted-foreground">{t('columns.user')}</p>
                 <p className="text-[13px] font-medium text-gray-900">{route.usuarioNombre}</p>
               </div>
             </div>
             <div className="flex items-start gap-2">
-              <MapPin className="w-4 h-4 text-gray-400 mt-0.5" />
+              <MapPin className="w-4 h-4 text-muted-foreground mt-0.5" />
               <div>
-                <p className="text-[11px] text-gray-500">{t('columns.zone')}</p>
+                <p className="text-[11px] text-muted-foreground">{t('columns.zone')}</p>
                 <p className="text-[13px] font-medium text-gray-900">{route.zonaNombre || t('noZone')}</p>
               </div>
             </div>
             <div className="flex items-start gap-2">
-              <Calendar className="w-4 h-4 text-gray-400 mt-0.5" />
+              <Calendar className="w-4 h-4 text-muted-foreground mt-0.5" />
               <div>
-                <p className="text-[11px] text-gray-500">{t('columns.date')}</p>
+                <p className="text-[11px] text-muted-foreground">{t('columns.date')}</p>
                 <p className="text-[13px] font-medium text-gray-900">
                   {formatDateOnly(route.fecha)}
                 </p>
               </div>
             </div>
             <div className="flex items-start gap-2">
-              <Clock className="w-4 h-4 text-gray-400 mt-0.5" />
+              <Clock className="w-4 h-4 text-muted-foreground mt-0.5" />
               <div>
-                <p className="text-[11px] text-gray-500">{t('columns.schedule')}</p>
+                <p className="text-[11px] text-muted-foreground">{t('columns.schedule')}</p>
                 <p className="text-[13px] font-medium text-gray-900">
                   {route.horaInicioEstimada || '--:--'} - {route.horaFinEstimada || '--:--'}
                 </p>
@@ -555,13 +555,13 @@ export default function RouteDetailPage() {
           </div>
           {route.notas && (
             <div className="mt-3 pt-3 border-t border-gray-100">
-              <p className="text-[11px] text-gray-500 mb-1">{tc('notes')}</p>
+              <p className="text-[11px] text-muted-foreground mb-1">{tc('notes')}</p>
               <p className="text-[13px] text-gray-700">{route.notas}</p>
             </div>
           )}
           <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-6">
             <div>
-              <span className="text-[11px] text-gray-500">{t('columns.stops')}: </span>
+              <span className="text-[11px] text-muted-foreground">{t('columns.stops')}: </span>
               <span className="text-[13px] font-medium">
                 <span className={route.paradasCompletadas === route.totalParadas && route.totalParadas > 0 ? 'text-green-600' : ''}>
                   {route.paradasCompletadas}
@@ -571,7 +571,7 @@ export default function RouteDetailPage() {
             </div>
             {route.kilometrosEstimados && (
               <div>
-                <span className="text-[11px] text-gray-500">{t('detail.estimatedKm')}: </span>
+                <span className="text-[11px] text-muted-foreground">{t('detail.estimatedKm')}: </span>
                 <span className="text-[13px] font-medium">
                   {route.kilometrosEstimados}
                 </span>
@@ -602,16 +602,16 @@ export default function RouteDetailPage() {
             )}
           </div>
 
-          <div className="bg-surface-2 border border-gray-200 rounded-lg overflow-hidden">
+          <div className="bg-surface-2 border border-border-subtle rounded-lg overflow-hidden">
             {/* Table Header */}
-            <div className="flex items-center gap-3 bg-surface-1 px-4 h-10 border-b border-gray-200">
-              <div className="w-[100px] text-xs font-semibold text-gray-600">{t('detail.orderNumber')}</div>
-              <div className="flex-1 min-w-[160px] text-xs font-semibold text-gray-600">{t('detail.client')}</div>
-              <div className="w-[120px] text-xs font-semibold text-gray-600 text-right">{t('detail.amount')}</div>
-              <div className="w-[60px] text-xs font-semibold text-gray-600 text-center">{t('detail.products')}</div>
-              <div className="w-[110px] text-xs font-semibold text-gray-600 text-center">{t('columns.status')}</div>
+            <div className="flex items-center gap-3 bg-surface-1 px-4 h-10 border-b border-border-subtle">
+              <div className="w-[100px] text-xs font-semibold text-foreground/70">{t('detail.orderNumber')}</div>
+              <div className="flex-1 min-w-[160px] text-xs font-semibold text-foreground/70">{t('detail.client')}</div>
+              <div className="w-[120px] text-xs font-semibold text-foreground/70 text-right">{t('detail.amount')}</div>
+              <div className="w-[60px] text-xs font-semibold text-foreground/70 text-center">{t('detail.products')}</div>
+              <div className="w-[110px] text-xs font-semibold text-foreground/70 text-center">{t('columns.status')}</div>
               {isEditable && (
-                <div className="w-[70px] text-xs font-semibold text-gray-600 text-center">{tc('actions')}</div>
+                <div className="w-[70px] text-xs font-semibold text-foreground/70 text-center">{tc('actions')}</div>
               )}
             </div>
 
@@ -620,7 +620,7 @@ export default function RouteDetailPage() {
               <div className="flex flex-col items-center justify-center py-16">
                 <Package className="w-12 h-12 text-gray-300 mb-3" />
                 <p className="text-sm font-medium text-gray-700 mb-1">{t('detail.noOrders')}</p>
-                <p className="text-xs text-gray-500 mb-3">{t('detail.assignConfirmedOrders')}</p>
+                <p className="text-xs text-muted-foreground mb-3">{t('detail.assignConfirmedOrders')}</p>
                 {isEditable && (
                   <button
                     onClick={handleOpenAddPedido}
@@ -644,10 +644,10 @@ export default function RouteDetailPage() {
                     <p className="text-[13px] font-medium text-gray-900 truncate">{p.clienteNombre}</p>
                   </div>
                   <div className="w-[120px] text-right">
-                    <span className="text-[13px] text-gray-600">{formatCurrency(p.montoTotal)}</span>
+                    <span className="text-[13px] text-foreground/70">{formatCurrency(p.montoTotal)}</span>
                   </div>
                   <div className="w-[60px] text-center">
-                    <span className="text-[13px] text-gray-600">{p.totalProductos}</span>
+                    <span className="text-[13px] text-foreground/70">{p.totalProductos}</span>
                   </div>
                   <div className="w-[110px] text-center">
                     <span className="inline-flex px-2 py-0.5 text-[10px] font-medium rounded-full bg-green-100 text-green-600">
@@ -658,7 +658,7 @@ export default function RouteDetailPage() {
                     <div className="w-[70px] flex items-center justify-center">
                       <button
                         onClick={() => handleRemovePedido(p.pedidoId)}
-                        className="p-1 text-gray-400 hover:text-red-600 rounded"
+                        className="p-1 text-muted-foreground hover:text-red-600 rounded"
                         title={t('detail.removeOrder')}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -688,16 +688,16 @@ export default function RouteDetailPage() {
             )}
           </div>
 
-          <div className="bg-surface-2 border border-gray-200 rounded-lg overflow-hidden">
+          <div className="bg-surface-2 border border-border-subtle rounded-lg overflow-hidden">
             {/* Table Header */}
-            <div className="flex items-center gap-3 bg-surface-1 px-4 h-10 border-b border-gray-200">
-              <div className="w-[50px] text-xs font-semibold text-gray-600 text-center">#</div>
-              <div className="flex-1 min-w-[160px] text-xs font-semibold text-gray-600">{t('detail.client')}</div>
-              <div className="w-[200px] text-xs font-semibold text-gray-600">{tc('address')}</div>
-              <div className="w-[60px] text-xs font-semibold text-gray-600 text-center">{t('detail.minutes')}</div>
-              <div className="w-[90px] text-xs font-semibold text-gray-600 text-center">{t('columns.status')}</div>
+            <div className="flex items-center gap-3 bg-surface-1 px-4 h-10 border-b border-border-subtle">
+              <div className="w-[50px] text-xs font-semibold text-foreground/70 text-center">#</div>
+              <div className="flex-1 min-w-[160px] text-xs font-semibold text-foreground/70">{t('detail.client')}</div>
+              <div className="w-[200px] text-xs font-semibold text-foreground/70">{tc('address')}</div>
+              <div className="w-[60px] text-xs font-semibold text-foreground/70 text-center">{t('detail.minutes')}</div>
+              <div className="w-[90px] text-xs font-semibold text-foreground/70 text-center">{t('columns.status')}</div>
               {isEditable && (
-                <div className="w-[90px] text-xs font-semibold text-gray-600 text-center">{tc('actions')}</div>
+                <div className="w-[90px] text-xs font-semibold text-foreground/70 text-center">{tc('actions')}</div>
               )}
             </div>
 
@@ -706,7 +706,7 @@ export default function RouteDetailPage() {
               <div className="flex flex-col items-center justify-center py-16">
                 <MapPin className="w-12 h-12 text-gray-300 mb-3" />
                 <p className="text-sm font-medium text-gray-700 mb-1">{t('detail.noStops')}</p>
-                <p className="text-xs text-gray-500 mb-3">{t('detail.addClientsHint')}</p>
+                <p className="text-xs text-muted-foreground mb-3">{t('detail.addClientsHint')}</p>
                 {isEditable && (
                   <button
                     onClick={() => setIsAddStopOpen(true)}
@@ -726,19 +726,19 @@ export default function RouteDetailPage() {
                     className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 hover:bg-surface-1 transition-colors"
                   >
                     <div className="w-[50px] text-center">
-                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-[11px] font-medium text-gray-600">
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-surface-3 text-[11px] font-medium text-foreground/70">
                         {stop.ordenVisita}
                       </span>
                     </div>
                     <div className="flex-1 min-w-[160px]">
                       <p className="text-[13px] font-medium text-gray-900 truncate">{stop.clienteNombre}</p>
-                      {stop.notas && <p className="text-[11px] text-gray-500 truncate">{stop.notas}</p>}
+                      {stop.notas && <p className="text-[11px] text-muted-foreground truncate">{stop.notas}</p>}
                     </div>
                     <div className="w-[200px]">
-                      <p className="text-[13px] text-gray-600 truncate">{stop.clienteDireccion || '-'}</p>
+                      <p className="text-[13px] text-foreground/70 truncate">{stop.clienteDireccion || '-'}</p>
                     </div>
                     <div className="w-[60px] text-center">
-                      <span className="text-[13px] text-gray-600">
+                      <span className="text-[13px] text-foreground/70">
                         {stop.duracionEstimadaMinutos || 30}
                       </span>
                     </div>
@@ -752,7 +752,7 @@ export default function RouteDetailPage() {
                         <button
                           onClick={() => handleMoveStop(stop, 'up')}
                           disabled={idx === 0}
-                          className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30 rounded"
+                          className="p-1 text-muted-foreground hover:text-foreground/70 disabled:opacity-30 rounded"
                           title={t('detail.moveUp')}
                         >
                           <ChevronUp className="w-3.5 h-3.5" />
@@ -760,14 +760,14 @@ export default function RouteDetailPage() {
                         <button
                           onClick={() => handleMoveStop(stop, 'down')}
                           disabled={idx === sortedStops.length - 1}
-                          className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30 rounded"
+                          className="p-1 text-muted-foreground hover:text-foreground/70 disabled:opacity-30 rounded"
                           title={t('detail.moveDown')}
                         >
                           <ChevronDown className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => handleDeleteStop(stop.id)}
-                          className="p-1 text-gray-400 hover:text-red-600 rounded"
+                          className="p-1 text-muted-foreground hover:text-red-600 rounded"
                           title={tc('delete')}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -808,7 +808,7 @@ export default function RouteDetailPage() {
               type="number"
               value={stopForm.duracion}
               onChange={(e) => setStopForm({ ...stopForm, duracion: parseInt(e.target.value) || 30 })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
           </div>
           <div>
@@ -818,14 +818,14 @@ export default function RouteDetailPage() {
               onChange={(e) => setStopForm({ ...stopForm, notas: e.target.value })}
               rows={2}
               placeholder={t('detail.stopNotesPlaceholder')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+              className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
             />
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t">
             <button
               onClick={() => setIsAddStopOpen(false)}
               disabled={actionLoading}
-              className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-surface-1 disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium text-gray-700 border border-border-default rounded-md hover:bg-surface-1 disabled:opacity-50"
             >
               Cancelar
             </button>
@@ -848,7 +848,7 @@ export default function RouteDetailPage() {
         title={t('detail.cancelRoute')}
       >
         <div className="space-y-4">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-foreground/70">
             {t('detail.cancelConfirm')}
           </p>
           <div>
@@ -858,14 +858,14 @@ export default function RouteDetailPage() {
               onChange={(e) => setCancelMotivo(e.target.value)}
               rows={2}
               placeholder={t('detail.reasonPlaceholder')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+              className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
             />
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t">
             <button
               onClick={() => setIsCancelOpen(false)}
               disabled={actionLoading}
-              className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-surface-1 disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium text-gray-700 border border-border-default rounded-md hover:bg-surface-1 disabled:opacity-50"
             >
               {tc('back')}
             </button>
@@ -893,7 +893,7 @@ export default function RouteDetailPage() {
         onSave={editRhfSubmit(handleSaveEdit)}
         footer={
           <div className="flex justify-end gap-3">
-            <button onClick={() => editDrawerRef.current?.requestClose()} disabled={editSaving} className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-surface-1 disabled:opacity-50">
+            <button onClick={() => editDrawerRef.current?.requestClose()} disabled={editSaving} className="px-4 py-2 text-sm font-medium text-gray-700 border border-border-default rounded-md hover:bg-surface-1 disabled:opacity-50">
               {tc('cancel')}
             </button>
             <button onClick={editRhfSubmit(handleSaveEdit)} disabled={editSaving} className="px-4 py-2 text-sm font-medium text-success-foreground bg-success rounded-md hover:bg-success/90 disabled:opacity-50 flex items-center gap-2">
@@ -905,13 +905,13 @@ export default function RouteDetailPage() {
       >
         <form onSubmit={editRhfSubmit(handleSaveEdit)} className="p-6 space-y-5">
           <div className="space-y-4">
-            <h4 className="text-xs font-semibold text-gray-400">{t('drawer.generalInfo')}</h4>
+            <h4 className="text-xs font-semibold text-muted-foreground">{t('drawer.generalInfo')}</h4>
             <div>
               <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
                 <Map className="w-3.5 h-3.5 text-teal-500" />
                 {t('columns.name')} <span className="text-red-500">*</span>
               </label>
-              <input type="text" {...editRegister('nombre')} maxLength={100} placeholder={t('drawer.namePlaceholder')} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
+              <input type="text" {...editRegister('nombre')} maxLength={100} placeholder={t('drawer.namePlaceholder')} className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
               {editErrors.nombre && <FieldError message={editErrors.nombre?.message} />}
             </div>
             <div>
@@ -941,7 +941,7 @@ export default function RouteDetailPage() {
           </div>
           <hr className="border-gray-100" />
           <div className="space-y-4">
-            <h4 className="text-xs font-semibold text-gray-400">{t('drawer.scheduling')}</h4>
+            <h4 className="text-xs font-semibold text-muted-foreground">{t('drawer.scheduling')}</h4>
             <div>
               <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
                 <Calendar className="w-3.5 h-3.5 text-amber-500" />
@@ -956,27 +956,27 @@ export default function RouteDetailPage() {
                   <Clock className="w-3.5 h-3.5 text-cyan-500" />
                   {t('drawer.startTime')}
                 </label>
-                <input type="time" {...editRegister('horaInicioEstimada')} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
+                <input type="time" {...editRegister('horaInicioEstimada')} className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
               </div>
               <div>
                 <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
                   <Clock className="w-3.5 h-3.5 text-cyan-500" />
                   {t('drawer.endTime')}
                 </label>
-                <input type="time" {...editRegister('horaFinEstimada')} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
+                <input type="time" {...editRegister('horaFinEstimada')} className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
               </div>
             </div>
           </div>
           <hr className="border-gray-100" />
           <div className="space-y-4">
-            <h4 className="text-xs font-semibold text-gray-400">{t('drawer.additionalDetails')}</h4>
+            <h4 className="text-xs font-semibold text-muted-foreground">{t('drawer.additionalDetails')}</h4>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1.5">{tc('description')}</label>
-              <textarea {...editRegister('descripcion')} rows={2} placeholder={t('drawer.descriptionPlaceholder')} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none" />
+              <textarea {...editRegister('descripcion')} rows={2} placeholder={t('drawer.descriptionPlaceholder')} className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none" />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1.5">{tc('notes')}</label>
-              <textarea {...editRegister('notas')} rows={2} placeholder={t('drawer.notesPlaceholder')} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none" />
+              <textarea {...editRegister('notas')} rows={2} placeholder={t('drawer.notesPlaceholder')} className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none" />
             </div>
           </div>
         </form>
@@ -991,13 +991,13 @@ export default function RouteDetailPage() {
       >
         <div className="space-y-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="text"
               value={pedidoSearch}
               onChange={(e) => setPedidoSearch(e.target.value)}
               placeholder={t('detail.searchOrderPlaceholder')}
-              className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full pl-9 pr-3 py-2 text-xs border border-border-subtle rounded focus:outline-none focus:ring-2 focus:ring-green-500"
             />
           </div>
 
@@ -1026,10 +1026,10 @@ export default function RouteDetailPage() {
                       <span className="text-[13px] font-medium text-gray-900">
                         #{p.numeroPedido || p.id}
                       </span>
-                      <span className="text-xs text-gray-500 ml-2">
+                      <span className="text-xs text-muted-foreground ml-2">
                         {p.clienteNombre || t('detail.noClient')}
                       </span>
-                      <span className="text-xs text-gray-400 ml-2">
+                      <span className="text-xs text-muted-foreground ml-2">
                         {formatCurrency(p.total || 0)}
                       </span>
                     </div>
@@ -1042,7 +1042,7 @@ export default function RouteDetailPage() {
                   </div>
                 ))}
               {availablePedidos.length === 0 && !loadingPedidos && (
-                <p className="text-xs text-gray-400 text-center py-4">
+                <p className="text-xs text-muted-foreground text-center py-4">
                   {t('detail.noConfirmedOrders')}
                 </p>
               )}

@@ -57,7 +57,7 @@ function getTemplateIcon(iconName: string): React.ComponentType<IconProps> {
 const STATUS_STYLES: Record<string, { bg: string; label: string; icon?: React.ComponentType<IconProps> }> = {
   Success: { bg: 'bg-emerald-50 text-emerald-700', label: 'Exitoso', icon: CheckCircle },
   Failed: { bg: 'bg-red-50 text-red-700', label: 'Error', icon: Warning },
-  Skipped: { bg: 'bg-gray-100 text-gray-600', label: 'Omitido' },
+  Skipped: { bg: 'bg-surface-3 text-foreground/70', label: 'Omitido' },
 };
 
 const DESTINATARIO_INFO: Record<string, { icon: React.ComponentType<IconProps>; label: string }> = {
@@ -271,14 +271,14 @@ export default function AutomationsPage() {
                 <p className="text-[11px] opacity-70 mt-0.5">{t('activeOf', { total: templates.length })}</p>
               </div>
             </div>
-            <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 bg-surface-1 text-gray-700">
+            <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-border-subtle bg-surface-1 text-gray-700">
               <Sparkle size={18} weight="fill" className="flex-shrink-0 opacity-60" />
               <div>
                 <p className="text-lg font-bold leading-none">{loading ? '—' : totalExecutions}</p>
                 <p className="text-[11px] opacity-70 mt-0.5">{t('totalExecutions')}</p>
               </div>
             </div>
-            <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 bg-surface-1 text-gray-700">
+            <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-border-subtle bg-surface-1 text-gray-700">
               <Clock size={18} weight="fill" className="flex-shrink-0 opacity-60" />
               <div>
                 <p className="text-lg font-bold leading-none truncate">
@@ -298,7 +298,7 @@ export default function AutomationsPage() {
                 className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
                   activeCategory === cat
                     ? 'bg-success text-success-foreground'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    : 'bg-surface-3 text-foreground/70 hover:bg-surface-3'
                 }`}
               >
                 {cat === 'Todas' ? t('allCategories') : cat === 'Operacion' ? t('operationCategory') : cat}
@@ -310,17 +310,17 @@ export default function AutomationsPage() {
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {[1, 2, 3, 4, 5, 6].map(i => (
-                <div key={i} className="bg-surface-2 rounded-lg border border-gray-200 p-3 animate-pulse">
+                <div key={i} className="bg-surface-2 rounded-xl border border-border-subtle p-3 animate-pulse">
                   <div className="flex items-start gap-2.5 mb-3">
-                    <div className="w-9 h-9 bg-gray-200 rounded-lg" />
+                    <div className="w-9 h-9 bg-surface-3 rounded-lg" />
                     <div className="flex-1">
-                      <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
-                      <div className="h-3 bg-gray-100 rounded w-full" />
+                      <div className="h-4 bg-surface-3 rounded w-3/4 mb-2" />
+                      <div className="h-3 bg-surface-3 rounded w-full" />
                     </div>
                   </div>
                   <div className="flex gap-2 mb-2">
-                    <div className="h-5 bg-gray-100 rounded-md w-16" />
-                    <div className="h-5 bg-gray-100 rounded-md w-14" />
+                    <div className="h-5 bg-surface-3 rounded-md w-16" />
+                    <div className="h-5 bg-surface-3 rounded-md w-14" />
                   </div>
                   <div className="h-7 bg-surface-1 rounded" />
                 </div>
@@ -328,11 +328,11 @@ export default function AutomationsPage() {
             </div>
           ) : filtered.length === 0 ? (
             <div className="text-center py-16">
-              <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+              <div className="w-10 h-10 bg-surface-3 rounded-xl flex items-center justify-center mx-auto mb-4">
                 <Robot size={20} className="text-muted-foreground" />
               </div>
               <p className="font-semibold text-gray-700 mb-1">{t('noCategory')}</p>
-              <p className="text-sm text-gray-400 max-w-sm mx-auto">
+              <p className="text-sm text-muted-foreground max-w-sm mx-auto">
                 {activeCategory !== 'Todas'
                   ? t('noCategoryDesc', { category: CATEGORY_LABELS[activeCategory] || activeCategory })
                   : t('emptyDefault')}
@@ -340,7 +340,7 @@ export default function AutomationsPage() {
               {activeCategory !== 'Todas' && (
                 <button
                   onClick={() => setActiveCategory('Todas')}
-                  className="mt-4 px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                  className="mt-4 px-4 py-2 text-sm font-medium text-foreground/70 bg-surface-3 rounded-lg hover:bg-surface-3 transition-colors"
                 >
                   {t('viewAll')}
                 </button>
@@ -355,10 +355,10 @@ export default function AutomationsPage() {
                 return (
                   <div
                     key={template.slug}
-                    className={`bg-surface-2 rounded-lg border transition-colors ${
+                    className={`bg-surface-2 rounded-xl border transition-colors ${
                       template.activada
                         ? 'border-green-200 hover:bg-surface-1'
-                        : 'border-gray-200 hover:bg-surface-1 opacity-60'
+                        : 'border-border-subtle hover:bg-surface-1 opacity-60'
                     }`}
                   >
                     <div className="p-3">
@@ -368,7 +368,7 @@ export default function AutomationsPage() {
                           <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
                             template.activada
                               ? 'bg-green-50 text-green-600'
-                              : 'bg-gray-100 text-gray-400'
+                              : 'bg-surface-3 text-muted-foreground'
                           }`}>
                             <Icon size={20} />
                           </div>
@@ -379,7 +379,7 @@ export default function AutomationsPage() {
                               </h3>
 
                             </div>
-                            <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
+                            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
                               {template.descripcionCorta}
                             </p>
                           </div>
@@ -400,7 +400,7 @@ export default function AutomationsPage() {
                       {/* Footer: Badge + Destinatario + Stats + Config */}
                       <div className="flex items-center gap-2">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium ${
-                          CATEGORY_COLORS[template.categoria] || 'bg-gray-100 text-gray-600'
+                          CATEGORY_COLORS[template.categoria] || 'bg-surface-3 text-foreground/70'
                         }`}>
                           {CATEGORY_LABELS[template.categoria] || template.categoria}
                         </span>
@@ -410,14 +410,14 @@ export default function AutomationsPage() {
                           if (!info) return null;
                           const DestIcon = info.icon;
                           return (
-                            <span className="inline-flex items-center gap-0.5 text-[10px] text-gray-400" title={`Notifica a: ${info.label}`}>
+                            <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground" title={`Notifica a: ${info.label}`}>
                               <DestIcon size={11} />
                               {info.label}
                             </span>
                           );
                         })()}
                         {template.activada && template.totalEjecuciones > 0 && (
-                          <span className="text-[10px] text-gray-400">
+                          <span className="text-[10px] text-muted-foreground">
                             {t('executionCount', { count: template.totalEjecuciones })}{template.ultimaEjecucion ? ` · ${formatTimeAgo(template.ultimaEjecucion)}` : ''}
                           </span>
                         )}
@@ -425,7 +425,7 @@ export default function AutomationsPage() {
                           <button
                               onClick={() => handleTest(template.slug, template.nombre)}
                               disabled={testingSlug === template.slug}
-                              className="text-gray-400 hover:text-green-600 text-xs transition-colors disabled:opacity-50"
+                              className="text-muted-foreground hover:text-green-600 text-xs transition-colors disabled:opacity-50"
                               aria-label={`${t('testNow')} ${template.nombre}`}
                               title={t('testNow')}
                             >
@@ -434,7 +434,7 @@ export default function AutomationsPage() {
                           {template.defaultParamsJson && (
                             <button
                               onClick={() => handleOpenConfig(template)}
-                              className="text-gray-400 hover:text-gray-600 text-xs transition-colors"
+                              className="text-muted-foreground hover:text-foreground/70 text-xs transition-colors"
                               data-tour="automations-config-btn"
                               aria-label={`${t('configure')} ${template.nombre}`}
                               title={t('configure')}
@@ -452,7 +452,7 @@ export default function AutomationsPage() {
           )}
 
           {/* Historial section */}
-          <div className="bg-surface-2 rounded-lg border border-gray-200" data-tour="automations-historial">
+          <div className="bg-surface-2 rounded-xl border border-border-subtle" data-tour="automations-historial">
             <button
               onClick={() => {
                 setShowHistorial(!showHistorial);
@@ -464,12 +464,12 @@ export default function AutomationsPage() {
                 <Lightning size={18} className="text-amber-500" />
                 <span className="font-semibold text-sm text-gray-900">{t('historyTitle')}</span>
                 {historialTotal > 0 && (
-                  <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-md">
+                  <span className="text-xs bg-surface-3 text-muted-foreground px-2 py-0.5 rounded-md">
                     {historialTotal}
                   </span>
                 )}
               </div>
-              {showHistorial ? <CaretUp size={16} className="text-gray-400" /> : <CaretDown size={16} className="text-gray-400" />}
+              {showHistorial ? <CaretUp size={16} className="text-muted-foreground" /> : <CaretDown size={16} className="text-muted-foreground" />}
             </button>
 
             {showHistorial && (
@@ -477,12 +477,12 @@ export default function AutomationsPage() {
                 {historialLoading ? (
                   <div className="py-12 text-center">
                     <RefreshCw className="w-6 h-6 mx-auto mb-2 text-gray-300 animate-spin" />
-                    <p className="text-sm text-gray-400">{tc('loading')}</p>
+                    <p className="text-sm text-muted-foreground">{tc('loading')}</p>
                   </div>
                 ) : historial.length === 0 ? (
                   <div className="py-12 text-center">
                     <Clock size={32} className="mx-auto mb-2 text-gray-200" />
-                    <p className="text-sm text-gray-400">{t('emptyHistoryTitle')}</p>
+                    <p className="text-sm text-muted-foreground">{t('emptyHistoryTitle')}</p>
                     <p className="text-xs text-gray-300 mt-1">{t('emptyHistoryDesc')}</p>
                   </div>
                 ) : (
@@ -492,16 +492,16 @@ export default function AutomationsPage() {
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="bg-surface-1 border-b border-gray-100">
-                            <th className="text-left px-5 py-2.5 font-medium text-gray-500">{t('columns.date')}</th>
-                            <th className="text-left px-5 py-2.5 font-medium text-gray-500">{t('columns.automation')}</th>
-                            <th className="text-left px-5 py-2.5 font-medium text-gray-500">{t('columns.result')}</th>
-                            <th className="text-left px-5 py-2.5 font-medium text-gray-500">{t('columns.action')}</th>
+                            <th className="text-left px-5 py-2.5 font-medium text-muted-foreground">{t('columns.date')}</th>
+                            <th className="text-left px-5 py-2.5 font-medium text-muted-foreground">{t('columns.automation')}</th>
+                            <th className="text-left px-5 py-2.5 font-medium text-muted-foreground">{t('columns.result')}</th>
+                            <th className="text-left px-5 py-2.5 font-medium text-muted-foreground">{t('columns.action')}</th>
                           </tr>
                         </thead>
                         <tbody>
                           {historial.map(exec => (
                             <tr key={exec.id} className="border-b border-gray-50 hover:bg-surface-1/50 transition-colors">
-                              <td className="px-5 py-2.5 text-gray-600 whitespace-nowrap">
+                              <td className="px-5 py-2.5 text-foreground/70 whitespace-nowrap">
                                 {formatDate(exec.ejecutadoEn, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                               </td>
                               <td className="px-5 py-2.5 font-medium text-gray-900">
@@ -510,7 +510,7 @@ export default function AutomationsPage() {
                               <td className="px-5 py-2.5">
                                 <StatusBadge status={exec.status} />
                               </td>
-                              <td className="px-5 py-2.5 text-gray-500 max-w-xs truncate">
+                              <td className="px-5 py-2.5 text-muted-foreground max-w-xs truncate">
                                 {exec.errorMessage || exec.actionTaken}
                               </td>
                             </tr>
@@ -527,8 +527,8 @@ export default function AutomationsPage() {
                             <span className="font-medium text-sm text-gray-900">{exec.templateNombre}</span>
                             <StatusBadge status={exec.status} size="xs" />
                           </div>
-                          <p className="text-xs text-gray-500 truncate">{exec.errorMessage || exec.actionTaken}</p>
-                          <p className="text-[10px] text-gray-400 mt-1">
+                          <p className="text-xs text-muted-foreground truncate">{exec.errorMessage || exec.actionTaken}</p>
+                          <p className="text-[10px] text-muted-foreground mt-1">
                             {formatDate(exec.ejecutadoEn)}
                           </p>
                         </div>
@@ -541,17 +541,17 @@ export default function AutomationsPage() {
                         <button
                           onClick={() => loadHistorial(historialPage - 1)}
                           disabled={historialPage <= 1}
-                          className="text-xs text-gray-500 hover:text-gray-700 disabled:opacity-50 transition-colors"
+                          className="text-xs text-muted-foreground hover:text-gray-700 disabled:opacity-50 transition-colors"
                         >
                           {tc('previous')}
                         </button>
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-muted-foreground">
                           {tc('page')} {historialPage} {tc('of')} {Math.ceil(historialTotal / 10)}
                         </span>
                         <button
                           onClick={() => loadHistorial(historialPage + 1)}
                           disabled={historialPage >= Math.ceil(historialTotal / 10)}
-                          className="text-xs text-gray-500 hover:text-gray-700 disabled:opacity-50 transition-colors"
+                          className="text-xs text-muted-foreground hover:text-gray-700 disabled:opacity-50 transition-colors"
                         >
                           {tc('next')}
                         </button>
@@ -583,7 +583,7 @@ export default function AutomationsPage() {
         onClose={() => setConfigDrawerOpen(false)}
         title={t('configurePrefix', { name: configTemplate?.nombre || '' })}
         description={t('drawerConfigDesc')}
-        icon={<GearSix size={20} className="text-gray-500" />}
+        icon={<GearSix size={20} className="text-muted-foreground" />}
         footer={
           <div className="flex gap-3 justify-end" data-tour="automations-drawer-actions">
             <Button type="button" variant="outline" onClick={() => setConfigDrawerOpen(false)}>
@@ -598,7 +598,7 @@ export default function AutomationsPage() {
       >
         <div className="space-y-5 p-6" data-tour="automations-drawer-form">
           {configTemplate?.descripcion && (
-            <p className="text-sm text-gray-500 bg-surface-1 rounded-lg p-3" data-tour="automations-drawer-desc">
+            <p className="text-sm text-muted-foreground bg-surface-1 rounded-lg p-3" data-tour="automations-drawer-desc">
               {configTemplate.descripcion}
             </p>
           )}
@@ -629,7 +629,7 @@ export default function AutomationsPage() {
                     type="time"
                     value={String(value || '')}
                     onChange={e => setConfigParams(prev => ({ ...prev, [key]: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-border-default rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   />
                 </div>
               );
@@ -642,7 +642,7 @@ export default function AutomationsPage() {
                   <select
                     value={String(value || '')}
                     onChange={e => setConfigParams(prev => ({ ...prev, [key]: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent bg-surface-2"
+                    className="w-full px-3 py-2 border border-border-default rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent bg-surface-2"
                   >
                     {config.options.map(opt => (
                       <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -661,10 +661,10 @@ export default function AutomationsPage() {
                   min={config.min}
                   max={config.max}
                   onChange={e => setConfigParams(prev => ({ ...prev, [key]: parseInt(e.target.value, 10) }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-border-default rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 />
                 {config.min !== undefined && config.max !== undefined && (
-                  <p className="text-[11px] text-gray-400 mt-1">{t('range', { min: config.min, max: config.max })}</p>
+                  <p className="text-[11px] text-muted-foreground mt-1">{t('range', { min: config.min, max: config.max })}</p>
                 )}
               </div>
             );
@@ -679,7 +679,7 @@ export default function AutomationsPage() {
         title={t('confirmDeactivateTitle')}
         size="sm"
       >
-        <p className="text-sm text-gray-600 mb-4">
+        <p className="text-sm text-foreground/70 mb-4">
           {t('confirmDeactivateDesc', { name: confirmDeactivate?.nombre || '' })}
         </p>
         <div className="flex gap-3 justify-end">

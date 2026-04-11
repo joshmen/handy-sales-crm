@@ -225,7 +225,7 @@ export default function LoadInventoryPage() {
       <div className="flex items-center justify-center h-full">
         <div className="flex flex-col items-center gap-2">
           <Loader2 className="h-8 w-8 animate-spin text-green-600" />
-          <span className="text-sm text-gray-500">{t('loadingData')}</span>
+          <span className="text-sm text-muted-foreground">{t('loadingData')}</span>
         </div>
       </div>
     );
@@ -234,18 +234,18 @@ export default function LoadInventoryPage() {
   if (!ruta) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-gray-500">{t('notFound')}</p>
+        <p className="text-muted-foreground">{t('notFound')}</p>
       </div>
     );
   }
 
   const estadoBadge = ESTADO_RUTA_KEYS[ruta.estado] ? ts(ESTADO_RUTA_KEYS[ruta.estado]) : ts('unknown');
-  const estadoColor = ESTADO_RUTA_COLORS[ruta.estado] || 'bg-gray-100 text-gray-800';
+  const estadoColor = ESTADO_RUTA_COLORS[ruta.estado] || 'bg-surface-3 text-gray-800';
 
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="bg-surface-2 px-8 py-6 border-b border-gray-200">
+      <div className="bg-surface-2 px-8 py-6 border-b border-border-subtle">
         <Breadcrumb items={[
           { label: tr('title'), href: '/routes' },
           { label: ruta.nombre, href: `/routes/${ruta.id}` },
@@ -275,7 +275,7 @@ export default function LoadInventoryPage() {
             <button
               onClick={fetchData}
               disabled={loading}
-              className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium text-gray-600 border border-gray-200 rounded hover:bg-surface-1 transition-colors"
+              className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium text-foreground/70 border border-border-subtle rounded hover:bg-surface-1 transition-colors"
             >
               <RefreshCw className="w-4 h-4" />
             </button>
@@ -285,16 +285,16 @@ export default function LoadInventoryPage() {
         {/* Stats */}
         <div data-tour="routes-load-stats" className="flex items-center gap-6 mt-3">
           <div className="flex items-center gap-2">
-            <Truck className="w-4 h-4 text-gray-400" />
-            <span className="text-xs text-gray-600">{t('deliveries')} <strong>{totalEntregas}</strong></span>
+            <Truck className="w-4 h-4 text-muted-foreground" />
+            <span className="text-xs text-foreground/70">{t('deliveries')} <strong>{totalEntregas}</strong></span>
           </div>
           <div className="flex items-center gap-2">
-            <Package className="w-4 h-4 text-gray-400" />
-            <span className="text-xs text-gray-600">{t('products')} <strong>{totalProductos}</strong></span>
+            <Package className="w-4 h-4 text-muted-foreground" />
+            <span className="text-xs text-foreground/70">{t('products')} <strong>{totalProductos}</strong></span>
           </div>
           <div className="flex items-center gap-2">
-            <DollarSign className="w-4 h-4 text-gray-400" />
-            <span className="text-xs text-gray-600">{t('totalAssigned')} <strong>{formatCurrency(totalAsignado)}</strong></span>
+            <DollarSign className="w-4 h-4 text-muted-foreground" />
+            <span className="text-xs text-foreground/70">{t('totalAssigned')} <strong>{formatCurrency(totalAsignado)}</strong></span>
           </div>
         </div>
       </div>
@@ -302,7 +302,7 @@ export default function LoadInventoryPage() {
       {/* Body */}
       <div className="flex-1 px-8 py-6 space-y-6 overflow-auto">
         {/* Section 1: User & Cash */}
-        <div data-tour="routes-load-user-section" className="bg-surface-2 border border-gray-200 rounded-lg p-6">
+        <div data-tour="routes-load-user-section" className="bg-surface-2 border border-border-subtle rounded-lg p-6">
           <h2 className="text-sm font-semibold text-gray-900 mb-4">{t('assignRouteToUser')}</h2>
 
           <div className="flex items-center gap-4 mb-4 p-3 bg-surface-1 rounded-lg">
@@ -311,7 +311,7 @@ export default function LoadInventoryPage() {
             </div>
             <div>
               <p className="text-sm font-medium text-gray-900">{ruta.usuarioNombre}</p>
-              <p className="text-xs text-gray-500">{t('assignedVendor')}</p>
+              <p className="text-xs text-muted-foreground">{t('assignedVendor')}</p>
             </div>
           </div>
 
@@ -324,7 +324,7 @@ export default function LoadInventoryPage() {
                 onChange={(e) => setEfectivoInicial(e.target.value)}
                 placeholder="0.00"
                 disabled={isReadOnly}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-500"
+                className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-surface-3 disabled:text-muted-foreground"
               />
             </div>
             <div>
@@ -335,14 +335,14 @@ export default function LoadInventoryPage() {
                 onChange={(e) => setComentarios(e.target.value)}
                 placeholder={t('commentsPlaceholder')}
                 disabled={isReadOnly}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-500"
+                className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-surface-3 disabled:text-muted-foreground"
               />
             </div>
           </div>
         </div>
 
         {/* Section 2: Pedidos */}
-        <div data-tour="routes-load-pedidos" className="bg-surface-2 border border-gray-200 rounded-lg p-6">
+        <div data-tour="routes-load-pedidos" className="bg-surface-2 border border-border-subtle rounded-lg p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <h2 className="text-sm font-semibold text-gray-900">{t('assignOrdersForDelivery')}</h2>
@@ -362,15 +362,15 @@ export default function LoadInventoryPage() {
           </div>
 
           {pedidos.length === 0 ? (
-            <p className="text-xs text-gray-400 text-center py-4">{t('noOrdersAssigned')}</p>
+            <p className="text-xs text-muted-foreground text-center py-4">{t('noOrdersAssigned')}</p>
           ) : (
             <div className="space-y-2">
               {pedidos.map((p) => (
                 <div key={p.id} className="flex items-center justify-between px-3 py-2 bg-surface-1 rounded-lg">
                   <div>
                     <span className="text-[13px] font-medium text-gray-900">{t('orderNumber', { id: p.pedidoId })}</span>
-                    <span className="text-xs text-gray-500 ml-2">{p.clienteNombre}</span>
-                    <span className="text-xs text-gray-400 ml-2">{formatCurrency(p.montoTotal)}</span>
+                    <span className="text-xs text-muted-foreground ml-2">{p.clienteNombre}</span>
+                    <span className="text-xs text-muted-foreground ml-2">{formatCurrency(p.montoTotal)}</span>
                   </div>
                   {!isReadOnly && (
                     <button
@@ -388,7 +388,7 @@ export default function LoadInventoryPage() {
 
         {/* Section 3: Add Products (hidden when read-only) */}
         {!isReadOnly && (
-        <div data-tour="routes-load-add-products" className="bg-surface-2 border border-gray-200 rounded-lg p-6">
+        <div data-tour="routes-load-add-products" className="bg-surface-2 border border-border-subtle rounded-lg p-6">
           <h2 className="text-sm font-semibold text-gray-900 mb-4">{t('assignProductsForSale')}</h2>
 
           <div className="flex items-end gap-3">
@@ -412,7 +412,7 @@ export default function LoadInventoryPage() {
                 value={cantidadVenta}
                 onChange={(e) => setCantidadVenta(e.target.value)}
                 min="1"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
             <div className="w-28">
@@ -422,7 +422,7 @@ export default function LoadInventoryPage() {
                 value={precioVenta}
                 onChange={(e) => setPrecioVenta(e.target.value)}
                 step="0.01"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
             <button
@@ -437,24 +437,24 @@ export default function LoadInventoryPage() {
         )}
 
         {/* Section 4: Consolidated Table */}
-        <div data-tour="routes-load-consolidated" className="bg-surface-2 border border-gray-200 rounded-lg p-6">
+        <div data-tour="routes-load-consolidated" className="bg-surface-2 border border-border-subtle rounded-lg p-6">
           <h2 className="text-sm font-semibold text-gray-900 mb-4">{t('totalAssignedToRoute')}</h2>
 
           {carga.length === 0 ? (
-            <p className="text-xs text-gray-400 text-center py-8">{t('noProductsLoaded')}</p>
+            <p className="text-xs text-muted-foreground text-center py-8">{t('noProductsLoaded')}</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-2 px-3 text-xs font-semibold text-gray-600">{t('columnProduct')}</th>
-                    <th className="text-center py-2 px-3 text-xs font-semibold text-gray-600">{t('columnDeliveryAssigned')}</th>
-                    <th className="text-center py-2 px-3 text-xs font-semibold text-gray-600">{t('columnSaleAssigned')}</th>
-                    <th className="text-center py-2 px-3 text-xs font-semibold text-gray-600">{t('columnTotal')}</th>
-                    <th className="text-center py-2 px-3 text-xs font-semibold text-gray-600">{t('columnAvailable')}</th>
-                    <th className="text-right py-2 px-3 text-xs font-semibold text-gray-600">{t('columnPrice')}</th>
-                    <th className="text-right py-2 px-3 text-xs font-semibold text-gray-600">{t('columnTotalAmount')}</th>
-                    <th className="text-center py-2 px-3 text-xs font-semibold text-gray-600 w-12"></th>
+                  <tr className="border-b border-border-subtle">
+                    <th className="text-left py-2 px-3 text-xs font-semibold text-foreground/70">{t('columnProduct')}</th>
+                    <th className="text-center py-2 px-3 text-xs font-semibold text-foreground/70">{t('columnDeliveryAssigned')}</th>
+                    <th className="text-center py-2 px-3 text-xs font-semibold text-foreground/70">{t('columnSaleAssigned')}</th>
+                    <th className="text-center py-2 px-3 text-xs font-semibold text-foreground/70">{t('columnTotal')}</th>
+                    <th className="text-center py-2 px-3 text-xs font-semibold text-foreground/70">{t('columnAvailable')}</th>
+                    <th className="text-right py-2 px-3 text-xs font-semibold text-foreground/70">{t('columnPrice')}</th>
+                    <th className="text-right py-2 px-3 text-xs font-semibold text-foreground/70">{t('columnTotalAmount')}</th>
+                    <th className="text-center py-2 px-3 text-xs font-semibold text-foreground/70 w-12"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -463,24 +463,24 @@ export default function LoadInventoryPage() {
                       <td className="py-2 px-3">
                         <span className="text-[13px] text-gray-900">{item.productoNombre}</span>
                         {item.productoSku && (
-                          <span className="text-[10px] text-gray-400 ml-2">{item.productoSku}</span>
+                          <span className="text-[10px] text-muted-foreground ml-2">{item.productoSku}</span>
                         )}
                       </td>
-                      <td className="py-2 px-3 text-center text-[13px] text-gray-600">
+                      <td className="py-2 px-3 text-center text-[13px] text-foreground/70">
                         {item.cantidadEntrega}
                       </td>
-                      <td className="py-2 px-3 text-center text-[13px] text-gray-600">
+                      <td className="py-2 px-3 text-center text-[13px] text-foreground/70">
                         {item.cantidadVenta}
                       </td>
                       <td className="py-2 px-3 text-center text-[13px] font-medium text-gray-900">
                         {item.cantidadTotal}
                       </td>
                       <td className="py-2 px-3 text-center">
-                        <span className={`text-[13px] ${(item.disponible ?? 0) < item.cantidadTotal ? 'text-red-600 font-medium' : 'text-gray-600'}`}>
+                        <span className={`text-[13px] ${(item.disponible ?? 0) < item.cantidadTotal ? 'text-red-600 font-medium' : 'text-foreground/70'}`}>
                           {item.disponible ?? '-'}
                         </span>
                       </td>
-                      <td className="py-2 px-3 text-right text-[13px] text-gray-600">
+                      <td className="py-2 px-3 text-right text-[13px] text-foreground/70">
                         {formatCurrency(item.precioUnitario)}
                       </td>
                       <td className="py-2 px-3 text-right text-[13px] font-medium text-gray-900">
@@ -500,8 +500,8 @@ export default function LoadInventoryPage() {
                   ))}
                 </tbody>
                 <tfoot>
-                  <tr className="border-t-2 border-gray-200">
-                    <td colSpan={3} className="py-2 px-3 text-right text-xs font-semibold text-gray-600">{t('totalsLabel')}</td>
+                  <tr className="border-t-2 border-border-subtle">
+                    <td colSpan={3} className="py-2 px-3 text-right text-xs font-semibold text-foreground/70">{t('totalsLabel')}</td>
                     <td className="py-2 px-3 text-center text-[13px] font-bold text-gray-900">
                       {carga.reduce((s, c) => s + c.cantidadTotal, 0)}
                     </td>
@@ -543,13 +543,13 @@ export default function LoadInventoryPage() {
       >
         <div className="space-y-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="text"
               value={pedidoSearch}
               onChange={(e) => setPedidoSearch(e.target.value)}
               placeholder={t('searchOrder')}
-              className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full pl-9 pr-3 py-2 text-xs border border-border-subtle rounded focus:outline-none focus:ring-2 focus:ring-green-500"
             />
           </div>
 
@@ -574,15 +574,15 @@ export default function LoadInventoryPage() {
                     <div key={p.id} className="flex items-center justify-between px-3 py-2 border border-gray-100 rounded-lg hover:bg-surface-1">
                       <div>
                         <span className="text-[13px] font-medium text-gray-900">#{p.numeroPedido || p.id}</span>
-                        <span className="text-xs text-gray-500 ml-2">{p.clienteNombre || t('noClient')}</span>
-                        <span className="text-xs text-gray-400 ml-2">{formatCurrency(p.total || 0)}</span>
+                        <span className="text-xs text-muted-foreground ml-2">{p.clienteNombre || t('noClient')}</span>
+                        <span className="text-xs text-muted-foreground ml-2">{formatCurrency(p.total || 0)}</span>
                       </div>
                       <button
                         onClick={() => handleAddPedido(p.id)}
                         disabled={alreadyAssigned}
                         className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
                           alreadyAssigned
-                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            ? 'bg-surface-3 text-muted-foreground cursor-not-allowed'
                             : 'bg-success text-success-foreground hover:bg-success/90'
                         }`}
                       >
@@ -592,7 +592,7 @@ export default function LoadInventoryPage() {
                   );
                 })}
               {availablePedidos.length === 0 && (
-                <p className="text-xs text-gray-400 text-center py-4">{t('noConfirmedOrders')}</p>
+                <p className="text-xs text-muted-foreground text-center py-4">{t('noConfirmedOrders')}</p>
               )}
             </div>
           )}

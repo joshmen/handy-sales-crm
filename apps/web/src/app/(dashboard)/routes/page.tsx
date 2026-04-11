@@ -210,14 +210,14 @@ export default function RoutesPage() {
       key: 'zonaNombre',
       label: t('columns.zone'),
       width: 120,
-      cellRenderer: (route) => <span className="text-[13px] text-gray-600 truncate block">{route.zonaNombre || '-'}</span>,
+      cellRenderer: (route) => <span className="text-[13px] text-foreground/70 truncate block">{route.zonaNombre || '-'}</span>,
     },
     {
       key: 'usuarioNombre',
       label: t('columns.user'),
       sortable: true,
       width: 140,
-      cellRenderer: (route) => <span className="text-[13px] text-gray-600 truncate block">{route.usuarioNombre}</span>,
+      cellRenderer: (route) => <span className="text-[13px] text-foreground/70 truncate block">{route.usuarioNombre}</span>,
     },
     {
       key: 'fecha',
@@ -232,7 +232,7 @@ export default function RoutesPage() {
       width: 110,
       align: 'center',
       cellRenderer: (route) => (
-        <span className="text-[12px] text-gray-500">
+        <span className="text-[12px] text-muted-foreground">
           {route.horaInicioEstimada
             ? `${route.horaInicioEstimada.substring(0, 5)} - ${route.horaFinEstimada?.substring(0, 5) || '--:--'}`
             : '--'}
@@ -255,7 +255,7 @@ export default function RoutesPage() {
       width: 80,
       align: 'center',
       cellRenderer: (route) => (
-        <span className="text-[13px] text-gray-600">
+        <span className="text-[13px] text-foreground/70">
           <span className={route.paradasCompletadas === route.totalParadas && route.totalParadas > 0 ? 'text-green-600 font-medium' : ''}>
             {route.paradasCompletadas}
           </span>/{route.totalParadas}
@@ -284,13 +284,13 @@ export default function RoutesPage() {
             <button onClick={() => router.push(`/routes/manage/${route.id}/load`)} className="text-[11px] font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-md transition-colors">{t('actions.load')}</button>
           )}
           {(route.estado === 1 || route.estado === 4 || route.estado === 5) && (
-            <button onClick={() => router.push(`/routes/manage/${route.id}/load`)} className="text-[11px] font-medium text-gray-600 hover:text-gray-800 bg-surface-1 hover:bg-gray-100 px-2.5 py-1 rounded-md transition-colors">{t('actions.viewLoad')}</button>
+            <button onClick={() => router.push(`/routes/manage/${route.id}/load`)} className="text-[11px] font-medium text-foreground/70 hover:text-gray-800 bg-surface-1 hover:bg-surface-3 px-2.5 py-1 rounded-md transition-colors">{t('actions.viewLoad')}</button>
           )}
           {route.estado === 2 && (
             <button onClick={() => router.push(`/routes/manage/${route.id}/close`)} className="text-[11px] font-medium text-green-600 hover:text-green-800 bg-green-50 hover:bg-green-100 px-2.5 py-1 rounded-md transition-colors">{t('actions.close')}</button>
           )}
           {route.estado === 6 && (
-            <button onClick={() => router.push(`/routes/manage/${route.id}/close`)} className="text-[11px] font-medium text-gray-500 bg-surface-1 px-2.5 py-1 rounded-md">{t('actions.closed')}</button>
+            <button onClick={() => router.push(`/routes/manage/${route.id}/close`)} className="text-[11px] font-medium text-muted-foreground bg-surface-1 px-2.5 py-1 rounded-md">{t('actions.closed')}</button>
           )}
         </div>
       ),
@@ -390,14 +390,14 @@ export default function RoutesPage() {
   // Estado badge
   const getEstadoBadge = (estado: number) => {
     switch (estado) {
-      case 0: return { label: t('status.planned'), cls: 'bg-gray-100 text-gray-600' };
+      case 0: return { label: t('status.planned'), cls: 'bg-surface-3 text-foreground/70' };
       case 1: return { label: t('status.inProgress'), cls: 'bg-cyan-100 text-cyan-700' };
       case 2: return { label: t('status.completed'), cls: 'bg-green-100 text-green-600' };
       case 3: return { label: t('status.cancelled'), cls: 'bg-red-100 text-red-600' };
       case 4: return { label: t('status.pendingAccept'), cls: 'bg-yellow-100 text-yellow-700' };
       case 5: return { label: t('status.loadAccepted'), cls: 'bg-blue-100 text-blue-700' };
       case 6: return { label: t('status.closed'), cls: 'bg-emerald-100 text-emerald-700' };
-      default: return { label: t('status.unknown'), cls: 'bg-gray-100 text-gray-600' };
+      default: return { label: t('status.unknown'), cls: 'bg-surface-3 text-foreground/70' };
     }
   };
 
@@ -430,7 +430,7 @@ export default function RoutesPage() {
           <button
             data-tour="routes-export-btn"
             onClick={async () => { try { await exportToCsv('rutas'); toast.success('Archivo CSV descargado'); } catch { toast.error('Error al exportar datos'); } }}
-            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-surface-1 transition-colors"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-border-subtle rounded hover:bg-surface-1 transition-colors"
           >
             <Download className="w-3.5 h-3.5 text-emerald-500" />
             <span className="hidden sm:inline">{tc('export')}</span>
@@ -559,7 +559,7 @@ export default function RoutesPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium text-gray-900 truncate">{route.nombre}</div>
-                      <div className="text-xs text-gray-500 truncate">{route.zonaNombre || t('noZone')}</div>
+                      <div className="text-xs text-muted-foreground truncate">{route.zonaNombre || t('noZone')}</div>
                     </div>
                     <div onClick={(e) => e.stopPropagation()}>
                       <ActiveToggle isActive={route.activo} onToggle={() => handleToggleActive(route)} disabled={loading} isLoading={togglingId === route.id} />
@@ -567,9 +567,9 @@ export default function RoutesPage() {
                   </div>
                   <div className="flex flex-wrap items-center gap-2 mb-2">
                     <span className={`inline-flex px-2.5 py-0.5 text-[10px] font-medium rounded-full ${badge.cls}`}>{badge.label}</span>
-                    <span className="text-xs text-gray-600">{t('columns.stops')}: <span className={route.paradasCompletadas === route.totalParadas && route.totalParadas > 0 ? 'text-green-600 font-medium' : ''}>{route.paradasCompletadas}</span>/{route.totalParadas}</span>
-                    <span className="text-xs text-gray-500">{route.usuarioNombre}</span>
-                    <span className="text-xs text-gray-500">{formatDateOnly(route.fecha)}</span>
+                    <span className="text-xs text-foreground/70">{t('columns.stops')}: <span className={route.paradasCompletadas === route.totalParadas && route.totalParadas > 0 ? 'text-green-600 font-medium' : ''}>{route.paradasCompletadas}</span>/{route.totalParadas}</span>
+                    <span className="text-xs text-muted-foreground">{route.usuarioNombre}</span>
+                    <span className="text-xs text-muted-foreground">{formatDateOnly(route.fecha)}</span>
                   </div>
                 </>
               );
@@ -606,7 +606,7 @@ export default function RoutesPage() {
             <button
               onClick={() => drawerRef.current?.requestClose()}
               disabled={actionLoading}
-              className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-surface-1 disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium text-gray-700 border border-border-default rounded-md hover:bg-surface-1 disabled:opacity-50"
             >
               {tc('cancel')}
             </button>
@@ -624,7 +624,7 @@ export default function RoutesPage() {
         <form onSubmit={rhfSubmit(handleSubmit)} className="p-6 space-y-5">
           {/* ── Información general ── */}
           <div className="space-y-4">
-            <h4 className="text-xs font-semibold text-gray-400">{t('drawer.generalInfo')}</h4>
+            <h4 className="text-xs font-semibold text-muted-foreground">{t('drawer.generalInfo')}</h4>
 
             {/* Nombre */}
             <div data-tour="routes-drawer-nombre">
@@ -637,7 +637,7 @@ export default function RoutesPage() {
                 {...register('nombre')}
                 maxLength={100}
                 placeholder={t('drawer.namePlaceholder')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
               />
               {errors.nombre && <FieldError message={errors.nombre?.message} />}
             </div>
@@ -678,7 +678,7 @@ export default function RoutesPage() {
 
           {/* ── Programación ── */}
           <div className="space-y-4">
-            <h4 className="text-xs font-semibold text-gray-400">{t('drawer.scheduling')}</h4>
+            <h4 className="text-xs font-semibold text-muted-foreground">{t('drawer.scheduling')}</h4>
 
             {/* Fecha */}
             <div data-tour="routes-drawer-fecha">
@@ -704,7 +704,7 @@ export default function RoutesPage() {
                 <input
                   type="time"
                   {...register('horaInicioEstimada')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                 />
               </div>
               <div>
@@ -715,7 +715,7 @@ export default function RoutesPage() {
                 <input
                   type="time"
                   {...register('horaFinEstimada')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                 />
               </div>
             </div>
@@ -725,7 +725,7 @@ export default function RoutesPage() {
 
           {/* ── Detalles adicionales ── */}
           <div className="space-y-4">
-            <h4 className="text-xs font-semibold text-gray-400">{t('drawer.additionalDetails')}</h4>
+            <h4 className="text-xs font-semibold text-muted-foreground">{t('drawer.additionalDetails')}</h4>
 
             {/* Descripción */}
             <div data-tour="routes-drawer-descripcion">
@@ -736,7 +736,7 @@ export default function RoutesPage() {
                 {...register('descripcion')}
                 rows={2}
                 placeholder={t('drawer.descriptionPlaceholder')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
+                className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
               />
             </div>
 
@@ -749,7 +749,7 @@ export default function RoutesPage() {
                 {...register('notas')}
                 rows={2}
                 placeholder={t('drawer.notesPlaceholder')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
+                className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
               />
             </div>
           </div>

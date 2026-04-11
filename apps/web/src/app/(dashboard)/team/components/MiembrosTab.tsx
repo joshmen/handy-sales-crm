@@ -134,13 +134,13 @@ function getDeviceIcon(deviceType: number) {
 function getSessionStatusConfig(status: number) {
   switch (status) {
     case 0: return { labelKey: 'activeStatus', className: 'text-green-700 bg-green-100' };
-    case 1: return { labelKey: 'loggedOut', className: 'text-gray-600 bg-gray-100' };
-    case 2: return { labelKey: 'expired', className: 'text-gray-600 bg-gray-100' };
+    case 1: return { labelKey: 'loggedOut', className: 'text-foreground/70 bg-surface-3' };
+    case 2: return { labelKey: 'expired', className: 'text-foreground/70 bg-surface-3' };
     case 3: return { labelKey: 'revokedAdmin', className: 'text-red-700 bg-red-100' };
     case 4: return { labelKey: 'revokedUser', className: 'text-orange-700 bg-orange-100' };
     case 5: return { labelKey: 'unbinding', className: 'text-yellow-700 bg-yellow-100 animate-pulse' };
     case 6: return { labelKey: 'unbound', className: 'text-purple-700 bg-purple-100' };
-    default: return { labelKey: 'unknown', className: 'text-gray-600 bg-gray-100' };
+    default: return { labelKey: 'unknown', className: 'text-foreground/70 bg-surface-3' };
   }
 }
 
@@ -626,7 +626,7 @@ function AdminUsersView() {
       case UserRole.SUPERVISOR:
         return 'bg-green-100 text-green-600';
       default:
-        return 'bg-gray-100 text-gray-600';
+        return 'bg-surface-3 text-foreground/70';
     }
   };
 
@@ -772,9 +772,9 @@ function AdminUsersView() {
     info: (
       <div>
         <p className="font-semibold">{u.nombre}</p>
-        {u.clienteNombre && <p className="text-gray-600">{u.clienteNombre}</p>}
+        {u.clienteNombre && <p className="text-foreground/70">{u.clienteNombre}</p>}
         {u.fechaUbicacion && (
-          <p className="text-gray-500 text-xs mt-1">
+          <p className="text-muted-foreground text-xs mt-1">
             {formatDate(u.fechaUbicacion)}
           </p>
         )}
@@ -932,14 +932,14 @@ function AdminUsersView() {
     <span className={`px-2 py-0.5 text-[11px] font-medium rounded-lg ${
       user.status === UserStatus.ACTIVE
         ? 'bg-green-100 text-green-600'
-        : 'bg-gray-100 text-gray-500'
+        : 'bg-surface-3 text-muted-foreground'
     }`}>
       {user.status === UserStatus.ACTIVE ? t('statusActive') : t('statusInactive')}
     </span>
   );
 
   const renderLastActivity = (user: User) => (
-    <span className="text-xs text-gray-500">
+    <span className="text-xs text-muted-foreground">
       {user.lastLogin ? formatDate(user.lastLogin) : t('noActivity')}
     </span>
   );
@@ -955,7 +955,7 @@ function AdminUsersView() {
         className={`px-2 py-0.5 text-[11px] font-medium rounded-lg transition-colors ${
           count > 0
             ? 'bg-blue-100 text-blue-700 hover:bg-blue-200 cursor-pointer'
-            : 'bg-gray-100 text-gray-400'
+            : 'bg-surface-3 text-muted-foreground'
         }`}
       >
         {count > 0 ? t('activeSessionsCount', { active: count, total: count }) : '0'}
@@ -984,12 +984,12 @@ function AdminUsersView() {
       sortable: true,
       cellRenderer: (user) => (
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-sm font-semibold text-gray-600">
+          <div className="w-9 h-9 rounded-full bg-surface-3 flex items-center justify-center text-sm font-semibold text-foreground/70">
             {user.name[0]?.toUpperCase()}
           </div>
           <div>
             <p className="text-[13px] font-medium text-gray-900">{user.name}</p>
-            <p className="text-[11px] text-gray-500">{user.email}</p>
+            <p className="text-[11px] text-muted-foreground">{user.email}</p>
           </div>
         </div>
       ),
@@ -1015,13 +1015,13 @@ function AdminUsersView() {
           className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
             batch.selectedIds.has(parseInt(user.id))
               ? 'bg-green-600 border-green-600 text-white'
-              : 'border-gray-300 hover:border-green-500'
+              : 'border-border-default hover:border-green-500'
           }`}
         >
           {batch.selectedIds.has(parseInt(user.id)) && <Check className="w-3 h-3" />}
         </button>
 
-        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-medium text-sm flex-shrink-0">
+        <div className="w-10 h-10 rounded-full bg-surface-3 flex items-center justify-center text-foreground/70 font-medium text-sm flex-shrink-0">
           {getInitials(user.name)}
         </div>
         <div className="flex-1 min-w-0">
@@ -1033,7 +1033,7 @@ function AdminUsersView() {
             <span className={`px-2 py-0.5 text-[11px] font-medium rounded-lg ${
               user.status === UserStatus.ACTIVE
                 ? 'bg-green-100 text-green-600'
-                : 'bg-gray-100 text-gray-500'
+                : 'bg-surface-3 text-muted-foreground'
             }`}>
               {user.status === UserStatus.ACTIVE ? t('statusActive') : t('statusInactive')}
             </span>
@@ -1069,21 +1069,21 @@ function AdminUsersView() {
       <div className="space-y-4">
         {/* KPI Strip */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-          <div className="bg-surface-2 rounded-xl border border-gray-200 p-4">
-            <p className="text-[11px] font-medium text-gray-500 uppercase">{t('totalUsers')}</p>
+          <div className="bg-surface-2 rounded-xl border border-border-subtle p-4">
+            <p className="text-[11px] font-medium text-muted-foreground uppercase">{t('totalUsers')}</p>
             <p className="text-2xl font-bold text-gray-900 mt-1">{totalCount}</p>
           </div>
-          <div className="bg-surface-2 rounded-xl border border-gray-200 p-4">
-            <p className="text-[11px] font-medium text-gray-500 uppercase">{t('activeUsers')}</p>
+          <div className="bg-surface-2 rounded-xl border border-border-subtle p-4">
+            <p className="text-[11px] font-medium text-muted-foreground uppercase">{t('activeUsers')}</p>
             <p className="text-2xl font-bold text-emerald-600 mt-1">{displayUsers.filter(u => u.status === UserStatus.ACTIVE).length}</p>
           </div>
-          <div className="bg-surface-2 rounded-xl border border-gray-200 p-4">
-            <p className="text-[11px] font-medium text-gray-500 uppercase">{t('onlineUsers')}</p>
+          <div className="bg-surface-2 rounded-xl border border-border-subtle p-4">
+            <p className="text-[11px] font-medium text-muted-foreground uppercase">{t('onlineUsers')}</p>
             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             <p className="text-2xl font-bold text-blue-600 mt-1">{apiUsers.filter((u: any) => u.isOnline).length}</p>
           </div>
-          <div className="bg-surface-2 rounded-xl border border-gray-200 p-4">
-            <p className="text-[11px] font-medium text-gray-500 uppercase">{t('activeSessions')}</p>
+          <div className="bg-surface-2 rounded-xl border border-border-subtle p-4">
+            <p className="text-[11px] font-medium text-muted-foreground uppercase">{t('activeSessions')}</p>
             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             <p className="text-2xl font-bold text-amber-600 mt-1">{apiUsers.reduce((sum: number, u: any) => sum + (u.activeSessionCount || 0), 0)}</p>
           </div>
@@ -1123,7 +1123,7 @@ function AdminUsersView() {
           <button
             onClick={handleCleanExpired}
             disabled={cleaningExpired}
-            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-surface-1 transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-gray-700 border border-border-default rounded-lg hover:bg-surface-1 transition-colors disabled:opacity-50"
           >
             {cleaningExpired ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -1260,17 +1260,17 @@ function AdminUsersView() {
           {drawerLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
-              <span className="ml-2 text-sm text-gray-500">{t("loadingSessions")}</span>
+              <span className="ml-2 text-sm text-muted-foreground">{t("loadingSessions")}</span>
             </div>
           ) : drawerSessions.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <Smartphone className="w-12 h-12 text-gray-300 mb-3" />
               <p className="text-sm font-medium">{t("noSessions")}</p>
-              <p className="text-xs text-gray-400 mt-1">{t("noSessionsDesc")}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t("noSessionsDesc")}</p>
             </div>
           ) : (
             <div className="space-y-3">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-foreground/70">
                 {t('activeSessionsCount', { active: drawerSessions.filter(s => s.status === 0).length, total: drawerSessions.length })}
               </p>
               {drawerSessions.map((s) => {
@@ -1280,12 +1280,12 @@ function AdminUsersView() {
                   <div
                     key={s.id}
                     className={`border rounded-lg p-4 ${
-                      s.esSesionActual ? 'border-green-300 ring-1 ring-green-200 bg-green-50/30' : 'border-gray-200 bg-surface-2'
+                      s.esSesionActual ? 'border-green-300 ring-1 ring-green-200 bg-green-50/30' : 'border-border-subtle bg-surface-2'
                     }`}
                   >
                     <div className="flex items-center gap-3 mb-2">
-                      <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-                        <DeviceIcon className="w-5 h-5 text-gray-500" />
+                      <div className="w-10 h-10 rounded-full bg-surface-3 flex items-center justify-center flex-shrink-0">
+                        <DeviceIcon className="w-5 h-5 text-muted-foreground" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
@@ -1298,7 +1298,7 @@ function AdminUsersView() {
                             </span>
                           )}
                         </div>
-                        <div className="text-xs text-gray-500 truncate">
+                        <div className="text-xs text-muted-foreground truncate">
                           {[s.osVersion, s.appVersion ? `v${s.appVersion}` : null, s.deviceModel].filter(Boolean).join(' / ')}
                         </div>
                       </div>
@@ -1307,7 +1307,7 @@ function AdminUsersView() {
                       </span>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
                       {s.ipAddress && <span>IP: {s.ipAddress}</span>}
                       <span>{t('connected')} {formatDate(s.loggedInAt, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
                       <span>{t('activity')} {formatTimeAgo(s.lastActivity)}</span>
@@ -1341,7 +1341,7 @@ function AdminUsersView() {
       {isCreateModalOpen && createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="bg-surface-2 dark:bg-card rounded-xl shadow-xl w-full max-w-md mx-4 border border-border">
-            <div className="px-6 py-4 border-b border-gray-200">
+            <div className="px-6 py-4 border-b border-border-subtle">
               <h2 className="text-lg font-semibold text-gray-900">{t("createUserTitle")}</h2>
             </div>
             <div className="p-6 space-y-4">
@@ -1351,7 +1351,7 @@ function AdminUsersView() {
                   type="text"
                   value={formData.nombre}
                   onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full px-3 py-2 border border-border-default rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                   placeholder="Juan Perez"
                 />
               </div>
@@ -1361,7 +1361,7 @@ function AdminUsersView() {
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full px-3 py-2 border border-border-default rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                   placeholder="usuario@ejemplo.com"
                 />
               </div>
@@ -1371,7 +1371,7 @@ function AdminUsersView() {
                   type="password"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full px-3 py-2 border border-border-default rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                   placeholder="********"
                 />
               </div>
@@ -1381,7 +1381,7 @@ function AdminUsersView() {
                   type="tel"
                   value={formData.telefono}
                   onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full px-3 py-2 border border-border-default rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                   placeholder="555-0100"
                 />
               </div>
@@ -1397,10 +1397,10 @@ function AdminUsersView() {
                 />
               </div>
             </div>
-            <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+            <div className="px-6 py-4 border-t border-border-subtle flex justify-end gap-3">
               <button
                 onClick={() => setIsCreateModalOpen(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-surface-1"
+                className="px-4 py-2 text-sm font-medium text-gray-700 border border-border-default rounded-lg hover:bg-surface-1"
               >
                 {tc('cancel')}
               </button>
@@ -1432,8 +1432,8 @@ function AdminUsersView() {
       {/* Edit Modal */}
       {isEditModalOpen && selectedUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-surface-2 rounded-lg shadow-xl w-full max-w-md mx-4">
-            <div className="px-6 py-4 border-b border-gray-200">
+          <div className="bg-surface-2 rounded-xl shadow-xl w-full max-w-md mx-4">
+            <div className="px-6 py-4 border-b border-border-subtle">
               <h2 className="text-lg font-semibold text-gray-900">{t("editUserTitle")}</h2>
             </div>
             <div className="p-6 space-y-4">
@@ -1443,7 +1443,7 @@ function AdminUsersView() {
                   type="text"
                   value={selectedUser.name}
                   onChange={(e) => setSelectedUser({ ...selectedUser, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full px-3 py-2 border border-border-default rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
               </div>
               <div>
@@ -1452,7 +1452,7 @@ function AdminUsersView() {
                   type="email"
                   value={selectedUser.email}
                   onChange={(e) => setSelectedUser({ ...selectedUser, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full px-3 py-2 border border-border-default rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
               </div>
               <div>
@@ -1461,7 +1461,7 @@ function AdminUsersView() {
                   type="tel"
                   value={selectedUser.phone || ''}
                   onChange={(e) => setSelectedUser({ ...selectedUser, phone: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full px-3 py-2 border border-border-default rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
               </div>
               <div>
@@ -1478,13 +1478,13 @@ function AdminUsersView() {
                 />
               </div>
             </div>
-            <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+            <div className="px-6 py-4 border-t border-border-subtle flex justify-end gap-3">
               <button
                 onClick={() => {
                   setIsEditModalOpen(false);
                   setSelectedUser(null);
                 }}
-                className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-surface-1"
+                className="px-4 py-2 text-sm font-medium text-gray-700 border border-border-default rounded-lg hover:bg-surface-1"
               >
                 {t('cancel')}
               </button>
@@ -1503,34 +1503,34 @@ function AdminUsersView() {
       {isLocationModalOpen && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4" onClick={() => setIsLocationModalOpen(false)}>
           <div className="bg-surface-2 rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+            <div className="px-6 py-4 border-b border-border-subtle flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">{t("vendorLocation")}</h2>
-                <p className="text-sm text-gray-500">{t("lastKnownPosition")}</p>
+                <p className="text-sm text-muted-foreground">{t("lastKnownPosition")}</p>
               </div>
-              <button onClick={() => setIsLocationModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg">
-                <X className="w-5 h-5 text-gray-400" />
+              <button onClick={() => setIsLocationModalOpen(false)} className="p-2 hover:bg-surface-3 rounded-lg">
+                <X className="w-5 h-5 text-muted-foreground" />
               </button>
             </div>
             <div className="p-6">
               {ubicacionesLoading ? (
                 <div className="flex items-center justify-center h-[400px]">
                   <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-                  <span className="ml-2 text-gray-500">{t("loadingLocations")}</span>
+                  <span className="ml-2 text-muted-foreground">{t("loadingLocations")}</span>
                 </div>
               ) : ubicaciones.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-[400px] text-gray-500">
+                <div className="flex flex-col items-center justify-center h-[400px] text-muted-foreground">
                   <MapPin className="w-12 h-12 text-gray-300 mb-3" />
                   <p className="font-medium">{t("noLocationData")}</p>
                   <p className="text-sm">{t("vendorsNoGps")}</p>
                 </div>
               ) : (
                 <>
-                  <div className="mb-3 text-sm text-gray-600">
+                  <div className="mb-3 text-sm text-foreground/70">
                     {t('vendorsWithLocation', { count: ubicaciones.length })}
                   </div>
                   <GoogleMapWrapper markers={locationMarkers} height="450px" />
-                  <p className="mt-3 text-xs text-gray-400">
+                  <p className="mt-3 text-xs text-muted-foreground">
                     {t('locationNote')}
                   </p>
                 </>
@@ -1545,30 +1545,30 @@ function AdminUsersView() {
       {isDistanceModalOpen && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4" onClick={() => setIsDistanceModalOpen(false)}>
           <div className="bg-surface-2 rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+            <div className="px-6 py-4 border-b border-border-subtle flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">{t("vendorDistance")}</h2>
-                <p className="text-sm text-gray-500">{t("distanceFromBase")}</p>
+                <p className="text-sm text-muted-foreground">{t("distanceFromBase")}</p>
               </div>
-              <button onClick={() => setIsDistanceModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg">
-                <X className="w-5 h-5 text-gray-400" />
+              <button onClick={() => setIsDistanceModalOpen(false)} className="p-2 hover:bg-surface-3 rounded-lg">
+                <X className="w-5 h-5 text-muted-foreground" />
               </button>
             </div>
             <div className="p-6 overflow-y-auto max-h-[65vh]">
               {ubicacionesLoading ? (
                 <div className="flex items-center justify-center h-40">
                   <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
-                  <span className="ml-2 text-gray-500">{t("calculatingDistances")}</span>
+                  <span className="ml-2 text-muted-foreground">{t("calculatingDistances")}</span>
                 </div>
               ) : distanceRows.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-40 text-gray-500">
+                <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
                   <Ruler className="w-12 h-12 text-gray-300 mb-3" />
                   <p className="font-medium">{t("noLocationData")}</p>
                 </div>
               ) : (<>
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-gray-200 text-left text-gray-500">
+                    <tr className="border-b border-border-subtle text-left text-muted-foreground">
                       <th className="pb-3 font-medium">{t("vendor")}</th>
                       <th className="pb-3 font-medium">{t("lastClient")}</th>
                       <th className="pb-3 font-medium text-right">{t("distanceCol")}</th>
@@ -1579,13 +1579,13 @@ function AdminUsersView() {
                     {distanceRows.map(row => (
                       <tr key={row.usuarioId} className="border-b border-gray-100 hover:bg-surface-1">
                         <td className="py-3 font-medium text-gray-900">{row.nombre}</td>
-                        <td className="py-3 text-gray-600">{row.clienteNombre || '\u2014'}</td>
+                        <td className="py-3 text-foreground/70">{row.clienteNombre || '\u2014'}</td>
                         <td className="py-3 text-right font-mono">
                           <span className={row.distanciaKm > 50 ? 'text-red-600' : row.distanciaKm > 20 ? 'text-amber-600' : 'text-green-600'}>
                             {row.distanciaKm.toFixed(1)} km
                           </span>
                         </td>
-                        <td className="py-3 text-right text-gray-500">
+                        <td className="py-3 text-right text-muted-foreground">
                           {row.tiempoAtras != null
                             ? row.tiempoAtras < 60
                               ? `${row.tiempoAtras} min`
@@ -1598,7 +1598,7 @@ function AdminUsersView() {
                     ))}
                   </tbody>
                 </table>
-                <p className="mt-3 text-xs text-gray-400">
+                <p className="mt-3 text-xs text-muted-foreground">
                   {t('distanceNote')}
                 </p>
               </>)}

@@ -376,7 +376,7 @@ export default function ZonesPage() {
           <button
             data-tour="zones-map-btn"
             onClick={handleViewMap}
-            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-surface-1 transition-colors"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-border-subtle rounded hover:bg-surface-1 transition-colors"
           >
             <Map className="w-3.5 h-3.5 text-blue-500" />
             <span className="hidden sm:inline">{t('mapTitle')}</span>
@@ -384,16 +384,16 @@ export default function ZonesPage() {
           <div className="relative" data-tour="zones-import-export">
             <button
               onClick={() => setShowDataMenu(!showDataMenu)}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-surface-1 transition-colors"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-border-subtle rounded hover:bg-surface-1 transition-colors"
             >
               <Download className="w-3.5 h-3.5 text-emerald-500" />
               <span className="hidden sm:inline">{tc('importExport')}</span>
-              <ChevronDown className="w-3 h-3 text-gray-400" />
+              <ChevronDown className="w-3 h-3 text-muted-foreground" />
             </button>
             {showDataMenu && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowDataMenu(false)} />
-                <div className="absolute right-0 mt-1 w-44 bg-surface-2 border border-gray-200 rounded-lg shadow-lg z-20 py-1">
+                <div className="absolute right-0 mt-1 w-44 bg-surface-2 border border-border-subtle rounded-lg shadow-lg z-20 py-1">
                   <button
                     onClick={() => { setShowDataMenu(false); exportToCsv('zonas'); }}
                     className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-surface-1"
@@ -462,7 +462,7 @@ export default function ZonesPage() {
             {loading && (
               <div className="flex flex-col items-center justify-center py-12">
                 <Loader2 className="w-8 h-8 text-green-600 animate-spin mb-3" />
-                <span className="text-sm text-gray-500">{t('loadingZones')}</span>
+                <span className="text-sm text-muted-foreground">{t('loadingZones')}</span>
               </div>
             )}
 
@@ -471,7 +471,7 @@ export default function ZonesPage() {
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <MapPin className="w-12 h-12 text-teal-300 mb-4" />
                 <p className="text-lg font-medium text-gray-900">{t('emptyTitle')}</p>
-                <p className="text-sm text-gray-500 mb-4">
+                <p className="text-sm text-muted-foreground mb-4">
                   {searchTerm ? t('emptyFiltered') : t('emptyDefault')}
                 </p>
               </div>
@@ -481,7 +481,7 @@ export default function ZonesPage() {
             {!loading && zones.length > 0 && zones.map((zone) => (
               <div
                 key={zone.id}
-                className={`border border-gray-200 rounded-lg p-3 bg-surface-2 ${
+                className={`border border-border-subtle rounded-lg p-3 bg-surface-2 ${
                   !zone.isEnabled ? 'opacity-60' : ''
                 }`}
               >
@@ -492,7 +492,7 @@ export default function ZonesPage() {
                     className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
                       batch.selectedIds.has(parseInt(zone.id))
                         ? 'bg-success border-success text-success-foreground'
-                        : 'border-gray-300 hover:border-green-500'
+                        : 'border-border-default hover:border-green-500'
                     }`}
                   >
                     {batch.selectedIds.has(parseInt(zone.id)) && <Check className="w-3 h-3" />}
@@ -509,7 +509,7 @@ export default function ZonesPage() {
                     <div className="text-sm font-medium text-gray-900 truncate">
                       {zone.name}
                     </div>
-                    <div className="text-xs text-gray-500 truncate">
+                    <div className="text-xs text-muted-foreground truncate">
                       {zone.description || t('noDescription')}
                     </div>
                   </div>
@@ -529,7 +529,7 @@ export default function ZonesPage() {
                   <button
                     onClick={() => handleEditZone(zone)}
                     disabled={loading}
-                    className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors disabled:opacity-50"
+                    className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors disabled:opacity-50"
                   >
                     <Pencil className="w-3.5 h-3.5 text-amber-400 hover:text-amber-600" />
                     <span>{tc('edit')}</span>
@@ -537,10 +537,10 @@ export default function ZonesPage() {
                   {deleteConfirmId === zone.id ? (
                     <div className="flex items-center gap-1">
                       <button onClick={() => { handleDelete(zone.id); setDeleteConfirmId(null); }} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"><Check size={16} /></button>
-                      <button onClick={() => setDeleteConfirmId(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X size={16} /></button>
+                      <button onClick={() => setDeleteConfirmId(null)} className="p-1.5 text-muted-foreground hover:bg-surface-3 rounded transition-colors"><X size={16} /></button>
                     </div>
                   ) : (
-                    <button onClick={() => setDeleteConfirmId(zone.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"><Trash2 size={16} /></button>
+                    <button onClick={() => setDeleteConfirmId(zone.id)} className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded transition-colors"><Trash2 size={16} /></button>
                   )}
                 </div>
               </div>
@@ -548,9 +548,9 @@ export default function ZonesPage() {
           </div>
 
           {/* Zones Table */}
-          <div className="hidden sm:block bg-surface-2 border border-gray-200 rounded-lg overflow-hidden" data-tour="zones-table">
+          <div className="hidden sm:block bg-surface-2 border border-border-subtle rounded-lg overflow-hidden" data-tour="zones-table">
             {/* Table Header */}
-            <div className="flex items-center gap-3 bg-surface-1 px-5 h-10 border-b border-gray-200">
+            <div className="flex items-center gap-3 bg-surface-1 px-5 h-10 border-b border-border-subtle">
               <div className="w-[28px] flex items-center justify-center">
                 <button
                   onClick={batch.handleSelectAllVisible}
@@ -559,7 +559,7 @@ export default function ZonesPage() {
                       ? 'bg-success border-success text-success-foreground'
                       : batch.someVisibleSelected
                       ? 'bg-green-100 border-green-600'
-                      : 'border-gray-300 hover:border-green-500'
+                      : 'border-border-default hover:border-green-500'
                   }`}
                 >
                   {batch.allVisibleSelected ? (
@@ -569,10 +569,10 @@ export default function ZonesPage() {
                   ) : null}
                 </button>
               </div>
-              <div className="w-[40px] text-[11px] font-medium text-gray-500">{t('columns.color')}</div>
-              <div className="flex-1 text-[11px] font-medium text-gray-500">{t('columns.name')}</div>
-              <div className="w-[100px] text-[11px] font-medium text-gray-500 text-center">{t('columns.clients')}</div>
-              <div className="w-[80px] text-[11px] font-medium text-gray-500">{t('columns.active')}</div>
+              <div className="w-[40px] text-[11px] font-medium text-muted-foreground">{t('columns.color')}</div>
+              <div className="flex-1 text-[11px] font-medium text-muted-foreground">{t('columns.name')}</div>
+              <div className="w-[100px] text-[11px] font-medium text-muted-foreground text-center">{t('columns.clients')}</div>
+              <div className="w-[80px] text-[11px] font-medium text-muted-foreground">{t('columns.active')}</div>
               <div className="w-16" />
             </div>
 
@@ -583,7 +583,7 @@ export default function ZonesPage() {
 
               {/* Empty State */}
               {!loading && zones.length === 0 ? (
-                <div className="flex items-center justify-center h-64 text-gray-400">
+                <div className="flex items-center justify-center h-64 text-muted-foreground">
                   <div className="text-center">
                     <MapPin className="w-12 h-12 mx-auto mb-4 text-teal-300" />
                     <p className="text-lg font-medium">{t('emptyTitle')}</p>
@@ -599,7 +599,7 @@ export default function ZonesPage() {
                   <div
                     key={zone.id}
                     onClick={() => handleEditZone(zone)}
-                    className={`flex items-center gap-3 px-5 py-3.5 border-b border-gray-200 bg-surface-2 hover:bg-amber-50 cursor-pointer transition-colors group ${
+                    className={`flex items-center gap-3 px-5 py-3.5 border-b border-border-subtle bg-surface-2 hover:bg-amber-50 cursor-pointer transition-colors group ${
                       !zone.isEnabled ? 'opacity-60' : ''
                     }`}
                   >
@@ -610,7 +610,7 @@ export default function ZonesPage() {
                         className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
                           batch.selectedIds.has(parseInt(zone.id))
                             ? 'bg-success border-success text-success-foreground'
-                            : 'border-gray-300 hover:border-green-500'
+                            : 'border-border-default hover:border-green-500'
                         }`}
                       >
                         {batch.selectedIds.has(parseInt(zone.id)) && <Check className="w-3 h-3" />}
@@ -631,7 +631,7 @@ export default function ZonesPage() {
                         {zone.name}
                       </span>
                       {zone.description && (
-                        <span className="text-[11px] text-gray-400 ml-2">{zone.description}</span>
+                        <span className="text-[11px] text-muted-foreground ml-2">{zone.description}</span>
                       )}
                     </div>
 
@@ -650,11 +650,11 @@ export default function ZonesPage() {
                       {deleteConfirmId === zone.id ? (
                         <>
                           <button onClick={() => { handleDelete(zone.id); setDeleteConfirmId(null); }} className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"><Check className="w-4 h-4" /></button>
-                          <button onClick={() => setDeleteConfirmId(null)} className="p-1 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X className="w-4 h-4" /></button>
+                          <button onClick={() => setDeleteConfirmId(null)} className="p-1 text-muted-foreground hover:bg-surface-3 rounded transition-colors"><X className="w-4 h-4" /></button>
                         </>
                       ) : (
                         <>
-                          <button onClick={() => setDeleteConfirmId(zone.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title={tc('delete')}><Trash2 className="w-4 h-4" /></button>
+                          <button onClick={() => setDeleteConfirmId(zone.id)} className="p-1 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded transition-colors" title={tc('delete')}><Trash2 className="w-4 h-4" /></button>
                           <CaretRight className="w-4 h-4 text-gray-300 group-hover:text-amber-500 transition-colors" weight="bold" />
                         </>
                       )}
@@ -694,11 +694,11 @@ export default function ZonesPage() {
                 if (zonesWithGeo.length === 0) {
                   return (
                     <div className="flex flex-col items-center justify-center py-16 text-center">
-                      <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                      <div className="w-16 h-16 rounded-full bg-surface-3 flex items-center justify-center mb-4">
                         <Map className="w-8 h-8 text-gray-300" />
                       </div>
                       <p className="text-sm font-medium text-gray-700">Sin zonas geolocalizadas</p>
-                      <p className="text-xs text-gray-400 mt-1.5 max-w-xs">
+                      <p className="text-xs text-muted-foreground mt-1.5 max-w-xs">
                         Edita una zona y agrega latitud, longitud y radio para verla en el mapa.
                       </p>
                     </div>
@@ -714,13 +714,13 @@ export default function ZonesPage() {
                   info: (
                     <div className="min-w-[160px]">
                       <p className="font-semibold text-sm">{z.name}</p>
-                      {z.description && <p className="text-xs text-gray-500 mt-0.5">{z.description}</p>}
+                      {z.description && <p className="text-xs text-muted-foreground mt-0.5">{z.description}</p>}
                       <div className="flex items-center gap-3 mt-2 pt-2 border-t border-gray-100">
-                        <span className="text-xs text-gray-600">
+                        <span className="text-xs text-foreground/70">
                           {z.clientCount || 0} cliente{(z.clientCount || 0) !== 1 ? 's' : ''}
                         </span>
                         {z.boundaries?.[0]?.radius && (
-                          <span className="text-xs text-gray-400">Radio: {z.boundaries[0].radius} km</span>
+                          <span className="text-xs text-muted-foreground">Radio: {z.boundaries[0].radius} km</span>
                         )}
                       </div>
                     </div>
@@ -731,7 +731,7 @@ export default function ZonesPage() {
 
                 return (
                   <>
-                    <div className="rounded-md overflow-hidden border border-gray-200 shadow-sm">
+                    <div className="rounded-md overflow-hidden border border-border-subtle shadow-sm">
                       <GoogleMapWrapper markers={markers} height="520px">
                         {zonesWithGeo.map(z => {
                           const radius = z.boundaries?.[0]?.radius;
@@ -755,7 +755,7 @@ export default function ZonesPage() {
                     </div>
                     {/* Legend */}
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-1">
-                      <span className="text-[11px] font-medium text-gray-500">
+                      <span className="text-[11px] font-medium text-muted-foreground">
                         {zonesWithoutGeo.length > 0
                           ? `${zonesWithGeo.length} de ${allZonesForMap.length} en mapa`
                           : 'Zonas'}
@@ -768,13 +768,13 @@ export default function ZonesPage() {
                             setIsMapOpen(false);
                             handleEditZone(z);
                           }}
-                          className="flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-gray-100 transition-colors group"
+                          className="flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-surface-3 transition-colors group"
                           title={`Editar ${z.name}`}
                         >
                           <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: z.color }} />
-                          <span className="text-xs text-gray-600 group-hover:text-gray-900">{z.name}</span>
+                          <span className="text-xs text-foreground/70 group-hover:text-gray-900">{z.name}</span>
                           {z.boundaries?.[0]?.radius && (
-                            <span className="text-[11px] text-gray-400">{z.boundaries[0].radius} km</span>
+                            <span className="text-[11px] text-muted-foreground">{z.boundaries[0].radius} km</span>
                           )}
                         </button>
                       ))}
@@ -824,7 +824,7 @@ export default function ZonesPage() {
           <form onSubmit={handleSubmit(handleSaveZone)} className="p-6 space-y-5">
             {/* ── Información general ── */}
             <div className="space-y-4">
-              <h4 className="text-xs font-semibold text-gray-400">{t('drawer.generalInfo')}</h4>
+              <h4 className="text-xs font-semibold text-muted-foreground">{t('drawer.generalInfo')}</h4>
 
               {/* Name + Color on same row */}
               <div className="flex gap-4 items-start" data-tour="zones-drawer-name">
@@ -836,7 +836,7 @@ export default function ZonesPage() {
                   <input
                     type="text"
                     {...register('name')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-border-default rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
                     placeholder={t('drawer.namePlaceholder')}
                   />
                   {errors.name && (
@@ -847,7 +847,7 @@ export default function ZonesPage() {
                 <div data-tour="zones-drawer-color">
                   <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
                     <span
-                      className="w-3 h-3 rounded-full border border-gray-200"
+                      className="w-3 h-3 rounded-full border border-border-subtle"
                       style={{ backgroundColor: watchedColor || '#EC4899' }}
                     />
                     Color
@@ -861,7 +861,7 @@ export default function ZonesPage() {
                         className={`w-7 h-7 rounded-full border-2 transition-all relative flex items-center justify-center ${
                           watchedColor === color
                             ? 'border-gray-800 ring-2 ring-offset-1 ring-gray-300'
-                            : 'border-transparent hover:border-gray-300'
+                            : 'border-transparent hover:border-border-default'
                         }`}
                         style={{ backgroundColor: color }}
                         title={color}
@@ -881,7 +881,7 @@ export default function ZonesPage() {
                 </label>
                 <textarea
                   {...register('description')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-border-default rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
                   placeholder={t('drawer.descriptionPlaceholder')}
                   rows={2}
                 />
@@ -895,7 +895,7 @@ export default function ZonesPage() {
 
             {/* ── Ubicación ── */}
             <div data-tour="zones-drawer-map" className="space-y-4">
-              <h4 className="text-xs font-semibold text-gray-400">{t('drawer.location')}</h4>
+              <h4 className="text-xs font-semibold text-muted-foreground">{t('drawer.location')}</h4>
               {isMapsLoaded ? (
                 <div className="space-y-4">
                   {/* Place search */}
@@ -905,17 +905,17 @@ export default function ZonesPage() {
                     restrictions={{ country: 'mx' }}
                   >
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                       <input
                         type="text"
                         placeholder={t('drawer.searchPlaceholder')}
-                        className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                        className="w-full pl-9 pr-3 py-2.5 text-sm border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
                       />
                     </div>
                   </Autocomplete>
 
                   {/* Map with hint overlay */}
-                  <div className="relative rounded-md overflow-hidden border border-gray-200 shadow-sm" style={{ height: 380 }}>
+                  <div className="relative rounded-md overflow-hidden border border-border-subtle shadow-sm" style={{ height: 380 }}>
                     <GoogleMap
                       mapContainerStyle={{ width: '100%', height: '100%' }}
                       center={drawerMapCenter}
@@ -996,26 +996,26 @@ export default function ZonesPage() {
                           setDrawerMapRadius(val);
                           setValue('radioKm', val, { shouldDirty: true });
                         }}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                        className="w-full px-3 py-2 text-sm border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('drawer.latitude')}</label>
-                      <div className="px-3 py-2 text-sm text-gray-600 bg-surface-1 border border-gray-200 rounded-lg tabular-nums">
+                      <label className="block text-xs font-medium text-muted-foreground mb-1.5">{t('drawer.latitude')}</label>
+                      <div className="px-3 py-2 text-sm text-foreground/70 bg-surface-1 border border-border-subtle rounded-lg tabular-nums">
                         {drawerMapCenter.lat.toFixed(6)}
                       </div>
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('drawer.longitude')}</label>
-                      <div className="px-3 py-2 text-sm text-gray-600 bg-surface-1 border border-gray-200 rounded-lg tabular-nums">
+                      <label className="block text-xs font-medium text-muted-foreground mb-1.5">{t('drawer.longitude')}</label>
+                      <div className="px-3 py-2 text-sm text-foreground/70 bg-surface-1 border border-border-subtle rounded-lg tabular-nums">
                         {drawerMapCenter.lng.toFixed(6)}
                       </div>
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center justify-center h-48 bg-surface-1 rounded-lg border border-gray-200">
-                  <div className="flex items-center gap-2 text-sm text-gray-400">
+                <div className="flex items-center justify-center h-48 bg-surface-1 rounded-lg border border-border-subtle">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Loader2 className="w-4 h-4 animate-spin" />
                     {t('drawer.loadingMap')}
                   </div>
@@ -1027,19 +1027,19 @@ export default function ZonesPage() {
 
             {/* ── Estado ── */}
             <div className="space-y-3">
-              <h4 className="text-xs font-semibold text-gray-400">{t('drawer.status')}</h4>
+              <h4 className="text-xs font-semibold text-muted-foreground">{t('drawer.status')}</h4>
               <label htmlFor="isEnabled" className="flex items-start gap-3 cursor-pointer group">
                 <input
                   type="checkbox"
                   id="isEnabled"
                   {...register('isEnabled')}
-                  className="mt-0.5 w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-600"
+                  className="mt-0.5 w-4 h-4 text-green-600 border-border-default rounded focus:ring-green-600"
                 />
                 <div>
                   <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors">
                     {t('drawer.activeZone')}
                   </span>
-                  <p className="text-xs text-gray-400 mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     {t('drawer.activeZoneHint')}
                   </p>
                 </div>

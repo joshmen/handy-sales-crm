@@ -39,7 +39,7 @@ const typeColors: Record<string, { bg: string; icon: string; darkBg: string; dar
   alert: { bg: 'bg-yellow-100', icon: 'text-yellow-600', darkBg: 'dark:bg-yellow-900/30', darkIcon: 'dark:text-yellow-400' },
   route: { bg: 'bg-purple-100', icon: 'text-purple-600', darkBg: 'dark:bg-purple-900/30', darkIcon: 'dark:text-purple-400' },
   inventory: { bg: 'bg-green-100', icon: 'text-green-600', darkBg: 'dark:bg-green-900/30', darkIcon: 'dark:text-green-400' },
-  general: { bg: 'bg-gray-100', icon: 'text-gray-600', darkBg: 'dark:bg-gray-700/50', darkIcon: 'dark:text-gray-400' },
+  general: { bg: 'bg-surface-3', icon: 'text-foreground/70', darkBg: 'dark:bg-gray-700/50', darkIcon: 'dark:text-muted-foreground' },
 };
 
 // Status labels are resolved via translations at render time
@@ -48,7 +48,7 @@ const statusColors: Record<string, string> = {
   sent: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
   pending: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
   failed: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-  read: 'bg-gray-100 text-gray-500 dark:bg-gray-700/50 dark:text-gray-400',
+  read: 'bg-surface-3 text-muted-foreground dark:bg-gray-700/50 dark:text-muted-foreground',
 };
 
 const PAGE_SIZE = 10;
@@ -204,11 +204,11 @@ export default function NotificationsPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="bg-surface-2 dark:bg-gray-900 px-8 py-6 border-b border-gray-200 dark:border-gray-700">
+      <div className="bg-surface-2 dark:bg-gray-900 px-8 py-6 border-b border-border-subtle dark:border-gray-700">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-[13px] mb-4">
-          <span className="text-gray-500 dark:text-gray-400">{t('breadcrumbAdmin')}</span>
-          <ChevronRight className="w-4 h-4 text-gray-400" />
+          <span className="text-muted-foreground dark:text-muted-foreground">{t('breadcrumbAdmin')}</span>
+          <ChevronRight className="w-4 h-4 text-muted-foreground" />
           <span className="text-gray-900 dark:text-gray-100 font-semibold">{t('breadcrumbNotifications')}</span>
         </div>
 
@@ -240,14 +240,14 @@ export default function NotificationsPage() {
         <div className="flex items-center gap-3">
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               data-tour="notifications-search"
               type="text"
               placeholder={t('searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-[280px] pl-10 pr-3 py-2.5 text-sm border border-gray-200 dark:border-gray-600 rounded-md bg-surface-2 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-[280px] pl-10 pr-3 py-2.5 text-sm border border-border-subtle dark:border-gray-600 rounded-md bg-surface-2 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500"
             />
           </div>
 
@@ -292,9 +292,9 @@ export default function NotificationsPage() {
             </div>
           ) : displayedNotifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 py-20">
-              <Bell className="w-16 h-16 text-gray-300 dark:text-gray-600 mb-4" />
+              <Bell className="w-16 h-16 text-gray-300 dark:text-foreground/70 mb-4" />
               <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">{t('emptyTitle')}</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
+              <p className="text-sm text-muted-foreground dark:text-muted-foreground text-center">
                 {searchTerm
                   ? t('emptySearchMessage')
                   : t('emptyFilterMessage')}
@@ -314,7 +314,7 @@ export default function NotificationsPage() {
                     key={notification.id}
                     className={`border rounded-lg p-5 hover:shadow-sm transition-shadow cursor-pointer ${
                       isUnread
-                        ? 'bg-surface-2 dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+                        ? 'bg-surface-2 dark:bg-gray-800 border-border-subtle dark:border-gray-700'
                         : 'bg-surface-1 dark:bg-gray-900/50 border-gray-100 dark:border-gray-800'
                     }`}
                     onClick={() => isUnread && handleMarkAsRead(notification.id)}
@@ -335,13 +335,13 @@ export default function NotificationsPage() {
                           <h3 className={`text-[15px] ${isUnread ? 'font-semibold' : 'font-medium'} text-gray-900 dark:text-gray-100`}>
                             {notification.titulo}
                           </h3>
-                          <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">
+                          <span className="text-xs text-muted-foreground dark:text-muted-foreground flex-shrink-0">
                             {formatRelativeTime(notification.creadoEn)}
                           </span>
                         </div>
 
                         {/* Body */}
-                        <p className="text-[13px] text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
+                        <p className="text-[13px] text-foreground/70 dark:text-muted-foreground mb-3 line-clamp-2">
                           {notification.mensaje}
                         </p>
 
@@ -360,7 +360,7 @@ export default function NotificationsPage() {
                               <button
                                 onClick={(e) => { e.stopPropagation(); handleMarkAsRead(notification.id); }}
                                 disabled={actionLoading === notification.id}
-                                className="p-1.5 rounded-md text-gray-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+                                className="p-1.5 rounded-md text-muted-foreground hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
                                 title={t('markAsRead')}
                               >
                                 <Check className="w-4 h-4" />
@@ -369,7 +369,7 @@ export default function NotificationsPage() {
                             <button
                               onClick={(e) => { e.stopPropagation(); handleDelete(notification.id); }}
                               disabled={actionLoading === notification.id}
-                              className="p-1.5 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                              className="p-1.5 rounded-md text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                               title={t('deleted')}
                             >
                               <Trash2 className="w-4 h-4" />
@@ -387,14 +387,14 @@ export default function NotificationsPage() {
           {/* Pagination */}
           {!loading && totalItems > 0 && (
             <div className="flex items-center justify-between pt-4">
-              <span className="text-sm text-gray-500 dark:text-gray-400">
+              <span className="text-sm text-muted-foreground dark:text-muted-foreground">
                 {t('showing', { start: startItem, end: endItem, total: totalItems })}
               </span>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-md text-gray-600 dark:text-gray-400 hover:bg-surface-1 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-3 py-2 border border-border-subtle dark:border-gray-600 rounded-md text-foreground/70 dark:text-muted-foreground hover:bg-surface-1 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
@@ -417,7 +417,7 @@ export default function NotificationsPage() {
                       className={`min-w-[32px] px-2 py-1 text-sm rounded-md transition-colors ${
                         page === currentPage
                           ? 'bg-success text-success-foreground'
-                          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                          : 'text-foreground/70 dark:text-muted-foreground hover:bg-surface-3 dark:hover:bg-gray-800'
                       }`}
                     >
                       {page}

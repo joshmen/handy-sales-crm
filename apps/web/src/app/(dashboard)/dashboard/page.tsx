@@ -385,7 +385,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Goal Card */}
-        <div className="bg-surface-2 border border-gray-200 rounded-xl shadow-sm page-animate page-animate-delay-4" data-tour="dashboard-goal">
+        <div className="bg-surface-2 border border-border-subtle rounded-xl shadow-sm page-animate page-animate-delay-4" data-tour="dashboard-goal">
           <div className="p-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <h3 className="text-lg font-semibold text-gray-900">
@@ -408,7 +408,7 @@ export default function DashboardPage() {
             <>
               <div className="flex flex-wrap items-center gap-6 sm:gap-10 mb-6">
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">{t('goalTarget')}</p>
+                  <p className="text-sm text-muted-foreground mb-1">{t('goalTarget')}</p>
                   <p className="text-2xl font-semibold text-gray-900">
                     {goalData.tipo === 'ventas'
                       ? `${formatCurrency(goalData.target)}`
@@ -416,7 +416,7 @@ export default function DashboardPage() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">{t('goalAchieved')}</p>
+                  <p className="text-sm text-muted-foreground mb-1">{t('goalAchieved')}</p>
                   <p className="text-2xl font-semibold" style={{ color: 'var(--company-primary-color, #16a34a)' }}>
                     {goalData.tipo === 'ventas'
                       ? `${formatCurrency(goalData.current)}`
@@ -424,7 +424,7 @@ export default function DashboardPage() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">{t('goalRemaining')}</p>
+                  <p className="text-sm text-muted-foreground mb-1">{t('goalRemaining')}</p>
                   <p className="text-2xl font-semibold text-gray-900">
                     {goalData.tipo === 'ventas'
                       ? `${formatCurrency(Math.max(0, goalData.target - goalData.current))}`
@@ -433,10 +433,10 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-3 bg-surface-3 rounded-full overflow-hidden">
                   <div className="h-full rounded-full transition-all" style={{ width: `${goalData.percentage}%`, backgroundColor: 'var(--company-primary-color, #16a34a)' }} />
                 </div>
-                <div className="flex justify-between text-xs text-gray-400">
+                <div className="flex justify-between text-xs text-muted-foreground">
                   <span>0</span>
                   <span>
                     {goalData.tipo === 'ventas'
@@ -447,7 +447,7 @@ export default function DashboardPage() {
               </div>
             </>
           ) : (
-            <div className="flex flex-col items-center justify-center py-8 text-gray-400 gap-2">
+            <div className="flex flex-col items-center justify-center py-8 text-muted-foreground gap-2">
               <AlertCircle className="w-8 h-8 text-gray-300" />
               <p className="text-sm">{t('noActiveGoal')}</p>
               <a href="/metas" className="text-xs text-blue-500 hover:underline">{t('configureGoals')}</a>
@@ -477,7 +477,7 @@ export default function DashboardPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 page-animate page-animate-delay-1">
           <div>
             <h1 className="text-3xl font-semibold text-gray-900 tracking-tight">{t('title')}</h1>
-            <p className="text-gray-500 mt-1">{t('subtitle')}</p>
+            <p className="text-muted-foreground mt-1">{t('subtitle')}</p>
           </div>
           <div className="flex items-center gap-3">
             {/* Period Selector */}
@@ -485,19 +485,19 @@ export default function DashboardPage() {
               <select
                 value={periodo}
                 onChange={(e) => setPeriodo(e.target.value as 'semana' | 'mes' | 'trimestre')}
-                className="appearance-none flex items-center gap-2 px-4 py-2 pr-8 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-surface-1 bg-surface-2 cursor-pointer transition-colors"
+                className="appearance-none flex items-center gap-2 px-4 py-2 pr-8 border border-border-subtle rounded-lg text-sm font-medium text-gray-700 hover:bg-surface-1 bg-surface-2 cursor-pointer transition-colors"
               >
                 <option value="semana">{t('thisWeek')}</option>
                 <option value="mes">{t('thisMonth')}</option>
                 <option value="trimestre">{t('thisQuarter')}</option>
               </select>
-              <ChevronDown className="w-4 h-4 absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              <ChevronDown className="w-4 h-4 absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
             </div>
             {/* Export Button */}
             <button
               onClick={exportPDF}
               disabled={exporting || metricCards.length === 0}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-surface-1 transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 border border-border-subtle rounded-lg text-sm font-medium text-gray-700 hover:bg-surface-1 transition-colors disabled:opacity-50"
             >
               {exporting ? (
                 <Loader2 className="w-4 h-4 text-emerald-500 animate-spin" />
@@ -561,7 +561,7 @@ export default function DashboardPage() {
             );
           }) : (
             Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="bg-surface-2 border border-gray-200 rounded-xl p-5">
+              <div key={i} className="bg-surface-2 border border-border-subtle rounded-xl p-5">
                 <div className="flex items-center justify-between mb-4">
                   <div className="h-4 bg-muted rounded animate-pulse w-24" />
                   <div className="w-8 h-8 bg-muted animate-pulse rounded-lg" />
@@ -576,13 +576,13 @@ export default function DashboardPage() {
         {/* Content Columns */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 page-animate page-animate-delay-3">
           {/* Chart Card */}
-          <div ref={chartRef} className="lg:col-span-2 bg-surface-2 border border-gray-200 rounded-xl p-6" data-tour="dashboard-chart">
+          <div ref={chartRef} className="lg:col-span-2 bg-surface-2 border border-border-subtle rounded-xl p-6" data-tour="dashboard-chart">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">
                   {periodo === 'semana' ? t('weeklySales') : periodo === 'mes' ? t('monthlySales') : t('quarterlySales')}
                 </h3>
-                <p className="text-sm text-gray-500">{t('revenuePerDay')}</p>
+                <p className="text-sm text-muted-foreground">{t('revenuePerDay')}</p>
               </div>
             </div>
             {/* ApexCharts Bar/Area Chart */}
@@ -606,7 +606,7 @@ export default function DashboardPage() {
                   series={[{ name: t('weeklySales'), data: chartData.map(d => d.value) }]}
                 />
               ) : (
-                <div className="flex items-center justify-center h-48 text-sm text-gray-400">
+                <div className="flex items-center justify-center h-48 text-sm text-muted-foreground">
                   {t('noDataPeriod')}
                 </div>
               )}
@@ -614,7 +614,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Activity Card */}
-          <div className="bg-surface-2 border border-gray-200 rounded-xl" data-tour="dashboard-activity">
+          <div className="bg-surface-2 border border-border-subtle rounded-xl" data-tour="dashboard-activity">
             <div className="flex items-center justify-between p-5 border-b border-gray-100">
               <h3 className="font-semibold text-gray-900">{t('recentActivity')}</h3>
             </div>
@@ -634,13 +634,13 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">{a.description}</p>
-                      <p className="text-xs text-gray-500">{a.userName}</p>
+                      <p className="text-xs text-muted-foreground">{a.userName}</p>
                     </div>
-                    <span className="text-xs text-gray-400 whitespace-nowrap">{a.timeAgo}</span>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">{a.timeAgo}</span>
                   </div>
                 );
               }) : (
-                <div className="flex items-center justify-center py-8 text-sm text-gray-400">
+                <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
                   {t('noRecentActivity')}
                 </div>
               )}
@@ -649,7 +649,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Goal Card */}
-        <div className="bg-surface-2 border border-gray-200 rounded-xl page-animate page-animate-delay-4" data-tour="dashboard-goal"><div className="p-6">
+        <div className="bg-surface-2 border border-border-subtle rounded-xl page-animate page-animate-delay-4" data-tour="dashboard-goal"><div className="p-6">
           {isVendedor ? (
             <>
               {/* Vendedor: single meta with progress */}
@@ -674,7 +674,7 @@ export default function DashboardPage() {
                 <>
                   <div className="flex flex-wrap items-center gap-6 sm:gap-10 mb-6">
                     <div>
-                      <p className="text-sm text-gray-500 mb-1">{t('goalTarget')}</p>
+                      <p className="text-sm text-muted-foreground mb-1">{t('goalTarget')}</p>
                       <p className="text-2xl font-semibold text-gray-900">
                         {goalData.tipo === 'ventas'
                           ? `${formatCurrency(goalData.target)}`
@@ -682,7 +682,7 @@ export default function DashboardPage() {
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500 mb-1">{t('goalAchieved')}</p>
+                      <p className="text-sm text-muted-foreground mb-1">{t('goalAchieved')}</p>
                       <p className="text-2xl font-semibold" style={{ color: 'var(--company-primary-color, #16a34a)' }}>
                         {goalData.tipo === 'ventas'
                           ? `${formatCurrency(goalData.current)}`
@@ -690,7 +690,7 @@ export default function DashboardPage() {
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500 mb-1">{t('goalRemaining')}</p>
+                      <p className="text-sm text-muted-foreground mb-1">{t('goalRemaining')}</p>
                       <p className="text-2xl font-semibold text-gray-900">
                         {goalData.tipo === 'ventas'
                           ? `${formatCurrency(Math.max(0, goalData.target - goalData.current))}`
@@ -699,13 +699,13 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-3 bg-surface-3 rounded-full overflow-hidden">
                       <div
                         className="h-full rounded-full transition-all"
                         style={{ width: `${goalData.percentage}%`, backgroundColor: 'var(--company-primary-color, #16a34a)' }}
                       />
                     </div>
-                    <div className="flex justify-between text-xs text-gray-400">
+                    <div className="flex justify-between text-xs text-muted-foreground">
                       <span>0</span>
                       <span>
                         {goalData.tipo === 'ventas'
@@ -716,7 +716,7 @@ export default function DashboardPage() {
                   </div>
                 </>
               ) : (
-                <div className="flex flex-col items-center justify-center py-8 text-gray-400 gap-2">
+                <div className="flex flex-col items-center justify-center py-8 text-muted-foreground gap-2">
                   <AlertCircle className="w-8 h-8 text-gray-300" />
                   <p className="text-sm">{t('noActiveGoal')}</p>
                   <a href="/metas" className="text-xs text-blue-500 hover:underline">{t('configureGoals')}</a>
@@ -743,7 +743,7 @@ export default function DashboardPage() {
                           <p className="text-sm font-medium text-gray-900 truncate">{meta.usuarioNombre}</p>
                           <div className="flex items-center gap-2 mt-0.5">
                             <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-medium ${tipoColor}`}>{tipoLabel}</span>
-                            <span className="text-xs text-gray-400">{periodoLabel}</span>
+                            <span className="text-xs text-muted-foreground">{periodoLabel}</span>
                           </div>
                         </div>
                         <p className="text-sm font-semibold text-gray-900 whitespace-nowrap">{fmtVal}</p>
@@ -752,7 +752,7 @@ export default function DashboardPage() {
                   })}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-8 text-gray-400 gap-2">
+                <div className="flex flex-col items-center justify-center py-8 text-muted-foreground gap-2">
                   <AlertCircle className="w-8 h-8 text-gray-300" />
                   <p className="text-sm">{t('noActiveGoals')}</p>
                   <a href="/metas" className="text-xs text-blue-500 hover:underline">{t('configureGoals')}</a>
@@ -767,31 +767,31 @@ export default function DashboardPage() {
           <div className="page-animate page-animate-delay-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('todayDeliveries')}</h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="bg-surface-2 border border-gray-200 rounded-xl p-4">
+              <div className="bg-surface-2 border border-border-subtle rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <SbTruck size={24} />
-                  <span className="text-xs text-gray-500">{t('inRoute')}</span>
+                  <span className="text-xs text-muted-foreground">{t('inRoute')}</span>
                 </div>
                 <p className="text-2xl font-semibold text-gray-900">{deliveryStats.totalEnRuta}</p>
               </div>
-              <div className="bg-surface-2 border border-gray-200 rounded-xl p-4">
+              <div className="bg-surface-2 border border-border-subtle rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <SbCheckCircle size={24} />
-                  <span className="text-xs text-gray-500">{t('completed')}</span>
+                  <span className="text-xs text-muted-foreground">{t('completed')}</span>
                 </div>
                 <p className="text-2xl font-semibold text-gray-900">{deliveryStats.totalCompletadas}</p>
               </div>
-              <div className="bg-surface-2 border border-gray-200 rounded-xl p-4">
+              <div className="bg-surface-2 border border-border-subtle rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <SbClock size={24} />
-                  <span className="text-xs text-gray-500">{t('pending')}</span>
+                  <span className="text-xs text-muted-foreground">{t('pending')}</span>
                 </div>
                 <p className="text-2xl font-semibold text-gray-900">{deliveryStats.totalPendientes}</p>
               </div>
-              <div className="bg-surface-2 border border-gray-200 rounded-xl p-4">
+              <div className="bg-surface-2 border border-border-subtle rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <SbTrendingUp size={24} />
-                  <span className="text-xs text-gray-500">{t('completedPct')}</span>
+                  <span className="text-xs text-muted-foreground">{t('completedPct')}</span>
                 </div>
                 <p className="text-2xl font-semibold text-gray-900">{deliveryStats.porcentajeCompletado}%</p>
               </div>

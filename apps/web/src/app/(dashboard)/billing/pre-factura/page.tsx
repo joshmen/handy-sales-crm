@@ -30,7 +30,7 @@ const formatMXN = (value: number) =>
 const SOURCE_STYLES: Record<PreFacturaLineDto['mappingSource'], { bg: string; key: string }> = {
   mapping: { bg: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', key: 'sourceMapping' },
   producto: { bg: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400', key: 'sourceProduct' },
-  default: { bg: 'bg-gray-100 text-gray-700 dark:bg-zinc-700 dark:text-zinc-300', key: 'sourceDefault' },
+  default: { bg: 'bg-surface-3 text-gray-700 dark:bg-zinc-700 dark:text-zinc-300', key: 'sourceDefault' },
   fallback: { bg: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400', key: 'sourceFallback' },
 };
 
@@ -465,7 +465,7 @@ function PreFacturaContent() {
         <Button
           onClick={() => handleSubmit(false)}
           disabled={submitting}
-          className="order-1 sm:order-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-foreground"
+          className="order-1 sm:order-2 bg-surface-3 dark:bg-zinc-800 hover:bg-surface-3 dark:hover:bg-zinc-700 text-foreground"
         >
           {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Check className="w-4 h-4 mr-2" />}
           Crear Factura

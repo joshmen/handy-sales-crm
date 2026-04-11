@@ -127,7 +127,7 @@ export default function CreatePromotionPage() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold">{t('createPage.title')}</h1>
-            <p className="text-gray-600">
+            <p className="text-foreground/70">
               {t('createPage.subtitle')}
             </p>
           </div>

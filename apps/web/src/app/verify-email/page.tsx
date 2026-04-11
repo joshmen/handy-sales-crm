@@ -205,7 +205,7 @@ function VerifyEmailContent() {
                 onKeyDown={(e) => handleKeyDown(index, e)}
                 onPaste={index === 0 ? handlePaste : undefined}
                 disabled={verifying}
-                className="w-12 h-14 text-center text-2xl font-mono border border-[#D1D5DB] rounded-[10px] focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors disabled:bg-surface-1 disabled:text-gray-500"
+                className="w-12 h-14 text-center text-2xl font-mono border border-[#D1D5DB] rounded-[10px] focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors disabled:bg-surface-1 disabled:text-muted-foreground"
               />
             ))}
           </div>
@@ -224,7 +224,7 @@ function VerifyEmailContent() {
               type="button"
               onClick={handleResend}
               disabled={resending || countdown > 0}
-              className="text-[14px] font-medium text-indigo-600 hover:text-indigo-700 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
+              className="text-[14px] font-medium text-indigo-600 hover:text-indigo-700 disabled:text-muted-foreground disabled:cursor-not-allowed transition-colors"
             >
               {countdown > 0
                 ? `Reenviar código en ${Math.floor(Math.max(0, countdown) / 60)}:${String(Math.max(0, countdown) % 60).padStart(2, '0')}`

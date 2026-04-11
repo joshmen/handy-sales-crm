@@ -24,7 +24,7 @@ import {
 const estadoBadgeStyles: Record<string, string> = {
   DISPONIBLE: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
   PROXIMO: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
-  DESCONTINUADO: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400",
+  DESCONTINUADO: "bg-surface-3 text-gray-800 dark:bg-gray-800 dark:text-muted-foreground",
 };
 
 const iconMap: Record<string, React.ReactNode> = {
@@ -65,14 +65,14 @@ function IntegrationCard({
   const icon = iconMap[integration.icono || ""] || <Zap className="h-6 w-6" />;
 
   return (
-    <Card className="group hover:shadow-md transition-all duration-200 border-gray-200 dark:border-gray-700">
+    <Card className="group hover:shadow-md transition-all duration-200 border-border-subtle dark:border-gray-700">
       <CardContent className="p-5">
         <div className="flex items-start gap-4">
           <div className={`p-3 rounded-xl ${
             integration.isActivated
               ? "bg-green-100 dark:bg-green-900/30 text-green-600"
               : isAvailable
-                ? "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400"
+                ? "bg-surface-3 dark:bg-gray-800 text-foreground/70 dark:text-muted-foreground"
                 : "bg-blue-50 dark:bg-blue-900/20 text-blue-500"
           }`}>
             {icon}

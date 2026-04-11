@@ -240,9 +240,9 @@ export default function UnitsPage() {
         {/* DataGrid */}
         <DataGrid<Unit>
           columns={[
-            { key: 'id', label: t('columnId'), width: 60, sortable: true, cellRenderer: (item) => <span className="font-mono text-gray-500">{item.id}</span> },
+            { key: 'id', label: t('columnId'), width: 60, sortable: true, cellRenderer: (item) => <span className="font-mono text-muted-foreground">{item.id}</span> },
             { key: 'nombre', label: t('columnName'), width: 'flex', sortable: true, cellRenderer: (item) => <span className="font-medium text-gray-900">{item.nombre}</span> },
-            { key: 'abreviatura', label: t('abbreviationLabel'), width: 120, sortable: true, cellRenderer: (item) => <span className="text-gray-500 font-mono">{item.abreviatura || '-'}</span> },
+            { key: 'abreviatura', label: t('abbreviationLabel'), width: 120, sortable: true, cellRenderer: (item) => <span className="text-muted-foreground font-mono">{item.abreviatura || '-'}</span> },
             { key: 'activo', label: t('columnActive'), width: 50, align: 'center', cellRenderer: (item) => (
               <div onClick={e => e.stopPropagation()}>
                 <ActiveToggle isActive={item.activo} onToggle={() => handleToggleActive(item)} isLoading={togglingId === item.id} />
@@ -256,10 +256,10 @@ export default function UnitsPage() {
                 {deleteConfirmId === item.id ? (
                   <>
                     <button onClick={() => { handleDelete(item.id); setDeleteConfirmId(null); }} className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"><Check className="w-4 h-4" /></button>
-                    <button onClick={() => setDeleteConfirmId(null)} className="p-1 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X className="w-4 h-4" /></button>
+                    <button onClick={() => setDeleteConfirmId(null)} className="p-1 text-muted-foreground hover:bg-surface-3 rounded transition-colors"><X className="w-4 h-4" /></button>
                   </>
                 ) : (
-                  <button onClick={() => setDeleteConfirmId(item.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title={tc('delete')}><Trash2 className="w-4 h-4" /></button>
+                  <button onClick={() => setDeleteConfirmId(item.id)} className="p-1 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded transition-colors" title={tc('delete')}><Trash2 className="w-4 h-4" /></button>
                 )}
               </div>
             )},
@@ -281,22 +281,22 @@ export default function UnitsPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium text-gray-900 truncate">{unit.nombre}</div>
-                  <div className="text-xs text-gray-500 font-mono">{unit.abreviatura || '-'}</div>
+                  <div className="text-xs text-muted-foreground font-mono">{unit.abreviatura || '-'}</div>
                 </div>
               </div>
               <div className="flex items-center justify-between">
                 <ActiveToggle isActive={unit.activo} onToggle={() => handleToggleActive(unit)} isLoading={togglingId === unit.id} />
                 <div className="flex items-center gap-1">
-                  <button onClick={() => handleOpenEdit(unit)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors">
+                  <button onClick={() => handleOpenEdit(unit)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors">
                     <Edit2 className="w-3.5 h-3.5 text-amber-400" /><span>{tc('edit')}</span>
                   </button>
                   {deleteConfirmId === unit.id ? (
                     <div className="flex items-center gap-1">
                       <button onClick={() => { handleDelete(unit.id); setDeleteConfirmId(null); }} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"><Check size={16} /></button>
-                      <button onClick={() => setDeleteConfirmId(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X size={16} /></button>
+                      <button onClick={() => setDeleteConfirmId(null)} className="p-1.5 text-muted-foreground hover:bg-surface-3 rounded transition-colors"><X size={16} /></button>
                     </div>
                   ) : (
-                    <button onClick={() => setDeleteConfirmId(unit.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"><Trash2 size={16} /></button>
+                    <button onClick={() => setDeleteConfirmId(unit.id)} className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded transition-colors"><Trash2 size={16} /></button>
                   )}
                 </div>
               </div>

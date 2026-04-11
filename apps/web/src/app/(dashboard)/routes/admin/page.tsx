@@ -347,7 +347,7 @@ export default function RouteAdminPage() {
           <Card className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">{t('templates.stats.templates')}</p>
+                <p className="text-sm text-foreground/70">{t('templates.stats.templates')}</p>
                 <p className="text-2xl font-bold">{totalTemplates}</p>
               </div>
               <Map size={24} className="text-blue-500" />
@@ -356,7 +356,7 @@ export default function RouteAdminPage() {
           <Card className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">{t('templates.stats.zonesCovered')}</p>
+                <p className="text-sm text-foreground/70">{t('templates.stats.zonesCovered')}</p>
                 <p className="text-2xl font-bold">{zonasCubiertas}</p>
               </div>
               <MapPin size={24} className="text-green-500" />
@@ -365,7 +365,7 @@ export default function RouteAdminPage() {
           <Card className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">{t('templates.stats.totalStops')}</p>
+                <p className="text-sm text-foreground/70">{t('templates.stats.totalStops')}</p>
                 <p className="text-2xl font-bold">{totalParadas}</p>
               </div>
               <Users size={24} className="text-purple-500" />
@@ -374,7 +374,7 @@ export default function RouteAdminPage() {
           <Card className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">{t('templates.stats.avgDistance')}</p>
+                <p className="text-sm text-foreground/70">{t('templates.stats.avgDistance')}</p>
                 <p className="text-2xl font-bold">
                   {distanciaPromedio > 0 ? `${distanciaPromedio} km` : '--'}
                 </p>
@@ -415,7 +415,7 @@ export default function RouteAdminPage() {
         {!loading && filteredTemplates.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <Route className="w-12 h-12 text-gray-300 mb-3" />
-            <p className="text-gray-500 text-sm">
+            <p className="text-muted-foreground text-sm">
               {searchTerm || filterZone !== 'all'
                 ? t('templates.noTemplatesFiltered')
                 : t('templates.noTemplates')}
@@ -443,7 +443,7 @@ export default function RouteAdminPage() {
                         {template.nombre}
                       </h3>
                       {template.descripcion && (
-                        <p className="text-sm text-gray-500 mt-0.5 line-clamp-2">
+                        <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2">
                           {template.descripcion}
                         </p>
                       )}
@@ -452,23 +452,23 @@ export default function RouteAdminPage() {
 
                   <div className="space-y-2 mb-4">
                     <div className="flex items-center text-sm">
-                      <MapPin size={15} className="mr-2 text-gray-400 flex-shrink-0" />
-                      <span className="text-gray-500">{t('templates.zone')}:</span>
+                      <MapPin size={15} className="mr-2 text-muted-foreground flex-shrink-0" />
+                      <span className="text-muted-foreground">{t('templates.zone')}:</span>
                       <span className="ml-1.5 font-medium text-gray-700 truncate">
                         {template.zonaNombre || t('templates.noZone')}
                       </span>
                     </div>
                     <div className="flex items-center text-sm">
-                      <Users size={15} className="mr-2 text-gray-400 flex-shrink-0" />
-                      <span className="text-gray-500">{t('templates.stops')}:</span>
+                      <Users size={15} className="mr-2 text-muted-foreground flex-shrink-0" />
+                      <span className="text-muted-foreground">{t('templates.stops')}:</span>
                       <span className="ml-1.5 font-medium text-gray-700">
                         {template.totalParadas}
                       </span>
                     </div>
                     {template.kilometrosEstimados != null && template.kilometrosEstimados > 0 && (
                       <div className="flex items-center text-sm">
-                        <Navigation size={15} className="mr-2 text-gray-400 flex-shrink-0" />
-                        <span className="text-gray-500">{t('templates.distance')}:</span>
+                        <Navigation size={15} className="mr-2 text-muted-foreground flex-shrink-0" />
+                        <span className="text-muted-foreground">{t('templates.distance')}:</span>
                         <span className="ml-1.5 font-medium text-gray-700">
                           {template.kilometrosEstimados} km
                         </span>
@@ -531,7 +531,7 @@ export default function RouteAdminPage() {
             <button
               type="button"
               onClick={() => setIsDrawerOpen(false)}
-              className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-surface-1"
+              className="px-4 py-2 text-sm text-gray-700 border border-border-default rounded-lg hover:bg-surface-1"
             >
               {tc('cancel')}
             </button>
@@ -555,7 +555,7 @@ export default function RouteAdminPage() {
             <input
               {...register('nombre')}
               placeholder={t('templates.namePlaceholder')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              className="w-full px-3 py-2 border border-border-default rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
             />
             {errors.nombre && (
               <FieldError message={errors.nombre?.message} />
@@ -568,7 +568,7 @@ export default function RouteAdminPage() {
               {...register('descripcion')}
               rows={3}
               placeholder={t('templates.descriptionPlaceholder')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none"
+              className="w-full px-3 py-2 border border-border-default rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none"
             />
           </div>
 
@@ -588,7 +588,7 @@ export default function RouteAdminPage() {
               {...register('notas')}
               rows={2}
               placeholder={t('templates.notesPlaceholder')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none"
+              className="w-full px-3 py-2 border border-border-default rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none"
             />
           </div>
         </form>
@@ -609,9 +609,9 @@ export default function RouteAdminPage() {
               <div className="p-3 bg-surface-1 rounded-lg">
                 <p className="font-medium text-sm">{assigningTemplate.nombre}</p>
                 {assigningTemplate.descripcion && (
-                  <p className="text-xs text-gray-500 mt-0.5">{assigningTemplate.descripcion}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{assigningTemplate.descripcion}</p>
                 )}
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   {assigningTemplate.totalParadas} parada{assigningTemplate.totalParadas !== 1 ? 's' : ''}
                   {assigningTemplate.zonaNombre ? ` - ${assigningTemplate.zonaNombre}` : ''}
                 </p>
@@ -652,7 +652,7 @@ export default function RouteAdminPage() {
               <button
                 type="button"
                 onClick={() => setIsAssignOpen(false)}
-                className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-surface-1"
+                className="px-4 py-2 text-sm text-gray-700 border border-border-default rounded-lg hover:bg-surface-1"
               >
                 {tc('cancel')}
               </button>

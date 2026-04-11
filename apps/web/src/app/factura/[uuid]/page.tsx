@@ -104,7 +104,7 @@ export default async function FacturaPublicPage({
             </svg>
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Factura no encontrada</h1>
-          <p className="mt-2 text-gray-600">
+          <p className="mt-2 text-foreground/70">
             El folio fiscal no existe o ha sido eliminado. Verifica el enlace e intenta de nuevo.
           </p>
           <Link
@@ -127,10 +127,10 @@ export default async function FacturaPublicPage({
         {/* Header */}
         <div className="text-center">
           <h2 className="text-lg font-semibold text-gray-900">{factura.emisorNombre}</h2>
-          <p className="text-sm text-gray-500">RFC: {factura.emisorRfc}</p>
+          <p className="text-sm text-muted-foreground">RFC: {factura.emisorRfc}</p>
           <h1 className="mt-4 text-2xl font-bold text-gray-900">Factura Electrónica</h1>
           {folioDisplay && (
-            <p className="mt-1 text-sm text-gray-500">Folio: {folioDisplay}</p>
+            <p className="mt-1 text-sm text-muted-foreground">Folio: {folioDisplay}</p>
           )}
         </div>
 
@@ -138,38 +138,38 @@ export default async function FacturaPublicPage({
         <div className="mt-6 rounded-xl bg-surface-2 shadow-sm ring-1 ring-gray-200">
           {/* Status */}
           <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-            <span className="text-sm font-medium text-gray-500">Estado</span>
+            <span className="text-sm font-medium text-muted-foreground">Estado</span>
             <StatusBadge estado={factura.estado} />
           </div>
 
           {/* Folio fiscal */}
           <div className="border-b border-gray-100 px-5 py-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Folio Fiscal (UUID)</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Folio Fiscal (UUID)</p>
             <p className="mt-1 break-all font-mono text-xs text-gray-700">{factura.uuid}</p>
           </div>
 
           {/* Emisor */}
           <div className="border-b border-gray-100 px-5 py-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Emisor</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Emisor</p>
             <p className="mt-1 text-sm font-medium text-gray-900">{factura.emisorNombre}</p>
-            <p className="text-sm text-gray-600">RFC: {factura.emisorRfc}</p>
+            <p className="text-sm text-foreground/70">RFC: {factura.emisorRfc}</p>
           </div>
 
           {/* Receptor */}
           <div className="border-b border-gray-100 px-5 py-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Receptor</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Receptor</p>
             <p className="mt-1 text-sm font-medium text-gray-900">{factura.receptorNombre}</p>
-            <p className="text-sm text-gray-600">RFC: {factura.receptorRfc}</p>
+            <p className="text-sm text-foreground/70">RFC: {factura.receptorRfc}</p>
           </div>
 
           {/* Fecha & Total */}
           <div className="grid grid-cols-2 border-b border-gray-100">
             <div className="border-r border-gray-100 px-5 py-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Fecha</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Fecha</p>
               <p className="mt-1 text-sm text-gray-900">{formatDate(factura.fechaEmision)}</p>
             </div>
             <div className="px-5 py-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Total</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Total</p>
               <p className="mt-1 text-lg font-bold text-gray-900">
                 {formatCurrency(factura.total, factura.moneda)}
               </p>
@@ -198,7 +198,7 @@ export default async function FacturaPublicPage({
                     href={factura.xmlUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-gray-300 bg-surface-2 px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-surface-1 transition-colors"
+                    className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-border-default bg-surface-2 px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-surface-1 transition-colors"
                   >
                     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
@@ -218,7 +218,7 @@ export default async function FacturaPublicPage({
         </div>
 
         {/* Footer */}
-        <div className="mt-6 text-center text-xs text-gray-400">
+        <div className="mt-6 text-center text-xs text-muted-foreground">
           <p>&copy; {new Date().getFullYear()} Handy Suites&reg; &mdash; Todos los derechos reservados</p>
           <Link href="/" className="mt-1 inline-block text-green-600 hover:underline">
             handysuites.com

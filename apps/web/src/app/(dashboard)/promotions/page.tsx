@@ -179,7 +179,7 @@ export default function PromotionsPage() {
       cellRenderer: (promo) => (
         <div className={`${!promo.activo ? 'opacity-50' : ''}`}>
           <div className="text-[13px] font-medium text-gray-900 truncate">{promo.nombre}</div>
-          {promo.descripcion && <div className="text-xs text-gray-500 truncate mt-0.5">{promo.descripcion}</div>}
+          {promo.descripcion && <div className="text-xs text-muted-foreground truncate mt-0.5">{promo.descripcion}</div>}
         </div>
       ),
     },
@@ -199,13 +199,13 @@ export default function PromotionsPage() {
             <div className="font-medium text-gray-300 mb-1 px-1">{t('productsCount', { count: promo.productos.length, plural: promo.productos.length !== 1 ? 's' : '' })}:</div>
             {promo.productos.map((prod) => (
               <div key={prod.productoId} className="flex items-center gap-1.5 px-1 py-0.5 rounded hover:bg-gray-800">
-                <Package className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                <Package className="w-3 h-3 text-muted-foreground flex-shrink-0" />
                 <span className="truncate">{prod.productoNombre}</span>
               </div>
             ))}
           </div>
         </div>
-      ) : <span className="text-[11px] text-gray-400">{t('noProducts')}</span>,
+      ) : <span className="text-[11px] text-muted-foreground">{t('noProducts')}</span>,
     },
     {
       key: 'descuentoPorcentaje',
@@ -224,7 +224,7 @@ export default function PromotionsPage() {
       width: 200,
       cellRenderer: (promo) => (
         <div>
-          <div className="flex items-center gap-1.5 text-[13px] text-gray-600">
+          <div className="flex items-center gap-1.5 text-[13px] text-foreground/70">
             <Calendar className="w-3.5 h-3.5 text-violet-500 flex-shrink-0" />
             <span>{formatDate(promo.fechaInicio)} - {formatDate(promo.fechaFin)}</span>
           </div>
@@ -255,10 +255,10 @@ export default function PromotionsPage() {
           {deleteConfirmId === promo.id ? (
             <>
               <button onClick={() => { handleDelete(promo.id); setDeleteConfirmId(null); }} className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"><Check className="w-4 h-4" /></button>
-              <button onClick={() => setDeleteConfirmId(null)} className="p-1 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X className="w-4 h-4" /></button>
+              <button onClick={() => setDeleteConfirmId(null)} className="p-1 text-muted-foreground hover:bg-surface-3 rounded transition-colors"><X className="w-4 h-4" /></button>
             </>
           ) : (
-            <button onClick={() => setDeleteConfirmId(promo.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title={tc('delete')}><Trash2 className="w-4 h-4" /></button>
+            <button onClick={() => setDeleteConfirmId(promo.id)} className="p-1 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded transition-colors" title={tc('delete')}><Trash2 className="w-4 h-4" /></button>
           )}
         </div>
       ),
@@ -406,16 +406,16 @@ export default function PromotionsPage() {
           <div className="relative" data-tour="promotions-import-export">
             <button
               onClick={() => setShowDataMenu(!showDataMenu)}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-surface-1 transition-colors"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-border-subtle rounded hover:bg-surface-1 transition-colors"
             >
               <Download className="w-3.5 h-3.5 text-emerald-500" />
               <span className="hidden sm:inline">{tc('importExport')}</span>
-              <ChevronDown className="w-3 h-3 text-gray-400" />
+              <ChevronDown className="w-3 h-3 text-muted-foreground" />
             </button>
             {showDataMenu && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowDataMenu(false)} />
-                <div className="absolute right-0 mt-1 w-44 bg-surface-2 border border-gray-200 rounded-lg shadow-lg z-20 py-1">
+                <div className="absolute right-0 mt-1 w-44 bg-surface-2 border border-border-subtle rounded-lg shadow-lg z-20 py-1">
                   <button
                     onClick={async () => { setShowDataMenu(false); try { await exportToCsv('promociones'); toast.success(tc('csvDownloaded')); } catch { toast.error(tc('errorExporting')); } }}
                     className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-surface-1"
@@ -521,33 +521,33 @@ export default function PromotionsPage() {
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">{promo.nombre}</p>
-                      {promo.descripcion && <p className="text-xs text-gray-500 truncate">{promo.descripcion}</p>}
+                      {promo.descripcion && <p className="text-xs text-muted-foreground truncate">{promo.descripcion}</p>}
                     </div>
                   </div>
                   <div onClick={(e) => e.stopPropagation()}>
                     <ActiveToggle isActive={promo.activo} onToggle={() => handleToggleActive(promo)} disabled={loading} isLoading={togglingId === promo.id} />
                   </div>
                 </div>
-                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                   <span className="inline-flex items-center gap-1"><Package className="w-3 h-3 text-blue-400" /> {t('productsCount', { count: promo.productos?.length || 0, plural: (promo.productos?.length || 0) !== 1 ? 's' : '' })}</span>
                   <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full font-medium">{promo.descuentoPorcentaje}%</span>
                 </div>
-                <div className="mt-1.5 flex items-center gap-1 text-xs text-gray-500">
+                <div className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground">
                   <Calendar className="w-3 h-3 text-violet-500" />
                   <span>{formatDate(promo.fechaInicio)} - {formatDate(promo.fechaFin)}</span>
                   {isExpired(promo.fechaFin) && <span className="text-red-500 ml-1">{t('expired')}</span>}
                 </div>
                 <div className="mt-2.5 flex items-center justify-end gap-1 border-t border-gray-100 pt-2" onClick={(e) => e.stopPropagation()}>
-                  <button onClick={() => handleOpenEdit(promo)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-green-600 hover:bg-green-50 rounded transition-colors">
+                  <button onClick={() => handleOpenEdit(promo)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-green-600 hover:bg-green-50 rounded transition-colors">
                     <Pencil className="w-3.5 h-3.5 text-amber-400" /> {tc('edit')}
                   </button>
                   {deleteConfirmId === promo.id ? (
                     <div className="flex items-center gap-1">
                       <button onClick={() => { handleDelete(promo.id); setDeleteConfirmId(null); }} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"><Check size={16} /></button>
-                      <button onClick={() => setDeleteConfirmId(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded transition-colors"><X size={16} /></button>
+                      <button onClick={() => setDeleteConfirmId(null)} className="p-1.5 text-muted-foreground hover:bg-surface-3 rounded transition-colors"><X size={16} /></button>
                     </div>
                   ) : (
-                    <button onClick={() => setDeleteConfirmId(promo.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"><Trash2 size={16} /></button>
+                    <button onClick={() => setDeleteConfirmId(promo.id)} className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded transition-colors"><Trash2 size={16} /></button>
                   )}
                 </div>
               </div>
@@ -598,7 +598,7 @@ export default function PromotionsPage() {
               type="text"
               {...register('nombre')}
               placeholder={t('namePlaceholder')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
             {errors.nombre && <FieldError message={errors.nombre.message} />}
           </div>
@@ -609,7 +609,7 @@ export default function PromotionsPage() {
               type="text"
               {...register('descripcion')}
               placeholder={t('descriptionPlaceholder')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
           </div>
 
@@ -662,7 +662,7 @@ export default function PromotionsPage() {
               }
             />
             {errors.productoIds && <FieldError message={errors.productoIds.message} />}
-            <p className="text-xs text-gray-400 mt-1">{t('selectedCount', { selected: watch('productoIds').length, total: productos.length, plural: watch('productoIds').length !== 1 ? 's' : '', plural2: watch('productoIds').length !== 1 ? 's' : '' })}</p>
+            <p className="text-xs text-muted-foreground mt-1">{t('selectedCount', { selected: watch('productoIds').length, total: productos.length, plural: watch('productoIds').length !== 1 ? 's' : '', plural2: watch('productoIds').length !== 1 ? 's' : '' })}</p>
           </div>
 
           <div data-tour="promotions-drawer-discount">
@@ -673,7 +673,7 @@ export default function PromotionsPage() {
               max="100"
               {...register('descuentoPorcentaje', { valueAsNumber: true })}
               placeholder={t('discountPlaceholder')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-border-default rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
             {errors.descuentoPorcentaje && <FieldError message={errors.descuentoPorcentaje.message} />}
           </div>

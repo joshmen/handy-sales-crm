@@ -36,7 +36,7 @@ export default function SuspendedPage() {
 
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Membresía Suspendida</h1>
 
-          <p className="text-lg text-gray-600">
+          <p className="text-lg text-foreground/70">
             Tu cuenta ha sido suspendida debido a un pago pendiente
           </p>
         </div>
@@ -64,19 +64,19 @@ export default function SuspendedPage() {
 
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-gray-600">Plan actual:</span>
+              <span className="text-foreground/70">Plan actual:</span>
               <span className="font-medium">Pro - $899 MXN/mes</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Último pago:</span>
+              <span className="text-foreground/70">Último pago:</span>
               <span className="font-medium">15 de diciembre, 2024</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Monto pendiente:</span>
+              <span className="text-foreground/70">Monto pendiente:</span>
               <span className="font-bold text-red-600">$899 MXN</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Fecha de suspensión:</span>
+              <span className="text-foreground/70">Fecha de suspensión:</span>
               <span className="font-medium">8 de enero, 2025</span>
             </div>
           </div>
@@ -132,7 +132,7 @@ export default function SuspendedPage() {
             </a>
           </div>
 
-          <p className="text-xs text-gray-500 mt-4">
+          <p className="text-xs text-muted-foreground mt-4">
             Horario de atención: Lunes a Viernes de 9:00 AM a 6:00 PM (Hora del Pacífico)
           </p>
         </div>

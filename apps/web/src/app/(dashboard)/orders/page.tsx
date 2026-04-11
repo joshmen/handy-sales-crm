@@ -66,7 +66,7 @@ const statusDotColors: Record<string, string> = {
   'cancelled': 'bg-red-400',
 };
 const statusTextColors: Record<string, string> = {
-  'draft': 'text-gray-500',
+  'draft': 'text-muted-foreground',
   'confirmed': 'text-blue-700',
   'en_route': 'text-cyan-700',
   'delivered': 'text-emerald-700',
@@ -467,7 +467,7 @@ export default function OrdersPage() {
       label: t('columns.vendor'),
       width: 140,
       hiddenOnMobile: true,
-      cellRenderer: (order) => <span className="text-[13px] text-gray-500 truncate block">{order.user.name}</span>,
+      cellRenderer: (order) => <span className="text-[13px] text-muted-foreground truncate block">{order.user.name}</span>,
     },
     {
       key: 'orderDate',
@@ -475,9 +475,9 @@ export default function OrdersPage() {
       sortable: true,
       width: 120,
       cellRenderer: (order) => (
-        <div className="text-[12px] text-gray-500 whitespace-nowrap tabular-nums">
+        <div className="text-[12px] text-muted-foreground whitespace-nowrap tabular-nums">
           <div>{order.orderDate.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</div>
-          <div className="text-[11px] text-gray-400">{order.orderDate.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}</div>
+          <div className="text-[11px] text-muted-foreground">{order.orderDate.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}</div>
         </div>
       ),
     },
@@ -497,7 +497,7 @@ export default function OrdersPage() {
       width: 85,
       hiddenOnMobile: true,
       cellRenderer: (order) => (
-        <span className={`text-[12px] whitespace-nowrap ${order.tipoVenta === 1 ? 'text-emerald-600' : 'text-gray-500'}`}>
+        <span className={`text-[12px] whitespace-nowrap ${order.tipoVenta === 1 ? 'text-emerald-600' : 'text-muted-foreground'}`}>
           {order.tipoVenta === 1 ? t('filters.directSale') : t('filters.preventa')}
         </span>
       ),
@@ -551,14 +551,14 @@ export default function OrdersPage() {
                 </button>
               );
             })()}
-            <div className="flex items-center gap-0.5 border border-gray-200 rounded-md px-0.5 py-0.5">
+            <div className="flex items-center gap-0.5 border border-border-subtle rounded-md px-0.5 py-0.5">
               {canAdvanceOrders && canCancel && (
                 <button onClick={() => handleCancelOrderStatus(order.id)} className="p-1 hover:bg-red-50 rounded transition-colors" title={t('actions.cancelOrder')}>
-                  <X className="w-3.5 h-3.5 text-gray-400 hover:text-red-500" />
+                  <X className="w-3.5 h-3.5 text-muted-foreground hover:text-red-500" />
                 </button>
               )}
               <button onClick={() => handleDeleteOrder(order.id)} className="p-1 hover:bg-red-50 rounded transition-colors" title={tc('delete')}>
-                <Trash2 className="w-3.5 h-3.5 text-gray-400 hover:text-red-500" />
+                <Trash2 className="w-3.5 h-3.5 text-muted-foreground hover:text-red-500" />
               </button>
             </div>
           </div>
@@ -634,7 +634,7 @@ export default function OrdersPage() {
               data-tour="orders-estado-filter"
               value={estadoFilter}
               onChange={(e) => { setEstadoFilter(e.target.value); setCurrentPage(1); }}
-              className="px-3 py-2 h-10 text-[13px] text-gray-700 border border-gray-300 rounded-lg hover:bg-surface-1 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="px-3 py-2 h-10 text-[13px] text-gray-700 border border-border-default rounded-lg hover:bg-surface-1 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             >
               <option value="">{t('filters.allStatuses')}</option>
               <option value="Borrador">{t('status.draft')}</option>
@@ -664,7 +664,7 @@ export default function OrdersPage() {
               data-tour="orders-tipo-filter"
               value={tipoVentaFilter}
               onChange={(e) => { setTipoVentaFilter(e.target.value as '' | '0' | '1'); setCurrentPage(1); }}
-              className="px-3 py-2 h-10 text-[13px] text-gray-700 border border-gray-300 rounded-lg hover:bg-surface-1 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="px-3 py-2 h-10 text-[13px] text-gray-700 border border-border-default rounded-lg hover:bg-surface-1 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             >
               <option value="">{t('filters.allTypes')}</option>
               <option value="0">{t('filters.preventa')}</option>
@@ -715,7 +715,7 @@ export default function OrdersPage() {
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-medium text-gray-900 truncate">{order.code}</p>
-                          <p className="text-xs text-gray-500 truncate">{order.client.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{order.client.name}</p>
                         </div>
                         <span className="flex items-center gap-1.5">
                           <span className={`w-2 h-2 rounded-full ${statusDotColors[order.status]}`} />
@@ -723,11 +723,11 @@ export default function OrdersPage() {
                         </span>
                       </div>
                       <div className="flex justify-end mt-1">
-                        <span className={`text-[10px] font-medium ${order.tipoVenta === 1 ? 'text-emerald-600' : 'text-gray-400'}`}>
+                        <span className={`text-[10px] font-medium ${order.tipoVenta === 1 ? 'text-emerald-600' : 'text-muted-foreground'}`}>
                           {order.tipoVenta === 1 ? t('filters.directSale') : t('filters.preventa')}
                         </span>
                       </div>
-                      <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 mb-2.5">
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mb-2.5">
                         <span className="font-medium text-gray-900">${formatCurrency(order.total)}</span>
                         <span>•</span>
                         <span>{formatDate(order.orderDate, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
@@ -735,23 +735,23 @@ export default function OrdersPage() {
                         <span>{order.user.name}</span>
                       </div>
                       <div className="flex items-center justify-end gap-1 border-t border-gray-100 pt-2" onClick={(e) => e.stopPropagation()}>
-                        <button onClick={() => handleViewDetails(order.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded">
+                        <button onClick={() => handleViewDetails(order.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-blue-600 hover:bg-blue-50 rounded">
                           <Eye className="w-3.5 h-3.5 text-blue-400" /> {t('view')}
                         </button>
-                        <button onClick={() => handleEditOrder(order.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-green-600 hover:bg-green-50 rounded">
+                        <button onClick={() => handleEditOrder(order.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-green-600 hover:bg-green-50 rounded">
                           <Edit className="w-3.5 h-3.5 text-amber-400" /> {t('editOrder')}
                         </button>
-                        <button onClick={() => handleDeleteOrder(order.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-red-600 hover:bg-red-50 rounded">
+                        <button onClick={() => handleDeleteOrder(order.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-red-600 hover:bg-red-50 rounded">
                           <Trash2 className="w-3.5 h-3.5 text-red-400" /> {tc('delete')}
                         </button>
                         {order.status === 'delivered' && (() => {
                           const inv = invoicedOrders[parseInt(order.id)];
                           return inv ? (
-                            <button onClick={() => router.push(`/billing/invoices/${inv.facturaId}`)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded">
+                            <button onClick={() => router.push(`/billing/invoices/${inv.facturaId}`)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-blue-600 hover:bg-blue-50 rounded">
                               <FileText className="w-3.5 h-3.5 text-blue-500" /> {t('actions.viewInvoice')}
                             </button>
                           ) : (
-                            <button onClick={() => handleFacturar(order.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-emerald-600 hover:bg-emerald-50 rounded">
+                            <button onClick={() => handleFacturar(order.id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-foreground/70 hover:text-emerald-600 hover:bg-emerald-50 rounded">
                               <Receipt className="w-3.5 h-3.5 text-emerald-500" weight="bold" /> {t('actions.invoice')}
                             </button>
                           );

@@ -255,7 +255,7 @@ function PlanCard({
         className={`group relative rounded-2xl transition-all duration-300 ease-out hover:-translate-y-1 ${
           isPopular
             ? "border-2 border-green-500 dark:border-green-400 shadow-lg"
-            : "border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600"
+            : "border border-border-subtle dark:border-gray-700 shadow-sm hover:shadow-md hover:border-border-default dark:hover:border-gray-600"
         } ${isCurrent ? "ring-2 ring-green-500/30" : ""}`}
       >
         <div className="relative bg-card rounded-2xl p-6 h-full flex flex-col min-h-[420px]">
@@ -286,7 +286,7 @@ function PlanCard({
                 {price === 0 ? "Gratis" : `$${monthlyEquivalent.toLocaleString("es-MX")}`}
               </span>
               {price > 0 && (
-                <span className="text-sm text-gray-400 dark:text-gray-500 font-medium">MXN/mes</span>
+                <span className="text-sm text-muted-foreground dark:text-muted-foreground font-medium">MXN/mes</span>
               )}
             </div>
             {price > 0 && billingInterval === "year" && (
@@ -297,19 +297,19 @@ function PlanCard({
           </div>
 
           <ul className="space-y-2.5 flex-1">
-            <li className="flex items-center gap-2.5 text-sm text-gray-600 dark:text-gray-300">
+            <li className="flex items-center gap-2.5 text-sm text-foreground/70 dark:text-gray-300">
               <Check className="h-4 w-4 text-green-500 flex-shrink-0" strokeWidth={2.5} />
               {plan.maxUsuarios} usuarios
             </li>
-            <li className="flex items-center gap-2.5 text-sm text-gray-600 dark:text-gray-300">
+            <li className="flex items-center gap-2.5 text-sm text-foreground/70 dark:text-gray-300">
               <Check className="h-4 w-4 text-green-500 flex-shrink-0" strokeWidth={2.5} />
               {plan.maxProductos.toLocaleString()} productos
             </li>
-            <li className="flex items-center gap-2.5 text-sm text-gray-600 dark:text-gray-300">
+            <li className="flex items-center gap-2.5 text-sm text-foreground/70 dark:text-gray-300">
               <Check className="h-4 w-4 text-green-500 flex-shrink-0" strokeWidth={2.5} />
               {plan.maxClientesPorMes} clientes/mes
             </li>
-            <li className={`flex items-center gap-2.5 text-sm ${plan.incluyeReportes ? "text-gray-600 dark:text-gray-300" : "text-gray-400 dark:text-gray-600"}`}>
+            <li className={`flex items-center gap-2.5 text-sm ${plan.incluyeReportes ? "text-foreground/70 dark:text-gray-300" : "text-muted-foreground dark:text-foreground/70"}`}>
               {plan.incluyeReportes ? (
                 <Check className="h-4 w-4 text-green-500 flex-shrink-0" strokeWidth={2.5} />
               ) : (
@@ -317,7 +317,7 @@ function PlanCard({
               )}
               Reportes avanzados
             </li>
-            <li className={`flex items-center gap-2.5 text-sm ${plan.incluyeSoportePrioritario ? "text-gray-600 dark:text-gray-300" : "text-gray-400 dark:text-gray-600"}`}>
+            <li className={`flex items-center gap-2.5 text-sm ${plan.incluyeSoportePrioritario ? "text-foreground/70 dark:text-gray-300" : "text-muted-foreground dark:text-foreground/70"}`}>
               {plan.incluyeSoportePrioritario ? (
                 <Check className="h-4 w-4 text-green-500 flex-shrink-0" strokeWidth={2.5} />
               ) : (
@@ -330,15 +330,15 @@ function PlanCard({
           {isBlocked && !isCurrent && (
             <div className={`flex items-center gap-2 px-3 py-2 rounded-lg mt-auto ${
               downgrade.isFreeBlocked
-                ? "bg-gray-100 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700"
+                ? "bg-surface-3 dark:bg-gray-800/60 border border-border-subtle dark:border-gray-700"
                 : "bg-muted/40 dark:bg-muted/30 border border-amber-200/60 dark:border-amber-800/40"
             }`}>
               <AlertTriangle className={`h-3.5 w-3.5 flex-shrink-0 ${
-                downgrade.isFreeBlocked ? "text-gray-400" : "text-amber-500"
+                downgrade.isFreeBlocked ? "text-muted-foreground" : "text-amber-500"
               }`} />
               <span className={`text-[11px] font-medium leading-tight ${
                 downgrade.isFreeBlocked
-                  ? "text-gray-500 dark:text-gray-400"
+                  ? "text-muted-foreground dark:text-muted-foreground"
                   : "text-amber-700 dark:text-amber-400"
               }`}>
                 {downgrade.isFreeBlocked
@@ -351,14 +351,14 @@ function PlanCard({
           <button
             className={`group/btn flex items-center justify-center gap-2 w-full py-3 rounded-xl font-semibold text-sm transition-all duration-300 ${isBlocked || isCurrent ? "mt-3" : "mt-5"} ${
               isCurrent
-                ? "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-default"
+                ? "bg-surface-3 dark:bg-gray-800 text-muted-foreground dark:text-muted-foreground cursor-default"
                 : isDisabled
-                  ? "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed opacity-60"
+                  ? "bg-surface-3 dark:bg-gray-800 text-muted-foreground dark:text-muted-foreground cursor-not-allowed opacity-60"
                   : downgrade.isDowngrade
                     ? "bg-amber-500 text-white hover:bg-amber-600 shadow-md"
                     : isPopular
                       ? "bg-success text-success-foreground hover:bg-success/90 shadow-md"
-                      : "bg-gray-900 dark:bg-surface-2 text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100"
+                      : "bg-gray-900 dark:bg-surface-2 text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-surface-3"
             }`}
             disabled={isDisabled}
             onClick={onUpgrade}

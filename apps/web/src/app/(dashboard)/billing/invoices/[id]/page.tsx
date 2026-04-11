@@ -27,7 +27,7 @@ const ESTADO_STYLE: Record<FacturaEstado, { key: string; color: string; bg: stri
 
 function StatusBadge({ estado }: { estado: FacturaEstado }) {
   const t = useTranslations('billing.invoiceDetail');
-  const cfg = ESTADO_STYLE[estado] ?? { key: estado.toLowerCase(), color: 'text-gray-700', bg: 'bg-gray-100' };
+  const cfg = ESTADO_STYLE[estado] ?? { key: estado.toLowerCase(), color: 'text-gray-700', bg: 'bg-surface-3' };
   return (
     <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${cfg.color} ${cfg.bg}`}>
       {t(`status.${cfg.key}` as 'status.pending')}
@@ -49,7 +49,7 @@ function formatDate(dateStr: string | null) {
 function InfoRow({ label, value }: { label: string; value: string | number | null | undefined }) {
   return (
     <div className="flex justify-between text-sm">
-      <span className="text-gray-500">{label}</span>
+      <span className="text-muted-foreground">{label}</span>
       <span className="text-gray-900 text-right">{value ?? '-'}</span>
     </div>
   );
@@ -179,7 +179,7 @@ export default function InvoiceDetailPage() {
       <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center">
         <div className="flex items-center gap-3">
           <Loader2 className="w-6 h-6 animate-spin text-green-600" />
-          <span className="text-gray-600">Cargando factura...</span>
+          <span className="text-foreground/70">Cargando factura...</span>
         </div>
       </div>
     );
@@ -191,7 +191,7 @@ export default function InvoiceDetailPage() {
         <div className="text-center">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Factura no encontrada</h2>
-          <p className="text-gray-600 mb-4">La factura que buscas no existe o no tienes acceso.</p>
+          <p className="text-foreground/70 mb-4">La factura que buscas no existe o no tienes acceso.</p>
           <button onClick={() => router.push('/billing/invoices')} className="px-4 py-2 bg-success text-success-foreground rounded hover:bg-success/90">
             Volver a facturas
           </button>
@@ -205,7 +205,7 @@ export default function InvoiceDetailPage() {
   return (
     <div className="min-h-screen bg-[#F9FAFB]">
       {/* Header */}
-      <div className="bg-surface-2 px-4 sm:px-8 py-4 border-b border-gray-200">
+      <div className="bg-surface-2 px-4 sm:px-8 py-4 border-b border-border-subtle">
         <Breadcrumb items={[
           { label: 'Inicio', href: '/dashboard' },
           { label: 'Facturacion', href: '/billing' },
@@ -216,7 +216,7 @@ export default function InvoiceDetailPage() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => router.push('/billing/invoices')}
-              className="p-1.5 rounded-md hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
+              className="p-1.5 rounded-md hover:bg-surface-3 text-muted-foreground hover:text-gray-700 transition-colors"
               aria-label="Volver a facturas"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -241,7 +241,7 @@ export default function InvoiceDetailPage() {
             <button
               onClick={handleDownloadPdf}
               disabled={!!actionLoading}
-              className="flex items-center gap-2 border border-gray-300 text-gray-700 hover:bg-surface-1 text-[13px] font-medium px-4 py-2 rounded-lg disabled:opacity-50 transition-colors"
+              className="flex items-center gap-2 border border-border-default text-gray-700 hover:bg-surface-1 text-[13px] font-medium px-4 py-2 rounded-lg disabled:opacity-50 transition-colors"
             >
               {actionLoading === 'pdf' && <Loader2 className="w-4 h-4 animate-spin" />}
               Descargar PDF
@@ -249,7 +249,7 @@ export default function InvoiceDetailPage() {
             <button
               onClick={handleDownloadXml}
               disabled={!!actionLoading}
-              className="flex items-center gap-2 border border-gray-300 text-gray-700 hover:bg-surface-1 text-[13px] font-medium px-4 py-2 rounded-lg disabled:opacity-50 transition-colors"
+              className="flex items-center gap-2 border border-border-default text-gray-700 hover:bg-surface-1 text-[13px] font-medium px-4 py-2 rounded-lg disabled:opacity-50 transition-colors"
             >
               {actionLoading === 'xml' && <Loader2 className="w-4 h-4 animate-spin" />}
               Descargar XML
@@ -257,7 +257,7 @@ export default function InvoiceDetailPage() {
             <button
               onClick={() => setShowEmailModal(true)}
               disabled={!!actionLoading}
-              className="flex items-center gap-2 border border-gray-300 text-gray-700 hover:bg-surface-1 text-[13px] font-medium px-4 py-2 rounded-lg disabled:opacity-50 transition-colors"
+              className="flex items-center gap-2 border border-border-default text-gray-700 hover:bg-surface-1 text-[13px] font-medium px-4 py-2 rounded-lg disabled:opacity-50 transition-colors"
             >
               Enviar por email
             </button>
@@ -278,7 +278,7 @@ export default function InvoiceDetailPage() {
       <div className="p-4 sm:p-8 space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Emisor */}
-          <div className="bg-surface-2 rounded-lg p-6 border border-gray-200">
+          <div className="bg-surface-2 rounded-xl p-6 border border-border-subtle">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Emisor</h2>
             <div className="space-y-2">
               <InfoRow label="RFC" value={factura.emisorRfc} />
@@ -288,7 +288,7 @@ export default function InvoiceDetailPage() {
           </div>
 
           {/* Receptor */}
-          <div className="bg-surface-2 rounded-lg p-6 border border-gray-200">
+          <div className="bg-surface-2 rounded-xl p-6 border border-border-subtle">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Receptor</h2>
             <div className="space-y-2">
               <InfoRow label="RFC" value={factura.receptorRfc} />
@@ -299,12 +299,12 @@ export default function InvoiceDetailPage() {
         </div>
 
         {/* Line items */}
-        <div className="bg-surface-2 rounded-lg p-6 border border-gray-200">
+        <div className="bg-surface-2 rounded-xl p-6 border border-border-subtle">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Conceptos</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-200 text-left text-gray-500">
+                <tr className="border-b border-border-subtle text-left text-muted-foreground">
                   <th className="pb-3 font-medium">Clave SAT</th>
                   <th className="pb-3 font-medium">Descripcion</th>
                   <th className="pb-3 font-medium">Unidad</th>
@@ -317,18 +317,18 @@ export default function InvoiceDetailPage() {
               <tbody>
                 {factura.detalles?.map((item) => (
                   <tr key={item.id} className="border-b border-gray-100">
-                    <td className="py-3 text-gray-500 font-mono text-xs">{item.claveProdServ}</td>
+                    <td className="py-3 text-muted-foreground font-mono text-xs">{item.claveProdServ}</td>
                     <td className="py-3 text-gray-900">{item.descripcion}</td>
-                    <td className="py-3 text-gray-500">{item.claveUnidad || item.unidad || '-'}</td>
+                    <td className="py-3 text-muted-foreground">{item.claveUnidad || item.unidad || '-'}</td>
                     <td className="py-3 text-right text-gray-900">{item.cantidad}</td>
                     <td className="py-3 text-right text-gray-900">{formatCurrency(item.valorUnitario)}</td>
-                    <td className="py-3 text-right text-gray-500">{item.descuento > 0 ? formatCurrency(item.descuento) : '-'}</td>
+                    <td className="py-3 text-right text-muted-foreground">{item.descuento > 0 ? formatCurrency(item.descuento) : '-'}</td>
                     <td className="py-3 text-right font-medium text-gray-900">{formatCurrency(item.importe)}</td>
                   </tr>
                 ))}
                 {(!factura.detalles || factura.detalles.length === 0) && (
                   <tr>
-                    <td colSpan={7} className="py-6 text-center text-gray-400">Sin conceptos</td>
+                    <td colSpan={7} className="py-6 text-center text-muted-foreground">Sin conceptos</td>
                   </tr>
                 )}
               </tbody>
@@ -338,13 +338,13 @@ export default function InvoiceDetailPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Totals */}
-          <div className="bg-surface-2 rounded-lg p-6 border border-gray-200">
+          <div className="bg-surface-2 rounded-xl p-6 border border-border-subtle">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Totales</h2>
             <div className="space-y-2">
               <InfoRow label="Subtotal" value={formatCurrency(factura.subtotal)} />
               {factura.descuento > 0 && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Descuento</span>
+                  <span className="text-muted-foreground">Descuento</span>
                   <span className="text-red-600">-{formatCurrency(factura.descuento)}</span>
                 </div>
               )}
@@ -352,7 +352,7 @@ export default function InvoiceDetailPage() {
               {factura.totalImpuestosRetenidos > 0 && (
                 <InfoRow label="Impuestos retenidos" value={formatCurrency(factura.totalImpuestosRetenidos)} />
               )}
-              <div className="border-t border-gray-200 pt-2 flex justify-between">
+              <div className="border-t border-border-subtle pt-2 flex justify-between">
                 <span className="text-base font-semibold text-gray-900">{tc('total')}</span>
                 <span className="text-base font-bold text-gray-900">{formatCurrency(factura.total)}</span>
               </div>
@@ -361,7 +361,7 @@ export default function InvoiceDetailPage() {
           </div>
 
           {/* CFDI info */}
-          <div className="bg-surface-2 rounded-lg p-6 border border-gray-200">
+          <div className="bg-surface-2 rounded-xl p-6 border border-border-subtle">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Datos CFDI</h2>
             <div className="space-y-2">
               {factura.uuid && <InfoRow label="UUID" value={factura.uuid} />}
@@ -381,7 +381,7 @@ export default function InvoiceDetailPage() {
       {/* Email Modal */}
       {showEmailModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-surface-2 rounded-lg p-6 w-full max-w-md shadow-xl">
+          <div className="bg-surface-2 rounded-xl p-6 w-full max-w-md shadow-xl">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Enviar factura por email</h3>
             <label className="block text-sm font-medium text-gray-700 mb-1">Correo electronico</label>
             <input
@@ -389,12 +389,12 @@ export default function InvoiceDetailPage() {
               value={emailTo}
               onChange={(e) => setEmailTo(e.target.value)}
               placeholder="correo@ejemplo.com"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
+              className="w-full px-3 py-2 border border-border-default rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
             />
             <div className="flex justify-end gap-2 mt-4">
               <button
                 onClick={() => { setShowEmailModal(false); setEmailTo(''); }}
-                className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-surface-1"
+                className="px-4 py-2 text-sm text-gray-700 border border-border-default rounded-lg hover:bg-surface-1"
               >
                 Cancelar
               </button>

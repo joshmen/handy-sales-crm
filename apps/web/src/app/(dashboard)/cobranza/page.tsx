@@ -82,7 +82,7 @@ const metodoPagoColors: Record<number, string> = {
   2: 'bg-amber-100 text-amber-700',
   3: 'bg-purple-100 text-purple-700',
   4: 'bg-indigo-100 text-indigo-700',
-  5: 'bg-gray-100 text-gray-700',
+  5: 'bg-surface-3 text-gray-700',
 };
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
@@ -426,45 +426,45 @@ export default function CobranzaPage() {
           <div data-tour="cobranza-kpis" className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
             {resumen ? (
               <>
-                <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-surface-2">
+                <div className="flex items-center gap-3 p-3 rounded-lg border border-border-subtle bg-surface-2">
                   <div className="p-2 rounded-lg bg-blue-50">
                     <DollarSign className="w-4 h-4 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-[11px] text-gray-500 flex items-center gap-1">{t('kpis.totalSold')} <HelpTooltip tooltipKey="cobranza-total-vendido" /></p>
+                    <p className="text-[11px] text-muted-foreground flex items-center gap-1">{t('kpis.totalSold')} <HelpTooltip tooltipKey="cobranza-total-vendido" /></p>
                     <p className="text-sm font-bold text-gray-900">
                       {formatCurrency(resumen.totalFacturado)}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-surface-2">
+                <div className="flex items-center gap-3 p-3 rounded-lg border border-border-subtle bg-surface-2">
                   <div className="p-2 rounded-lg bg-green-50">
                     <CreditCard className="w-4 h-4 text-green-600" />
                   </div>
                   <div>
-                    <p className="text-[11px] text-gray-500 flex items-center gap-1">{t('kpis.collected')} <HelpTooltip tooltipKey="cobranza-cobrado" /></p>
+                    <p className="text-[11px] text-muted-foreground flex items-center gap-1">{t('kpis.collected')} <HelpTooltip tooltipKey="cobranza-cobrado" /></p>
                     <p className="text-sm font-bold text-gray-900">
                       {formatCurrency(resumen.totalCobrado)}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-surface-2">
+                <div className="flex items-center gap-3 p-3 rounded-lg border border-border-subtle bg-surface-2">
                   <div className="p-2 rounded-lg bg-amber-50">
                     <AlertCircle className="w-4 h-4 text-amber-600" />
                   </div>
                   <div>
-                    <p className="text-[11px] text-gray-500 flex items-center gap-1">{t('kpis.outstanding')} <HelpTooltip tooltipKey="cobranza-por-cobrar" /></p>
+                    <p className="text-[11px] text-muted-foreground flex items-center gap-1">{t('kpis.outstanding')} <HelpTooltip tooltipKey="cobranza-por-cobrar" /></p>
                     <p className="text-sm font-bold text-amber-600">
                       {formatCurrency(resumen.totalPendiente)}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-surface-2">
+                <div className="flex items-center gap-3 p-3 rounded-lg border border-border-subtle bg-surface-2">
                   <div className="p-2 rounded-lg bg-red-50">
                     <Users className="w-4 h-4 text-red-600" />
                   </div>
                   <div>
-                    <p className="text-[11px] text-gray-500 flex items-center gap-1">{t('kpis.clientsOwing')} <HelpTooltip tooltipKey="cobranza-clientes-deben" /></p>
+                    <p className="text-[11px] text-muted-foreground flex items-center gap-1">{t('kpis.clientsOwing')} <HelpTooltip tooltipKey="cobranza-clientes-deben" /></p>
                     <p className="text-sm font-bold text-gray-900">
                       {resumen.clientesConSaldo}
                     </p>
@@ -474,13 +474,13 @@ export default function CobranzaPage() {
             ) : (
               <>
                 {[0, 1, 2, 3].map((i) => (
-                  <div key={i} className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-surface-2 animate-pulse">
-                    <div className="p-2 rounded-lg bg-gray-100">
+                  <div key={i} className="flex items-center gap-3 p-3 rounded-lg border border-border-subtle bg-surface-2 animate-pulse">
+                    <div className="p-2 rounded-lg bg-surface-3">
                       <div className="w-4 h-4" />
                     </div>
                     <div className="flex-1">
-                      <div className="h-3 w-20 bg-gray-100 rounded mb-1.5" />
-                      <div className="h-4 w-24 bg-gray-200 rounded" />
+                      <div className="h-3 w-20 bg-surface-3 rounded mb-1.5" />
+                      <div className="h-4 w-24 bg-surface-3 rounded" />
                     </div>
                   </div>
                 ))}
@@ -511,7 +511,7 @@ export default function CobranzaPage() {
                 placeholder={tc('from')}
               />
             </div>
-            <span className="text-xs text-gray-400">—</span>
+            <span className="text-xs text-muted-foreground">—</span>
             <div>
               <DateTimePicker
                 compact
@@ -540,7 +540,7 @@ export default function CobranzaPage() {
                   className={`px-2.5 py-1 text-[11px] font-medium rounded-full transition-colors ${
                     activePreset === p.label
                       ? 'bg-green-100 text-green-700 ring-1 ring-green-300'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      : 'bg-surface-3 text-foreground/70 hover:bg-surface-3'
                   }`}
                 >
                   {tc(p.label)}
@@ -555,7 +555,7 @@ export default function CobranzaPage() {
                 className={`px-4 py-2.5 text-[13px] font-medium border-b-2 transition-colors ${
                   tab === 'cobros'
                     ? 'text-green-600 border-green-600'
-                    : 'text-gray-500 border-transparent hover:text-gray-700'
+                    : 'text-muted-foreground border-transparent hover:text-gray-700'
                 }`}
               >
                 {t('tabs.payments')}
@@ -565,7 +565,7 @@ export default function CobranzaPage() {
                 className={`px-4 py-2.5 text-[13px] font-medium border-b-2 transition-colors ${
                   tab === 'saldos'
                     ? 'text-green-600 border-green-600'
-                    : 'text-gray-500 border-transparent hover:text-gray-700'
+                    : 'text-muted-foreground border-transparent hover:text-gray-700'
                 }`}
               >
                 {t('tabs.balances')}
@@ -586,11 +586,11 @@ export default function CobranzaPage() {
                   {!cobrosLoading && filteredCobros.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-12">
                       <CreditCard className="w-8 h-8 text-muted-foreground mb-3" />
-                      <p className="text-sm text-gray-500">{searchCobros ? tc('noResults') : t('noPayments')}</p>
+                      <p className="text-sm text-muted-foreground">{searchCobros ? tc('noResults') : t('noPayments')}</p>
                     </div>
                   ) : (
                     filteredCobros.map((c) => (
-                      <div key={c.id} className="border border-gray-200 rounded-lg p-3 bg-surface-2" onClick={() => openDetail(c.clienteId)}>
+                      <div key={c.id} className="border border-border-subtle rounded-lg p-3 bg-surface-2" onClick={() => openDetail(c.clienteId)}>
                         {/* Row 1: Icon + Name/Subtitle + Amount */}
                         <div className="flex items-center gap-3 mb-2">
                           <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
@@ -600,7 +600,7 @@ export default function CobranzaPage() {
                             <div className="text-sm font-medium text-gray-900 truncate">
                               {c.clienteNombre}
                             </div>
-                            <div className="text-xs text-gray-500 truncate">
+                            <div className="text-xs text-muted-foreground truncate">
                               {fmtDate(c.fechaCobro)}
                             </div>
                           </div>
@@ -612,14 +612,14 @@ export default function CobranzaPage() {
                         </div>
                         {/* Row 2: Badges */}
                         <div className="flex flex-wrap items-center gap-2 mb-2">
-                          <span className="bg-gray-100 text-gray-600 px-2 py-0.5 text-[10px] rounded font-mono">
+                          <span className="bg-surface-3 text-foreground/70 px-2 py-0.5 text-[10px] rounded font-mono">
                             {c.numeroPedido}
                           </span>
                           <span className={`px-2 py-0.5 text-[10px] rounded-full font-medium ${metodoPagoColors[c.metodoPago] || metodoPagoColors[5]}`}>
                             {c.metodoPagoNombre}
                           </span>
                           {c.referencia && (
-                            <span className="text-xs text-gray-500 truncate">
+                            <span className="text-xs text-muted-foreground truncate">
                               Ref: {c.referencia}
                             </span>
                           )}
@@ -628,7 +628,7 @@ export default function CobranzaPage() {
                         <div className="flex justify-end gap-2">
                           <button
                             onClick={(e) => { e.stopPropagation(); openDetail(c.clienteId); }}
-                            className="px-3 py-1.5 text-xs font-medium text-gray-700 border border-gray-300 rounded hover:bg-surface-1 transition-colors"
+                            className="px-3 py-1.5 text-xs font-medium text-gray-700 border border-border-default rounded hover:bg-surface-1 transition-colors"
                             title={t('viewAccountStatement')}
                           >
                             {tc('details')}
@@ -647,9 +647,9 @@ export default function CobranzaPage() {
                 </div>
 
                 {/* Table - Cobros */}
-                <div data-tour="cobranza-cobros-table" className="hidden sm:block bg-surface-2 border border-gray-200 rounded-lg overflow-x-auto">
+                <div data-tour="cobranza-cobros-table" className="hidden sm:block bg-surface-2 border border-border-subtle rounded-lg overflow-x-auto">
                 {/* Table Header */}
-                <div className="flex items-center bg-surface-1 px-4 h-10 border-b border-gray-200 min-w-[800px]">
+                <div className="flex items-center bg-surface-1 px-4 h-10 border-b border-border-subtle min-w-[800px]">
                   <div
                     className="w-[100px] text-xs font-semibold text-gray-700 cursor-pointer hover:text-gray-900 select-none"
                     onClick={() => handleSort('fechaCobro')}
@@ -681,7 +681,7 @@ export default function CobranzaPage() {
                       <h3 className="text-lg font-semibold text-gray-700 mb-2">
                         {searchCobros ? t('noResults') : t('emptyPayments')}
                       </h3>
-                      <p className="text-sm text-gray-500 text-center">
+                      <p className="text-sm text-muted-foreground text-center">
                         {searchCobros
                           ? t('emptyPaymentsSearch', { search: searchCobros })
                           : t('emptyPaymentsHint')}
@@ -696,7 +696,7 @@ export default function CobranzaPage() {
                           className="flex items-center px-4 py-3 border-b border-gray-100 hover:bg-surface-1 transition-colors cursor-pointer min-w-[800px]"
                           onClick={() => openDetail(c.clienteId)}
                         >
-                          <div className="w-[100px] text-[13px] text-gray-600">
+                          <div className="w-[100px] text-[13px] text-foreground/70">
                             {fmtDate(c.fechaCobro)}
                           </div>
                           <div className="flex-1">
@@ -705,7 +705,7 @@ export default function CobranzaPage() {
                             </div>
                           </div>
                           <div className="w-[100px]">
-                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded font-mono">
+                            <span className="text-xs bg-surface-3 text-foreground/70 px-2 py-0.5 rounded font-mono">
                               {c.numeroPedido}
                             </span>
                           </div>
@@ -717,10 +717,10 @@ export default function CobranzaPage() {
                               {c.metodoPagoNombre}
                             </span>
                           </div>
-                          <div className="w-[100px] text-[13px] text-gray-600 truncate">
+                          <div className="w-[100px] text-[13px] text-foreground/70 truncate">
                             {c.usuarioNombre}
                           </div>
-                          <div className="w-[100px] text-[13px] text-gray-500 truncate">
+                          <div className="w-[100px] text-[13px] text-muted-foreground truncate">
                             {c.referencia || '—'}
                           </div>
                           <div className="w-[80px] flex items-center justify-center gap-1">
@@ -744,11 +744,11 @@ export default function CobranzaPage() {
 
                       {/* Footer total */}
                       {cobros.length > 0 && (
-                        <div className="flex items-center px-4 py-3 bg-surface-1 border-t border-gray-300 min-w-[800px]">
+                        <div className="flex items-center px-4 py-3 bg-surface-1 border-t border-border-default min-w-[800px]">
                           <div className="w-[100px] text-xs font-semibold text-gray-700">
                             {tc('total')}
                           </div>
-                          <div className="flex-1 text-xs text-gray-500">
+                          <div className="flex-1 text-xs text-muted-foreground">
                             {t('paymentCount', { count: cobros.length })}
                           </div>
                           <div className="w-[100px]" />
@@ -781,13 +781,13 @@ export default function CobranzaPage() {
                   {!saldosLoading && saldos.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-12">
                       <DollarSign className="w-12 h-12 text-emerald-300 mb-3" />
-                      <p className="text-sm text-gray-500">{t('emptyBalances')}</p>
+                      <p className="text-sm text-muted-foreground">{t('emptyBalances')}</p>
                     </div>
                   ) : (
                     saldos.map((s) => {
                       const pct = s.totalFacturado > 0 ? Math.round((s.totalCobrado / s.totalFacturado) * 100) : 0;
                       return (
-                        <div key={s.clienteId} className="border border-gray-200 rounded-lg p-3 bg-surface-2" onClick={() => openDetail(s.clienteId)}>
+                        <div key={s.clienteId} className="border border-border-subtle rounded-lg p-3 bg-surface-2" onClick={() => openDetail(s.clienteId)}>
                           {/* Row 1: Icon + Name/Subtitle + Amount */}
                           <div className="flex items-center gap-3 mb-2">
                             <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
@@ -797,7 +797,7 @@ export default function CobranzaPage() {
                               <div className="text-sm font-medium text-gray-900 truncate">
                                 {s.clienteNombre}
                               </div>
-                              <div className="text-xs text-gray-500 truncate">
+                              <div className="text-xs text-muted-foreground truncate">
                                 {t('pendingOrders', { count: s.pedidosPendientes })}
                               </div>
                             </div>
@@ -809,7 +809,7 @@ export default function CobranzaPage() {
                           </div>
                           {/* Row 2: Badges */}
                           <div className="flex flex-wrap items-center gap-2 mb-2">
-                            <span className="text-xs text-gray-600">
+                            <span className="text-xs text-foreground/70">
                               {t('statement.invoiced')}: {formatCurrency(s.totalFacturado)}
                             </span>
                             <span className="text-xs text-green-600">
@@ -818,13 +818,13 @@ export default function CobranzaPage() {
                           </div>
                           {/* Progress bar */}
                           <div className="mb-2">
-                            <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                            <div className="h-2 bg-surface-3 rounded-full overflow-hidden">
                               <div
                                 className="h-full bg-green-500 rounded-full transition-all"
                                 style={{ width: `${Math.min(100, pct)}%` }}
                               />
                             </div>
-                            <p className="text-[10px] text-gray-400 text-center mt-0.5">{pct}%</p>
+                            <p className="text-[10px] text-muted-foreground text-center mt-0.5">{pct}%</p>
                           </div>
                           {/* Row 3: Actions */}
                           <div className="flex justify-end gap-2">
@@ -836,7 +836,7 @@ export default function CobranzaPage() {
                             </button>
                             <button
                               onClick={(e) => { e.stopPropagation(); openDetail(s.clienteId); }}
-                              className="px-3 py-1.5 text-xs font-medium text-gray-700 border border-gray-300 rounded hover:bg-surface-1 transition-colors"
+                              className="px-3 py-1.5 text-xs font-medium text-gray-700 border border-border-default rounded hover:bg-surface-1 transition-colors"
                               title={t('viewAccountStatement')}
                             >
                               Ver detalles
@@ -849,9 +849,9 @@ export default function CobranzaPage() {
                 </div>
 
                 {/* Table - Saldos */}
-                <div data-tour="cobranza-saldos-table" className="hidden sm:block bg-surface-2 border border-gray-200 rounded-lg overflow-x-auto">
+                <div data-tour="cobranza-saldos-table" className="hidden sm:block bg-surface-2 border border-border-subtle rounded-lg overflow-x-auto">
                 {/* Table Header */}
-                <div className="flex items-center bg-surface-1 px-4 h-10 border-b border-gray-200 min-w-[740px]">
+                <div className="flex items-center bg-surface-1 px-4 h-10 border-b border-border-subtle min-w-[740px]">
                   <div className="flex-1 text-xs font-semibold text-gray-700">{t('columns.client')}</div>
                   <div className="w-[100px] text-xs font-semibold text-gray-700 text-center">{t('columns.orders')}</div>
                   <div className="w-[130px] text-xs font-semibold text-gray-700 text-right">{t('columns.sold')}</div>
@@ -869,7 +869,7 @@ export default function CobranzaPage() {
                     <div className="flex flex-col items-center justify-center py-20">
                       <DollarSign className="w-16 h-16 text-emerald-300 mb-4" />
                       <h3 className="text-lg font-semibold text-gray-700 mb-2">{t('emptyBalances')}</h3>
-                      <p className="text-sm text-gray-500">{t('emptyBalancesHint')}</p>
+                      <p className="text-sm text-muted-foreground">{t('emptyBalancesHint')}</p>
                     </div>
                   ) : (
                     <div className={`transition-opacity duration-200 ${saldosLoading ? 'opacity-50' : 'opacity-100'}`}>
@@ -886,7 +886,7 @@ export default function CobranzaPage() {
                                 {s.clienteNombre}
                               </div>
                             </div>
-                            <div className="w-[100px] text-[13px] text-gray-600 text-center">
+                            <div className="w-[100px] text-[13px] text-foreground/70 text-center">
                               {s.pedidosPendientes}
                             </div>
                             <div className="w-[130px] text-[13px] text-gray-900 text-right">
@@ -899,13 +899,13 @@ export default function CobranzaPage() {
                               {formatCurrency(s.saldoPendiente)}
                             </div>
                             <div className="w-[100px] px-3">
-                              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                              <div className="h-2 bg-surface-3 rounded-full overflow-hidden">
                                 <div
                                   className="h-full bg-green-500 rounded-full transition-all"
                                   style={{ width: `${Math.min(100, pct)}%` }}
                                 />
                               </div>
-                              <p className="text-[10px] text-gray-400 text-center mt-0.5">{pct}%</p>
+                              <p className="text-[10px] text-muted-foreground text-center mt-0.5">{pct}%</p>
                             </div>
                             <div className="w-[100px] flex items-center justify-center gap-1">
                               <button
@@ -929,7 +929,7 @@ export default function CobranzaPage() {
 
                       {/* Footer total */}
                       {saldos.length > 0 && (
-                        <div className="flex items-center px-4 py-3 bg-surface-1 border-t border-gray-300 min-w-[740px]">
+                        <div className="flex items-center px-4 py-3 bg-surface-1 border-t border-border-default min-w-[740px]">
                           <div className="flex-1 text-xs font-semibold text-gray-700">
                             {tc('total')} ({t('clientCount', { count: saldos.length })})
                           </div>
@@ -1079,12 +1079,12 @@ export default function CobranzaPage() {
 
               {/* ── Pedidos list ── */}
               <div className="px-6 pt-4 pb-6">
-                <h3 className="text-xs font-semibold text-gray-400 mb-3">{t('columns.orders')}</h3>
+                <h3 className="text-xs font-semibold text-muted-foreground mb-3">{t('columns.orders')}</h3>
                 {estadoCuenta.pedidos.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12">
                     <Receipt className="w-10 h-10 text-gray-300 mb-3" />
-                    <p className="text-sm text-gray-500 font-medium">{t('statement.noOrdersInPeriod')}</p>
-                    <p className="text-xs text-gray-400 mt-1">
+                    <p className="text-sm text-muted-foreground font-medium">{t('statement.noOrdersInPeriod')}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
                       {estadoCuentaHistorico
                         ? t('statement.noOrdersEver')
                         : t('statement.tryFullHistory')}
@@ -1101,7 +1101,7 @@ export default function CobranzaPage() {
                         className={`rounded-xl border transition-all duration-200 ${
                           isPaid
                             ? 'border-green-200 bg-green-50/40'
-                            : 'border-gray-200 bg-surface-2 hover:border-gray-300 hover:shadow-sm'
+                            : 'border-border-subtle bg-surface-2 hover:border-border-default hover:shadow-sm'
                         }`}
                       >
                         {/* Card header */}
@@ -1125,7 +1125,7 @@ export default function CobranzaPage() {
                                     {isPaid ? t('statement.paid') : t('statement.pending')}
                                   </span>
                                 </div>
-                                <p className="text-xs text-gray-400 mt-0.5">{fmtDate(p.fechaPedido)}</p>
+                                <p className="text-xs text-muted-foreground mt-0.5">{fmtDate(p.fechaPedido)}</p>
                               </div>
                             </div>
                             <div className="text-right flex-shrink-0">
@@ -1141,13 +1141,13 @@ export default function CobranzaPage() {
                           {/* Mini progress bar */}
                           {!isPaid && (
                             <div className="mt-3 flex items-center gap-2">
-                              <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                              <div className="flex-1 h-1.5 bg-surface-3 rounded-full overflow-hidden">
                                 <div
                                   className="h-full bg-green-500 rounded-full transition-all duration-500"
                                   style={{ width: `${paidPct}%` }}
                                 />
                               </div>
-                              <span className="text-[10px] font-medium text-gray-400 tabular-nums w-8 text-right">{paidPct}%</span>
+                              <span className="text-[10px] font-medium text-muted-foreground tabular-nums w-8 text-right">{paidPct}%</span>
                             </div>
                           )}
                         </div>
@@ -1159,7 +1159,7 @@ export default function CobranzaPage() {
                               {p.cobros.map((c) => (
                                 <div key={c.id} className="flex items-center gap-2 text-xs group">
                                   <div className="w-1.5 h-1.5 rounded-full bg-green-400 flex-shrink-0" />
-                                  <span className="text-gray-500 flex-1 min-w-0 truncate">
+                                  <span className="text-muted-foreground flex-1 min-w-0 truncate">
                                     {fmtDate(c.fechaCobro)}
                                     <span className="mx-1.5 text-gray-300">&middot;</span>
                                     {c.metodoPagoNombre}
@@ -1177,7 +1177,7 @@ export default function CobranzaPage() {
                         {/* No cobros */}
                         {p.cobros.length === 0 && !isPaid && (
                           <div className="border-t border-gray-100 px-4 py-2.5 bg-surface-1/30 rounded-b-xl">
-                            <p className="text-xs text-gray-400 italic">{t('statement.noPaymentsRecorded')}</p>
+                            <p className="text-xs text-muted-foreground italic">{t('statement.noPaymentsRecorded')}</p>
                           </div>
                         )}
 
@@ -1196,9 +1196,9 @@ export default function CobranzaPage() {
                                 {/* Row 1: Monto + Método */}
                                 <div className="grid grid-cols-2 gap-2">
                                   <div>
-                                    <label className="block text-[10px] font-medium text-gray-500 mb-0.5">{t('drawer.amountLabel')} *</label>
+                                    <label className="block text-[10px] font-medium text-muted-foreground mb-0.5">{t('drawer.amountLabel')} *</label>
                                     <div className="relative">
-                                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-gray-400">$</span>
+                                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
                                       <input
                                         type="number"
                                         step="0.01"
@@ -1206,16 +1206,16 @@ export default function CobranzaPage() {
                                         max={p.saldo}
                                         value={inlineCobroData.monto || ''}
                                         onChange={(e) => setInlineCobroData(prev => ({ ...prev, monto: parseFloat(e.target.value) || 0 }))}
-                                        className="w-full pl-6 pr-2 py-1.5 text-xs border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-surface-2 tabular-nums"
+                                        className="w-full pl-6 pr-2 py-1.5 text-xs border border-border-subtle rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-surface-2 tabular-nums"
                                       />
                                     </div>
                                   </div>
                                   <div>
-                                    <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Método *</label>
+                                    <label className="block text-[10px] font-medium text-muted-foreground mb-0.5">Método *</label>
                                     <select
                                       value={inlineCobroData.metodoPago}
                                       onChange={(e) => setInlineCobroData(prev => ({ ...prev, metodoPago: Number(e.target.value) }))}
-                                      className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-surface-2"
+                                      className="w-full px-2 py-1.5 text-xs border border-border-subtle rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-surface-2"
                                     >
                                       {METODO_PAGO_OPTIONS.map((opt) => (
                                         <option key={opt.value} value={opt.value}>{t(`paymentMethods.${opt.labelKey}`)}</option>
@@ -1225,13 +1225,13 @@ export default function CobranzaPage() {
                                 </div>
                                 {/* Row 2: Referencia */}
                                 <div>
-                                  <label className="block text-[10px] font-medium text-gray-500 mb-0.5">{t('drawer.reference')} <span className="text-gray-300">({tc('optional')})</span></label>
+                                  <label className="block text-[10px] font-medium text-muted-foreground mb-0.5">{t('drawer.reference')} <span className="text-gray-300">({tc('optional')})</span></label>
                                   <input
                                     type="text"
                                     value={inlineCobroData.referencia}
                                     onChange={(e) => setInlineCobroData(prev => ({ ...prev, referencia: e.target.value }))}
                                     placeholder={t('drawer.referencePlaceholder')}
-                                    className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-surface-2"
+                                    className="w-full px-2 py-1.5 text-xs border border-border-subtle rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-surface-2"
                                   />
                                 </div>
                                 {/* Row 3: Actions */}
@@ -1251,7 +1251,7 @@ export default function CobranzaPage() {
                                   <button
                                     onClick={() => setInlineCobroPedidoId(null)}
                                     disabled={inlineCobroSaving}
-                                    className="px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors disabled:opacity-50"
+                                    className="px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-gray-700 transition-colors disabled:opacity-50"
                                   >
                                     {tc('cancel')}
                                   </button>
@@ -1311,7 +1311,7 @@ export default function CobranzaPage() {
       >
         <div className="p-6 space-y-4">
           <div data-tour="cobro-client-selector">
-            <label className="block text-xs font-medium text-gray-600 mb-1">{t('drawer.clientLabel')} *</label>
+            <label className="block text-xs font-medium text-foreground/70 mb-1">{t('drawer.clientLabel')} *</label>
             <SearchableSelect
               options={clientOptions}
               value={watch('clienteId') || null}
@@ -1326,9 +1326,9 @@ export default function CobranzaPage() {
             {errors.clienteId && <p className="text-xs text-red-500 mt-1">{t('drawer.selectClient')}</p>}
           </div>
           <div data-tour="cobro-pedido-selector">
-            <label className="block text-xs font-medium text-gray-600 mb-1">{t('drawer.orderLabel')} *</label>
+            <label className="block text-xs font-medium text-foreground/70 mb-1">{t('drawer.orderLabel')} *</label>
             {formPedidosLoading ? (
-              <div className="flex items-center gap-2 py-2 text-sm text-gray-400">
+              <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
                 <Loader2 className="w-4 h-4 animate-spin" />
                 Cargando pedidos...
               </div>
@@ -1365,27 +1365,27 @@ export default function CobranzaPage() {
                 </div>
               )
             ) : (
-              <p className="text-sm text-gray-400 py-2">{t('drawer.selectClientFirst')}</p>
+              <p className="text-sm text-muted-foreground py-2">{t('drawer.selectClientFirst')}</p>
             )}
             {errors.pedidoId && <p className="text-xs text-red-500 mt-1">{t('drawer.selectOrder')}</p>}
           </div>
           <div data-tour="cobro-amount-method" className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">{t('drawer.amountLabel')} *</label>
+              <label className="block text-xs font-medium text-foreground/70 mb-1">{t('drawer.amountLabel')} *</label>
               <input
                 type="number"
                 step="0.01"
                 {...register('monto', { valueAsNumber: true })}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
+                className="w-full px-3 py-2 text-sm border border-border-default rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
                 placeholder="0.00"
               />
               {errors.monto && <p className="text-xs text-red-500 mt-1">{t('validation.amountGreaterThanZero')}</p>}
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">{t('drawer.paymentMethod')}</label>
+              <label className="block text-xs font-medium text-foreground/70 mb-1">{t('drawer.paymentMethod')}</label>
               <select
                 {...register('metodoPago', { valueAsNumber: true })}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
+                className="w-full px-3 py-2 text-sm border border-border-default rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
               >
                 {METODO_PAGO_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>{t(`paymentMethods.${o.labelKey}`)}</option>
@@ -1394,7 +1394,7 @@ export default function CobranzaPage() {
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">{t('drawer.paymentDate')} *</label>
+            <label className="block text-xs font-medium text-foreground/70 mb-1">{t('drawer.paymentDate')} *</label>
             <DateTimePicker
               mode="date"
               value={watch('fechaCobro')}
@@ -1403,19 +1403,19 @@ export default function CobranzaPage() {
             {errors.fechaCobro && <p className="text-xs text-red-500 mt-1">{t('drawer.selectDate')}</p>}
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">{t('drawer.reference')}</label>
+            <label className="block text-xs font-medium text-foreground/70 mb-1">{t('drawer.reference')}</label>
             <input
               type="text"
               {...register('referencia')}
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
+              className="w-full px-3 py-2 text-sm border border-border-default rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
               placeholder={t('drawer.referencePlaceholder')}
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">{t('drawer.notes')}</label>
+            <label className="block text-xs font-medium text-foreground/70 mb-1">{t('drawer.notes')}</label>
             <textarea
               {...register('notas')}
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
+              className="w-full px-3 py-2 text-sm border border-border-default rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
               rows={2}
               placeholder={t('drawer.notesPlaceholder')}
             />
@@ -1431,10 +1431,10 @@ export default function CobranzaPage() {
         size="sm"
       >
         <div className="py-2 space-y-2">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-foreground/70">
             {t('voidConfirm')}
           </p>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted-foreground">
             {t('voidConsequence')}
           </p>
         </div>
@@ -1442,7 +1442,7 @@ export default function CobranzaPage() {
           <button
             onClick={() => setDeleteId(null)}
             disabled={deleting}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-surface-2 border border-gray-300 rounded-lg hover:bg-surface-1 disabled:opacity-50"
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-surface-2 border border-border-default rounded-lg hover:bg-surface-1 disabled:opacity-50"
           >
             {tc('cancel')}
           </button>

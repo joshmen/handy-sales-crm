@@ -159,7 +159,7 @@ export default function CloseRoutePage() {
       <div className="flex items-center justify-center h-full">
         <div className="flex flex-col items-center gap-2">
           <Loader2 className="h-8 w-8 animate-spin text-green-600" />
-          <span className="text-sm text-gray-500">Cargando cierre...</span>
+          <span className="text-sm text-muted-foreground">Cargando cierre...</span>
         </div>
       </div>
     );
@@ -168,19 +168,19 @@ export default function CloseRoutePage() {
   if (!ruta || !resumen) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-gray-500">Ruta no encontrada</p>
+        <p className="text-muted-foreground">Ruta no encontrada</p>
       </div>
     );
   }
 
   const estadoBadge = ESTADO_RUTA_KEYS[ruta.estado] ? ts(ESTADO_RUTA_KEYS[ruta.estado]) : ts('unknown');
-  const estadoColor = ESTADO_RUTA_COLORS[ruta.estado] || 'bg-gray-100 text-gray-800';
+  const estadoColor = ESTADO_RUTA_COLORS[ruta.estado] || 'bg-surface-3 text-gray-800';
   const diferencia = montoRecibido ? parseFloat(montoRecibido) - resumen.aRecibir : null;
 
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="bg-surface-2 px-8 py-6 border-b border-gray-200">
+      <div className="bg-surface-2 px-8 py-6 border-b border-border-subtle">
         <Breadcrumb items={[
           { label: 'Rutas', href: '/routes' },
           { label: ruta.nombre, href: `/routes/${ruta.id}` },
@@ -210,7 +210,7 @@ export default function CloseRoutePage() {
             )}
             <button
               onClick={() => router.push('/routes')}
-              className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium text-gray-600 border border-gray-200 rounded hover:bg-surface-1"
+              className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium text-foreground/70 border border-border-subtle rounded hover:bg-surface-1"
             >
               <X className="w-4 h-4" />
               Cancelar
@@ -231,18 +231,18 @@ export default function CloseRoutePage() {
                   <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
                     isCompleted ? 'bg-success text-success-foreground' :
                     isCurrent ? 'bg-green-100 border-2 border-green-600 text-green-700' :
-                    'bg-gray-100 text-gray-400'
+                    'bg-surface-3 text-muted-foreground'
                   }`}>
                     {isCompleted ? '✓' : idx + 1}
                   </div>
                   <span className={`text-[11px] font-medium ${
-                    isCurrent ? 'text-green-700' : isCompleted ? 'text-gray-600' : 'text-gray-400'
+                    isCurrent ? 'text-green-700' : isCompleted ? 'text-foreground/70' : 'text-muted-foreground'
                   }`}>
                     {step.label}
                   </span>
                 </div>
                 {idx < LIFECYCLE_STEPS.length - 1 && (
-                  <div className={`flex-1 h-px mx-2 ${isCompleted ? 'bg-green-400' : 'bg-gray-200'}`} />
+                  <div className={`flex-1 h-px mx-2 ${isCompleted ? 'bg-green-400' : 'bg-surface-3'}`} />
                 )}
               </React.Fragment>
             );
@@ -261,7 +261,7 @@ export default function CloseRoutePage() {
         )}
 
         {/* Section: Route Details */}
-        <div data-tour="routes-close-details" className="bg-surface-2 border border-gray-200 rounded-lg p-6">
+        <div data-tour="routes-close-details" className="bg-surface-2 border border-border-subtle rounded-lg p-6">
           <h2 className="text-sm font-semibold text-gray-900 mb-4">Detalles de la ruta</h2>
           <div className="flex items-center gap-4 p-3 bg-surface-1 rounded-lg">
             <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
@@ -269,7 +269,7 @@ export default function CloseRoutePage() {
             </div>
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-900">{ruta.usuarioNombre}</p>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 Ruta: {ruta.nombre} | Zona: {ruta.zonaNombre || 'Sin zona'} | Creado: {formatDate(ruta.creadoEn)}
               </p>
             </div>
@@ -279,62 +279,62 @@ export default function CloseRoutePage() {
         {/* Financial Summary */}
         <div data-tour="routes-close-financial" className="grid grid-cols-3 gap-4">
           {/* Efectivo entrante */}
-          <div className="bg-surface-2 border border-gray-200 rounded-lg p-4">
+          <div className="bg-surface-2 border border-border-subtle rounded-lg p-4">
             <div className="flex items-center gap-2 mb-3">
               <ArrowDown className="w-4 h-4 text-green-600" />
               <h3 className="text-xs font-semibold text-gray-700">Efectivo entrante</h3>
             </div>
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
-                <span className="text-gray-500">Ventas contado ({resumen.ventasContadoCount})</span>
+                <span className="text-muted-foreground">Ventas contado ({resumen.ventasContadoCount})</span>
                 <span className="font-medium">{formatCurrency(resumen.ventasContado)}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-gray-500">Entregas cobradas ({resumen.entregasCobradasCount})</span>
+                <span className="text-muted-foreground">Entregas cobradas ({resumen.entregasCobradasCount})</span>
                 <span className="font-medium">{formatCurrency(resumen.entregasCobradas)}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-gray-500">Cobranza adeudos ({resumen.cobranzaAdeudosCount})</span>
+                <span className="text-muted-foreground">Cobranza adeudos ({resumen.cobranzaAdeudosCount})</span>
                 <span className="font-medium">{formatCurrency(resumen.cobranzaAdeudos)}</span>
               </div>
             </div>
           </div>
 
           {/* Movimientos a saldo */}
-          <div className="bg-surface-2 border border-gray-200 rounded-lg p-4">
+          <div className="bg-surface-2 border border-border-subtle rounded-lg p-4">
             <div className="flex items-center gap-2 mb-3">
               <ArrowUp className="w-4 h-4 text-blue-600" />
               <h3 className="text-xs font-semibold text-gray-700">Movimientos a saldo</h3>
             </div>
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
-                <span className="text-gray-500">Ventas crédito ({resumen.ventasCreditoCount})</span>
+                <span className="text-muted-foreground">Ventas crédito ({resumen.ventasCreditoCount})</span>
                 <span className="font-medium">{formatCurrency(resumen.ventasCredito)}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-gray-500">Entregas crédito ({resumen.entregasCreditoCount})</span>
+                <span className="text-muted-foreground">Entregas crédito ({resumen.entregasCreditoCount})</span>
                 <span className="font-medium">{formatCurrency(resumen.entregasCredito)}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-gray-500">Saldo a favor ({resumen.entregasContadoSaldoFavorCount})</span>
+                <span className="text-muted-foreground">Saldo a favor ({resumen.entregasContadoSaldoFavorCount})</span>
                 <span className="font-medium">{formatCurrency(resumen.entregasContadoSaldoFavor)}</span>
               </div>
             </div>
           </div>
 
           {/* Otros movimientos */}
-          <div className="bg-surface-2 border border-gray-200 rounded-lg p-4">
+          <div className="bg-surface-2 border border-border-subtle rounded-lg p-4">
             <div className="flex items-center gap-2 mb-3">
-              <Package className="w-4 h-4 text-gray-600" />
+              <Package className="w-4 h-4 text-foreground/70" />
               <h3 className="text-xs font-semibold text-gray-700">Otros movimientos</h3>
             </div>
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
-                <span className="text-gray-500">Pedidos preventa ({resumen.pedidosPreventaCount})</span>
+                <span className="text-muted-foreground">Pedidos preventa ({resumen.pedidosPreventaCount})</span>
                 <span className="font-medium">{formatCurrency(resumen.pedidosPreventa)}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-gray-500">Devoluciones ({resumen.devolucionesCount})</span>
+                <span className="text-muted-foreground">Devoluciones ({resumen.devolucionesCount})</span>
                 <span className="font-medium text-red-600">{formatCurrency(resumen.devoluciones)}</span>
               </div>
             </div>
@@ -344,30 +344,30 @@ export default function CloseRoutePage() {
         {/* Al inicio vs Al cierre */}
         <div className="grid grid-cols-2 gap-4">
           {/* Al inicio */}
-          <div className="bg-surface-2 border border-gray-200 rounded-lg p-4">
+          <div className="bg-surface-2 border border-border-subtle rounded-lg p-4">
             <h3 className="text-xs font-semibold text-gray-700 mb-3">Al inicio</h3>
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
-                <span className="text-gray-500">Valor de la ruta</span>
+                <span className="text-muted-foreground">Valor de la ruta</span>
                 <span className="font-medium text-lg">{formatCurrency(resumen.valorRuta)}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-gray-500">Efectivo inicial</span>
+                <span className="text-muted-foreground">Efectivo inicial</span>
                 <span className="font-medium">{formatCurrency(resumen.efectivoInicial)}</span>
               </div>
             </div>
           </div>
 
           {/* Al cierre */}
-          <div className="bg-surface-2 border border-gray-200 rounded-lg p-4">
+          <div className="bg-surface-2 border border-border-subtle rounded-lg p-4">
             <h3 className="text-xs font-semibold text-gray-700 mb-3">Al cierre</h3>
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
-                <span className="text-gray-500">A recibir</span>
+                <span className="text-muted-foreground">A recibir</span>
                 <span className="font-medium text-lg">{formatCurrency(resumen.aRecibir)}</span>
               </div>
               <div className="flex justify-between text-xs items-center">
-                <span className="text-gray-500">Recibido</span>
+                <span className="text-muted-foreground">Recibido</span>
                 {isReadonly ? (
                   <span className="font-medium">{formatCurrency(resumen.recibido ?? 0)}</span>
                 ) : (
@@ -376,14 +376,14 @@ export default function CloseRoutePage() {
                     value={montoRecibido}
                     onChange={(e) => setMontoRecibido(e.target.value)}
                     step="0.01"
-                    className="w-32 px-2 py-1 text-right text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-32 px-2 py-1 text-right text-sm border border-border-default rounded focus:outline-none focus:ring-2 focus:ring-green-500"
                    
                   />
                 )}
               </div>
               {diferencia !== null && (
                 <div className="flex justify-between text-xs pt-1 border-t">
-                  <span className="text-gray-500">Diferencia</span>
+                  <span className="text-muted-foreground">Diferencia</span>
                   <span className={`font-bold text-lg ${diferencia < 0 ? 'text-red-600' : diferencia > 0 ? 'text-green-600' : 'text-gray-900'}`}>
                     {diferencia >= 0 ? '+' : ''}{formatCurrency(diferencia)}
                   </span>
@@ -394,21 +394,21 @@ export default function CloseRoutePage() {
         </div>
 
         {/* Inventario de retorno */}
-        <div data-tour="routes-close-inventory" className="bg-surface-2 border border-gray-200 rounded-lg p-6">
+        <div data-tour="routes-close-inventory" className="bg-surface-2 border border-border-subtle rounded-lg p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-gray-900">Inventario de retorno</h2>
             {!isReadonly && (
               <div data-tour="routes-close-actions" className="flex items-center gap-2">
-                <span className="text-xs text-gray-500">Diferencia a:</span>
+                <span className="text-xs text-muted-foreground">Diferencia a:</span>
                 <button
                   onClick={() => handleSetAllDiferencia('recAlmacen')}
-                  className="px-3 py-1 text-xs font-medium text-gray-600 border border-gray-200 rounded hover:bg-surface-1 transition-colors"
+                  className="px-3 py-1 text-xs font-medium text-foreground/70 border border-border-subtle rounded hover:bg-surface-1 transition-colors"
                 >
                   Almacén
                 </button>
                 <button
                   onClick={() => handleSetAllDiferencia('cargaVehiculo')}
-                  className="px-3 py-1 text-xs font-medium text-gray-600 border border-gray-200 rounded hover:bg-surface-1 transition-colors"
+                  className="px-3 py-1 text-xs font-medium text-foreground/70 border border-border-subtle rounded hover:bg-surface-1 transition-colors"
                 >
                   Carga
                 </button>
@@ -417,22 +417,22 @@ export default function CloseRoutePage() {
           </div>
 
           {retorno.length === 0 ? (
-            <p className="text-xs text-gray-400 text-center py-8">No hay inventario de retorno</p>
+            <p className="text-xs text-muted-foreground text-center py-8">No hay inventario de retorno</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-2 px-2 text-[10px] font-semibold text-gray-600">Producto</th>
-                    <th className="text-right py-2 px-2 text-[10px] font-semibold text-gray-600">Ventas($)</th>
-                    <th className="text-center py-2 px-2 text-[10px] font-semibold text-gray-600">Inicial</th>
-                    <th className="text-center py-2 px-2 text-[10px] font-semibold text-gray-600">Vendidos</th>
-                    <th className="text-center py-2 px-2 text-[10px] font-semibold text-gray-600">Entregados</th>
-                    <th className="text-center py-2 px-2 text-[10px] font-semibold text-gray-600">Devueltos</th>
-                    <th className="text-center py-2 px-2 text-[10px] font-semibold text-gray-600">Mermas</th>
-                    <th className="text-center py-2 px-2 text-[10px] font-semibold text-gray-600">Rec. almacén</th>
-                    <th className="text-center py-2 px-2 text-[10px] font-semibold text-gray-600">Carga veh.</th>
-                    <th className="text-center py-2 px-2 text-[10px] font-semibold text-gray-600">Dif.</th>
+                  <tr className="border-b border-border-subtle">
+                    <th className="text-left py-2 px-2 text-[10px] font-semibold text-foreground/70">Producto</th>
+                    <th className="text-right py-2 px-2 text-[10px] font-semibold text-foreground/70">Ventas($)</th>
+                    <th className="text-center py-2 px-2 text-[10px] font-semibold text-foreground/70">Inicial</th>
+                    <th className="text-center py-2 px-2 text-[10px] font-semibold text-foreground/70">Vendidos</th>
+                    <th className="text-center py-2 px-2 text-[10px] font-semibold text-foreground/70">Entregados</th>
+                    <th className="text-center py-2 px-2 text-[10px] font-semibold text-foreground/70">Devueltos</th>
+                    <th className="text-center py-2 px-2 text-[10px] font-semibold text-foreground/70">Mermas</th>
+                    <th className="text-center py-2 px-2 text-[10px] font-semibold text-foreground/70">Rec. almacén</th>
+                    <th className="text-center py-2 px-2 text-[10px] font-semibold text-foreground/70">Carga veh.</th>
+                    <th className="text-center py-2 px-2 text-[10px] font-semibold text-foreground/70">Dif.</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -441,19 +441,19 @@ export default function CloseRoutePage() {
                       <td className="py-2 px-2">
                         <span className="text-[12px] text-gray-900">{item.productoNombre}</span>
                       </td>
-                      <td className="py-2 px-2 text-right text-[12px] text-gray-600">
+                      <td className="py-2 px-2 text-right text-[12px] text-foreground/70">
                         {formatCurrency(item.ventasMonto)}
                       </td>
                       <td className="py-2 px-2 text-center text-[12px] text-gray-900 font-medium">
                         {item.cantidadInicial}
                       </td>
-                      <td className="py-2 px-2 text-center text-[12px] text-gray-600">
+                      <td className="py-2 px-2 text-center text-[12px] text-foreground/70">
                         {item.vendidos}
                       </td>
-                      <td className="py-2 px-2 text-center text-[12px] text-gray-600">
+                      <td className="py-2 px-2 text-center text-[12px] text-foreground/70">
                         {item.entregados}
                       </td>
-                      <td className="py-2 px-2 text-center text-[12px] text-gray-600">
+                      <td className="py-2 px-2 text-center text-[12px] text-foreground/70">
                         {item.devueltos}
                       </td>
                       {/* Mermas stepper */}
@@ -522,7 +522,7 @@ function Stepper({ value, onDecrement, onIncrement, disabled }: {
       <button
         onClick={onDecrement}
         disabled={disabled || value <= 0}
-        className="w-5 h-5 flex items-center justify-center rounded bg-gray-100 hover:bg-gray-200 text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        className="w-5 h-5 flex items-center justify-center rounded bg-surface-3 hover:bg-surface-3 text-foreground/70 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
       >
         <MinusIcon className="w-3 h-3" />
       </button>
@@ -532,7 +532,7 @@ function Stepper({ value, onDecrement, onIncrement, disabled }: {
       <button
         onClick={onIncrement}
         disabled={disabled}
-        className="w-5 h-5 flex items-center justify-center rounded bg-gray-100 hover:bg-gray-200 text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        className="w-5 h-5 flex items-center justify-center rounded bg-surface-3 hover:bg-surface-3 text-foreground/70 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
       >
         <PlusIcon className="w-3 h-3" />
       </button>

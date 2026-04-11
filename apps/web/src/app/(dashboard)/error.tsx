@@ -24,21 +24,21 @@ export default function DashboardError({
         </div>
         <div className="space-y-2">
           <h2 className="text-xl font-bold text-gray-900">Error en esta página</h2>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-muted-foreground">
             No se pudo cargar el contenido. Esto puede deberse a un problema temporal.
           </p>
           {process.env.NODE_ENV === 'development' && (
             <details className="mt-3 text-left">
-              <summary className="text-xs text-gray-400 cursor-pointer hover:text-gray-600">
+              <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground/70">
                 Detalles del error (solo visible en desarrollo)
               </summary>
-              <pre className="mt-2 p-3 bg-gray-100 rounded-lg text-xs text-red-700 overflow-auto max-h-40">
+              <pre className="mt-2 p-3 bg-surface-3 rounded-lg text-xs text-red-700 overflow-auto max-h-40">
                 {error.message}
                 {error.stack && `\n\n${error.stack}`}
               </pre>
             </details>
           )}
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-muted-foreground">
             Si el problema persiste, contacta a soporte.
             {error.digest && <span className="font-mono ml-1">(Ref: {error.digest})</span>}
           </p>
@@ -53,7 +53,7 @@ export default function DashboardError({
           </button>
           <a
             href="/dashboard"
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-surface-2 text-gray-700 text-sm font-medium rounded-lg border border-gray-300 hover:bg-surface-1 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-surface-2 text-gray-700 text-sm font-medium rounded-lg border border-border-default hover:bg-surface-1 transition-colors"
           >
             <Home className="w-4 h-4" />
             Dashboard

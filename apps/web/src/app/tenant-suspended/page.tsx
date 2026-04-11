@@ -31,15 +31,15 @@ export default function TenantSuspendedPage() {
           <h1 className="text-2xl font-bold text-[#111827]">
             Cuenta Desactivada
           </h1>
-          <p className="text-gray-600 text-sm leading-relaxed">
+          <p className="text-foreground/70 text-sm leading-relaxed">
             Su empresa ha sido desactivada por el administrador del sistema.
             Si cree que esto es un error, contacte al soporte técnico.
           </p>
         </div>
 
         {/* Contact info */}
-        <div className="bg-surface-2 border border-gray-200 rounded-lg p-4 text-left space-y-2">
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Soporte</p>
+        <div className="bg-surface-2 border border-border-subtle rounded-lg p-4 text-left space-y-2">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Soporte</p>
           <p className="text-sm text-gray-700">
             Email: <a href="mailto:soporte@handysuites.com" className="text-blue-600 hover:underline">soporte@handysuites.com</a>
           </p>

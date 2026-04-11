@@ -27,7 +27,7 @@ const actionColors: Record<string, string> = {
   update: 'bg-yellow-100 text-yellow-700',
   delete: 'bg-red-100 text-red-700',
   login: 'bg-blue-100 text-blue-700',
-  logout: 'bg-gray-100 text-gray-700',
+  logout: 'bg-surface-3 text-gray-700',
   view: 'bg-indigo-100 text-indigo-700',
   export: 'bg-emerald-100 text-emerald-700',
   error: 'bg-red-100 text-red-700',
@@ -39,7 +39,7 @@ const statusColors: Record<string, string> = {
   success: 'text-green-600',
   failed: 'text-red-600',
   warning: 'text-yellow-600',
-  pending: 'text-gray-500',
+  pending: 'text-muted-foreground',
   info: 'text-blue-600',
 };
 
@@ -211,7 +211,7 @@ export default function ActivityLogsPage() {
         <button
           data-tour="logs-export-btn"
           onClick={handleExport}
-          className="flex items-center gap-2 px-4 py-2.5 text-[13px] font-medium text-gray-700 border border-gray-200 rounded-md hover:bg-surface-1 transition-colors"
+          className="flex items-center gap-2 px-4 py-2.5 text-[13px] font-medium text-gray-700 border border-border-subtle rounded-md hover:bg-surface-1 transition-colors"
         >
           <Download className="w-4 h-4" />
           <span>{tc('exportCsv')}</span>
@@ -222,14 +222,14 @@ export default function ActivityLogsPage() {
           <div className="flex flex-wrap items-center gap-3 mb-6">
             {/* Search */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 data-tour="logs-search"
                 type="text"
                 placeholder={t('searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-[280px] pl-10 pr-3 py-2.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-[280px] pl-10 pr-3 py-2.5 text-sm border border-border-subtle rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
 
@@ -300,7 +300,7 @@ export default function ActivityLogsPage() {
                 <div className="flex flex-col items-center justify-center h-64 py-20">
                   <FileText className="w-10 h-10 text-muted-foreground mb-4" />
                   <h3 className="text-lg font-semibold text-gray-700 mb-2">{t('noRecords')}</h3>
-                  <p className="text-sm text-gray-500 text-center">
+                  <p className="text-sm text-muted-foreground text-center">
                     {t('noRecordsDesc')}
                   </p>
                 </div>
@@ -309,17 +309,17 @@ export default function ActivityLogsPage() {
                   {/* Desktop Table */}
                   <div className="hidden md:block">
                     {/* Table Header */}
-                    <div className="flex items-center bg-surface-1 px-4 h-10 border-b border-gray-200">
-                      <div className="w-[160px] text-xs font-semibold text-gray-600">{t('columns.user')}</div>
+                    <div className="flex items-center bg-surface-1 px-4 h-10 border-b border-border-subtle">
+                      <div className="w-[160px] text-xs font-semibold text-foreground/70">{t('columns.user')}</div>
                       {isSuperAdmin && (
-                        <div className="w-[140px] text-xs font-semibold text-gray-600">{t('columns.company')}</div>
+                        <div className="w-[140px] text-xs font-semibold text-foreground/70">{t('columns.company')}</div>
                       )}
-                      <div className="w-[100px] text-xs font-semibold text-gray-600">{t('columns.action')}</div>
-                      <div className="w-[110px] text-xs font-semibold text-gray-600">{t('columns.category')}</div>
-                      <div className="w-[80px] text-xs font-semibold text-gray-600">{t('columns.status')}</div>
-                      <div className="flex-1 text-xs font-semibold text-gray-600">{t('columns.description')}</div>
-                      <div className="w-[140px] text-xs font-semibold text-gray-600">{t('columns.dateTime')}</div>
-                      <div className="w-[120px] text-xs font-semibold text-gray-600">{t('columns.ip')}</div>
+                      <div className="w-[100px] text-xs font-semibold text-foreground/70">{t('columns.action')}</div>
+                      <div className="w-[110px] text-xs font-semibold text-foreground/70">{t('columns.category')}</div>
+                      <div className="w-[80px] text-xs font-semibold text-foreground/70">{t('columns.status')}</div>
+                      <div className="flex-1 text-xs font-semibold text-foreground/70">{t('columns.description')}</div>
+                      <div className="w-[140px] text-xs font-semibold text-foreground/70">{t('columns.dateTime')}</div>
+                      <div className="w-[120px] text-xs font-semibold text-foreground/70">{t('columns.ip')}</div>
                     </div>
 
                     {/* Table Rows */}
@@ -336,13 +336,13 @@ export default function ActivityLogsPage() {
                         </div>
 
                         {isSuperAdmin && (
-                          <div className="w-[140px] text-[13px] text-gray-600 truncate">
+                          <div className="w-[140px] text-[13px] text-foreground/70 truncate">
                             {log.tenantName || '-'}
                           </div>
                         )}
 
                         <div className="w-[100px]">
-                          <span className={`px-2 py-0.5 text-[11px] font-medium rounded ${actionColors[log.activityType] || 'bg-gray-100 text-gray-700'}`}>
+                          <span className={`px-2 py-0.5 text-[11px] font-medium rounded ${actionColors[log.activityType] || 'bg-surface-3 text-gray-700'}`}>
                             {actionLabels[log.activityType] || log.activityType}
                           </span>
                         </div>
@@ -352,7 +352,7 @@ export default function ActivityLogsPage() {
                         </div>
 
                         <div className="w-[80px]">
-                          <span className={`text-[12px] font-medium ${statusColors[log.activityStatus] || 'text-gray-500'}`}>
+                          <span className={`text-[12px] font-medium ${statusColors[log.activityStatus] || 'text-muted-foreground'}`}>
                             {log.activityStatus}
                           </span>
                         </div>
@@ -361,11 +361,11 @@ export default function ActivityLogsPage() {
                           {log.description || '-'}
                         </div>
 
-                        <div className="w-[140px] text-[13px] text-gray-500">
+                        <div className="w-[140px] text-[13px] text-muted-foreground">
                           {formatDateTime(log.createdAt)}
                         </div>
 
-                        <div className="w-[120px] text-[13px] text-gray-500 font-mono">
+                        <div className="w-[120px] text-[13px] text-muted-foreground font-mono">
                           {log.ipAddress || '-'}
                         </div>
                       </div>
@@ -375,7 +375,7 @@ export default function ActivityLogsPage() {
                   {/* Mobile Cards */}
                   <div className="md:hidden space-y-2 p-3">
                     {logs.map((log) => (
-                      <div key={log.id} className="border border-gray-200 rounded-lg p-3 space-y-2">
+                      <div key={log.id} className="border border-border-subtle rounded-lg p-3 space-y-2">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <div className={`w-7 h-7 rounded-full ${getUserColor(log.userId)} flex items-center justify-center text-[10px] font-medium`}>
@@ -383,12 +383,12 @@ export default function ActivityLogsPage() {
                             </div>
                             <span className="text-[13px] font-medium text-gray-900">{log.userName}</span>
                           </div>
-                          <span className={`px-2 py-0.5 text-[11px] font-medium rounded ${actionColors[log.activityType] || 'bg-gray-100 text-gray-700'}`}>
+                          <span className={`px-2 py-0.5 text-[11px] font-medium rounded ${actionColors[log.activityType] || 'bg-surface-3 text-gray-700'}`}>
                             {actionLabels[log.activityType] || log.activityType}
                           </span>
                         </div>
                         <p className="text-[13px] text-gray-700">{log.description || '-'}</p>
-                        <div className="flex items-center justify-between text-[12px] text-gray-500">
+                        <div className="flex items-center justify-between text-[12px] text-muted-foreground">
                           <span>{categoryLabels[log.activityCategory] || log.activityCategory}</span>
                           <span>{formatDateTime(log.createdAt)}</span>
                         </div>
@@ -402,14 +402,14 @@ export default function ActivityLogsPage() {
             {/* Pagination */}
             {!loading && totalCount > 0 && (
               <div className="flex items-center justify-between pt-4">
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-muted-foreground">
                   {t('showingRange', { start: startItem, end: endItem, total: formatNumber(totalCount) })}
                 </span>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-gray-600 border border-gray-200 rounded-md hover:bg-surface-1 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-foreground/70 border border-border-subtle rounded-md hover:bg-surface-1 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 
                   >
                     <ChevronLeft className="w-4 h-4" />
@@ -434,7 +434,7 @@ export default function ActivityLogsPage() {
                         className={`min-w-[32px] px-2 py-1 text-sm rounded-md transition-colors ${
                           page === currentPage
                             ? 'bg-success text-success-foreground'
-                            : 'text-gray-600 hover:bg-gray-100'
+                            : 'text-foreground/70 hover:bg-surface-3'
                         }`}
                       >
                         {page}
@@ -445,7 +445,7 @@ export default function ActivityLogsPage() {
                   <button
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
-                    className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-gray-600 border border-gray-200 rounded-md hover:bg-surface-1 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-foreground/70 border border-border-subtle rounded-md hover:bg-surface-1 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 
                   >
                     <span>{tc('next')}</span>

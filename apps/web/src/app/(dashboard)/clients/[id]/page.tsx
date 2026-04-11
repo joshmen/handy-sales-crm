@@ -24,7 +24,7 @@ function formatDate(dateStr: string) {
 }
 
 const ORDER_STATUS_STYLES: Record<string, { statusKey: string; color: string; bg: string }> = {
-  PENDIENTE:      { statusKey: 'draft',      color: 'text-gray-700',  bg: 'bg-gray-100' },
+  PENDIENTE:      { statusKey: 'draft',      color: 'text-gray-700',  bg: 'bg-surface-3' },
   CONFIRMADA:     { statusKey: 'confirmed',  color: 'text-blue-700',  bg: 'bg-blue-100' },
   EN_PREPARACION: { statusKey: 'inPrep',     color: 'text-indigo-700', bg: 'bg-indigo-100' },
   LISTA_ENVIO:    { statusKey: 'readyToShip', color: 'text-purple-700', bg: 'bg-purple-100' },
@@ -79,7 +79,7 @@ export default function ClientDetailPage() {
       <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center">
         <div className="flex items-center gap-3">
           <Loader2 className="w-6 h-6 animate-spin text-green-600" />
-          <span className="text-gray-600">{t('loadingClient')}</span>
+          <span className="text-foreground/70">{t('loadingClient')}</span>
         </div>
       </div>
     );
@@ -91,7 +91,7 @@ export default function ClientDetailPage() {
         <div className="text-center">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">{t('notFound')}</h2>
-          <p className="text-gray-600 mb-4">{t('notFoundMessage')}</p>
+          <p className="text-foreground/70 mb-4">{t('notFoundMessage')}</p>
           <button onClick={() => router.push('/clients')} className="px-4 py-2 bg-success text-success-foreground rounded hover:bg-success/90">
             {t('backToClients')}
           </button>
@@ -108,7 +108,7 @@ export default function ClientDetailPage() {
   return (
     <div className="min-h-screen bg-[#F9FAFB]">
       {/* Header */}
-      <div className="bg-surface-2 px-4 sm:px-8 py-4 border-b border-gray-200">
+      <div className="bg-surface-2 px-4 sm:px-8 py-4 border-b border-border-subtle">
         <Breadcrumb items={[
           { label: tc('home'), href: '/dashboard' },
           { label: tClients('title'), href: '/clients' },
@@ -118,7 +118,7 @@ export default function ClientDetailPage() {
         <div className="flex items-center justify-between mt-2">
           <div className="flex items-center gap-3">
             <h1 className="text-[22px] font-bold text-gray-900">{client.name}</h1>
-            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${client.isActive ? 'text-green-700 bg-green-100' : 'text-gray-700 bg-gray-100'}`}>
+            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${client.isActive ? 'text-green-700 bg-green-100' : 'text-gray-700 bg-surface-3'}`}>
               {client.isActive ? tc('active') : tc('inactive')}
             </span>
             {client.esProspecto && (
@@ -141,62 +141,62 @@ export default function ClientDetailPage() {
       <div className="p-4 sm:p-8 space-y-6">
         {/* KPI cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-surface-2 rounded-lg p-5 border border-gray-200">
-            <p className="text-xs font-medium text-gray-500 mb-1">{t('totalOrders')}</p>
+          <div className="bg-surface-2 rounded-xl p-5 border border-border-subtle">
+            <p className="text-xs font-medium text-muted-foreground mb-1">{t('totalOrders')}</p>
             <p className="text-2xl font-bold text-gray-900">{totalPedidos}</p>
           </div>
-          <div className="bg-surface-2 rounded-lg p-5 border border-gray-200">
-            <p className="text-xs font-medium text-gray-500 mb-1">{t('totalSales')}</p>
+          <div className="bg-surface-2 rounded-xl p-5 border border-border-subtle">
+            <p className="text-xs font-medium text-muted-foreground mb-1">{t('totalSales')}</p>
             <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalVentas)}</p>
           </div>
-          <div className="bg-surface-2 rounded-lg p-5 border border-gray-200">
-            <p className="text-xs font-medium text-gray-500 mb-1">{t('pendingOrders')}</p>
+          <div className="bg-surface-2 rounded-xl p-5 border border-border-subtle">
+            <p className="text-xs font-medium text-muted-foreground mb-1">{t('pendingOrders')}</p>
             <p className="text-2xl font-bold text-gray-900">{pedidosPendientes}</p>
           </div>
         </div>
 
         {/* Client info card */}
-        <div className="bg-surface-2 rounded-lg p-6 border border-gray-200">
+        <div className="bg-surface-2 rounded-xl p-6 border border-border-subtle">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('clientInfo')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-500">{t('rfc')}</span>
+              <span className="text-muted-foreground">{t('rfc')}</span>
               <span className="text-gray-900 font-mono">{client.code || '-'}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">{t('phone')}</span>
+              <span className="text-muted-foreground">{t('phone')}</span>
               <span className="text-gray-900">{client.phone || '-'}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">{t('email')}</span>
+              <span className="text-muted-foreground">{t('email')}</span>
               <span className="text-gray-900">{client.email || '-'}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">{t('manager')}</span>
+              <span className="text-muted-foreground">{t('manager')}</span>
               <span className="text-gray-900">{client.encargado || '-'}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">{t('address')}</span>
+              <span className="text-muted-foreground">{t('address')}</span>
               <span className="text-gray-900 text-right max-w-[200px]">{client.address || '-'}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">{t('zone')}</span>
+              <span className="text-muted-foreground">{t('zone')}</span>
               <span className="text-gray-900">{client.zoneName || '-'}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">{t('category')}</span>
+              <span className="text-muted-foreground">{t('category')}</span>
               <span className="text-gray-900">{client.categoryName || '-'}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">{t('balance')}</span>
+              <span className="text-muted-foreground">{t('balance')}</span>
               <span className="text-gray-900">{formatCurrency(client.saldo ?? 0)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">{t('creditLimit')}</span>
+              <span className="text-muted-foreground">{t('creditLimit')}</span>
               <span className="text-gray-900">{formatCurrency(client.limiteCredito ?? 0)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">{t('creditDays')}</span>
+              <span className="text-muted-foreground">{t('creditDays')}</span>
               <span className="text-gray-900">{client.diasCredito ?? 0}</span>
             </div>
           </div>
@@ -204,27 +204,27 @@ export default function ClientDetailPage() {
 
         {/* Fiscal data section */}
         {client.facturable && (
-          <div className="bg-surface-2 rounded-lg p-6 border border-gray-200">
+          <div className="bg-surface-2 rounded-xl p-6 border border-border-subtle">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('fiscalData')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-500">{t('rfc')}</span>
+                <span className="text-muted-foreground">{t('rfc')}</span>
                 <span className="text-gray-900 font-mono">{client.code || '-'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">{t('businessName')}</span>
+                <span className="text-muted-foreground">{t('businessName')}</span>
                 <span className="text-gray-900">{client.razonSocial || '-'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">{t('taxRegime')}</span>
+                <span className="text-muted-foreground">{t('taxRegime')}</span>
                 <span className="text-gray-900">{client.regimenFiscal || '-'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">{t('fiscalPostalCode')}</span>
+                <span className="text-muted-foreground">{t('fiscalPostalCode')}</span>
                 <span className="text-gray-900">{client.codigoPostalFiscal || '-'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">{t('defaultCfdiUse')}</span>
+                <span className="text-muted-foreground">{t('defaultCfdiUse')}</span>
                 <span className="text-gray-900">{client.usoCFDIPredeterminado || '-'}</span>
               </div>
             </div>
@@ -232,8 +232,8 @@ export default function ClientDetailPage() {
         )}
 
         {/* Tabs */}
-        <div className="bg-surface-2 rounded-lg border border-gray-200">
-          <div className="border-b border-gray-200 px-6">
+        <div className="bg-surface-2 rounded-xl border border-border-subtle">
+          <div className="border-b border-border-subtle px-6">
             <div className="flex gap-6">
               {([
                 { key: 'pedidos' as Tab, label: t('tabs.orders') },
@@ -245,7 +245,7 @@ export default function ClientDetailPage() {
                   className={`py-3 text-sm font-medium border-b-2 transition-colors ${
                     activeTab === tab.key
                       ? 'border-green-600 text-green-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                      : 'border-transparent text-muted-foreground hover:text-gray-700'
                   }`}
                 >
                   {tab.label}
@@ -258,12 +258,12 @@ export default function ClientDetailPage() {
             {activeTab === 'pedidos' && (
               <div>
                 {orders.length === 0 ? (
-                  <p className="text-center text-gray-400 py-8">{t('noOrders')}</p>
+                  <p className="text-center text-muted-foreground py-8">{t('noOrders')}</p>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="border-b border-gray-200 text-left text-gray-500">
+                        <tr className="border-b border-border-subtle text-left text-muted-foreground">
                           <th className="pb-3 font-medium">{t('orderColumns.number')}</th>
                           <th className="pb-3 font-medium">{t('orderColumns.date')}</th>
                           <th className="pb-3 font-medium">{t('orderColumns.status')}</th>
@@ -273,7 +273,7 @@ export default function ClientDetailPage() {
                       </thead>
                       <tbody>
                         {orders.map((order) => {
-                          const style = ORDER_STATUS_STYLES[order.estado] ?? { statusKey: '', color: 'text-gray-700', bg: 'bg-gray-100' };
+                          const style = ORDER_STATUS_STYLES[order.estado] ?? { statusKey: '', color: 'text-gray-700', bg: 'bg-surface-3' };
                           const statusLabel = style.statusKey ? t(`orderStatus.${style.statusKey}` as Parameters<typeof t>[0]) : order.estado;
                           const cfg = { label: statusLabel, color: style.color, bg: style.bg };
                           return (
@@ -289,7 +289,7 @@ export default function ClientDetailPage() {
                                   {cfg.label}
                                 </span>
                               </td>
-                              <td className="py-3 text-gray-500">{order.usuarioNombre}</td>
+                              <td className="py-3 text-muted-foreground">{order.usuarioNombre}</td>
                               <td className="py-3 text-right font-medium text-gray-900">{formatCurrency(order.total)}</td>
                             </tr>
                           );
@@ -306,7 +306,7 @@ export default function ClientDetailPage() {
                 {client.comentarios ? (
                   <p>{client.comentarios}</p>
                 ) : (
-                  <p className="text-gray-400">{t('noComments')}</p>
+                  <p className="text-muted-foreground">{t('noComments')}</p>
                 )}
               </div>
             )}

@@ -268,10 +268,10 @@ export default function TenantDetailPage() {
 
   const getPlanBadgeColor = (plan: string | null) => {
     switch (plan) {
-      case 'free': return 'bg-gray-100 text-gray-800';
+      case 'free': return 'bg-surface-3 text-gray-800';
       case 'basic': return 'bg-blue-100 text-blue-800';
       case 'pro': return 'bg-purple-100 text-purple-800';
-      default: return 'bg-gray-100 text-gray-600';
+      default: return 'bg-surface-3 text-foreground/70';
     }
   };
 
