@@ -92,7 +92,7 @@ export const Modal: React.FC<ModalProps> = ({
         />
         {/* Panel */}
         <div
-          className={`relative w-full ${sizeClasses[size]} bg-card rounded-lg shadow-xl transition-all duration-200 ${
+          className={`relative w-full ${sizeClasses[size]} bg-surface-4 rounded-xl shadow-elevation-3 transition-all duration-200 ${
             entered
               ? "opacity-100 scale-100"
               : "opacity-0 scale-[0.97]"

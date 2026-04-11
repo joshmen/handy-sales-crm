@@ -116,14 +116,14 @@ export function DataGrid<T>({
   };
 
   return (
-    <div className={`bg-white rounded-xl border border-gray-200 overflow-hidden relative ${className || ''}`}>
+    <div className={`bg-surface-2 rounded-lg border border-border-subtle shadow-elevation-1 overflow-hidden relative ${className || ''}`}>
       {/* ─── Loading Overlay (only when refreshing existing data) ─── */}
       {loading && data.length > 0 && <TableLoadingOverlay loading={true} message={loadingMessage} />}
 
       {/* ─── Desktop Table ─── */}
       <div className="hidden sm:block">
         {/* Header */}
-        <div className="flex items-center gap-3 px-5 py-3 bg-gray-50/80 border-b border-gray-200">
+        <div className="flex items-center gap-3 px-5 py-3 bg-surface-3/80 border-b border-border-subtle">
           {selection && (
             <div className="w-8 flex-shrink-0 flex items-center justify-center">
               <input
@@ -185,9 +185,9 @@ export function DataGrid<T>({
                 <div
                   key={String(id)}
                   className={`
-                    flex items-center gap-3 px-5 py-3.5 border-b border-gray-100 transition-colors
-                    ${onRowClick ? 'cursor-pointer hover:bg-gray-50' : ''}
-                    ${isSelected ? 'bg-green-50/50' : ''}
+                    flex items-center gap-3 px-5 py-3.5 border-b border-border-subtle transition-colors
+                    ${onRowClick ? 'cursor-pointer hover:bg-surface-3' : ''}
+                    ${isSelected ? 'bg-primary/5' : ''}
                   `}
                   onClick={onRowClick ? () => onRowClick(item) : undefined}
                 >

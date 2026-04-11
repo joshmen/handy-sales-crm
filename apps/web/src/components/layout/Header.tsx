@@ -227,7 +227,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
   if (!mounted || !isClient) {
     return (
       <header className={cn(
-        "fixed left-0 right-0 z-50 w-full bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 border-b border-border shadow-sm",
+        "fixed left-0 right-0 z-50 w-full bg-surface-2/95 backdrop-blur supports-[backdrop-filter]:bg-surface-2/80 border-b border-border-subtle shadow-elevation-1",
         isImpersonating ? "top-10" : "top-0"
       )}>
         <div className="flex h-16 items-center px-4 lg:px-6">
@@ -241,7 +241,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
 
   return (
     <header className={cn(
-      "fixed left-0 right-0 z-50 w-full bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 border-b border-border shadow-sm",
+      "fixed left-0 right-0 z-50 w-full bg-surface-2/95 backdrop-blur supports-[backdrop-filter]:bg-surface-2/80 border-b border-border-subtle shadow-elevation-1",
       isImpersonating ? "top-10" : "top-0"
     )}>
       <div className="flex h-16 items-center px-4 lg:px-6">

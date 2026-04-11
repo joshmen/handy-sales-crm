@@ -128,7 +128,7 @@ export const Drawer = forwardRef<DrawerHandle, DrawerProps>(({
         role="dialog"
         aria-modal="true"
         className={cn(
-          'relative w-full flex flex-col bg-card shadow-xl transition-transform duration-300 ease-out',
+          'relative w-full flex flex-col bg-surface-4 shadow-elevation-3 transition-transform duration-300 ease-out',
           entered ? 'translate-x-0' : 'translate-x-full',
           widthClasses[width]
         )}
@@ -157,7 +157,7 @@ export const Drawer = forwardRef<DrawerHandle, DrawerProps>(({
 
         {/* Sticky Footer */}
         {footer && (
-          <div className="drawer-footer flex-shrink-0 border-t border-border shadow-[0_-2px_8px_rgba(0,0,0,0.06)] bg-card px-6 py-4">
+          <div className="drawer-footer flex-shrink-0 border-t border-border-subtle shadow-elevation-1 bg-surface-4 px-6 py-4">
             {footer}
           </div>
         )}

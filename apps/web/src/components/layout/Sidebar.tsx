@@ -672,7 +672,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isImpersonating: isImpersonati
       {/* Modern Google-style Sidebar */}
       <aside
         className={cn(
-          'fixed left-0 z-30 bg-card border-r border-border transition-all duration-300 ease-in-out',
+          'fixed left-0 z-30 bg-surface-2 border-r border-border-subtle transition-all duration-300 ease-in-out',
           isImpersonatingProp
             ? 'top-[calc(4rem+2.5rem)] h-[calc(100vh-4rem-2.5rem)]'
             : 'top-16 h-[calc(100vh-4rem)]',

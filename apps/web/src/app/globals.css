@@ -29,85 +29,87 @@ body {
 
 @layer base {
   :root {
-    /* Background colors - Google style */
-    --background: 0 0% 98%;
-    --foreground: 0 0% 15%;
+    /* ═══ HANDY SUITES VISUAL IDENTITY ═══ */
 
-    /* Card colors */
+    /* Background — cool slate tint */
+    --background: 220 14% 96%;          /* #F1F3F6 — slate-tinted off-white */
+    --foreground: 220 20% 14%;
+
+    /* Cards — pure white, stands out from slate background */
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 15%;
+    --card-foreground: 220 20% 14%;
 
-    /* Popover colors */
+    /* Popovers — pure white */
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 15%;
+    --popover-foreground: 220 20% 14%;
 
-    /* Primary colors — company brand (default green #16A34A, overridden by CompanyContext) */
+    /* Primary — company brand (overridden by CompanyContext) */
     --primary: 142 71% 45%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary colors */
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 15%;
+    /* Secondary — light blue-gray */
+    --secondary: 220 14% 93%;
+    --secondary-foreground: 220 20% 14%;
 
-    /* Muted colors */
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
+    /* Muted — subtle background */
+    --muted: 220 14% 93%;
+    --muted-foreground: 220 10% 46%;
 
-    /* Accent colors */
-    --accent: 0 0% 96%;
-    --accent-foreground: 0 0% 15%;
+    /* Accent — hover tint */
+    --accent: 220 14% 93%;
+    --accent-foreground: 220 20% 14%;
 
-    /* Destructive colors */
+    /* Destructive */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
-    /* Success colors — company green #16a34a */
+    /* Success — company green */
     --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
 
-    /* Border colors - Subtle Google borders */
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
+    /* Borders — blue-gray tint */
+    --border: 220 13% 87%;
+    --input: 220 13% 87%;
 
-    /* Ring colors - company brand for focus */
+    /* Ring — company brand for focus */
     --ring: 142 71% 45%;
 
-    /* Chart colors - Google palette */
+    /* Charts */
     --chart-1: 213 93% 57%;
-    --chart-2: 120 57% 50%;
+    --chart-2: 142 71% 45%;
     --chart-3: 0 84% 60%;
     --chart-4: 45 93% 57%;
-    --chart-5: 300 47% 50%;
+    --chart-5: 280 60% 55%;
 
-    /* Radius - More rounded for modern look */
+    /* Radius */
     --radius: 0.75rem;
 
     /* ═══ SURFACE ELEVATION SYSTEM ═══ */
-    --surface-1: 0 0% 98%;        /* fondo general */
-    --surface-2: 0 0% 100%;       /* cards normales */
-    --surface-3: 0 0% 96%;        /* hover / active */
-    --surface-4: 0 0% 100%;       /* modals / floating */
+    --surface-1: 220 14% 96%;          /* #F1F3F6 — page bg */
+    --surface-2: 0 0% 100%;            /* #FFFFFF — cards */
+    --surface-3: 220 14% 94%;          /* #ECEEF2 — hover/active */
+    --surface-4: 0 0% 100%;            /* #FFFFFF — modals */
 
     /* ═══ SHADOW ELEVATION SYSTEM ═══ */
-    --shadow-1: 0 1px 3px 0 rgba(0,0,0,0.04), 0 1px 2px 0 rgba(0,0,0,0.02);
-    --shadow-2: 0 4px 12px -2px rgba(0,0,0,0.08), 0 2px 6px -2px rgba(0,0,0,0.04);
-    --shadow-3: 0 12px 32px -4px rgba(0,0,0,0.12), 0 8px 16px -4px rgba(0,0,0,0.06);
+    --shadow-1: 0 1px 3px 0 rgba(0,0,0,0.06), 0 1px 2px -1px rgba(0,0,0,0.04);
+    --shadow-2: 0 4px 16px -2px rgba(0,0,0,0.10), 0 2px 8px -2px rgba(0,0,0,0.06);
+    --shadow-3: 0 16px 40px -4px rgba(0,0,0,0.14), 0 8px 20px -8px rgba(0,0,0,0.08);
 
     /* ═══ BORDER ELEVATION SYSTEM ═══ */
-    --border-subtle: 0 0% 93%;
-    --border-default: 0 0% 90%;
-    --border-strong: 0 0% 82%;
+    --border-subtle: 220 13% 91%;
+    --border-default: 220 13% 87%;
+    --border-strong: 220 13% 78%;
 
     /* ═══ RADIUS SCALE ═══ */
-    --radius-xs: 0.25rem;         /* 4px  - pills, tiny */
-    --radius-sm: 0.375rem;        /* 6px  - badges, chips */
-    --radius-md: 0.5rem;          /* 8px  - buttons, inputs */
-    --radius-lg: 0.75rem;         /* 12px - cards, panels */
-    --radius-xl: 1rem;            /* 16px - modals, drawers */
-    --radius-2xl: 1.25rem;        /* 20px - hero cards */
+    --radius-xs: 0.25rem;
+    --radius-sm: 0.375rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    --radius-2xl: 1.25rem;
 
-    /* ═══ ACCENT COLOR (info/links) ═══ */
-    --accent-color: 210 80% 56%;
+    /* ═══ ACCENT COLOR ═══ */
+    --accent-color: 217 91% 60%;       /* #3B82F6 — blue accent */
     --accent-color-foreground: 0 0% 100%;
   }
 
