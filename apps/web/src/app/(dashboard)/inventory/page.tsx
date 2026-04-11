@@ -657,22 +657,23 @@ export default function InventoryPage() {
         : (movTotalItems > 0 ? t('movementsSubtitle', { count: movTotalItems, plural: movTotalItems !== 1 ? 's' : '' }) : undefined)
       }
       actions={activeTab === 'almacen' ? almacenActions : movimientosActions}
+      actionsKey={activeTab}
     >
       <div className="space-y-4">
         {/* Tabs */}
         <div className="flex gap-1 bg-surface-3 rounded-lg p-1 w-fit">
           <button
             onClick={() => setActiveTab('almacen')}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              activeTab === 'almacen' ? 'bg-surface-2 text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground/80'
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+              activeTab === 'almacen' ? 'bg-surface-2 text-foreground shadow-elevation-1' : 'text-muted-foreground hover:text-foreground/80'
             }`}
           >
             {t('tabs.warehouse')}
           </button>
           <button
             onClick={() => setActiveTab('movimientos')}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              activeTab === 'movimientos' ? 'bg-surface-2 text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground/80'
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+              activeTab === 'movimientos' ? 'bg-surface-2 text-foreground shadow-elevation-1' : 'text-muted-foreground hover:text-foreground/80'
             }`}
           >
             {t('tabs.movements')}
@@ -681,7 +682,7 @@ export default function InventoryPage() {
 
         {/* ═══════════════ ALMACÉN TAB ═══════════════ */}
         {activeTab === 'almacen' && (
-          <>
+          <div key="almacen" className="animate-fade-in">
             {/* Filter Row */}
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <SearchBar
@@ -799,12 +800,12 @@ export default function InventoryPage() {
                 }}
               />
             </div>
-          </>
+          </div>
         )}
 
         {/* ═══════════════ MOVIMIENTOS TAB ═══════════════ */}
         {activeTab === 'movimientos' && (
-          <>
+          <div key="movimientos" className="animate-fade-in">
             {/* Filter Row */}
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <SearchBar
@@ -1009,7 +1010,7 @@ export default function InventoryPage() {
               onPageChange={setMovCurrentPage}
               itemLabel={t('tabs.movements').toLowerCase()}
             />
-          </>
+          </div>
         )}
       </div>
 

@@ -23,6 +23,7 @@ interface SearchableSelectProps {
   disabled?: boolean;
   error?: boolean;
   className?: string;
+  hideSearch?: boolean;
   onSelectAll?: () => void;
   onClearAll?: () => void;
 }
@@ -37,6 +38,7 @@ export function SearchableSelect({
   disabled = false,
   error = false,
   className,
+  hideSearch = false,
   onSelectAll,
   onClearAll,
 }: SearchableSelectProps) {
@@ -114,27 +116,29 @@ export function SearchableSelect({
           align="start"
         >
           {/* Search input */}
-          <div className="flex items-center gap-2 px-3 py-2 border-b border-border-subtle">
-            <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-            <input
-              ref={inputRef}
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={searchPlaceholder ?? tc('searchEllipsis')}
-              aria-label={tc('searchOptions')}
-              className="flex-1 text-sm outline-none bg-transparent placeholder:text-muted-foreground"
-            />
-            {search && (
-              <button
-                type="button"
-                onClick={() => setSearch('')}
-                className="p-0.5 hover:bg-surface-3 rounded"
-              >
-                <X className="w-3.5 h-3.5 text-muted-foreground" />
-              </button>
-            )}
-          </div>
+          {!hideSearch && (
+            <div className="flex items-center gap-2 px-3 py-2 border-b border-border-subtle">
+              <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+              <input
+                ref={inputRef}
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={searchPlaceholder ?? tc('searchEllipsis')}
+                aria-label={tc('searchOptions')}
+                className="flex-1 text-sm outline-none bg-transparent placeholder:text-muted-foreground"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch('')}
+                  className="p-0.5 hover:bg-surface-3 rounded"
+                >
+                  <X className="w-3.5 h-3.5 text-muted-foreground" />
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Bulk actions */}
           {(onSelectAll || onClearAll) && (

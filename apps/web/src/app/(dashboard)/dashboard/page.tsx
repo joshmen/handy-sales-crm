@@ -7,7 +7,6 @@ import {
   TrendingUp,
   TrendingDown,
   Download,
-  ChevronDown,
   AlertCircle,
   Loader2,
   ArrowRight,
@@ -21,6 +20,8 @@ import {
   FileDown,
   Eye,
 } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import {
   SbDollarSign,
   SbShoppingCart,
@@ -481,31 +482,33 @@ export default function DashboardPage() {
           </div>
           <div className="flex items-center gap-3">
             {/* Period Selector */}
-            <div className="relative">
-              <select
+            <div className="w-[160px]">
+              <SearchableSelect
+                options={[
+                  { value: 'semana', label: t('thisWeek') },
+                  { value: 'mes', label: t('thisMonth') },
+                  { value: 'trimestre', label: t('thisQuarter') },
+                ]}
                 value={periodo}
-                onChange={(e) => setPeriodo(e.target.value as 'semana' | 'mes' | 'trimestre')}
-                className="appearance-none flex items-center gap-2 px-4 py-2 pr-8 border border-border-subtle rounded-lg text-sm font-medium text-foreground/80 hover:bg-surface-1 bg-surface-2 cursor-pointer transition-colors"
-              >
-                <option value="semana">{t('thisWeek')}</option>
-                <option value="mes">{t('thisMonth')}</option>
-                <option value="trimestre">{t('thisQuarter')}</option>
-              </select>
-              <ChevronDown className="w-4 h-4 absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                onChange={(val) => setPeriodo((val as 'semana' | 'mes' | 'trimestre') ?? 'semana')}
+                placeholder={t('thisWeek')}
+                hideSearch
+              />
             </div>
             {/* Export Button */}
-            <button
+            <Button
+              variant="outline"
+              size="sm"
               onClick={exportPDF}
               disabled={exporting || metricCards.length === 0}
-              className="flex items-center gap-2 px-4 py-2 border border-border-subtle rounded-lg text-sm font-medium text-foreground/80 hover:bg-surface-1 transition-colors disabled:opacity-50"
             >
               {exporting ? (
-                <Loader2 className="w-4 h-4 text-emerald-500 animate-spin" />
+                <Loader2 className="w-4 h-4 text-emerald-500 animate-spin mr-2" />
               ) : (
-                <Download className="w-4 h-4 text-emerald-500" />
+                <Download className="w-4 h-4 text-emerald-500 mr-2" />
               )}
-              <span>{t('exportReport')}</span>
-            </button>
+              {t('exportReport')}
+            </Button>
           </div>
         </div>
 

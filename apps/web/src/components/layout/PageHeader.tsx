@@ -6,6 +6,8 @@ interface PageHeaderProps {
   title: string;
   subtitle?: string;
   actions?: React.ReactNode;
+  /** When this key changes, actions + subtitle animate in */
+  actionsKey?: string;
   children: React.ReactNode;
 }
 
@@ -13,7 +15,7 @@ interface PageHeaderProps {
  * Reusable page layout with a sticky header bar (breadcrumb + title + actions)
  * and a scrollable body. Used by all list/CRUD pages in the dashboard.
  */
-export function PageHeader({ breadcrumbs, title, subtitle, actions, children }: PageHeaderProps) {
+export function PageHeader({ breadcrumbs, title, subtitle, actions, actionsKey, children }: PageHeaderProps) {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
@@ -27,11 +29,11 @@ export function PageHeader({ breadcrumbs, title, subtitle, actions, children }: 
               {title}
             </h1>
             {subtitle && (
-              <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
+              <p key={actionsKey} className={`text-sm text-muted-foreground mt-1${actionsKey ? ' animate-fade-in' : ''}`}>{subtitle}</p>
             )}
           </div>
           {actions && (
-            <div className="flex items-center gap-2">
+            <div key={actionsKey} className={`flex items-center gap-2${actionsKey ? ' animate-fade-in' : ''}`}>
               {actions}
             </div>
           )}

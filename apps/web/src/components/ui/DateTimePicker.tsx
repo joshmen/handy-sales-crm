@@ -187,10 +187,14 @@ export function DateTimePicker({
     if (!value || !selectedDate) return '';
 
     if (mode === 'datetime' && value.includes('T')) {
-      return format(selectedDate, "d 'de' MMM yyyy · HH:mm", { locale: dateLocale });
+      return appLocale === 'en'
+        ? format(selectedDate, "MMM d, yyyy · HH:mm", { locale: dateLocale })
+        : format(selectedDate, "d 'de' MMM yyyy · HH:mm", { locale: dateLocale });
     }
-    return format(selectedDate, "d 'de' MMMM 'de' yyyy", { locale: dateLocale });
-  }, [value, selectedDate, mode]);
+    return appLocale === 'en'
+      ? format(selectedDate, "MMMM d, yyyy", { locale: dateLocale })
+      : format(selectedDate, "d 'de' MMMM 'de' yyyy", { locale: dateLocale });
+  }, [value, selectedDate, mode, appLocale]);
 
   const defaultPlaceholder = mode === 'datetime'
     ? (appLocale === 'en' ? 'Select date and time...' : 'Seleccionar fecha y hora...')
