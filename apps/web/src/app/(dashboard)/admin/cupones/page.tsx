@@ -35,7 +35,7 @@ function formatTipo(tipo: TipoCupon): string {
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return '—';
   try {
-    return new Date(dateStr).toLocaleDateString('es-MX', {
+    return new Date(dateStr).toLocaleDateString(undefined, {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -214,7 +214,7 @@ export default function CuponesAdminPage() {
   const renderDrawer = () => (
     <div className="fixed inset-0 z-50 flex justify-end">
       <div className="fixed inset-0 bg-black/50" onClick={closeDrawer} />
-      <div className="relative w-full max-w-lg bg-white shadow-xl flex flex-col h-full animate-slide-in-right">
+      <div className="relative w-full max-w-lg bg-surface-2 shadow-xl flex flex-col h-full animate-slide-in-right">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -358,14 +358,14 @@ export default function CuponesAdminPage() {
           {drawerMode === 'edit' && (
             <div className="border-t border-gray-200 pt-4 mt-4">
               <div
-                className="flex items-center justify-between py-2 px-2 rounded-lg hover:bg-gray-50 cursor-pointer"
+                className="flex items-center justify-between py-2 px-2 rounded-lg hover:bg-surface-1 cursor-pointer"
                 onClick={() => setActivo(!activo)}
               >
                 <span className={`text-sm ${activo ? 'text-green-700 font-medium' : 'text-red-600 font-medium'}`}>
                   {activo ? t('couponActive') : t('couponInactive')}
                 </span>
                 <div className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${activo ? 'bg-green-600' : 'bg-gray-200'}`}>
-                  <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${activo ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                  <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-surface-2 transition-transform ${activo ? 'translate-x-4' : 'translate-x-0.5'}`} />
                 </div>
               </div>
             </div>
@@ -382,7 +382,7 @@ export default function CuponesAdminPage() {
                   type="text"
                   value={editingCupon.codigo}
                   readOnly
-                  className={`${inputClasses} font-mono bg-gray-50 text-gray-600`}
+                  className={`${inputClasses} font-mono bg-surface-1 text-gray-600`}
                 />
                 <button
                   type="button"
@@ -420,7 +420,7 @@ export default function CuponesAdminPage() {
           <button
             type="button"
             onClick={closeDrawer}
-            className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            className="px-4 py-2 text-gray-700 bg-surface-2 border border-gray-300 rounded-lg hover:bg-surface-1 transition-colors"
             disabled={saving}
           >
             {tc('cancel')}
@@ -469,7 +469,7 @@ export default function CuponesAdminPage() {
           <button
             onClick={fetchCupones}
             disabled={loading}
-            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 bg-surface-2 border border-gray-300 rounded-lg hover:bg-surface-1 transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             {tc('refresh')}
@@ -486,7 +486,7 @@ export default function CuponesAdminPage() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-lg border border-gray-200 bg-white p-4">
+        <div className="rounded-lg border border-gray-200 bg-surface-2 p-4">
           <div className="flex items-center gap-3">
             <div className="rounded-lg bg-violet-100 p-2">
               <Ticket className="h-5 w-5 text-violet-600" weight="duotone" />
@@ -497,7 +497,7 @@ export default function CuponesAdminPage() {
             </div>
           </div>
         </div>
-        <div className="rounded-lg border border-gray-200 bg-white p-4">
+        <div className="rounded-lg border border-gray-200 bg-surface-2 p-4">
           <div className="flex items-center gap-3">
             <div className="rounded-lg bg-green-100 p-2">
               <CheckCircle className="h-5 w-5 text-green-600" weight="duotone" />
@@ -508,7 +508,7 @@ export default function CuponesAdminPage() {
             </div>
           </div>
         </div>
-        <div className="rounded-lg border border-gray-200 bg-white p-4">
+        <div className="rounded-lg border border-gray-200 bg-surface-2 p-4">
           <div className="flex items-center gap-3">
             <div className="rounded-lg bg-blue-100 p-2">
               <Ticket className="h-5 w-5 text-blue-600" weight="duotone" />
@@ -527,7 +527,7 @@ export default function CuponesAdminPage() {
           <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
         </div>
       ) : cupones.length === 0 ? (
-        <div className="rounded-lg border border-gray-200 bg-white p-12 text-center">
+        <div className="rounded-lg border border-gray-200 bg-surface-2 p-12 text-center">
           <Ticket className="mx-auto h-12 w-12 text-gray-300" weight="duotone" />
           <p className="mt-4 text-gray-500">{t('noCoupons')}</p>
           <button
@@ -541,9 +541,9 @@ export default function CuponesAdminPage() {
       ) : (
         <>
           {/* Desktop Table */}
-          <div className="hidden overflow-hidden rounded-lg border border-gray-200 bg-white md:block">
+          <div className="hidden overflow-hidden rounded-lg border border-gray-200 bg-surface-2 md:block">
             <table className="w-full text-sm">
-              <thead className="border-b border-gray-200 bg-gray-50 text-left">
+              <thead className="border-b border-gray-200 bg-surface-1 text-left">
                 <tr>
                   <th className="px-4 py-3 font-medium text-gray-500">{t('tableNameHeader')}</th>
                   <th className="px-4 py-3 font-medium text-gray-500">{t('tableCodeHeader')}</th>
@@ -556,7 +556,7 @@ export default function CuponesAdminPage() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {cupones.map((cupon) => (
-                  <tr key={cupon.id} className="hover:bg-gray-50">
+                  <tr key={cupon.id} className="hover:bg-surface-1">
                     <td className="px-4 py-3 font-medium text-gray-900">
                       {cupon.nombre}
                     </td>
@@ -629,7 +629,7 @@ export default function CuponesAdminPage() {
                             </button>
                             <button
                               onClick={() => setDeleteConfirmId(null)}
-                              className="p-1.5 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                              className="p-1.5 text-gray-600 hover:bg-surface-1 rounded-lg transition-colors"
                               title={tc('cancel')}
                             >
                               <X className="h-4 w-4" />
@@ -657,7 +657,7 @@ export default function CuponesAdminPage() {
             {cupones.map((cupon) => (
               <div
                 key={cupon.id}
-                className="rounded-lg border border-gray-200 bg-white p-4"
+                className="rounded-lg border border-gray-200 bg-surface-2 p-4"
               >
                 <div className="flex items-start justify-between">
                   <div>
@@ -703,7 +703,7 @@ export default function CuponesAdminPage() {
                 <div className="mt-3 flex gap-2 border-t border-gray-100 pt-3">
                   <button
                     onClick={() => openEdit(cupon)}
-                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm text-gray-700 bg-surface-2 border border-gray-300 rounded-lg hover:bg-surface-1 transition-colors"
                   >
                     <Pencil className="h-3.5 w-3.5 text-amber-600" />
                     {tc('edit')}

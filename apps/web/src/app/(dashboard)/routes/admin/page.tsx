@@ -531,7 +531,7 @@ export default function RouteAdminPage() {
             <button
               type="button"
               onClick={() => setIsDrawerOpen(false)}
-              className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-surface-1"
             >
               {tc('cancel')}
             </button>
@@ -606,7 +606,7 @@ export default function RouteAdminPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {t('templates.selectedTemplate')}
               </label>
-              <div className="p-3 bg-gray-50 rounded-lg">
+              <div className="p-3 bg-surface-1 rounded-lg">
                 <p className="font-medium text-sm">{assigningTemplate.nombre}</p>
                 {assigningTemplate.descripcion && (
                   <p className="text-xs text-gray-500 mt-0.5">{assigningTemplate.descripcion}</p>
@@ -652,7 +652,7 @@ export default function RouteAdminPage() {
               <button
                 type="button"
                 onClick={() => setIsAssignOpen(false)}
-                className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+                className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-surface-1"
               >
                 {tc('cancel')}
               </button>

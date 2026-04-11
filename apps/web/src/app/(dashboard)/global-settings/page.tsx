@@ -373,7 +373,7 @@ export default function GlobalSettingsPage() {
                 <h2 className="text-xl font-semibold text-gray-900">{t('maintenance.title')}</h2>
               </div>
 
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between p-4 bg-surface-1 rounded-lg">
                 <div>
                   <p className="text-sm text-gray-700">
                     {t('maintenance.description')}

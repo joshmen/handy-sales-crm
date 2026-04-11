@@ -582,7 +582,7 @@ export default function InventoryPage() {
       <div className="relative" data-tour="inventory-import-export">
         <button
           onClick={() => setShowDataMenu(!showDataMenu)}
-          className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+          className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-surface-1 transition-colors"
         >
           <Download className="w-3.5 h-3.5 text-emerald-500" />
           <span className="hidden sm:inline">{tc('importExport')}</span>
@@ -591,17 +591,17 @@ export default function InventoryPage() {
         {showDataMenu && (
           <>
             <div className="fixed inset-0 z-10" onClick={() => setShowDataMenu(false)} />
-            <div className="absolute right-0 mt-1 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1">
+            <div className="absolute right-0 mt-1 w-44 bg-surface-2 border border-gray-200 rounded-lg shadow-lg z-20 py-1">
               <button
                 onClick={async () => { setShowDataMenu(false); try { await exportToCsv('inventario'); toast.success(tc('csvDownloaded')); } catch { toast.error(tc('errorExporting')); } }}
-                className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
+                className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-surface-1"
               >
                 <Download className="w-3.5 h-3.5 text-emerald-500" />
                 {tc('exportCsv')}
               </button>
               <button
                 onClick={() => { setIsImportOpen(true); setShowDataMenu(false); }}
-                className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
+                className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-surface-1"
               >
                 <Upload className="w-3.5 h-3.5 text-blue-500" />
                 {tc('importCsv')}
@@ -626,7 +626,7 @@ export default function InventoryPage() {
       <button
         data-tour="movements-export-btn"
         onClick={() => exportToCsv('inventario')}
-        className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+        className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-surface-1 transition-colors"
       >
         <Download className="w-3.5 h-3.5 text-emerald-500" />
         <span className="hidden sm:inline">{tc('exportCsv')}</span>
@@ -664,7 +664,7 @@ export default function InventoryPage() {
           <button
             onClick={() => setActiveTab('almacen')}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              activeTab === 'almacen' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              activeTab === 'almacen' ? 'bg-surface-2 text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
             }`}
           >
             {t('tabs.warehouse')}
@@ -672,7 +672,7 @@ export default function InventoryPage() {
           <button
             onClick={() => setActiveTab('movimientos')}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              activeTab === 'movimientos' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              activeTab === 'movimientos' ? 'bg-surface-2 text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
             }`}
           >
             {t('tabs.movements')}
@@ -790,7 +790,7 @@ export default function InventoryPage() {
                         <span>{t('columns.maxStock')}: {item.maxStock || '-'}</span>
                       </div>
                       <div className="mt-2.5 flex items-center justify-end gap-1 border-t border-gray-100 pt-2">
-                        <button onClick={() => handleOpenEdit(item)} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded hover:bg-gray-50 transition-colors">
+                        <button onClick={() => handleOpenEdit(item)} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 bg-surface-2 border border-gray-200 rounded hover:bg-surface-1 transition-colors">
                           <Pencil className="w-3 h-3 text-amber-400" /><span>{tc('edit')}</span>
                         </button>
                       </div>
@@ -865,7 +865,7 @@ export default function InventoryPage() {
             <div data-tour="movements-table" className="relative min-h-[200px] border border-gray-200 rounded-lg overflow-x-auto">
               <TableLoadingOverlay loading={movLoading} message={t('movements.loadingMovements')} />
               {!movLoading && movements.length === 0 ? (
-                <div className="flex items-center justify-center h-64 bg-white text-gray-400">
+                <div className="flex items-center justify-center h-64 bg-surface-2 text-gray-400">
                   <div className="text-center">
                     <Package className="w-12 h-12 mx-auto mb-4 text-indigo-300" />
                     <p className="text-lg font-medium">{t('movements.noMovements')}</p>
@@ -884,7 +884,7 @@ export default function InventoryPage() {
                       const badge = getTypeBadge(movement.movementType);
                       const qty = getQuantityDisplay(movement);
                       return (
-                        <div key={movement.id} className="bg-white border border-gray-200 rounded-lg p-4">
+                        <div key={movement.id} className="bg-surface-2 border border-gray-200 rounded-lg p-4">
                           <div className="flex items-start gap-3 mb-2">
                             <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
                               <ArrowRightLeft className="w-5 h-5 text-indigo-600" />
@@ -928,7 +928,7 @@ export default function InventoryPage() {
 
                   {/* Desktop Table */}
                   <div className="hidden sm:block">
-                    <div className="flex items-center bg-gray-50 px-5 h-10 border-b border-gray-200 min-w-[1100px]">
+                    <div className="flex items-center bg-surface-1 px-5 h-10 border-b border-gray-200 min-w-[1100px]">
                       <div className="w-[130px] text-[11px] font-medium text-gray-500">{t('movementColumns.date')}</div>
                       <div className="flex-1 min-w-[180px] text-[11px] font-medium text-gray-500">{t('movementColumns.product')}</div>
                       <div className="w-[90px] text-[11px] font-medium text-gray-500 text-center">{t('movementColumns.type')}</div>
@@ -945,7 +945,7 @@ export default function InventoryPage() {
                       return (
                         <div
                           key={movement.id}
-                          className="flex items-center px-5 py-3.5 border-b border-gray-200 bg-white hover:bg-amber-50 transition-colors min-w-[1100px]"
+                          className="flex items-center px-5 py-3.5 border-b border-gray-200 bg-surface-2 hover:bg-amber-50 transition-colors min-w-[1100px]"
                         >
                           <div className="w-[130px]">
                             <span className="text-[13px] text-gray-900">
@@ -1042,7 +1042,7 @@ export default function InventoryPage() {
                 {t('drawer.productLabel')} <span className="text-red-500">*</span>
               </label>
               {loadingProducts ? (
-                <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded text-sm text-gray-500">
+                <div className="flex items-center gap-2 px-3 py-2 bg-surface-1 border border-gray-200 rounded text-sm text-gray-500">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600" />
                   {t('drawer.loadingProducts')}
                 </div>
@@ -1073,7 +1073,7 @@ export default function InventoryPage() {
           ) : (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{t('drawer.productLabel')}</label>
-              <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded text-sm text-gray-700">
+              <div className="px-3 py-2 bg-surface-1 border border-gray-200 rounded text-sm text-gray-700">
                 {selectedItem?.product?.name || `Producto #${selectedItem?.productId}`}
                 {selectedItem?.product?.code && (
                   <span className="text-gray-400 ml-2">({selectedItem.product.code})</span>
@@ -1212,7 +1212,7 @@ export default function InventoryPage() {
           <div data-tour="movements-drawer-actions" className="flex items-center justify-end gap-3">
             <button
               onClick={() => movDrawerRef.current?.requestClose()}
-              className="px-4 py-2 text-xs font-medium text-gray-700 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 text-xs font-medium text-gray-700 border border-gray-200 rounded hover:bg-surface-1 transition-colors"
             >
               {tc('cancel')}
             </button>
@@ -1249,7 +1249,7 @@ export default function InventoryPage() {
           {watchedMovProductoId > 0 && (
             <div>
               {stockLoading ? (
-                <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded border border-gray-200">
+                <div className="flex items-center gap-2 px-3 py-2 bg-surface-1 rounded border border-gray-200">
                   <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-gray-400"></div>
                   <span className="text-xs text-gray-500">{t('movementDrawer.checkingStock')}</span>
                 </div>
@@ -1304,7 +1304,7 @@ export default function InventoryPage() {
                         ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
                         : isSelected
                           ? config.activeClass
-                          : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                          : 'bg-surface-2 border-gray-200 text-gray-700 hover:bg-surface-1'
                     }`}
                     title={salidaDisabled ? t('movementDrawer.noExitPossible') : undefined}
                   >

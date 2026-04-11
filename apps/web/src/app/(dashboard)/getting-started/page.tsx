@@ -474,7 +474,7 @@ export default function GettingStartedPage() {
   return (
     <div className="flex flex-col">
       {/* Header */}
-      <div className="bg-white px-4 py-4 sm:px-8 sm:py-6 border-b border-gray-200">
+      <div className="bg-surface-2 px-4 py-4 sm:px-8 sm:py-6 border-b border-gray-200">
         <div className="page-animate">
           <div className="flex items-center gap-2 text-sm mb-3">
             <Link href="/dashboard" className="text-gray-500 hover:text-gray-700 transition-colors">
@@ -504,7 +504,7 @@ export default function GettingStartedPage() {
             </button>
             <button
               onClick={handleDismiss}
-              className="flex items-center gap-1.5 h-9 px-3 text-xs font-medium text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-1.5 h-9 px-3 text-xs font-medium text-gray-500 border border-gray-200 rounded-lg hover:bg-surface-1 transition-colors"
             >
               <X className="w-3.5 h-3.5" />
               <span className="sm:hidden">{t('skipShort')}</span>
@@ -519,7 +519,7 @@ export default function GettingStartedPage() {
 
         {/* Global Progress */}
         <div className="page-animate page-animate-delay-2">
-          <div className="bg-white border border-gray-200 rounded-xl p-5 sm:p-6">
+          <div className="bg-surface-2 border border-gray-200 rounded-xl p-5 sm:p-6">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
                 {allDone ? (
@@ -595,7 +595,7 @@ export default function GettingStartedPage() {
                 {/* Phase header */}
                 <button
                   onClick={() => togglePhase(phase.id)}
-                  className="w-full flex items-center gap-3 px-4 py-3.5 sm:px-5 sm:py-4 text-left hover:bg-white/50 transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-3.5 sm:px-5 sm:py-4 text-left hover:bg-surface-2/50 transition-colors"
                 >
                   <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${phaseCompleted ? 'bg-green-500' : phase.colorDot}`} />
                   <div className="flex-1 min-w-0">
@@ -625,7 +625,7 @@ export default function GettingStartedPage() {
                       {phase.steps.map((step) => (
                         <div
                           key={step.id}
-                          className="flex items-center gap-3 px-4 py-3 sm:px-5 sm:py-3.5 bg-white/80 hover:bg-white transition-colors group"
+                          className="flex items-center gap-3 px-4 py-3 sm:px-5 sm:py-3.5 bg-surface-2/80 hover:bg-surface-2 transition-colors group"
                         >
                           {/* Check icon */}
                           <div className="flex-shrink-0">
@@ -685,7 +685,7 @@ export default function GettingStartedPage() {
                                   scheduleTourContinuation(step.tourId!);
                                   router.push(step.href);
                                 }}
-                                className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-400 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                                className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-400 border border-gray-200 rounded-lg hover:bg-surface-1 transition-colors whitespace-nowrap opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                                 title={t('repeatTour')}
                               >
                                 <Compass className="w-3 h-3" />
@@ -695,7 +695,7 @@ export default function GettingStartedPage() {
                             {step.completed && (
                               <Link
                                 href={step.href}
-                                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-400 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-400 border border-gray-200 rounded-lg hover:bg-surface-1 transition-colors whitespace-nowrap opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                               >
                                 {t('view')}
                                 <ChevronRight className="w-3 h-3" />

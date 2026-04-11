@@ -420,7 +420,7 @@ function VisitsPageContent() {
         <button
           onClick={() => setView('list')}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-            currentView === 'list' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+            currentView === 'list' ? 'bg-surface-2 text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
           }`}
         >
           <List className="w-4 h-4" />
@@ -429,7 +429,7 @@ function VisitsPageContent() {
         <button
           onClick={() => setView('calendar')}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-            currentView === 'calendar' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+            currentView === 'calendar' ? 'bg-surface-2 text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
           }`}
         >
           <CalendarDays className="w-4 h-4" />
@@ -534,7 +534,7 @@ function VisitsPageContent() {
             {hasFilters && (
               <button
                 onClick={handleClearFilters}
-                className="flex items-center gap-1 px-3 py-2 text-xs text-gray-500 hover:text-gray-700 border border-gray-200 rounded hover:bg-gray-50"
+                className="flex items-center gap-1 px-3 py-2 text-xs text-gray-500 hover:text-gray-700 border border-gray-200 rounded hover:bg-surface-1"
               >
                 <X className="w-3.5 h-3.5" />
                 {t('clearFilters')}
@@ -601,7 +601,7 @@ function VisitsPageContent() {
                       {visit.duracionMinutos && <span className="text-xs text-gray-400 ml-auto">{visit.duracionMinutos} min</span>}
                     </div>
                     <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                      <button onClick={() => handleViewDetails(visit.id)} className="flex items-center gap-1 px-3 py-1.5 text-xs border border-gray-200 rounded hover:bg-gray-50">
+                      <button onClick={() => handleViewDetails(visit.id)} className="flex items-center gap-1 px-3 py-1.5 text-xs border border-gray-200 rounded hover:bg-surface-1">
                         <Eye className="w-3.5 h-3.5" /> Ver
                       </button>
                     </div>
@@ -671,7 +671,7 @@ function VisitsPageContent() {
             </div>
 
             {/* Cliente */}
-            <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+            <div className="bg-surface-1 rounded-lg p-4 space-y-2">
               <div className="flex items-center gap-2">
                 <User className="w-4 h-4 text-gray-400" />
                 <span className="font-medium">{visitDetail.clienteNombre}</span>
@@ -722,7 +722,7 @@ function VisitsPageContent() {
 
             {/* Pedido asociado */}
             {visitDetail.numeroPedido && (
-              <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg text-sm">
+              <div className="flex items-center gap-2 p-3 bg-surface-1 rounded-lg text-sm">
                 <ShoppingCart className="w-4 h-4 text-green-600" />
                 <span className="text-gray-700 font-medium">{t('detail.linkedOrder', { number: visitDetail.numeroPedido })}</span>
               </div>
@@ -732,7 +732,7 @@ function VisitsPageContent() {
             {visitDetail.notas && (
               <div>
                 <p className="text-xs font-medium text-gray-500 mb-1">Notas</p>
-                <p className="text-sm text-gray-700 bg-gray-50 rounded p-3">{visitDetail.notas}</p>
+                <p className="text-sm text-gray-700 bg-surface-1 rounded p-3">{visitDetail.notas}</p>
               </div>
             )}
 

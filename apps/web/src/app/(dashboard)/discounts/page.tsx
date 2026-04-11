@@ -415,7 +415,7 @@ export default function DiscountsPage() {
           <div className="relative" data-tour="discounts-import-export">
             <button
               onClick={() => setShowDataMenu(!showDataMenu)}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-surface-1 transition-colors"
             >
               <Download className="w-3.5 h-3.5 text-emerald-500" />
               <span className="hidden sm:inline">{tc('importExport')}</span>
@@ -424,17 +424,17 @@ export default function DiscountsPage() {
             {showDataMenu && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowDataMenu(false)} />
-                <div className="absolute right-0 mt-1 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1">
+                <div className="absolute right-0 mt-1 w-44 bg-surface-2 border border-gray-200 rounded-lg shadow-lg z-20 py-1">
                   <button
                     onClick={async () => { setShowDataMenu(false); try { await exportToCsv('descuentos'); toast.success(tc('csvDownloaded')); } catch { toast.error(tc('errorExporting')); } }}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
+                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-surface-1"
                   >
                     <Download className="w-3.5 h-3.5 text-emerald-500" />
                     {tc('exportCsv')}
                   </button>
                   <button
                     onClick={() => { setIsImportOpen(true); setShowDataMenu(false); }}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
+                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-surface-1"
                   >
                     <Upload className="w-3.5 h-3.5 text-blue-500" />
                     {tc('importCsv')}
@@ -449,16 +449,16 @@ export default function DiscountsPage() {
               <span>{t('newDiscount')}</span>
               <ChevronDown className="w-3.5 h-3.5" />
             </button>
-            <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20">
+            <div className="absolute right-0 top-full mt-1 w-56 bg-surface-2 border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20">
               <button
                 onClick={() => handleOpenCreate('Global')}
-                className="w-full px-4 py-2.5 text-left text-[13px] text-gray-700 hover:bg-gray-50 first:rounded-t-lg"
+                className="w-full px-4 py-2.5 text-left text-[13px] text-gray-700 hover:bg-surface-1 first:rounded-t-lg"
               >
                 {t('globalDiscount')}
               </button>
               <button
                 onClick={() => handleOpenCreate('Producto')}
-                className="w-full px-4 py-2.5 text-left text-[13px] text-gray-700 hover:bg-gray-50 last:rounded-b-lg border-t border-gray-100"
+                className="w-full px-4 py-2.5 text-left text-[13px] text-gray-700 hover:bg-surface-1 last:rounded-b-lg border-t border-gray-100"
               >
                 {t('productDiscount')}
               </button>
@@ -589,7 +589,7 @@ export default function DiscountsPage() {
                     {discount.tipoAplicacion === 'Producto' && discount.productoCodigo && <span className="text-gray-400">- {discount.productoCodigo}</span>}
                   </div>
                   <div className="mt-2.5 flex items-center justify-end gap-1 border-t border-gray-100 pt-2" onClick={(e) => e.stopPropagation()}>
-                    <button onClick={() => handleOpenEdit(discount)} disabled={loading} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded hover:bg-gray-50 transition-colors disabled:opacity-50">
+                    <button onClick={() => handleOpenEdit(discount)} disabled={loading} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 bg-surface-2 border border-gray-200 rounded hover:bg-surface-1 transition-colors disabled:opacity-50">
                       <Pencil className="w-3 h-3 text-amber-400" /><span>{tc('edit')}</span>
                     </button>
                     {deleteConfirmId === discount.id ? (

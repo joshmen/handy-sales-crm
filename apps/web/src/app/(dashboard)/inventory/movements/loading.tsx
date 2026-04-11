@@ -2,7 +2,7 @@ export default function Loading() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-8 py-6">
+      <div className="bg-surface-2 border-b border-gray-200 px-8 py-6">
         <div className="h-4 w-48 bg-gray-200 rounded animate-pulse mb-4" />
         <div className="flex items-center gap-3">
           <div className="h-8 w-64 bg-gray-200 rounded animate-pulse" />
@@ -24,8 +24,8 @@ export default function Loading() {
         </div>
 
         {/* Table */}
-        <div className="bg-white border border-gray-200 rounded">
-          <div className="h-10 bg-gray-50 border-b border-gray-200" />
+        <div className="bg-surface-2 border border-gray-200 rounded">
+          <div className="h-10 bg-surface-1 border-b border-gray-200" />
           {[1, 2, 3, 4, 5].map((i) => (
             <div key={i} className="flex items-center px-4 py-3 border-b border-gray-100">
               <div className="h-4 w-24 bg-gray-200 rounded animate-pulse mr-4" />

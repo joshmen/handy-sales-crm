@@ -101,7 +101,7 @@ function HelpTooltip() {
         <Question size={15} weight="bold" />
       </button>
       {open && (
-        <div className="absolute right-0 top-10 z-50 w-80 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl shadow-2xl shadow-black/10 p-5 text-sm animate-ai-fade-up">
+        <div className="absolute right-0 top-10 z-50 w-80 rounded-2xl border border-gray-200 dark:border-gray-700 bg-surface-2/95 dark:bg-gray-800/95 backdrop-blur-xl shadow-2xl shadow-black/10 p-5 text-sm animate-ai-fade-up">
           <p className="font-semibold text-gray-900 dark:text-white mb-4 text-base">{t('helpTitle')}</p>
           <div className="space-y-3">
             {ACTION_TYPES.map((a) => {
@@ -175,7 +175,7 @@ function WelcomeState({
             <button
               key={s.textKey}
               onClick={() => onSelectSuggestion(suggestionText, s.action)}
-              className={`group text-left p-3 sm:p-4 rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-800 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 opacity-0 animate-ai-fade-up ${actionColorMap[s.action]}`}
+              className={`group text-left p-3 sm:p-4 rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-surface-2/70 dark:bg-gray-800/50 backdrop-blur-sm hover:bg-surface-2 dark:hover:bg-gray-800 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 opacity-0 animate-ai-fade-up ${actionColorMap[s.action]}`}
               style={{ animationDelay: `${200 + i * 80}ms`, animationFillMode: 'forwards' }}
             >
               <div className="flex items-start gap-3">
@@ -295,8 +295,8 @@ function ActionButtons({
               isConfirming
                 ? 'border-amber-500 dark:border-amber-500 bg-amber-50 dark:bg-amber-950/40 ring-1 ring-amber-500/30'
                 : isExecuting
-                  ? 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 cursor-wait'
-                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/80 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm'
+                  ? 'border-gray-300 dark:border-gray-600 bg-surface-1 dark:bg-gray-800 cursor-wait'
+                  : 'border-gray-200 dark:border-gray-700 bg-surface-2 dark:bg-gray-800/80 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm'
             } ${executing && !isExecuting ? 'opacity-40 cursor-not-allowed' : ''}`}
             style={!isConfirming && !isExecuting ? {
               borderLeftWidth: '3px',
@@ -370,7 +370,7 @@ function MessageBubble({ message, isLatest, onActionExecute, executingAction }: 
           className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${
             isUser
               ? 'bg-violet-600 text-white rounded-br-md shadow-sm'
-              : 'bg-white dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700/60 text-gray-800 dark:text-gray-200 rounded-bl-md shadow-sm'
+              : 'bg-surface-2 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700/60 text-gray-800 dark:text-gray-200 rounded-bl-md shadow-sm'
           }`}
         >
           <div className="whitespace-pre-wrap break-words">{message.content}</div>
@@ -432,7 +432,7 @@ function TypingIndicator() {
   return (
     <div className="flex gap-3 justify-start animate-ai-fade-up">
       <AiChatAvatar />
-      <div className="bg-white dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700/60 rounded-2xl rounded-bl-md px-5 py-3.5 shadow-sm">
+      <div className="bg-surface-2 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700/60 rounded-2xl rounded-bl-md px-5 py-3.5 shadow-sm">
         <div className="flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-violet-400 dark:bg-violet-500 animate-ai-dot-pulse" style={{ animationDelay: '0ms' }} />
           <span className="w-2 h-2 rounded-full bg-blue-400 dark:bg-blue-500 animate-ai-dot-pulse" style={{ animationDelay: '200ms' }} />
@@ -608,19 +608,19 @@ export default function AiPage() {
   const actionPillColors: Record<string, { active: string; inactive: string }> = {
     resumen: {
       active: 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-300 dark:ring-emerald-700 shadow-sm shadow-emerald-500/10',
-      inactive: 'bg-gray-50 dark:bg-gray-800/80 text-gray-500 dark:text-gray-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/5 hover:text-emerald-600 dark:hover:text-emerald-400',
+      inactive: 'bg-surface-1 dark:bg-gray-800/80 text-gray-500 dark:text-gray-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/5 hover:text-emerald-600 dark:hover:text-emerald-400',
     },
     insight: {
       active: 'bg-violet-100 dark:bg-violet-500/15 text-violet-700 dark:text-violet-300 ring-1 ring-violet-300 dark:ring-violet-700 shadow-sm shadow-violet-500/10',
-      inactive: 'bg-gray-50 dark:bg-gray-800/80 text-gray-500 dark:text-gray-400 hover:bg-violet-50 dark:hover:bg-violet-500/5 hover:text-violet-600 dark:hover:text-violet-400',
+      inactive: 'bg-surface-1 dark:bg-gray-800/80 text-gray-500 dark:text-gray-400 hover:bg-violet-50 dark:hover:bg-violet-500/5 hover:text-violet-600 dark:hover:text-violet-400',
     },
     pregunta: {
       active: 'bg-sky-100 dark:bg-sky-500/15 text-sky-700 dark:text-sky-300 ring-1 ring-sky-300 dark:ring-sky-700 shadow-sm shadow-sky-500/10',
-      inactive: 'bg-gray-50 dark:bg-gray-800/80 text-gray-500 dark:text-gray-400 hover:bg-sky-50 dark:hover:bg-sky-500/5 hover:text-sky-600 dark:hover:text-sky-400',
+      inactive: 'bg-surface-1 dark:bg-gray-800/80 text-gray-500 dark:text-gray-400 hover:bg-sky-50 dark:hover:bg-sky-500/5 hover:text-sky-600 dark:hover:text-sky-400',
     },
     pronostico: {
       active: 'bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 ring-1 ring-amber-300 dark:ring-amber-700 shadow-sm shadow-amber-500/10',
-      inactive: 'bg-gray-50 dark:bg-gray-800/80 text-gray-500 dark:text-gray-400 hover:bg-amber-50 dark:hover:bg-amber-500/5 hover:text-amber-600 dark:hover:text-amber-400',
+      inactive: 'bg-surface-1 dark:bg-gray-800/80 text-gray-500 dark:text-gray-400 hover:bg-amber-50 dark:hover:bg-amber-500/5 hover:text-amber-600 dark:hover:text-amber-400',
     },
   };
 
@@ -640,7 +640,7 @@ export default function AiPage() {
         {!noPlan && (
           <div className="flex items-center justify-end gap-2.5 pb-3">
             {!loadingCredits && credits && (
-              <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/60 dark:border-gray-700/60 text-sm shadow-sm">
+              <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-surface-2/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/60 dark:border-gray-700/60 text-sm shadow-sm">
                 <div className="flex items-center gap-1.5">
                   <div className="w-5 h-5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 flex items-center justify-center">
                     <Lightning size={11} weight="fill" className="text-white" />
@@ -715,7 +715,7 @@ export default function AiPage() {
                   : 'shadow-sm'
               }`}>
                 {/* (focus ring handled by parent shadow) */}
-                <div className="relative flex items-end gap-1.5 sm:gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-1.5 sm:p-2 pl-3 sm:pl-4">
+                <div className="relative flex items-end gap-1.5 sm:gap-2 bg-surface-2 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-1.5 sm:p-2 pl-3 sm:pl-4">
                   <textarea
                     ref={textareaRef}
                     value={prompt}

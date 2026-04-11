@@ -20,7 +20,7 @@ export default async function NotFound() {
   const t = texts[locale] || texts.es;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-surface-1 px-4">
       <div className="max-w-md w-full text-center space-y-6">
         <div className="mx-auto w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
           <FileQuestion className="w-8 h-8 text-gray-400" />

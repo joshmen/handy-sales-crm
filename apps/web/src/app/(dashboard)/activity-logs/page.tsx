@@ -211,7 +211,7 @@ export default function ActivityLogsPage() {
         <button
           data-tour="logs-export-btn"
           onClick={handleExport}
-          className="flex items-center gap-2 px-4 py-2.5 text-[13px] font-medium text-gray-700 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
+          className="flex items-center gap-2 px-4 py-2.5 text-[13px] font-medium text-gray-700 border border-gray-200 rounded-md hover:bg-surface-1 transition-colors"
         >
           <Download className="w-4 h-4" />
           <span>{tc('exportCsv')}</span>
@@ -309,7 +309,7 @@ export default function ActivityLogsPage() {
                   {/* Desktop Table */}
                   <div className="hidden md:block">
                     {/* Table Header */}
-                    <div className="flex items-center bg-gray-50 px-4 h-10 border-b border-gray-200">
+                    <div className="flex items-center bg-surface-1 px-4 h-10 border-b border-gray-200">
                       <div className="w-[160px] text-xs font-semibold text-gray-600">{t('columns.user')}</div>
                       {isSuperAdmin && (
                         <div className="w-[140px] text-xs font-semibold text-gray-600">{t('columns.company')}</div>
@@ -326,7 +326,7 @@ export default function ActivityLogsPage() {
                     {logs.map((log) => (
                       <div
                         key={log.id}
-                        className="flex items-center px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                        className="flex items-center px-4 py-3 border-b border-gray-100 hover:bg-surface-1 transition-colors"
                       >
                         <div className="w-[160px] flex items-center gap-2">
                           <div className={`w-7 h-7 rounded-full ${getUserColor(log.userId)} flex items-center justify-center text-[10px] font-medium shrink-0`}>
@@ -409,7 +409,7 @@ export default function ActivityLogsPage() {
                   <button
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-gray-600 border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-gray-600 border border-gray-200 rounded-md hover:bg-surface-1 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 
                   >
                     <ChevronLeft className="w-4 h-4" />
@@ -445,7 +445,7 @@ export default function ActivityLogsPage() {
                   <button
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
-                    className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-gray-600 border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-gray-600 border border-gray-200 rounded-md hover:bg-surface-1 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 
                   >
                     <span>{tc('next')}</span>

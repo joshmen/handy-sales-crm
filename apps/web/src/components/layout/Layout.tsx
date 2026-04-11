@@ -91,7 +91,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           <ExpirationBanner />
           <AnnouncementBanners />
           <ErrorBoundary>
-            <div className="p-4 sm:p-6 lg:p-8 w-full min-w-0">
+            <div className="p-4 sm:p-6 lg:p-8 w-full min-w-0 max-w-page mx-auto">
               {children}
             </div>
           </ErrorBoundary>

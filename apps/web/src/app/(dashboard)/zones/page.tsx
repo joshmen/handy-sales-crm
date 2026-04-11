@@ -376,7 +376,7 @@ export default function ZonesPage() {
           <button
             data-tour="zones-map-btn"
             onClick={handleViewMap}
-            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-surface-1 transition-colors"
           >
             <Map className="w-3.5 h-3.5 text-blue-500" />
             <span className="hidden sm:inline">{t('mapTitle')}</span>
@@ -384,7 +384,7 @@ export default function ZonesPage() {
           <div className="relative" data-tour="zones-import-export">
             <button
               onClick={() => setShowDataMenu(!showDataMenu)}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-surface-1 transition-colors"
             >
               <Download className="w-3.5 h-3.5 text-emerald-500" />
               <span className="hidden sm:inline">{tc('importExport')}</span>
@@ -393,17 +393,17 @@ export default function ZonesPage() {
             {showDataMenu && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowDataMenu(false)} />
-                <div className="absolute right-0 mt-1 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1">
+                <div className="absolute right-0 mt-1 w-44 bg-surface-2 border border-gray-200 rounded-lg shadow-lg z-20 py-1">
                   <button
                     onClick={() => { setShowDataMenu(false); exportToCsv('zonas'); }}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
+                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-surface-1"
                   >
                     <Download className="w-3.5 h-3.5 text-emerald-500" />
                     {tc('exportCsv')}
                   </button>
                   <button
                     onClick={() => { setShowDataMenu(false); setIsImportOpen(true); }}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
+                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-surface-1"
                   >
                     <Upload className="w-3.5 h-3.5 text-blue-500" />
                     {tc('importCsv')}
@@ -481,7 +481,7 @@ export default function ZonesPage() {
             {!loading && zones.length > 0 && zones.map((zone) => (
               <div
                 key={zone.id}
-                className={`border border-gray-200 rounded-lg p-3 bg-white ${
+                className={`border border-gray-200 rounded-lg p-3 bg-surface-2 ${
                   !zone.isEnabled ? 'opacity-60' : ''
                 }`}
               >
@@ -548,9 +548,9 @@ export default function ZonesPage() {
           </div>
 
           {/* Zones Table */}
-          <div className="hidden sm:block bg-white border border-gray-200 rounded-lg overflow-hidden" data-tour="zones-table">
+          <div className="hidden sm:block bg-surface-2 border border-gray-200 rounded-lg overflow-hidden" data-tour="zones-table">
             {/* Table Header */}
-            <div className="flex items-center gap-3 bg-gray-50 px-5 h-10 border-b border-gray-200">
+            <div className="flex items-center gap-3 bg-surface-1 px-5 h-10 border-b border-gray-200">
               <div className="w-[28px] flex items-center justify-center">
                 <button
                   onClick={batch.handleSelectAllVisible}
@@ -599,7 +599,7 @@ export default function ZonesPage() {
                   <div
                     key={zone.id}
                     onClick={() => handleEditZone(zone)}
-                    className={`flex items-center gap-3 px-5 py-3.5 border-b border-gray-200 bg-white hover:bg-amber-50 cursor-pointer transition-colors group ${
+                    className={`flex items-center gap-3 px-5 py-3.5 border-b border-gray-200 bg-surface-2 hover:bg-amber-50 cursor-pointer transition-colors group ${
                       !zone.isEnabled ? 'opacity-60' : ''
                     }`}
                   >
@@ -1001,20 +1001,20 @@ export default function ZonesPage() {
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('drawer.latitude')}</label>
-                      <div className="px-3 py-2 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg tabular-nums">
+                      <div className="px-3 py-2 text-sm text-gray-600 bg-surface-1 border border-gray-200 rounded-lg tabular-nums">
                         {drawerMapCenter.lat.toFixed(6)}
                       </div>
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('drawer.longitude')}</label>
-                      <div className="px-3 py-2 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg tabular-nums">
+                      <div className="px-3 py-2 text-sm text-gray-600 bg-surface-1 border border-gray-200 rounded-lg tabular-nums">
                         {drawerMapCenter.lng.toFixed(6)}
                       </div>
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center justify-center h-48 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center justify-center h-48 bg-surface-1 rounded-lg border border-gray-200">
                   <div className="flex items-center gap-2 text-sm text-gray-400">
                     <Loader2 className="w-4 h-4 animate-spin" />
                     {t('drawer.loadingMap')}

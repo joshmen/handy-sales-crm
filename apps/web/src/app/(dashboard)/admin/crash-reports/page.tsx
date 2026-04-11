@@ -244,10 +244,10 @@ function LogLevelControls() {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <div className="bg-surface-2 rounded-xl border border-gray-200 shadow-sm overflow-hidden">
       <button
         onClick={() => setOpen(prev => !prev)}
-        className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 transition-colors"
+        className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-surface-1 transition-colors"
       >
         <span className="flex items-center gap-2 text-sm font-semibold text-gray-700">
           <GearSix size={18} weight="duotone" className="text-gray-500" />
@@ -431,7 +431,7 @@ function CloudWatchTab() {
             className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition-colors ${
               autoRefresh
                 ? 'bg-green-50 border-green-200 text-green-700'
-                : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'
+                : 'bg-surface-2 border-gray-200 text-gray-500 hover:bg-surface-1'
             }`}
           >
             <ArrowsClockwise size={14} weight={autoRefresh ? 'fill' : 'regular'} className={autoRefresh ? 'animate-spin' : ''} />
@@ -446,7 +446,7 @@ function CloudWatchTab() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div className="bg-surface-2 rounded-xl border border-gray-200 p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500">{t('errors24h')}</p>
@@ -464,7 +464,7 @@ function CloudWatchTab() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div className="bg-surface-2 rounded-xl border border-gray-200 p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500">{t('warnings24h')}</p>
@@ -482,7 +482,7 @@ function CloudWatchTab() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div className="bg-surface-2 rounded-xl border border-gray-200 p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500">{t('crashes24h')}</p>
@@ -500,7 +500,7 @@ function CloudWatchTab() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div className="bg-surface-2 rounded-xl border border-gray-200 p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500">{t('apisWithErrors')}</p>
@@ -520,10 +520,10 @@ function CloudWatchTab() {
       </div>
 
       {/* Bar Chart — Errors by Hour */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+      <div className="bg-surface-2 rounded-xl border border-gray-200 p-6 shadow-sm">
         <h3 className="text-sm font-semibold text-gray-700 mb-4">{t('errorsByHour')}</h3>
         {loading ? (
-          <div className="h-64 w-full bg-gray-50 rounded-lg animate-pulse" />
+          <div className="h-64 w-full bg-surface-1 rounded-lg animate-pulse" />
         ) : chartData.length === 0 ? (
           <div className="h-64 flex items-center justify-center text-sm text-gray-400">
             {t('noDataLast24h')}
@@ -546,7 +546,7 @@ function CloudWatchTab() {
       </div>
 
       {/* Recent Errors Table */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-surface-2 rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100">
           <h3 className="text-sm font-semibold text-gray-700">{t('recentErrors')}</h3>
         </div>
@@ -570,7 +570,7 @@ function CloudWatchTab() {
             {/* Desktop table */}
             <div className="hidden md:block overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead className="bg-surface-1">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 w-8" />
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Timestamp</th>
@@ -584,7 +584,7 @@ function CloudWatchTab() {
                       <tr
                         key={`row-${idx}`}
                         onClick={() => toggleRow(idx)}
-                        className="hover:bg-gray-50 cursor-pointer transition-colors"
+                        className="hover:bg-surface-1 cursor-pointer transition-colors"
                       >
                         <td className="px-6 py-3">
                           {expandedRows.has(idx) ? (
@@ -605,7 +605,7 @@ function CloudWatchTab() {
                       </tr>
                       {expandedRows.has(idx) && (
                         <tr key={`detail-${idx}`}>
-                          <td colSpan={4} className="px-6 py-4 bg-gray-50">
+                          <td colSpan={4} className="px-6 py-4 bg-surface-1">
                             <div className="space-y-3">
                               <div className="flex gap-4 text-xs text-gray-500">
                                 <span><span className="font-medium">Nivel:</span> {entry.level}</span>
@@ -654,7 +654,7 @@ function CloudWatchTab() {
                 <div
                   key={idx}
                   onClick={() => toggleRow(idx)}
-                  className="px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors"
+                  className="px-4 py-3 cursor-pointer hover:bg-surface-1 transition-colors"
                 >
                   <div className="flex items-center justify-between mb-1.5">
                     {getLogGroupBadge(entry.logGroup)}
@@ -869,7 +869,7 @@ function MobileCrashesTab() {
     <div className="space-y-6">
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div className="bg-surface-2 rounded-xl border border-gray-200 p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500">{t('today')}</p>
@@ -887,7 +887,7 @@ function MobileCrashesTab() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div className="bg-surface-2 rounded-xl border border-gray-200 p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500">{t('unresolved')}</p>
@@ -905,7 +905,7 @@ function MobileCrashesTab() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div className="bg-surface-2 rounded-xl border border-gray-200 p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500">{t('crashes')}</p>
@@ -923,7 +923,7 @@ function MobileCrashesTab() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div className="bg-surface-2 rounded-xl border border-gray-200 p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500">{t('errors')}</p>
@@ -943,7 +943,7 @@ function MobileCrashesTab() {
       </div>
 
       {/* Filters + Refresh */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+      <div className="bg-surface-2 rounded-xl border border-gray-200 p-4 shadow-sm">
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
           <div className="w-full sm:w-48">
             <Select
@@ -1007,10 +1007,10 @@ function MobileCrashesTab() {
       </div>
 
       {/* Desktop Table */}
-      <div className="hidden md:block bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="hidden md:block bg-surface-2 rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-surface-1">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Fecha</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Severidad</th>
@@ -1020,7 +1020,7 @@ function MobileCrashesTab() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Estado</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-100">
+            <tbody className="bg-surface-2 divide-y divide-gray-100">
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i}>
@@ -1045,7 +1045,7 @@ function MobileCrashesTab() {
                   <tr
                     key={report.id}
                     onClick={() => handleRowClick(report)}
-                    className="hover:bg-gray-50 cursor-pointer transition-colors"
+                    className="hover:bg-surface-1 cursor-pointer transition-colors"
                   >
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {formatDate(report.creadoEn)}
@@ -1098,7 +1098,7 @@ function MobileCrashesTab() {
       <div className="md:hidden space-y-3">
         {loading ? (
           Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm animate-pulse">
+            <div key={i} className="bg-surface-2 rounded-xl border border-gray-200 p-4 shadow-sm animate-pulse">
               <div className="flex justify-between mb-3">
                 <div className="h-5 w-16 bg-gray-100 rounded-full" />
                 <div className="h-5 w-20 bg-gray-100 rounded-full" />
@@ -1108,7 +1108,7 @@ function MobileCrashesTab() {
             </div>
           ))
         ) : reports.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-200 p-8 text-center shadow-sm">
+          <div className="bg-surface-2 rounded-xl border border-gray-200 p-8 text-center shadow-sm">
             <Bug size={48} weight="duotone" className="mx-auto text-gray-300 mb-3" />
             <p className="text-gray-500 text-sm">No se encontraron crash reports</p>
           </div>
@@ -1117,7 +1117,7 @@ function MobileCrashesTab() {
             <div
               key={report.id}
               onClick={() => handleRowClick(report)}
-              className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+              className="bg-surface-2 rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
             >
               <div className="flex items-center justify-between mb-2">
                 {getSeverityBadge(report.severity)}
@@ -1286,19 +1286,19 @@ function MobileCrashesTab() {
                 Dispositivo
               </h3>
               <div className="grid grid-cols-2 gap-3">
-                <div className="bg-gray-50 rounded-lg px-3 py-2">
+                <div className="bg-surface-1 rounded-lg px-3 py-2">
                   <p className="text-xs text-gray-400">Nombre</p>
                   <p className="text-sm text-gray-900 font-medium">{selectedReport.deviceName || '-'}</p>
                 </div>
-                <div className="bg-gray-50 rounded-lg px-3 py-2">
+                <div className="bg-surface-1 rounded-lg px-3 py-2">
                   <p className="text-xs text-gray-400">Device ID</p>
                   <p className="text-sm text-gray-900 font-mono truncate">{selectedReport.deviceId || '-'}</p>
                 </div>
-                <div className="bg-gray-50 rounded-lg px-3 py-2">
+                <div className="bg-surface-1 rounded-lg px-3 py-2">
                   <p className="text-xs text-gray-400">Version App</p>
                   <p className="text-sm text-gray-900 font-medium">{selectedReport.appVersion || '-'}</p>
                 </div>
-                <div className="bg-gray-50 rounded-lg px-3 py-2">
+                <div className="bg-surface-1 rounded-lg px-3 py-2">
                   <p className="text-xs text-gray-400">OS Version</p>
                   <p className="text-sm text-gray-900 font-medium">{selectedReport.osVersion || '-'}</p>
                 </div>
@@ -1311,7 +1311,7 @@ function MobileCrashesTab() {
                 Contexto
               </h3>
               <div className="grid grid-cols-2 gap-3">
-                <div className="bg-gray-50 rounded-lg px-3 py-2">
+                <div className="bg-surface-1 rounded-lg px-3 py-2">
                   <p className="text-xs text-gray-400 flex items-center gap-1">
                     <Buildings size={12} />
                     Empresa
@@ -1320,7 +1320,7 @@ function MobileCrashesTab() {
                     {selectedReport.tenantNombre || `Tenant #${selectedReport.tenantId}`}
                   </p>
                 </div>
-                <div className="bg-gray-50 rounded-lg px-3 py-2">
+                <div className="bg-surface-1 rounded-lg px-3 py-2">
                   <p className="text-xs text-gray-400 flex items-center gap-1">
                     <User size={12} />
                     Usuario

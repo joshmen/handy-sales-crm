@@ -53,7 +53,7 @@ export default function DashboardError({
           </button>
           <a
             href="/dashboard"
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-white text-gray-700 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-surface-2 text-gray-700 text-sm font-medium rounded-lg border border-gray-300 hover:bg-surface-1 transition-colors"
           >
             <Home className="w-4 h-4" />
             Dashboard

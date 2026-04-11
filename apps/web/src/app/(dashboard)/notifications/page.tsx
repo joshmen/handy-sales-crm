@@ -204,7 +204,7 @@ export default function NotificationsPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-900 px-8 py-6 border-b border-gray-200 dark:border-gray-700">
+      <div className="bg-surface-2 dark:bg-gray-900 px-8 py-6 border-b border-gray-200 dark:border-gray-700">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-[13px] mb-4">
           <span className="text-gray-500 dark:text-gray-400">{t('breadcrumbAdmin')}</span>
@@ -247,7 +247,7 @@ export default function NotificationsPage() {
               placeholder={t('searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-[280px] pl-10 pr-3 py-2.5 text-sm border border-gray-200 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-[280px] pl-10 pr-3 py-2.5 text-sm border border-gray-200 dark:border-gray-600 rounded-md bg-surface-2 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500"
             />
           </div>
 
@@ -314,8 +314,8 @@ export default function NotificationsPage() {
                     key={notification.id}
                     className={`border rounded-lg p-5 hover:shadow-sm transition-shadow cursor-pointer ${
                       isUnread
-                        ? 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
-                        : 'bg-gray-50 dark:bg-gray-900/50 border-gray-100 dark:border-gray-800'
+                        ? 'bg-surface-2 dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+                        : 'bg-surface-1 dark:bg-gray-900/50 border-gray-100 dark:border-gray-800'
                     }`}
                     onClick={() => isUnread && handleMarkAsRead(notification.id)}
                   >
@@ -394,7 +394,7 @@ export default function NotificationsPage() {
                 <button
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-md text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-md text-gray-600 dark:text-gray-400 hover:bg-surface-1 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>

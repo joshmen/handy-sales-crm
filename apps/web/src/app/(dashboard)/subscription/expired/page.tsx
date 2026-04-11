@@ -106,7 +106,7 @@ export default function SubscriptionExpiredPage() {
                 return (
                   <div
                     key={plan.id}
-                    className={`rounded-xl border p-6 bg-white ${
+                    className={`rounded-xl border p-6 bg-surface-2 ${
                       isMostPopular
                         ? 'border-2 border-blue-500 shadow-xl relative'
                         : 'border-gray-200'
@@ -186,7 +186,7 @@ export default function SubscriptionExpiredPage() {
         </div>
 
         {/* Contact Options */}
-        <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8">
+        <div className="bg-surface-2 border border-gray-200 rounded-xl p-6 mb-8">
           <h3 className="text-lg font-bold mb-5 text-center">
             {te('needHelp')}
           </h3>
@@ -219,7 +219,7 @@ export default function SubscriptionExpiredPage() {
         </div>
 
         {/* Payment Methods */}
-        <div className="bg-white border border-gray-200 rounded-xl p-5 mb-8">
+        <div className="bg-surface-2 border border-gray-200 rounded-xl p-5 mb-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
             <div>
               <h3 className="font-medium text-sm mb-0.5">{te('paymentMethods')}</h3>
@@ -238,7 +238,7 @@ export default function SubscriptionExpiredPage() {
         <div className="text-center pb-8">
           <button
             onClick={handleLogout}
-            className="px-6 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            className="px-6 py-2 text-sm font-medium text-gray-700 bg-surface-2 border border-gray-300 rounded-lg hover:bg-surface-1 transition-colors"
           >
             {te('logout')}
           </button>

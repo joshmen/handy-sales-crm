@@ -284,13 +284,13 @@ export default function RoutesPage() {
             <button onClick={() => router.push(`/routes/manage/${route.id}/load`)} className="text-[11px] font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-md transition-colors">{t('actions.load')}</button>
           )}
           {(route.estado === 1 || route.estado === 4 || route.estado === 5) && (
-            <button onClick={() => router.push(`/routes/manage/${route.id}/load`)} className="text-[11px] font-medium text-gray-600 hover:text-gray-800 bg-gray-50 hover:bg-gray-100 px-2.5 py-1 rounded-md transition-colors">{t('actions.viewLoad')}</button>
+            <button onClick={() => router.push(`/routes/manage/${route.id}/load`)} className="text-[11px] font-medium text-gray-600 hover:text-gray-800 bg-surface-1 hover:bg-gray-100 px-2.5 py-1 rounded-md transition-colors">{t('actions.viewLoad')}</button>
           )}
           {route.estado === 2 && (
             <button onClick={() => router.push(`/routes/manage/${route.id}/close`)} className="text-[11px] font-medium text-green-600 hover:text-green-800 bg-green-50 hover:bg-green-100 px-2.5 py-1 rounded-md transition-colors">{t('actions.close')}</button>
           )}
           {route.estado === 6 && (
-            <button onClick={() => router.push(`/routes/manage/${route.id}/close`)} className="text-[11px] font-medium text-gray-500 bg-gray-50 px-2.5 py-1 rounded-md">{t('actions.closed')}</button>
+            <button onClick={() => router.push(`/routes/manage/${route.id}/close`)} className="text-[11px] font-medium text-gray-500 bg-surface-1 px-2.5 py-1 rounded-md">{t('actions.closed')}</button>
           )}
         </div>
       ),
@@ -430,7 +430,7 @@ export default function RoutesPage() {
           <button
             data-tour="routes-export-btn"
             onClick={async () => { try { await exportToCsv('rutas'); toast.success('Archivo CSV descargado'); } catch { toast.error('Error al exportar datos'); } }}
-            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-surface-1 transition-colors"
           >
             <Download className="w-3.5 h-3.5 text-emerald-500" />
             <span className="hidden sm:inline">{tc('export')}</span>
@@ -606,7 +606,7 @@ export default function RoutesPage() {
             <button
               onClick={() => drawerRef.current?.requestClose()}
               disabled={actionLoading}
-              className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-surface-1 disabled:opacity-50"
             >
               {tc('cancel')}
             </button>

@@ -7,7 +7,7 @@ export default function TenantSuspendedPage() {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-6">
+    <div className="min-h-screen flex items-center justify-center bg-surface-1 px-6">
       <div className="max-w-md w-full text-center space-y-6">
         {/* Brand */}
         <div className="flex items-center justify-center gap-3 mb-8">
@@ -38,7 +38,7 @@ export default function TenantSuspendedPage() {
         </div>
 
         {/* Contact info */}
-        <div className="bg-white border border-gray-200 rounded-lg p-4 text-left space-y-2">
+        <div className="bg-surface-2 border border-gray-200 rounded-lg p-4 text-left space-y-2">
           <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Soporte</p>
           <p className="text-sm text-gray-700">
             Email: <a href="mailto:soporte@handysuites.com" className="text-blue-600 hover:underline">soporte@handysuites.com</a>

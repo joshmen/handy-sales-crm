@@ -42,7 +42,7 @@ function formatCurrency(value: number) {
 }
 
 function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('es-MX', {
+  return new Date(dateStr).toLocaleDateString(undefined, {
     year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
   });
 }
@@ -158,7 +158,7 @@ export default function OrderDetailPage() {
   return (
     <div className="min-h-screen bg-[#F9FAFB]">
       {/* Header */}
-      <div className="bg-white px-4 sm:px-8 py-4 border-b border-gray-200">
+      <div className="bg-surface-2 px-4 sm:px-8 py-4 border-b border-gray-200">
         <Breadcrumb items={[
           { label: t('breadcrumbHome'), href: '/dashboard' },
           { label: t('breadcrumbOrders'), href: '/orders' },
@@ -222,7 +222,7 @@ export default function OrderDetailPage() {
       <div className="p-4 sm:p-8 space-y-6">
         {/* Status stepper */}
         {!isCancelled && (
-          <div className="bg-white rounded-lg p-6 border border-gray-200">
+          <div className="bg-surface-2 rounded-lg p-6 border border-gray-200">
             <div className="flex items-center justify-between">
               {STEPPER_STEPS.map((step, i) => {
                 const stepLabel = STATUS_LABELS[step] ?? step;
@@ -253,7 +253,7 @@ export default function OrderDetailPage() {
           {/* Left column: 2/3 */}
           <div className="lg:col-span-2 space-y-6">
             {/* Products table */}
-            <div className="bg-white rounded-lg p-6 border border-gray-200">
+            <div className="bg-surface-2 rounded-lg p-6 border border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('products')}</h2>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -284,7 +284,7 @@ export default function OrderDetailPage() {
             </div>
 
             {/* Totals card */}
-            <div className="bg-white rounded-lg p-6 border border-gray-200">
+            <div className="bg-surface-2 rounded-lg p-6 border border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('summary')}</h2>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
@@ -310,7 +310,7 @@ export default function OrderDetailPage() {
 
             {/* Notes */}
             {(order.notas || order.notasInternas) && (
-              <div className="bg-white rounded-lg p-6 border border-gray-200">
+              <div className="bg-surface-2 rounded-lg p-6 border border-gray-200">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('notesTitle')}</h2>
                 {order.notas && (
                   <div className="mb-3">
@@ -331,7 +331,7 @@ export default function OrderDetailPage() {
           {/* Right column: 1/3 */}
           <div className="space-y-6">
             {/* Client info */}
-            <div className="bg-white rounded-lg p-6 border border-gray-200">
+            <div className="bg-surface-2 rounded-lg p-6 border border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('clientTitle')}</h2>
               <div className="space-y-2 text-sm">
                 <p className="font-medium text-gray-900">{order.clienteNombre}</p>
@@ -342,7 +342,7 @@ export default function OrderDetailPage() {
             </div>
 
             {/* Order metadata */}
-            <div className="bg-white rounded-lg p-6 border border-gray-200">
+            <div className="bg-surface-2 rounded-lg p-6 border border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('orderInfoTitle')}</h2>
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">

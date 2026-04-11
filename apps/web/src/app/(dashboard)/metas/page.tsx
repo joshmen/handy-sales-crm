@@ -533,7 +533,7 @@ export default function MetasPage() {
                 )}
               </>
             ) : (
-              <div className="h-10 border border-gray-200 rounded-lg text-sm px-3 flex items-center text-gray-500 bg-gray-50">
+              <div className="h-10 border border-gray-200 rounded-lg text-sm px-3 flex items-center text-gray-500 bg-surface-1">
                 {editingMeta.usuarioNombre}
               </div>
             )}
@@ -662,7 +662,7 @@ export default function MetasPage() {
       {/* Delete Confirm Modal */}
       {confirmDeleteId && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full mx-4 page-animate">
+          <div className="bg-surface-2 rounded-xl shadow-xl p-6 max-w-sm w-full mx-4 page-animate">
             <h3 className="font-semibold text-gray-900 mb-2">{t('deleteTitle')}</h3>
             <p className="text-sm text-gray-600 mb-6">{t('deleteConfirm')}</p>
             <div className="flex gap-3">

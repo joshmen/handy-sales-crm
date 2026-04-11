@@ -40,7 +40,7 @@ const PERIOD_VALUES = [7, 15, 30, 90];
 
 function formatChartDate(dateStr: string): string {
   const d = new Date(dateStr);
-  return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
+  return d.toLocaleDateString(undefined, { day: '2-digit', month: 'short' });
 }
 
 function formatShortCurrency(value: number): string {
@@ -110,7 +110,7 @@ export default function SystemDashboardPage() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+            <div key={i} className="bg-surface-2 rounded-xl border border-gray-200 p-6 shadow-sm">
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <div className="h-4 w-24 bg-gray-200 rounded-md animate-pulse mb-3" />
@@ -123,7 +123,7 @@ export default function SystemDashboardPage() {
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {[1, 2].map((i) => (
-            <div key={i} className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm h-80 animate-pulse" />
+            <div key={i} className="bg-surface-2 rounded-xl border border-gray-200 p-6 shadow-sm h-80 animate-pulse" />
           ))}
         </div>
       </div>
@@ -157,7 +157,7 @@ export default function SystemDashboardPage() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-surface-2 rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500">{t('totalCompanies')}</p>
@@ -175,7 +175,7 @@ export default function SystemDashboardPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-surface-2 rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500">{t('activeUsers')}</p>
@@ -192,7 +192,7 @@ export default function SystemDashboardPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-surface-2 rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500">{t('totalOrders')}</p>
@@ -210,7 +210,7 @@ export default function SystemDashboardPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-surface-2 rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500">{t('totalSales')}</p>
@@ -242,7 +242,7 @@ export default function SystemDashboardPage() {
                   onClick={() => setTrendDays(opt.value)}
                   className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
                     trendDays === opt.value
-                      ? 'bg-white text-gray-900 shadow-sm'
+                      ? 'bg-surface-2 text-gray-900 shadow-sm'
                       : 'text-gray-500 hover:text-gray-700'
                   }`}
                 >
@@ -254,7 +254,7 @@ export default function SystemDashboardPage() {
 
           {/* Revenue Chart (full width) */}
           {trends.revenueByDay.length > 0 && (
-            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+            <div className="bg-surface-2 rounded-xl border border-gray-200 p-6 shadow-sm">
               <h3 className="text-base font-semibold text-gray-900 mb-4">
                 {t('revenueByDay')}
               </h3>
@@ -299,7 +299,7 @@ export default function SystemDashboardPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Tenant & User Growth */}
             {(trends.tenantGrowth.length > 0 || trends.userGrowth.length > 0) && (
-              <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+              <div className="bg-surface-2 rounded-xl border border-gray-200 p-6 shadow-sm">
                 <h3 className="text-base font-semibold text-gray-900 mb-4">
                   {t('growth')}
                 </h3>
@@ -353,7 +353,7 @@ export default function SystemDashboardPage() {
 
             {/* Plan Distribution */}
             {trends.planBreakdown.length > 0 && (
-              <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+              <div className="bg-surface-2 rounded-xl border border-gray-200 p-6 shadow-sm">
                 <h3 className="text-base font-semibold text-gray-900 mb-4">
                   {t('planDistribution')}
                 </h3>
@@ -390,7 +390,7 @@ export default function SystemDashboardPage() {
       {/* Bottom Sections — Top Tenants + Recent Tenants */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Tenants */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div className="bg-surface-2 rounded-xl border border-gray-200 p-6 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
             <Crown className="h-5 w-5 text-amber-500" />
             <h2 className="text-lg font-semibold text-gray-900">{t('topCompanies')}</h2>
@@ -418,7 +418,7 @@ export default function SystemDashboardPage() {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {metrics.topTenants.map((tenant, index) => (
-                    <tr key={tenant.id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={tenant.id} className="hover:bg-surface-1 transition-colors">
                       <td className="py-3">
                         <div className="flex items-center gap-2">
                           <div className="flex items-center justify-center h-6 w-6 rounded-full bg-amber-50 text-amber-600 text-xs font-bold">
@@ -444,7 +444,7 @@ export default function SystemDashboardPage() {
         </div>
 
         {/* Recent Tenants */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div className="bg-surface-2 rounded-xl border border-gray-200 p-6 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
             <Clock className="h-5 w-5 text-blue-500" />
             <h2 className="text-lg font-semibold text-gray-900">{t('recentCompanies')}</h2>
@@ -459,7 +459,7 @@ export default function SystemDashboardPage() {
               {metrics.tenantsRecientes.map((tenant) => (
                 <div
                   key={tenant.id}
-                  className="flex items-center justify-between p-4 rounded-lg border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-all"
+                  className="flex items-center justify-between p-4 rounded-lg border border-gray-100 hover:border-gray-200 hover:bg-surface-1 transition-all"
                 >
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">

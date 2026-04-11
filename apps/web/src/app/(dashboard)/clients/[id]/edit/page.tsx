@@ -288,7 +288,7 @@ export default function EditClientPage() {
   return (
     <div className="min-h-screen bg-[#F9FAFB]">
       {/* Header */}
-      <div className="bg-white px-4 sm:px-8 py-4 border-b border-gray-200">
+      <div className="bg-surface-2 px-4 sm:px-8 py-4 border-b border-gray-200">
         <Breadcrumb items={[
           { label: t('breadcrumbHome'), href: '/dashboard' },
           { label: t('breadcrumbClients'), href: '/clients' },
@@ -303,7 +303,7 @@ export default function EditClientPage() {
             <button
               type="button"
               onClick={handleCancel}
-              className="px-4 py-2 text-[13px] font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 text-[13px] font-medium text-gray-700 border border-gray-300 rounded hover:bg-surface-1 transition-colors"
             >
               Cancelar
             </button>
@@ -337,7 +337,7 @@ export default function EditClientPage() {
           {/* Left Column */}
           <div className="flex-1 flex flex-col gap-6">
             {/* === Información General === */}
-            <div className="bg-white rounded-lg p-6">
+            <div className="bg-surface-2 rounded-lg p-6">
               <SectionTitle>{t("generalInfo")}</SectionTitle>
 
               <div className="flex flex-wrap items-center gap-5 mb-4">
@@ -375,7 +375,7 @@ export default function EditClientPage() {
             </div>
 
             {/* === Precios y descuento === */}
-            <div className="bg-white rounded-lg p-6">
+            <div className="bg-surface-2 rounded-lg p-6">
               <SectionTitle subtitle={t("pricingOptional")}>{t("pricingTitle")}</SectionTitle>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -405,7 +405,7 @@ export default function EditClientPage() {
             </div>
 
             {/* === Pago, venta y crédito === */}
-            <div className="bg-white rounded-lg p-6">
+            <div className="bg-surface-2 rounded-lg p-6">
               <SectionTitle>{t("paymentTitle")}</SectionTitle>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -443,7 +443,7 @@ export default function EditClientPage() {
             </div>
 
             {/* === Config entregas === */}
-            <div className="bg-white rounded-lg p-6">
+            <div className="bg-surface-2 rounded-lg p-6">
               <SectionTitle>{t("deliveryTitle")}</SectionTitle>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -484,7 +484,7 @@ export default function EditClientPage() {
             </div>
 
             {/* === Datos fiscales === */}
-            <div className="bg-white rounded-lg p-6">
+            <div className="bg-surface-2 rounded-lg p-6">
               <SectionTitle>{t("fiscalTitle")}</SectionTitle>
 
               <div className="mb-4">
@@ -558,7 +558,7 @@ export default function EditClientPage() {
           {/* Right Column */}
           <div className="w-full lg:w-[480px] flex flex-col gap-6">
             {/* === Dirección y geolocalización === */}
-            <div className="bg-white rounded-lg p-6">
+            <div className="bg-surface-2 rounded-lg p-6">
               <SectionTitle>{t("addressTitle")}</SectionTitle>
 
               <div className="flex flex-col gap-4">
@@ -623,7 +623,7 @@ export default function EditClientPage() {
                       step="0.000001"
                       {...register('latitud', { valueAsNumber: true })}
                       readOnly
-                      className={`${inputClass()} bg-gray-50 text-gray-500 cursor-default`}
+                      className={`${inputClass()} bg-surface-1 text-gray-500 cursor-default`}
                     />
                   </FormField>
                   <FormField label={t("longitudeLabel")}>
@@ -632,7 +632,7 @@ export default function EditClientPage() {
                       step="0.000001"
                       {...register('longitud', { valueAsNumber: true })}
                       readOnly
-                      className={`${inputClass()} bg-gray-50 text-gray-500 cursor-default`}
+                      className={`${inputClass()} bg-surface-1 text-gray-500 cursor-default`}
                     />
                   </FormField>
                 </div>
@@ -666,7 +666,7 @@ export default function EditClientPage() {
             </div>
 
             {/* === Datos de contacto === */}
-            <div className="bg-white rounded-lg p-6">
+            <div className="bg-surface-2 rounded-lg p-6">
               <SectionTitle>{t("contactTitle")}</SectionTitle>
 
               <div className="flex flex-col gap-4">

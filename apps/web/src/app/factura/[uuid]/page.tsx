@@ -54,7 +54,7 @@ function formatCurrency(amount: number, currency = 'MXN') {
 }
 
 function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('es-MX', {
+  return new Date(dateStr).toLocaleDateString(undefined, {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -96,7 +96,7 @@ export default async function FacturaPublicPage({
   // Not found
   if (!factura) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+      <main className="flex min-h-screen items-center justify-center bg-surface-1 px-4">
         <div className="w-full max-w-md text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
             <svg className="h-8 w-8 text-red-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -122,7 +122,7 @@ export default async function FacturaPublicPage({
   const folioDisplay = [factura.serie, factura.folio].filter(Boolean).join('-');
 
   return (
-    <main className="min-h-screen bg-gray-50 px-4 py-8 sm:py-12">
+    <main className="min-h-screen bg-surface-1 px-4 py-8 sm:py-12">
       <div className="mx-auto max-w-lg">
         {/* Header */}
         <div className="text-center">
@@ -135,7 +135,7 @@ export default async function FacturaPublicPage({
         </div>
 
         {/* Card */}
-        <div className="mt-6 rounded-xl bg-white shadow-sm ring-1 ring-gray-200">
+        <div className="mt-6 rounded-xl bg-surface-2 shadow-sm ring-1 ring-gray-200">
           {/* Status */}
           <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
             <span className="text-sm font-medium text-gray-500">Estado</span>
@@ -198,7 +198,7 @@ export default async function FacturaPublicPage({
                     href={factura.xmlUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors"
+                    className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-gray-300 bg-surface-2 px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-surface-1 transition-colors"
                   >
                     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />

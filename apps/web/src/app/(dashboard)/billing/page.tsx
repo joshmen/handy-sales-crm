@@ -170,7 +170,7 @@ export default function BillingDashboardPage() {
               {d.facturasPorDia.slice(0, 7).map((item: FacturasPorDia) => (
                 <div key={item.fecha} className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">
-                    {new Date(item.fecha).toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric', month: 'short' })}
+                    {new Date(item.fecha).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })}
                   </span>
                   <div className="flex items-center gap-3">
                     <span className="text-xs text-muted-foreground">{t('invoicesCount', { count: item.cantidad })}</span>

@@ -182,7 +182,7 @@ function RegisterContent() {
   const inputClassName = (hasError: boolean) =>
     `w-full h-12 px-3.5 border rounded-[10px] text-[15px] focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors ${
       hasError ? 'border-red-500' : 'border-[#D1D5DB]'
-    } disabled:bg-gray-50 disabled:text-gray-500`;
+    } disabled:bg-surface-1 disabled:text-gray-500`;
 
   return (
     <AuthLayout>
@@ -218,7 +218,7 @@ function RegisterContent() {
               <input
                 {...googleForm.register('email')}
                 readOnly
-                className={`${inputClassName(false)} bg-gray-50 text-gray-500 cursor-not-allowed`}
+                className={`${inputClassName(false)} bg-surface-1 text-gray-500 cursor-not-allowed`}
               />
             </div>
 
@@ -441,7 +441,7 @@ function RegisterContent() {
                 <div className="w-full border-t border-[#E5E7EB]" />
               </div>
               <div className="relative flex justify-center text-xs">
-                <span className="bg-white px-3 text-[#9CA3AF]">o</span>
+                <span className="bg-surface-2 px-3 text-[#9CA3AF]">o</span>
               </div>
             </div>
 
@@ -449,7 +449,7 @@ function RegisterContent() {
               type="button"
               onClick={() => signIn('google', { callbackUrl: '/dashboard' })}
               disabled={submitting}
-              className="w-full h-12 border border-[#D1D5DB] text-[15px] font-medium text-[#374151] rounded-[10px] hover:bg-gray-50 transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+              className="w-full h-12 border border-[#D1D5DB] text-[15px] font-medium text-[#374151] rounded-[10px] hover:bg-surface-1 transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-3"
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />

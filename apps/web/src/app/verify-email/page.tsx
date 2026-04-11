@@ -205,7 +205,7 @@ function VerifyEmailContent() {
                 onKeyDown={(e) => handleKeyDown(index, e)}
                 onPaste={index === 0 ? handlePaste : undefined}
                 disabled={verifying}
-                className="w-12 h-14 text-center text-2xl font-mono border border-[#D1D5DB] rounded-[10px] focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors disabled:bg-gray-50 disabled:text-gray-500"
+                className="w-12 h-14 text-center text-2xl font-mono border border-[#D1D5DB] rounded-[10px] focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors disabled:bg-surface-1 disabled:text-gray-500"
               />
             ))}
           </div>

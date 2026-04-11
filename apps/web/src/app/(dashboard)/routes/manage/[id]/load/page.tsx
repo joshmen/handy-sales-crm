@@ -245,7 +245,7 @@ export default function LoadInventoryPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="bg-white px-8 py-6 border-b border-gray-200">
+      <div className="bg-surface-2 px-8 py-6 border-b border-gray-200">
         <Breadcrumb items={[
           { label: tr('title'), href: '/routes' },
           { label: ruta.nombre, href: `/routes/${ruta.id}` },
@@ -275,7 +275,7 @@ export default function LoadInventoryPage() {
             <button
               onClick={fetchData}
               disabled={loading}
-              className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium text-gray-600 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium text-gray-600 border border-gray-200 rounded hover:bg-surface-1 transition-colors"
             >
               <RefreshCw className="w-4 h-4" />
             </button>
@@ -302,10 +302,10 @@ export default function LoadInventoryPage() {
       {/* Body */}
       <div className="flex-1 px-8 py-6 space-y-6 overflow-auto">
         {/* Section 1: User & Cash */}
-        <div data-tour="routes-load-user-section" className="bg-white border border-gray-200 rounded-lg p-6">
+        <div data-tour="routes-load-user-section" className="bg-surface-2 border border-gray-200 rounded-lg p-6">
           <h2 className="text-sm font-semibold text-gray-900 mb-4">{t('assignRouteToUser')}</h2>
 
-          <div className="flex items-center gap-4 mb-4 p-3 bg-gray-50 rounded-lg">
+          <div className="flex items-center gap-4 mb-4 p-3 bg-surface-1 rounded-lg">
             <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
               <User className="w-5 h-5 text-green-600" />
             </div>
@@ -342,7 +342,7 @@ export default function LoadInventoryPage() {
         </div>
 
         {/* Section 2: Pedidos */}
-        <div data-tour="routes-load-pedidos" className="bg-white border border-gray-200 rounded-lg p-6">
+        <div data-tour="routes-load-pedidos" className="bg-surface-2 border border-gray-200 rounded-lg p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <h2 className="text-sm font-semibold text-gray-900">{t('assignOrdersForDelivery')}</h2>
@@ -366,7 +366,7 @@ export default function LoadInventoryPage() {
           ) : (
             <div className="space-y-2">
               {pedidos.map((p) => (
-                <div key={p.id} className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg">
+                <div key={p.id} className="flex items-center justify-between px-3 py-2 bg-surface-1 rounded-lg">
                   <div>
                     <span className="text-[13px] font-medium text-gray-900">{t('orderNumber', { id: p.pedidoId })}</span>
                     <span className="text-xs text-gray-500 ml-2">{p.clienteNombre}</span>
@@ -388,7 +388,7 @@ export default function LoadInventoryPage() {
 
         {/* Section 3: Add Products (hidden when read-only) */}
         {!isReadOnly && (
-        <div data-tour="routes-load-add-products" className="bg-white border border-gray-200 rounded-lg p-6">
+        <div data-tour="routes-load-add-products" className="bg-surface-2 border border-gray-200 rounded-lg p-6">
           <h2 className="text-sm font-semibold text-gray-900 mb-4">{t('assignProductsForSale')}</h2>
 
           <div className="flex items-end gap-3">
@@ -437,7 +437,7 @@ export default function LoadInventoryPage() {
         )}
 
         {/* Section 4: Consolidated Table */}
-        <div data-tour="routes-load-consolidated" className="bg-white border border-gray-200 rounded-lg p-6">
+        <div data-tour="routes-load-consolidated" className="bg-surface-2 border border-gray-200 rounded-lg p-6">
           <h2 className="text-sm font-semibold text-gray-900 mb-4">{t('totalAssignedToRoute')}</h2>
 
           {carga.length === 0 ? (
@@ -459,7 +459,7 @@ export default function LoadInventoryPage() {
                 </thead>
                 <tbody>
                   {carga.map((item) => (
-                    <tr key={item.id} className="border-b border-gray-50 hover:bg-gray-50">
+                    <tr key={item.id} className="border-b border-gray-50 hover:bg-surface-1">
                       <td className="py-2 px-3">
                         <span className="text-[13px] text-gray-900">{item.productoNombre}</span>
                         {item.productoSku && (
@@ -571,7 +571,7 @@ export default function LoadInventoryPage() {
                 .map((p) => {
                   const alreadyAssigned = pedidos.some(assigned => assigned.pedidoId === p.id);
                   return (
-                    <div key={p.id} className="flex items-center justify-between px-3 py-2 border border-gray-100 rounded-lg hover:bg-gray-50">
+                    <div key={p.id} className="flex items-center justify-between px-3 py-2 border border-gray-100 rounded-lg hover:bg-surface-1">
                       <div>
                         <span className="text-[13px] font-medium text-gray-900">#{p.numeroPedido || p.id}</span>
                         <span className="text-xs text-gray-500 ml-2">{p.clienteNombre || t('noClient')}</span>

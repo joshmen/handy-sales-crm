@@ -59,7 +59,7 @@ export default function SuspendedPage() {
           </ul>
         </div>
 
-        <div className="bg-white border rounded-lg p-6 mb-6">
+        <div className="bg-surface-2 border rounded-lg p-6 mb-6">
           <h3 className="font-semibold text-gray-900 mb-4">Detalles de tu suscripción</h3>
 
           <div className="space-y-3">

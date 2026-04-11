@@ -211,7 +211,7 @@ export function DispositivosTab() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input type="text" placeholder={t('searchPlaceholder')} aria-label={t('searchLabel')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent" />
         </div>
-        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} aria-label={t('filterLabel')} className="w-full sm:w-48 px-3 py-2 text-xs border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white">
+        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} aria-label={t('filterLabel')} className="w-full sm:w-48 px-3 py-2 text-xs border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-surface-2">
           <option value="all">{t('allStatuses')}</option>
           <option value="0">{t('activeStatus')}</option>
           <option value="1">{t('loggedOut')}</option>
@@ -227,7 +227,7 @@ export function DispositivosTab() {
       {!loading && !error && sessions.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           {[
-            { label: t('total'), value: stats.total, icon: TabletSmartphone, color: 'text-gray-700 bg-gray-50 border-gray-200' },
+            { label: t('total'), value: stats.total, icon: TabletSmartphone, color: 'text-gray-700 bg-surface-1 border-gray-200' },
             { label: t('activeLabel'), value: stats.active, icon: Wifi, color: 'text-green-700 bg-green-50 border-green-200' },
             { label: 'Android', value: stats.android, icon: Smartphone, color: 'text-green-700 bg-green-50 border-green-200' },
             { label: 'iOS', value: stats.ios, icon: Smartphone, color: 'text-blue-700 bg-blue-50 border-blue-200' },
@@ -241,12 +241,12 @@ export function DispositivosTab() {
         </div>
       )}
 
-      {error && !loading && <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">{renderError()}</div>}
+      {error && !loading && <div className="bg-surface-2 border border-gray-200 rounded-lg overflow-hidden">{renderError()}</div>}
 
       {!error && (<>
         <div className="md:hidden space-y-3">
           {loading && Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="border border-gray-200 rounded-lg p-4 bg-white animate-pulse space-y-3">
+            <div key={i} className="border border-gray-200 rounded-lg p-4 bg-surface-2 animate-pulse space-y-3">
               <div className="flex items-center gap-3"><div className="w-10 h-10 bg-gray-200 rounded-full" /><div className="flex-1 space-y-1.5"><div className="h-4 bg-gray-200 rounded w-32" /><div className="h-3 bg-gray-100 rounded w-24" /></div></div>
               <div className="flex justify-between"><div className="h-5 bg-gray-200 rounded-full w-16" /><div className="h-7 bg-gray-200 rounded w-20" /></div>
             </div>
@@ -257,7 +257,7 @@ export function DispositivosTab() {
             const sKey = getStatusKey(session.status);
             const sClass = getStatusClassName(session.status);
             return (
-              <div key={session.id} className={`border border-gray-200 rounded-lg p-4 bg-white ${session.esSesionActual ? 'ring-2 ring-green-200 border-green-300' : ''}`}>
+              <div key={session.id} className={`border border-gray-200 rounded-lg p-4 bg-surface-2 ${session.esSesionActual ? 'ring-2 ring-green-200 border-green-300' : ''}`}>
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0"><DeviceIcon className="w-5 h-5 text-gray-500" /></div>
                   <div className="flex-1 min-w-0">
@@ -288,10 +288,10 @@ export function DispositivosTab() {
           })}
         </div>
 
-        <div className="hidden md:block bg-white border border-gray-200 rounded-lg overflow-hidden">
+        <div className="hidden md:block bg-surface-2 border border-gray-200 rounded-lg overflow-hidden">
           {loading ? renderSkeleton() : paginatedSessions.length === 0 ? renderEmpty() : (
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-surface-1">
                 <tr>
                   <th scope="col" className="px-4 py-2.5 text-left text-xs font-semibold text-foreground w-[180px]">{t('vendorCol')}</th>
                   <th scope="col" className="px-4 py-2.5 text-left text-xs font-semibold text-foreground w-[220px]">{t('deviceCol')}</th>
@@ -330,11 +330,11 @@ export function DispositivosTab() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <span className="text-sm text-gray-500">{t('showing', { start: startItem, end: endItem, total: totalItems })}</span>
             <div className="flex items-center gap-2">
-              <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} aria-label={t('prevPage')} className="px-3 py-2 border border-gray-200 rounded-md text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"><ChevronLeft className="w-4 h-4" /></button>
+              <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} aria-label={t('prevPage')} className="px-3 py-2 border border-gray-200 rounded-md text-gray-600 hover:bg-surface-1 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"><ChevronLeft className="w-4 h-4" /></button>
               {Array.from({ length: totalPages }, (_, i) => i + 1).filter((page) => { if (totalPages <= 5) return true; if (page === 1 || page === totalPages) return true; return Math.abs(page - currentPage) <= 1; }).reduce<(number | string)[]>((acc, page, idx, arr) => { if (idx > 0) { const prev = arr[idx - 1]; if (page - prev > 1) acc.push('...'); } acc.push(page); return acc; }, []).map((page, idx) => (
                 <button key={typeof page === 'number' ? `page-${page}` : `ellipsis-${idx}`} onClick={() => typeof page === 'number' && setCurrentPage(page)} disabled={page === '...'} className={`min-w-[32px] px-2 py-1.5 text-sm rounded-md transition-colors ${page === currentPage ? 'bg-success text-success-foreground' : page === '...' ? 'text-gray-400 cursor-default' : 'text-gray-600 hover:bg-gray-100'}`}>{page}</button>
               ))}
-              <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} aria-label={t('nextPage')} className="px-3 py-2 border border-gray-200 rounded-md text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"><ChevronRight className="w-4 h-4" /></button>
+              <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} aria-label={t('nextPage')} className="px-3 py-2 border border-gray-200 rounded-md text-gray-600 hover:bg-surface-1 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"><ChevronRight className="w-4 h-4" /></button>
             </div>
           </div>
         )}
@@ -346,7 +346,7 @@ export function DispositivosTab() {
             <p className="text-sm text-gray-600">{t('revokeConfirm', { user: confirmAction.session.usuarioNombre, device: confirmAction.session.deviceName || confirmAction.session.deviceTypeNombre })}</p>
             <div className="bg-red-50 border border-red-200 rounded-md px-3 py-2"><p className="text-xs text-red-700">{t('revokeWarning')}</p></div>
             <div className="flex justify-end gap-2">
-              <button onClick={() => setConfirmAction(null)} className="px-4 py-2 text-xs font-medium text-gray-700 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors">{tc('cancel')}</button>
+              <button onClick={() => setConfirmAction(null)} className="px-4 py-2 text-xs font-medium text-gray-700 border border-gray-200 rounded-md hover:bg-surface-1 transition-colors">{tc('cancel')}</button>
               <button onClick={executeRevoke} className="px-4 py-2 text-xs font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors">{t('revokeSessionBtn')}</button>
             </div>
           </div>
@@ -356,7 +356,7 @@ export function DispositivosTab() {
             <p className="text-sm text-gray-600">{t('cleanConfirm')}</p>
             <div className="bg-amber-50 border border-amber-200 rounded-md px-3 py-2"><p className="text-xs text-amber-700">{t('cleanWarning')}</p></div>
             <div className="flex justify-end gap-2">
-              <button onClick={() => setConfirmAction(null)} className="px-4 py-2 text-xs font-medium text-gray-700 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors">{tc('cancel')}</button>
+              <button onClick={() => setConfirmAction(null)} className="px-4 py-2 text-xs font-medium text-gray-700 border border-gray-200 rounded-md hover:bg-surface-1 transition-colors">{tc('cancel')}</button>
               <button onClick={executeCleanExpired} className="px-4 py-2 text-xs font-medium text-white bg-amber-600 rounded-md hover:bg-amber-700 transition-colors">{t('cleanExpiredBtn')}</button>
             </div>
           </div>

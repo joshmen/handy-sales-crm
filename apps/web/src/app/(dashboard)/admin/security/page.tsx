@@ -87,7 +87,7 @@ function LoadingSkeleton() {
 
       {/* Cards Skeleton */}
       {[1, 2, 3].map(i => (
-        <div key={i} className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div key={i} className="bg-surface-2 rounded-xl border border-gray-200 p-6 shadow-sm">
           <div className="h-6 w-48 bg-gray-200 rounded-md animate-pulse mb-4" />
           <div className="space-y-3">
             {[1, 2, 3].map(j => (
@@ -137,7 +137,7 @@ export default function SecurityConfigPage() {
           <ChevronRight className="h-4 w-4" />
           <span className="text-gray-900 font-medium">Seguridad</span>
         </nav>
-        <div className="bg-white rounded-xl border border-gray-200 p-12 shadow-sm text-center">
+        <div className="bg-surface-2 rounded-xl border border-gray-200 p-12 shadow-sm text-center">
           <Shield size={48} weight="duotone" className="mx-auto text-gray-300 mb-3" />
           <p className="text-gray-500 text-sm">{error || t('loadError')}</p>
         </div>
@@ -166,7 +166,7 @@ export default function SecurityConfigPage() {
       </div>
 
       {/* Rate Limiting Section */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-surface-2 rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
           <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-cyan-100">
             <WifiHigh size={18} weight="duotone" className="text-cyan-600" />
@@ -175,7 +175,7 @@ export default function SecurityConfigPage() {
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-surface-1">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">
                   {t('colApi')}
@@ -194,9 +194,9 @@ export default function SecurityConfigPage() {
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-100">
+            <tbody className="bg-surface-2 divide-y divide-gray-100">
               {config.rateLimiting.map((policy, idx) => (
-                <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                <tr key={idx} className="hover:bg-surface-1 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-800">
                       {policy.api}
@@ -229,7 +229,7 @@ export default function SecurityConfigPage() {
       </div>
 
       {/* Authentication Section */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-surface-2 rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
           <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-amber-100">
             <Lock size={18} weight="duotone" className="text-amber-600" />
@@ -238,29 +238,29 @@ export default function SecurityConfigPage() {
         </div>
         <div className="p-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="bg-gray-50 rounded-lg px-4 py-3">
+            <div className="bg-surface-1 rounded-lg px-4 py-3">
               <p className="text-xs text-gray-400 mb-1">{t('jwtExpiration')}</p>
               <p className="text-sm font-semibold text-gray-900">
                 {config.authentication.jwtExpirationMinutes} {t('minutes')}
               </p>
             </div>
-            <div className="bg-gray-50 rounded-lg px-4 py-3">
+            <div className="bg-surface-1 rounded-lg px-4 py-3">
               <p className="text-xs text-gray-400 mb-1">{t('refreshTokenExpiration')}</p>
               <p className="text-sm font-semibold text-gray-900">
                 {config.authentication.refreshTokenExpirationDays} {t('days')}
               </p>
             </div>
-            <div className="bg-gray-50 rounded-lg px-4 py-3">
+            <div className="bg-surface-1 rounded-lg px-4 py-3">
               <p className="text-xs text-gray-400 mb-1">{t('passwordMinLength')}</p>
               <p className="text-sm font-semibold text-gray-900">
                 {config.authentication.passwordMinLength} {t('characters')}
               </p>
             </div>
-            <div className="bg-gray-50 rounded-lg px-4 py-3">
+            <div className="bg-surface-1 rounded-lg px-4 py-3">
               <p className="text-xs text-gray-400 mb-1">{t('twoFactorAuth')}</p>
               <EnabledBadge enabled={config.authentication.twoFactorEnabled} enabledLabel={t('enabled')} disabledLabel={t('disabled')} />
             </div>
-            <div className="bg-gray-50 rounded-lg px-4 py-3">
+            <div className="bg-surface-1 rounded-lg px-4 py-3">
               <p className="text-xs text-gray-400 mb-1">{t('hashingAlgorithm')}</p>
               <p className="text-sm font-semibold text-gray-900">
                 {config.authentication.hashingAlgorithm}
@@ -271,7 +271,7 @@ export default function SecurityConfigPage() {
       </div>
 
       {/* Sessions Section */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-surface-2 rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
           <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-violet-100">
             <Monitor size={18} weight="duotone" className="text-violet-600" />
@@ -280,15 +280,15 @@ export default function SecurityConfigPage() {
         </div>
         <div className="p-6">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-gray-50 rounded-lg px-4 py-3">
+            <div className="bg-surface-1 rounded-lg px-4 py-3">
               <p className="text-xs text-gray-400 mb-1">{t('deviceBinding')}</p>
               <EnabledBadge enabled={config.sessions.deviceBinding} enabledLabel={t('enabled')} disabledLabel={t('disabled')} />
             </div>
-            <div className="bg-gray-50 rounded-lg px-4 py-3">
+            <div className="bg-surface-1 rounded-lg px-4 py-3">
               <p className="text-xs text-gray-400 mb-1">{t('sessionVersionValidation')}</p>
               <EnabledBadge enabled={config.sessions.sessionVersionValidation} enabledLabel={t('enabled')} disabledLabel={t('disabled')} />
             </div>
-            <div className="bg-gray-50 rounded-lg px-4 py-3">
+            <div className="bg-surface-1 rounded-lg px-4 py-3">
               <p className="text-xs text-gray-400 mb-1">{t('singleSessionPerDevice')}</p>
               <EnabledBadge enabled={config.sessions.singleSessionPerDevice} enabledLabel={t('enabled')} disabledLabel={t('disabled')} />
             </div>

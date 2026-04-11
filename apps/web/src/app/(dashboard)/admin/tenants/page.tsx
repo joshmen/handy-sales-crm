@@ -451,7 +451,7 @@ export default function TenantsPage() {
       {/* Desktop Table */}
       <div className="hidden md:block border border-gray-200 rounded-lg overflow-hidden overflow-x-auto">
         {/* Table Header */}
-        <div className="flex items-center gap-3 bg-gray-50 px-5 h-10 border-b border-gray-200">
+        <div className="flex items-center gap-3 bg-surface-1 px-5 h-10 border-b border-gray-200">
           <div className="w-[28px] flex items-center justify-center">
             <button
               onClick={batch.handleSelectAllVisible}

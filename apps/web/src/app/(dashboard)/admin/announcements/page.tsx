@@ -227,7 +227,7 @@ export default function AnnouncementsPage() {
       </div>
 
       {/* Maintenance Quick Toggle */}
-      <div className={`rounded-xl border p-4 ${maintenanceActive ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-200'}`}>
+      <div className={`rounded-xl border p-4 ${maintenanceActive ? 'bg-red-50 border-red-200' : 'bg-surface-1 border-gray-200'}`}>
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <div className="flex items-center gap-3 flex-1">
             <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${maintenanceActive ? 'bg-red-100' : 'bg-gray-200'}`}>
@@ -278,7 +278,7 @@ export default function AnnouncementsPage() {
       </div>
 
       {/* Announcements List */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="bg-surface-2 rounded-xl border border-gray-200 overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100">
           <h2 className="font-medium text-gray-900">
             {t('historyTitle', { count: total })}
@@ -301,7 +301,7 @@ export default function AnnouncementsPage() {
               const prioridadColor = prioridadColors[ann.prioridad] || prioridadColors.Normal;
 
               return (
-                <div key={ann.id} className="px-4 py-3 hover:bg-gray-50 transition-colors">
+                <div key={ann.id} className="px-4 py-3 hover:bg-surface-1 transition-colors">
                   <div className="flex items-start gap-3">
                     <div className={`mt-0.5 p-1.5 rounded-md ${tipo.color}`}>
                       {tipo.icon}
@@ -370,14 +370,14 @@ export default function AnnouncementsPage() {
               <button
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="px-3 py-1 border rounded-md disabled:opacity-50 hover:bg-gray-50"
+                className="px-3 py-1 border rounded-md disabled:opacity-50 hover:bg-surface-1"
               >
                 {t('previous')}
               </button>
               <button
                 onClick={() => setPage(p => p + 1)}
                 disabled={page * 20 >= total}
-                className="px-3 py-1 border rounded-md disabled:opacity-50 hover:bg-gray-50"
+                className="px-3 py-1 border rounded-md disabled:opacity-50 hover:bg-surface-1"
               >
                 {t('next')}
               </button>
@@ -412,7 +412,7 @@ export default function AnnouncementsPage() {
                     className={`flex items-center gap-2 p-2.5 rounded-lg border text-sm transition-colors ${
                       form.tipo === tipo
                         ? 'border-purple-500 bg-purple-50 text-purple-700'
-                        : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                        : 'border-gray-200 text-gray-600 hover:bg-surface-1'
                     }`}
                   >
                     {tipoMeta.icon}
@@ -437,7 +437,7 @@ export default function AnnouncementsPage() {
                       className={`flex flex-col items-center gap-1 p-2.5 rounded-lg border text-xs transition-colors ${
                         form.displayMode === mode
                           ? 'border-purple-500 bg-purple-50 text-purple-700'
-                          : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                          : 'border-gray-200 text-gray-600 hover:bg-surface-1'
                       }`}
                     >
                       {m.icon}
@@ -459,7 +459,7 @@ export default function AnnouncementsPage() {
                 className={`flex flex-col items-center gap-1 p-2.5 rounded-lg border text-xs transition-colors ${
                   targetMode === 'all'
                     ? 'border-purple-500 bg-purple-50 text-purple-700'
-                    : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                    : 'border-gray-200 text-gray-600 hover:bg-surface-1'
                 }`}
               >
                 <Globe className="h-4 w-4" />
@@ -471,7 +471,7 @@ export default function AnnouncementsPage() {
                 className={`flex flex-col items-center gap-1 p-2.5 rounded-lg border text-xs transition-colors ${
                   targetMode === 'tenants'
                     ? 'border-purple-500 bg-purple-50 text-purple-700'
-                    : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                    : 'border-gray-200 text-gray-600 hover:bg-surface-1'
                 }`}
               >
                 <Building2 className="h-4 w-4" />
@@ -483,7 +483,7 @@ export default function AnnouncementsPage() {
                 className={`flex flex-col items-center gap-1 p-2.5 rounded-lg border text-xs transition-colors ${
                   targetMode === 'roles'
                     ? 'border-purple-500 bg-purple-50 text-purple-700'
-                    : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                    : 'border-gray-200 text-gray-600 hover:bg-surface-1'
                 }`}
               >
                 <Users className="h-4 w-4" />
@@ -537,7 +537,7 @@ export default function AnnouncementsPage() {
                           <span className="text-xs text-gray-400 ml-auto">{filtered.length}</span>
                         </label>
                         {filtered.map(t => (
-                          <label key={t.id} className="flex items-center gap-2 p-1.5 rounded-md hover:bg-gray-50 cursor-pointer">
+                          <label key={t.id} className="flex items-center gap-2 p-1.5 rounded-md hover:bg-surface-1 cursor-pointer">
                             <input
                               type="checkbox"
                               checked={selectedTenantIds.includes(t.id)}
@@ -575,7 +575,7 @@ export default function AnnouncementsPage() {
             {targetMode === 'roles' && (
               <div className="mt-2 space-y-1 border border-gray-200 rounded-lg p-2">
                 {['Admin', 'Vendedor'].map(role => (
-                  <label key={role} className="flex items-center gap-2 p-1.5 rounded-md hover:bg-gray-50 cursor-pointer">
+                  <label key={role} className="flex items-center gap-2 p-1.5 rounded-md hover:bg-surface-1 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={selectedRoles.includes(role)}
@@ -642,7 +642,7 @@ export default function AnnouncementsPage() {
             <select
               value={form.prioridad}
               onChange={(e) => setForm(f => ({ ...f, prioridad: e.target.value }))}
-              className="w-full h-10 px-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none bg-white"
+              className="w-full h-10 px-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none bg-surface-2"
             >
               <option value="Low">{t('priorityLow')}</option>
               <option value="Normal">{t('priorityNormal')}</option>

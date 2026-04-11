@@ -180,7 +180,7 @@ export default function CloseRoutePage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="bg-white px-8 py-6 border-b border-gray-200">
+      <div className="bg-surface-2 px-8 py-6 border-b border-gray-200">
         <Breadcrumb items={[
           { label: 'Rutas', href: '/routes' },
           { label: ruta.nombre, href: `/routes/${ruta.id}` },
@@ -210,7 +210,7 @@ export default function CloseRoutePage() {
             )}
             <button
               onClick={() => router.push('/routes')}
-              className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium text-gray-600 border border-gray-200 rounded hover:bg-gray-50"
+              className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium text-gray-600 border border-gray-200 rounded hover:bg-surface-1"
             >
               <X className="w-4 h-4" />
               Cancelar
@@ -261,9 +261,9 @@ export default function CloseRoutePage() {
         )}
 
         {/* Section: Route Details */}
-        <div data-tour="routes-close-details" className="bg-white border border-gray-200 rounded-lg p-6">
+        <div data-tour="routes-close-details" className="bg-surface-2 border border-gray-200 rounded-lg p-6">
           <h2 className="text-sm font-semibold text-gray-900 mb-4">Detalles de la ruta</h2>
-          <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+          <div className="flex items-center gap-4 p-3 bg-surface-1 rounded-lg">
             <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
               <User className="w-5 h-5 text-green-600" />
             </div>
@@ -279,7 +279,7 @@ export default function CloseRoutePage() {
         {/* Financial Summary */}
         <div data-tour="routes-close-financial" className="grid grid-cols-3 gap-4">
           {/* Efectivo entrante */}
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
+          <div className="bg-surface-2 border border-gray-200 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-3">
               <ArrowDown className="w-4 h-4 text-green-600" />
               <h3 className="text-xs font-semibold text-gray-700">Efectivo entrante</h3>
@@ -301,7 +301,7 @@ export default function CloseRoutePage() {
           </div>
 
           {/* Movimientos a saldo */}
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
+          <div className="bg-surface-2 border border-gray-200 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-3">
               <ArrowUp className="w-4 h-4 text-blue-600" />
               <h3 className="text-xs font-semibold text-gray-700">Movimientos a saldo</h3>
@@ -323,7 +323,7 @@ export default function CloseRoutePage() {
           </div>
 
           {/* Otros movimientos */}
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
+          <div className="bg-surface-2 border border-gray-200 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-3">
               <Package className="w-4 h-4 text-gray-600" />
               <h3 className="text-xs font-semibold text-gray-700">Otros movimientos</h3>
@@ -344,7 +344,7 @@ export default function CloseRoutePage() {
         {/* Al inicio vs Al cierre */}
         <div className="grid grid-cols-2 gap-4">
           {/* Al inicio */}
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
+          <div className="bg-surface-2 border border-gray-200 rounded-lg p-4">
             <h3 className="text-xs font-semibold text-gray-700 mb-3">Al inicio</h3>
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
@@ -359,7 +359,7 @@ export default function CloseRoutePage() {
           </div>
 
           {/* Al cierre */}
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
+          <div className="bg-surface-2 border border-gray-200 rounded-lg p-4">
             <h3 className="text-xs font-semibold text-gray-700 mb-3">Al cierre</h3>
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
@@ -394,7 +394,7 @@ export default function CloseRoutePage() {
         </div>
 
         {/* Inventario de retorno */}
-        <div data-tour="routes-close-inventory" className="bg-white border border-gray-200 rounded-lg p-6">
+        <div data-tour="routes-close-inventory" className="bg-surface-2 border border-gray-200 rounded-lg p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-gray-900">Inventario de retorno</h2>
             {!isReadonly && (
@@ -402,13 +402,13 @@ export default function CloseRoutePage() {
                 <span className="text-xs text-gray-500">Diferencia a:</span>
                 <button
                   onClick={() => handleSetAllDiferencia('recAlmacen')}
-                  className="px-3 py-1 text-xs font-medium text-gray-600 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+                  className="px-3 py-1 text-xs font-medium text-gray-600 border border-gray-200 rounded hover:bg-surface-1 transition-colors"
                 >
                   Almacén
                 </button>
                 <button
                   onClick={() => handleSetAllDiferencia('cargaVehiculo')}
-                  className="px-3 py-1 text-xs font-medium text-gray-600 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+                  className="px-3 py-1 text-xs font-medium text-gray-600 border border-gray-200 rounded hover:bg-surface-1 transition-colors"
                 >
                   Carga
                 </button>
@@ -437,7 +437,7 @@ export default function CloseRoutePage() {
                 </thead>
                 <tbody>
                   {retorno.map((item) => (
-                    <tr key={item.id} className="border-b border-gray-50 hover:bg-gray-50">
+                    <tr key={item.id} className="border-b border-gray-50 hover:bg-surface-1">
                       <td className="py-2 px-2">
                         <span className="text-[12px] text-gray-900">{item.productoNombre}</span>
                       </td>

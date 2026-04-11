@@ -206,7 +206,7 @@ export default function InvoicesPage() {
                   </a>
                 </td>
                 <td className="px-4 py-3 text-muted-foreground">
-                  {new Date(f.fechaEmision).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}
+                  {new Date(f.fechaEmision).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })}
                 </td>
                 <td className="px-4 py-3">
                   <div className="truncate max-w-[200px]">{f.receptorNombre}</div>
@@ -284,7 +284,7 @@ export default function InvoicesPage() {
             <p className="text-xs text-muted-foreground mb-2">{f.receptorRfc}</p>
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground">
-                {new Date(f.fechaEmision).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}
+                {new Date(f.fechaEmision).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })}
               </span>
               <span className="font-semibold tabular-nums">{formatCurrency(f.total)}</span>
             </div>

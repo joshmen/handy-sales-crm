@@ -105,7 +105,7 @@ export function PlanComparisonPage({
             style={{ backgroundColor: billingInterval === "year" ? "#16A34A" : "hsl(var(--muted-foreground) / 0.3)" }}
           >
             <div
-              className="absolute top-[3px] w-[22px] h-[22px] bg-white rounded-full shadow-md transition-all duration-300"
+              className="absolute top-[3px] w-[22px] h-[22px] bg-surface-2 rounded-full shadow-md transition-all duration-300"
               style={{ left: billingInterval === "year" ? "calc(100% - 25px)" : "3px" }}
             />
           </button>
@@ -358,7 +358,7 @@ function PlanCard({
                     ? "bg-amber-500 text-white hover:bg-amber-600 shadow-md"
                     : isPopular
                       ? "bg-success text-success-foreground hover:bg-success/90 shadow-md"
-                      : "bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100"
+                      : "bg-gray-900 dark:bg-surface-2 text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100"
             }`}
             disabled={isDisabled}
             onClick={onUpgrade}

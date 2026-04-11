@@ -17,7 +17,7 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-surface-1 px-4">
       <div className="max-w-md w-full text-center space-y-6">
         <div className="mx-auto w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
           <AlertTriangle className="w-8 h-8 text-red-600" />
@@ -42,7 +42,7 @@ export default function GlobalError({
           </button>
           <a
             href="/dashboard"
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-white text-gray-700 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-surface-2 text-gray-700 text-sm font-medium rounded-lg border border-gray-300 hover:bg-surface-1 transition-colors"
           >
             <Home className="w-4 h-4" />
             Ir al inicio

@@ -1069,20 +1069,20 @@ function AdminUsersView() {
       <div className="space-y-4">
         {/* KPI Strip */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="bg-surface-2 rounded-xl border border-gray-200 p-4">
             <p className="text-[11px] font-medium text-gray-500 uppercase">{t('totalUsers')}</p>
             <p className="text-2xl font-bold text-gray-900 mt-1">{totalCount}</p>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="bg-surface-2 rounded-xl border border-gray-200 p-4">
             <p className="text-[11px] font-medium text-gray-500 uppercase">{t('activeUsers')}</p>
             <p className="text-2xl font-bold text-emerald-600 mt-1">{displayUsers.filter(u => u.status === UserStatus.ACTIVE).length}</p>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="bg-surface-2 rounded-xl border border-gray-200 p-4">
             <p className="text-[11px] font-medium text-gray-500 uppercase">{t('onlineUsers')}</p>
             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             <p className="text-2xl font-bold text-blue-600 mt-1">{apiUsers.filter((u: any) => u.isOnline).length}</p>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="bg-surface-2 rounded-xl border border-gray-200 p-4">
             <p className="text-[11px] font-medium text-gray-500 uppercase">{t('activeSessions')}</p>
             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             <p className="text-2xl font-bold text-amber-600 mt-1">{apiUsers.reduce((sum: number, u: any) => sum + (u.activeSessionCount || 0), 0)}</p>
@@ -1123,7 +1123,7 @@ function AdminUsersView() {
           <button
             onClick={handleCleanExpired}
             disabled={cleaningExpired}
-            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-surface-1 transition-colors disabled:opacity-50"
           >
             {cleaningExpired ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -1280,7 +1280,7 @@ function AdminUsersView() {
                   <div
                     key={s.id}
                     className={`border rounded-lg p-4 ${
-                      s.esSesionActual ? 'border-green-300 ring-1 ring-green-200 bg-green-50/30' : 'border-gray-200 bg-white'
+                      s.esSesionActual ? 'border-green-300 ring-1 ring-green-200 bg-green-50/30' : 'border-gray-200 bg-surface-2'
                     }`}
                   >
                     <div className="flex items-center gap-3 mb-2">
@@ -1340,7 +1340,7 @@ function AdminUsersView() {
       {/* Create Modal */}
       {isCreateModalOpen && createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-card rounded-xl shadow-xl w-full max-w-md mx-4 border border-border">
+          <div className="bg-surface-2 dark:bg-card rounded-xl shadow-xl w-full max-w-md mx-4 border border-border">
             <div className="px-6 py-4 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900">{t("createUserTitle")}</h2>
             </div>
@@ -1400,7 +1400,7 @@ function AdminUsersView() {
             <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
               <button
                 onClick={() => setIsCreateModalOpen(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+                className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-surface-1"
               >
                 {tc('cancel')}
               </button>
@@ -1432,7 +1432,7 @@ function AdminUsersView() {
       {/* Edit Modal */}
       {isEditModalOpen && selectedUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+          <div className="bg-surface-2 rounded-lg shadow-xl w-full max-w-md mx-4">
             <div className="px-6 py-4 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900">{t("editUserTitle")}</h2>
             </div>
@@ -1484,7 +1484,7 @@ function AdminUsersView() {
                   setIsEditModalOpen(false);
                   setSelectedUser(null);
                 }}
-                className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+                className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-surface-1"
               >
                 {t('cancel')}
               </button>
@@ -1502,7 +1502,7 @@ function AdminUsersView() {
       {/* B4: Location Modal — rendered via portal to avoid parent overflow/transform issues */}
       {isLocationModalOpen && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4" onClick={() => setIsLocationModalOpen(false)}>
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+          <div className="bg-surface-2 rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">{t("vendorLocation")}</h2>
@@ -1544,7 +1544,7 @@ function AdminUsersView() {
       {/* B5: Distance Modal — rendered via portal */}
       {isDistanceModalOpen && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4" onClick={() => setIsDistanceModalOpen(false)}>
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+          <div className="bg-surface-2 rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">{t("vendorDistance")}</h2>
@@ -1577,7 +1577,7 @@ function AdminUsersView() {
                   </thead>
                   <tbody>
                     {distanceRows.map(row => (
-                      <tr key={row.usuarioId} className="border-b border-gray-100 hover:bg-gray-50">
+                      <tr key={row.usuarioId} className="border-b border-gray-100 hover:bg-surface-1">
                         <td className="py-3 font-medium text-gray-900">{row.nombre}</td>
                         <td className="py-3 text-gray-600">{row.clienteNombre || '\u2014'}</td>
                         <td className="py-3 text-right font-mono">

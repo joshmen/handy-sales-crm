@@ -18,7 +18,7 @@ function formatCurrency(value: number) {
 }
 
 function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('es-MX', {
+  return new Date(dateStr).toLocaleDateString(undefined, {
     year: 'numeric', month: 'short', day: 'numeric',
   });
 }
@@ -108,7 +108,7 @@ export default function ClientDetailPage() {
   return (
     <div className="min-h-screen bg-[#F9FAFB]">
       {/* Header */}
-      <div className="bg-white px-4 sm:px-8 py-4 border-b border-gray-200">
+      <div className="bg-surface-2 px-4 sm:px-8 py-4 border-b border-gray-200">
         <Breadcrumb items={[
           { label: tc('home'), href: '/dashboard' },
           { label: tClients('title'), href: '/clients' },
@@ -141,22 +141,22 @@ export default function ClientDetailPage() {
       <div className="p-4 sm:p-8 space-y-6">
         {/* KPI cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-white rounded-lg p-5 border border-gray-200">
+          <div className="bg-surface-2 rounded-lg p-5 border border-gray-200">
             <p className="text-xs font-medium text-gray-500 mb-1">{t('totalOrders')}</p>
             <p className="text-2xl font-bold text-gray-900">{totalPedidos}</p>
           </div>
-          <div className="bg-white rounded-lg p-5 border border-gray-200">
+          <div className="bg-surface-2 rounded-lg p-5 border border-gray-200">
             <p className="text-xs font-medium text-gray-500 mb-1">{t('totalSales')}</p>
             <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalVentas)}</p>
           </div>
-          <div className="bg-white rounded-lg p-5 border border-gray-200">
+          <div className="bg-surface-2 rounded-lg p-5 border border-gray-200">
             <p className="text-xs font-medium text-gray-500 mb-1">{t('pendingOrders')}</p>
             <p className="text-2xl font-bold text-gray-900">{pedidosPendientes}</p>
           </div>
         </div>
 
         {/* Client info card */}
-        <div className="bg-white rounded-lg p-6 border border-gray-200">
+        <div className="bg-surface-2 rounded-lg p-6 border border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('clientInfo')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 text-sm">
             <div className="flex justify-between">
@@ -204,7 +204,7 @@ export default function ClientDetailPage() {
 
         {/* Fiscal data section */}
         {client.facturable && (
-          <div className="bg-white rounded-lg p-6 border border-gray-200">
+          <div className="bg-surface-2 rounded-lg p-6 border border-gray-200">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('fiscalData')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 text-sm">
               <div className="flex justify-between">
@@ -232,7 +232,7 @@ export default function ClientDetailPage() {
         )}
 
         {/* Tabs */}
-        <div className="bg-white rounded-lg border border-gray-200">
+        <div className="bg-surface-2 rounded-lg border border-gray-200">
           <div className="border-b border-gray-200 px-6">
             <div className="flex gap-6">
               {([
@@ -279,7 +279,7 @@ export default function ClientDetailPage() {
                           return (
                             <tr
                               key={order.id}
-                              className="border-b border-gray-100 cursor-pointer hover:bg-gray-50"
+                              className="border-b border-gray-100 cursor-pointer hover:bg-surface-1"
                               onClick={() => router.push(`/orders/${order.id}`)}
                             >
                               <td className="py-3 font-mono text-xs text-blue-600 hover:underline">{order.numeroPedido}</td>

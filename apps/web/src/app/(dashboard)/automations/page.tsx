@@ -271,14 +271,14 @@ export default function AutomationsPage() {
                 <p className="text-[11px] opacity-70 mt-0.5">{t('activeOf', { total: templates.length })}</p>
               </div>
             </div>
-            <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 text-gray-700">
+            <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 bg-surface-1 text-gray-700">
               <Sparkle size={18} weight="fill" className="flex-shrink-0 opacity-60" />
               <div>
                 <p className="text-lg font-bold leading-none">{loading ? '—' : totalExecutions}</p>
                 <p className="text-[11px] opacity-70 mt-0.5">{t('totalExecutions')}</p>
               </div>
             </div>
-            <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 text-gray-700">
+            <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 bg-surface-1 text-gray-700">
               <Clock size={18} weight="fill" className="flex-shrink-0 opacity-60" />
               <div>
                 <p className="text-lg font-bold leading-none truncate">
@@ -310,7 +310,7 @@ export default function AutomationsPage() {
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {[1, 2, 3, 4, 5, 6].map(i => (
-                <div key={i} className="bg-white rounded-lg border border-gray-200 p-3 animate-pulse">
+                <div key={i} className="bg-surface-2 rounded-lg border border-gray-200 p-3 animate-pulse">
                   <div className="flex items-start gap-2.5 mb-3">
                     <div className="w-9 h-9 bg-gray-200 rounded-lg" />
                     <div className="flex-1">
@@ -322,7 +322,7 @@ export default function AutomationsPage() {
                     <div className="h-5 bg-gray-100 rounded-md w-16" />
                     <div className="h-5 bg-gray-100 rounded-md w-14" />
                   </div>
-                  <div className="h-7 bg-gray-50 rounded" />
+                  <div className="h-7 bg-surface-1 rounded" />
                 </div>
               ))}
             </div>
@@ -355,10 +355,10 @@ export default function AutomationsPage() {
                 return (
                   <div
                     key={template.slug}
-                    className={`bg-white rounded-lg border transition-colors ${
+                    className={`bg-surface-2 rounded-lg border transition-colors ${
                       template.activada
-                        ? 'border-green-200 hover:bg-gray-50'
-                        : 'border-gray-200 hover:bg-gray-50 opacity-60'
+                        ? 'border-green-200 hover:bg-surface-1'
+                        : 'border-gray-200 hover:bg-surface-1 opacity-60'
                     }`}
                   >
                     <div className="p-3">
@@ -452,13 +452,13 @@ export default function AutomationsPage() {
           )}
 
           {/* Historial section */}
-          <div className="bg-white rounded-lg border border-gray-200" data-tour="automations-historial">
+          <div className="bg-surface-2 rounded-lg border border-gray-200" data-tour="automations-historial">
             <button
               onClick={() => {
                 setShowHistorial(!showHistorial);
                 if (!showHistorial && historial.length === 0) loadHistorial();
               }}
-              className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 transition-colors rounded-lg"
+              className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-surface-1 transition-colors rounded-lg"
             >
               <div className="flex items-center gap-2">
                 <Lightning size={18} className="text-amber-500" />
@@ -491,7 +491,7 @@ export default function AutomationsPage() {
                     <div className="hidden sm:block overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead>
-                          <tr className="bg-gray-50 border-b border-gray-100">
+                          <tr className="bg-surface-1 border-b border-gray-100">
                             <th className="text-left px-5 py-2.5 font-medium text-gray-500">{t('columns.date')}</th>
                             <th className="text-left px-5 py-2.5 font-medium text-gray-500">{t('columns.automation')}</th>
                             <th className="text-left px-5 py-2.5 font-medium text-gray-500">{t('columns.result')}</th>
@@ -500,7 +500,7 @@ export default function AutomationsPage() {
                         </thead>
                         <tbody>
                           {historial.map(exec => (
-                            <tr key={exec.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                            <tr key={exec.id} className="border-b border-gray-50 hover:bg-surface-1/50 transition-colors">
                               <td className="px-5 py-2.5 text-gray-600 whitespace-nowrap">
                                 {formatDate(exec.ejecutadoEn, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                               </td>
@@ -598,7 +598,7 @@ export default function AutomationsPage() {
       >
         <div className="space-y-5 p-6" data-tour="automations-drawer-form">
           {configTemplate?.descripcion && (
-            <p className="text-sm text-gray-500 bg-gray-50 rounded-lg p-3" data-tour="automations-drawer-desc">
+            <p className="text-sm text-gray-500 bg-surface-1 rounded-lg p-3" data-tour="automations-drawer-desc">
               {configTemplate.descripcion}
             </p>
           )}
@@ -642,7 +642,7 @@ export default function AutomationsPage() {
                   <select
                     value={String(value || '')}
                     onChange={e => setConfigParams(prev => ({ ...prev, [key]: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent bg-surface-2"
                   >
                     {config.options.map(opt => (
                       <option key={opt.value} value={opt.value}>{opt.label}</option>

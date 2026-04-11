@@ -118,7 +118,7 @@ export default async function RootLayout({
         <a
           id="skip-link"
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-indigo-700 focus:rounded-md focus:shadow-lg focus:ring-2 focus:ring-indigo-500"
+          className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:bg-surface-2 focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-indigo-700 focus:rounded-md focus:shadow-lg focus:ring-2 focus:ring-indigo-500"
         >
           Skip to main content
         </a>

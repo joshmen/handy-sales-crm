@@ -385,7 +385,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Goal Card */}
-        <div className="bg-white border border-gray-200 rounded-xl shadow-sm page-animate page-animate-delay-4" data-tour="dashboard-goal">
+        <div className="bg-surface-2 border border-gray-200 rounded-xl shadow-sm page-animate page-animate-delay-4" data-tour="dashboard-goal">
           <div className="p-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <h3 className="text-lg font-semibold text-gray-900">
@@ -485,7 +485,7 @@ export default function DashboardPage() {
               <select
                 value={periodo}
                 onChange={(e) => setPeriodo(e.target.value as 'semana' | 'mes' | 'trimestre')}
-                className="appearance-none flex items-center gap-2 px-4 py-2 pr-8 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 bg-white cursor-pointer transition-colors"
+                className="appearance-none flex items-center gap-2 px-4 py-2 pr-8 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-surface-1 bg-surface-2 cursor-pointer transition-colors"
               >
                 <option value="semana">{t('thisWeek')}</option>
                 <option value="mes">{t('thisMonth')}</option>
@@ -497,7 +497,7 @@ export default function DashboardPage() {
             <button
               onClick={exportPDF}
               disabled={exporting || metricCards.length === 0}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-surface-1 transition-colors disabled:opacity-50"
             >
               {exporting ? (
                 <Loader2 className="w-4 h-4 text-emerald-500 animate-spin" />
@@ -561,7 +561,7 @@ export default function DashboardPage() {
             );
           }) : (
             Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="bg-white border border-gray-200 rounded-xl p-5">
+              <div key={i} className="bg-surface-2 border border-gray-200 rounded-xl p-5">
                 <div className="flex items-center justify-between mb-4">
                   <div className="h-4 bg-muted rounded animate-pulse w-24" />
                   <div className="w-8 h-8 bg-muted animate-pulse rounded-lg" />
@@ -576,7 +576,7 @@ export default function DashboardPage() {
         {/* Content Columns */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 page-animate page-animate-delay-3">
           {/* Chart Card */}
-          <div ref={chartRef} className="lg:col-span-2 bg-white border border-gray-200 rounded-xl p-6" data-tour="dashboard-chart">
+          <div ref={chartRef} className="lg:col-span-2 bg-surface-2 border border-gray-200 rounded-xl p-6" data-tour="dashboard-chart">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">
@@ -614,7 +614,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Activity Card */}
-          <div className="bg-white border border-gray-200 rounded-xl" data-tour="dashboard-activity">
+          <div className="bg-surface-2 border border-gray-200 rounded-xl" data-tour="dashboard-activity">
             <div className="flex items-center justify-between p-5 border-b border-gray-100">
               <h3 className="font-semibold text-gray-900">{t('recentActivity')}</h3>
             </div>
@@ -622,7 +622,7 @@ export default function DashboardPage() {
               {activities.length > 0 ? activities.map((a) => {
                 const IconComp = activityIcons[a.type] || Clock;
                 return (
-                  <div key={a.id} className="flex items-start gap-3 p-4 hover:bg-gray-50 transition-colors">
+                  <div key={a.id} className="flex items-start gap-3 p-4 hover:bg-surface-1 transition-colors">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
                       a.status === 'success' ? 'bg-emerald-50' :
                       a.status === 'failed' ? 'bg-amber-50' : 'bg-blue-50'
@@ -649,7 +649,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Goal Card */}
-        <div className="bg-white border border-gray-200 rounded-xl page-animate page-animate-delay-4" data-tour="dashboard-goal"><div className="p-6">
+        <div className="bg-surface-2 border border-gray-200 rounded-xl page-animate page-animate-delay-4" data-tour="dashboard-goal"><div className="p-6">
           {isVendedor ? (
             <>
               {/* Vendedor: single meta with progress */}
@@ -738,7 +738,7 @@ export default function DashboardPage() {
                     const periodoLabel = meta.periodo === 'semanal' ? 'Semanal' : 'Mensual';
                     const fmtVal = meta.tipo === 'ventas' ? `${formatCurrency(meta.monto)}` : formatNumber(meta.monto);
                     return (
-                      <div key={meta.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                      <div key={meta.id} className="flex items-center gap-3 p-3 bg-surface-1 rounded-lg">
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-gray-900 truncate">{meta.usuarioNombre}</p>
                           <div className="flex items-center gap-2 mt-0.5">
@@ -767,28 +767,28 @@ export default function DashboardPage() {
           <div className="page-animate page-animate-delay-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('todayDeliveries')}</h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="bg-white border border-gray-200 rounded-xl p-4">
+              <div className="bg-surface-2 border border-gray-200 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <SbTruck size={24} />
                   <span className="text-xs text-gray-500">{t('inRoute')}</span>
                 </div>
                 <p className="text-2xl font-semibold text-gray-900">{deliveryStats.totalEnRuta}</p>
               </div>
-              <div className="bg-white border border-gray-200 rounded-xl p-4">
+              <div className="bg-surface-2 border border-gray-200 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <SbCheckCircle size={24} />
                   <span className="text-xs text-gray-500">{t('completed')}</span>
                 </div>
                 <p className="text-2xl font-semibold text-gray-900">{deliveryStats.totalCompletadas}</p>
               </div>
-              <div className="bg-white border border-gray-200 rounded-xl p-4">
+              <div className="bg-surface-2 border border-gray-200 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <SbClock size={24} />
                   <span className="text-xs text-gray-500">{t('pending')}</span>
                 </div>
                 <p className="text-2xl font-semibold text-gray-900">{deliveryStats.totalPendientes}</p>
               </div>
-              <div className="bg-white border border-gray-200 rounded-xl p-4">
+              <div className="bg-surface-2 border border-gray-200 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <SbTrendingUp size={24} />
                   <span className="text-xs text-gray-500">{t('completedPct')}</span>
@@ -830,7 +830,7 @@ function WelcomeBanner({ userName }: { userName?: string | null }) {
     <div className="relative overflow-hidden rounded-xl border border-green-200 dark:border-green-900/50 bg-gradient-to-r from-green-50 via-emerald-50/80 to-white dark:from-green-950/40 dark:via-emerald-950/20 dark:to-card p-5 sm:p-6 page-animate">
       <button
         onClick={handleDismiss}
-        className="absolute top-3 right-3 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+        className="absolute top-3 right-3 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-surface-2/10 transition-colors"
         aria-label={t('welcome.closeBanner')}
       >
         <X className="w-4 h-4" />

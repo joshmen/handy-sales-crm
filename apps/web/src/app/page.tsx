@@ -132,7 +132,7 @@ export default function LandingPage() {
                 </Link>
                 <a
                   href="#caracteristicas"
-                  className="inline-flex items-center justify-center border border-gray-300 text-gray-700 hover:bg-gray-50 px-6 py-3.5 rounded-xl font-medium text-base transition-colors"
+                  className="inline-flex items-center justify-center border border-gray-300 text-gray-700 hover:bg-surface-1 px-6 py-3.5 rounded-xl font-medium text-base transition-colors"
                 >
                   Ver características
                 </a>
@@ -147,7 +147,7 @@ export default function LandingPage() {
 
             {/* Right: Browser chrome + screenshot */}
             <div className="relative page-animate page-animate-delay-6">
-              <div className="rounded-2xl shadow-2xl border border-gray-200 overflow-hidden bg-white">
+              <div className="rounded-2xl shadow-2xl border border-gray-200 overflow-hidden bg-surface-2">
                 {/* Browser bar */}
                 <div className="bg-gray-100 px-4 py-2.5 flex items-center gap-2">
                   <div className="flex gap-1.5">
@@ -156,7 +156,7 @@ export default function LandingPage() {
                     <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
                   </div>
                   <div className="flex-1 mx-4">
-                    <div className="bg-white rounded-md px-3 py-1 text-xs text-gray-400 max-w-xs">
+                    <div className="bg-surface-2 rounded-md px-3 py-1 text-xs text-gray-400 max-w-xs">
                       app.handysuites.com/dashboard
                     </div>
                   </div>
@@ -172,7 +172,7 @@ export default function LandingPage() {
                 />
               </div>
               {/* Floating badge */}
-              <div className="absolute -bottom-4 -right-2 lg:-right-4 bg-white rounded-xl shadow-lg border border-gray-100 px-4 py-2.5 flex items-center gap-2.5">
+              <div className="absolute -bottom-4 -right-2 lg:-right-4 bg-surface-2 rounded-xl shadow-lg border border-gray-100 px-4 py-2.5 flex items-center gap-2.5">
                 <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                 <span className="text-sm font-semibold text-gray-900">En vivo</span>
                 <span className="text-xs text-gray-500">datos en tiempo real</span>
@@ -183,7 +183,7 @@ export default function LandingPage() {
       </section>
 
       {/* ===== SOCIAL PROOF STRIP ===== */}
-      <section className="py-10 bg-white border-y border-gray-100">
+      <section className="py-10 bg-surface-2 border-y border-gray-100">
         <ScrollReveal className="max-w-7xl mx-auto px-6">
           <p className="text-xs text-gray-400 text-center mb-6">
             Empresas que confían en Handy Suites
@@ -221,7 +221,7 @@ export default function LandingPage() {
       </section>
 
       {/* ===== VALUE PROPS — Beneficios clave ===== */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-surface-2">
         <div className="max-w-7xl mx-auto px-6">
           <ScrollReveal className="text-center mb-14">
             <p className="text-sm font-medium text-emerald-600 mb-2">¿Por qué Handy Suites?</p>
@@ -255,7 +255,7 @@ export default function LandingPage() {
             ].map((prop, i) => (
               <ScrollReveal key={prop.title} delay={i * 0.08}>
                 <div className="text-center">
-                  <div className="w-16 h-16 rounded-2xl bg-gray-50/80 flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 rounded-2xl bg-surface-1/80 flex items-center justify-center mx-auto mb-4">
                     <prop.Icon size={42} />
                   </div>
                   <h3 className="font-semibold text-gray-900 text-base">{prop.title}</h3>
@@ -316,7 +316,7 @@ export default function LandingPage() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.map((feat, i) => (
               <ScrollReveal key={feat.title} delay={i * 0.08}>
-                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow h-full">
+                <div className="bg-surface-2 rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow h-full">
                   <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${feat.bg}`}>
                     <feat.Icon size={36} />
                   </div>
@@ -330,12 +330,12 @@ export default function LandingPage() {
       </section>
 
       {/* ===== PRODUCT SHOWCASE ===== */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-surface-2">
         <div className="max-w-7xl mx-auto px-6 space-y-16">
           {/* Row 1: Clients */}
           <ScrollReveal>
             <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-              <div className="rounded-2xl shadow-xl border border-gray-200 overflow-hidden bg-white">
+              <div className="rounded-2xl shadow-xl border border-gray-200 overflow-hidden bg-surface-2">
                 <div className="bg-gray-100 px-4 py-2.5 flex items-center gap-2">
                   <div className="flex gap-1.5">
                     <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
@@ -343,7 +343,7 @@ export default function LandingPage() {
                     <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
                   </div>
                   <div className="flex-1 mx-4">
-                    <div className="bg-white rounded-md px-3 py-1 text-xs text-gray-400 max-w-xs">
+                    <div className="bg-surface-2 rounded-md px-3 py-1 text-xs text-gray-400 max-w-xs">
                       app.handysuites.com/clientes
                     </div>
                   </div>
@@ -382,7 +382,7 @@ export default function LandingPage() {
           {/* Row 2: Orders (reversed) */}
           <ScrollReveal>
             <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-              <div className="lg:order-2 rounded-2xl shadow-xl border border-gray-200 overflow-hidden bg-white">
+              <div className="lg:order-2 rounded-2xl shadow-xl border border-gray-200 overflow-hidden bg-surface-2">
                 <div className="bg-gray-100 px-4 py-2.5 flex items-center gap-2">
                   <div className="flex gap-1.5">
                     <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
@@ -390,7 +390,7 @@ export default function LandingPage() {
                     <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
                   </div>
                   <div className="flex-1 mx-4">
-                    <div className="bg-white rounded-md px-3 py-1 text-xs text-gray-400 max-w-xs">
+                    <div className="bg-surface-2 rounded-md px-3 py-1 text-xs text-gray-400 max-w-xs">
                       app.handysuites.com/pedidos
                     </div>
                   </div>
@@ -441,7 +441,7 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-3 gap-6 mb-16">
             {testimonials.map((t, i) => (
               <ScrollReveal key={t.company} delay={i * 0.08}>
-                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm h-full">
+                <div className="bg-surface-2 rounded-2xl p-6 border border-gray-100 shadow-sm h-full">
                   <div className="flex gap-0.5 mb-4">
                     {[...Array(5)].map((_, j) => (
                       <Star key={j} className="w-4 h-4 text-amber-400 fill-amber-400" />
@@ -499,7 +499,7 @@ export default function LandingPage() {
           </p>
           <Link
             href="/register"
-            className="inline-flex items-center gap-2 bg-white text-green-700 font-semibold px-8 py-4 rounded-xl text-lg shadow-lg hover:bg-green-50 transition-colors mt-8"
+            className="inline-flex items-center gap-2 bg-surface-2 text-green-700 font-semibold px-8 py-4 rounded-xl text-lg shadow-lg hover:bg-green-50 transition-colors mt-8"
           >
             Comenzar prueba gratuita
             <ArrowRight className="w-5 h-5" />

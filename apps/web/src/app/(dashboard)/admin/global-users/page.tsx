@@ -119,7 +119,7 @@ export default function GlobalUsersPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="bg-white px-8 py-6 border-b border-gray-200">
+      <div className="bg-surface-2 px-8 py-6 border-b border-gray-200">
         <div className="flex items-center gap-2 text-[13px] mb-4">
           <span className="text-gray-500">{ta('breadcrumb')}</span>
           <ChevronRight className="w-4 h-4 text-gray-400" />
@@ -180,7 +180,7 @@ export default function GlobalUsersPage() {
       {/* Body */}
       <div className="flex-1 overflow-auto">
         <div className="px-8 py-6">
-          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+          <div className="bg-surface-2 border border-gray-200 rounded-lg overflow-hidden">
             {loading ? (
               <div className="flex flex-col items-center justify-center h-64 gap-4">
                 <div className="flex items-center gap-2">
@@ -207,7 +207,7 @@ export default function GlobalUsersPage() {
               <>
                 {/* Desktop Table */}
                 <div className="hidden md:block">
-                  <div className="flex items-center bg-gray-50 px-4 h-10 border-b border-gray-200">
+                  <div className="flex items-center bg-surface-1 px-4 h-10 border-b border-gray-200">
                     <div className="w-[200px] text-xs font-semibold text-gray-600">{t('colUser')}</div>
                     <div className="w-[220px] text-xs font-semibold text-gray-600">{t('colEmail')}</div>
                     <div className="w-[180px] text-xs font-semibold text-gray-600">{t('colCompany')}</div>
@@ -219,7 +219,7 @@ export default function GlobalUsersPage() {
                   {users.map((user) => (
                     <div
                       key={user.id}
-                      className="flex items-center px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                      className="flex items-center px-4 py-3 border-b border-gray-100 hover:bg-surface-1 transition-colors"
                     >
                       <div className="w-[200px] flex items-center gap-2">
                         <div
@@ -312,7 +312,7 @@ export default function GlobalUsersPage() {
                 <button
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-gray-600 border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-gray-600 border border-gray-200 rounded-md hover:bg-surface-1 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <ChevronLeft className="w-4 h-4" />
                   <span>{t('previous')}</span>
@@ -347,7 +347,7 @@ export default function GlobalUsersPage() {
                 <button
                   onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
-                  className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-gray-600 border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-gray-600 border border-gray-200 rounded-md hover:bg-surface-1 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <span>{t('next')}</span>
                   <ChevronRight className="w-4 h-4" />

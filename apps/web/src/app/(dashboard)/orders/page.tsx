@@ -476,7 +476,7 @@ export default function OrdersPage() {
       width: 120,
       cellRenderer: (order) => (
         <div className="text-[12px] text-gray-500 whitespace-nowrap tabular-nums">
-          <div>{order.orderDate.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+          <div>{order.orderDate.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</div>
           <div className="text-[11px] text-gray-400">{order.orderDate.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}</div>
         </div>
       ),
@@ -634,7 +634,7 @@ export default function OrdersPage() {
               data-tour="orders-estado-filter"
               value={estadoFilter}
               onChange={(e) => { setEstadoFilter(e.target.value); setCurrentPage(1); }}
-              className="px-3 py-2 h-10 text-[13px] text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="px-3 py-2 h-10 text-[13px] text-gray-700 border border-gray-300 rounded-lg hover:bg-surface-1 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             >
               <option value="">{t('filters.allStatuses')}</option>
               <option value="Borrador">{t('status.draft')}</option>
@@ -664,7 +664,7 @@ export default function OrdersPage() {
               data-tour="orders-tipo-filter"
               value={tipoVentaFilter}
               onChange={(e) => { setTipoVentaFilter(e.target.value as '' | '0' | '1'); setCurrentPage(1); }}
-              className="px-3 py-2 h-10 text-[13px] text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="px-3 py-2 h-10 text-[13px] text-gray-700 border border-gray-300 rounded-lg hover:bg-surface-1 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             >
               <option value="">{t('filters.allTypes')}</option>
               <option value="0">{t('filters.preventa')}</option>

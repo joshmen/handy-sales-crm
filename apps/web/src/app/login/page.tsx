@@ -396,9 +396,9 @@ function LoginContent() {
                     placeholder={t('emailPlaceholder')}
                     {...register('email')}
                     disabled={isDisabled}
-                    className={`auth-input w-full h-12 px-3.5 border rounded-[10px] text-[15px] bg-gray-50/50 outline-none ${
+                    className={`auth-input w-full h-12 px-3.5 border rounded-[10px] text-[15px] bg-surface-1/50 outline-none ${
                       errors.email ? 'border-red-400 bg-red-50/30' : 'border-[#D1D5DB]'
-                    } disabled:bg-gray-50 disabled:text-gray-500`}
+                    } disabled:bg-surface-1 disabled:text-gray-500`}
                   />
                   {errors.email && (
                     <p className="text-xs text-red-500 flex items-center gap-1">
@@ -424,9 +424,9 @@ function LoginContent() {
                       placeholder="••••••••"
                       {...register('password')}
                       disabled={isDisabled}
-                      className={`auth-input w-full h-12 px-3.5 pr-10 border rounded-[10px] text-[15px] bg-gray-50/50 outline-none ${
+                      className={`auth-input w-full h-12 px-3.5 pr-10 border rounded-[10px] text-[15px] bg-surface-1/50 outline-none ${
                         errors.password ? 'border-red-400 bg-red-50/30' : 'border-[#D1D5DB]'
-                      } disabled:bg-gray-50 disabled:text-gray-500`}
+                      } disabled:bg-surface-1 disabled:text-gray-500`}
                     />
                     <button
                       type="button"
@@ -472,7 +472,7 @@ function LoginContent() {
                   <div className="w-full auth-separator" />
                 </div>
                 <div className="relative flex justify-center text-xs">
-                  <span className="bg-white px-4 text-gray-400 uppercase tracking-widest text-[11px]">o</span>
+                  <span className="bg-surface-2 px-4 text-gray-400 uppercase tracking-widest text-[11px]">o</span>
                 </div>
               </div>
 
@@ -485,7 +485,7 @@ function LoginContent() {
                     signIn('google', { callbackUrl: safe });
                   }}
                   disabled={isDisabled}
-                  className="w-full h-12 border border-[#D1D5DB] text-[15px] font-medium text-[#374151] rounded-[10px] hover:bg-gray-50 hover:border-gray-400 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-3 active:scale-[0.98]"
+                  className="w-full h-12 border border-[#D1D5DB] text-[15px] font-medium text-[#374151] rounded-[10px] hover:bg-surface-1 hover:border-gray-400 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-3 active:scale-[0.98]"
                 >
                   <svg className="h-5 w-5" viewBox="0 0 24 24">
                     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
@@ -505,7 +505,7 @@ function LoginContent() {
               </p>
 
               {process.env.NODE_ENV === 'development' && (
-                <div className="p-3 bg-gray-50 rounded-lg border border-gray-100 auth-animate auth-animate-delay-7">
+                <div className="p-3 bg-surface-1 rounded-lg border border-gray-100 auth-animate auth-animate-delay-7">
                   <p className="text-xs text-gray-500 mb-1.5 font-medium">{t('testCredentials')}</p>
                   <div className="space-y-0.5">
                     <p className="text-xs text-gray-500">
@@ -569,7 +569,7 @@ function LoginContent() {
                     }}
                     onKeyDown={handleTotpKeyDown}
                     disabled={verifying2FA}
-                    className="auth-input w-48 h-14 text-center text-2xl tracking-[0.5em] font-mono border border-[#D1D5DB] rounded-[10px] outline-none disabled:bg-gray-50"
+                    className="auth-input w-48 h-14 text-center text-2xl tracking-[0.5em] font-mono border border-[#D1D5DB] rounded-[10px] outline-none disabled:bg-surface-1"
                   />
 
                   <p className="text-xs text-[#9CA3AF]">{t('codeChanges30s')}</p>
@@ -629,7 +629,7 @@ function LoginContent() {
                 <button
                   type="button"
                   onClick={handleBackToCredentials}
-                  className="w-full h-11 text-sm font-medium text-[#64748B] rounded-[10px] hover:bg-gray-50 transition-all active:scale-[0.98]"
+                  className="w-full h-11 text-sm font-medium text-[#64748B] rounded-[10px] hover:bg-surface-1 transition-all active:scale-[0.98]"
                 >
                   {t('useOtherAccount')}
                 </button>

@@ -258,7 +258,7 @@ export default function ProductCategoriesPage() {
           <div className="relative" data-tour="product-categories-import-export">
             <button
               onClick={() => setShowDataMenu(!showDataMenu)}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-surface-1 transition-colors"
             >
               <Download className="w-3.5 h-3.5 text-emerald-500" />
               <span className="hidden sm:inline">{tc('importExport')}</span>
@@ -267,17 +267,17 @@ export default function ProductCategoriesPage() {
             {showDataMenu && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowDataMenu(false)} />
-                <div className="absolute right-0 mt-1 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1">
+                <div className="absolute right-0 mt-1 w-44 bg-surface-2 border border-gray-200 rounded-lg shadow-lg z-20 py-1">
                   <button
                     onClick={async () => { setShowDataMenu(false); try { await exportToCsv('categorias-productos'); toast.success(tc('csvDownloaded')); } catch { toast.error(tc('errorExporting')); } }}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
+                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-surface-1"
                   >
                     <Download className="w-3.5 h-3.5 text-emerald-500" />
                     {tc('exportCsv')}
                   </button>
                   <button
                     onClick={() => { setShowDataMenu(false); setIsImportOpen(true); }}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
+                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-surface-1"
                   >
                     <Upload className="w-3.5 h-3.5 text-blue-500" />
                     {tc('importCsv')}
