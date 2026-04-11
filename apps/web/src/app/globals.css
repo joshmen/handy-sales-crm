@@ -32,7 +32,7 @@ body {
     /* ═══ HANDY SUITES VISUAL IDENTITY ═══ */
 
     /* Background — cool slate tint */
-    --background: 220 14% 96%;          /* #F1F3F6 — slate-tinted off-white */
+    --background: 220 16% 93%;          /* #E8EBF0 — slate bg, visible contrast vs white cards */
     --foreground: 220 20% 14%;
 
     /* Cards — pure white, stands out from slate background */
@@ -85,20 +85,20 @@ body {
     --radius: 0.75rem;
 
     /* ═══ SURFACE ELEVATION SYSTEM ═══ */
-    --surface-1: 220 14% 96%;          /* #F1F3F6 — page bg */
-    --surface-2: 0 0% 100%;            /* #FFFFFF — cards */
-    --surface-3: 220 14% 94%;          /* #ECEEF2 — hover/active */
+    --surface-1: 220 16% 93%;          /* #E8EBF0 — page bg, clearly different from white */
+    --surface-2: 0 0% 100%;            /* #FFFFFF — cards float above */
+    --surface-3: 220 14% 90%;          /* #E0E4EA — hover/active, visible change */
     --surface-4: 0 0% 100%;            /* #FFFFFF — modals */
 
     /* ═══ SHADOW ELEVATION SYSTEM ═══ */
-    --shadow-1: 0 1px 3px 0 rgba(0,0,0,0.06), 0 1px 2px -1px rgba(0,0,0,0.04);
-    --shadow-2: 0 4px 16px -2px rgba(0,0,0,0.10), 0 2px 8px -2px rgba(0,0,0,0.06);
-    --shadow-3: 0 16px 40px -4px rgba(0,0,0,0.14), 0 8px 20px -8px rgba(0,0,0,0.08);
+    --shadow-1: 0 1px 3px 0 rgba(0,0,0,0.08), 0 2px 8px -1px rgba(0,0,0,0.06);
+    --shadow-2: 0 6px 20px -4px rgba(0,0,0,0.14), 0 4px 10px -4px rgba(0,0,0,0.08);
+    --shadow-3: 0 20px 50px -8px rgba(0,0,0,0.18), 0 10px 24px -8px rgba(0,0,0,0.10);
 
     /* ═══ BORDER ELEVATION SYSTEM ═══ */
-    --border-subtle: 220 13% 91%;
-    --border-default: 220 13% 87%;
-    --border-strong: 220 13% 78%;
+    --border-subtle: 220 14% 88%;
+    --border-default: 220 13% 84%;
+    --border-strong: 220 13% 72%;
 
     /* ═══ RADIUS SCALE ═══ */
     --radius-xs: 0.25rem;

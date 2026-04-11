@@ -116,7 +116,7 @@ export function DataGrid<T>({
   };
 
   return (
-    <div className={`bg-surface-2 rounded-lg border border-border-subtle shadow-elevation-1 overflow-hidden relative ${className || ''}`}>
+    <div className={`bg-surface-2 rounded-xl border border-border-subtle shadow-elevation-1 overflow-hidden relative ${className || ''}`}>
       {/* ─── Loading Overlay (only when refreshing existing data) ─── */}
       {loading && data.length > 0 && <TableLoadingOverlay loading={true} message={loadingMessage} />}
 
@@ -140,10 +140,10 @@ export function DataGrid<T>({
               key={col.key}
               style={getColumnStyle(col)}
               className={`
-                text-[11px] font-semibold text-gray-500 uppercase tracking-wider select-none
+                text-[11px] font-semibold text-muted-foreground uppercase tracking-wider select-none
                 ${col.hiddenOnMobile ? 'hidden md:block' : ''}
                 ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : ''}
-                ${col.sortable ? 'cursor-pointer hover:text-gray-700 transition-colors' : ''}
+                ${col.sortable ? 'cursor-pointer hover:text-foreground transition-colors' : ''}
               `}
               onClick={col.sortable ? () => handleSort(col.key) : undefined}
             >
