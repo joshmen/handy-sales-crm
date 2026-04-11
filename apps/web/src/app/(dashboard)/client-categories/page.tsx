@@ -390,7 +390,7 @@ export default function ClientCategoriesPage() {
           isOpen={isImportOpen}
           onClose={() => setIsImportOpen(false)}
           entity="categorias-clientes"
-          entityLabel="categorías"
+          entityLabel={t('title').toLowerCase()}
           onSuccess={loadCategories}
         />
       </PageHeader>

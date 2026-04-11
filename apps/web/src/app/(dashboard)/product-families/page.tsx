@@ -362,7 +362,7 @@ export default function ProductFamiliesPage() {
         <BatchActionBar
           selectedCount={batch.selectedCount}
           totalItems={totalItems}
-          entityLabel="familias"
+          entityLabel={t('title').toLowerCase()}
           onActivate={() => batch.openBatchAction('activate')}
           onDeactivate={() => batch.openBatchAction('deactivate')}
           onClear={batch.handleClearSelection}
@@ -438,7 +438,7 @@ export default function ProductFamiliesPage() {
         isOpen={isImportOpen}
         onClose={() => setIsImportOpen(false)}
         entity="familias-productos"
-        entityLabel="familias de productos"
+        entityLabel={t('title').toLowerCase()}
         onSuccess={() => loadFamilies()}
       />
 
@@ -449,7 +449,7 @@ export default function ProductFamiliesPage() {
         onConfirm={handleBatchToggle}
         action={batch.batchAction}
         selectedCount={batch.selectedCount}
-        entityLabel="familia"
+        entityLabel={t('title').toLowerCase()}
         loading={batch.batchLoading}
         consequenceActivate={t('consequenceActivate')}
         consequenceDeactivate={t('consequenceDeactivate')}

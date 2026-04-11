@@ -9,6 +9,7 @@ import { toast } from '@/hooks/useToast';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useReportExport } from '@/hooks/useReportExport';
 import { useFormatters } from '@/hooks/useFormatters';
+import { useTranslations } from 'next-intl';
 
 function defaultDates() {
   const h = new Date();
@@ -17,9 +18,10 @@ function defaultDates() {
   return { desde: d.toISOString().slice(0, 10), hasta: h.toISOString().slice(0, 10) };
 }
 
-
 export function ActividadClientesReport() {
   const { formatCurrency, formatDate } = useFormatters();
+  const t = useTranslations('reports.actividadClientes');
+  const tc = useTranslations('reports.common');
   const fmt = (n: number) => formatCurrency(n);
   const fmtDate = (d: string | null) => d ? formatDate(d, { day: '2-digit', month: 'short' }) : '-';
   const [dates, setDates] = useState(defaultDates);
@@ -32,15 +34,15 @@ export function ActividadClientesReport() {
   datesRef.current = dates;
   const { exportPDF, exporting } = useReportExport({
     fileName: 'actividad-clientes',
-    title: 'Actividad de Clientes',
+    title: t('client'),
     dateRange: dates,
     kpis: data.length > 0 ? [
-      { label: 'Clientes', value: total },
-      { label: 'Total Ventas', value: fmt(data.reduce((s, c) => s + c.ventasTotales, 0)) },
-      { label: 'Total Pedidos', value: data.reduce((s, c) => s + c.pedidos, 0) },
+      { label: tc('clients'), value: total },
+      { label: t('totalSales'), value: fmt(data.reduce((s, c) => s + c.ventasTotales, 0)) },
+      { label: t('totalOrders'), value: data.reduce((s, c) => s + c.pedidos, 0) },
     ] : undefined,
     table: data.length > 0 ? {
-      headers: ['Cliente', 'Zona', 'Pedidos', 'Ventas', 'Visitas', 'Últ. Visita', 'Últ. Pedido'],
+      headers: [t('client'), t('zone'), t('orders'), t('sales'), t('visits'), t('lastVisit'), t('lastOrder')],
       rows: data.map(c => [c.nombre, c.zona || '-', c.pedidos, fmt(c.ventasTotales), c.visitas, fmtDate(c.ultimaVisita), fmtDate(c.ultimoPedido)]),
     } : undefined,
   });
@@ -51,14 +53,12 @@ export function ActividadClientesReport() {
       const res = await getActividadClientes({ ...datesRef.current, page: p, limit });
       setData(res.clientes);
       setTotal(res.total);
-    } catch { toast.error('Error al cargar reporte'); }
+    } catch { toast.error(tc('errorLoading')); }
     finally { setLoading(false); }
   };
 
-  // Initial load
   useEffect(() => { fetchData(1); }, []);
 
-  // Re-fetch when page changes (from pagination buttons)
   const isInitialMount = useRef(true);
   useEffect(() => {
     if (isInitialMount.current) { isInitialMount.current = false; return; }
@@ -68,31 +68,28 @@ export function ActividadClientesReport() {
   const totalPages = Math.ceil(total / limit);
 
   const columns: ReportColumn<ActividadCliente>[] = [
-    { key: 'nombre', header: 'Cliente', sortable: true },
-    { key: 'zona', header: 'Zona', sortable: true },
-    { key: 'pedidos', header: 'Pedidos', align: 'right', sortable: true },
-    { key: 'ventasTotales', header: 'Ventas', align: 'right', sortable: true, render: (r) => fmt(r.ventasTotales) },
-    { key: 'visitas', header: 'Visitas', align: 'right', sortable: true },
-    { key: 'ultimaVisita', header: 'Últ. Visita', sortable: true, render: (r) => fmtDate(r.ultimaVisita) },
-    { key: 'ultimoPedido', header: 'Últ. Pedido', sortable: true, render: (r) => fmtDate(r.ultimoPedido) },
+    { key: 'nombre', header: t('client'), sortable: true },
+    { key: 'zona', header: t('zone'), sortable: true },
+    { key: 'pedidos', header: t('orders'), align: 'right', sortable: true },
+    { key: 'ventasTotales', header: t('sales'), align: 'right', sortable: true, render: (r) => fmt(r.ventasTotales) },
+    { key: 'visitas', header: t('visits'), align: 'right', sortable: true },
+    { key: 'ultimaVisita', header: t('lastVisit'), sortable: true, render: (r) => fmtDate(r.ultimaVisita) },
+    { key: 'ultimoPedido', header: t('lastOrder'), sortable: true, render: (r) => fmtDate(r.ultimoPedido) },
   ];
 
   const totalVentas = data.reduce((s, c) => s + c.ventasTotales, 0);
   const totalPedidos = data.reduce((s, c) => s + c.pedidos, 0);
 
-  const handleApply = () => {
-    setPage(1);
-    fetchData(1);
-  };
+  const handleApply = () => { setPage(1); fetchData(1); };
 
   return (
     <div className="space-y-4">
       <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={handleApply} loading={loading} onExportPDF={data.length > 0 ? exportPDF : undefined} exporting={exporting} />
 
       <ReportKPICards cards={[
-        { label: 'Clientes', value: total, color: 'blue' },
-        { label: 'Total Ventas', value: fmt(totalVentas), color: 'green' },
-        { label: 'Total Pedidos', value: totalPedidos, color: 'amber' },
+        { label: tc('clients'), value: total, color: 'blue' },
+        { label: t('totalSales'), value: fmt(totalVentas), color: 'green' },
+        { label: t('totalOrders'), value: totalPedidos, color: 'amber' },
       ]} />
 
       <ReportTable
@@ -102,17 +99,16 @@ export function ActividadClientesReport() {
         maxHeight="600px"
       />
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-xs text-gray-500">
-            Mostrando {(page - 1) * limit + 1} - {Math.min(page * limit, total)} de {total}
+            {tc('showing', { from: (page - 1) * limit + 1, to: Math.min(page * limit, total), total })}
           </p>
           <div className="flex items-center gap-1">
             <button onClick={() => setPage(p => p - 1)} disabled={page <= 1} className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30">
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="text-xs text-gray-600 px-2">Pág. {page}/{totalPages}</span>
+            <span className="text-xs text-gray-600 px-2">{tc('page', { page, totalPages })}</span>
             <button onClick={() => setPage(p => p + 1)} disabled={page >= totalPages} className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30">
               <ChevronRight className="w-4 h-4" />
             </button>

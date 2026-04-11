@@ -1,6 +1,24 @@
 import { FileQuestion, Home } from 'lucide-react';
+import { cookies } from 'next/headers';
 
-export default function NotFound() {
+const texts = {
+  en: {
+    title: 'Page not found',
+    description: 'The page you are looking for does not exist or has been moved.',
+    button: 'Go to Dashboard',
+  },
+  es: {
+    title: 'Página no encontrada',
+    description: 'La página que buscas no existe o fue movida.',
+    button: 'Ir al Dashboard',
+  },
+};
+
+export default async function NotFound() {
+  const store = await cookies();
+  const locale = (store.get('NEXT_LOCALE')?.value || 'es') as keyof typeof texts;
+  const t = texts[locale] || texts.es;
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="max-w-md w-full text-center space-y-6">
@@ -9,17 +27,15 @@ export default function NotFound() {
         </div>
         <div className="space-y-2">
           <h1 className="text-5xl font-bold text-gray-300">404</h1>
-          <h2 className="text-xl font-semibold text-gray-900">Página no encontrada</h2>
-          <p className="text-sm text-gray-500">
-            La página que buscas no existe o fue movida.
-          </p>
+          <h2 className="text-xl font-semibold text-gray-900">{t.title}</h2>
+          <p className="text-sm text-gray-500">{t.description}</p>
         </div>
         <a
           href="/dashboard"
           className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
         >
           <Home className="w-4 h-4" />
-          Ir al Dashboard
+          {t.button}
         </a>
       </div>
     </div>

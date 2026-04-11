@@ -80,10 +80,10 @@ const productSchema = z.object({
   nombre: z.string().min(1, 'nameRequired'),
   codigoBarra: z.string().min(1, 'barcodeRequired'),
   descripcion: z.string(),
-  familiaId: z.number().min(1, 'Selecciona una familia de productos'),
-  categoraId: z.number().min(1, 'Selecciona una categoría'),
-  unidadMedidaId: z.number().min(1, 'Selecciona una unidad de medida'),
-  precioBase: z.number().min(0.01, 'El precio debe ser mayor a 0'),
+  familiaId: z.number().min(1, 'selectFamilyRequired'),
+  categoraId: z.number().min(1, 'selectCategoryRequired'),
+  unidadMedidaId: z.number().min(1, 'selectUnitRequired'),
+  precioBase: z.number().min(0.01, 'priceGreaterThanZero'),
 });
 
 type ProductFormData = z.infer<typeof productSchema>;
@@ -594,7 +594,7 @@ export default function ProductsPage() {
           <BatchActionBar
             selectedCount={batch.selectedCount}
             totalItems={totalProducts}
-            entityLabel="productos"
+            entityLabel={t('title').toLowerCase()}
             onActivate={() => batch.openBatchAction('activate')}
             onDeactivate={() => batch.openBatchAction('deactivate')}
             onClear={batch.handleClearSelection}
@@ -682,7 +682,7 @@ export default function ProductsPage() {
           isOpen={isImportOpen}
           onClose={() => setIsImportOpen(false)}
           entity="productos"
-          entityLabel="productos"
+          entityLabel={t('title').toLowerCase()}
           onSuccess={() => fetchProducts()}
         />
 
@@ -693,7 +693,7 @@ export default function ProductsPage() {
           onConfirm={handleBatchToggle}
           action={batch.batchAction}
           selectedCount={batch.selectedCount}
-          entityLabel="productos"
+          entityLabel={t('title').toLowerCase()}
           loading={batch.batchLoading}
           consequenceDeactivate={t('consequenceDeactivate')}
           consequenceActivate={t('consequenceActivate')}

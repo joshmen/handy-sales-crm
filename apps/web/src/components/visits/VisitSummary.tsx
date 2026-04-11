@@ -1,5 +1,6 @@
+'use client';
+
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/Card';
 import {
   MapPin,
   CheckCircle,
@@ -8,6 +9,7 @@ import {
   XCircle,
   TrendingUp,
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface VisitSummaryProps {
   totalVisits: number;
@@ -28,67 +30,65 @@ export const VisitSummary: React.FC<VisitSummaryProps> = ({
   conversionRate,
   className = '',
 }) => {
+  const t = useTranslations('visits');
+
   const stats = [
     {
-      label: 'Total Visitas',
+      label: t('summary.totalVisits'),
       value: totalVisits,
       icon: MapPin,
       color: 'text-blue-600',
-      bgColor: 'bg-blue-100',
+      bgColor: 'bg-blue-50',
     },
     {
-      label: 'Completadas',
+      label: t('summary.completed'),
       value: completedVisits,
       icon: CheckCircle,
       color: 'text-green-600',
-      bgColor: 'bg-green-100',
+      bgColor: 'bg-green-50',
     },
     {
-      label: 'Con Venta',
+      label: t('summary.withSale'),
       value: visitsWithSale,
       icon: ShoppingCart,
       color: 'text-purple-600',
-      bgColor: 'bg-purple-100',
+      bgColor: 'bg-purple-50',
     },
     {
-      label: 'Pendientes',
+      label: t('summary.pending'),
       value: pendingVisits,
       icon: Clock,
-      color: 'text-yellow-600',
-      bgColor: 'bg-yellow-100',
+      color: 'text-amber-600',
+      bgColor: 'bg-amber-50',
     },
     {
-      label: 'Canceladas',
+      label: t('summary.cancelled'),
       value: cancelledVisits,
       icon: XCircle,
-      color: 'text-red-600',
-      bgColor: 'bg-red-100',
+      color: 'text-red-500',
+      bgColor: 'bg-red-50',
     },
     {
-      label: 'Tasa Conversión',
+      label: t('summary.conversionRate'),
       value: `${conversionRate.toFixed(1)}%`,
       icon: TrendingUp,
       color: 'text-indigo-600',
-      bgColor: 'bg-indigo-100',
+      bgColor: 'bg-indigo-50',
     },
   ];
 
   return (
     <div className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 ${className}`}>
       {stats.map((stat, index) => (
-        <Card key={index}>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-                <stat.icon size={20} className={stat.color} />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{stat.value}</p>
-                <p className="text-xs text-gray-500">{stat.label}</p>
-              </div>
+        <div key={index} className="bg-white border border-gray-200 rounded-lg p-4">
+          <div className="flex items-start justify-between mb-3">
+            <p className="text-[11px] text-gray-500">{stat.label}</p>
+            <div className={`p-1.5 rounded-lg ${stat.bgColor} shrink-0`}>
+              <stat.icon size={14} className={stat.color} />
             </div>
-          </CardContent>
-        </Card>
+          </div>
+          <p className="text-2xl font-semibold text-gray-900">{stat.value}</p>
+        </div>
       ))}
     </div>
   );

@@ -1,14 +1,21 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { routeService, RouteDetail, RouteStop, AddStopRequest, PedidoAsignado, ESTADO_RUTA, ESTADO_RUTA_LABELS, ESTADO_RUTA_COLORS } from '@/services/api/routes';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { routeService, RouteDetail, RouteStop, AddStopRequest, PedidoAsignado, RouteUpdateRequest, ESTADO_RUTA, ESTADO_RUTA_KEYS, ESTADO_RUTA_COLORS } from '@/services/api/routes';
+import { zoneService } from '@/services/api/zones';
 import { api } from '@/lib/api';
 import { clientService } from '@/services/api/clients';
 import { toast } from '@/hooks/useToast';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
+import { DateTimePicker } from '@/components/ui/DateTimePicker';
+import { Drawer, DrawerHandle } from '@/components/ui/Drawer';
 import { Modal } from '@/components/ui/Modal';
+import { FieldError } from '@/components/forms/FieldError';
 import {
   ArrowLeft,
   Plus,
@@ -19,10 +26,13 @@ import {
   CheckCircle,
   XCircle,
   MapPin,
+  MapPinned,
+  Map,
   User,
   Calendar,
   Clock,
   Loader2,
+  Pencil,
   Package,
   Search,
   ExternalLink,
@@ -31,6 +41,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useFormatters } from '@/hooks/useFormatters';
+import { dateOnlyToUTC } from '@/lib/formatters';
 import { useTranslations } from 'next-intl';
 
 interface PedidoOption {
@@ -41,8 +52,24 @@ interface PedidoOption {
   estado?: string;
 }
 
+interface ZoneOption { id: number; name: string; }
+interface UsuarioOption { id: number; nombre: string; }
+
+const editRouteSchema = z.object({
+  nombre: z.string().min(1, 'nameRequired').max(100),
+  usuarioId: z.number(),
+  zonaId: z.number().nullable(),
+  fecha: z.string().min(1, 'dateRequired'),
+  horaInicioEstimada: z.string(),
+  horaFinEstimada: z.string(),
+  descripcion: z.string(),
+  notas: z.string(),
+});
+type EditRouteFormData = z.infer<typeof editRouteSchema>;
+
 export default function RouteDetailPage() {
   const t = useTranslations('routes');
+  const ts = useTranslations('routes.status');
   const tc = useTranslations('common');
   const { formatDateOnly, formatCurrency } = useFormatters();
   const params = useParams();
@@ -68,6 +95,17 @@ export default function RouteDetailPage() {
   const [availablePedidos, setAvailablePedidos] = useState<PedidoOption[]>([]);
   const [loadingPedidos, setLoadingPedidos] = useState(false);
   const [pedidoSearch, setPedidoSearch] = useState('');
+
+  // Edit drawer
+  const editDrawerRef = useRef<DrawerHandle>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
+  const [zones, setZones] = useState<ZoneOption[]>([]);
+  const [usuarios, setUsuarios] = useState<UsuarioOption[]>([]);
+  const { register: editRegister, handleSubmit: editRhfSubmit, reset: editReset, watch: editWatch, setValue: editSetValue, formState: { errors: editErrors, isDirty: editIsDirty } } = useForm<EditRouteFormData>({
+    resolver: zodResolver(editRouteSchema),
+    defaultValues: { nombre: '', usuarioId: 0, zonaId: null, fecha: '', horaInicioEstimada: '', horaFinEstimada: '', descripcion: '', notas: '' },
+  });
 
   const fetchRoute = useCallback(async () => {
     try {
@@ -101,6 +139,65 @@ export default function RouteDetailPage() {
   useEffect(() => {
     fetchClients();
   }, []);
+
+  // Edit drawer: fetch dropdown data
+  const fetchEditDropdowns = async () => {
+    try {
+      const [zonesRes, usersRes] = await Promise.all([
+        zoneService.getZones(),
+        api.get<{ items: UsuarioOption[] } | UsuarioOption[]>('/api/usuarios?pagina=1&tamanoPagina=500'),
+      ]);
+      setZones(zonesRes.zones.map(z => ({ id: parseInt(z.id), name: z.name })));
+      const userData = usersRes.data;
+      setUsuarios(Array.isArray(userData) ? userData : userData.items || []);
+    } catch (err) {
+      console.error('Error loading edit dropdowns:', err);
+    }
+  };
+
+  const handleOpenEditDrawer = () => {
+    if (!route) return;
+    // Fetch dropdown data on first open
+    if (zones.length === 0 || usuarios.length === 0) fetchEditDropdowns();
+    // Pre-populate ALL fields from route data (fix the bug — no more empty strings)
+    editReset({
+      nombre: route.nombre,
+      usuarioId: route.usuarioId,
+      zonaId: route.zonaId ?? null,
+      fecha: typeof route.fecha === 'string' ? route.fecha.split('T')[0] : new Date(route.fecha).toISOString().split('T')[0],
+      horaInicioEstimada: route.horaInicioEstimada || '',
+      horaFinEstimada: route.horaFinEstimada || '',
+      descripcion: route.descripcion || '',
+      notas: route.notas || '',
+    });
+    setIsEditOpen(true);
+  };
+
+  const handleSaveEdit = async (data: EditRouteFormData) => {
+    try {
+      setEditSaving(true);
+      const fmtTime = (t?: string | null) => t ? (t.length === 5 ? `${t}:00` : t) : null;
+      const updateData: RouteUpdateRequest = {
+        nombre: data.nombre,
+        usuarioId: data.usuarioId || undefined,
+        zonaId: data.zonaId,
+        fecha: dateOnlyToUTC(data.fecha),
+        horaInicioEstimada: fmtTime(data.horaInicioEstimada),
+        horaFinEstimada: fmtTime(data.horaFinEstimada),
+        descripcion: data.descripcion || undefined,
+        notas: data.notas || undefined,
+      };
+      await routeService.updateRuta(routeId, updateData);
+      toast.success(t('routeUpdated'));
+      setIsEditOpen(false);
+      fetchRoute();
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } }; message?: string };
+      toast.error(e?.response?.data?.message || e?.message || t('errorSaving'));
+    } finally {
+      setEditSaving(false);
+    }
+  };
 
   const isPlanificada = route?.estado === 0;
   const isEnProgreso = route?.estado === 1;
@@ -260,7 +357,7 @@ export default function RouteDetailPage() {
 
   // Badges — use shared constants for all 7 states
   const getEstadoBadge = (estado: number) => ({
-    label: ESTADO_RUTA_LABELS[estado] || 'Desconocido',
+    label: ESTADO_RUTA_KEYS[estado] ? ts(ESTADO_RUTA_KEYS[estado]) : ts('unknown'),
     cls: ESTADO_RUTA_COLORS[estado] || 'bg-gray-100 text-gray-600',
   });
 
@@ -411,6 +508,17 @@ export default function RouteDetailPage() {
       <div className="flex-1 px-8 py-6 space-y-6 overflow-auto">
         {/* Info Card */}
         <div className="bg-white border border-gray-200 rounded-lg p-5">
+          {isEditable && (
+            <div className="flex justify-end mb-3">
+              <button
+                onClick={handleOpenEditDrawer}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
+              >
+                <Pencil className="w-3.5 h-3.5 text-amber-500" />
+                {tc('edit')}
+              </button>
+            </div>
+          )}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="flex items-start gap-2">
               <User className="w-4 h-4 text-gray-400 mt-0.5" />
@@ -483,7 +591,7 @@ export default function RouteDetailPage() {
                 {pedidos.length}
               </span>
             </div>
-            {isEditable && (
+            {isEditable && pedidos.length > 0 && (
               <button
                 onClick={handleOpenAddPedido}
                 className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
@@ -569,7 +677,7 @@ export default function RouteDetailPage() {
             <h2 className="text-lg font-semibold text-gray-900">
               {t('columns.stops')} ({route.totalParadas})
             </h2>
-            {isEditable && (
+            {isEditable && sortedStops.length > 0 && (
               <button
                 onClick={() => setIsAddStopOpen(true)}
                 className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
@@ -772,6 +880,107 @@ export default function RouteDetailPage() {
           </div>
         </div>
       </Modal>
+
+      {/* Edit Route Drawer */}
+      <Drawer
+        ref={editDrawerRef}
+        isOpen={isEditOpen}
+        onClose={() => !editSaving && setIsEditOpen(false)}
+        title={t('drawer.editTitle')}
+        icon={<Map className="w-5 h-5 text-teal-500" />}
+        width="lg"
+        isDirty={editIsDirty}
+        onSave={editRhfSubmit(handleSaveEdit)}
+        footer={
+          <div className="flex justify-end gap-3">
+            <button onClick={() => editDrawerRef.current?.requestClose()} disabled={editSaving} className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50">
+              {tc('cancel')}
+            </button>
+            <button onClick={editRhfSubmit(handleSaveEdit)} disabled={editSaving} className="px-4 py-2 text-sm font-medium text-success-foreground bg-success rounded-md hover:bg-success/90 disabled:opacity-50 flex items-center gap-2">
+              {editSaving && <Loader2 className="w-4 h-4 animate-spin" />}
+              {t('drawer.saveChanges')}
+            </button>
+          </div>
+        }
+      >
+        <form onSubmit={editRhfSubmit(handleSaveEdit)} className="p-6 space-y-5">
+          <div className="space-y-4">
+            <h4 className="text-xs font-semibold text-gray-400">{t('drawer.generalInfo')}</h4>
+            <div>
+              <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
+                <Map className="w-3.5 h-3.5 text-teal-500" />
+                {t('columns.name')} <span className="text-red-500">*</span>
+              </label>
+              <input type="text" {...editRegister('nombre')} maxLength={100} placeholder={t('drawer.namePlaceholder')} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
+              {editErrors.nombre && <FieldError message={editErrors.nombre?.message} />}
+            </div>
+            <div>
+              <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
+                <User className="w-3.5 h-3.5 text-blue-500" />
+                {t('drawer.vendor')} <span className="text-red-500">*</span>
+              </label>
+              <SearchableSelect
+                options={usuarios.map(u => ({ value: u.id.toString(), label: u.nombre }))}
+                value={editWatch('usuarioId') ? editWatch('usuarioId').toString() : ''}
+                onChange={(val) => editSetValue('usuarioId', val ? parseInt(String(val)) : 0, { shouldDirty: true })}
+                placeholder={t('drawer.selectVendor')}
+              />
+            </div>
+            <div>
+              <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
+                <MapPinned className="w-3.5 h-3.5 text-violet-500" />
+                {t('columns.zone')}
+              </label>
+              <SearchableSelect
+                options={[{ value: '', label: t('drawer.noZone') }, ...zones.map(z => ({ value: z.id.toString(), label: z.name }))]}
+                value={editWatch('zonaId') ? editWatch('zonaId')!.toString() : ''}
+                onChange={(val) => editSetValue('zonaId', val ? parseInt(String(val)) : null, { shouldDirty: true })}
+                placeholder={t('drawer.selectZone')}
+              />
+            </div>
+          </div>
+          <hr className="border-gray-100" />
+          <div className="space-y-4">
+            <h4 className="text-xs font-semibold text-gray-400">{t('drawer.scheduling')}</h4>
+            <div>
+              <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
+                <Calendar className="w-3.5 h-3.5 text-amber-500" />
+                {t('columns.date')} <span className="text-red-500">*</span>
+              </label>
+              <DateTimePicker mode="date" value={editWatch('fecha')} onChange={(val) => editSetValue('fecha', val, { shouldValidate: true, shouldDirty: true })} />
+              {editErrors.fecha && <FieldError message={editErrors.fecha?.message} />}
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
+                  <Clock className="w-3.5 h-3.5 text-cyan-500" />
+                  {t('drawer.startTime')}
+                </label>
+                <input type="time" {...editRegister('horaInicioEstimada')} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
+              </div>
+              <div>
+                <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
+                  <Clock className="w-3.5 h-3.5 text-cyan-500" />
+                  {t('drawer.endTime')}
+                </label>
+                <input type="time" {...editRegister('horaFinEstimada')} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
+              </div>
+            </div>
+          </div>
+          <hr className="border-gray-100" />
+          <div className="space-y-4">
+            <h4 className="text-xs font-semibold text-gray-400">{t('drawer.additionalDetails')}</h4>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">{tc('description')}</label>
+              <textarea {...editRegister('descripcion')} rows={2} placeholder={t('drawer.descriptionPlaceholder')} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">{tc('notes')}</label>
+              <textarea {...editRegister('notas')} rows={2} placeholder={t('drawer.notesPlaceholder')} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none" />
+            </div>
+          </div>
+        </form>
+      </Drawer>
 
       {/* Add Pedido Modal */}
       <Modal

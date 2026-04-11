@@ -197,6 +197,19 @@ module.exports = {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
         },
+        "card-enter": {
+          "0%": { opacity: "0", transform: "translateY(16px) scale(0.98)" },
+          "100%": { opacity: "1", transform: "translateY(0) scale(1)" },
+        },
+        "number-pop": {
+          "0%": { opacity: "0", transform: "scale(0.5)" },
+          "60%": { transform: "scale(1.05)" },
+          "100%": { opacity: "1", transform: "scale(1)" },
+        },
+        "bar-grow": {
+          "0%": { width: "0%" },
+          "100%": { width: "var(--bar-width)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -218,6 +231,9 @@ module.exports = {
         "banner-exit": "banner-exit 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards",
         "banner-pulse-glow": "banner-pulse-glow 3s ease-in-out infinite",
         "banner-shimmer": "banner-shimmer 3s linear infinite",
+        "card-enter": "card-enter 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards",
+        "number-pop": "number-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
+        "bar-grow": "bar-grow 1s cubic-bezier(0.22, 1, 0.36, 1) forwards",
       },
     },
   },

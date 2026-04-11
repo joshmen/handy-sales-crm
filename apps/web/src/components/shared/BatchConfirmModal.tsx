@@ -3,6 +3,7 @@
 import React from 'react';
 import { Loader2 } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
+import { useTranslations } from 'next-intl';
 
 interface BatchConfirmModalProps {
   isOpen: boolean;
@@ -27,29 +28,22 @@ export const BatchConfirmModal: React.FC<BatchConfirmModalProps> = ({
   consequenceActivate,
   consequenceDeactivate,
 }) => {
+  const tc = useTranslations('common');
   const isActivate = action === 'activate';
-  const actionVerb = isActivate ? 'Activar' : 'Desactivar';
-  const actionVerbLower = isActivate ? 'activar' : 'desactivar';
-  const plural = selectedCount > 1 ? 's' : '';
-
-  const defaultConsequence = isActivate
-    ? `Los ${entityLabel} activados volverán a aparecer en las listas activas.`
-    : `Los ${entityLabel} desactivados no aparecerán en las listas activas.`;
-
+  const actionVerb = isActivate ? tc('activate') : tc('deactivate');
   const consequence = isActivate
-    ? (consequenceActivate ?? defaultConsequence)
-    : (consequenceDeactivate ?? defaultConsequence);
+    ? (consequenceActivate ?? tc('batchConsequenceActivateDefault', { label: entityLabel }))
+    : (consequenceDeactivate ?? tc('batchConsequenceDeactivateDefault', { label: entityLabel }));
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`¿${actionVerb} ${selectedCount} ${entityLabel}${plural !== 's' ? '' : ''}?`}
+      title={tc('batchConfirmTitle', { action: actionVerb, count: selectedCount, label: entityLabel })}
     >
       <div className="py-4">
         <p className="text-gray-500">
-          ¿Estás seguro de que deseas {actionVerbLower}{' '}
-          <strong>{selectedCount}</strong> {entityLabel} seleccionado{plural}?{' '}
+          {tc('batchConfirmMessage', { action: actionVerb.toLowerCase(), count: selectedCount, label: entityLabel })}{' '}
           {consequence}
         </p>
       </div>
@@ -59,7 +53,7 @@ export const BatchConfirmModal: React.FC<BatchConfirmModalProps> = ({
           disabled={loading}
           className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
         >
-          Cancelar
+          {tc('cancel')}
         </button>
         <button
           onClick={onConfirm}

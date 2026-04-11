@@ -529,7 +529,7 @@ export default function DiscountsPage() {
           <BatchActionBar
             selectedCount={batch.selectedCount}
             totalItems={filteredDiscounts.length}
-            entityLabel="descuentos"
+            entityLabel={t('title').toLowerCase()}
             onActivate={() => batch.openBatchAction('activate')}
             onDeactivate={() => batch.openBatchAction('deactivate')}
             onClear={batch.handleClearSelection}
@@ -690,7 +690,7 @@ export default function DiscountsPage() {
         onConfirm={handleBatchToggle}
         action={batch.batchAction}
         selectedCount={batch.selectedCount}
-        entityLabel="descuentos"
+        entityLabel={t('title').toLowerCase()}
         loading={actionLoading}
         consequenceDeactivate={t('batchConsequenceDeactivate')}
         consequenceActivate={t('batchConsequenceActivate')}
@@ -700,7 +700,7 @@ export default function DiscountsPage() {
         isOpen={isImportOpen}
         onClose={() => setIsImportOpen(false)}
         entity="descuentos"
-        entityLabel="descuentos"
+        entityLabel={t('title').toLowerCase()}
         onSuccess={() => fetchDiscounts()}
       />
     </PageHeader>

@@ -52,9 +52,9 @@ const TIPO_COLORS: Record<string, string> = {
 // ─── Zod Schema ────────────────────────────────────────
 const metaSchema = z.object({
   usuarioId: z.number({ required_error: 'selectVendor' }).min(1, 'selectVendor'),
-  tipo: z.enum(['ventas', 'pedidos', 'visitas'], { required_error: 'Selecciona un tipo' }),
-  periodo: z.enum(['semanal', 'mensual'], { required_error: 'Selecciona un período' }),
-  monto: z.number({ required_error: 'El monto es requerido' }).positive('Debe ser mayor a 0'),
+  tipo: z.enum(['ventas', 'pedidos', 'visitas'], { required_error: 'selectType' }),
+  periodo: z.enum(['semanal', 'mensual'], { required_error: 'selectPeriod' }),
+  monto: z.number({ required_error: 'amountRequired' }).positive('amountGreaterThanZero'),
   fechaInicio: z.string().min(1, 'startDateRequired'),
   fechaFin: z.string().min(1, 'endDateRequired'),
   autoRenovar: z.boolean(),

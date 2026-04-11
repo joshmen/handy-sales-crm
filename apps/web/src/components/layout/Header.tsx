@@ -8,6 +8,7 @@ import { useProfile } from '@/contexts/ProfileContext';
 import { usePathname, useRouter } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import { toast } from '@/hooks/useToast';
+import { useTranslations } from 'next-intl';
 import {
   Bell,
   Search,
@@ -111,6 +112,8 @@ export interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpersonating }) => {
+  const tc = useTranslations('common');
+  const tcp = useTranslations('commandPalette');
   const { formatDate } = useFormatters();
   const isClient = useClientOnly();
   const [mounted, setMounted] = useState(false);
@@ -303,7 +306,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
           >
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-blue-400" />
             <div className="w-full h-10 pl-11 pr-20 flex items-center text-muted-foreground bg-muted border border-border rounded-full group-hover:shadow-md transition-all duration-200 text-sm">
-              Buscar clientes, productos, pedidos...
+              {tcp('searchPlaceholder')}
             </div>
             <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden sm:inline-flex h-5 items-center gap-1 rounded border border-border bg-background px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
               {typeof navigator !== 'undefined' && /Mac/i.test(navigator.userAgent) ? '⌘K' : 'Ctrl K'}
@@ -356,7 +359,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
             size="icon"
             className="rounded-full hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors duration-200"
             onClick={onHelpClick}
-            aria-label="Ayuda"
+            aria-label={tc('help')}
           >
             <Info className="h-[18px] w-[18px] text-blue-500" strokeWidth={2} />
           </Button>
@@ -526,7 +529,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
       <Dialog open={isUserMenuOpen} onOpenChange={setIsUserMenuOpen}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Cuenta de usuario</DialogTitle>
+            <DialogTitle>{tc('userAccount')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-6">
             <div className="flex items-center space-x-4 p-4 rounded-xl bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950 border">
@@ -561,7 +564,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
                 }}
               >
                 <User className="h-4 w-4 mr-3 text-blue-500" />
-                Mi perfil
+                {tc('myProfile')}
               </Button>
               {/* Solo SUPER_ADMIN y ADMIN pueden ver Configuración */}
               {(currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN') && (
@@ -576,7 +579,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
                   }}
                 >
                   <Settings className="h-4 w-4 mr-3 text-muted-foreground" />
-                  {currentUser.role === 'SUPER_ADMIN' ? 'Configuración Global' : 'Configuración'}
+                  {currentUser.role === 'SUPER_ADMIN' ? tc('globalSettings') : tc('settings')}
                 </Button>
               )}
               {/* Solo SUPER_ADMIN puede impersonar empresas */}
@@ -590,7 +593,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
                   }}
                 >
                   <Building2 className="h-4 w-4 mr-3 text-purple-500" />
-                  Impersonar Empresa
+                  {tc('impersonateCompany')}
                 </Button>
               )}
               <div className="border-t pt-2">
@@ -603,12 +606,12 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick, isImpe
                   {isLoggingOut ? (
                     <>
                       <div className="h-4 w-4 mr-3 animate-spin rounded-full border-2 border-red-500 border-r-transparent" />
-                      Cerrando sesión...
+                      {tc('loggingOut')}
                     </>
                   ) : (
                     <>
                       <LogOut className="h-4 w-4 mr-3" />
-                      Cerrar sesión
+                      {tc('signOut')}
                     </>
                   )}
                 </Button>

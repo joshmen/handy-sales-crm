@@ -10,6 +10,7 @@ import { getNuevosClientes, NuevoCliente } from '@/services/api/reports';
 import { toast } from '@/hooks/useToast';
 import { useFormatters } from '@/hooks/useFormatters';
 import { formatDate as libFmtDate } from '@/lib/formatters';
+import { useTranslations } from 'next-intl';
 
 function defaultDates() {
   const h = new Date();
@@ -22,6 +23,8 @@ const fmtDate = (d: string) => libFmtDate(d, null, { day: '2-digit', month: 'sho
 
 export function NuevosClientesReport() {
   const { formatDate } = useFormatters();
+  const t = useTranslations('reports.nuevosClientes');
+  const tc = useTranslations('reports.common');
   const [dates, setDates] = useState(defaultDates);
   const ct = useChartTheme();
   const [data, setData] = useState<{ clientes: NuevoCliente[]; total: number; porMes: { mes: string; cantidad: number }[] } | null>(null);
@@ -32,7 +35,7 @@ export function NuevosClientesReport() {
       setLoading(true);
       const res = await getNuevosClientes(dates);
       setData(res);
-    } catch { toast.error('Error al cargar reporte'); }
+    } catch { toast.error(tc('errorLoading')); }
     finally { setLoading(false); }
   }, [dates]);
 
@@ -40,12 +43,12 @@ export function NuevosClientesReport() {
   useEffect(() => { fetch(); }, []);
 
   const columns: ReportColumn<NuevoCliente>[] = [
-    { key: 'nombre', header: 'Cliente', sortable: true },
-    { key: 'zona', header: 'Zona', sortable: true },
-    { key: 'correo', header: 'Correo' },
-    { key: 'telefono', header: 'Teléfono' },
-    { key: 'fechaCreacion', header: 'Fecha', sortable: true, render: (r) => fmtDate(r.fechaCreacion) },
-    { key: 'creadoPor', header: 'Creado por' },
+    { key: 'nombre', header: t('client'), sortable: true },
+    { key: 'zona', header: t('zone'), sortable: true },
+    { key: 'correo', header: t('email') },
+    { key: 'telefono', header: t('phone') },
+    { key: 'fechaCreacion', header: tc('date'), sortable: true, render: (r) => fmtDate(r.fechaCreacion) },
+    { key: 'creadoPor', header: t('createdBy') },
   ];
 
   return (
@@ -55,19 +58,19 @@ export function NuevosClientesReport() {
       {data && (
         <>
           <ReportKPICards cards={[
-            { label: 'Nuevos Clientes', value: data.total, color: 'green' },
+            { label: t('newClients'), value: data.total, color: 'green' },
           ]} />
 
           {data.porMes.length > 0 && (
             <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <p className="text-xs font-medium text-gray-600 mb-3">Nuevos clientes por mes</p>
+              <p className="text-xs font-medium text-gray-600 mb-3">{t('perMonth')}</p>
               <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={data.porMes}>
                   <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
                   <XAxis dataKey="mes" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
                   <Tooltip />
-                  <Bar dataKey="cantidad" fill="#16a34a" radius={[4, 4, 0, 0]} name="Clientes" />
+                  <Bar dataKey="cantidad" fill="#16a34a" radius={[4, 4, 0, 0]} name={tc('clients')} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

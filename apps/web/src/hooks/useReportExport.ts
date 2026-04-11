@@ -52,10 +52,13 @@ function hexToRgb(hex: string): [number, number, number] {
   ];
 }
 
-function fmtDateEs(dateStr: string): string {
+function fmtDateLocale(dateStr: string): string {
   try {
     const d = new Date(dateStr + 'T00:00:00');
-    return libFormatDate(d, null, { day: 'numeric', month: 'long', year: 'numeric' });
+    let lang = 'es';
+    try { const s = JSON.parse(localStorage.getItem('company_settings') || '{}'); lang = s.language || 'es'; } catch { /* */ }
+    const locale = lang === 'en' ? 'en-US' : 'es-MX';
+    return d.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' });
   } catch {
     return dateStr;
   }
@@ -161,7 +164,7 @@ export function useReportExport(config: ReportExportConfig) {
       if (cfg.dateRange) {
         pdf.setFont('helvetica', 'normal').setFontSize(8.5);
         pdf.text(
-          `${fmtDateEs(cfg.dateRange.desde)} — ${fmtDateEs(cfg.dateRange.hasta)}`,
+          `${fmtDateLocale(cfg.dateRange.desde)} — ${fmtDateLocale(cfg.dateRange.hasta)}`,
           pw - MARGIN - 4, y + 7.5, { align: 'right' }
         );
       }
@@ -277,7 +280,21 @@ export function useReportExport(config: ReportExportConfig) {
         drawFooterOnPage(pdf, pw, ph, primary, p, total);
       }
 
-      pdf.save(`${cfg.fileName}.pdf`);
+      // Build filename: tenant-slug_report-name_date_shortId.pdf
+      const slug = (name || 'report').replace(/[^a-zA-Z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').substring(0, 30).toLowerCase();
+      const dateStamp = new Date().toISOString().slice(0, 10);
+      const shortId = Math.random().toString(36).substring(2, 8);
+      const fullFileName = `${slug}_${cfg.fileName}_${dateStamp}_${shortId}.pdf`;
+
+      const blob = pdf.output('blob');
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fullFileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     } finally {
       setExporting(false);
     }
@@ -296,14 +313,16 @@ function drawFooterOnPage(pdf: jsPDF, pw: number, ph: number, color: string, pag
   pdf.line(MARGIN, fy - 4, pw - MARGIN, fy - 4);
 
   pdf.setFont('helvetica', 'normal').setFontSize(6.5).setTextColor(160, 160, 160);
-  pdf.text('Confidencial — Solo uso interno', MARGIN, fy);
+  let lang = 'es';
+  try { const s = JSON.parse(localStorage.getItem('company_settings') || '{}'); lang = s.language || 'es'; } catch { /* */ }
+  pdf.text(lang === 'en' ? 'Confidential — Internal use only' : 'Confidencial — Solo uso interno', MARGIN, fy);
 
   const gen = libFormatDate(new Date(), null, {
     year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit',
   });
-  pdf.text(`Generado: ${gen}`, pw / 2, fy, { align: 'center' });
+  pdf.text(`${lang === 'en' ? 'Generated' : 'Generado'}: ${gen}`, pw / 2, fy, { align: 'center' });
 
   if (page && total) {
-    pdf.text(`Pág ${page} de ${total}`, pw - MARGIN, fy, { align: 'right' });
+    pdf.text(lang === 'en' ? `Page ${page} of ${total}` : `Pág ${page} de ${total}`, pw - MARGIN, fy, { align: 'right' });
   }
 }

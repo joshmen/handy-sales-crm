@@ -39,6 +39,12 @@
     "activate": "Activar",
     "deactivate": "Desactivar",
     "showInactive": "Mostrar inactivos",
+    "selectedCount": "{count} seleccionado{count, plural, one {} other {s}}",
+    "ofTotal": "de {total} {label}",
+    "batchConfirmTitle": "¿{action} {count} {label}?",
+    "batchConfirmMessage": "¿Estás seguro de que deseas {action} {count} {label} seleccionados?",
+    "batchConsequenceActivateDefault": "Los {label} activados volverán a aparecer en las listas activas.",
+    "batchConsequenceDeactivateDefault": "Los {label} desactivados no aparecerán en las listas activas.",
     "error": "Error",
     "success": "Éxito",
     "warning": "Advertencia",
@@ -455,6 +461,15 @@
     "settings": "Configuración",
     "aiAssistant": "Asistente IA",
     "help": "Ayuda",
+    "userAccount": "Cuenta de usuario",
+    "myProfile": "Mi perfil",
+    "globalSettings": "Configuración Global",
+    "impersonateCompany": "Impersonar Empresa",
+    "loggingOut": "Cerrando sesión...",
+    "signOut": "Cerrar sesión",
+    "pageNotFound": "Página no encontrada",
+    "pageNotFoundDescription": "La página que buscas no existe o fue movida.",
+    "goToDashboard": "Ir al Dashboard",
     "gettingStarted": "Guía de configuración",
     "superAdmin": "Super Admin",
     "saCompanies": "Empresas",
@@ -1188,6 +1203,17 @@
     "routesUpdated": "Las rutas se han actualizado correctamente",
     "errorSaving": "Error al guardar ruta",
     "errorUpdating": "Error al actualizar rutas",
+    "batchSuccess": "{count} ruta(s) {action} exitosamente",
+    "status": {
+      "planned": "Planificada",
+      "inProgress": "En progreso",
+      "completed": "Completada",
+      "cancelled": "Cancelada",
+      "pendingAcceptance": "Pendiente de aceptar",
+      "loadAccepted": "Carga aceptada",
+      "closed": "Cerrada",
+      "unknown": "Desconocido"
+    },
     "searchPlaceholder": "Buscar ruta...",
     "columns": {
       "name": "Nombre",
@@ -1582,6 +1608,19 @@
       "shrinkage": "Merma",
       "transfer": "Transferencia"
     },
+    "subtitle": "{count} producto{plural}",
+    "movementsSubtitle": "{count} movimiento{plural}",
+    "columns": {
+      "product": "Producto",
+      "unit": "Unidad",
+      "stock": "Existencias",
+      "stockHeader": "Existencias",
+      "minStock": "Stock min.",
+      "maxStock": "Stock max."
+    },
+    "removeFilter": "Quitar filtro",
+    "saving": "Guardando...",
+    "save": "Guardar",
     "csvUpdatedNote": "Si un producto ya tiene inventario, sus valores se actualizaran con los del CSV.",
     "importExport": "Importar / Exportar",
     "filterForm": {
@@ -2818,6 +2857,7 @@
       "clients": "Clientes",
       "active": "Activa"
     },
+    "batchSuccess": "{count} zona(s) {action} exitosamente",
     "batchConsequenceActivate": "Las zonas activadas volverán a aparecer en las listas activas.",
     "batchConsequenceDeactivate": "Las zonas desactivadas no aparecerán en las listas activas.",
     "mapTitle": "Mapa de Zonas",
@@ -2983,6 +3023,14 @@
       "mobileOnlyHint": "Inicia y finaliza visitas desde la app móvil"
     },
     "view": "Ver",
+    "summary": {
+      "totalVisits": "Total Visitas",
+      "completed": "Completadas",
+      "withSale": "Con Venta",
+      "pending": "Pendientes",
+      "cancelled": "Canceladas",
+      "conversionRate": "Tasa Conversión"
+    },
     "form": {
       "client": "Cliente",
       "selectClient": "Seleccionar cliente...",
@@ -3397,6 +3445,8 @@
     "noMoreProducts": "No hay mas productos disponibles",
     "selectedCount": "{selected} de {total} producto{plural} seleccionado{plural2}",
     "discountPercent": "Descuento (%)",
+    "namePlaceholder": "Ej: Promo Verano 2026",
+    "discountPlaceholder": "Ej: 15",
     "startDate": "Fecha inicio",
     "endDate": "Fecha fin",
     "batchActivated": "{count} promocion{plural} activada{plural2} exitosamente",
@@ -4613,7 +4663,12 @@
     "cobranza-total-vendido": "Suma del monto total de todos los pedidos en el período, sin importar si ya se cobraron.",
     "cobranza-cobrado": "Monto efectivamente recibido de clientes en cobros registrados.",
     "cobranza-por-cobrar": "Lo que tus clientes aún te deben. Es la diferencia entre lo vendido y lo cobrado.",
-    "cobranza-clientes-deben": "Cantidad de clientes que tienen al menos un pedido con saldo pendiente."
+    "cobranza-clientes-deben": "Cantidad de clientes que tienen al menos un pedido con saldo pendiente.",
+    "total-quantity": "Total de unidades del producto sumando existencias en almacén más existencias en ruta.",
+    "min-stock": "Cantidad mínima recomendada en almacén. Al caer por debajo, se muestra alerta de 'Stock bajo'.",
+    "max-stock": "Cantidad máxima recomendada para evitar sobreinventario.",
+    "movement-type": "Entrada: aumenta stock. Salida: disminuye stock. Ajuste: establece el stock al valor indicado.",
+    "movement-quantity": "Número de unidades para este movimiento."
   },
   "formValidation": {
     "nameRequired": "El nombre es obligatorio",
@@ -4660,6 +4715,18 @@
     "maxUsers1000": "Máximo 1000 usuarios",
     "selectProductForDiscount": "Debe seleccionar un producto para descuentos por producto",
     "minOneUnit": "Mínimo 1 unidad",
-    "minOnePercent": "Mínimo 1%"
+    "minOnePercent": "Mínimo 1%",
+    "minZero": "Mínimo 0",
+    "selectProductRequired": "Selecciona un producto",
+    "quantityGreaterThanZero": "La cantidad debe ser mayor a 0",
+    "selectFamilyRequired": "Selecciona una familia de productos",
+    "selectCategoryRequired": "Selecciona una categoría",
+    "selectUnitRequired": "Selecciona una unidad de medida",
+    "priceGreaterThanZero": "El precio debe ser mayor a 0",
+    "coordinatesBothRequired": "Las coordenadas deben incluir tanto latitud como longitud",
+    "selectType": "Selecciona un tipo",
+    "selectPeriod": "Selecciona un período",
+    "amountRequired": "El monto es requerido",
+    "notesMax2000": "Las notas no pueden exceder 2000 caracteres"
   }
 }

@@ -15,12 +15,12 @@ import { FieldError } from '@/components/forms/FieldError';
 // Schema de validación para visitas - sincronizado con backend
 const visitFormSchema = z.object({
   clienteId: z
-    .number({ required_error: 'Debe seleccionar un cliente' })
+    .number({ required_error: 'selectClient' })
     .int()
-    .positive('Debe seleccionar un cliente'),
+    .positive('selectClient'),
   tipoVisita: z.nativeEnum(TipoVisita).default(TipoVisita.Rutina),
   fechaProgramada: z.string().optional(),
-  notas: z.string().max(2000, 'Las notas no pueden exceder 2000 caracteres').optional(),
+  notas: z.string().max(2000, 'notesMax2000').optional(),
 });
 
 type VisitFormData = z.infer<typeof visitFormSchema>;
@@ -98,7 +98,7 @@ export const VisitForm: React.FC<VisitFormProps> = ({
           error={!!errors.clienteId}
         />
         {errors.clienteId && (
-          <p className="mt-1 text-sm text-red-500">{errors.clienteId.message}</p>
+          <FieldError message={errors.clienteId.message} />
         )}
       </div>
 
@@ -147,7 +147,7 @@ export const VisitForm: React.FC<VisitFormProps> = ({
           }`}
         />
         {errors.notas && (
-          <p className="mt-1 text-sm text-red-500">{errors.notas.message}</p>
+          <FieldError message={errors.notas.message} />
         )}
       </div>
 

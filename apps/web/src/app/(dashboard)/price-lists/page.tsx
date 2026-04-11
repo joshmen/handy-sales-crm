@@ -361,7 +361,7 @@ export default function PriceListsPage() {
         <BatchActionBar
           selectedCount={batch.selectedCount}
           totalItems={totalItems}
-          entityLabel="listas de precios"
+          entityLabel={t('title').toLowerCase()}
           onActivate={() => batch.openBatchAction('activate')}
           onDeactivate={() => batch.openBatchAction('deactivate')}
           onClear={batch.handleClearSelection}
@@ -456,7 +456,7 @@ export default function PriceListsPage() {
         onConfirm={handleBatchToggle}
         action={batch.batchAction}
         selectedCount={batch.selectedCount}
-        entityLabel="lista"
+        entityLabel={t('title').toLowerCase()}
         loading={batch.batchLoading}
         consequenceDeactivate={t('batchConsequenceDeactivate')}
         consequenceActivate={t('batchConsequenceActivate')}
@@ -512,7 +512,7 @@ export default function PriceListsPage() {
         isOpen={isImportOpen}
         onClose={() => setIsImportOpen(false)}
         entity="listas-precios"
-        entityLabel="listas de precios"
+        entityLabel={t('title').toLowerCase()}
         onSuccess={() => loadPriceLists()}
       />
     </PageHeader>

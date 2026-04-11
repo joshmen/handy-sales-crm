@@ -567,6 +567,18 @@ export const ESTADO_RUTA = {
   Cerrada: 6,
 } as const;
 
+/** Translation keys for route status — resolve via useTranslations('routes.status') */
+export const ESTADO_RUTA_KEYS: Record<number, string> = {
+  0: 'planned',
+  1: 'inProgress',
+  2: 'completed',
+  3: 'cancelled',
+  4: 'pendingAcceptance',
+  5: 'loadAccepted',
+  6: 'closed',
+};
+
+/** @deprecated Use ESTADO_RUTA_KEYS + useTranslations('routes.status') instead */
 export const ESTADO_RUTA_LABELS: Record<number, string> = {
   0: 'Planificada',
   1: 'En progreso',

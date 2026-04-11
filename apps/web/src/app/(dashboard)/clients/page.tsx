@@ -461,7 +461,7 @@ export default function ClientsPage() {
         <BatchActionBar
           selectedCount={batch.selectedCount}
           totalItems={totalClients}
-          entityLabel="clientes"
+          entityLabel={t('title').toLowerCase()}
           onActivate={() => batch.openBatchAction('activate')}
           onDeactivate={() => batch.openBatchAction('deactivate')}
           onClear={batch.handleClearSelection}
@@ -553,7 +553,7 @@ export default function ClientsPage() {
           isOpen={isImportOpen}
           onClose={() => setIsImportOpen(false)}
           entity="clientes"
-          entityLabel="clientes"
+          entityLabel={t('title').toLowerCase()}
           onSuccess={() => fetchClients()}
         />
 
@@ -564,7 +564,7 @@ export default function ClientsPage() {
           onConfirm={handleBatchToggle}
           action={batch.batchAction}
           selectedCount={batch.selectedCount}
-          entityLabel="clientes"
+          entityLabel={t('title').toLowerCase()}
           loading={batch.batchLoading}
         />
 

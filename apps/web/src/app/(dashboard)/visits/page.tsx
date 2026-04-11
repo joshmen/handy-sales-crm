@@ -36,37 +36,24 @@ type ViewMode = 'list' | 'calendar';
 
 const PAGE_SIZE = 10;
 
-// API returns enums as integers (0-5), so we map both numeric and string keys
-const resultadoStyles: { label: string; color: string; dotColor: string }[] = [
-  { label: 'Pendiente', color: 'bg-yellow-100 text-yellow-800', dotColor: 'bg-yellow-400' },
-  { label: 'Con Venta', color: 'bg-green-100 text-green-800', dotColor: 'bg-green-400' },
-  { label: 'Sin Venta', color: 'bg-gray-100 text-gray-800', dotColor: 'bg-gray-400' },
-  { label: 'No Encontrado', color: 'bg-orange-100 text-orange-800', dotColor: 'bg-orange-400' },
-  { label: 'Reprogramada', color: 'bg-blue-100 text-blue-800', dotColor: 'bg-blue-400' },
-  { label: 'Cancelada', color: 'bg-red-100 text-red-800', dotColor: 'bg-red-400' },
+// API returns enums as integers (0-5) — colors are static, labels resolved via i18n inside component
+const resultadoKeys = ['pending', 'withSale', 'noSale', 'notFound', 'rescheduled', 'cancelled'];
+const resultadoColorArr = [
+  { color: 'bg-yellow-100 text-yellow-800', dotColor: 'bg-yellow-400' },
+  { color: 'bg-green-100 text-green-800', dotColor: 'bg-green-400' },
+  { color: 'bg-gray-100 text-gray-800', dotColor: 'bg-gray-400' },
+  { color: 'bg-orange-100 text-orange-800', dotColor: 'bg-orange-400' },
+  { color: 'bg-blue-100 text-blue-800', dotColor: 'bg-blue-400' },
+  { color: 'bg-red-100 text-red-800', dotColor: 'bg-red-400' },
 ];
 const resultadoStringMap: Record<string, number> = {
   Pendiente: 0, Venta: 1, SinVenta: 2, NoEncontrado: 3, Reprogramada: 4, Cancelada: 5,
 };
-const getResultado = (val: ResultadoVisita | number) => {
-  const idx = typeof val === 'number' ? val : (resultadoStringMap[val] ?? 0);
-  return resultadoStyles[idx] ?? resultadoStyles[0];
-};
 
-const tipoStyles: { label: string; color: string }[] = [
-  { label: 'Rutina', color: 'text-blue-600' },
-  { label: 'Cobranza', color: 'text-green-600' },
-  { label: 'Entrega', color: 'text-purple-600' },
-  { label: 'Prospección', color: 'text-orange-600' },
-  { label: 'Seguimiento', color: 'text-cyan-600' },
-  { label: 'Otro', color: 'text-gray-600' },
-];
+const tipoKeys = ['routine', 'collection', 'delivery', 'prospecting', 'followUp', 'other'];
+const tipoColorArr = ['text-blue-600', 'text-green-600', 'text-purple-600', 'text-orange-600', 'text-cyan-600', 'text-gray-600'];
 const tipoStringMap: Record<string, number> = {
   Rutina: 0, Cobranza: 1, Entrega: 2, Prospeccion: 3, Seguimiento: 4, Otro: 5,
-};
-const getTipo = (val: TipoVisita | number) => {
-  const idx = typeof val === 'number' ? val : (tipoStringMap[val] ?? 5);
-  return tipoStyles[idx] ?? tipoStyles[5];
 };
 
 function getDateRange(preset: string): { desde?: string; hasta?: string } {
@@ -123,6 +110,17 @@ function VisitsPageContent() {
   const viewParam = searchParams.get('view') as ViewMode | null;
   const currentView: ViewMode = viewParam === 'calendar' ? 'calendar' : 'list';
 
+  // Translated helpers for enums
+  const getResultado = (val: ResultadoVisita | number) => {
+    const idx = typeof val === 'number' ? val : (resultadoStringMap[val] ?? 0);
+    const style = resultadoColorArr[idx] ?? resultadoColorArr[0];
+    return { label: t(`results.${resultadoKeys[idx] ?? 'pending'}`), ...style };
+  };
+  const getTipo = (val: TipoVisita | number) => {
+    const idx = typeof val === 'number' ? val : (tipoStringMap[val] ?? 5);
+    return { label: t(`types.${tipoKeys[idx] ?? 'other'}`), color: tipoColorArr[idx] ?? tipoColorArr[5] };
+  };
+
   // Data state
   const [visits, setVisits] = useState<ClienteVisitaListaDto[]>([]);
   const [calendarVisits, setCalendarVisits] = useState<ClienteVisitaListaDto[]>([]);
@@ -165,8 +163,8 @@ function VisitsPageContent() {
       const response = await visitService.getVisits({
         pagina: currentPage,
         tamanoPagina: PAGE_SIZE,
-        tipoVisita: tipoFilter ? (tipoFilter as TipoVisita) : undefined,
-        resultado: resultadoFilter ? (resultadoFilter as ResultadoVisita) : undefined,
+        tipoVisita: tipoFilter ? (Number(tipoFilter) as TipoVisita) : undefined,
+        resultado: resultadoFilter ? (Number(resultadoFilter) as ResultadoVisita) : undefined,
         fechaDesde: dateRange.desde,
         fechaHasta: dateRange.hasta,
       });
@@ -274,40 +272,40 @@ function VisitsPageContent() {
   const visitColumns = useMemo<DataGridColumn<ClienteVisitaListaDto>[]>(() => [
     {
       key: 'clienteNombre',
-      label: 'Cliente',
+      label: t('columns.client'),
       sortable: true,
       width: 'flex',
       cellRenderer: (visit) => (
         <div>
-          <p className="text-sm font-medium text-gray-900 truncate">{visit.clienteNombre}</p>
-          {visit.clienteDireccion && <p className="text-xs text-gray-500 truncate">{visit.clienteDireccion}</p>}
+          <p className="text-[13px] font-medium text-gray-900 truncate">{visit.clienteNombre}</p>
+          {visit.clienteDireccion && <p className="text-[11px] text-gray-500 truncate">{visit.clienteDireccion}</p>}
         </div>
       ),
     },
     {
       key: 'tipoVisita',
-      label: 'Tipo',
+      label: t('columns.type'),
       width: 100,
       cellRenderer: (visit) => {
         const tipo = getTipo(visit.tipoVisita);
-        return <span className={`text-xs font-medium ${tipo.color}`}>{tipo.label}</span>;
+        return <span className={`text-[12px] font-medium ${tipo.color}`}>{tipo.label}</span>;
       },
     },
     {
       key: 'fechaProgramada',
-      label: 'Fecha',
+      label: t('columns.date'),
       sortable: true,
       width: 110,
       cellRenderer: (visit) => (
-        <div className="text-xs text-gray-600">
+        <div className="text-[12px] text-gray-600">
           {formatDate(visit.fechaProgramada)}
-          {visit.fechaHoraInicio && <span className="block text-gray-400">{formatTime(visit.fechaHoraInicio)}</span>}
+          {visit.fechaHoraInicio && <span className="block text-[11px] text-gray-400">{formatTime(visit.fechaHoraInicio)}</span>}
         </div>
       ),
     },
     {
       key: 'resultado',
-      label: 'Resultado',
+      label: t('columns.result'),
       width: 120,
       cellRenderer: (visit) => {
         const res = getResultado(visit.resultado);
@@ -321,10 +319,10 @@ function VisitsPageContent() {
     },
     {
       key: 'duracion',
-      label: 'Duración',
+      label: t('columns.duration'),
       width: 70,
       align: 'center',
-      cellRenderer: (visit) => <span className="text-xs text-gray-600">{visit.duracionMinutos ? `${visit.duracionMinutos} min` : '-'}</span>,
+      cellRenderer: (visit) => <span className="text-[13px] text-gray-600">{visit.duracionMinutos ? `${visit.duracionMinutos} min` : '-'}</span>,
     },
     {
       key: 'pedido',
@@ -334,14 +332,14 @@ function VisitsPageContent() {
     },
     {
       key: 'actions',
-      label: 'Acciones',
+      label: tc('actions'),
       width: 130,
       align: 'right',
       cellRenderer: (visit) => {
         const isCompleted = !!visit.fechaHoraFin;
         return (
           <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => handleViewDetails(visit.id)} className="p-1.5 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50 transition-colors" title="Ver detalles">
+            <button onClick={() => handleViewDetails(visit.id)} className="p-1.5 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50 transition-colors" title={t('view')}>
               <Eye className="w-4 h-4" />
             </button>
             {isCompleted && (
@@ -386,8 +384,9 @@ function VisitsPageContent() {
         await fetchCalendarVisits(startOfMonth(now), endOfMonth(now));
       }
       setShowVisitForm(false);
-    } catch {
-      toast.error(t('errorCreating'));
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } }; message?: string };
+      toast.error(e?.response?.data?.message || e?.message || t('errorCreating'));
     }
   };
 
@@ -475,62 +474,62 @@ function VisitsPageContent() {
             <SearchBar
               value={searchTerm}
               onChange={setSearchTerm}
-              placeholder="Buscar por cliente..."
+              placeholder={t('searchPlaceholder')}
             />
             <div className="w-[150px]">
               <SearchableSelect
                 options={[
-                  { value: '', label: 'Todos los tipos' },
-                  { value: TipoVisita.Rutina, label: 'Rutina' },
-                  { value: TipoVisita.Cobranza, label: 'Cobranza' },
-                  { value: TipoVisita.Entrega, label: 'Entrega' },
-                  { value: TipoVisita.Prospeccion, label: 'Prospección' },
-                  { value: TipoVisita.Seguimiento, label: 'Seguimiento' },
-                  { value: TipoVisita.Otro, label: 'Otro' },
+                  { value: '', label: t('filters.allTypes') },
+                  { value: TipoVisita.Rutina, label: t('types.routine') },
+                  { value: TipoVisita.Cobranza, label: t('types.collection') },
+                  { value: TipoVisita.Entrega, label: t('types.delivery') },
+                  { value: TipoVisita.Prospeccion, label: t('types.prospecting') },
+                  { value: TipoVisita.Seguimiento, label: t('types.followUp') },
+                  { value: TipoVisita.Otro, label: t('types.other') },
                 ]}
                 value={tipoFilter || null}
                 onChange={(val) => setTipoFilter(val ? String(val) : '')}
-                placeholder="Tipo"
+                placeholder={t('columns.type')}
               />
             </div>
             <div className="w-[170px]">
               <SearchableSelect
                 options={[
-                  { value: '', label: 'Todos los resultados' },
-                  { value: ResultadoVisita.Pendiente, label: 'Pendiente' },
-                  { value: ResultadoVisita.Venta, label: 'Con Venta' },
-                  { value: ResultadoVisita.SinVenta, label: 'Sin Venta' },
-                  { value: ResultadoVisita.NoEncontrado, label: 'No Encontrado' },
-                  { value: ResultadoVisita.Reprogramada, label: 'Reprogramada' },
-                  { value: ResultadoVisita.Cancelada, label: 'Cancelada' },
+                  { value: '', label: t('filters.allResults') },
+                  { value: ResultadoVisita.Pendiente, label: t('results.pending') },
+                  { value: ResultadoVisita.Venta, label: t('results.withSale') },
+                  { value: ResultadoVisita.SinVenta, label: t('results.noSale') },
+                  { value: ResultadoVisita.NoEncontrado, label: t('results.notFound') },
+                  { value: ResultadoVisita.Reprogramada, label: t('results.rescheduled') },
+                  { value: ResultadoVisita.Cancelada, label: t('results.cancelled') },
                 ]}
                 value={resultadoFilter || null}
                 onChange={(val) => setResultadoFilter(val ? String(val) : '')}
-                placeholder="Resultado"
+                placeholder={t('columns.result')}
               />
             </div>
             <div className="w-[160px]">
               <SearchableSelect
                 options={[
-                  { value: '', label: 'Todas las fechas' },
-                  { value: 'today', label: 'Hoy' },
-                  { value: 'yesterday', label: 'Ayer' },
-                  { value: 'this_week', label: 'Esta semana' },
-                  { value: 'last_week', label: 'Semana pasada' },
-                  { value: 'this_month', label: 'Este mes' },
-                  { value: 'last_month', label: 'Mes pasado' },
+                  { value: '', label: t('filters.allDates') },
+                  { value: 'today', label: t('filters.today') },
+                  { value: 'yesterday', label: t('filters.yesterday') },
+                  { value: 'this_week', label: t('filters.thisWeek') },
+                  { value: 'last_week', label: t('filters.lastWeek') },
+                  { value: 'this_month', label: t('filters.thisMonth') },
+                  { value: 'last_month', label: t('filters.lastMonth') },
                 ]}
                 value={dateFilter || null}
                 onChange={(val) => setDateFilter(val ? String(val) : '')}
-                placeholder="Fecha"
+                placeholder={t('columns.date')}
               />
             </div>
             <button
               onClick={() => fetchVisits()}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
             >
-              <RefreshCw className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Actualizar</span>
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">{tc('refresh')}</span>
             </button>
             {hasFilters && (
               <button
@@ -723,9 +722,9 @@ function VisitsPageContent() {
 
             {/* Pedido asociado */}
             {visitDetail.numeroPedido && (
-              <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg text-sm">
+              <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg text-sm">
                 <ShoppingCart className="w-4 h-4 text-green-600" />
-                <span className="text-green-700">Pedido #{visitDetail.numeroPedido}</span>
+                <span className="text-gray-700 font-medium">{t('detail.linkedOrder', { number: visitDetail.numeroPedido })}</span>
               </div>
             )}
 
@@ -745,8 +744,8 @@ function VisitsPageContent() {
                   id: 'checkin',
                   lat: visitDetail.latitudInicio,
                   lng: visitDetail.longitudInicio,
-                  title: 'Check-in',
-                  label: 'Check-in',
+                  title: t('detail.checkIn'),
+                  label: t('detail.checkIn'),
                   color: 'green',
                 });
               }
@@ -755,14 +754,14 @@ function VisitsPageContent() {
                   id: 'checkout',
                   lat: visitDetail.latitudFin,
                   lng: visitDetail.longitudFin,
-                  title: 'Check-out',
-                  label: 'Check-out',
+                  title: t('detail.checkOut'),
+                  label: t('detail.checkOut'),
                   color: 'blue',
                 });
               }
               return (
                 <div className="space-y-2">
-                  <p className="text-xs font-medium text-gray-500">Ubicación</p>
+                  <p className="text-xs font-medium text-gray-500">{t('detail.location')}</p>
                   <GoogleMapWrapper
                     markers={markers}
                     zoom={15}

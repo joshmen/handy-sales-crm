@@ -1,20 +1,20 @@
-// Enums que coinciden con el backend
+// Enums que coinciden con el backend (integers)
 export enum TipoVisita {
-  Rutina = 'Rutina',
-  Cobranza = 'Cobranza',
-  Entrega = 'Entrega',
-  Prospeccion = 'Prospeccion',
-  Seguimiento = 'Seguimiento',
-  Otro = 'Otro',
+  Rutina = 0,
+  Cobranza = 1,
+  Entrega = 2,
+  Prospeccion = 3,
+  Seguimiento = 4,
+  Otro = 5,
 }
 
 export enum ResultadoVisita {
-  Pendiente = 'Pendiente',
-  Venta = 'Venta',
-  SinVenta = 'SinVenta',
-  NoEncontrado = 'NoEncontrado',
-  Reprogramada = 'Reprogramada',
-  Cancelada = 'Cancelada',
+  Pendiente = 0,
+  Venta = 1,
+  SinVenta = 2,
+  NoEncontrado = 3,
+  Reprogramada = 4,
+  Cancelada = 5,
 }
 
 // DTO completo de visita

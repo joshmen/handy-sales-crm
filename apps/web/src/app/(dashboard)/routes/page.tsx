@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { routeService, RouteListItem, RouteCreateRequest, RouteUpdateRequest } from '@/services/api/routes';
+import { routeService, RouteListItem, RouteCreateRequest } from '@/services/api/routes';
 import { zoneService } from '@/services/api/zones';
 import { api } from '@/lib/api';
 import { toast } from '@/hooks/useToast';
@@ -23,7 +23,6 @@ import {
   RefreshCw,
   MapPin,
   Map,
-  Pencil,
   Loader2,
   Calendar,
   Clock,
@@ -89,9 +88,8 @@ export default function RoutesPage() {
   // Toggle state
   const [togglingId, setTogglingId] = useState<number | null>(null);
 
-  // Create/Edit modal state
+  // Create modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingRoute, setEditingRoute] = useState<RouteListItem | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [usuarios, setUsuarios] = useState<UsuarioOption[]>([]);
 
@@ -205,9 +203,7 @@ export default function RoutesPage() {
       sortable: true,
       width: 'flex',
       cellRenderer: (route) => (
-        <div onClick={(e) => { e.stopPropagation(); router.push(`/routes/${route.id}`); }}>
-          <span className="text-[13px] font-medium text-gray-900 hover:underline cursor-pointer truncate block">{route.nombre}</span>
-        </div>
+        <span className="text-[13px] font-medium text-green-600 truncate block">{route.nombre}</span>
       ),
     },
     {
@@ -278,18 +274,6 @@ export default function RoutesPage() {
       ),
     },
     {
-      key: 'edit',
-      label: '',
-      width: 32,
-      cellRenderer: (route) => (
-        <div onClick={(e) => e.stopPropagation()}>
-          <button onClick={() => handleOpenEdit(route)} disabled={loading} className="p-1 text-amber-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors disabled:opacity-50" title={tc('edit')}>
-            <Pencil className="w-4 h-4" />
-          </button>
-        </div>
-      ),
-    },
-    {
       key: 'contextAction',
       label: t('columns.action'),
       width: 80,
@@ -326,7 +310,7 @@ export default function RoutesPage() {
     try {
       batch.setBatchLoading(true);
       await routeService.batchToggleActivo(ids, activo);
-      toast.success(`${ids.length} ruta${ids.length > 1 ? 's' : ''} ${activo ? 'activada' : 'desactivada'}${ids.length > 1 ? 's' : ''}`);
+      toast.success(t('batchSuccess', { count: ids.length, action: activo ? tc('activate').toLowerCase() : tc('deactivate').toLowerCase() }));
       batch.completeBatch();
       fetchRoutes();
     } catch {
@@ -357,7 +341,6 @@ export default function RoutesPage() {
 
   // Create/Edit handlers
   const handleOpenCreate = () => {
-    setEditingRoute(null);
     const todayString = new Date().toISOString().split('T')[0];
     resetForm({
       nombre: '',
@@ -372,58 +355,27 @@ export default function RoutesPage() {
     setIsModalOpen(true);
   };
 
-  const handleOpenEdit = (route: RouteListItem) => {
-    setEditingRoute(route);
-    resetForm({
-      nombre: route.nombre,
-      usuarioId: route.usuarioId,
-      zonaId: zones.find(z => z.name === route.zonaNombre)?.id ?? null,
-      fecha: route.fecha.toISOString().split('T')[0],
-      horaInicioEstimada: '',
-      horaFinEstimada: '',
-      descripcion: '',
-      notas: '',
-    });
-    setIsModalOpen(true);
-  };
-
   const handleSubmit = async (data: RouteFormData) => {
     try {
       setActionLoading(true);
-      if (editingRoute) {
-        const fmtTimeUpd = (t?: string | null) => t ? (t.length === 5 ? `${t}:00` : t) : null;
-        const updateData: RouteUpdateRequest = {
-          usuarioId: data.usuarioId || undefined,
-          nombre: data.nombre,
-          zonaId: data.zonaId,
-          fecha: dateOnlyToUTC(data.fecha),
-          horaInicioEstimada: fmtTimeUpd(data.horaInicioEstimada),
-          horaFinEstimada: fmtTimeUpd(data.horaFinEstimada),
-          descripcion: data.descripcion || undefined,
-          notas: data.notas || undefined,
-        };
-        await routeService.updateRuta(editingRoute.id, updateData);
-        toast.success(t('routeUpdated'));
-      } else {
-        if (!data.usuarioId) {
-          toast.error(t('selectUser'));
-          setActionLoading(false);
-          return;
-        }
-        const fmtTime = (t?: string | null) => t ? (t.length === 5 ? `${t}:00` : t) : null;
-        const createData: RouteCreateRequest = {
-          nombre: data.nombre,
-          usuarioId: data.usuarioId,
-          zonaId: data.zonaId,
-          fecha: dateOnlyToUTC(data.fecha),
-          horaInicioEstimada: fmtTime(data.horaInicioEstimada),
-          horaFinEstimada: fmtTime(data.horaFinEstimada),
-          descripcion: data.descripcion || undefined,
-          notas: data.notas || undefined,
-        };
-        await routeService.createRuta(createData);
-        toast.success(t('routeCreated'));
+      if (!data.usuarioId) {
+        toast.error(t('selectUser'));
+        setActionLoading(false);
+        return;
       }
+      const fmtTime = (t?: string | null) => t ? (t.length === 5 ? `${t}:00` : t) : null;
+      const createData: RouteCreateRequest = {
+        nombre: data.nombre,
+        usuarioId: data.usuarioId,
+        zonaId: data.zonaId,
+        fecha: dateOnlyToUTC(data.fecha),
+        horaInicioEstimada: fmtTime(data.horaInicioEstimada),
+        horaFinEstimada: fmtTime(data.horaFinEstimada),
+        descripcion: data.descripcion || undefined,
+        notas: data.notas || undefined,
+      };
+      await routeService.createRuta(createData);
+      toast.success(t('routeCreated'));
       setIsModalOpen(false);
       fetchRoutes();
     } catch (err: unknown) {
@@ -557,7 +509,7 @@ export default function RoutesPage() {
         <BatchActionBar
           selectedCount={batch.selectedCount}
           totalItems={totalItems}
-          entityLabel="rutas"
+          entityLabel={t('title').toLowerCase()}
           onActivate={() => batch.openBatchAction('activate')}
           onDeactivate={() => batch.openBatchAction('deactivate')}
           onClear={batch.handleClearSelection}
@@ -578,7 +530,7 @@ export default function RoutesPage() {
             emptyIcon={<MapPin className="w-16 h-16 text-cyan-300" />}
             emptyTitle={t('emptyTitle')}
             emptyMessage={searchTerm || estadoFilter !== 'all' || zonaFilter !== 'all' ? t('emptyFiltered') : t('emptyDefault')}
-            onRowClick={(route) => handleOpenEdit(route)}
+            onRowClick={(route) => router.push(`/routes/${route.id}`)}
             sort={{
               key: sortKey,
               direction: sortDir,
@@ -615,12 +567,9 @@ export default function RoutesPage() {
                   </div>
                   <div className="flex flex-wrap items-center gap-2 mb-2">
                     <span className={`inline-flex px-2.5 py-0.5 text-[10px] font-medium rounded-full ${badge.cls}`}>{badge.label}</span>
-                    <span className="text-xs text-gray-600">Paradas: <span className={route.paradasCompletadas === route.totalParadas && route.totalParadas > 0 ? 'text-green-600 font-medium' : ''}>{route.paradasCompletadas}</span>/{route.totalParadas}</span>
+                    <span className="text-xs text-gray-600">{t('columns.stops')}: <span className={route.paradasCompletadas === route.totalParadas && route.totalParadas > 0 ? 'text-green-600 font-medium' : ''}>{route.paradasCompletadas}</span>/{route.totalParadas}</span>
                     <span className="text-xs text-gray-500">{route.usuarioNombre}</span>
                     <span className="text-xs text-gray-500">{formatDateOnly(route.fecha)}</span>
-                  </div>
-                  <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
-                    <button onClick={() => handleOpenEdit(route)} disabled={loading} className="px-3 py-1.5 text-xs font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 transition-colors disabled:opacity-50">{tc('edit')}</button>
                   </div>
                 </>
               );
@@ -636,18 +585,18 @@ export default function RoutesPage() {
         onConfirm={handleBatchToggle}
         action={batch.batchAction}
         selectedCount={batch.selectedCount}
-        entityLabel="ruta"
+        entityLabel={t('title').toLowerCase()}
         loading={batch.batchLoading}
         consequenceActivate={t('batchConsequenceActivate')}
         consequenceDeactivate={t('batchConsequenceDeactivate')}
       />
 
-      {/* Create/Edit Route Drawer */}
+      {/* Create Route Drawer */}
       <Drawer
         ref={drawerRef}
         isOpen={isModalOpen}
         onClose={() => !actionLoading && setIsModalOpen(false)}
-        title={editingRoute ? t('drawer.editTitle') : t('drawer.createTitle')}
+        title={t('drawer.createTitle')}
         icon={<Map className="w-5 h-5 text-teal-500" />}
         width="lg"
         isDirty={isDirty}
@@ -667,7 +616,7 @@ export default function RoutesPage() {
               className="px-4 py-2 text-sm font-medium text-success-foreground bg-success rounded-md hover:bg-success/90 disabled:opacity-50 flex items-center gap-2"
             >
               {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-              {editingRoute ? t('drawer.saveChanges') : t('drawer.createRoute')}
+              {t('drawer.createRoute')}
             </button>
           </div>
         }

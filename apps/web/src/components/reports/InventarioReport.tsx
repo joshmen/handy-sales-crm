@@ -10,11 +10,11 @@ import { RefreshCw, Download, Loader2 } from 'lucide-react';
 import { useReportExport } from '@/hooks/useReportExport';
 import { useTranslations } from 'next-intl';
 
-const estadoColors: Record<string, { bg: string; text: string; label: string; pie: string }> = {
-  sin_stock: { bg: 'bg-red-100', text: 'text-red-700', label: 'Sin Stock', pie: '#dc2626' },
-  bajo: { bg: 'bg-amber-100', text: 'text-amber-700', label: 'Stock Bajo', pie: '#d97706' },
-  normal: { bg: 'bg-green-100', text: 'text-green-700', label: 'Normal', pie: '#16a34a' },
-  exceso: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Exceso', pie: '#2563eb' },
+const estadoColorMap: Record<string, { bg: string; text: string; key: string; pie: string }> = {
+  sin_stock: { bg: 'bg-red-100', text: 'text-red-700', key: 'outOfStock', pie: '#dc2626' },
+  bajo: { bg: 'bg-amber-100', text: 'text-amber-700', key: 'lowStock', pie: '#d97706' },
+  normal: { bg: 'bg-green-100', text: 'text-green-700', key: 'normal', pie: '#16a34a' },
+  exceso: { bg: 'bg-blue-100', text: 'text-blue-700', key: 'excess', pie: '#2563eb' },
 };
 
 export function InventarioReport() {
@@ -26,17 +26,17 @@ export function InventarioReport() {
   const chartRef = useRef<HTMLDivElement>(null);
   const { exportPDF, exporting } = useReportExport({
     fileName: 'inventario',
-    title: 'Inventario Actual',
+    title: t('title'),
     kpis: data ? [
-      { label: 'Total Productos', value: data.resumen.total },
-      { label: 'Sin Stock', value: data.resumen.sinStock },
-      { label: 'Stock Bajo', value: data.resumen.bajo },
-      { label: 'Normal', value: data.resumen.normal },
+      { label: t('totalProducts'), value: data.resumen.total },
+      { label: t('outOfStock'), value: data.resumen.sinStock },
+      { label: t('lowStock'), value: data.resumen.bajo },
+      { label: t('normal'), value: data.resumen.normal },
     ] : undefined,
     chartRef,
     table: data ? {
-      headers: ['Producto', 'Código', 'Actual', 'Mínimo', 'Máximo', 'Estado'],
-      rows: data.productos.map(p => [p.nombre, p.codigoBarra || '-', p.stockActual, p.stockMinimo, p.stockMaximo, estadoColors[p.estado]?.label || p.estado]),
+      headers: [t('product'), t('code'), t('current'), t('minimum'), t('maximum'), t('status')],
+      rows: data.productos.map(p => [p.nombre, p.codigoBarra || '-', p.stockActual, p.stockMinimo, p.stockMaximo, estadoColorMap[p.estado] ? t(estadoColorMap[p.estado].key) : p.estado]),
     } : undefined,
   });
 
@@ -61,24 +61,24 @@ export function InventarioReport() {
     {
       key: 'estado', header: t('status'), align: 'center', sortable: true,
       render: (r) => {
-        const c = estadoColors[r.estado];
-        return <span className={`inline-block px-2 py-0.5 text-[10px] font-medium rounded-full ${c.bg} ${c.text}`}>{c.label}</span>;
+        const c = estadoColorMap[r.estado];
+        return <span className={`inline-block px-2 py-0.5 text-[10px] font-medium rounded-full ${c.bg} ${c.text}`}>{t(c.key)}</span>;
       }
     },
   ];
 
   const pieData = data ? [
-    { name: 'Sin Stock', value: data.resumen.sinStock },
-    { name: 'Stock Bajo', value: data.resumen.bajo },
-    { name: 'Normal', value: data.resumen.normal },
-    { name: 'Exceso', value: data.resumen.exceso },
+    { name: t('outOfStock'), value: data.resumen.sinStock, key: 'sin_stock' },
+    { name: t('lowStock'), value: data.resumen.bajo, key: 'bajo' },
+    { name: t('normal'), value: data.resumen.normal, key: 'normal' },
+    { name: t('excess'), value: data.resumen.exceso, key: 'exceso' },
   ].filter(d => d.value > 0) : [];
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-end gap-2">
         {data && (
-          <button onClick={exportPDF} disabled={exporting} className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50" title="Exportar a PDF">
+          <button onClick={exportPDF} disabled={exporting} className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50" title={tFilters('exportPDF')}>
             {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
             {exporting ? tFilters('exporting') : 'PDF'}
           </button>
@@ -113,7 +113,7 @@ export function InventarioReport() {
                     label={({ name, value }) => `${name}: ${value}`}
                   >
                     {pieData.map((d, i) => {
-                      const colorKey = Object.entries(estadoColors).find(([, v]) => v.label === d.name)?.[1]?.pie || '#999';
+                      const colorKey = estadoColorMap[d.key]?.pie || '#999';
                       return <Cell key={i} fill={colorKey} />;
                     })}
                   </Pie>

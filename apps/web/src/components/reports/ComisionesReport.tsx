@@ -10,6 +10,7 @@ import { getComisiones, ComisionVendedor, ComisionesResponse } from "@/services/
 import { toast } from "@/hooks/useToast";
 import { useReportExport } from "@/hooks/useReportExport";
 import { useFormatters } from "@/hooks/useFormatters";
+import { useTranslations } from "next-intl";
 
 function defaultDates() {
   const h = new Date();
@@ -20,6 +21,8 @@ function defaultDates() {
 
 export function ComisionesReport() {
   const { formatCurrency } = useFormatters();
+  const t = useTranslations("reports.comisionesReport");
+  const tc = useTranslations("reports.common");
   const fmt = (n: number) => formatCurrency(n);
   const [dates, setDates] = useState(defaultDates);
   const ct = useChartTheme();
@@ -29,48 +32,48 @@ export function ComisionesReport() {
   const chartRef = useRef<HTMLDivElement>(null);
   const { exportPDF, exporting } = useReportExport({
     fileName: "comisiones",
-    title: "Comisiones por Vendedor",
+    title: t("totalCommissions"),
     dateRange: dates,
     kpis: data ? [
-      { label: "Total Ventas", value: fmt(data.totalVentas) },
-      { label: "Total Comisiones", value: fmt(data.totalComisiones) },
-      { label: "% Aplicado", value: `${data.porcentajeAplicado}%` },
+      { label: t("totalSales"), value: fmt(data.totalVentas) },
+      { label: t("totalCommissions"), value: fmt(data.totalComisiones) },
+      { label: t("appliedPct"), value: `${data.porcentajeAplicado}%` },
     ] : undefined,
     chartRef,
     table: data ? {
-      headers: ["Vendedor", "Ventas", "Pedidos", "Comision"],
+      headers: [t("vendor"), t("sales"), t("orders"), t("commission")],
       rows: data.vendedores.map(v => [v.nombre, fmt(v.totalVentas), v.cantidadPedidos, fmt(v.comision)]),
-      footerRow: ["TOTAL", fmt(data.totalVentas), "", fmt(data.totalComisiones)],
+      footerRow: [tc("total"), fmt(data.totalVentas), "", fmt(data.totalComisiones)],
     } : undefined,
   });
 
   const fetch = useCallback(async () => {
     try { setLoading(true); setData(await getComisiones({ ...dates, porcentaje })); }
-    catch { toast.error("Error al cargar reporte"); }
+    catch { toast.error(tc("errorLoading")); }
     finally { setLoading(false); }
   }, [dates, porcentaje]);
 
   const columns: ReportColumn<ComisionVendedor>[] = [
-    { key: "nombre", header: "Vendedor", sortable: true },
-    { key: "totalVentas", header: "Ventas", align: "right", sortable: true, render: r => fmt(r.totalVentas) },
-    { key: "cantidadPedidos", header: "Pedidos", align: "right", sortable: true },
-    { key: "comision", header: "Comision", align: "right", sortable: true, render: r => <span className="font-semibold text-green-600">{fmt(r.comision)}</span> },
+    { key: "nombre", header: t("vendor"), sortable: true },
+    { key: "totalVentas", header: t("sales"), align: "right", sortable: true, render: r => fmt(r.totalVentas) },
+    { key: "cantidadPedidos", header: t("orders"), align: "right", sortable: true },
+    { key: "comision", header: t("commission"), align: "right", sortable: true, render: r => <span className="font-semibold text-green-600">{fmt(r.comision)}</span> },
   ];
 
   return (
     <div className="space-y-4">
       <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={fetch} loading={loading} onExportPDF={data ? exportPDF : undefined} exporting={exporting}>
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-600">% Comision</label>
+          <label className="text-xs font-medium text-gray-600">{t("commissionPct")}</label>
           <input type="number" value={porcentaje} onChange={e => setPorcentaje(Number(e.target.value))} min={0} max={100} step={0.5} className="px-3 py-2 text-sm border border-gray-300 rounded-md w-20" />
         </div>
       </ReportFilters>
       {data && (
         <>
           <ReportKPICards cards={[
-            { label: "Total Ventas", value: fmt(data.totalVentas), color: "blue" },
-            { label: "Total Comisiones", value: fmt(data.totalComisiones), color: "green" },
-            { label: "% Aplicado", value: `${data.porcentajeAplicado}%`, color: "amber" },
+            { label: t("totalSales"), value: fmt(data.totalVentas), color: "blue" },
+            { label: t("totalCommissions"), value: fmt(data.totalComisiones), color: "green" },
+            { label: t("appliedPct"), value: `${data.porcentajeAplicado}%`, color: "amber" },
           ]} />
           {data.vendedores.length > 0 && (
             <div ref={chartRef} className="bg-white border border-gray-200 rounded-lg p-4">
@@ -80,12 +83,12 @@ export function ComisionesReport() {
                   <XAxis dataKey="nombre" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} />
                   <Tooltip formatter={v => [fmt(Number(v))]} />
-                  <Bar dataKey="comision" name="Comision" fill="#16a34a" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="comision" name={t("chartName")} fill="#16a34a" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           )}
-          <ReportTable data={data.vendedores as unknown as Record<string, unknown>[]} columns={columns as unknown as ReportColumn<Record<string, unknown>>[]} footerRow={{ nombre: "TOTAL", totalVentas: fmt(data.totalVentas), cantidadPedidos: "", comision: fmt(data.totalComisiones) }} />
+          <ReportTable data={data.vendedores as unknown as Record<string, unknown>[]} columns={columns as unknown as ReportColumn<Record<string, unknown>>[]} footerRow={{ nombre: tc("total"), totalVentas: fmt(data.totalVentas), cantidadPedidos: "", comision: fmt(data.totalComisiones) }} />
         </>
       )}
     </div>

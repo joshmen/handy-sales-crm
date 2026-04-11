@@ -44,6 +44,15 @@ interface VisitCalendarViewProps {
   loading?: boolean;
 }
 
+const VISIT_TYPE_LABEL_KEYS: Record<string, string> = {
+  Rutina: 'routine',
+  Cobranza: 'collection',
+  Entrega: 'delivery',
+  Prospeccion: 'prospecting',
+  Seguimiento: 'followUp',
+  Otro: 'other',
+};
+
 export function VisitCalendarView({
   visits,
   onDateRangeChange,
@@ -52,6 +61,7 @@ export function VisitCalendarView({
   loading,
 }: VisitCalendarViewProps) {
   const t = useTranslations('visits.calendar');
+  const tt = useTranslations('visits.types');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<View>('month');
 
@@ -149,7 +159,7 @@ export function VisitCalendarView({
         {Object.entries(VISIT_TYPE_COLORS).map(([type, color]) => (
           <div key={type} className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded" style={{ backgroundColor: color }} />
-            <span className="text-gray-600">{type}</span>
+            <span className="text-gray-600">{tt(VISIT_TYPE_LABEL_KEYS[type] || 'other')}</span>
           </div>
         ))}
       </div>

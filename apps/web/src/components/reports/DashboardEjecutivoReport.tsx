@@ -3,11 +3,23 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { getDashboardEjecutivo, DashboardEjecutivoResponse } from '@/services/api/reports';
 import { toast } from '@/hooks/useToast';
-import { TrendingUp, TrendingDown, ShoppingCart, Eye, UserPlus, Trophy, Star, AlertTriangle, Loader2, Download } from 'lucide-react';
+import {
+  Card,
+  Metric,
+  Text,
+  Flex,
+  BadgeDelta,
+  DonutChart,
+  BarList,
+  ProgressBar,
+  SparkAreaChart,
+  CategoryBar,
+  Legend,
+} from '@tremor/react';
+import { ShoppingCart, Eye, UserPlus, Trophy, Star, AlertTriangle, Loader2, Download } from 'lucide-react';
 import { useReportExport } from '@/hooks/useReportExport';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useTranslations } from 'next-intl';
-
 
 export function DashboardEjecutivoReport() {
   const { formatCurrency } = useFormatters();
@@ -19,169 +31,220 @@ export function DashboardEjecutivoReport() {
   const [loading, setLoading] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const { exportPDF, exporting } = useReportExport({
-    fileName: 'dashboard-ejecutivo',
-    title: 'Dashboard Ejecutivo',
+    fileName: 'executive-dashboard',
+    title: t('summary'),
     kpis: data ? [
-      { label: 'Ventas', value: fmt(data.ventas.total) },
-      { label: 'Pedidos', value: data.ventas.pedidos },
-      { label: 'Visitas', value: data.visitas.total },
-      { label: 'Nuevos Clientes', value: data.nuevosClientes },
+      { label: t('salesTitle'), value: fmt(data.ventas.total) },
+      { label: t('orders'), value: data.ventas.pedidos },
+      { label: t('visitsTitle'), value: data.visitas.total },
+      { label: t('newClientsTitle'), value: data.nuevosClientes },
     ] : undefined,
+    table: data ? {
+      headers: [t('salesTitle'), t('orders'), t('avgTicket'), t('vsPriorPeriod'), t('visitsTitle'), t('newClientsTitle')],
+      rows: [[fmt(data.ventas.total), data.ventas.pedidos, fmt(data.ventas.ticketPromedio), `${data.ventas.crecimientoPct > 0 ? '+' : ''}${data.ventas.crecimientoPct}%`, `${data.visitas.total} (${data.visitas.efectividadPct}%)`, data.nuevosClientes]],
+    } : undefined,
     fallbackRef: contentRef,
   });
 
   const fetch = useCallback(async () => {
-    try {
-      setLoading(true);
-      const res = await getDashboardEjecutivo({ periodo });
-      setData(res);
-    } catch { toast.error(tCommon('errorLoadingDashboard')); }
+    try { setLoading(true); setData(await getDashboardEjecutivo({ periodo })); }
+    catch { toast.error(tCommon('errorLoadingDashboard')); }
     finally { setLoading(false); }
   }, [periodo]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetch(); }, [periodo]);
 
   const periodoLabel = periodo === 'semana' ? t('thisWeek') : periodo === 'trimestre' ? t('thisQuarter') : t('thisMonth');
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Period selector */}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-600">{t('summary')} <span className="font-medium text-gray-900">{periodoLabel}</span></p>
+        <p className="text-sm text-gray-600">{t('summary')} <span className="font-semibold text-gray-900">{periodoLabel}</span></p>
         <div className="flex items-center gap-2">
           {data && !loading && (
-            <button onClick={exportPDF} disabled={exporting} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50" title="Exportar a PDF">
+            <button onClick={exportPDF} disabled={exporting} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors">
               {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
               PDF
             </button>
           )}
-        <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
-          {(['semana', 'mes', 'trimestre'] as const).map(p => (
-            <button
-              key={p}
-              onClick={() => setPeriodo(p)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                periodo === p ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-800'
-              }`}
-            >
-              {p === 'semana' ? t('week') : p === 'mes' ? t('month') : t('quarter')}
-            </button>
-          ))}
-        </div>
+          <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+            {(['semana', 'mes', 'trimestre'] as const).map(p => (
+              <button key={p} onClick={() => setPeriodo(p)} className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${periodo === p ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}>
+                {p === 'semana' ? t('week') : p === 'mes' ? t('month') : t('quarter')}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {loading && (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+        <div className="flex items-center justify-center py-24">
+          <Loader2 className="w-8 h-8 animate-spin text-gray-300" />
         </div>
       )}
 
+      {!loading && !data && (
+        <div className="text-center py-16 text-sm text-gray-400">{tCommon('noData')}</div>
+      )}
+
       {data && !loading && (
-        <div ref={contentRef} className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {/* Ventas */}
-          <div className="col-span-1 md:col-span-2 xl:col-span-2 bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-xl p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <ShoppingCart className="w-5 h-5 text-green-600" />
-              <h3 className="text-sm font-semibold text-green-800">{t('salesTitle')}</h3>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div>
-                <p className="text-2xl font-bold text-green-900">{fmt(data.ventas.total)}</p>
-                <p className="text-xs text-green-700">{t('totalSales')}</p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-green-900">{data.ventas.pedidos}</p>
-                <p className="text-xs text-green-700">{t('orders')}</p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-green-900">{fmt(data.ventas.ticketPromedio)}</p>
-                <p className="text-xs text-green-700">{t('avgTicket')}</p>
-              </div>
-              <div>
-                <div className="flex items-center gap-1">
-                  <p className={`text-2xl font-bold ${data.ventas.crecimientoPct >= 0 ? 'text-green-900' : 'text-red-600'}`}>
-                    {data.ventas.crecimientoPct > 0 ? '+' : ''}{data.ventas.crecimientoPct}%
-                  </p>
-                  {data.ventas.crecimientoPct >= 0 ? <TrendingUp className="w-4 h-4 text-green-600" /> : <TrendingDown className="w-4 h-4 text-red-500" />}
+        <div ref={contentRef} className="space-y-5" key={periodo}>
+
+          {/* ── Row 1: Sales Hero ── */}
+          <Card className="page-animate page-animate-delay-1 !p-0 overflow-hidden">
+            <div className="bg-gradient-to-br from-gray-900 to-gray-800 p-6 sm:p-8">
+              <Flex justifyContent="between" alignItems="start">
+                <div>
+                  <Flex justifyContent="start" className="gap-2 mb-4">
+                    <div className="p-2 rounded-lg bg-white/10"><ShoppingCart className="w-5 h-5 text-emerald-400" /></div>
+                    <Text className="!text-gray-400">{t('salesTitle')}</Text>
+                  </Flex>
+                  <Metric className="!text-white !text-5xl sm:!text-6xl !font-bold !tracking-tight">
+                    {fmt(data.ventas.total)}
+                  </Metric>
+                  <Text className="!text-gray-400 mt-2">{t('totalSales')} · {periodoLabel}</Text>
                 </div>
-                <p className="text-xs text-green-700">{t('vsPriorPeriod')}</p>
+                <div className="text-right">
+                  <BadgeDelta
+                    deltaType={data.ventas.crecimientoPct >= 0 ? 'increase' : 'decrease'}
+                    size="lg"
+                  >
+                    {data.ventas.crecimientoPct > 0 ? '+' : ''}{data.ventas.crecimientoPct}%
+                  </BadgeDelta>
+                  <Text className="!text-gray-500 mt-1 text-xs">{t('vsPriorPeriod')}</Text>
+                </div>
+              </Flex>
+
+              {/* Sub-metrics */}
+              <div className="grid grid-cols-3 gap-6 mt-8 pt-6 border-t border-white/10">
+                <div>
+                  <Text className="!text-gray-500">{t('orders')}</Text>
+                  <Metric className="!text-white !text-2xl !font-semibold mt-1">{data.ventas.pedidos}</Metric>
+                </div>
+                <div>
+                  <Text className="!text-gray-500">{t('avgTicket')}</Text>
+                  <Metric className="!text-white !text-2xl !font-semibold mt-1">{fmt(data.ventas.ticketPromedio)}</Metric>
+                </div>
+                <div>
+                  <Text className="!text-gray-500">{t('newClientsTitle')}</Text>
+                  <Metric className="!text-white !text-2xl !font-semibold mt-1">{data.nuevosClientes}</Metric>
+                </div>
               </div>
             </div>
-          </div>
+          </Card>
 
-          {/* Visitas */}
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <Eye className="w-5 h-5 text-blue-600" />
-              <h3 className="text-sm font-semibold text-blue-800">{t('visitsTitle')}</h3>
-            </div>
-            <p className="text-3xl font-bold text-blue-900 mb-1">{data.visitas.total}</p>
-            <div className="flex items-center gap-3 text-xs">
-              <span className="text-green-700">{t('withSale', { count: data.visitas.conVenta })}</span>
-              <span className="text-gray-500">{t('withoutSale', { count: data.visitas.sinVenta })}</span>
-            </div>
-            <div className="mt-2 w-full bg-blue-200 rounded-full h-2">
-              <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${data.visitas.efectividadPct}%` }} />
-            </div>
-            <p className="text-xs text-blue-700 mt-1">{t('effectiveness', { pct: data.visitas.efectividadPct })}</p>
-          </div>
-
-          {/* Nuevos Clientes */}
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <UserPlus className="w-5 h-5 text-amber-600" />
-              <h3 className="text-sm font-semibold text-amber-800">{t('newClientsTitle')}</h3>
-            </div>
-            <p className="text-3xl font-bold text-amber-900">{data.nuevosClientes}</p>
-            <p className="text-xs text-amber-700 mt-1">{periodoLabel}</p>
-          </div>
-
-          {/* Top Vendedor */}
-          <div className="bg-purple-50 border border-purple-200 rounded-xl p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <Trophy className="w-5 h-5 text-purple-600" />
-              <h3 className="text-sm font-semibold text-purple-800">{t('topVendor')}</h3>
-            </div>
-            {data.topVendedor ? (
-              <>
-                <p className="text-lg font-bold text-purple-900">{data.topVendedor.nombre}</p>
-                <p className="text-sm text-purple-700">{fmt(data.topVendedor.totalVentas)}</p>
-              </>
-            ) : (
-              <p className="text-sm text-purple-600">{t('noData')}</p>
-            )}
-          </div>
-
-          {/* Top Producto */}
-          <div className="bg-pink-50 border border-pink-200 rounded-xl p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <Star className="w-5 h-5 text-pink-600" />
-              <h3 className="text-sm font-semibold text-pink-800">{t('starProduct')}</h3>
-            </div>
-            {data.topProducto ? (
-              <>
-                <p className="text-lg font-bold text-pink-900">{data.topProducto.nombre}</p>
-                <p className="text-sm text-pink-700">{fmt(data.topProducto.totalVentas)} ({data.topProducto.cantidadVendida} {t('units')})</p>
-              </>
-            ) : (
-              <p className="text-sm text-pink-600">{t('noData')}</p>
-            )}
-          </div>
-
-          {/* Alertas */}
-          {data.alertas.inventarioBajo > 0 && (
-            <div className="bg-red-50 border border-red-200 rounded-xl p-5">
-              <div className="flex items-center gap-2 mb-2">
-                <AlertTriangle className="w-5 h-5 text-red-600" />
-                <h3 className="text-sm font-semibold text-red-800">{t('alertsTitle')}</h3>
+          {/* ── Row 2: Visits + Breakdown ── */}
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+            {/* Visits donut */}
+            <Card className="lg:col-span-2 page-animate page-animate-delay-2">
+              <Flex justifyContent="start" className="gap-2 mb-4">
+                <div className="p-1.5 rounded-lg bg-blue-50"><Eye className="w-4 h-4 text-blue-600" /></div>
+                <Text className="!font-semibold !text-gray-900">{t('visitsTitle')}</Text>
+              </Flex>
+              <Flex justifyContent="start" alignItems="end" className="gap-4">
+                <Metric className="!text-4xl !font-bold">{data.visitas.total}</Metric>
+                <BadgeDelta deltaType="unchanged" size="sm">{data.visitas.efectividadPct}%</BadgeDelta>
+              </Flex>
+              <div className="mt-6">
+                <DonutChart
+                  data={[
+                    { name: t('withSale', { count: data.visitas.conVenta }), value: data.visitas.conVenta },
+                    { name: t('withoutSale', { count: data.visitas.sinVenta }), value: data.visitas.sinVenta || 1 },
+                  ]}
+                  category="value"
+                  index="name"
+                  colors={['blue', 'slate']}
+                  variant="pie"
+                  className="h-32 mt-2"
+                  showLabel
+                  showAnimation
+                />
+                <Legend
+                  categories={[t('withSale', { count: data.visitas.conVenta }), t('withoutSale', { count: data.visitas.sinVenta })]}
+                  colors={['blue', 'slate']}
+                  className="mt-3 justify-center"
+                />
               </div>
-              <p className="text-sm text-red-700">
-                {t('lowStockAlert', { count: data.alertas.inventarioBajo })}
-              </p>
-            </div>
-          )}
+            </Card>
+
+            {/* Performance metrics */}
+            <Card className="lg:col-span-3 page-animate page-animate-delay-3">
+              <Text className="!font-semibold !text-gray-900 mb-4">{t('salesTitle')} — {periodoLabel}</Text>
+              <BarList
+                data={[
+                  { name: t('totalSales'), value: data.ventas.total, color: 'emerald' },
+                  { name: t('avgTicket'), value: data.ventas.ticketPromedio, color: 'blue' },
+                  ...(data.topVendedor ? [{ name: `🏆 ${data.topVendedor.nombre}`, value: data.topVendedor.totalVentas, color: 'violet' as const }] : []),
+                  ...(data.topProducto ? [{ name: `⭐ ${data.topProducto.nombre}`, value: data.topProducto.totalVentas, color: 'rose' as const }] : []),
+                ]}
+                valueFormatter={fmt}
+                showAnimation
+                className="mt-2"
+              />
+            </Card>
+          </div>
+
+          {/* ── Row 3: Top Vendor + Star Product + Alerts ── */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 page-animate page-animate-delay-4">
+            {/* Top Vendor */}
+            <Card decoration="top" decorationColor="violet">
+              <Flex justifyContent="start" className="gap-2">
+                <div className="p-1.5 rounded-lg bg-violet-50"><Trophy className="w-4 h-4 text-violet-600" /></div>
+                <Text className="!font-semibold !text-gray-900">{t('topVendor')}</Text>
+              </Flex>
+              {data.topVendedor ? (
+                <div className="mt-4">
+                  <Text className="!text-gray-500">{data.topVendedor.nombre}</Text>
+                  <Metric className="!text-violet-600 mt-1">{fmt(data.topVendedor.totalVentas)}</Metric>
+                  <CategoryBar
+                    values={[100]}
+                    colors={['violet']}
+                    className="mt-4"
+                    showLabels={false}
+                  />
+                </div>
+              ) : <Text className="mt-4 !text-gray-400">{t('noData')}</Text>}
+            </Card>
+
+            {/* Star Product */}
+            <Card decoration="top" decorationColor="rose">
+              <Flex justifyContent="start" className="gap-2">
+                <div className="p-1.5 rounded-lg bg-rose-50"><Star className="w-4 h-4 text-rose-500" /></div>
+                <Text className="!font-semibold !text-gray-900">{t('starProduct')}</Text>
+              </Flex>
+              {data.topProducto ? (
+                <div className="mt-4">
+                  <Text className="!text-gray-500">{data.topProducto.nombre}</Text>
+                  <Metric className="!text-rose-500 mt-1">{fmt(data.topProducto.totalVentas)}</Metric>
+                  <Text className="mt-2">{data.topProducto.cantidadVendida} {t('units')}</Text>
+                </div>
+              ) : <Text className="mt-4 !text-gray-400">{t('noData')}</Text>}
+            </Card>
+
+            {/* Alerts */}
+            <Card decoration="top" decorationColor={data.alertas.inventarioBajo > 0 ? 'red' : 'green'}>
+              <Flex justifyContent="start" className="gap-2">
+                <div className={`p-1.5 rounded-lg ${data.alertas.inventarioBajo > 0 ? 'bg-red-50' : 'bg-green-50'}`}>
+                  <AlertTriangle className={`w-4 h-4 ${data.alertas.inventarioBajo > 0 ? 'text-red-500' : 'text-green-500'}`} />
+                </div>
+                <Text className="!font-semibold !text-gray-900">{t('alertsTitle')}</Text>
+              </Flex>
+              <div className="mt-4">
+                {data.alertas.inventarioBajo > 0 ? (
+                  <>
+                    <Metric className="!text-red-500">{data.alertas.inventarioBajo}</Metric>
+                    <Text className="mt-1">{t('lowStockAlert', { count: data.alertas.inventarioBajo })}</Text>
+                  </>
+                ) : (
+                  <>
+                    <Metric className="!text-green-600">✓</Metric>
+                    <Text className="mt-1">{tCommon('noData')}</Text>
+                  </>
+                )}
+              </div>
+            </Card>
+          </div>
         </div>
       )}
     </div>

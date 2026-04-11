@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { ChevronUp, ChevronDown } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 export interface ReportColumn<T> {
   key: string;
@@ -24,11 +25,13 @@ interface ReportTableProps<T> {
 export function ReportTable<T extends Record<string, unknown>>({
   data,
   columns,
-  emptyMessage = 'Sin datos para el período seleccionado',
+  emptyMessage,
   maxHeight = '500px',
   showIndex,
   footerRow,
 }: ReportTableProps<T>) {
+  const tc = useTranslations('reports.common');
+  const resolvedEmptyMessage = emptyMessage || tc('noData');
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
@@ -60,7 +63,7 @@ export function ReportTable<T extends Record<string, unknown>>({
   if (data.length === 0) {
     return (
       <div className="flex items-center justify-center py-12 text-sm text-gray-500">
-        {emptyMessage}
+        {resolvedEmptyMessage}
       </div>
     );
   }

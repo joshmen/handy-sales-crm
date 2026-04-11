@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { routeService, RouteDetail, CierreResumen, RetornoItem, ESTADO_RUTA, ESTADO_RUTA_LABELS, ESTADO_RUTA_COLORS } from '@/services/api/routes';
+import { routeService, RouteDetail, CierreResumen, RetornoItem, ESTADO_RUTA, ESTADO_RUTA_KEYS, ESTADO_RUTA_COLORS } from '@/services/api/routes';
 import { toast } from '@/hooks/useToast';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import {
@@ -18,18 +18,21 @@ import {
   Package,
 } from 'lucide-react';
 import { useFormatters } from '@/hooks/useFormatters';
-
-// Lifecycle steps for route status timeline
-const LIFECYCLE_STEPS = [
-  { estado: ESTADO_RUTA.PendienteAceptar, label: 'Pendiente' },
-  { estado: ESTADO_RUTA.CargaAceptada, label: 'Carga aceptada' },
-  { estado: ESTADO_RUTA.EnProgreso, label: 'En progreso' },
-  { estado: ESTADO_RUTA.Completada, label: 'Completada' },
-  { estado: ESTADO_RUTA.Cerrada, label: 'Cerrada' },
-];
+import { useTranslations } from 'next-intl';
 
 export default function CloseRoutePage() {
   const { formatCurrency, formatDate } = useFormatters();
+  const ts = useTranslations('routes.status');
+  const tl = useTranslations('routes.detail');
+
+  // Lifecycle steps for route status timeline
+  const LIFECYCLE_STEPS = [
+    { estado: ESTADO_RUTA.PendienteAceptar, label: tl('lifecyclePending') },
+    { estado: ESTADO_RUTA.CargaAceptada, label: tl('lifecycleLoadAccepted') },
+    { estado: ESTADO_RUTA.EnProgreso, label: tl('lifecycleInProgress') },
+    { estado: ESTADO_RUTA.Completada, label: tl('lifecycleCompleted') },
+    { estado: ESTADO_RUTA.Cerrada, label: tl('lifecycleClosed') },
+  ];
   const params = useParams();
   const router = useRouter();
   const rutaId = Number(params.id);
@@ -170,7 +173,7 @@ export default function CloseRoutePage() {
     );
   }
 
-  const estadoBadge = ESTADO_RUTA_LABELS[ruta.estado] || 'Desconocido';
+  const estadoBadge = ESTADO_RUTA_KEYS[ruta.estado] ? ts(ESTADO_RUTA_KEYS[ruta.estado]) : ts('unknown');
   const estadoColor = ESTADO_RUTA_COLORS[ruta.estado] || 'bg-gray-100 text-gray-800';
   const diferencia = montoRecibido ? parseFloat(montoRecibido) - resumen.aRecibir : null;
 

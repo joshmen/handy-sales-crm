@@ -10,6 +10,7 @@ import { getVentasPeriodo, VentaPeriodo, VentasPeriodoResponse } from '@/service
 import { toast } from '@/hooks/useToast';
 import { useReportExport } from '@/hooks/useReportExport';
 import { useFormatters } from '@/hooks/useFormatters';
+import { useTranslations } from 'next-intl';
 
 function defaultDates() {
   const h = new Date();
@@ -18,9 +19,10 @@ function defaultDates() {
   return { desde: d.toISOString().slice(0, 10), hasta: h.toISOString().slice(0, 10) };
 }
 
-
 export function VentasPeriodoReport() {
   const { formatCurrency } = useFormatters();
+  const t = useTranslations('reports.ventasPeriodo');
+  const tc = useTranslations('reports.common');
   const fmt = (n: number) => formatCurrency(n);
   const [dates, setDates] = useState(defaultDates);
   const ct = useChartTheme();
@@ -30,18 +32,18 @@ export function VentasPeriodoReport() {
   const chartRef = useRef<HTMLDivElement>(null);
   const { exportPDF, exporting } = useReportExport({
     fileName: 'ventas-periodo',
-    title: 'Ventas por Período',
+    title: t('totalSales'),
     dateRange: dates,
     kpis: data ? [
-      { label: 'Total Ventas', value: fmt(data.totales.totalVentas) },
-      { label: 'Pedidos', value: data.totales.cantidadPedidos },
-      { label: 'Ticket Promedio', value: fmt(data.totales.ticketPromedio) },
+      { label: t('totalSales'), value: fmt(data.totales.totalVentas) },
+      { label: t('orders'), value: data.totales.cantidadPedidos },
+      { label: t('avgTicket'), value: fmt(data.totales.ticketPromedio) },
     ] : undefined,
     chartRef,
     table: data ? {
-      headers: ['Período', 'Pedidos', 'Total Ventas', 'Ticket Promedio'],
+      headers: [t('periodCol'), t('orders'), t('totalSales'), t('avgTicket')],
       rows: data.periodos.map(p => [p.fecha, p.cantidadPedidos, fmt(p.totalVentas), fmt(p.ticketPromedio)]),
-      footerRow: ['TOTAL', data.totales.cantidadPedidos, fmt(data.totales.totalVentas), fmt(data.totales.ticketPromedio)],
+      footerRow: [tc('total'), data.totales.cantidadPedidos, fmt(data.totales.totalVentas), fmt(data.totales.ticketPromedio)],
     } : undefined,
   });
 
@@ -50,7 +52,7 @@ export function VentasPeriodoReport() {
       setLoading(true);
       const res = await getVentasPeriodo({ ...dates, agrupacion });
       setData(res);
-    } catch { toast.error('Error al cargar reporte'); }
+    } catch { toast.error(tc('errorLoading')); }
     finally { setLoading(false); }
   }, [dates, agrupacion]);
 
@@ -58,21 +60,21 @@ export function VentasPeriodoReport() {
   useEffect(() => { fetch(); }, []);
 
   const columns: ReportColumn<VentaPeriodo>[] = [
-    { key: 'fecha', header: 'Período', sortable: true },
-    { key: 'cantidadPedidos', header: 'Pedidos', align: 'right', sortable: true },
-    { key: 'totalVentas', header: 'Total Ventas', align: 'right', sortable: true, render: (r) => fmt(r.totalVentas) },
-    { key: 'ticketPromedio', header: 'Ticket Promedio', align: 'right', sortable: true, render: (r) => fmt(r.ticketPromedio) },
+    { key: 'fecha', header: t('periodCol'), sortable: true },
+    { key: 'cantidadPedidos', header: t('orders'), align: 'right', sortable: true },
+    { key: 'totalVentas', header: t('totalSales'), align: 'right', sortable: true, render: (r) => fmt(r.totalVentas) },
+    { key: 'ticketPromedio', header: t('avgTicket'), align: 'right', sortable: true, render: (r) => fmt(r.ticketPromedio) },
   ];
 
   return (
     <div className="space-y-4">
       <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={fetch} loading={loading} onExportPDF={data ? exportPDF : undefined} exporting={exporting}>
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-600">Agrupar por</label>
+          <label className="text-xs font-medium text-gray-600">{t('groupBy')}</label>
           <select value={agrupacion} onChange={e => setAgrupacion(e.target.value as 'dia' | 'semana' | 'mes')} className="px-3 py-2 text-sm border border-gray-300 rounded-md">
-            <option value="dia">Día</option>
-            <option value="semana">Semana</option>
-            <option value="mes">Mes</option>
+            <option value="dia">{t('day')}</option>
+            <option value="semana">{t('week')}</option>
+            <option value="mes">{t('month')}</option>
           </select>
         </div>
       </ReportFilters>
@@ -80,9 +82,9 @@ export function VentasPeriodoReport() {
       {data && (
         <>
           <ReportKPICards cards={[
-            { label: 'Total Ventas', value: fmt(data.totales.totalVentas), color: 'green' },
-            { label: 'Pedidos', value: data.totales.cantidadPedidos, color: 'blue' },
-            { label: 'Ticket Promedio', value: fmt(data.totales.ticketPromedio), color: 'amber' },
+            { label: t('totalSales'), value: fmt(data.totales.totalVentas), color: 'green' },
+            { label: t('orders'), value: data.totales.cantidadPedidos, color: 'blue' },
+            { label: t('avgTicket'), value: fmt(data.totales.ticketPromedio), color: 'amber' },
           ]} />
 
           {data.periodos.length > 0 && (
@@ -93,7 +95,7 @@ export function VentasPeriodoReport() {
                     <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
                     <XAxis dataKey="fecha" tick={{ fontSize: 11 }} />
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} />
-                    <Tooltip formatter={(v) => [fmt(Number(v)), 'Ventas']} />
+                    <Tooltip formatter={(v) => [fmt(Number(v)), t('salesLabel')]} />
                     <Line type="monotone" dataKey="totalVentas" stroke="#16a34a" strokeWidth={2} dot={{ r: 3 }} />
                   </LineChart>
                 ) : (
@@ -101,7 +103,7 @@ export function VentasPeriodoReport() {
                     <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
                     <XAxis dataKey="fecha" tick={{ fontSize: 11 }} />
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} />
-                    <Tooltip formatter={(v) => [fmt(Number(v)), 'Ventas']} />
+                    <Tooltip formatter={(v) => [fmt(Number(v)), t('salesLabel')]} />
                     <Bar dataKey="totalVentas" fill="#16a34a" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 )}
@@ -112,7 +114,7 @@ export function VentasPeriodoReport() {
           <ReportTable
             data={data.periodos as unknown as Record<string, unknown>[]}
             columns={columns as unknown as ReportColumn<Record<string, unknown>>[]}
-            footerRow={{ fecha: 'TOTAL', cantidadPedidos: data.totales.cantidadPedidos, totalVentas: fmt(data.totales.totalVentas), ticketPromedio: fmt(data.totales.ticketPromedio) }}
+            footerRow={{ fecha: tc('total'), cantidadPedidos: data.totales.cantidadPedidos, totalVentas: fmt(data.totales.totalVentas), ticketPromedio: fmt(data.totales.ticketPromedio) }}
           />
         </>
       )}

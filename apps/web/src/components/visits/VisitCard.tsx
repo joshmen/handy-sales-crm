@@ -1,4 +1,7 @@
+'use client';
+
 import React from 'react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ClienteVisitaListaDto, ResultadoVisita, TipoVisita } from '@/types/visits';
@@ -23,46 +26,22 @@ interface VisitCardProps {
   className?: string;
 }
 
-const resultadoConfig: Record<ResultadoVisita, { label: string; color: string; dotColor: string }> = {
-  [ResultadoVisita.Pendiente]: {
-    label: 'Pendiente',
-    color: 'bg-yellow-100 text-yellow-800',
-    dotColor: 'bg-yellow-400',
-  },
-  [ResultadoVisita.Venta]: {
-    label: 'Con Venta',
-    color: 'bg-green-100 text-green-800',
-    dotColor: 'bg-green-400',
-  },
-  [ResultadoVisita.SinVenta]: {
-    label: 'Sin Venta',
-    color: 'bg-gray-100 text-gray-800',
-    dotColor: 'bg-gray-400',
-  },
-  [ResultadoVisita.NoEncontrado]: {
-    label: 'No Encontrado',
-    color: 'bg-orange-100 text-orange-800',
-    dotColor: 'bg-orange-400',
-  },
-  [ResultadoVisita.Reprogramada]: {
-    label: 'Reprogramada',
-    color: 'bg-blue-100 text-blue-800',
-    dotColor: 'bg-blue-400',
-  },
-  [ResultadoVisita.Cancelada]: {
-    label: 'Cancelada',
-    color: 'bg-red-100 text-red-800',
-    dotColor: 'bg-red-400',
-  },
+const resultadoColorConfig: Record<ResultadoVisita, { key: string; color: string; dotColor: string }> = {
+  [ResultadoVisita.Pendiente]: { key: 'pending', color: 'bg-yellow-100 text-yellow-800', dotColor: 'bg-yellow-400' },
+  [ResultadoVisita.Venta]: { key: 'withSale', color: 'bg-green-100 text-green-800', dotColor: 'bg-green-400' },
+  [ResultadoVisita.SinVenta]: { key: 'noSale', color: 'bg-gray-100 text-gray-800', dotColor: 'bg-gray-400' },
+  [ResultadoVisita.NoEncontrado]: { key: 'notFound', color: 'bg-orange-100 text-orange-800', dotColor: 'bg-orange-400' },
+  [ResultadoVisita.Reprogramada]: { key: 'rescheduled', color: 'bg-blue-100 text-blue-800', dotColor: 'bg-blue-400' },
+  [ResultadoVisita.Cancelada]: { key: 'cancelled', color: 'bg-red-100 text-red-800', dotColor: 'bg-red-400' },
 };
 
-const tipoVisitaConfig: Record<TipoVisita, { label: string; color: string }> = {
-  [TipoVisita.Rutina]: { label: 'Rutina', color: 'text-blue-600' },
-  [TipoVisita.Cobranza]: { label: 'Cobranza', color: 'text-green-600' },
-  [TipoVisita.Entrega]: { label: 'Entrega', color: 'text-purple-600' },
-  [TipoVisita.Prospeccion]: { label: 'Prospección', color: 'text-orange-600' },
-  [TipoVisita.Seguimiento]: { label: 'Seguimiento', color: 'text-cyan-600' },
-  [TipoVisita.Otro]: { label: 'Otro', color: 'text-gray-600' },
+const tipoVisitaColorConfig: Record<TipoVisita, { key: string; color: string }> = {
+  [TipoVisita.Rutina]: { key: 'routine', color: 'text-blue-600' },
+  [TipoVisita.Cobranza]: { key: 'collection', color: 'text-green-600' },
+  [TipoVisita.Entrega]: { key: 'delivery', color: 'text-purple-600' },
+  [TipoVisita.Prospeccion]: { key: 'prospecting', color: 'text-orange-600' },
+  [TipoVisita.Seguimiento]: { key: 'followUp', color: 'text-cyan-600' },
+  [TipoVisita.Otro]: { key: 'other', color: 'text-gray-600' },
 };
 
 export const VisitCard: React.FC<VisitCardProps> = ({
@@ -72,8 +51,18 @@ export const VisitCard: React.FC<VisitCardProps> = ({
   onCheckOut,
   className = '',
 }) => {
-  const resultado = resultadoConfig[visit.resultado];
-  const tipoVisita = tipoVisitaConfig[visit.tipoVisita];
+  const tr = useTranslations('visits.results');
+  const tt = useTranslations('visits.types');
+  const getResultado = (val: ResultadoVisita) => {
+    const cfg = resultadoColorConfig[val] ?? resultadoColorConfig[ResultadoVisita.Pendiente];
+    return { label: tr(cfg.key), color: cfg.color, dotColor: cfg.dotColor };
+  };
+  const getTipo = (val: TipoVisita) => {
+    const cfg = tipoVisitaColorConfig[val] ?? tipoVisitaColorConfig[TipoVisita.Otro];
+    return { label: tt(cfg.key), color: cfg.color };
+  };
+  const resultado = getResultado(visit.resultado);
+  const tipoVisita = getTipo(visit.tipoVisita);
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return '-';

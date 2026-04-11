@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { routeService, RouteDetail, RutaCargaItem, PedidoAsignado, ESTADO_RUTA, ESTADO_RUTA_LABELS, ESTADO_RUTA_COLORS } from '@/services/api/routes';
+import { routeService, RouteDetail, RutaCargaItem, PedidoAsignado, ESTADO_RUTA, ESTADO_RUTA_KEYS, ESTADO_RUTA_COLORS } from '@/services/api/routes';
 import { api } from '@/lib/api';
 import { toast } from '@/hooks/useToast';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
@@ -22,6 +22,7 @@ import {
   User,
 } from 'lucide-react';
 import { useFormatters } from '@/hooks/useFormatters';
+import { useTranslations } from 'next-intl';
 
 interface ProductoOption {
   id: number;
@@ -39,6 +40,10 @@ interface PedidoOption {
 
 export default function LoadInventoryPage() {
   const { formatCurrency, formatDate } = useFormatters();
+  const t = useTranslations('routes.load');
+  const tr = useTranslations('routes');
+  const ts = useTranslations('routes.status');
+  const tc = useTranslations('common');
   const params = useParams();
   const router = useRouter();
   const rutaId = Number(params.id);
@@ -81,7 +86,7 @@ export default function LoadInventoryPage() {
       setComentarios(rutaData.comentariosCarga || '');
     } catch (err) {
       console.error('Error:', err);
-      toast.error('Error al cargar datos de la ruta');
+      toast.error(t('errorLoadingData'));
     } finally {
       setLoading(false);
     }
@@ -105,9 +110,9 @@ export default function LoadInventoryPage() {
     try {
       setSaving(true);
       await routeService.updateEfectivoInicial(rutaId, parseFloat(efectivoInicial) || 0, comentarios || undefined);
-      toast.success('Efectivo inicial actualizado');
+      toast.success(t('cashUpdated'));
     } catch (_err) {
-      toast.error('Error al guardar efectivo');
+      toast.error(t('errorSavingCash'));
     } finally {
       setSaving(false);
     }
@@ -115,7 +120,7 @@ export default function LoadInventoryPage() {
 
   const handleAddProducto = async () => {
     if (!selectedProducto || !cantidadVenta) {
-      toast.error('Selecciona un producto y cantidad');
+      toast.error(t('selectProductAndQuantity'));
       return;
     }
     try {
@@ -125,25 +130,25 @@ export default function LoadInventoryPage() {
         cantidad: parseInt(cantidadVenta),
         precioUnitario: parseFloat(precioVenta) || prod?.precioBase || 0,
       });
-      toast.success('Producto agregado');
+      toast.success(t('productAdded'));
       setSelectedProducto('');
       setCantidadVenta('1');
       setPrecioVenta('');
       const updated = await routeService.getCarga(rutaId);
       setCarga(updated);
     } catch (err: unknown) {
-      toast.error((err instanceof Error ? err.message : null) || 'Error al agregar producto');
+      toast.error((err instanceof Error ? err.message : null) || t('errorAddingProduct'));
     }
   };
 
   const handleRemoveProducto = async (productoId: number) => {
     try {
       await routeService.removeProductoCarga(rutaId, productoId);
-      toast.success('Producto removido');
+      toast.success(t('productRemoved'));
       const updated = await routeService.getCarga(rutaId);
       setCarga(updated);
     } catch (_err) {
-      toast.error('Error al remover producto');
+      toast.error(t('errorRemovingProduct'));
     }
   };
 
@@ -163,7 +168,7 @@ export default function LoadInventoryPage() {
   const handleAddPedido = async (pedidoId: number) => {
     try {
       await routeService.addPedido(rutaId, pedidoId);
-      toast.success('Pedido asignado');
+      toast.success(t('orderAssigned'));
       setIsPedidoModalOpen(false);
       const [cargaData, pedidosData] = await Promise.all([
         routeService.getCarga(rutaId),
@@ -172,14 +177,14 @@ export default function LoadInventoryPage() {
       setCarga(cargaData);
       setPedidos(pedidosData);
     } catch (err: unknown) {
-      toast.error((err instanceof Error ? err.message : null) || 'Error al asignar pedido');
+      toast.error((err instanceof Error ? err.message : null) || t('errorAssigningOrder'));
     }
   };
 
   const handleRemovePedido = async (pedidoId: number) => {
     try {
       await routeService.removePedido(rutaId, pedidoId);
-      toast.success('Pedido removido');
+      toast.success(t('orderRemoved'));
       const [cargaData, pedidosData] = await Promise.all([
         routeService.getCarga(rutaId),
         routeService.getPedidosAsignados(rutaId),
@@ -187,21 +192,21 @@ export default function LoadInventoryPage() {
       setCarga(cargaData);
       setPedidos(pedidosData);
     } catch (_err) {
-      toast.error('Error al remover pedido');
+      toast.error(t('errorRemovingOrder'));
     }
   };
 
   const handleEnviarACarga = async () => {
-    if (!confirm('Se enviará la carga al vendedor. ¿Continuar?')) return;
+    if (!confirm(t('confirmSendToLoad'))) return;
     try {
       setSending(true);
       // Save efectivo first
       await routeService.updateEfectivoInicial(rutaId, parseFloat(efectivoInicial) || 0, comentarios || undefined);
       await routeService.enviarACarga(rutaId);
-      toast.success('Ruta enviada a carga exitosamente');
+      toast.success(t('sentSuccess'));
       router.push('/routes');
     } catch (err: unknown) {
-      toast.error((err instanceof Error ? err.message : null) || 'Error al enviar a carga');
+      toast.error((err instanceof Error ? err.message : null) || t('errorSending'));
     } finally {
       setSending(false);
     }
@@ -220,7 +225,7 @@ export default function LoadInventoryPage() {
       <div className="flex items-center justify-center h-full">
         <div className="flex flex-col items-center gap-2">
           <Loader2 className="h-8 w-8 animate-spin text-green-600" />
-          <span className="text-sm text-gray-500">Cargando...</span>
+          <span className="text-sm text-gray-500">{t('loadingData')}</span>
         </div>
       </div>
     );
@@ -229,12 +234,12 @@ export default function LoadInventoryPage() {
   if (!ruta) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-gray-500">Ruta no encontrada</p>
+        <p className="text-gray-500">{t('notFound')}</p>
       </div>
     );
   }
 
-  const estadoBadge = ESTADO_RUTA_LABELS[ruta.estado] || 'Desconocido';
+  const estadoBadge = ESTADO_RUTA_KEYS[ruta.estado] ? ts(ESTADO_RUTA_KEYS[ruta.estado]) : ts('unknown');
   const estadoColor = ESTADO_RUTA_COLORS[ruta.estado] || 'bg-gray-100 text-gray-800';
 
   return (
@@ -242,15 +247,15 @@ export default function LoadInventoryPage() {
       {/* Header */}
       <div className="bg-white px-8 py-6 border-b border-gray-200">
         <Breadcrumb items={[
-          { label: 'Rutas', href: '/routes' },
+          { label: tr('title'), href: '/routes' },
           { label: ruta.nombre, href: `/routes/${ruta.id}` },
-          { label: 'Cargar inventario' },
+          { label: t('breadcrumbLabel') },
         ]} />
 
         <div className="flex items-center justify-between mt-2">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold text-gray-900">
-              Cargar inventario de ruta
+              {t('title')}
             </h1>
             <span className={`inline-flex px-2.5 py-0.5 text-[10px] font-medium rounded-full ${estadoColor}`}>
               {estadoBadge}
@@ -264,7 +269,7 @@ export default function LoadInventoryPage() {
                 className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors disabled:opacity-50"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                Guardar
+                {tc('save')}
               </button>
             )}
             <button
@@ -281,15 +286,15 @@ export default function LoadInventoryPage() {
         <div data-tour="routes-load-stats" className="flex items-center gap-6 mt-3">
           <div className="flex items-center gap-2">
             <Truck className="w-4 h-4 text-gray-400" />
-            <span className="text-xs text-gray-600">Entregas: <strong>{totalEntregas}</strong></span>
+            <span className="text-xs text-gray-600">{t('deliveries')} <strong>{totalEntregas}</strong></span>
           </div>
           <div className="flex items-center gap-2">
             <Package className="w-4 h-4 text-gray-400" />
-            <span className="text-xs text-gray-600">Productos: <strong>{totalProductos}</strong></span>
+            <span className="text-xs text-gray-600">{t('products')} <strong>{totalProductos}</strong></span>
           </div>
           <div className="flex items-center gap-2">
             <DollarSign className="w-4 h-4 text-gray-400" />
-            <span className="text-xs text-gray-600">Total asignado: <strong>{formatCurrency(totalAsignado)}</strong></span>
+            <span className="text-xs text-gray-600">{t('totalAssigned')} <strong>{formatCurrency(totalAsignado)}</strong></span>
           </div>
         </div>
       </div>
@@ -298,7 +303,7 @@ export default function LoadInventoryPage() {
       <div className="flex-1 px-8 py-6 space-y-6 overflow-auto">
         {/* Section 1: User & Cash */}
         <div data-tour="routes-load-user-section" className="bg-white border border-gray-200 rounded-lg p-6">
-          <h2 className="text-sm font-semibold text-gray-900 mb-4">Asigna la ruta a un usuario</h2>
+          <h2 className="text-sm font-semibold text-gray-900 mb-4">{t('assignRouteToUser')}</h2>
 
           <div className="flex items-center gap-4 mb-4 p-3 bg-gray-50 rounded-lg">
             <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
@@ -306,13 +311,13 @@ export default function LoadInventoryPage() {
             </div>
             <div>
               <p className="text-sm font-medium text-gray-900">{ruta.usuarioNombre}</p>
-              <p className="text-xs text-gray-500">Vendedor asignado</p>
+              <p className="text-xs text-gray-500">{t('assignedVendor')}</p>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Efectivo inicial ($)</label>
+              <label className="block text-xs font-medium text-gray-700 mb-1">{t('initialCash')}</label>
               <input
                 type="number"
                 value={efectivoInicial}
@@ -323,12 +328,12 @@ export default function LoadInventoryPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Comentarios</label>
+              <label className="block text-xs font-medium text-gray-700 mb-1">{t('comments')}</label>
               <input
                 type="text"
                 value={comentarios}
                 onChange={(e) => setComentarios(e.target.value)}
-                placeholder="Comentarios de la carga..."
+                placeholder={t('commentsPlaceholder')}
                 disabled={isReadOnly}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-500"
               />
@@ -340,7 +345,7 @@ export default function LoadInventoryPage() {
         <div data-tour="routes-load-pedidos" className="bg-white border border-gray-200 rounded-lg p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold text-gray-900">Asignar pedidos para entrega</h2>
+              <h2 className="text-sm font-semibold text-gray-900">{t('assignOrdersForDelivery')}</h2>
               <span className="inline-flex px-2 py-0.5 text-[10px] font-medium rounded-full bg-blue-100 text-blue-700">
                 {pedidos.length}
               </span>
@@ -351,19 +356,19 @@ export default function LoadInventoryPage() {
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-600 border border-green-200 rounded hover:bg-green-50 transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" />
-                Agregar pedidos
+                {t('addOrders')}
               </button>
             )}
           </div>
 
           {pedidos.length === 0 ? (
-            <p className="text-xs text-gray-400 text-center py-4">No hay pedidos asignados</p>
+            <p className="text-xs text-gray-400 text-center py-4">{t('noOrdersAssigned')}</p>
           ) : (
             <div className="space-y-2">
               {pedidos.map((p) => (
                 <div key={p.id} className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg">
                   <div>
-                    <span className="text-[13px] font-medium text-gray-900">Pedido #{p.pedidoId}</span>
+                    <span className="text-[13px] font-medium text-gray-900">{t('orderNumber', { id: p.pedidoId })}</span>
                     <span className="text-xs text-gray-500 ml-2">{p.clienteNombre}</span>
                     <span className="text-xs text-gray-400 ml-2">{formatCurrency(p.montoTotal)}</span>
                   </div>
@@ -384,11 +389,11 @@ export default function LoadInventoryPage() {
         {/* Section 3: Add Products (hidden when read-only) */}
         {!isReadOnly && (
         <div data-tour="routes-load-add-products" className="bg-white border border-gray-200 rounded-lg p-6">
-          <h2 className="text-sm font-semibold text-gray-900 mb-4">Asignar productos para venta</h2>
+          <h2 className="text-sm font-semibold text-gray-900 mb-4">{t('assignProductsForSale')}</h2>
 
           <div className="flex items-end gap-3">
             <div className="flex-1">
-              <label className="block text-xs font-medium text-gray-700 mb-1">Producto</label>
+              <label className="block text-xs font-medium text-gray-700 mb-1">{t('productLabel')}</label>
               <SearchableSelect
                 options={productos.map(p => ({ value: p.id.toString(), label: `${p.nombre} (${p.codigoBarra})` }))}
                 value={selectedProducto}
@@ -397,11 +402,11 @@ export default function LoadInventoryPage() {
                   const prod = productos.find(p => p.id.toString() === String(val));
                   if (prod) setPrecioVenta(prod.precioBase.toString());
                 }}
-                placeholder="Buscar producto..."
+                placeholder={t('searchProduct')}
               />
             </div>
             <div className="w-24">
-              <label className="block text-xs font-medium text-gray-700 mb-1">Cantidad</label>
+              <label className="block text-xs font-medium text-gray-700 mb-1">{t('quantity')}</label>
               <input
                 type="number"
                 value={cantidadVenta}
@@ -411,7 +416,7 @@ export default function LoadInventoryPage() {
               />
             </div>
             <div className="w-28">
-              <label className="block text-xs font-medium text-gray-700 mb-1">Precio</label>
+              <label className="block text-xs font-medium text-gray-700 mb-1">{t('price')}</label>
               <input
                 type="number"
                 value={precioVenta}
@@ -425,7 +430,7 @@ export default function LoadInventoryPage() {
               className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
-              Agregar
+              {t('add')}
             </button>
           </div>
         </div>
@@ -433,22 +438,22 @@ export default function LoadInventoryPage() {
 
         {/* Section 4: Consolidated Table */}
         <div data-tour="routes-load-consolidated" className="bg-white border border-gray-200 rounded-lg p-6">
-          <h2 className="text-sm font-semibold text-gray-900 mb-4">Total asignado a la ruta (pedidos y venta)</h2>
+          <h2 className="text-sm font-semibold text-gray-900 mb-4">{t('totalAssignedToRoute')}</h2>
 
           {carga.length === 0 ? (
-            <p className="text-xs text-gray-400 text-center py-8">No hay productos cargados a esta ruta</p>
+            <p className="text-xs text-gray-400 text-center py-8">{t('noProductsLoaded')}</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="text-left py-2 px-3 text-xs font-semibold text-gray-600">Producto</th>
-                    <th className="text-center py-2 px-3 text-xs font-semibold text-gray-600">Asig. entrega</th>
-                    <th className="text-center py-2 px-3 text-xs font-semibold text-gray-600">Asig. venta</th>
-                    <th className="text-center py-2 px-3 text-xs font-semibold text-gray-600">Total</th>
-                    <th className="text-center py-2 px-3 text-xs font-semibold text-gray-600">Disponible</th>
-                    <th className="text-right py-2 px-3 text-xs font-semibold text-gray-600">Precio</th>
-                    <th className="text-right py-2 px-3 text-xs font-semibold text-gray-600">Total $</th>
+                    <th className="text-left py-2 px-3 text-xs font-semibold text-gray-600">{t('columnProduct')}</th>
+                    <th className="text-center py-2 px-3 text-xs font-semibold text-gray-600">{t('columnDeliveryAssigned')}</th>
+                    <th className="text-center py-2 px-3 text-xs font-semibold text-gray-600">{t('columnSaleAssigned')}</th>
+                    <th className="text-center py-2 px-3 text-xs font-semibold text-gray-600">{t('columnTotal')}</th>
+                    <th className="text-center py-2 px-3 text-xs font-semibold text-gray-600">{t('columnAvailable')}</th>
+                    <th className="text-right py-2 px-3 text-xs font-semibold text-gray-600">{t('columnPrice')}</th>
+                    <th className="text-right py-2 px-3 text-xs font-semibold text-gray-600">{t('columnTotalAmount')}</th>
                     <th className="text-center py-2 px-3 text-xs font-semibold text-gray-600 w-12"></th>
                   </tr>
                 </thead>
@@ -496,7 +501,7 @@ export default function LoadInventoryPage() {
                 </tbody>
                 <tfoot>
                   <tr className="border-t-2 border-gray-200">
-                    <td colSpan={3} className="py-2 px-3 text-right text-xs font-semibold text-gray-600">Totales:</td>
+                    <td colSpan={3} className="py-2 px-3 text-right text-xs font-semibold text-gray-600">{t('totalsLabel')}</td>
                     <td className="py-2 px-3 text-center text-[13px] font-bold text-gray-900">
                       {carga.reduce((s, c) => s + c.cantidadTotal, 0)}
                     </td>
@@ -523,7 +528,7 @@ export default function LoadInventoryPage() {
               className="flex items-center gap-2 px-6 py-3 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
             >
               {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              Enviar a carga
+              {t('sendToLoad')}
             </button>
           </div>
         )}
@@ -533,7 +538,7 @@ export default function LoadInventoryPage() {
       <Modal
         isOpen={isPedidoModalOpen}
         onClose={() => setIsPedidoModalOpen(false)}
-        title="Asignar pedidos para entrega"
+        title={t('assignOrdersForDelivery')}
         size="lg"
       >
         <div className="space-y-4">
@@ -543,7 +548,7 @@ export default function LoadInventoryPage() {
               type="text"
               value={pedidoSearch}
               onChange={(e) => setPedidoSearch(e.target.value)}
-              placeholder="Buscar pedido..."
+              placeholder={t('searchOrder')}
               className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
             />
           </div>
@@ -569,7 +574,7 @@ export default function LoadInventoryPage() {
                     <div key={p.id} className="flex items-center justify-between px-3 py-2 border border-gray-100 rounded-lg hover:bg-gray-50">
                       <div>
                         <span className="text-[13px] font-medium text-gray-900">#{p.numeroPedido || p.id}</span>
-                        <span className="text-xs text-gray-500 ml-2">{p.clienteNombre || 'Sin cliente'}</span>
+                        <span className="text-xs text-gray-500 ml-2">{p.clienteNombre || t('noClient')}</span>
                         <span className="text-xs text-gray-400 ml-2">{formatCurrency(p.total || 0)}</span>
                       </div>
                       <button
@@ -581,13 +586,13 @@ export default function LoadInventoryPage() {
                             : 'bg-success text-success-foreground hover:bg-success/90'
                         }`}
                       >
-                        {alreadyAssigned ? 'Asignado' : 'Asignar'}
+                        {alreadyAssigned ? t('assigned') : t('assign')}
                       </button>
                     </div>
                   );
                 })}
               {availablePedidos.length === 0 && (
-                <p className="text-xs text-gray-400 text-center py-4">No hay pedidos confirmados disponibles</p>
+                <p className="text-xs text-gray-400 text-center py-4">{t('noConfirmedOrders')}</p>
               )}
             </div>
           )}

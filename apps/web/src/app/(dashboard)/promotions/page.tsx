@@ -51,8 +51,8 @@ interface ProductoSimple {
 const promotionSchema = z.object({
   nombre: z.string().min(1, 'nameRequired'),
   descripcion: z.string(),
-  productoIds: z.array(z.number()).min(1, 'Selecciona al menos un producto'),
-  descuentoPorcentaje: z.number().min(1, 'Mínimo 1%').max(100, 'Máximo 100%'),
+  productoIds: z.array(z.number()).min(1, 'selectProductForDiscount'),
+  descuentoPorcentaje: z.number().min(1, 'minOnePercent').max(100, 'discountMax100'),
   fechaInicio: z.string().min(1, 'startDateRequired'),
   fechaFin: z.string().min(1, 'endDateRequired'),
 }).refine(data => !data.fechaFin || !data.fechaInicio || data.fechaFin > data.fechaInicio, {
@@ -476,7 +476,7 @@ export default function PromotionsPage() {
         <BatchActionBar
           selectedCount={batch.selectedCount}
           totalItems={totalItems}
-          entityLabel="promociones"
+          entityLabel={t('title').toLowerCase()}
           onActivate={() => batch.openBatchAction('activate')}
           onDeactivate={() => batch.openBatchAction('deactivate')}
           onClear={batch.handleClearSelection}
@@ -563,7 +563,7 @@ export default function PromotionsPage() {
         onConfirm={handleBatchToggle}
         action={batch.batchAction}
         selectedCount={batch.selectedCount}
-        entityLabel="promocion"
+        entityLabel={t('title').toLowerCase()}
         loading={batch.batchLoading}
         consequenceActivate={t('batchConsequenceActivate')}
         consequenceDeactivate={t('batchConsequenceDeactivate')}
@@ -597,7 +597,7 @@ export default function PromotionsPage() {
             <input
               type="text"
               {...register('nombre')}
-              placeholder="Ej: Promo Verano 2026"
+              placeholder={t('namePlaceholder')}
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
             {errors.nombre && <FieldError message={errors.nombre.message} />}
@@ -672,7 +672,7 @@ export default function PromotionsPage() {
               min="1"
               max="100"
               {...register('descuentoPorcentaje', { valueAsNumber: true })}
-              placeholder="Ej: 15"
+              placeholder={t('discountPlaceholder')}
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
             {errors.descuentoPorcentaje && <FieldError message={errors.descuentoPorcentaje.message} />}
@@ -706,7 +706,7 @@ export default function PromotionsPage() {
         isOpen={isImportOpen}
         onClose={() => setIsImportOpen(false)}
         entity="promociones"
-        entityLabel="promociones"
+        entityLabel={t('title').toLowerCase()}
         onSuccess={() => fetchPromotions()}
       />
     </PageHeader>

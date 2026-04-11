@@ -91,9 +91,9 @@ export const VisitList: React.FC<VisitListProps> = ({
           visit.clienteDireccion.toLowerCase().includes(searchTerm.toLowerCase()));
 
       // Filtros específicos
-      const matchesTipo = tipoFilter === '' || visit.tipoVisita === tipoFilter;
+      const matchesTipo = tipoFilter === '' || Number(visit.tipoVisita) === Number(tipoFilter);
       const matchesResultado =
-        resultadoFilter === '' || visit.resultado === resultadoFilter;
+        resultadoFilter === '' || Number(visit.resultado) === Number(resultadoFilter);
       const matchesDate = filterByDate(visit, dateFilter);
 
       return matchesSearch && matchesTipo && matchesResultado && matchesDate;

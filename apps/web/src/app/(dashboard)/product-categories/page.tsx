@@ -326,7 +326,7 @@ export default function ProductCategoriesPage() {
         <BatchActionBar
           selectedCount={batch.selectedCount}
           totalItems={totalItems}
-          entityLabel="categorías"
+          entityLabel={t('title').toLowerCase()}
           onActivate={() => batch.openBatchAction('activate')}
           onDeactivate={() => batch.openBatchAction('deactivate')}
           onClear={batch.handleClearSelection}
@@ -422,7 +422,7 @@ export default function ProductCategoriesPage() {
         isOpen={isImportOpen}
         onClose={() => setIsImportOpen(false)}
         entity="categorias-productos"
-        entityLabel="categorías de productos"
+        entityLabel={t('title').toLowerCase()}
         onSuccess={() => loadCategories()}
       />
 
@@ -433,7 +433,7 @@ export default function ProductCategoriesPage() {
         onConfirm={handleBatchToggle}
         action={batch.batchAction}
         selectedCount={batch.selectedCount}
-        entityLabel="categorías"
+        entityLabel={t('title').toLowerCase()}
         loading={batch.batchLoading}
       />
 

@@ -10,6 +10,7 @@ import { getVentasZona, VentaZona, VentasZonaResponse } from '@/services/api/rep
 import { toast } from '@/hooks/useToast';
 import { useReportExport } from '@/hooks/useReportExport';
 import { useFormatters } from '@/hooks/useFormatters';
+import { useTranslations } from 'next-intl';
 
 function defaultDates() {
   const h = new Date();
@@ -22,6 +23,8 @@ const COLORS = ['#16a34a', '#2563eb', '#d97706', '#dc2626', '#7c3aed', '#0891b2'
 
 export function VentasZonaReport() {
   const { formatCurrency } = useFormatters();
+  const t = useTranslations('reports.ventasZona');
+  const tc = useTranslations('reports.common');
   const fmt = (n: number) => formatCurrency(n);
   const [dates, setDates] = useState(defaultDates);
   const [data, setData] = useState<VentasZonaResponse | null>(null);
@@ -29,18 +32,18 @@ export function VentasZonaReport() {
   const chartRef = useRef<HTMLDivElement>(null);
   const { exportPDF, exporting } = useReportExport({
     fileName: 'ventas-zona',
-    title: 'Ventas por Zona',
+    title: t('totalSales'),
     dateRange: dates,
     kpis: data ? [
-      { label: 'Total Ventas', value: fmt(data.totales.totalVentas) },
-      { label: 'Total Pedidos', value: data.totales.totalPedidos },
-      { label: 'Total Clientes', value: data.totales.totalClientes },
+      { label: t('totalSales'), value: fmt(data.totales.totalVentas) },
+      { label: t('totalOrders'), value: data.totales.totalPedidos },
+      { label: t('totalClients'), value: data.totales.totalClientes },
     ] : undefined,
     chartRef,
     table: data ? {
-      headers: ['Zona', 'Clientes', 'Pedidos', 'Ventas Totales'],
+      headers: [t('zone'), t('clients'), t('orders'), t('totalSalesCol')],
       rows: data.zonas.map(z => [z.nombre, z.totalClientes, z.pedidos, fmt(z.ventasTotales)]),
-      footerRow: ['TOTAL', data.totales.totalClientes, data.totales.totalPedidos, fmt(data.totales.totalVentas)],
+      footerRow: [tc('total'), data.totales.totalClientes, data.totales.totalPedidos, fmt(data.totales.totalVentas)],
     } : undefined,
   });
 
@@ -49,7 +52,7 @@ export function VentasZonaReport() {
       setLoading(true);
       const res = await getVentasZona(dates);
       setData(res);
-    } catch { toast.error('Error al cargar reporte'); }
+    } catch { toast.error(tc('errorLoading')); }
     finally { setLoading(false); }
   }, [dates]);
 
@@ -57,10 +60,10 @@ export function VentasZonaReport() {
   useEffect(() => { fetch(); }, []);
 
   const columns: ReportColumn<VentaZona>[] = [
-    { key: 'nombre', header: 'Zona', sortable: true },
-    { key: 'totalClientes', header: 'Clientes', align: 'right', sortable: true },
-    { key: 'pedidos', header: 'Pedidos', align: 'right', sortable: true },
-    { key: 'ventasTotales', header: 'Ventas Totales', align: 'right', sortable: true, render: (r) => fmt(r.ventasTotales) },
+    { key: 'nombre', header: t('zone'), sortable: true },
+    { key: 'totalClientes', header: t('clients'), align: 'right', sortable: true },
+    { key: 'pedidos', header: t('orders'), align: 'right', sortable: true },
+    { key: 'ventasTotales', header: t('totalSalesCol'), align: 'right', sortable: true, render: (r) => fmt(r.ventasTotales) },
   ];
 
   return (
@@ -70,9 +73,9 @@ export function VentasZonaReport() {
       {data && (
         <>
           <ReportKPICards cards={[
-            { label: 'Total Ventas', value: fmt(data.totales.totalVentas), color: 'green' },
-            { label: 'Total Pedidos', value: data.totales.totalPedidos, color: 'blue' },
-            { label: 'Total Clientes', value: data.totales.totalClientes, color: 'amber' },
+            { label: t('totalSales'), value: fmt(data.totales.totalVentas), color: 'green' },
+            { label: t('totalOrders'), value: data.totales.totalPedidos, color: 'blue' },
+            { label: t('totalClients'), value: data.totales.totalClientes, color: 'amber' },
           ]} />
 
           {data.zonas.length > 0 && (
@@ -103,7 +106,7 @@ export function VentasZonaReport() {
           <ReportTable
             data={data.zonas as unknown as Record<string, unknown>[]}
             columns={columns as unknown as ReportColumn<Record<string, unknown>>[]}
-            footerRow={{ nombre: 'TOTAL', totalClientes: data.totales.totalClientes, pedidos: data.totales.totalPedidos, ventasTotales: fmt(data.totales.totalVentas) }}
+            footerRow={{ nombre: tc('total'), totalClientes: data.totales.totalClientes, pedidos: data.totales.totalPedidos, ventasTotales: fmt(data.totales.totalVentas) }}
           />
         </>
       )}

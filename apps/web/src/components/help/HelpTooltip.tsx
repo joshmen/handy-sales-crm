@@ -15,7 +15,13 @@ export function HelpTooltip({ tooltipKey, className }: HelpTooltipProps) {
   const t = useTranslations('tooltips');
   // Try i18n first, fallback to hardcoded help-content
   let text: string;
-  try { text = t(tooltipKey); } catch { text = tooltips[tooltipKey]; }
+  try {
+    const translated = t(tooltipKey);
+    // next-intl returns the full key path when missing (e.g. "tooltips.total-quantity")
+    text = translated.startsWith('tooltips.') ? tooltips[tooltipKey] : translated;
+  } catch {
+    text = tooltips[tooltipKey];
+  }
   if (!text) return null;
 
   return (

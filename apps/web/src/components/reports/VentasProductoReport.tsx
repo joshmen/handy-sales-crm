@@ -10,6 +10,7 @@ import { getVentasProducto, VentasProductoResponse, VentaProducto } from '@/serv
 import { toast } from '@/hooks/useToast';
 import { useReportExport } from '@/hooks/useReportExport';
 import { useFormatters } from '@/hooks/useFormatters';
+import { useTranslations } from 'next-intl';
 
 function defaultDates() {
   const h = new Date();
@@ -23,6 +24,8 @@ type Tab = 'masVendidos' | 'mayorVenta' | 'sinVenta';
 
 export function VentasProductoReport() {
   const { formatCurrency } = useFormatters();
+  const tr = useTranslations('reports.ventasProducto');
+  const tc = useTranslations('reports.common');
   const fmt = (n: number) => formatCurrency(n);
   const [dates, setDates] = useState(defaultDates);
   const ct = useChartTheme();
@@ -32,16 +35,16 @@ export function VentasProductoReport() {
   const chartRef = useRef<HTMLDivElement>(null);
   const { exportPDF, exporting } = useReportExport({
     fileName: 'ventas-producto',
-    title: 'Ventas por Producto',
+    title: tr('totalSales'),
     dateRange: dates,
     kpis: data ? [
-      { label: 'Total Ventas', value: fmt(data.totalGeneral) },
-      { label: 'Productos Vendidos', value: data.masVendidos.length },
-      { label: 'Sin Venta', value: data.sinVenta.length },
+      { label: tr('totalSales'), value: fmt(data.totalGeneral) },
+      { label: tr('productsSold'), value: data.masVendidos.length },
+      { label: tr('noSale'), value: data.sinVenta.length },
     ] : undefined,
     chartRef,
     table: data ? {
-      headers: ['Producto', 'Cantidad', 'Total Ventas', '% del Total'],
+      headers: [tr('product'), tr('quantity'), tr('totalSalesCol'), tr('percentTotal')],
       rows: data.masVendidos.map(p => [p.nombre, p.cantidadVendida, fmt(p.totalVentas), `${p.porcentajeDelTotal}%`]),
     } : undefined,
   });
@@ -51,7 +54,7 @@ export function VentasProductoReport() {
       setLoading(true);
       const res = await getVentasProducto({ ...dates, top: 20 });
       setData(res);
-    } catch { toast.error('Error al cargar reporte'); }
+    } catch { toast.error(tc('errorLoading')); }
     finally { setLoading(false); }
   }, [dates]);
 
@@ -59,20 +62,20 @@ export function VentasProductoReport() {
   useEffect(() => { fetch(); }, []);
 
   const tabs: { key: Tab; label: string }[] = [
-    { key: 'masVendidos', label: 'Más Vendidos' },
-    { key: 'mayorVenta', label: 'Mayor Venta' },
-    { key: 'sinVenta', label: 'Sin Venta' },
+    { key: 'masVendidos', label: tr('topSelling') },
+    { key: 'mayorVenta', label: tr('topRevenue') },
+    { key: 'sinVenta', label: tr('noSale') },
   ];
 
   const productColumns: ReportColumn<VentaProducto>[] = [
-    { key: 'nombre', header: 'Producto', sortable: true },
-    { key: 'cantidadVendida', header: 'Cantidad', align: 'right', sortable: true },
-    { key: 'totalVentas', header: 'Total Ventas', align: 'right', sortable: true, render: (r) => fmt(r.totalVentas) },
-    { key: 'porcentajeDelTotal', header: '% del Total', align: 'right', sortable: true, render: (r) => `${r.porcentajeDelTotal}%` },
+    { key: 'nombre', header: tr('product'), sortable: true },
+    { key: 'cantidadVendida', header: tr('quantity'), align: 'right', sortable: true },
+    { key: 'totalVentas', header: tr('totalSalesCol'), align: 'right', sortable: true, render: (r) => fmt(r.totalVentas) },
+    { key: 'porcentajeDelTotal', header: tr('percentTotal'), align: 'right', sortable: true, render: (r) => `${r.porcentajeDelTotal}%` },
   ];
 
   const sinVentaColumns: ReportColumn<{ productoId: number; nombre: string }>[] = [
-    { key: 'nombre', header: 'Producto', sortable: true },
+    { key: 'nombre', header: tr('product'), sortable: true },
   ];
 
   const currentData = data ? (tab === 'sinVenta' ? data.sinVenta : data[tab]) : [];
@@ -85,9 +88,9 @@ export function VentasProductoReport() {
       {data && (
         <>
           <ReportKPICards cards={[
-            { label: 'Total Ventas', value: fmt(data.totalGeneral), color: 'green' },
-            { label: 'Productos Vendidos', value: data.masVendidos.length, color: 'blue' },
-            { label: 'Sin Venta', value: data.sinVenta.length, color: data.sinVenta.length > 0 ? 'red' : 'gray' },
+            { label: tr('totalSales'), value: fmt(data.totalGeneral), color: 'green' },
+            { label: tr('productsSold'), value: data.masVendidos.length, color: 'blue' },
+            { label: tr('noSale'), value: data.sinVenta.length, color: data.sinVenta.length > 0 ? 'red' : 'gray' },
           ]} />
 
           {/* Tabs */}
@@ -116,7 +119,7 @@ export function VentasProductoReport() {
                   <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
                   <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={v => tab === 'masVendidos' ? String(v) : `$${(v / 1000).toFixed(0)}k`} />
                   <YAxis type="category" dataKey="nombre" tick={{ fontSize: 10 }} width={150} />
-                  <Tooltip formatter={(v) => [tab === 'masVendidos' ? v : fmt(Number(v)), tab === 'masVendidos' ? 'Cantidad' : 'Ventas']} />
+                  <Tooltip formatter={(v) => [tab === 'masVendidos' ? v : fmt(Number(v)), tab === 'masVendidos' ? tr('quantity') : tr('totalSales')]} />
                   <Bar dataKey={tab === 'masVendidos' ? 'cantidadVendida' : 'totalVentas'} fill={tab === 'masVendidos' ? '#2563eb' : '#16a34a'} radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>

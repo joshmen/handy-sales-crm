@@ -64,7 +64,7 @@ const zoneFormSchema = z.object({
     const hasLng = data.centroLongitud !== undefined;
     return hasLat === hasLng;
   },
-  { message: 'Las coordenadas deben incluir tanto latitud como longitud', path: ['centroLongitud'] }
+  { message: 'coordinatesBothRequired', path: ['centroLongitud'] }
 );
 
 type ZoneFormData = z.infer<typeof zoneFormSchema>;
@@ -334,7 +334,7 @@ export default function ZonesPage() {
       await api.patch('/zonas/batch-toggle', { ids, activo });
 
       toast.success(
-        `${ids.length} zona${ids.length > 1 ? 's' : ''} ${activo ? 'activada' : 'desactivada'}${ids.length > 1 ? 's' : ''} exitosamente`
+        t('batchSuccess', { count: ids.length, action: activo ? tc('activate').toLowerCase() : tc('deactivate').toLowerCase() })
       );
 
       batch.completeBatch();
@@ -347,7 +347,7 @@ export default function ZonesPage() {
       }
     } catch (error: unknown) {
       console.error('Error en batch toggle:', error);
-      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Error al cambiar el estado de las zonas';
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || t('errorChangingStatus');
       toast.error(message);
       batch.setBatchLoading(false);
     }
@@ -379,7 +379,7 @@ export default function ZonesPage() {
             className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
           >
             <Map className="w-3.5 h-3.5 text-blue-500" />
-            <span className="hidden sm:inline">Mapa</span>
+            <span className="hidden sm:inline">{t('mapTitle')}</span>
           </button>
           <div className="relative" data-tour="zones-import-export">
             <button
@@ -387,7 +387,7 @@ export default function ZonesPage() {
               className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
             >
               <Download className="w-3.5 h-3.5 text-emerald-500" />
-              <span className="hidden sm:inline">Importar / Exportar</span>
+              <span className="hidden sm:inline">{tc('importExport')}</span>
               <ChevronDown className="w-3 h-3 text-gray-400" />
             </button>
             {showDataMenu && (
@@ -399,14 +399,14 @@ export default function ZonesPage() {
                     className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
                   >
                     <Download className="w-3.5 h-3.5 text-emerald-500" />
-                    Exportar CSV
+                    {tc('exportCsv')}
                   </button>
                   <button
                     onClick={() => { setShowDataMenu(false); setIsImportOpen(true); }}
                     className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
                   >
                     <Upload className="w-3.5 h-3.5 text-blue-500" />
-                    Importar CSV
+                    {tc('importCsv')}
                   </button>
                 </div>
               </>
@@ -434,7 +434,7 @@ export default function ZonesPage() {
             className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-success rounded-lg hover:bg-success/90 transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 text-white ${loading ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline">Actualizar</span>
+            <span className="hidden sm:inline">{tc('refresh')}</span>
           </button>
 
           <div data-tour="zones-toggle-inactive" className="ml-auto">
@@ -449,7 +449,7 @@ export default function ZonesPage() {
           <BatchActionBar
             selectedCount={batch.selectedCount}
             totalItems={totalZones}
-            entityLabel="zonas"
+            entityLabel={t('title').toLowerCase()}
             onActivate={() => batch.openBatchAction('activate')}
             onDeactivate={() => batch.openBatchAction('deactivate')}
             onClear={batch.handleClearSelection}
@@ -462,7 +462,7 @@ export default function ZonesPage() {
             {loading && (
               <div className="flex flex-col items-center justify-center py-12">
                 <Loader2 className="w-8 h-8 text-green-600 animate-spin mb-3" />
-                <span className="text-sm text-gray-500">Cargando zonas...</span>
+                <span className="text-sm text-gray-500">{t('loadingZones')}</span>
               </div>
             )}
 
@@ -514,7 +514,7 @@ export default function ZonesPage() {
                     </div>
                   </div>
 
-                  <ActiveToggle isActive={zone.isEnabled} onToggle={() => handleToggleActive(zone)} disabled={loading} isLoading={togglingId === zone.id} title={zone.isEnabled ? 'Desactivar zona' : 'Activar zona'} />
+                  <ActiveToggle isActive={zone.isEnabled} onToggle={() => handleToggleActive(zone)} disabled={loading} isLoading={togglingId === zone.id} title={zone.isEnabled ? tc('deactivate') : tc('activate')} />
                 </div>
 
                 {/* Row 2: Badges */}
@@ -532,7 +532,7 @@ export default function ZonesPage() {
                     className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors disabled:opacity-50"
                   >
                     <Pencil className="w-3.5 h-3.5 text-amber-400 hover:text-amber-600" />
-                    <span>Editar</span>
+                    <span>{tc('edit')}</span>
                   </button>
                   {deleteConfirmId === zone.id ? (
                     <div className="flex items-center gap-1">
@@ -569,24 +569,24 @@ export default function ZonesPage() {
                   ) : null}
                 </button>
               </div>
-              <div className="w-[40px] text-[11px] font-medium text-gray-500">Color</div>
-              <div className="flex-1 text-[11px] font-medium text-gray-500">Nombre</div>
-              <div className="w-[100px] text-[11px] font-medium text-gray-500 text-center">Clientes</div>
-              <div className="w-[80px] text-[11px] font-medium text-gray-500">Activa</div>
+              <div className="w-[40px] text-[11px] font-medium text-gray-500">{t('columns.color')}</div>
+              <div className="flex-1 text-[11px] font-medium text-gray-500">{t('columns.name')}</div>
+              <div className="w-[100px] text-[11px] font-medium text-gray-500 text-center">{t('columns.clients')}</div>
+              <div className="w-[80px] text-[11px] font-medium text-gray-500">{t('columns.active')}</div>
               <div className="w-16" />
             </div>
 
             {/* Table Body - With loading overlay */}
             <div className="relative min-h-[200px]">
               {/* Loading Overlay */}
-              <TableLoadingOverlay loading={loading} message="Cargando zonas..." />
+              <TableLoadingOverlay loading={loading} message={t('loadingZones')} />
 
               {/* Empty State */}
               {!loading && zones.length === 0 ? (
                 <div className="flex items-center justify-center h-64 text-gray-400">
                   <div className="text-center">
                     <MapPin className="w-12 h-12 mx-auto mb-4 text-teal-300" />
-                    <p className="text-lg font-medium">No hay zonas</p>
+                    <p className="text-lg font-medium">{t('emptyTitle')}</p>
                     <p className="text-sm">
                       {searchTerm ? t('emptyFiltered') : t('emptyDefault')}
                     </p>
@@ -642,7 +642,7 @@ export default function ZonesPage() {
 
                     {/* Activa - Toggle Switch */}
                     <div className="w-[80px]" onClick={(e) => e.stopPropagation()}>
-                      <ActiveToggle isActive={zone.isEnabled} onToggle={() => handleToggleActive(zone)} disabled={loading} isLoading={togglingId === zone.id} title={zone.isEnabled ? 'Desactivar zona' : 'Activar zona'} />
+                      <ActiveToggle isActive={zone.isEnabled} onToggle={() => handleToggleActive(zone)} disabled={loading} isLoading={togglingId === zone.id} title={zone.isEnabled ? tc('deactivate') : tc('activate')} />
                     </div>
 
                     {/* Actions */}
@@ -674,7 +674,7 @@ export default function ZonesPage() {
               totalItems={totalZones}
               pageSize={pageSize}
               onPageChange={setCurrentPage}
-              itemLabel="zonas"
+              itemLabel={t('title').toLowerCase()}
               loading={loading}
             />
           )}
@@ -793,10 +793,10 @@ export default function ZonesPage() {
           onConfirm={handleBatchToggle}
           action={batch.batchAction}
           selectedCount={batch.selectedCount}
-          entityLabel="zona"
+          entityLabel={t('title').toLowerCase()}
           loading={batch.batchLoading}
-          consequenceDeactivate="Las zonas desactivadas no aparecerán en las listas activas."
-          consequenceActivate="Las zonas activadas volverán a aparecer en las listas activas."
+          consequenceDeactivate={t('batchConsequenceDeactivate')}
+          consequenceActivate={t('batchConsequenceActivate')}
         />
 
         {/* Zone Form Drawer */}
@@ -804,7 +804,7 @@ export default function ZonesPage() {
           ref={drawerRef}
           isOpen={showZoneForm}
           onClose={handleCloseDrawer}
-          title={editingZone ? 'Editar Zona' : 'Nueva Zona'}
+          title={editingZone ? t('drawer.editTitle') : t('drawer.createTitle')}
           icon={<MapPin className="w-5 h-5" />}
           width="xl"
           isDirty={isDirty}
@@ -812,11 +812,11 @@ export default function ZonesPage() {
           footer={
             <div data-tour="zones-drawer-actions" className="flex items-center justify-end gap-3">
               <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()} disabled={savingZone}>
-                Cancelar
+                {tc('cancel')}
               </Button>
               <Button type="button" variant="success" onClick={handleSubmit(handleSaveZone)} disabled={savingZone} className="flex items-center gap-2">
                 {savingZone && <Loader2 className="w-4 h-4 animate-spin" />}
-                {editingZone ? 'Guardar Cambios' : 'Crear Zona'}
+                {editingZone ? t('drawer.saveChanges') : t('drawer.createZone')}
               </Button>
             </div>
           }
@@ -824,20 +824,20 @@ export default function ZonesPage() {
           <form onSubmit={handleSubmit(handleSaveZone)} className="p-6 space-y-5">
             {/* ── Información general ── */}
             <div className="space-y-4">
-              <h4 className="text-xs font-semibold text-gray-400">Información general</h4>
+              <h4 className="text-xs font-semibold text-gray-400">{t('drawer.generalInfo')}</h4>
 
               {/* Name + Color on same row */}
               <div className="flex gap-4 items-start" data-tour="zones-drawer-name">
                 <div className="flex-1">
                   <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1.5">
                     <Map className="w-3.5 h-3.5 text-green-600" />
-                    Nombre <span className="text-red-500">*</span>
+                    {tc('name')} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     {...register('name')}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
-                    placeholder="Nombre de la zona"
+                    placeholder={t('drawer.namePlaceholder')}
                   />
                   {errors.name && (
                     <FieldError message={errors.name?.message} />
@@ -877,12 +877,12 @@ export default function ZonesPage() {
 
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                  Descripción
+                  {tc('description')}
                 </label>
                 <textarea
                   {...register('description')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
-                  placeholder="Descripción breve de la zona (opcional)"
+                  placeholder={t('drawer.descriptionPlaceholder')}
                   rows={2}
                 />
                 {errors.description && (
@@ -895,7 +895,7 @@ export default function ZonesPage() {
 
             {/* ── Ubicación ── */}
             <div data-tour="zones-drawer-map" className="space-y-4">
-              <h4 className="text-xs font-semibold text-gray-400">Ubicación</h4>
+              <h4 className="text-xs font-semibold text-gray-400">{t('drawer.location')}</h4>
               {isMapsLoaded ? (
                 <div className="space-y-4">
                   {/* Place search */}
@@ -908,7 +908,7 @@ export default function ZonesPage() {
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                       <input
                         type="text"
-                        placeholder="Buscar lugar... (ej. Zapopan, Guadalajara)"
+                        placeholder={t('drawer.searchPlaceholder')}
                         className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
                       />
                     </div>
@@ -976,7 +976,7 @@ export default function ZonesPage() {
                     {/* Hint overlay */}
                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent px-3 py-2 pointer-events-none">
                       <p className="text-[11px] text-white/90 text-center">
-                        Doble clic para posicionar · Arrastra el marcador · Ajusta el radio desde el borde del círculo
+                        {t('drawer.mapHint')}
                       </p>
                     </div>
                   </div>
@@ -984,7 +984,7 @@ export default function ZonesPage() {
                   {/* Radius + Coordinates */}
                   <div className="grid grid-cols-3 gap-3">
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1.5">Radio (km)</label>
+                      <label className="block text-xs font-medium text-gray-700 mb-1.5">{t('drawer.radiusKm')}</label>
                       <input
                         type="number"
                         step="0.1"
@@ -1000,13 +1000,13 @@ export default function ZonesPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1.5">Latitud</label>
+                      <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('drawer.latitude')}</label>
                       <div className="px-3 py-2 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg tabular-nums">
                         {drawerMapCenter.lat.toFixed(6)}
                       </div>
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1.5">Longitud</label>
+                      <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('drawer.longitude')}</label>
                       <div className="px-3 py-2 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg tabular-nums">
                         {drawerMapCenter.lng.toFixed(6)}
                       </div>
@@ -1017,7 +1017,7 @@ export default function ZonesPage() {
                 <div className="flex items-center justify-center h-48 bg-gray-50 rounded-lg border border-gray-200">
                   <div className="flex items-center gap-2 text-sm text-gray-400">
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Cargando mapa...
+                    {t('drawer.loadingMap')}
                   </div>
                 </div>
               )}
@@ -1027,7 +1027,7 @@ export default function ZonesPage() {
 
             {/* ── Estado ── */}
             <div className="space-y-3">
-              <h4 className="text-xs font-semibold text-gray-400">Estado</h4>
+              <h4 className="text-xs font-semibold text-gray-400">{t('drawer.status')}</h4>
               <label htmlFor="isEnabled" className="flex items-start gap-3 cursor-pointer group">
                 <input
                   type="checkbox"
@@ -1037,10 +1037,10 @@ export default function ZonesPage() {
                 />
                 <div>
                   <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors">
-                    Zona activa
+                    {t('drawer.activeZone')}
                   </span>
                   <p className="text-xs text-gray-400 mt-0.5">
-                    Las zonas inactivas no se asignan a rutas ni aparecen en los filtros de vendedores.
+                    {t('drawer.activeZoneHint')}
                   </p>
                 </div>
               </label>
@@ -1053,7 +1053,7 @@ export default function ZonesPage() {
           isOpen={isImportOpen}
           onClose={() => setIsImportOpen(false)}
           entity="zonas"
-          entityLabel="zonas"
+          entityLabel={t('title').toLowerCase()}
           onSuccess={fetchZones}
         />
       </div>

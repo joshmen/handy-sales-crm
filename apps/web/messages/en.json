@@ -39,6 +39,12 @@
     "activate": "Activate",
     "deactivate": "Deactivate",
     "showInactive": "Show inactive",
+    "selectedCount": "{count} selected",
+    "ofTotal": "of {total} {label}",
+    "batchConfirmTitle": "{action} {count} {label}?",
+    "batchConfirmMessage": "Are you sure you want to {action} {count} selected {label}?",
+    "batchConsequenceActivateDefault": "Activated {label} will appear in active lists again.",
+    "batchConsequenceDeactivateDefault": "Deactivated {label} will not appear in active lists.",
     "error": "Error",
     "success": "Success",
     "warning": "Warning",
@@ -455,6 +461,15 @@
     "settings": "Settings",
     "aiAssistant": "AI Assistant",
     "help": "Help",
+    "userAccount": "User account",
+    "myProfile": "My profile",
+    "globalSettings": "Global Settings",
+    "impersonateCompany": "Impersonate Company",
+    "loggingOut": "Signing out...",
+    "signOut": "Sign out",
+    "pageNotFound": "Page not found",
+    "pageNotFoundDescription": "The page you are looking for does not exist or has been moved.",
+    "goToDashboard": "Go to Dashboard",
     "gettingStarted": "Getting started",
     "superAdmin": "Super Admin",
     "saCompanies": "Companies",
@@ -1188,6 +1203,17 @@
     "routesUpdated": "Routes updated successfully",
     "errorSaving": "Error saving route",
     "errorUpdating": "Error updating routes",
+    "batchSuccess": "{count} route(s) {action} successfully",
+    "status": {
+      "planned": "Planned",
+      "inProgress": "In progress",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "pendingAcceptance": "Pending acceptance",
+      "loadAccepted": "Load accepted",
+      "closed": "Closed",
+      "unknown": "Unknown"
+    },
     "searchPlaceholder": "Search route...",
     "columns": {
       "name": "Name",
@@ -1582,6 +1608,19 @@
       "shrinkage": "Shrinkage",
       "transfer": "Transfer"
     },
+    "subtitle": "{count} product{plural}",
+    "movementsSubtitle": "{count} movement{plural}",
+    "columns": {
+      "product": "Product",
+      "unit": "Unit",
+      "stock": "Stock",
+      "stockHeader": "Stock",
+      "minStock": "Min stock",
+      "maxStock": "Max stock"
+    },
+    "removeFilter": "Remove filter",
+    "saving": "Saving...",
+    "save": "Save",
     "csvUpdatedNote": "If a product already has inventory, its values will be updated from the CSV.",
     "importExport": "Import / Export",
     "filterForm": {
@@ -2818,6 +2857,7 @@
       "clients": "Clients",
       "active": "Active"
     },
+    "batchSuccess": "{count} zone(s) {action} successfully",
     "batchConsequenceActivate": "Activated zones will appear in active lists again.",
     "batchConsequenceDeactivate": "Deactivated zones will not appear in active lists.",
     "mapTitle": "Zone Map",
@@ -2983,6 +3023,14 @@
       "mobileOnlyHint": "Start and finish visits from the mobile app"
     },
     "view": "View",
+    "summary": {
+      "totalVisits": "Total Visits",
+      "completed": "Completed",
+      "withSale": "With Sale",
+      "pending": "Pending",
+      "cancelled": "Cancelled",
+      "conversionRate": "Conversion Rate"
+    },
     "form": {
       "client": "Client",
       "selectClient": "Select client...",
@@ -3397,6 +3445,8 @@
     "noMoreProducts": "No more products available",
     "selectedCount": "{selected} of {total} product{plural} selected",
     "discountPercent": "Discount (%)",
+    "namePlaceholder": "E.g.: Summer Promo 2026",
+    "discountPlaceholder": "E.g.: 15",
     "startDate": "Start date",
     "endDate": "End date",
     "batchActivated": "{count} promotion{plural} activated successfully",
@@ -4613,7 +4663,12 @@
     "cobranza-total-vendido": "Total amount of all orders in the period, regardless of whether they have been collected.",
     "cobranza-cobrado": "Amount actually received from clients in registered payments.",
     "cobranza-por-cobrar": "What your clients still owe you. The difference between sold and collected.",
-    "cobranza-clientes-deben": "Number of clients with at least one order with outstanding balance."
+    "cobranza-clientes-deben": "Number of clients with at least one order with outstanding balance.",
+    "total-quantity": "Total product units combining warehouse stock plus on-route stock.",
+    "min-stock": "Minimum recommended warehouse quantity. Below this level, a 'Low stock' alert is shown.",
+    "max-stock": "Maximum recommended quantity to avoid excess inventory.",
+    "movement-type": "Entry: increases stock. Exit: decreases stock. Adjustment: sets stock to the specified value.",
+    "movement-quantity": "Number of units for this movement."
   },
   "formValidation": {
     "nameRequired": "Name is required",
@@ -4660,6 +4715,18 @@
     "maxUsers1000": "Maximum 1000 users",
     "selectProductForDiscount": "Please select a product for product-specific discounts",
     "minOneUnit": "Minimum 1 unit",
-    "minOnePercent": "Minimum 1%"
+    "minOnePercent": "Minimum 1%",
+    "minZero": "Minimum 0",
+    "selectProductRequired": "Select a product",
+    "quantityGreaterThanZero": "Quantity must be greater than 0",
+    "selectFamilyRequired": "Select a product family",
+    "selectCategoryRequired": "Select a category",
+    "selectUnitRequired": "Select a unit of measure",
+    "priceGreaterThanZero": "Price must be greater than 0",
+    "coordinatesBothRequired": "Coordinates must include both latitude and longitude",
+    "selectType": "Select a type",
+    "selectPeriod": "Select a period",
+    "amountRequired": "Amount is required",
+    "notesMax2000": "Notes cannot exceed 2000 characters"
   }
 }

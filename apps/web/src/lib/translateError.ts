@@ -65,9 +65,6 @@ const ERROR_MAP: Record<string, { es: string; en: string }> = {
   // Category/family/unit duplicates (from services)
   'Ya existe una categoría de productos con ese nombre.': { es: 'Ya existe una categoría de productos con ese nombre.', en: 'A product category with that name already exists.' },
   'Ya existe una familia de productos con ese nombre.': { es: 'Ya existe una familia de productos con ese nombre.', en: 'A product family with that name already exists.' },
-  'Ya existe una lista de precios con ese nombre.': { es: 'Ya existe una lista de precios con ese nombre.', en: 'A price list with that name already exists.' },
-  'Ya existe una unidad de medida con ese nombre.': { es: 'Ya existe una unidad de medida con ese nombre.', en: 'A unit of measure with that name already exists.' },
-  'Ya existe una promoción con ese nombre.': { es: 'Ya existe una promoción con ese nombre.', en: 'A promotion with that name already exists.' },
 
   // Route errors
   'La ruta no está en progreso': { es: 'La ruta no está en progreso', en: 'Route is not in progress' },
@@ -79,7 +76,6 @@ const ERROR_MAP: Record<string, { es: string; en: string }> = {
   'Solo se pueden agregar paradas a rutas planificadas o pendientes de aceptar': { es: 'Solo se pueden agregar paradas a rutas planificadas o pendientes de aceptar', en: 'Stops can only be added to planned or pending routes' },
   'Solo se pueden cerrar rutas completadas/terminadas': { es: 'Solo se pueden cerrar rutas completadas/terminadas', en: 'Only completed routes can be closed' },
   'Solo se pueden enviar a carga rutas planificadas': { es: 'Solo se pueden enviar a carga rutas planificadas', en: 'Only planned routes can be sent for loading' },
-  'Ruta no encontrada': { es: 'Ruta no encontrada', en: 'Route not found' },
 
   // Auth/user errors
   'El email ya está en uso': { es: 'El email ya está en uso', en: 'Email is already in use' },
@@ -95,15 +91,18 @@ const ERROR_MAP: Record<string, { es: string; en: string }> = {
   'Ya tienes una sesión de impersonación activa. Finalízala antes de iniciar otra.': { es: 'Ya tienes una sesión de impersonación activa. Finalízala antes de iniciar otra.', en: 'You already have an active impersonation session. End it before starting another.' },
   'La sesión ya fue finalizada.': { es: 'La sesión ya fue finalizada.', en: 'Session has already ended.' },
 
-  // Promotion
-  'Debe seleccionar al menos un producto.': { es: 'Debe seleccionar al menos un producto.', en: 'You must select at least one product.' },
-  'La fecha de fin debe ser posterior a la fecha de inicio.': { es: 'La fecha de fin debe ser posterior a la fecha de inicio.', en: 'End date must be after start date.' },
-
   // Limits
   'Has alcanzado el límite de usuarios': { es: 'Has alcanzado el límite de usuarios', en: 'You have reached the user limit' },
   'Has alcanzado el límite de productos': { es: 'Has alcanzado el límite de productos', en: 'You have reached the product limit' },
   'Has alcanzado el límite de clientes': { es: 'Has alcanzado el límite de clientes', en: 'You have reached the client limit' },
   'No quedan timbres disponibles': { es: 'No quedan timbres disponibles', en: 'No stamps available' },
+
+  // Generic backend middleware errors
+  'Ocurrió un error al procesar tu solicitud.': { es: 'Ocurrió un error al procesar tu solicitud.', en: 'An error occurred while processing your request.' },
+  'No se pudo completar la operación.': { es: 'No se pudo completar la operación.', en: 'The operation could not be completed.' },
+  'Parámetros de solicitud inválidos.': { es: 'Parámetros de solicitud inválidos.', en: 'Invalid request parameters.' },
+  'Acceso no autorizado.': { es: 'Acceso no autorizado.', en: 'Unauthorized access.' },
+  'Recurso no encontrado.': { es: 'Recurso no encontrado.', en: 'Resource not found.' },
 };
 
 /**

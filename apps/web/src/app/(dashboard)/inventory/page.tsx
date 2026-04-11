@@ -51,27 +51,24 @@ import { FieldError } from '@/components/forms/FieldError';
 // ─── Almacén tab types ───────────────────────────────────────────────
 const inventorySchema = z.object({
   productoId: z.number(),
-  cantidadActual: z.number().min(0, 'Mínimo 0'),
-  stockMinimo: z.number().min(0, 'Mínimo 0'),
-  stockMaximo: z.number().min(0, 'Mínimo 0'),
+  cantidadActual: z.number().min(0, 'minZero'),
+  stockMinimo: z.number().min(0, 'minZero'),
+  stockMaximo: z.number().min(0, 'minZero'),
 });
 type InventoryFormData = z.infer<typeof inventorySchema>;
 
 const ALERTAS_VALIDAS = ['stock_bajo', 'critico'] as const;
 type AlertaInventario = typeof ALERTAS_VALIDAS[number];
 
-const ALERTA_LABELS: Record<AlertaInventario, string> = {
-  stock_bajo: 'Stock bajo',
-  critico: 'En cero',
-};
+// Labels are set inside the component where useTranslations is available
 
 // ─── Movimientos tab types ───────────────────────────────────────────
 type MovementType = 'ENTRADA' | 'SALIDA' | 'AJUSTE';
 
 const movementSchema = z.object({
-  productoId: z.number().min(1, 'Selecciona un producto'),
+  productoId: z.number().min(1, 'selectProductRequired'),
   tipoMovimiento: z.enum(['ENTRADA', 'SALIDA', 'AJUSTE']),
-  cantidad: z.number().min(0.01, 'La cantidad debe ser mayor a 0'),
+  cantidad: z.number().min(0.01, 'quantityGreaterThanZero'),
   motivo: z.string().min(1, 'selectReason'),
   comentario: z.string(),
 });
@@ -89,6 +86,12 @@ type ActiveTab = 'almacen' | 'movimientos';
 export default function InventoryPage() {
   const t = useTranslations('inventory');
   const tc = useTranslations('common');
+
+  const ALERTA_LABELS: Record<AlertaInventario, string> = {
+    stock_bajo: t('warehouse.lowStock'),
+    critico: t('warehouse.inZero'),
+  };
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const { formatDate } = useFormatters();
@@ -486,6 +489,15 @@ export default function InventoryPage() {
     toast.success(t('movements.updated'));
   };
 
+  const getTypeLabel = (type: MovementType) => {
+    switch (type) {
+      case 'ENTRADA': return t('movements.entry');
+      case 'SALIDA': return t('movements.exit');
+      case 'AJUSTE': return t('movements.adjustment');
+      default: return type;
+    }
+  };
+
   // Movement type badge colors
   const getTypeBadge = (type: MovementType) => {
     switch (type) {
@@ -573,7 +585,7 @@ export default function InventoryPage() {
           className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
         >
           <Download className="w-3.5 h-3.5 text-emerald-500" />
-          <span className="hidden sm:inline">Importar / Exportar</span>
+          <span className="hidden sm:inline">{tc('importExport')}</span>
           <ChevronDown className="w-3 h-3 text-gray-400" />
         </button>
         {showDataMenu && (
@@ -581,18 +593,18 @@ export default function InventoryPage() {
             <div className="fixed inset-0 z-10" onClick={() => setShowDataMenu(false)} />
             <div className="absolute right-0 mt-1 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1">
               <button
-                onClick={async () => { setShowDataMenu(false); try { await exportToCsv('inventario'); toast.success('Archivo CSV descargado'); } catch { toast.error('Error al exportar datos'); } }}
+                onClick={async () => { setShowDataMenu(false); try { await exportToCsv('inventario'); toast.success(tc('csvDownloaded')); } catch { toast.error(tc('errorExporting')); } }}
                 className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
               >
                 <Download className="w-3.5 h-3.5 text-emerald-500" />
-                Exportar CSV
+                {tc('exportCsv')}
               </button>
               <button
                 onClick={() => { setIsImportOpen(true); setShowDataMenu(false); }}
                 className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
               >
                 <Upload className="w-3.5 h-3.5 text-blue-500" />
-                Importar CSV
+                {tc('importCsv')}
               </button>
             </div>
           </>
@@ -617,7 +629,7 @@ export default function InventoryPage() {
         className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-gray-900 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
       >
         <Download className="w-3.5 h-3.5 text-emerald-500" />
-        <span className="hidden sm:inline">Exportar</span>
+        <span className="hidden sm:inline">{tc('exportCsv')}</span>
       </button>
       <button
         data-tour="movements-new-btn"
@@ -641,8 +653,8 @@ export default function InventoryPage() {
       ]}
       title={t('title')}
       subtitle={activeTab === 'almacen'
-        ? (totalItems > 0 ? `${totalItems} producto${totalItems !== 1 ? 's' : ''}` : undefined)
-        : (movTotalItems > 0 ? `${movTotalItems} movimiento${movTotalItems !== 1 ? 's' : ''}` : undefined)
+        ? (totalItems > 0 ? t('subtitle', { count: totalItems, plural: totalItems !== 1 ? 's' : '' }) : undefined)
+        : (movTotalItems > 0 ? t('movementsSubtitle', { count: movTotalItems, plural: movTotalItems !== 1 ? 's' : '' }) : undefined)
       }
       actions={activeTab === 'almacen' ? almacenActions : movimientosActions}
     >
@@ -675,7 +687,7 @@ export default function InventoryPage() {
               <SearchBar
                 value={searchTerm}
                 onChange={(v) => { setSearchTerm(v); setCurrentPage(1); }}
-                placeholder="Buscar producto..."
+                placeholder={t('warehouse.searchPlaceholder')}
                 dataTour="inventory-search"
               />
 
@@ -690,7 +702,7 @@ export default function InventoryPage() {
                   <button
                     onClick={() => { setAlertFilter(null); router.push('/inventory'); }}
                     className="ml-0.5 hover:opacity-70"
-                    aria-label="Quitar filtro"
+                    aria-label={t('removeFilter')}
                   >
                     ×
                   </button>
@@ -703,7 +715,7 @@ export default function InventoryPage() {
                 className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors disabled:opacity-50"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-                <span className="hidden sm:inline">Actualizar</span>
+                <span className="hidden sm:inline">{tc('refresh')}</span>
               </button>
             </div>
 
@@ -712,7 +724,7 @@ export default function InventoryPage() {
             <div data-tour="inventory-table">
               <DataGrid<InventoryItem>
                 columns={[
-                  { key: 'product', label: 'Producto', width: 'flex', sortable: true, cellRenderer: (item, index) => {
+                  { key: 'product', label: t('columns.product'), width: 'flex', sortable: true, cellRenderer: (item, index) => {
                     const color = getProductColor(index);
                     return (
                       <div className="flex items-center gap-2.5">
@@ -724,14 +736,14 @@ export default function InventoryPage() {
                           </div>
                         )}
                         <div className="min-w-0">
-                          <div className="text-[13px] font-medium text-gray-900 truncate">{item.product?.name || `Producto #${item.productId}`}</div>
+                          <div className="text-[13px] font-medium text-gray-900 truncate">{item.product?.name || `${t('drawer.productLabel')} #${item.productId}`}</div>
                           <div className="text-[11px] text-gray-400">{item.product?.code || '-'}</div>
                         </div>
                       </div>
                     );
                   }},
-                  { key: 'unit', label: 'Unidad', width: 120, hiddenOnMobile: true, cellRenderer: (item) => <span className="text-gray-700">{item.product?.unit || 'PZA'}</span> },
-                  { key: 'totalQuantity', label: 'Existencias', width: 120, align: 'center', sortable: true, headerRenderer: () => <span className="inline-flex items-center gap-1">Existencias <HelpTooltip tooltipKey="total-quantity" /></span>, cellRenderer: (item) => {
+                  { key: 'unit', label: t('columns.unit'), width: 120, hiddenOnMobile: true, cellRenderer: (item) => <span className="text-gray-700">{item.product?.unit || 'PZA'}</span> },
+                  { key: 'totalQuantity', label: t('columns.stock'), width: 120, align: 'center', sortable: true, headerRenderer: () => <span className="inline-flex items-center gap-1">{t('columns.stockHeader')} <HelpTooltip tooltipKey="total-quantity" /></span>, cellRenderer: (item) => {
                     const lowStock = isLowStock(item);
                     return (
                       <span>
@@ -740,8 +752,8 @@ export default function InventoryPage() {
                       </span>
                     );
                   }},
-                  { key: 'minStock', label: 'Stock min.', width: 100, align: 'center', hiddenOnMobile: true, headerRenderer: () => <span className="inline-flex items-center gap-1" data-tour="inventory-stock-columns">Stock min. <HelpTooltip tooltipKey="min-stock" /></span>, cellRenderer: (item) => <span className="text-gray-500">{item.minStock || '-'}</span> },
-                  { key: 'maxStock', label: 'Stock max.', width: 100, align: 'center', hiddenOnMobile: true, headerRenderer: () => <span className="inline-flex items-center gap-1">Stock max. <HelpTooltip tooltipKey="max-stock" /></span>, cellRenderer: (item) => <span className="text-gray-500">{item.maxStock || '-'}</span> },
+                  { key: 'minStock', label: t('columns.minStock'), width: 100, align: 'center', hiddenOnMobile: true, headerRenderer: () => <span className="inline-flex items-center gap-1" data-tour="inventory-stock-columns">{t('columns.minStock')} <HelpTooltip tooltipKey="min-stock" /></span>, cellRenderer: (item) => <span className="text-gray-500">{item.minStock || '-'}</span> },
+                  { key: 'maxStock', label: t('columns.maxStock'), width: 100, align: 'center', hiddenOnMobile: true, headerRenderer: () => <span className="inline-flex items-center gap-1">{t('columns.maxStock')} <HelpTooltip tooltipKey="max-stock" /></span>, cellRenderer: (item) => <span className="text-gray-500">{item.maxStock || '-'}</span> },
                   { key: 'arrow', label: '', width: 32, cellRenderer: () => <CaretRight className="w-4 h-4 text-gray-300 group-hover:text-amber-500 transition-colors" weight="bold" /> },
                 ] as DataGridColumn<InventoryItem>[]}
                 data={inventoryItems}
@@ -767,19 +779,19 @@ export default function InventoryPage() {
                           </div>
                         )}
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-gray-900 truncate">{item.product?.name || `Producto #${item.productId}`}</p>
+                          <p className="text-sm font-medium text-gray-900 truncate">{item.product?.name || `${t('drawer.productLabel')} #${item.productId}`}</p>
                           <p className="text-xs text-gray-500">{item.product?.code || '-'}</p>
                         </div>
                       </div>
                       <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-500">
                         <span className={`font-medium ${lowStock ? 'text-red-600' : 'text-gray-900'}`}>{item.totalQuantity?.toLocaleString() || 0} {item.product?.unit || 'PZA'}</span>
-                        {lowStock && <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-600 rounded-full"><AlertTriangle className="w-3 h-3" />Stock bajo</span>}
-                        <span>Min: {item.minStock || '-'}</span>
-                        <span>Max: {item.maxStock || '-'}</span>
+                        {lowStock && <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-600 rounded-full"><AlertTriangle className="w-3 h-3" />{t('warehouse.lowStock')}</span>}
+                        <span>{t('columns.minStock')}: {item.minStock || '-'}</span>
+                        <span>{t('columns.maxStock')}: {item.maxStock || '-'}</span>
                       </div>
                       <div className="mt-2.5 flex items-center justify-end gap-1 border-t border-gray-100 pt-2">
                         <button onClick={() => handleOpenEdit(item)} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded hover:bg-gray-50 transition-colors">
-                          <Pencil className="w-3 h-3 text-amber-400" /><span>Editar</span>
+                          <Pencil className="w-3 h-3 text-amber-400" /><span>{tc('edit')}</span>
                         </button>
                       </div>
                     </div>
@@ -801,7 +813,7 @@ export default function InventoryPage() {
                   setMovSearchTerm(val);
                   setMovCurrentPage(1);
                 }}
-                placeholder="Buscar producto..."
+                placeholder={t('warehouse.searchPlaceholder')}
                 className="w-64"
                 dataTour="movements-search"
               />
@@ -814,7 +826,7 @@ export default function InventoryPage() {
                     setTypeFilter(val ? String(val) : 'all');
                     setMovCurrentPage(1);
                   }}
-                  placeholder="Todos los tipos"
+                  placeholder={t('filters.allTypes')}
                 />
               </div>
 
@@ -826,7 +838,7 @@ export default function InventoryPage() {
                     setReasonFilter(val ? String(val) : 'all');
                     setMovCurrentPage(1);
                   }}
-                  placeholder="Todos los motivos"
+                  placeholder={t('filters.allReasons')}
                 />
               </div>
 
@@ -836,7 +848,7 @@ export default function InventoryPage() {
                 className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 transition-colors"
               >
                 <RefreshCw className={`w-3.5 h-3.5 text-white ${movLoading ? 'animate-spin' : ''}`} />
-                <span className="hidden sm:inline">Actualizar</span>
+                <span className="hidden sm:inline">{tc('refresh')}</span>
               </button>
             </div>
 
@@ -844,14 +856,14 @@ export default function InventoryPage() {
               <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
                 {movError}
                 <button onClick={fetchMovements} className="ml-4 underline hover:no-underline">
-                  Reintentar
+                  {t('movements.retry')}
                 </button>
               </div>
             )}
 
             {/* Movements Table */}
             <div data-tour="movements-table" className="relative min-h-[200px] border border-gray-200 rounded-lg overflow-x-auto">
-              <TableLoadingOverlay loading={movLoading} message="Cargando movimientos..." />
+              <TableLoadingOverlay loading={movLoading} message={t('movements.loadingMovements')} />
               {!movLoading && movements.length === 0 ? (
                 <div className="flex items-center justify-center h-64 bg-white text-gray-400">
                   <div className="text-center">
@@ -884,7 +896,7 @@ export default function InventoryPage() {
                               <p className="text-xs text-gray-500">{movement.productCode}</p>
                             </div>
                             <span className={`inline-flex px-2.5 py-0.5 text-[10px] font-medium rounded-full flex-shrink-0 ${badge}`}>
-                              {movement.movementType}
+                              {getTypeLabel(movement.movementType as MovementType)}
                             </span>
                           </div>
                           <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-500">
@@ -917,14 +929,14 @@ export default function InventoryPage() {
                   {/* Desktop Table */}
                   <div className="hidden sm:block">
                     <div className="flex items-center bg-gray-50 px-5 h-10 border-b border-gray-200 min-w-[1100px]">
-                      <div className="w-[130px] text-[11px] font-medium text-gray-500">Fecha</div>
-                      <div className="flex-1 min-w-[180px] text-[11px] font-medium text-gray-500">Producto</div>
-                      <div className="w-[90px] text-[11px] font-medium text-gray-500 text-center">Tipo</div>
-                      <div className="w-[80px] text-[11px] font-medium text-gray-500 text-right">Cantidad</div>
-                      <div className="w-[80px] text-[11px] font-medium text-gray-500 text-right hidden md:block">Anterior</div>
-                      <div className="w-[80px] text-[11px] font-medium text-gray-500 text-right hidden md:block">Nuevo</div>
-                      <div className="w-[140px] text-[11px] font-medium text-gray-500 pl-4">Motivo</div>
-                      <div className="w-[150px] text-[11px] font-medium text-gray-500 hidden lg:block">Usuario</div>
+                      <div className="w-[130px] text-[11px] font-medium text-gray-500">{t('movementColumns.date')}</div>
+                      <div className="flex-1 min-w-[180px] text-[11px] font-medium text-gray-500">{t('movementColumns.product')}</div>
+                      <div className="w-[90px] text-[11px] font-medium text-gray-500 text-center">{t('movementColumns.type')}</div>
+                      <div className="w-[80px] text-[11px] font-medium text-gray-500 text-right">{t('movementColumns.quantity')}</div>
+                      <div className="w-[80px] text-[11px] font-medium text-gray-500 text-right hidden md:block">{t('movementColumns.previous')}</div>
+                      <div className="w-[80px] text-[11px] font-medium text-gray-500 text-right hidden md:block">{t('movementColumns.new')}</div>
+                      <div className="w-[140px] text-[11px] font-medium text-gray-500 pl-4">{t('movementColumns.reason')}</div>
+                      <div className="w-[150px] text-[11px] font-medium text-gray-500 hidden lg:block">{t('movementColumns.user')}</div>
                     </div>
 
                     {movements.map((movement) => {
@@ -953,7 +965,7 @@ export default function InventoryPage() {
                           </div>
                           <div className="w-[90px] text-center">
                             <span className={`inline-flex px-2.5 py-0.5 text-[10px] font-medium rounded-full ${badge}`}>
-                              {movement.movementType}
+                              {getTypeLabel(movement.movementType as MovementType)}
                             </span>
                           </div>
                           <div className="w-[80px] text-right">
@@ -995,7 +1007,7 @@ export default function InventoryPage() {
               totalItems={movTotalItems}
               pageSize={pageSize}
               onPageChange={setMovCurrentPage}
-              itemLabel="movimientos"
+              itemLabel={t('tabs.movements').toLowerCase()}
             />
           </>
         )}
@@ -1014,7 +1026,7 @@ export default function InventoryPage() {
         footer={
           <div data-tour="inventory-drawer-actions" className="flex justify-end gap-3">
             <Button type="button" variant="outline" onClick={() => drawerRef.current?.requestClose()} disabled={submitting}>
-              Cancelar
+              {tc('cancel')}
             </Button>
             <Button type="button" variant="success" onClick={handleSubmit} disabled={submitting || (modalMode === 'create' && !watch('productoId'))} className="flex items-center gap-2">
               {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -1027,18 +1039,18 @@ export default function InventoryPage() {
           {modalMode === 'create' ? (
             <div data-tour="inventory-product-selector">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Producto <span className="text-red-500">*</span>
+                {t('drawer.productLabel')} <span className="text-red-500">*</span>
               </label>
               {loadingProducts ? (
                 <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded text-sm text-gray-500">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600" />
-                  Cargando productos...
+                  {t('drawer.loadingProducts')}
                 </div>
               ) : products.length === 0 ? (
                 <div className="px-3 py-3 bg-amber-50 border border-amber-200 rounded text-sm text-amber-700">
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-                    <span>Todos los productos ya tienen inventario registrado. Agrega un nuevo producto primero.</span>
+                    <span>{t('drawer.allProductsHaveInventory')}</span>
                   </div>
                 </div>
               ) : (
@@ -1053,14 +1065,14 @@ export default function InventoryPage() {
                     setImageFile(null);
                     setImagePreview(null);
                   }}
-                  placeholder="Seleccionar producto..."
-                  searchPlaceholder="Buscar producto..."
+                  placeholder={t('drawer.selectProduct')}
+                  searchPlaceholder={t('drawer.searchProduct')}
                 />
               )}
             </div>
           ) : (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Producto</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('drawer.productLabel')}</label>
               <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded text-sm text-gray-700">
                 {selectedItem?.product?.name || `Producto #${selectedItem?.productId}`}
                 {selectedItem?.product?.code && (
@@ -1074,7 +1086,7 @@ export default function InventoryPage() {
           {(modalMode === 'edit' || watch('productoId') > 0) && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Imagen del producto
+                {t('drawer.productImage')}
               </label>
               <ImageUpload
                 variant="square"
@@ -1097,7 +1109,7 @@ export default function InventoryPage() {
 
           <div data-tour="inventory-quantity">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Cantidad actual <span className="text-red-500">*</span>
+              {t('drawer.currentQuantity')} <span className="text-red-500">*</span>
             </label>
             <input
               type="number"
@@ -1113,7 +1125,7 @@ export default function InventoryPage() {
 
           <div data-tour="inventory-stock-fields" className="grid grid-cols-2 gap-4">
             <div>
-              <label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">Stock minimo <HelpTooltip tooltipKey="min-stock" /></label>
+              <label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">{t('drawer.minStock')} <HelpTooltip tooltipKey="min-stock" /></label>
               <input
                 type="number"
                 min="0"
@@ -1126,7 +1138,7 @@ export default function InventoryPage() {
               )}
             </div>
             <div>
-              <label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">Stock maximo <HelpTooltip tooltipKey="max-stock" /></label>
+              <label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">{t('drawer.maxStock')} <HelpTooltip tooltipKey="max-stock" /></label>
               <input
                 type="number"
                 min="0"
@@ -1143,14 +1155,14 @@ export default function InventoryPage() {
           {/* Per-product movement history */}
           {modalMode === 'edit' && selectedItem && (
             <div className="mt-6 pt-4 border-t border-gray-200">
-              <h4 className="text-sm font-semibold text-gray-700 mb-3">Ultimos movimientos</h4>
+              <h4 className="text-sm font-semibold text-gray-700 mb-3">{t('drawer.recentMovements')}</h4>
               {drawerMovementsLoading ? (
                 <div className="flex items-center gap-2 text-xs text-gray-500 py-2">
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  Cargando movimientos...
+                  {t('drawer.loadingMovements')}
                 </div>
               ) : drawerMovements.length === 0 ? (
-                <p className="text-xs text-gray-400 py-2">Sin movimientos registrados para este producto.</p>
+                <p className="text-xs text-gray-400 py-2">{t('drawer.noMovements')}</p>
               ) : (
                 <div className="space-y-2">
                   {drawerMovements.map((mov) => {
@@ -1160,7 +1172,7 @@ export default function InventoryPage() {
                       <div key={mov.id} className="flex items-center gap-2 text-xs py-1.5 border-b border-gray-100 last:border-b-0">
                         <span className="text-gray-500 w-[70px] flex-shrink-0">{formatDate(mov.createdAt)}</span>
                         <span className={`inline-flex px-2 py-0.5 text-[10px] font-medium rounded-full ${badge}`}>
-                          {mov.movementType}
+                          {getTypeLabel(mov.movementType as MovementType)}
                         </span>
                         <span className={`font-semibold ${qty.color}`}>
                           {qty.sign}{Math.abs(mov.quantity)}
@@ -1179,7 +1191,7 @@ export default function InventoryPage() {
                 }}
                 className="mt-3 text-xs font-medium text-green-600 hover:text-green-700 transition-colors"
               >
-                Ver todo →
+                {t('drawer.viewAll')}
               </button>
             </div>
           )}
@@ -1202,14 +1214,14 @@ export default function InventoryPage() {
               onClick={() => movDrawerRef.current?.requestClose()}
               className="px-4 py-2 text-xs font-medium text-gray-700 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
             >
-              Cancelar
+              {tc('cancel')}
             </button>
             <button
               onClick={handleCreateMovement}
               disabled={movSubmitting || !movWatch('productoId') || movWatch('cantidad') <= 0}
               className="px-4 py-2 text-xs font-medium text-success-foreground bg-success rounded-lg hover:bg-success/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {movSubmitting ? 'Guardando...' : 'Guardar'}
+              {movSubmitting ? t('saving') : t('save')}
             </button>
           </div>
         }
@@ -1217,7 +1229,7 @@ export default function InventoryPage() {
         <div className="px-6 py-4 space-y-4">
           {/* Product Select */}
           <div data-tour="movements-product-selector">
-            <label className="block text-xs font-medium text-gray-700 mb-1.5">Producto *</label>
+            <label className="block text-xs font-medium text-gray-700 mb-1.5">{t('movementDrawer.productLabel')} *</label>
             <SearchableSelect
               options={movProducts.map(p => ({ value: p.id, label: p.name, description: p.code, imageUrl: p.imageUrl }))}
               value={movWatch('productoId') || null}
@@ -1225,8 +1237,8 @@ export default function InventoryPage() {
                 movSetValue('productoId', val ? Number(val) : 0, { shouldDirty: true });
                 movSetValue('motivo', '', { shouldDirty: true });
               }}
-              placeholder="Seleccionar producto"
-              searchPlaceholder="Buscar producto..."
+              placeholder={t('movementDrawer.selectProduct')}
+              searchPlaceholder={t('movementDrawer.searchProduct')}
             />
             {movErrors.productoId && (
               <p className="mt-1 text-xs text-red-600">{movErrors.productoId.message}</p>
@@ -1239,23 +1251,23 @@ export default function InventoryPage() {
               {stockLoading ? (
                 <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded border border-gray-200">
                   <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-gray-400"></div>
-                  <span className="text-xs text-gray-500">Consultando existencias...</span>
+                  <span className="text-xs text-gray-500">{t('movementDrawer.checkingStock')}</span>
                 </div>
               ) : hasInventory === false ? (
                 <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 rounded border border-amber-200">
                   <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
-                  <span className="text-xs text-amber-700">Sin existencias registradas — no es posible dar salida</span>
+                  <span className="text-xs text-amber-700">{t('movementDrawer.noStockRegistered')}</span>
                 </div>
               ) : currentStock !== null && currentStock === 0 ? (
                 <div className="flex items-center gap-2 px-3 py-2 bg-red-50 rounded border border-red-200">
                   <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0" />
-                  <span className="text-xs text-red-700">Existencias: <strong>0</strong> — no es posible dar salida</span>
+                  <span className="text-xs text-red-700">{t('movementDrawer.zeroStock')}</span>
                 </div>
               ) : currentStock !== null ? (
                 <div className="flex items-center gap-2 px-3 py-2 bg-green-50 rounded border border-green-200">
                   <Package className="w-4 h-4 text-green-500 flex-shrink-0" />
                   <span className="text-xs text-green-700">
-                    Existencias actuales: <strong>{currentStock}</strong>
+                    {t('movementDrawer.currentStock')} <strong>{currentStock}</strong>
                     {projectedStock !== null && (
                       <span className="ml-2 text-gray-500">
                         <ArrowRight className="w-3 h-3 inline mx-1" />
@@ -1270,7 +1282,7 @@ export default function InventoryPage() {
 
           {/* Movement Type */}
           <div data-tour="movements-type-selector">
-            <label className="flex items-center gap-1 text-xs font-medium text-gray-700 mb-1.5">Tipo de movimiento * <HelpTooltip tooltipKey="movement-type" /></label>
+            <label className="flex items-center gap-1 text-xs font-medium text-gray-700 mb-1.5">{t('movementDrawer.movementType')} * <HelpTooltip tooltipKey="movement-type" /></label>
             <div className="flex gap-2">
               {(['ENTRADA', 'SALIDA', 'AJUSTE'] as MovementType[]).map(type => {
                 const config = movementTypeConfig[type];
@@ -1294,7 +1306,7 @@ export default function InventoryPage() {
                           ? config.activeClass
                           : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
                     }`}
-                    title={salidaDisabled ? 'No hay existencias para dar salida' : undefined}
+                    title={salidaDisabled ? t('movementDrawer.noExitPossible') : undefined}
                   >
                     {config.icon}
                     {config.label}
@@ -1306,7 +1318,7 @@ export default function InventoryPage() {
 
           {/* Quantity */}
           <div data-tour="movements-quantity">
-            <label className="flex items-center gap-1 text-xs font-medium text-gray-700 mb-1.5">Cantidad * <HelpTooltip tooltipKey="movement-quantity" /></label>
+            <label className="flex items-center gap-1 text-xs font-medium text-gray-700 mb-1.5">{t('movementDrawer.quantity')} * <HelpTooltip tooltipKey="movement-quantity" /></label>
             <input
               type="number"
               min="0"
@@ -1322,14 +1334,14 @@ export default function InventoryPage() {
 
           {/* Reason */}
           <div data-tour="movements-reason">
-            <label className="block text-xs font-medium text-gray-700 mb-1.5">Motivo *</label>
+            <label className="block text-xs font-medium text-gray-700 mb-1.5">{t('movementDrawer.reason')} *</label>
             <SearchableSelect
               options={motivosPorTipo[watchedTipoMovimiento] || []}
               value={movWatch('motivo') || null}
               onChange={(val) => {
                 movSetValue('motivo', val ? String(val) : '', { shouldDirty: true });
               }}
-              placeholder="Seleccionar motivo"
+              placeholder={t('movementDrawer.selectReason')}
             />
             {movErrors.motivo && (
               <p className="mt-1 text-xs text-red-600">{movErrors.motivo.message}</p>
@@ -1338,12 +1350,12 @@ export default function InventoryPage() {
 
           {/* Comment */}
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1.5">Comentario</label>
+            <label className="block text-xs font-medium text-gray-700 mb-1.5">{t('movementDrawer.comment')}</label>
             <textarea
               {...movRegister('comentario')}
               rows={3}
               className="w-full px-3 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 resize-none"
-              placeholder="Opcional: anade un comentario..."
+              placeholder={t('movementDrawer.commentPlaceholder')}
             />
           </div>
         </div>
@@ -1353,9 +1365,9 @@ export default function InventoryPage() {
         isOpen={isImportOpen}
         onClose={() => setIsImportOpen(false)}
         entity="inventario"
-        entityLabel="inventario"
+        entityLabel={t('title').toLowerCase()}
         onSuccess={() => fetchInventory()}
-        infoNote="Si un producto ya tiene inventario, sus valores se actualizaran con los del CSV."
+        infoNote={t('csvUpdatedNote')}
       />
     </PageHeader>
   );
