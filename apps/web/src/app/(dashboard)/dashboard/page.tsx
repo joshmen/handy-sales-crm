@@ -352,33 +352,32 @@ export default function DashboardPage() {
         {/* Métricas del vendedor */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 page-animate page-animate-delay-2">
           {vendedorCards.map((card, index) => (
-            <div key={index} className="bg-card border border-border rounded-xl p-6 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-sm text-muted-foreground">{card.title}</span>
-                <card.icon3d size={30} />
-              </div>
-              <div className="text-3xl font-semibold text-foreground mb-2">{card.value}</div>
-              <div className="flex items-center gap-2">
+            <div key={index} className="stat bg-base-100 border border-base-300 rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+              <div className="stat-figure"><card.icon3d size={30} /></div>
+              <div className="stat-title text-sm">{card.title}</div>
+              <div className="stat-value text-2xl font-semibold">{card.value}</div>
+              <div className="stat-desc flex items-center gap-1.5 mt-1">
                 {card.change !== 0 ? (
                   <>
                     {card.change > 0 ? (
-                      <TrendingUp className="w-4 h-4 text-green-500" />
+                      <TrendingUp className="w-3.5 h-3.5 text-success" />
                     ) : (
-                      <TrendingDown className="w-4 h-4 text-red-500" />
+                      <TrendingDown className="w-3.5 h-3.5 text-error" />
                     )}
-                    <span className={card.change > 0 ? 'text-green-600 text-sm' : 'text-red-600 text-sm'}>
+                    <span className={card.change > 0 ? 'text-success text-xs font-medium' : 'text-error text-xs font-medium'}>
                       {card.change > 0 ? '+' : ''}{card.change}%
                     </span>
                   </>
                 ) : null}
-                <span className="text-muted-foreground text-sm">{card.changeLabel}</span>
+                <span className="text-xs">{card.changeLabel}</span>
               </div>
             </div>
           ))}
         </div>
 
         {/* Goal Card */}
-        <div className="bg-white border border-gray-200 rounded-xl p-6 page-animate page-animate-delay-4" data-tour="dashboard-goal">
+        <div className="card bg-base-100 border border-base-300 shadow-sm page-animate page-animate-delay-4" data-tour="dashboard-goal">
+          <div className="card-body">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <h3 className="text-lg font-semibold text-gray-900">
               {goalData
@@ -425,12 +424,11 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all"
-                    style={{ width: `${goalData.percentage}%`, backgroundColor: 'var(--company-primary-color, #16a34a)' }}
-                  />
-                </div>
+                <progress
+                  className="progress progress-success w-full h-3"
+                  value={goalData.percentage}
+                  max="100"
+                />
                 <div className="flex justify-between text-xs text-gray-400">
                   <span>0</span>
                   <span>
@@ -448,6 +446,7 @@ export default function DashboardPage() {
               <a href="/metas" className="text-xs text-blue-500 hover:underline">{t('configureGoals')}</a>
             </div>
           )}
+          </div>
         </div>
       </div>
     );
@@ -479,7 +478,7 @@ export default function DashboardPage() {
               <select
                 value={periodo}
                 onChange={(e) => setPeriodo(e.target.value as 'semana' | 'mes' | 'trimestre')}
-                className="appearance-none flex items-center gap-2 px-4 py-2 pr-8 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 bg-white cursor-pointer transition-colors"
+                className="select select-bordered select-sm"
               >
                 <option value="semana">{t('thisWeek')}</option>
                 <option value="mes">{t('thisMonth')}</option>
@@ -491,7 +490,7 @@ export default function DashboardPage() {
             <button
               onClick={exportPDF}
               disabled={exporting || metricCards.length === 0}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+              className="btn btn-sm btn-outline gap-2"
             >
               {exporting ? (
                 <Loader2 className="w-4 h-4 text-emerald-500 animate-spin" />
@@ -508,27 +507,25 @@ export default function DashboardPage() {
           {metricCards.length > 0 ? metricCards.map((card, index) => (
             <div
               key={index}
-              className="bg-card border border-border rounded-xl p-6 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+              className="stat bg-base-100 border border-base-300 rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
             >
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-sm text-muted-foreground">{card.title}</span>
-                <card.icon3d size={30} />
-              </div>
-              <div className={`text-3xl font-semibold text-foreground mb-2 ${isRefreshing ? 'animate-pulse' : ''}`}>{card.value}</div>
-              <div className="flex items-center gap-2">
+              <div className="stat-figure"><card.icon3d size={30} /></div>
+              <div className="stat-title text-sm">{card.title}</div>
+              <div className={`stat-value text-2xl font-semibold ${isRefreshing ? 'animate-pulse' : ''}`}>{card.value}</div>
+              <div className="stat-desc flex items-center gap-1.5 mt-1">
                 {card.change !== 0 ? (
                   <>
                     {card.change > 0 ? (
-                      <TrendingUp className="w-4 h-4 text-green-500" />
+                      <TrendingUp className="w-3.5 h-3.5 text-success" />
                     ) : (
-                      <TrendingDown className="w-4 h-4 text-red-500" />
+                      <TrendingDown className="w-3.5 h-3.5 text-error" />
                     )}
-                    <span className={card.change > 0 ? 'text-green-600 text-sm' : 'text-red-600 text-sm'}>
+                    <span className={card.change > 0 ? 'text-success text-xs font-medium' : 'text-error text-xs font-medium'}>
                       {card.change > 0 ? '+' : ''}{card.change}%
                     </span>
                   </>
                 ) : null}
-                <span className="text-muted-foreground text-sm">{card.changeLabel}</span>
+                <span className="text-xs">{card.changeLabel}</span>
               </div>
             </div>
           )) : (
