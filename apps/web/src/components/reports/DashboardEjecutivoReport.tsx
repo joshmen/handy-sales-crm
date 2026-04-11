@@ -1,25 +1,16 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import { getDashboardEjecutivo, DashboardEjecutivoResponse } from '@/services/api/reports';
 import { toast } from '@/hooks/useToast';
-import {
-  Card,
-  Metric,
-  Text,
-  Flex,
-  BadgeDelta,
-  DonutChart,
-  BarList,
-  ProgressBar,
-  SparkAreaChart,
-  CategoryBar,
-  Legend,
-} from '@tremor/react';
+import { Card, Metric, Text, Flex, BadgeDelta, BarList } from '@tremor/react';
 import { ShoppingCart, Eye, UserPlus, Trophy, Star, AlertTriangle, Loader2, Download } from 'lucide-react';
 import { useReportExport } from '@/hooks/useReportExport';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useTranslations } from 'next-intl';
+
+const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
 export function DashboardEjecutivoReport() {
   const { formatCurrency } = useFormatters();
@@ -46,15 +37,47 @@ export function DashboardEjecutivoReport() {
     fallbackRef: contentRef,
   });
 
-  const fetch = useCallback(async () => {
+  const loadData = useCallback(async () => {
     try { setLoading(true); setData(await getDashboardEjecutivo({ periodo })); }
     catch { toast.error(tCommon('errorLoadingDashboard')); }
     finally { setLoading(false); }
   }, [periodo]);
 
-  useEffect(() => { fetch(); }, [periodo]);
+  useEffect(() => { loadData(); }, [loadData]);
 
   const periodoLabel = periodo === 'semana' ? t('thisWeek') : periodo === 'trimestre' ? t('thisQuarter') : t('thisMonth');
+
+  // Donut chart for visits
+  const donutOptions: ApexCharts.ApexOptions = {
+    chart: { type: 'donut', animations: { enabled: true, speed: 800 } },
+    labels: data ? [t('withSale', { count: data.visitas.conVenta }), t('withoutSale', { count: data.visitas.sinVenta })] : [],
+    colors: ['#3b82f6', '#e5e7eb'],
+    plotOptions: { pie: { donut: { size: '70%', labels: { show: true, total: { show: true, label: t('visitsTitle'), fontSize: '12px', color: '#6b7280', formatter: () => data ? String(data.visitas.total) : '0' } } } } },
+    legend: { position: 'bottom', fontSize: '12px' },
+    dataLabels: { enabled: false },
+    stroke: { width: 2, colors: ['#ffffff'] },
+  };
+
+  // Bar chart for sales breakdown
+  const barOptions: ApexCharts.ApexOptions = {
+    chart: { type: 'bar', toolbar: { show: false }, animations: { enabled: true, speed: 600 } },
+    plotOptions: { bar: { horizontal: true, borderRadius: 6, barHeight: '60%' } },
+    colors: ['#10b981'],
+    grid: { borderColor: '#f3f4f6', strokeDashArray: 3, xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } } },
+    dataLabels: { enabled: true, formatter: (v) => fmt(Number(v)), style: { fontSize: '11px', colors: ['#374151'] }, offsetX: 5 },
+    xaxis: { labels: { formatter: (v) => `$${(Number(v) / 1000).toFixed(0)}k`, style: { fontSize: '11px', colors: '#9ca3af' } } },
+    yaxis: { labels: { style: { fontSize: '11px', colors: '#374151' } } },
+    tooltip: { y: { formatter: (v) => fmt(v) } },
+  };
+
+  const barSeries = data ? [{
+    name: t('salesTitle'),
+    data: [
+      ...(data.topVendedor ? [{ x: `🏆 ${data.topVendedor.nombre}`, y: data.topVendedor.totalVentas }] : []),
+      ...(data.topProducto ? [{ x: `⭐ ${data.topProducto.nombre}`, y: data.topProducto.totalVentas }] : []),
+      { x: t('avgTicket'), y: data.ventas.ticketPromedio },
+    ],
+  }] : [];
 
   return (
     <div className="space-y-5">
@@ -68,7 +91,7 @@ export function DashboardEjecutivoReport() {
               PDF
             </button>
           )}
-          <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+          <div className="flex gap-1 bg-gray-100 rounded-lg p-1" role="group" aria-label="Period selector">
             {(['semana', 'mes', 'trimestre'] as const).map(p => (
               <button key={p} onClick={() => setPeriodo(p)} className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${periodo === p ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}>
                 {p === 'semana' ? t('week') : p === 'mes' ? t('month') : t('quarter')}
@@ -100,94 +123,53 @@ export function DashboardEjecutivoReport() {
                     <div className="p-2 rounded-lg bg-white/10"><ShoppingCart className="w-5 h-5 text-emerald-400" /></div>
                     <Text className="!text-gray-400">{t('salesTitle')}</Text>
                   </Flex>
-                  <Metric className="!text-white !text-5xl sm:!text-6xl !font-bold !tracking-tight">
-                    {fmt(data.ventas.total)}
-                  </Metric>
-                  <Text className="!text-gray-400 mt-2">{t('totalSales')} · {periodoLabel}</Text>
+                  <p className="text-5xl sm:text-6xl font-bold text-white tracking-tight">{fmt(data.ventas.total)}</p>
+                  <p className="text-sm text-gray-400 mt-2">{t('totalSales')} · {periodoLabel}</p>
                 </div>
                 <div className="text-right">
-                  <BadgeDelta
-                    deltaType={data.ventas.crecimientoPct >= 0 ? 'increase' : 'decrease'}
-                    size="lg"
-                  >
+                  <BadgeDelta deltaType={data.ventas.crecimientoPct >= 0 ? 'increase' : 'decrease'} size="lg">
                     {data.ventas.crecimientoPct > 0 ? '+' : ''}{data.ventas.crecimientoPct}%
                   </BadgeDelta>
-                  <Text className="!text-gray-500 mt-1 text-xs">{t('vsPriorPeriod')}</Text>
+                  <p className="text-xs text-gray-500 mt-1">{t('vsPriorPeriod')}</p>
                 </div>
               </Flex>
-
-              {/* Sub-metrics */}
               <div className="grid grid-cols-3 gap-6 mt-8 pt-6 border-t border-white/10">
                 <div>
-                  <Text className="!text-gray-500">{t('orders')}</Text>
-                  <Metric className="!text-white !text-2xl !font-semibold mt-1">{data.ventas.pedidos}</Metric>
+                  <p className="text-xs text-gray-500">{t('orders')}</p>
+                  <p className="text-2xl font-semibold text-white mt-1">{data.ventas.pedidos}</p>
                 </div>
                 <div>
-                  <Text className="!text-gray-500">{t('avgTicket')}</Text>
-                  <Metric className="!text-white !text-2xl !font-semibold mt-1">{fmt(data.ventas.ticketPromedio)}</Metric>
+                  <p className="text-xs text-gray-500">{t('avgTicket')}</p>
+                  <p className="text-2xl font-semibold text-white mt-1">{fmt(data.ventas.ticketPromedio)}</p>
                 </div>
                 <div>
-                  <Text className="!text-gray-500">{t('newClientsTitle')}</Text>
-                  <Metric className="!text-white !text-2xl !font-semibold mt-1">{data.nuevosClientes}</Metric>
+                  <p className="text-xs text-gray-500">{t('newClientsTitle')}</p>
+                  <p className="text-2xl font-semibold text-white mt-1">{data.nuevosClientes}</p>
                 </div>
               </div>
             </div>
           </Card>
 
-          {/* ── Row 2: Visits + Breakdown ── */}
+          {/* ── Row 2: Visits Donut + Sales Breakdown ── */}
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
-            {/* Visits donut */}
             <Card className="lg:col-span-2 page-animate page-animate-delay-2">
-              <Flex justifyContent="start" className="gap-2 mb-4">
+              <Flex justifyContent="start" className="gap-2 mb-2">
                 <div className="p-1.5 rounded-lg bg-blue-50"><Eye className="w-4 h-4 text-blue-600" /></div>
                 <Text className="!font-semibold !text-gray-900">{t('visitsTitle')}</Text>
               </Flex>
-              <Flex justifyContent="start" alignItems="end" className="gap-4">
-                <Metric className="!text-4xl !font-bold">{data.visitas.total}</Metric>
-                <BadgeDelta deltaType="unchanged" size="sm">{data.visitas.efectividadPct}%</BadgeDelta>
-              </Flex>
-              <div className="mt-6">
-                <DonutChart
-                  data={[
-                    { name: t('withSale', { count: data.visitas.conVenta }), value: data.visitas.conVenta },
-                    { name: t('withoutSale', { count: data.visitas.sinVenta }), value: data.visitas.sinVenta || 1 },
-                  ]}
-                  category="value"
-                  index="name"
-                  colors={['blue', 'slate']}
-                  variant="pie"
-                  className="h-32 mt-2"
-                  showLabel
-                  showAnimation
-                />
-                <Legend
-                  categories={[t('withSale', { count: data.visitas.conVenta }), t('withoutSale', { count: data.visitas.sinVenta })]}
-                  colors={['blue', 'slate']}
-                  className="mt-3 justify-center"
-                />
-              </div>
+              <p className="text-3xl font-bold text-gray-900 mb-1">{data.visitas.total}</p>
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 mb-4">{data.visitas.efectividadPct}%</span>
+              <Chart type="donut" options={donutOptions} series={[data.visitas.conVenta, data.visitas.sinVenta || 0]} height={220} />
             </Card>
 
-            {/* Performance metrics */}
             <Card className="lg:col-span-3 page-animate page-animate-delay-3">
               <Text className="!font-semibold !text-gray-900 mb-4">{t('salesTitle')} — {periodoLabel}</Text>
-              <BarList
-                data={[
-                  { name: t('totalSales'), value: data.ventas.total, color: 'emerald' },
-                  { name: t('avgTicket'), value: data.ventas.ticketPromedio, color: 'blue' },
-                  ...(data.topVendedor ? [{ name: `🏆 ${data.topVendedor.nombre}`, value: data.topVendedor.totalVentas, color: 'violet' as const }] : []),
-                  ...(data.topProducto ? [{ name: `⭐ ${data.topProducto.nombre}`, value: data.topProducto.totalVentas, color: 'rose' as const }] : []),
-                ]}
-                valueFormatter={fmt}
-                showAnimation
-                className="mt-2"
-              />
+              <Chart type="bar" options={barOptions} series={barSeries} height={200} />
             </Card>
           </div>
 
           {/* ── Row 3: Top Vendor + Star Product + Alerts ── */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 page-animate page-animate-delay-4">
-            {/* Top Vendor */}
             <Card decoration="top" decorationColor="violet">
               <Flex justifyContent="start" className="gap-2">
                 <div className="p-1.5 rounded-lg bg-violet-50"><Trophy className="w-4 h-4 text-violet-600" /></div>
@@ -197,17 +179,10 @@ export function DashboardEjecutivoReport() {
                 <div className="mt-4">
                   <Text className="!text-gray-500">{data.topVendedor.nombre}</Text>
                   <Metric className="!text-violet-600 mt-1">{fmt(data.topVendedor.totalVentas)}</Metric>
-                  <CategoryBar
-                    values={[100]}
-                    colors={['violet']}
-                    className="mt-4"
-                    showLabels={false}
-                  />
                 </div>
               ) : <Text className="mt-4 !text-gray-400">{t('noData')}</Text>}
             </Card>
 
-            {/* Star Product */}
             <Card decoration="top" decorationColor="rose">
               <Flex justifyContent="start" className="gap-2">
                 <div className="p-1.5 rounded-lg bg-rose-50"><Star className="w-4 h-4 text-rose-500" /></div>
@@ -222,7 +197,6 @@ export function DashboardEjecutivoReport() {
               ) : <Text className="mt-4 !text-gray-400">{t('noData')}</Text>}
             </Card>
 
-            {/* Alerts */}
             <Card decoration="top" decorationColor={data.alertas.inventarioBajo > 0 ? 'red' : 'green'}>
               <Flex justifyContent="start" className="gap-2">
                 <div className={`p-1.5 rounded-lg ${data.alertas.inventarioBajo > 0 ? 'bg-red-50' : 'bg-green-50'}`}>

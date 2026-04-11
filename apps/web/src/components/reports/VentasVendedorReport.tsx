@@ -1,15 +1,17 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import dynamic from 'next/dynamic';
+import { Card } from '@tremor/react';
 import { ReportFilters } from './ReportFilters';
-import { useChartTheme } from '@/hooks/useChartTheme';
 import { ReportTable, ReportColumn } from './ReportTable';
 import { getVentasVendedor, VentaVendedor } from '@/services/api/reports';
 import { toast } from '@/hooks/useToast';
 import { useReportExport } from '@/hooks/useReportExport';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useTranslations } from 'next-intl';
+
+const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
 function defaultDates() {
   const h = new Date();
@@ -24,7 +26,6 @@ export function VentasVendedorReport() {
   const tc = useTranslations('reports.common');
   const fmt = (n: number) => formatCurrency(n);
   const [dates, setDates] = useState(defaultDates);
-  const ct = useChartTheme();
   const [data, setData] = useState<VentaVendedor[]>([]);
   const [loading, setLoading] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
@@ -32,10 +33,7 @@ export function VentasVendedorReport() {
     fileName: 'ventas-vendedor',
     title: t('vendor'),
     dateRange: dates,
-    kpis: data.length > 0 ? data.slice(0, 3).map((v, i) => ({
-      label: `#${i + 1} ${v.nombre}`,
-      value: fmt(v.totalVentas),
-    })) : undefined,
+    kpis: data.length > 0 ? data.slice(0, 3).map((v, i) => ({ label: `#${i + 1} ${v.nombre}`, value: fmt(v.totalVentas) })) : undefined,
     chartRef,
     table: data.length > 0 ? {
       headers: [t('vendor'), t('totalSales'), t('orders'), t('avgTicket'), t('visits'), t('withSale'), t('effectiveness')],
@@ -43,17 +41,13 @@ export function VentasVendedorReport() {
     } : undefined,
   });
 
-  const fetch = useCallback(async () => {
-    try {
-      setLoading(true);
-      const res = await getVentasVendedor(dates);
-      setData(res.vendedores);
-    } catch { toast.error(tc('errorLoading')); }
+  const loadData = useCallback(async () => {
+    try { setLoading(true); const res = await getVentasVendedor(dates); setData(res.vendedores); }
+    catch { toast.error(tc('errorLoading')); }
     finally { setLoading(false); }
   }, [dates]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { fetch(); }, []);
+  useEffect(() => { loadData(); }, []);
 
   const columns: ReportColumn<VentaVendedor>[] = [
     { key: 'nombre', header: t('vendor'), sortable: true },
@@ -65,60 +59,31 @@ export function VentasVendedorReport() {
     { key: 'efectividadVisitas', header: t('effectiveness'), align: 'right', sortable: true, render: (r) => `${r.efectividadVisitas}%` },
   ];
 
+  const chartOptions: ApexCharts.ApexOptions = {
+    chart: { type: 'bar', toolbar: { show: true }, animations: { enabled: true, speed: 800 } },
+    plotOptions: { bar: { horizontal: true, borderRadius: 6, barHeight: '65%' } },
+    colors: ['#10b981'],
+    grid: { borderColor: '#f3f4f6', strokeDashArray: 3 },
+    dataLabels: { enabled: true, formatter: (v) => fmt(Number(v)), style: { fontSize: '11px', colors: ['#374151'] }, offsetX: 5 },
+    xaxis: { labels: { formatter: (v) => `$${(Number(v) / 1000).toFixed(0)}k`, style: { fontSize: '11px', colors: '#9ca3af' } } },
+    yaxis: { labels: { style: { fontSize: '11px', colors: '#374151' } } },
+    tooltip: { y: { formatter: (v) => fmt(v) } },
+  };
+
   return (
     <div className="space-y-4">
-      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={fetch} loading={loading} onExportPDF={data.length > 0 ? exportPDF : undefined} exporting={exporting} />
+      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={loadData} loading={loading} onExportPDF={data.length > 0 ? exportPDF : undefined} exporting={exporting} />
 
       {data.length > 0 && (
         <>
-          {/* Cards by vendor — clean white design with accent bars */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {data.map((v, i) => (
-              <div key={v.usuarioId} className="relative overflow-hidden bg-white border border-gray-200 rounded-lg p-4 motion-safe:opacity-0 motion-safe:animate-card-enter hover:shadow-md transition-shadow duration-300" style={{ animationDelay: `${i * 60}ms` }}>
-                <div className={`absolute top-0 left-0 right-0 h-1 ${i === 0 ? 'bg-amber-400' : i === 1 ? 'bg-gray-400' : i === 2 ? 'bg-amber-700' : 'bg-gray-200'}`} />
-                <div className="flex items-center gap-2 mb-3 pt-1">
-                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold text-white ${i === 0 ? 'bg-amber-400' : i === 1 ? 'bg-gray-400' : i === 2 ? 'bg-amber-700' : 'bg-gray-300'}`}>
-                    {i + 1}
-                  </div>
-                  <div>
-                    <p className="text-[13px] font-semibold text-gray-900">{v.nombre}</p>
-                    <p className="text-[11px] text-gray-400">{v.email}</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="text-center p-2 bg-gray-50 rounded">
-                    <p className="text-base font-semibold text-gray-900">{fmt(v.totalVentas)}</p>
-                    <p className="text-[10px] text-gray-500">{t('salesLabel')}</p>
-                  </div>
-                  <div className="text-center p-2 bg-gray-50 rounded">
-                    <p className="text-base font-semibold text-gray-900">{v.cantidadPedidos}</p>
-                    <p className="text-[10px] text-gray-500">{t('orders')}</p>
-                  </div>
-                  <div className="text-center p-2 bg-gray-50 rounded">
-                    <p className="text-base font-semibold text-gray-900">{v.totalVisitas}</p>
-                    <p className="text-[10px] text-gray-500">{t('visits')}</p>
-                  </div>
-                  <div className="text-center p-2 bg-gray-50 rounded">
-                    <p className="text-base font-semibold text-gray-900">{v.efectividadVisitas}%</p>
-                    <p className="text-[10px] text-gray-500">{t('effectiveness')}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Bar chart */}
-          <div ref={chartRef} className="bg-white border border-gray-200 rounded-lg p-4">
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={data} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
-                <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} />
-                <YAxis type="category" dataKey="nombre" tick={{ fontSize: 11 }} width={120} />
-                <Tooltip formatter={(v) => [fmt(Number(v)), t('salesLabel')]} />
-                <Bar dataKey="totalVentas" fill="#16a34a" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          <Card ref={chartRef as React.RefObject<HTMLDivElement>}>
+            <Chart
+              type="bar"
+              options={chartOptions}
+              series={[{ name: t('salesLabel'), data: data.map(v => ({ x: v.nombre, y: v.totalVentas })) }]}
+              height={Math.max(250, data.length * 45)}
+            />
+          </Card>
 
           <ReportTable
             data={data as unknown as Record<string, unknown>[]}

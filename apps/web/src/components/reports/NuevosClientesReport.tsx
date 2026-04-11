@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import dynamic from 'next/dynamic';
+import { Card } from '@tremor/react';
 import { ReportFilters } from './ReportFilters';
-import { useChartTheme } from '@/hooks/useChartTheme';
 import { ReportKPICards } from './ReportKPICards';
 import { ReportTable, ReportColumn } from './ReportTable';
 import { getNuevosClientes, NuevoCliente } from '@/services/api/reports';
@@ -12,35 +12,29 @@ import { useFormatters } from '@/hooks/useFormatters';
 import { formatDate as libFmtDate } from '@/lib/formatters';
 import { useTranslations } from 'next-intl';
 
+const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
+
 function defaultDates() {
-  const h = new Date();
-  const d = new Date(h);
-  d.setMonth(d.getMonth() - 3);
+  const h = new Date(); const d = new Date(h); d.setMonth(d.getMonth() - 3);
   return { desde: d.toISOString().slice(0, 10), hasta: h.toISOString().slice(0, 10) };
 }
 
 const fmtDate = (d: string) => libFmtDate(d, null, { day: '2-digit', month: 'short', year: 'numeric' });
 
 export function NuevosClientesReport() {
-  const { formatDate } = useFormatters();
   const t = useTranslations('reports.nuevosClientes');
   const tc = useTranslations('reports.common');
   const [dates, setDates] = useState(defaultDates);
-  const ct = useChartTheme();
   const [data, setData] = useState<{ clientes: NuevoCliente[]; total: number; porMes: { mes: string; cantidad: number }[] } | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const fetch = useCallback(async () => {
-    try {
-      setLoading(true);
-      const res = await getNuevosClientes(dates);
-      setData(res);
-    } catch { toast.error(tc('errorLoading')); }
+  const loadData = useCallback(async () => {
+    try { setLoading(true); setData(await getNuevosClientes(dates)); }
+    catch { toast.error(tc('errorLoading')); }
     finally { setLoading(false); }
   }, [dates]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { fetch(); }, []);
+  useEffect(() => { loadData(); }, []);
 
   const columns: ReportColumn<NuevoCliente>[] = [
     { key: 'nombre', header: t('client'), sortable: true },
@@ -51,36 +45,30 @@ export function NuevosClientesReport() {
     { key: 'creadoPor', header: t('createdBy') },
   ];
 
+  const chartOptions: ApexCharts.ApexOptions = {
+    chart: { type: 'bar', toolbar: { show: false }, animations: { enabled: true, speed: 700 } },
+    plotOptions: { bar: { borderRadius: 6, columnWidth: '50%' } },
+    colors: ['#10b981'],
+    grid: { borderColor: '#f3f4f6', strokeDashArray: 3 },
+    dataLabels: { enabled: true, style: { fontSize: '11px', colors: ['#374151'] } },
+    xaxis: { categories: data?.porMes.map(m => m.mes) || [], labels: { style: { fontSize: '11px', colors: '#9ca3af' } } },
+    yaxis: { labels: { style: { fontSize: '11px', colors: '#9ca3af' } }, forceNiceScale: true },
+    tooltip: { y: { formatter: (v) => `${v} ${tc('clients').toLowerCase()}` } },
+  };
+
   return (
     <div className="space-y-4">
-      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={fetch} loading={loading} />
-
+      <ReportFilters desde={dates.desde} hasta={dates.hasta} onDesdeChange={v => setDates(d => ({ ...d, desde: v }))} onHastaChange={v => setDates(d => ({ ...d, hasta: v }))} onApply={loadData} loading={loading} />
       {data && (
         <>
-          <ReportKPICards cards={[
-            { label: t('newClients'), value: data.total, color: 'green' },
-          ]} />
-
+          <ReportKPICards cards={[{ label: t('newClients'), value: data.total, color: 'green' }]} />
           {data.porMes.length > 0 && (
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <Card>
               <p className="text-xs font-medium text-gray-600 mb-3">{t('perMonth')}</p>
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={data.porMes}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
-                  <XAxis dataKey="mes" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-                  <Tooltip />
-                  <Bar dataKey="cantidad" fill="#16a34a" radius={[4, 4, 0, 0]} name={tc('clients')} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+              <Chart type="bar" options={chartOptions} series={[{ name: tc('clients'), data: data.porMes.map(m => m.cantidad) }]} height={260} />
+            </Card>
           )}
-
-          <ReportTable
-            data={data.clientes as unknown as Record<string, unknown>[]}
-            columns={columns as unknown as ReportColumn<Record<string, unknown>>[]}
-            showIndex
-          />
+          <ReportTable data={data.clientes as unknown as Record<string, unknown>[]} columns={columns as unknown as ReportColumn<Record<string, unknown>>[]} showIndex />
         </>
       )}
     </div>

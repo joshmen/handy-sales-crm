@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { Card as TremorCard } from '@tremor/react';
+import dynamic from 'next/dynamic';
+const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 import { ReportKPICards } from './ReportKPICards';
 import { ReportTable, ReportColumn } from './ReportTable';
 import { getInventario, InventarioProducto } from '@/services/api/reports';
@@ -99,29 +101,21 @@ export function InventarioReport() {
           ]} />
 
           {pieData.length > 0 && (
-            <div ref={chartRef} className="bg-white border border-gray-200 rounded-lg p-4">
-              <ResponsiveContainer width="100%" height={260}>
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    label={({ name, value }) => `${name}: ${value}`}
-                  >
-                    {pieData.map((d, i) => {
-                      const colorKey = estadoColorMap[d.key]?.pie || '#999';
-                      return <Cell key={i} fill={colorKey} />;
-                    })}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
+            <TremorCard ref={chartRef as React.RefObject<HTMLDivElement>}>
+              <Chart
+                type="donut"
+                options={{
+                  chart: { type: 'donut', animations: { enabled: true, speed: 800 } },
+                  labels: pieData.map(d => d.name),
+                  colors: ['#ef4444', '#f59e0b', '#10b981', '#3b82f6'],
+                  plotOptions: { pie: { donut: { size: '65%' } } },
+                  legend: { position: 'bottom', fontSize: '12px' },
+                  dataLabels: { enabled: true, formatter: (val: number) => `${val.toFixed(0)}%` },
+                }}
+                series={pieData.map(d => d.value)}
+                height={280}
+              />
+            </TremorCard>
           )}
 
           <ReportTable

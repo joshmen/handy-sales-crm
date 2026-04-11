@@ -1,18 +1,10 @@
 "use client";
 
 import React, { useState, useCallback, useRef } from "react";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-} from "recharts";
+import { Card } from "@tremor/react";
+import dynamic from "next/dynamic";
+const ApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
 import { DateTimePicker } from "@/components/ui/DateTimePicker";
-import { useChartTheme } from "@/hooks/useChartTheme";
 import { ReportKPICards } from "./ReportKPICards";
 import {
   getComparativo,
@@ -39,7 +31,6 @@ export function ComparativoPeriodosReport() {
   const tCommon = useTranslations("reports.common");
   const tFilters = useTranslations("reports.filters");
   const fmt = (n: number) => formatCurrency(n);
-  const ct = useChartTheme();
   const METRIC_LABELS: Record<string, string> = {
     totalVentas: tMetrics("totalVentas"),
     cantidadPedidos: tMetrics("cantidadPedidos"),
@@ -166,20 +157,28 @@ export function ComparativoPeriodosReport() {
           />
 
           {chartData.length > 0 && (
-            <div ref={chartRef} className="bg-white border border-gray-200 rounded-lg p-4">
+            <Card ref={chartRef as React.RefObject<HTMLDivElement>}>
               <h3 className="text-sm font-semibold text-gray-700 mb-3">{t("chartTitle")}</h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
-                  <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-15} textAnchor="end" height={60} />
-                  <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="periodo1" name={tCommon("period1")} fill="#94a3b8" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="periodo2" name={tCommon("period2")} fill="#16a34a" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+              <ApexChart
+                type="bar"
+                options={{
+                  chart: { type: "bar", toolbar: { show: true }, animations: { enabled: true, speed: 700 } },
+                  plotOptions: { bar: { borderRadius: 6, columnWidth: "40%" } },
+                  colors: ["#94a3b8", "#10b981"],
+                  grid: { borderColor: "#f3f4f6", strokeDashArray: 3 },
+                  dataLabels: { enabled: false },
+                  xaxis: { categories: chartData.map(c => c.name), labels: { style: { fontSize: "10px", colors: "#9ca3af" }, rotate: -20 } },
+                  yaxis: { labels: { style: { fontSize: "11px", colors: "#9ca3af" } } },
+                  legend: { position: "top", fontSize: "12px" },
+                  tooltip: { shared: true },
+                }}
+                series={[
+                  { name: tCommon("period1"), data: chartData.map(c => c.periodo1) },
+                  { name: tCommon("period2"), data: chartData.map(c => c.periodo2) },
+                ]}
+                height={320}
+              />
+            </Card>
           )}
 
           {/* Delta table */}
