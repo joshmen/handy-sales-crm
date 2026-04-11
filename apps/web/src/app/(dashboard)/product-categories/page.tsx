@@ -22,6 +22,7 @@ import { BatchActionBar } from '@/components/shared/BatchActionBar';
 import { BatchConfirmModal } from '@/components/shared/BatchConfirmModal';
 import { DataGrid, type DataGridColumn } from '@/components/ui/DataGrid';
 import { useTranslations } from 'next-intl';
+import { useBackendTranslation } from '@/hooks/useBackendTranslation';
 import { FieldError } from '@/components/forms/FieldError';
 import {
   Plus,
@@ -47,6 +48,7 @@ type FormData = z.infer<typeof formSchema>;
 export default function ProductCategoriesPage() {
   const t = useTranslations('productCategories');
   const tc = useTranslations('common');
+  const { tApi } = useBackendTranslation();
   // State
   const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -176,8 +178,7 @@ export default function ProductCategoriesPage() {
       setIsModalOpen(false);
       await loadCategories();
     } catch (error: unknown) {
-      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || t('errorSaving');
-      toast.error(message);
+      toast.error(tApi((error as { response?: { data?: { message?: string } } })?.response?.data?.message) || t('errorSaving'));
     } finally {
       setActionLoading(false);
     }
@@ -200,8 +201,7 @@ export default function ProductCategoriesPage() {
         }
       }
     } catch (error: unknown) {
-      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || t('errorChangingStatus');
-      toast.error(message);
+      toast.error(tApi((error as { response?: { data?: { message?: string } } })?.response?.data?.message) || t('errorChangingStatus'));
     } finally {
       setTogglingId(null);
     }
@@ -238,8 +238,7 @@ export default function ProductCategoriesPage() {
         ));
       }
     } catch (error: unknown) {
-      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || t('errorBatchToggle');
-      toast.error(message);
+      toast.error(tApi((error as { response?: { data?: { message?: string } } })?.response?.data?.message) || t('errorBatchToggle'));
     } finally {
       batch.setBatchLoading(false);
     }

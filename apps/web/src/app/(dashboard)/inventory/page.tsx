@@ -46,6 +46,7 @@ import { ListPagination } from '@/components/ui/ListPagination';
 import { TableLoadingOverlay } from '@/components/ui/TableLoadingOverlay';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useTranslations } from 'next-intl';
+import { useBackendTranslation } from '@/hooks/useBackendTranslation';
 import { FieldError } from '@/components/forms/FieldError';
 
 // ─── Almacén tab types ───────────────────────────────────────────────
@@ -86,6 +87,7 @@ type ActiveTab = 'almacen' | 'movimientos';
 export default function InventoryPage() {
   const t = useTranslations('inventory');
   const tc = useTranslations('common');
+  const { tApi } = useBackendTranslation();
 
   const ALERTA_LABELS: Record<AlertaInventario, string> = {
     stock_bajo: t('warehouse.lowStock'),
@@ -311,8 +313,7 @@ export default function InventoryPage() {
         fetchInventory();
       } catch (err: unknown) {
         const e = err as { response?: { data?: { message?: string } }; message?: string };
-        const msg = e?.response?.data?.message || e?.message || t('errorCreating');
-        toast.error(msg);
+        toast.error(tApi(e?.response?.data?.message) || tApi(e?.message) || t('errorCreating'));
       } finally {
         setSubmitting(false);
       }
@@ -338,8 +339,7 @@ export default function InventoryPage() {
         fetchInventory();
       } catch (err: unknown) {
         const e = err as { response?: { data?: { message?: string } }; message?: string };
-        const msg = e?.response?.data?.message || e?.message || t('errorUpdating');
-        toast.error(msg);
+        toast.error(tApi(e?.response?.data?.message) || tApi(e?.message) || t('errorUpdating'));
       } finally {
         setSubmitting(false);
       }

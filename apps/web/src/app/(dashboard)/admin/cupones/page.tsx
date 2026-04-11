@@ -25,6 +25,7 @@ import {
   TIPO_CUPON_OPTIONS,
 } from '@/services/api/cuponesAdmin';
 import { useTranslations } from 'next-intl';
+import { useBackendTranslation } from '@/hooks/useBackendTranslation';
 
 type DrawerMode = 'none' | 'create' | 'edit';
 
@@ -54,6 +55,7 @@ export default function CuponesAdminPage() {
   const t = useTranslations('admin.cupones');
   const ta = useTranslations('admin');
   const tc = useTranslations('common');
+  const { tApi } = useBackendTranslation();
   const [cupones, setCupones] = useState<CuponAdminDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [drawerMode, setDrawerMode] = useState<DrawerMode>('none');
@@ -162,8 +164,8 @@ export default function CuponesAdminPage() {
       closeDrawer();
       fetchCupones();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : t('saveError');
-      toast({ title: tc('error'), description: message, variant: 'destructive' });
+      const raw = err instanceof Error ? err.message : '';
+      toast({ title: tc('error'), description: tApi(raw) || t('saveError'), variant: 'destructive' });
     } finally {
       setSaving(false);
     }
@@ -175,8 +177,8 @@ export default function CuponesAdminPage() {
       toast({ title: cupon.activo ? t('couponDeactivated') : t('couponActivated') });
       fetchCupones();
     } catch (err: unknown) {
-      const message = (err as { message?: string })?.message || t('toggleError');
-      toast({ title: tc('error'), description: message, variant: 'destructive' });
+      const raw = (err as { message?: string })?.message;
+      toast({ title: tc('error'), description: tApi(raw) || t('toggleError'), variant: 'destructive' });
     }
   };
 
@@ -187,8 +189,8 @@ export default function CuponesAdminPage() {
       setDeleteConfirmId(null);
       fetchCupones();
     } catch (err: unknown) {
-      const message = (err as { message?: string })?.message || t('deleteError');
-      toast({ title: tc('error'), description: message, variant: 'destructive' });
+      const raw = (err as { message?: string })?.message;
+      toast({ title: tc('error'), description: tApi(raw) || t('deleteError'), variant: 'destructive' });
     }
   };
 

@@ -31,6 +31,7 @@ import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, subDays, subWeeks, su
 import { useFormatters } from '@/hooks/useFormatters';
 import { formatDate as libFmtDate } from '@/lib/formatters';
 import { useTranslations } from 'next-intl';
+import { useBackendTranslation } from '@/hooks/useBackendTranslation';
 
 type ViewMode = 'list' | 'calendar';
 
@@ -105,6 +106,7 @@ const formatTime = (dateStr?: string) => {
 function VisitsPageContent() {
   const t = useTranslations('visits');
   const tc = useTranslations('common');
+  const { tApi } = useBackendTranslation();
   const searchParams = useSearchParams();
   const router = useRouter();
   const viewParam = searchParams.get('view') as ViewMode | null;
@@ -386,7 +388,7 @@ function VisitsPageContent() {
       setShowVisitForm(false);
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } }; message?: string };
-      toast.error(e?.response?.data?.message || e?.message || t('errorCreating'));
+      toast.error(tApi(e?.response?.data?.message) || tApi(e?.message) || t('errorCreating'));
     }
   };
 

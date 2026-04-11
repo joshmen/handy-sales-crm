@@ -8,6 +8,7 @@ import { useBatchOperations } from '@/hooks/useBatchOperations';
 import { BatchActionBar } from '@/components/shared/BatchActionBar';
 import { BatchConfirmModal } from '@/components/shared/BatchConfirmModal';
 import { toast } from '@/hooks/useToast';
+import { useBackendTranslation } from '@/hooks/useBackendTranslation';
 import { Zone } from '@/types/zones';
 import { zoneService } from '@/services/api';
 import { api } from '@/lib/api';
@@ -72,6 +73,7 @@ type ZoneFormData = z.infer<typeof zoneFormSchema>;
 export default function ZonesPage() {
   const t = useTranslations('zones');
   const tc = useTranslations('common');
+  const { tApi } = useBackendTranslation();
   const drawerRef = useRef<DrawerHandle>(null);
   const [zones, setZones] = useState<Zone[]>([]);
   const [loading, setLoading] = useState(true);
@@ -235,7 +237,7 @@ export default function ZonesPage() {
     } catch (err) {
       console.error('Error al guardar zona:', err);
       const apiErr = err as { message?: string };
-      toast.error(apiErr?.message || t('errorSaving'));
+      toast.error(tApi(apiErr?.message) || t('errorSaving'));
     } finally {
       setSavingZone(false);
     }
@@ -300,8 +302,8 @@ export default function ZonesPage() {
       }
     } catch (err: unknown) {
       console.error('Error al cambiar estado:', err);
-      const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || t('errorChangingStatus');
-      toast.error(message);
+      const raw = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(tApi(raw) || t('errorChangingStatus'));
     } finally {
       setTogglingId(null);
     }
@@ -347,8 +349,8 @@ export default function ZonesPage() {
       }
     } catch (error: unknown) {
       console.error('Error en batch toggle:', error);
-      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || t('errorChangingStatus');
-      toast.error(message);
+      const raw = (error as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(tApi(raw) || t('errorChangingStatus'));
       batch.setBatchLoading(false);
     }
   };

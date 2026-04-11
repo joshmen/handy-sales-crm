@@ -41,6 +41,7 @@ import { BatchActionBar } from '@/components/shared/BatchActionBar';
 import { BatchConfirmModal } from '@/components/shared/BatchConfirmModal';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useTranslations } from 'next-intl';
+import { useBackendTranslation } from '@/hooks/useBackendTranslation';
 import { FieldError } from '@/components/forms/FieldError';
 
 // Tipos locales para los catálogos (coinciden con el backend)
@@ -91,6 +92,7 @@ type ProductFormData = z.infer<typeof productSchema>;
 export default function ProductsPage() {
   const t = useTranslations('products');
   const tc = useTranslations('common');
+  const { tApi } = useBackendTranslation();
   const { formatCurrency } = useFormatters();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -296,7 +298,7 @@ export default function ProductsPage() {
     } catch (err: unknown) {
       console.error('Error al guardar producto:', err);
       const e = err as { response?: { data?: { message?: string } }; message?: string };
-      toast.error(e?.response?.data?.message || e?.message || t('errorSaving'));
+      toast.error(tApi(e?.response?.data?.message) || tApi(e?.message) || t('errorSaving'));
     } finally {
       setSavingProduct(false);
     }

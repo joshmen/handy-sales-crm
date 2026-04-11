@@ -30,6 +30,7 @@ import {
   X,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { useBackendTranslation } from '@/hooks/useBackendTranslation';
 import { CurrencyDollar } from '@phosphor-icons/react';
 import { SearchBar } from '@/components/common/SearchBar';
 import { InactiveToggle } from '@/components/ui/InactiveToggle';
@@ -55,6 +56,7 @@ export default function PriceListsPage() {
   const t = useTranslations('priceLists');
   const tv = useTranslations('formValidation');
   const tc = useTranslations('common');
+  const { tApi } = useBackendTranslation();
   const { formatDate: _fmtDate } = useFormatters();
   // State
   const [priceLists, setPriceLists] = useState<ListaPrecio[]>([]);
@@ -184,8 +186,7 @@ export default function PriceListsPage() {
       await loadPriceLists();
     } catch (error: unknown) {
       console.error('Error al guardar lista:', error);
-      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || t('errorSaving');
-      toast.error(message);
+      toast.error(tApi((error as { response?: { data?: { message?: string } } })?.response?.data?.message) || t('errorSaving'));
     } finally{
       setSavingList(false);
     }
@@ -222,8 +223,7 @@ export default function PriceListsPage() {
       }
     } catch (error: unknown) {
       console.error('Error al cambiar estado:', error);
-      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || t('errorToggle');
-      toast.error(message);
+      toast.error(tApi((error as { response?: { data?: { message?: string } } })?.response?.data?.message) || t('errorToggle'));
     } finally {
       setTogglingId(null);
     }
@@ -259,8 +259,7 @@ export default function PriceListsPage() {
       }
     } catch (error: unknown) {
       console.error('Error en batch toggle:', error);
-      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || t('batchError');
-      toast.error(message);
+      toast.error(tApi((error as { response?: { data?: { message?: string } } })?.response?.data?.message) || t('batchError'));
       batch.setBatchLoading(false);
     }
   };

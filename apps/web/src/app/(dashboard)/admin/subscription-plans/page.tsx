@@ -28,6 +28,7 @@ import {
 } from '@/services/api/subscriptionPlansAdmin';
 import { useFormatters } from '@/hooks/useFormatters';
 import { useTranslations } from 'next-intl';
+import { useBackendTranslation } from '@/hooks/useBackendTranslation';
 
 const AVAILABLE_FEATURES = [
   'CRM y clientes',
@@ -52,6 +53,7 @@ export default function SubscriptionPlansAdminPage() {
   const t = useTranslations('admin.subscriptionPlans');
   const ta = useTranslations('admin');
   const tc = useTranslations('common');
+  const { tApi } = useBackendTranslation();
   const { formatCurrency } = useFormatters();
   const [plans, setPlans] = useState<SubscriptionPlanAdminDto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -182,8 +184,8 @@ export default function SubscriptionPlansAdminPage() {
       toast({ title: plan.activo ? t('planDeactivated') : t('planActivated') });
       fetchPlans();
     } catch (err: unknown) {
-      const message = (err as { message?: string })?.message || t('toggleError');
-      toast({ title: tc('error'), description: message, variant: 'destructive' });
+      const raw = (err as { message?: string })?.message;
+      toast({ title: tc('error'), description: tApi(raw) || t('toggleError'), variant: 'destructive' });
     }
   };
 

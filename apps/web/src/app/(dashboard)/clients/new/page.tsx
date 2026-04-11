@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { useBackendTranslation } from '@/hooks/useBackendTranslation';
 import { useForm } from 'react-hook-form';
 import { scrollToFirstError } from '@/hooks/useScrollToError';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -52,6 +53,7 @@ export default function NewClientPage() {
   const router = useRouter();
   const t = useTranslations('clients.formPage');
   const tc = useTranslations('common');
+  const { tApi } = useBackendTranslation();
 
   const TIPOS_PAGO_OPTIONS = [
     { value: 'contado_credito', label: t('paymentCashCredit') },
@@ -200,9 +202,9 @@ export default function NewClientPage() {
           setError(field as keyof ClientFormInput, { type: 'server', message });
         });
         const errorMessages = Object.values(apiError.validationErrors).flat();
-        toast.error(errorMessages[0] || t('errorFormCorrection'));
+        toast.error(tApi(errorMessages[0]) || t('errorFormCorrection'));
       } else {
-        toast.error(apiError.message || t('errorCreating'));
+        toast.error(tApi(apiError.message) || t('errorCreating'));
       }
     } finally {
       setSaving(false);

@@ -38,6 +38,7 @@ import { InactiveToggle } from '@/components/ui/InactiveToggle';
 import { ActiveToggle } from '@/components/ui/ActiveToggle';
 import { DataGrid, DataGridColumn } from '@/components/ui/DataGrid';
 import { useTranslations } from 'next-intl';
+import { useBackendTranslation } from '@/hooks/useBackendTranslation';
 import { FieldError } from '@/components/forms/FieldError';
 import { Megaphone } from '@phosphor-icons/react';
 import { HelpTooltip } from '@/components/help/HelpTooltip';
@@ -65,6 +66,7 @@ type PromotionFormData = z.infer<typeof promotionSchema>;
 export default function PromotionsPage() {
   const t = useTranslations('promotions');
   const tc = useTranslations('common');
+  const { tApi } = useBackendTranslation();
   const { formatDate: _fmtDate } = useFormatters();
   const drawerRef = useRef<DrawerHandle>(null);
   const [promotions, setPromotions] = useState<PromocionDto[]>([]);
@@ -363,8 +365,7 @@ export default function PromotionsPage() {
       await fetchPromotions();
     } catch (error: unknown) {
       const e = error as { response?: { data?: { message?: string } }; message?: string };
-      const msg = e?.response?.data?.message || e?.message || t('errorSaving');
-      toast.error(msg);
+      toast.error(tApi(e?.response?.data?.message) || tApi(e?.message) || t('errorSaving'));
     } finally {
       setActionLoading(false);
     }
@@ -385,8 +386,7 @@ export default function PromotionsPage() {
         ));
       }
     } catch (error: unknown) {
-      const msg = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || t('errorToggle');
-      toast.error(msg);
+      toast.error(tApi((error as { response?: { data?: { message?: string } } })?.response?.data?.message) || t('errorToggle'));
       await fetchPromotions();
     } finally {
       setTogglingId(null);

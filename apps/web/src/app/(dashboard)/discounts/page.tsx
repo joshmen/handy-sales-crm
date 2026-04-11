@@ -31,6 +31,7 @@ import {
   X,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { useBackendTranslation } from '@/hooks/useBackendTranslation';
 import { FieldError } from '@/components/forms/FieldError';
 import { Percent as PercentIcon } from '@phosphor-icons/react';
 import { SearchBar } from '@/components/common/SearchBar';
@@ -56,6 +57,7 @@ type DiscountFormData = z.infer<typeof discountSchema>;
 export default function DiscountsPage() {
   const t = useTranslations('discounts');
   const tc = useTranslations('common');
+  const { tApi } = useBackendTranslation();
   const { formatDate } = useFormatters();
   const drawerRef = useRef<DrawerHandle>(null);
 
@@ -204,8 +206,7 @@ export default function DiscountsPage() {
       await fetchDiscounts();
     } catch (error: unknown) {
       const e = error as { response?: { data?: { message?: string } } };
-      const message = e?.response?.data?.message || t('errorSaving');
-      toast.error(message);
+      toast.error(tApi(e?.response?.data?.message) || t('errorSaving'));
     } finally {
       setActionLoading(false);
     }

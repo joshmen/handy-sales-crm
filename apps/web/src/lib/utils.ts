@@ -90,3 +90,22 @@ export function formatTimeAgo(dateStr: string): string {
 export function getErrorMessage(err: unknown): string {
   return err instanceof Error ? err.message : 'Error desconocido'
 }
+
+/**
+ * Translate a backend API message using i18n.
+ * Backend sends messages in Spanish; this maps them to the user's locale.
+ * Pass the `t` function from `useTranslations('backendMessages')`.
+ * If no translation is found, returns the original message.
+ */
+export function translateBackendMessage(
+  message: string,
+  t: (key: string) => string
+): string {
+  try {
+    const translated = t(message);
+    // next-intl returns the key itself if not found, so check
+    return translated !== message ? translated : message;
+  } catch {
+    return message;
+  }
+}

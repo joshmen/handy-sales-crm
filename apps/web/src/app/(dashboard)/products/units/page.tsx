@@ -17,6 +17,7 @@ import { ActiveToggle } from '@/components/ui/ActiveToggle';
 import { DataGrid, type DataGridColumn } from '@/components/ui/DataGrid';
 import { api } from '@/lib/api';
 import { useTranslations } from 'next-intl';
+import { useBackendTranslation } from '@/hooks/useBackendTranslation';
 import { FieldError } from '@/components/forms/FieldError';
 import {
   Plus,
@@ -38,6 +39,7 @@ type FormData = z.infer<typeof formSchema>;
 export default function UnitsPage() {
   const t = useTranslations('units');
   const tc = useTranslations('common');
+  const { tApi } = useBackendTranslation();
   // State
   const [units, setUnits] = useState<Unit[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -159,8 +161,7 @@ export default function UnitsPage() {
       setIsModalOpen(false);
       await loadUnits();
     } catch (error: unknown) {
-      const message = (error as { message?: string })?.message || t('errorSaving');
-      toast.error(message);
+      toast.error(tApi((error as { message?: string })?.message) || t('errorSaving'));
     } finally {
       setActionLoading(false);
     }
